@@ -1,0 +1,1 @@
+@tailwind base;@tailwind components;@tailwind utilities;.card{@apply bg-white rounded-2xl shadow p-4}.kpi{@apply text-3xl font-semibold}.label{@apply text-xs uppercase tracking-wide text-slate-500}.tab{@apply px-3 py-2 rounded-lg hover:bg-slate-200 cursor-pointer}.tab-active{@apply bg-slate-200}

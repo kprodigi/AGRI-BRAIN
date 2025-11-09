@@ -1,0 +1,20 @@
+/* Change the Swagger top bar color */
+.swagger-ui .topbar {
+    background: #0b3d2e !important;
+    /* deep green bar */
+}
+
+/* Replace the Swagger text/logo with your own logo */
+.swagger-ui .topbar-wrapper .link {
+    background: url('/static/branding/logo.png') no-repeat left center !important;
+    background-size: 36px 36px !important;
+    padding-left: 46px !important;
+    height: 40px !important;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Hide the default Swagger "Swagger UI" wordmark */
+.swagger-ui .topbar-wrapper .link img {
+    display: none !important;
+}

@@ -1,0 +1,2 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28; contract SLCARewards{ mapping(address=>uint256) public balance; event Rewarded(address indexed to,uint256 amount); event Slashed(address indexed from,uint256 amount); function reward(address to,uint256 amount) external {balance[to]+=amount; emit Rewarded(to,amount);} function slash(address from,uint256 amount) external { if(balance[from]>=amount) balance[from]-=amount; else balance[from]=0; emit Slashed(from,amount);} }

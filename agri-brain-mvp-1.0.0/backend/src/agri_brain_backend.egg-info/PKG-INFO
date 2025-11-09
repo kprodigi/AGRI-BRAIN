@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: agri-brain-backend
+Version: 1.0.0
+Requires-Dist: fastapi
+Requires-Dist: uvicorn
+Requires-Dist: pydantic
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: reportlab
+Requires-Dist: orjson
+Requires-Dist: requests
+Requires-Dist: web3
+Requires-Dist: python-multipart

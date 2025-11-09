@@ -1,0 +1,7 @@
+[project]
+name='agri-brain-backend'
+version='1.0.0'
+dependencies=['fastapi','uvicorn','pydantic','numpy','pandas','reportlab','orjson','requests','web3','python-multipart']
+[build-system]
+requires=['setuptools','wheel']
+build-backend='setuptools.build_meta'

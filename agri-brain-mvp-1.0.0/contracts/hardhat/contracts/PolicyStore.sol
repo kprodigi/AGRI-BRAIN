@@ -1,0 +1,2 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28; contract PolicyStore{ mapping(bytes32=>uint256) public policy; event PolicyChanged(bytes32 indexed key,uint256 oldValue,uint256 newValue); function setPolicy(bytes32 key,uint256 value) external {uint256 oldv=policy[key]; policy[key]=value; emit PolicyChanged(key,oldv,value);} function getPolicy(bytes32 key) external view returns(uint256){return policy[key];} }
