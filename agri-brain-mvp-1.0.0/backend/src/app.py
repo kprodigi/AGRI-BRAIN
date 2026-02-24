@@ -30,6 +30,7 @@ from .models.spoilage import compute_spoilage, volatility_flags
 from .models.forecast import yield_demand_forecast
 from .models.slca import slca_score
 from .models.policy import Policy
+from .models.footprint import compute_footprint, footprint_meter
 from .chain.client import ChainClient
 
 # Static/docs branding
@@ -149,9 +150,10 @@ def _warm_case() -> None:
 # ---------------------------------------------------------------------------
 @API.post("/case/load")
 def case_load():
+    p = state["policy"]
     df = pd.read_csv(DATA, parse_dates=["timestamp"])
-    df = compute_spoilage(df)
-    df["volatility"] = volatility_flags(df)
+    df = compute_spoilage(df, k0=p.k0, alpha=p.alpha_decay, T0=p.T0, beta=p.beta_humidity)
+    df["volatility"] = volatility_flags(df, window=p.boll_window, k=p.boll_k)
     state["df"] = df
     return {"ok": True, "records": len(df)}
 
@@ -194,8 +196,12 @@ def predictions():
     return {
         "timestamp": df["timestamp"].astype(str).tolist(),
         "shelf_left": df["shelf_left"].round(4).tolist(),
+        "spoilage_risk": df["spoilage_risk"].round(4).tolist() if "spoilage_risk" in df.columns else [],
         "volatility": df["volatility"].tolist(),
-        "yield_forecast_24h": yf
+        "yield_forecast_24h": yf["forecast"],
+        "yield_forecast_ci_lower": yf["ci_lower"],
+        "yield_forecast_ci_upper": yf["ci_upper"],
+        "yield_forecast_std": yf["std"],
     }
 
 # ---------------------------------------------------------------------------
@@ -236,7 +242,14 @@ def decide(d: DecideIn):
         action = "standard_cold_chain"; km = p.km_farm_to_dc + p.km_dc_to_retail; price = p.msrp
 
     carbon = km * p.carbon_per_km
-    slca = slca_score(carbon)
+    slca_result = slca_score(
+        carbon, action,
+        w_c=p.w_c, w_l=p.w_l, w_r=p.w_r, w_p=p.w_p,
+    )
+    slca_composite = slca_result["composite"]
+
+    # Green AI footprint for this inference step
+    fp = compute_footprint(steps=1)
 
     import time
     memo = {
@@ -251,8 +264,10 @@ def decide(d: DecideIn):
         "km": km,
         "carbon_kg": round(carbon, 2),
         "unit_price": round(price, 2),
-        "slca": round(slca, 3),
-        "slca_score": round(slca, 3),
+        "slca": round(slca_composite, 3),
+        "slca_score": round(slca_composite, 3),
+        "slca_components": slca_result,
+        "footprint": fp,
         "note": f"Decision={action} because shelf_left={shelf:.2f} and volatility={vol}.",
     }
 
@@ -260,7 +275,7 @@ def decide(d: DecideIn):
     tx = "0x0"
     try:
         chain = ChainClient(**state["chain"])
-        tx = chain.log_decision(d.agent_id, action, int(slca * 1e6), "")
+        tx = chain.log_decision(d.agent_id, action, int(slca_composite * 1e6), "")
     except Exception:
         pass
     memo["tx"] = tx
