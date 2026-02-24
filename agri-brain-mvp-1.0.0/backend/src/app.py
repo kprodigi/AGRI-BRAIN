@@ -25,6 +25,7 @@ from src.routers import scenarios as _scn
 from src.routers import compat as _compat
 from src.routers import debug as _debug
 from src.routers import stream as _stream
+from src.routers import results as _results
 from src.agents.runtime import start_agent_runtime
 
 # Your models/utilities
@@ -70,6 +71,8 @@ API.include_router(_scn.router,         prefix="/scenarios",  tags=["scenarios"]
 API.include_router(_compat.router,                          tags=["compat"])
 API.include_router(_debug.router,                           tags=["debug"])
 API.include_router(_stream.router)  # no prefix => /stream (websocket)
+
+API.include_router(_results.router,    prefix="/results",    tags=["results"])
 
 API.include_router(rag_router, prefix="/rag", tags=["pirag"])
 API.include_router(mcp_router, prefix="/mcp", tags=["mcp"])

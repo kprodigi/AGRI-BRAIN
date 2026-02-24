@@ -1,0 +1,16 @@
+Scenario,Method,ARI,RLE,Waste,SLCA,Carbon,Equity
+heatwave,static,0.0668,0.0,0.7771,0.5261,4147.2,1.0
+heatwave,hybrid_rl,0.1584,0.9962,0.3002,0.8621,1739.4,0.9435
+heatwave,agribrain,0.1765,1.0,0.1817,0.8732,1648.8,0.946
+overproduction,static,0.0688,0.0,0.7446,0.5261,4147.2,1.0
+overproduction,hybrid_rl,0.1755,0.9886,0.2919,0.8596,1764.0,0.9414
+overproduction,agribrain,0.1918,0.9848,0.1816,0.8648,1711.2,0.9465
+cyber_outage,static,0.0688,0.0,0.7446,0.5261,4147.2,1.0
+cyber_outage,hybrid_rl,0.18,1.0,0.2908,0.8642,1728.6,0.9414
+cyber_outage,agribrain,0.1905,1.0,0.1757,0.8662,1698.6,0.9473
+adaptive_pricing,static,0.0688,0.0,0.7446,0.5261,4147.2,1.0
+adaptive_pricing,hybrid_rl,0.1752,0.9924,0.2889,0.8613,1744.2,0.9439
+adaptive_pricing,agribrain,0.1925,1.0,0.1755,0.8688,1683.6,0.9453
+baseline,static,0.0688,0.0,0.7446,0.5261,4147.2,1.0
+baseline,hybrid_rl,0.173,0.9886,0.2871,0.8605,1749.0,0.9443
+baseline,agribrain,0.1934,0.9962,0.1797,0.8671,1696.8,0.9453
