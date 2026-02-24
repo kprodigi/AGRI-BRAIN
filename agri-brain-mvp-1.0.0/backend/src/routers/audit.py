@@ -33,7 +33,15 @@ def _as_dict(x: Any) -> Dict[str, Any]:
     return x if isinstance(x, dict) else {}
 
 def _get_last_decision_raw() -> Dict[str, Any]:
-    """Best-effort: LAST → DECISIONS → case.STATE['last_decision'].""" 
+    """Best-effort: app.state → LAST → DECISIONS → case.STATE['last_decision']."""
+    # Prefer the app-level log (has full softmax memo)
+    try:
+        from src.app import state as _app_state  # lazy to avoid circular at import
+        log = _app_state.get("log")
+        if log:
+            return log[-1]
+    except Exception:
+        pass
     if _LAST:
         return _as_dict(_LAST)
     if _DECISIONS:
@@ -48,7 +56,7 @@ def _get_last_decision_raw() -> Dict[str, Any]:
 
 def _map_for_pdf(memo: Dict[str, Any]) -> Dict[str, Any]:
     """Normalize last-decision keys to the labels used in the PDF."""
-    return {
+    base = {
         "time":       memo.get("ts") or memo.get("time") or "",
         "agent":      memo.get("agent") or "",
         "role":       memo.get("role") or "",
@@ -62,6 +70,20 @@ def _map_for_pdf(memo: Dict[str, Any]) -> Dict[str, Any]:
         "tx":         memo.get("tx_hash") or memo.get("tx") or "",
         "note":       memo.get("reason") or memo.get("note") or "",
     }
+    # Extended fields from regime-aware softmax policy
+    if memo.get("action_probabilities"):
+        base["action_probabilities"] = memo["action_probabilities"]
+    if memo.get("slca_components"):
+        base["slca_components"] = memo["slca_components"]
+    if memo.get("footprint"):
+        base["footprint"] = memo["footprint"]
+    if memo.get("regime"):
+        base["regime"] = memo["regime"]
+    if memo.get("reward_decomposition"):
+        base["reward_decomposition"] = memo["reward_decomposition"]
+    if memo.get("spoilage_risk") is not None:
+        base["spoilage_risk"] = memo["spoilage_risk"]
+    return base
 
 def _ensure_state_has_kpis() -> None:
     """
@@ -89,9 +111,15 @@ def _ensure_state_has_kpis() -> None:
 
 def _fetch_kpis() -> Dict[str, Any]:
     """
-    Prefer case.STATE (and guarantee it’s filled); map to the names your PDF prints:
-    records, avg_tempC, anomaly_points, waste_rate_baseline, waste_rate_agri.
+    Prefer the app-level /kpis (includes extended metrics); fall back to case.STATE.
     """
+    # Try the app-level kpis first (includes mean_ari, mean_rle, etc.)
+    try:
+        from src.app import kpis as _app_kpis
+        return _app_kpis()
+    except Exception:
+        pass
+
     _ensure_state_has_kpis()
 
     metrics: Dict[str, Any] = {}
@@ -165,11 +193,49 @@ def _render_pdf(kpis: Dict[str, Any], last: Dict[str, Any]) -> bytes:
     y -= 18
     c.setFont("Helvetica", 10)
     for label in [
-        "time", "agent", "role", "decision", "shelf_left", "volatility",
-        "km", "carbon_kg", "unit_price", "slca", "tx", "note",
+        "time", "agent", "role", "decision", "shelf_left", "spoilage_risk",
+        "volatility", "km", "carbon_kg", "unit_price", "slca", "tx", "note",
     ]:
         c.drawString(x, y, f"{label}: {last.get(label, '')}")
         y -= 14
+
+    # SLCA components
+    sc = last.get("slca_components")
+    if isinstance(sc, dict):
+        y -= 6
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(x, y, "SLCA Components"); y -= 14
+        c.setFont("Helvetica", 10)
+        for k in ("carbon", "labor", "resilience", "transparency", "composite"):
+            c.drawString(x + 10, y, f"{k}: {sc.get(k, '')}"); y -= 14
+
+    # Reward decomposition
+    rd = last.get("reward_decomposition")
+    if isinstance(rd, dict):
+        y -= 6
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(x, y, "Reward Decomposition"); y -= 14
+        c.setFont("Helvetica", 10)
+        for k in ("slca", "energy_penalty", "water_penalty", "waste_penalty", "total"):
+            c.drawString(x + 10, y, f"{k}: {rd.get(k, '')}"); y -= 14
+
+    # Action probabilities
+    ap = last.get("action_probabilities")
+    if isinstance(ap, dict):
+        y -= 6
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(x, y, "Action Probabilities"); y -= 14
+        c.setFont("Helvetica", 10)
+        for k, v in ap.items():
+            c.drawString(x + 10, y, f"{k}: {v}"); y -= 14
+
+    # Footprint & regime
+    fp = last.get("footprint")
+    if isinstance(fp, dict):
+        c.drawString(x, y, f"footprint: energy_J={fp.get('energy_J','')} water_L={fp.get('water_L','')}"); y -= 14
+    rg = last.get("regime")
+    if isinstance(rg, dict):
+        c.drawString(x, y, f"regime: tau={rg.get('tau','')} bollinger_z={rg.get('bollinger_z','')}"); y -= 14
 
     c.showPage()
     c.save()
@@ -178,7 +244,15 @@ def _render_pdf(kpis: Dict[str, Any], last: Dict[str, Any]) -> bytes:
 # ----------------------------------- Routes ----------------------------------
 @router.get("/logs")
 def audit_logs():
-    return {"items": get_audit()}
+    # Merge the global audit log with the app-level decision log
+    items = list(get_audit())
+    try:
+        from src.app import state as _app_state  # lazy import avoids circular at module level
+        for m in _app_state.get("log", []):
+            items.append(_map_for_pdf(m))
+    except Exception:
+        pass
+    return {"items": items}
 
 @router.get("/memo.json")
 def audit_memo_json():
