@@ -1,8 +1,18 @@
 # backend/src/routers/decide.py
+"""
+Decision router -- regime-aware contextual softmax policy.
+
+This router is imported by compat.py for legacy endpoints.
+The primary /decide endpoint lives in app.py; this module provides
+a standalone fallback that also implements the softmax policy.
+"""
+from __future__ import annotations
+
 from fastapi import APIRouter
 from pydantic import BaseModel
 from time import time
-import random
+
+import numpy as np
 
 # --- Optional shared state for PDF and others
 try:
@@ -10,221 +20,275 @@ try:
 except Exception:
     CASE_STATE = {}
 
-# --- Optional scenario state (Admin → Scenarios)
+# --- Optional scenario state
 try:
     from src.routers.scenarios import ACTIVE as SCENARIO_ACTIVE
 except Exception:
     SCENARIO_ACTIVE = {"name": None, "intensity": 1.0}
 
-# --- Optional chain config (Admin → Blockchain)
+# --- Optional chain config
 try:
-    from src.routers.governance import CHAIN as CHAIN_CFG   # should be a dict
+    from src.routers.governance import CHAIN as CHAIN_CFG
 except Exception:
     CHAIN_CFG = {}
 
 router = APIRouter()
 
+# ---------------------------------------------------------------------------
+# Softmax policy constants  (mirror of app.py)
+# ---------------------------------------------------------------------------
+ACTIONS = ["cold_chain", "local_redistribute", "recovery"]
+THETA = np.array([
+    [ 1.0, -0.5,  0.3, -0.8, -2.0, -1.0],   # ColdChain
+    [-0.3,  1.2, -0.2,  0.3,  1.5,  2.0],   # LocalRedist
+    [-0.8, -0.3, -0.3,  0.8,  1.8,  0.5],   # Recovery
+])
+GAMMA_DEFAULT = np.array([1.5, -0.3, -0.5])
+
+
+def _softmax(x: np.ndarray) -> np.ndarray:
+    e = np.exp(x - x.max())
+    return e / e.sum()
+
 
 # ---------- Request / Response models ----------
 class DecideRequest(BaseModel):
     agent: str = "farm"
-    role: str = ""  # farm / processor / distributor / retail ...
+    role: str = ""
+    step: int | None = None
+    deterministic: bool = True
 
-    # Optional knobs used by the QuickDecision panel (safe to ignore)
+    # Optional knobs used by the QuickDecision panel
     inventory_units: float | None = None
     demand_units: float | None = None
     temp_c: float | None = None
     volatility: float | None = None
 
 
-class DecisionMemo(BaseModel):
-    # Core
-    agent: str
-    role: str = ""
-    action: str
-    slca_score: float
-    carbon_kg: float
-    reason: str = ""
-    tx_hash: str = "0x0"
-    ts: int
-
-    # Extras often shown in the PDF
-    shelf_left: float = 0.0
-    volatility: float = 0.0
-    km: float = 0.0
-    unit_price: float = 0.0
-
-
 # ---------- In-memory log ----------
-DECISIONS: list[DecisionMemo] = []
-LAST: DecisionMemo | None = None
+DECISIONS: list[dict] = []
+LAST: dict | None = None
 
 
-def _to_dict(m: DecisionMemo) -> dict:
-    return m.model_dump() if hasattr(m, "model_dump") else m.dict()
-
-
-def _compat_from_memo(m: DecisionMemo) -> dict:
-    """Map to the exact keys the PDF expects."""
-    d = _to_dict(m)
-    return {
-        "time":       d.get("ts"),
-        "agent":      d.get("agent") or "",
-        "role":       d.get("role") or "",
-        "decision":   d.get("action") or d.get("decision") or "",
-        "shelf_left": d.get("shelf_left") or 0.0,
-        "volatility": d.get("volatility") or 0.0,
-        "km":         d.get("km") or 0.0,
-        "carbon_kg":  d.get("carbon_kg") or d.get("carbon") or 0.0,
-        "unit_price": d.get("unit_price") or 0.0,
-        "slca":       d.get("slca_score") or d.get("slca") or 0.0,
-        "tx":         d.get("tx_hash") or d.get("tx") or "",
-        "note":       d.get("reason") or d.get("note") or "",
-    }
-
-
-def _persist_last(memo: DecisionMemo) -> None:
+def _persist_last(memo: dict) -> None:
     DECISIONS.append(memo)
     globals()["LAST"] = memo
     try:
-        CASE_STATE["last_decision"] = _compat_from_memo(memo)
+        CASE_STATE["last_decision"] = memo
     except Exception:
         pass
 
 
+def _compat_from_memo(m: dict) -> dict:
+    """Map to the exact keys the PDF expects."""
+    return {
+        "time":       m.get("ts"),
+        "agent":      m.get("agent") or "",
+        "role":       m.get("role") or "",
+        "decision":   m.get("action") or m.get("decision") or "",
+        "shelf_left": m.get("shelf_left") or 0.0,
+        "volatility": m.get("volatility") or 0.0,
+        "km":         m.get("km") or 0.0,
+        "carbon_kg":  m.get("carbon_kg") or m.get("carbon") or 0.0,
+        "unit_price": m.get("unit_price") or 0.0,
+        "slca":       m.get("slca_score") or m.get("slca") or 0.0,
+        "tx":         m.get("tx_hash") or m.get("tx") or "",
+        "note":       m.get("note") or "",
+    }
+
+
 # ---------- Core decision logic ----------
-def _base_scores(req: DecideRequest) -> tuple[float, float, float, float]:
-    """Produce baseline SLCA/carbon and extras, then adjust with optional inputs."""
-    # Baseline demo
-    slca = 0.6 + 0.4 * random.random()           # 0.60–1.00
-    carbon = 0.5 + 10.0 * random.random()        # 0.5–10.5 kg
-    shelf_left = 0.5 + 0.5 * random.random()     # 50–100%
-    volatility = 0.0 + 0.3 * random.random()     # 0–0.3
-
-    # Optional user inputs can nudge the baseline a bit
-    if req.temp_c is not None:
-        # Warmer temp → slightly lower SLCA, slightly higher carbon
-        delta = max(0.0, req.temp_c - 4.0) * 0.02
-        slca = max(0.0, slca - delta)
-        carbon += delta * 3
-
-    if req.volatility is not None:
-        v = max(0.0, min(1.0, req.volatility))
-        slca = max(0.0, slca - 0.15 * v)
-        volatility = max(volatility, v)
-
-    if req.inventory_units is not None and req.demand_units is not None:
-        # If inventory >> demand, routing toward redistribution may increase SLCA
-        ratio = (req.demand_units + 1e-6) / (req.inventory_units + 1e-6)
-        if ratio < 0.9:
-            slca = min(1.0, slca + 0.05)
-        else:
-            slca = max(0.0, slca - 0.02)
-
-    return round(slca, 3), round(carbon, 2), round(shelf_left, 2), round(volatility, 2)
+def _get_app_state():
+    """Lazy import to access the main app state (avoids circular imports)."""
+    try:
+        from src.app import state
+        return state
+    except Exception:
+        return None
 
 
-def _apply_scenario(action: str,
-                    slca: float,
-                    carbon: float,
-                    shelf_left: float,
-                    vol: float) -> tuple[str, float, float, float, float, str]:
-    """Adjust outputs given the active scenario."""
-    scn = SCENARIO_ACTIVE or {}
-    name = scn.get("name")
-    intensity = float(scn.get("intensity") or 1.0)
+def _decide_with_app(req: DecideRequest) -> dict | None:
+    """Delegate to the main app.py /decide endpoint if available."""
+    try:
+        from src.app import decide as _app_decide, DecideIn
+        result = _app_decide(DecideIn(
+            agent_id=req.agent,
+            role=req.role,
+            step=req.step,
+            deterministic=req.deterministic,
+        ))
+        return result
+    except Exception:
+        return None
 
-    reason_bits: list[str] = []
-    if name == "climate_shock":
-        # Heatwave → spoilage risk; reroute nearer DC; more volatility & carbon
-        slca = max(0.0, round(slca - 0.15 * intensity, 3))
-        carbon = round(carbon + 1.2 * intensity, 2)
-        shelf_left = max(0.0, round(shelf_left - 0.10 * intensity, 2))
-        vol = min(1.0, round(vol + 0.15 * intensity, 2))
-        action = "reroute_to_near_dc"
-        reason_bits.append("climate_shock")
 
-    elif name == "reverse_logistics":
-        # Promote redistribution/recovery before thresholds are crossed
-        slca = min(1.0, round(slca + 0.06 * intensity, 3))
-        action = "redistribute_or_recover"
-        reason_bits.append("reverse_logistics")
+def _decide_standalone(req: DecideRequest) -> dict:
+    """Standalone softmax decision when app state is not available."""
+    app_st = _get_app_state()
+    df = app_st.get("df") if app_st else None
+    policy = app_st.get("policy") if app_st else None
 
-    elif name == "cyber_outage":
-        # Node outage → local redistribution; slight SLCA drop
-        slca = max(0.0, round(slca - 0.10 * intensity, 3))
-        action = "local_redistribution"
-        reason_bits.append("cyber_outage")
+    if df is not None and len(df) > 0:
+        idx = req.step if req.step is not None else len(df) - 1
+        idx = max(0, min(idx, len(df) - 1))
+        row = df.iloc[idx]
+        rho = float(row.get("spoilage_risk", 1.0 - row.get("shelf_left", 0.5)))
+        inv = float(row.get("inventory_units", 100.0))
+        temp = float(row.get("tempC", 4.0))
+        tau = 1.0 if str(row.get("volatility", "normal")) == "anomaly" else 0.0
+        shelf = float(row.get("shelf_left", 0.5))
+        vol = str(row.get("volatility", "normal"))
+    else:
+        rho = 0.2
+        inv = req.inventory_units or 100.0
+        temp = req.temp_c or 4.0
+        tau = 1.0 if (req.volatility or 0) > 0.5 else 0.0
+        shelf = 1.0 - rho
+        vol = "anomaly" if tau else "normal"
 
-    elif name == "adaptive_pricing":
-        # Learned pricing → equity-aware redistribution when saturated
-        slca = min(1.0, round(slca + 0.08 * intensity, 3))
-        action = "price_adjusted_route"
-        reason_bits.append("adaptive_pricing")
+    y_hat = 100.0
+    inv_norm = min(inv / 1000.0, 1.0)
+    yhat_norm = min(y_hat / 1000.0, 1.0)
+    temp_norm = min(max(temp / 40.0, 0.0), 1.0)
 
-    reason = "Policy+SLCA demo"
-    if reason_bits:
-        reason += " | " + ",".join(reason_bits)
+    phi = np.array([1.0 - rho, inv_norm, yhat_norm, temp_norm, rho, rho * inv_norm])
 
-    return action, slca, carbon, shelf_left, vol, reason
+    gamma = GAMMA_DEFAULT
+    if policy:
+        gamma = np.array([
+            getattr(policy, "gamma_coldchain", 1.5),
+            getattr(policy, "gamma_local", -0.3),
+            getattr(policy, "gamma_recovery", -0.5),
+        ])
+
+    logits = THETA @ phi + gamma * tau
+    probs = _softmax(logits)
+
+    if req.deterministic:
+        action_idx = int(np.argmax(probs))
+    else:
+        action_idx = int(np.random.choice(len(ACTIONS), p=probs))
+    action = ACTIONS[action_idx]
+
+    # Carbon / SLCA
+    km_map = {"cold_chain": 120.0, "local_redistribute": 45.0, "recovery": 80.0}
+    carbon_per_km = 0.12
+    if policy:
+        km_map = {
+            "cold_chain": getattr(policy, "km_coldchain", 120.0),
+            "local_redistribute": getattr(policy, "km_local", 45.0),
+            "recovery": getattr(policy, "km_recovery", 80.0),
+        }
+        carbon_per_km = getattr(policy, "carbon_per_km", 0.12)
+
+    km = km_map[action]
+    carbon = km * carbon_per_km
+
+    try:
+        from src.models.slca import slca_score
+        slca_result = slca_score(carbon, action)
+    except Exception:
+        slca_result = {"C": 0.7, "L": 0.5, "R": 0.4, "P": 0.45, "composite": 0.55,
+                       "action_family": "coldchain"}
+
+    slca_composite = slca_result["composite"]
+
+    try:
+        from src.models.footprint import compute_footprint
+        fp = compute_footprint(steps=1)
+    except Exception:
+        fp = {"energy_J": 0.05, "water_L": 1.8e-6}
+
+    waste = rho
+    eta = getattr(policy, "eta", 0.5) if policy else 0.5
+    alpha_E = getattr(policy, "alpha_E", 0.05) if policy else 0.05
+    beta_W = getattr(policy, "beta_W", 0.03) if policy else 0.03
+    msrp = getattr(policy, "msrp", 1.50) if policy else 1.50
+
+    price_factor = {"cold_chain": 1.0, "local_redistribute": 0.95, "recovery": 0.88}
+    price = msrp * price_factor.get(action, 1.0)
+
+    energy_penalty = alpha_E * fp["energy_J"]
+    water_penalty = beta_W * fp["water_L"]
+    waste_penalty = eta * waste
+    reward_total = slca_composite - energy_penalty - water_penalty - waste_penalty
+
+    memo = {
+        "time": None,
+        "ts": int(time()),
+        "agent": req.agent,
+        "role": req.role,
+        "decision": action,
+        "action": action,
+        "shelf_left": round(shelf, 4),
+        "spoilage_risk": round(rho, 4),
+        "volatility": vol,
+        "km": round(km, 2),
+        "carbon_kg": round(carbon, 4),
+        "unit_price": round(price, 2),
+        "slca": round(slca_composite, 4),
+        "slca_score": round(slca_composite, 4),
+        "action_probabilities": {
+            "cold_chain": round(float(probs[0]), 4),
+            "local_redistribute": round(float(probs[1]), 4),
+            "recovery": round(float(probs[2]), 4),
+        },
+        "slca_components": {
+            "carbon": slca_result["C"],
+            "labor": slca_result["L"],
+            "resilience": slca_result["R"],
+            "transparency": slca_result["P"],
+            "composite": slca_result["composite"],
+        },
+        "footprint": {
+            "energy_J": fp["energy_J"],
+            "water_L": fp["water_L"],
+        },
+        "regime": {
+            "tau": tau,
+            "bollinger_z": 0.0,
+        },
+        "reward_decomposition": {
+            "slca": round(slca_composite, 4),
+            "energy_penalty": round(energy_penalty, 6),
+            "water_penalty": round(water_penalty, 8),
+            "waste_penalty": round(waste_penalty, 4),
+            "total": round(reward_total, 4),
+        },
+        "tx_hash": "0x0",
+        "note": (
+            f"Softmax policy: action={action} "
+            f"P={probs[action_idx]:.3f} rho={rho:.3f} tau={tau}"
+        ),
+    }
+
+    _persist_last(memo)
+
+    # Optional: log to blockchain
+    try:
+        from src.chain.eth import log_decision_onchain
+        txh = log_decision_onchain(memo, CHAIN_CFG or {})
+        if txh:
+            memo["tx_hash"] = txh
+    except Exception:
+        pass
+
+    return {"ok": True, "memo": memo}
 
 
 # ---------- Routes ----------
-@router.post("/decide", response_model=DecisionMemo)
+@router.post("/decide")
 def decide(req: DecideRequest):
-    # 1) Baseline scores (with optional QuickDecision nudges)
-    slca, carbon, shelf_left, vol = _base_scores(req)
-
-    # 2) Default action from baseline
-    action = "reroute_to_near_dc" if slca < 0.7 else "standard_cold_chain"
-
-    # 3) Scenario adjustments (if any active)
-    action, slca, carbon, shelf_left, vol, reason = _apply_scenario(
-        action, slca, carbon, shelf_left, vol
-    )
-
-    # Distance & price for the PDF (demo)
-    km = round(5 + 100 * random.random(), 1)
-    unit_price = round(1.0 + 4.0 * random.random(), 2)
-
-    memo = DecisionMemo(
-        agent=req.agent,
-        role=req.role,
-        action=action,
-        slca_score=slca,
-        carbon_kg=carbon,
-        reason=reason,
-        tx_hash="0x0",
-        ts=int(time()),
-        shelf_left=shelf_left,
-        volatility=vol,
-        km=km,
-        unit_price=unit_price,
-    )
-
-    # Persist in memory + compat state
-    _persist_last(memo)
-
-    # 4) Optional: log to blockchain (no-op if not configured)
-    try:
-        from src.chain.eth import log_decision_onchain  # lazy import to keep deps optional
-        txh = log_decision_onchain(_to_dict(memo), CHAIN_CFG or {})
-        if txh:
-            memo.tx_hash = txh
-            # also update compat dict for PDF
-            try:
-                CASE_STATE["last_decision"]["tx"] = txh
-            except Exception:
-                pass
-    except Exception as e:
-        # Keep failures silent so the main flow never breaks
-        print("[chain] log_decision_onchain failed:", e)
-
-    return memo
+    # Try delegating to app.py first (canonical implementation)
+    result = _decide_with_app(req)
+    if result is not None:
+        return result
+    # Fallback to standalone
+    return _decide_standalone(req)
 
 
 # GET alias for quick testing in a browser
-@router.get("/decide", response_model=DecisionMemo)
+@router.get("/decide")
 def decide_get(agent: str = "farm", role: str = ""):
     return decide(DecideRequest(agent=agent, role=role))
 
@@ -241,7 +305,7 @@ def last_decision():
     try:
         data = CASE_STATE.get("last_decision")
         if data:
-            return data
+            return _compat_from_memo(data) if not isinstance(data, dict) else data
     except Exception:
         pass
     if LAST:
@@ -252,4 +316,4 @@ def last_decision():
 # Optional: recent memos feed
 @router.get("/decisions", response_model=list[dict])
 def decisions_feed():
-    return [_to_dict(m) for m in reversed(DECISIONS[-50:])]
+    return list(reversed(DECISIONS[-50:]))

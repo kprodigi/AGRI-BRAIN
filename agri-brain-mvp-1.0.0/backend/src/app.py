@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 
 import inspect
+import time as _time
+import numpy as np
 import pandas as pd
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -117,9 +119,26 @@ def root():
 DATA = Path(__file__).parent / "data_spinach.csv"
 state: Dict[str, Any] = {
     "df": None,
+    "df_original": None,        # pristine copy for scenario reset
     "policy": Policy(),
     "chain": {"rpc": None, "addresses": {}, "chain_id": 31337, "private_key": None},
 }
+
+# ---------------------------------------------------------------------------
+# Softmax policy constants (Section 5 — contextual regime-aware policy)
+# ---------------------------------------------------------------------------
+ACTIONS = ["cold_chain", "local_redistribute", "recovery"]
+ACTION_KM_KEYS = {"cold_chain": "km_coldchain",
+                  "local_redistribute": "km_local",
+                  "recovery": "km_recovery"}
+PRICE_FACTOR = {"cold_chain": 1.0, "local_redistribute": 0.95, "recovery": 0.88}
+
+# theta matrix  (3 actions x 6 features)
+THETA = np.array([
+    [ 1.0, -0.5,  0.3, -0.8, -2.0, -1.0],   # ColdChain
+    [-0.3,  1.2, -0.2,  0.3,  1.5,  2.0],   # LocalRedist
+    [-0.8, -0.3, -0.3,  0.8,  1.8,  0.5],   # Recovery
+])
 
 class ChainConfig(BaseModel):
     rpc: Optional[str] = None
@@ -144,6 +163,11 @@ def _warm_case() -> None:
         print("[startup] spinach CSV loaded")
     except Exception as e:
         print("[startup] case_load skipped:", e)
+    # Let the scenarios router access our state for data modifications
+    try:
+        _scn.register_app_state(state)
+    except Exception:
+        pass
 
 # ---------------------------------------------------------------------------
 # Data endpoints
@@ -155,6 +179,7 @@ def case_load():
     df = compute_spoilage(df, k0=p.k0, alpha=p.alpha_decay, T0=p.T0, beta=p.beta_humidity)
     df["volatility"] = volatility_flags(df, window=p.boll_window, k=p.boll_k)
     state["df"] = df
+    state["df_original"] = df.copy()
     return {"ok": True, "records": len(df)}
 
 @API.get("/kpis")
@@ -164,12 +189,48 @@ def kpis():
     df = state["df"]
     waste_baseline = float((df["shelf_left"] < 0.0).sum() / len(df))
     waste_agri = float((df["shelf_left"] < 0.0).rolling(4).max().fillna(0).mean() * 0.6)
+
+    # --- Extended KPIs from decision logs ---------------------------------
+    logs = state.get("log", [])
+    ari_vals: list[float] = []
+    rle_at_risk = 0
+    rle_routed = 0
+    slca_vals: list[float] = []
+    total_carbon = 0.0
+
+    for m in logs:
+        sc = m.get("slca_components") or {}
+        slca_c = sc.get("composite", m.get("slca", 0.0))
+        slca_vals.append(slca_c)
+
+        rho = m.get("spoilage_risk", 1.0 - m.get("shelf_left", 1.0))
+        waste = rho
+        ari_vals.append((1.0 - waste) * slca_c * (1.0 - rho))
+
+        total_carbon += m.get("carbon_kg", 0.0)
+
+        # RLE: at-risk = rho > 0.3  (shelf_left < 0.7)
+        if rho > 0.3:
+            rle_at_risk += 1
+            act = m.get("action", "")
+            if act in ("local_redistribute", "recovery"):
+                rle_routed += 1
+
+    fp_summary = footprint_meter.summary()
+
     return {
         "records": len(df),
         "avg_tempC": float(df["tempC"].mean()),
         "anomaly_points": int((df["volatility"] == "anomaly").sum()),
         "waste_rate_baseline": waste_baseline,
         "waste_rate_agri": waste_agri,
+        # --- new KPIs ---
+        "mean_ari": round(float(np.mean(ari_vals)), 4) if ari_vals else 0.0,
+        "mean_rle": round(rle_routed / max(rle_at_risk, 1), 4),
+        "mean_slca_composite": round(float(np.mean(slca_vals)), 4) if slca_vals else 0.0,
+        "total_carbon_kg": round(total_carbon, 4),
+        "total_energy_J": fp_summary["cumulative_energy_J"],
+        "total_water_L": fp_summary["cumulative_water_L"],
     }
 
 @API.get("/telemetry")
@@ -217,11 +278,19 @@ def set_policy(p: Policy):
     return {"ok": True, "policy": p.model_dump()}
 
 # ---------------------------------------------------------------------------
-# Decisions (local)
+# Decisions — regime-aware contextual softmax policy  (Section 5)
 # ---------------------------------------------------------------------------
 class DecideIn(BaseModel):
     agent_id: str
     role: str
+    step: int | None = None          # optional row index (None → last row)
+    deterministic: bool = True       # argmax when True, sample when False
+
+
+def _softmax(x: np.ndarray) -> np.ndarray:
+    e = np.exp(x - x.max())
+    return e / e.sum()
+
 
 @API.post("/decide")
 def decide(d: DecideIn):
@@ -230,17 +299,56 @@ def decide(d: DecideIn):
 
     p = state["policy"]
     df = state["df"]
-    row = df.iloc[-1]
-    shelf = float(row["shelf_left"])
-    vol = str(row["volatility"])
 
-    if shelf < p.min_shelf_expedite:
-        action = "expedite_to_retail"; km = p.km_expedited; price = p.msrp * 0.92
-    elif shelf < p.min_shelf_reroute or vol == "anomaly":
-        action = "reroute_to_near_dc"; km = p.km_farm_to_dc * 0.6; price = p.msrp * 0.95
+    # Pick the observation row
+    idx = d.step if d.step is not None else len(df) - 1
+    idx = max(0, min(idx, len(df) - 1))
+    row = df.iloc[idx]
+
+    # ---- state vector s_t = [rho, I, Y_hat, T, tau] ----------------------
+    rho = float(row.get("spoilage_risk", 1.0 - row["shelf_left"]))
+    inv = float(row.get("inventory_units", 100.0))
+    temp = float(row["tempC"])
+
+    # Yield forecast (single-step)
+    yf = yield_demand_forecast(df.iloc[: idx + 1], horizon=1)
+    y_hat = float(yf["forecast"][0]) if yf["forecast"] else 100.0
+
+    # Bollinger trigger  (tau = 1 if anomaly)
+    tau = 1.0 if str(row.get("volatility", "normal")) == "anomaly" else 0.0
+
+    # Bollinger z-score at this point
+    demand_series = df["demand_units"].astype(float).iloc[: idx + 1]
+    roll_mean = demand_series.rolling(p.boll_window, min_periods=1).mean()
+    roll_std = demand_series.rolling(p.boll_window, min_periods=1).std().fillna(0.0)
+    boll_z = float(
+        (demand_series.iloc[-1] - roll_mean.iloc[-1])
+        / max(float(roll_std.iloc[-1]), 1e-12)
+    )
+
+    # ---- feature vector  phi(s_t) ----------------------------------------
+    inv_norm = min(inv / 1000.0, 1.0)
+    yhat_norm = min(y_hat / 1000.0, 1.0)
+    temp_norm = min(max(temp / 40.0, 0.0), 1.0)
+
+    phi = np.array([1.0 - rho, inv_norm, yhat_norm, temp_norm, rho, rho * inv_norm])
+
+    # ---- logits  l_a = theta_a @ phi + gamma_a * tau ---------------------
+    gamma = np.array([p.gamma_coldchain, p.gamma_local, p.gamma_recovery])
+    logits = THETA @ phi + gamma * tau
+
+    probs = _softmax(logits)
+
+    # ---- action selection ------------------------------------------------
+    if d.deterministic:
+        action_idx = int(np.argmax(probs))
     else:
-        action = "standard_cold_chain"; km = p.km_farm_to_dc + p.km_dc_to_retail; price = p.msrp
+        action_idx = int(np.random.choice(len(ACTIONS), p=probs))
 
+    action = ACTIONS[action_idx]
+    km = getattr(p, ACTION_KM_KEYS[action])
+
+    # ---- carbon & SLCA ---------------------------------------------------
     carbon = km * p.carbon_per_km
     slca_result = slca_score(
         carbon, action,
@@ -248,27 +356,70 @@ def decide(d: DecideIn):
     )
     slca_composite = slca_result["composite"]
 
-    # Green AI footprint for this inference step
+    # ---- footprint -------------------------------------------------------
     fp = compute_footprint(steps=1)
 
-    import time
+    # ---- waste & price ---------------------------------------------------
+    waste = rho
+    price = p.msrp * PRICE_FACTOR.get(action, 1.0)
+
+    # ---- composite reward ------------------------------------------------
+    # R = w_c*C + w_l*L + w_r*R + w_p*P  - alpha_E*E - beta_W*W - eta*waste
+    energy_penalty = p.alpha_E * fp["energy_J"]
+    water_penalty = p.beta_W * fp["water_L"]
+    waste_penalty = p.eta * waste
+    reward_total = slca_composite - energy_penalty - water_penalty - waste_penalty
+
+    shelf = float(row["shelf_left"])
+    vol = str(row.get("volatility", "normal"))
+
     memo = {
         "time": datetime.utcnow().isoformat(),
-        "ts": int(time.time()),
+        "ts": int(_time.time()),
+        "step": idx,
         "agent": d.agent_id,
         "role": d.role,
         "decision": action,
         "action": action,
-        "shelf_left": round(shelf, 3),
+        "shelf_left": round(shelf, 4),
+        "spoilage_risk": round(rho, 4),
         "volatility": vol,
-        "km": km,
-        "carbon_kg": round(carbon, 2),
+        "km": round(km, 2),
+        "carbon_kg": round(carbon, 4),
         "unit_price": round(price, 2),
-        "slca": round(slca_composite, 3),
-        "slca_score": round(slca_composite, 3),
-        "slca_components": slca_result,
-        "footprint": fp,
-        "note": f"Decision={action} because shelf_left={shelf:.2f} and volatility={vol}.",
+        "slca": round(slca_composite, 4),
+        "slca_score": round(slca_composite, 4),
+        "action_probabilities": {
+            "cold_chain": round(float(probs[0]), 4),
+            "local_redistribute": round(float(probs[1]), 4),
+            "recovery": round(float(probs[2]), 4),
+        },
+        "slca_components": {
+            "carbon": slca_result["C"],
+            "labor": slca_result["L"],
+            "resilience": slca_result["R"],
+            "transparency": slca_result["P"],
+            "composite": slca_result["composite"],
+        },
+        "footprint": {
+            "energy_J": fp["energy_J"],
+            "water_L": fp["water_L"],
+        },
+        "regime": {
+            "tau": tau,
+            "bollinger_z": round(boll_z, 4),
+        },
+        "reward_decomposition": {
+            "slca": round(slca_composite, 4),
+            "energy_penalty": round(energy_penalty, 6),
+            "water_penalty": round(water_penalty, 8),
+            "waste_penalty": round(waste_penalty, 4),
+            "total": round(reward_total, 4),
+        },
+        "note": (
+            f"Softmax policy: action={action} "
+            f"P={probs[action_idx]:.3f} rho={rho:.3f} tau={tau}"
+        ),
     }
 
     # best-effort on-chain log (never break)
@@ -294,9 +445,11 @@ def decide(d: DecideIn):
 
     return {"ok": True, "memo": memo}
 
+
 @API.get("/decision/take")
 def decision_take(agent: str = "farm", role: str = ""):
     return decide(DecideIn(agent_id=agent, role=role))
+
 
 @API.get("/decisions")
 def list_decisions():
