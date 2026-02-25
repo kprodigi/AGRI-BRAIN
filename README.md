@@ -4,22 +4,6 @@ An adaptive supply-chain intelligence system combining PINN-based spoilage
 prediction, Social Life-Cycle Assessment (SLCA), and regime-aware contextual
 policy for sustainable food logistics.
 
-## Generating Results
-
-```bash
-cd mvp/simulation
-pip install numpy pandas matplotlib scipy
-python generate_results.py    # runs all scenarios, saves tables
-python generate_figures.py    # generates publication-quality figures
-```
-
-Results are written to `mvp/simulation/results/` including:
-- `table1_summary.csv` — Scenario × Method summary
-- `table2_ablation.csv` — Full ablation study
-- 7 publication figures (PNG + PDF at 300 DPI)
-
-See `mvp/simulation/README.md` for full methodology documentation.
-
 ## Backend API
 
 The backend exposes simulation results via REST:
