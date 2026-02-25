@@ -1,10 +1,10 @@
 # AGRI-BRAIN
 
-Adaptive supply-chain intelligence system combining PINN-based spoilage
+An adaptive supply-chain intelligence system combining PINN-based spoilage
 prediction, Social Life-Cycle Assessment (SLCA), and regime-aware contextual
 policy for sustainable food logistics.
 
-## Generating Paper Results
+## Generating Results
 
 ```bash
 cd mvp/simulation
