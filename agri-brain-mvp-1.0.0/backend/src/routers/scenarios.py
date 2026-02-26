@@ -29,7 +29,7 @@ SCENARIOS = [
     {"id": "heatwave",         "label": "Climate-Induced Heatwave",
      "desc": "72 h heatwave: +20 C ramp (hours 24-48) with exponential tail; +10 % RH."},
     {"id": "overproduction",   "label": "Overproduction / Glut",
-     "desc": "Inventory multiplied 2.5x during hours 12-60; triggers redistribution."},
+     "desc": "Inventory multiplied 2.5x during hours 12-60 with +2°C cold storage excursion."},
     {"id": "cyber_outage",     "label": "Cyber Threat & Node Outage",
      "desc": "Yield drops to 15 % and inventory to 25 % from hour 24 onward."},
     {"id": "adaptive_pricing", "label": "Adaptive Pricing & Demand Oscillation",
@@ -54,21 +54,23 @@ def _hours_from_start(df) -> np.ndarray:
 
 
 def _recompute_derived(df):
-    """Re-run PINN spoilage + Bollinger volatility on the (modified) DataFrame."""
+    """Re-run PINN spoilage (Arrhenius model) + Bollinger volatility."""
     from src.models.spoilage import compute_spoilage, volatility_flags
 
     p = None
     if _APP_STATE:
         p = _APP_STATE.get("policy")
 
-    k0 = getattr(p, "k0", 0.04) if p else 0.04
-    alpha = getattr(p, "alpha_decay", 0.12) if p else 0.12
-    T0 = getattr(p, "T0", 4.0) if p else 4.0
+    k_ref = getattr(p, "k_ref", 0.0021) if p else 0.0021
+    Ea_R = getattr(p, "Ea_R", 8000.0) if p else 8000.0
+    T_ref_K = getattr(p, "T_ref_K", 277.15) if p else 277.15
     beta = getattr(p, "beta_humidity", 0.25) if p else 0.25
+    lag_lambda = getattr(p, "lag_lambda", 12.0) if p else 12.0
     window = getattr(p, "boll_window", 20) if p else 20
     k_boll = getattr(p, "boll_k", 2.0) if p else 2.0
 
-    df = compute_spoilage(df, k0=k0, alpha=alpha, T0=T0, beta=beta)
+    df = compute_spoilage(df, k_ref=k_ref, Ea_R=Ea_R, T_ref_K=T_ref_K,
+                          beta=beta, lag_lambda=lag_lambda)
     df["volatility"] = volatility_flags(df, window=window, k=k_boll)
     return df
 
@@ -99,7 +101,12 @@ def _apply_heatwave(df, intensity: float = 1.0):
 
 
 def _apply_overproduction(df, intensity: float = 1.0):
-    """Multiply inventory by 2.5x during hours 12-60."""
+    """Multiply inventory by 2.5x during hours 12-60 with +2°C cold storage excursion.
+
+    The temperature excursion models overcapacity effects: frequent door
+    openings, some produce in non-refrigerated staging areas, and
+    overwhelmed cold storage (documented in USDA cold chain studies).
+    """
     df = df.copy()
     hours = _hours_from_start(df)
     factor = 1.0 + 1.5 * intensity    # intensity=1 -> 2.5x
@@ -107,6 +114,7 @@ def _apply_overproduction(df, intensity: float = 1.0):
     df.loc[mask, "inventory_units"] = (
         df.loc[mask, "inventory_units"].astype(float) * factor
     )
+    df.loc[mask, "tempC"] = df.loc[mask, "tempC"].astype(float) + 2.0 * intensity
     return _recompute_derived(df)
 
 

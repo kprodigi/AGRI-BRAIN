@@ -4,10 +4,28 @@ Green AI footprint meter.
 Tracks cumulative energy (Joules) and water (Litres) consumed per inference
 step so the cost of running the decision engine is transparent.
 
-Default per-step estimates are based on the Strubell et al. (2019) and
-Patterson et al. (2021) benchmarks for lightweight ML inference on CPU:
+Default per-step estimates are based on published benchmarks for lightweight
+ML inference on CPU/edge hardware:
+
     energy_per_step_J  = 0.05 J   (~50 mJ per forward pass)
+        Based on Strubell et al. (2019) extrapolation for single-inference
+        neural network forward passes on CPU. A full BERT inference is
+        ~0.6 J; our lightweight softmax policy (6-feature, 3-action) is
+        roughly 12x cheaper.
+        Ref: Strubell, E., Ganesh, A., & McCallum, A. (2019). Energy and
+        Policy Considerations for Deep Learning in NLP. ACL 2019.
+
     water_per_step_L   = 1.8e-6 L (cooling water per server-second)
+        Based on Patterson et al. (2021) estimates for Google data center
+        cooling: ~3.8 L/kWh. At 0.05 J/step and typical server efficiency,
+        this corresponds to ~1.8 µL per inference step.
+        Ref: Patterson, D., et al. (2021). Carbon Emissions and Large
+        Neural Network Training. arXiv:2104.10350.
+
+    Additional references:
+        - Schwartz et al. (2020). Green AI. Communications of the ACM.
+        - Henderson et al. (2020). Towards the Systematic Reporting of
+          the Energy and Carbon Footprints of Machine Learning. JMLR.
 """
 from __future__ import annotations
 

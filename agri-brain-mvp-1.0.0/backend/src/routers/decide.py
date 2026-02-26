@@ -35,15 +35,27 @@ except Exception:
 router = APIRouter()
 
 # ---------------------------------------------------------------------------
-# Softmax policy constants  (mirror of app.py)
+# Softmax policy constants  (synced with generate_results.py)
 # ---------------------------------------------------------------------------
 ACTIONS = ["cold_chain", "local_redistribute", "recovery"]
+
+# Feature vector: [freshness, inv_pressure, demand_signal, thermal_stress,
+#                  spoilage_urgency, interaction]
+INV_CAPACITY = 15000.0
+BASELINE_DEMAND = 20.0
+THERMAL_T0 = 4.0
+THERMAL_DELTA_MAX = 20.0
+
 THETA = np.array([
-    [ 1.0, -0.5,  0.3, -0.8, -2.0, -1.0],   # ColdChain
-    [-0.3,  1.2, -0.2,  0.3,  1.5,  2.0],   # LocalRedist
-    [-0.8, -0.3, -0.3,  0.8,  1.8,  0.5],   # Recovery
+    [ 0.5,  -0.3,   0.4,  -0.5,  -2.0,  -1.0],   # ColdChain
+    [ 0.0,   0.5,  -0.2,   0.5,   2.0,   1.5],    # LocalRedistribute
+    [-0.5,  -0.3,  -0.2,   0.3,   1.5,  -0.3],    # Recovery
 ])
-GAMMA_DEFAULT = np.array([1.5, -0.3, -0.5])
+GAMMA_DEFAULT = np.array([0.3, 0.05, -0.3])
+
+# SLCA-aware logit bonus for the full agribrain mode
+SLCA_BONUS = np.array([-0.35, 0.60, -0.1])
+SLCA_RHO_BONUS = np.array([-0.5, 1.0, 0.15])
 
 
 def _softmax(x: np.ndarray) -> np.ndarray:
@@ -147,11 +159,15 @@ def _decide_standalone(req: DecideRequest) -> dict:
         vol = "anomaly" if tau else "normal"
 
     y_hat = 100.0
-    inv_norm = min(inv / 1000.0, 1.0)
-    yhat_norm = min(y_hat / 1000.0, 1.0)
-    temp_norm = min(max(temp / 40.0, 0.0), 1.0)
+    freshness = 1.0 - rho
+    inv_pressure = min(inv / INV_CAPACITY, 1.0)
+    demand_signal = min(y_hat / BASELINE_DEMAND, 1.0)
+    thermal_stress = min(max((temp - THERMAL_T0) / THERMAL_DELTA_MAX, 0.0), 1.0)
+    spoilage_urgency = rho
+    interaction = rho * inv_pressure
 
-    phi = np.array([1.0 - rho, inv_norm, yhat_norm, temp_norm, rho, rho * inv_norm])
+    phi = np.array([freshness, inv_pressure, demand_signal,
+                    thermal_stress, spoilage_urgency, interaction])
 
     gamma = GAMMA_DEFAULT
     if policy:
@@ -161,7 +177,7 @@ def _decide_standalone(req: DecideRequest) -> dict:
             getattr(policy, "gamma_recovery", -0.5),
         ])
 
-    logits = THETA @ phi + gamma * tau
+    logits = THETA @ phi + gamma * tau + SLCA_BONUS + SLCA_RHO_BONUS * rho
     probs = _softmax(logits)
 
     if req.deterministic:

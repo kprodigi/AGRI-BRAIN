@@ -27,7 +27,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 
-from generate_results import run_all, SCENARIOS, MODES, RESULTS_DIR
+from generate_results import run_all, SCENARIOS, MODES, RESULTS_DIR, RLE_THRESHOLD
 
 # ---------------------------------------------------------------------------
 # Style configuration
@@ -202,7 +202,7 @@ def fig3_reverse(data):
         rho = np.array(ep["rho_trace"])
         actions = np.array(ep["action_trace"])
         # Compute rolling RLE
-        at_risk = rho > 0.3
+        at_risk = rho > RLE_THRESHOLD
         routed = at_risk & (actions >= 1)  # local_redistribute or recovery
         rle_rolling = np.convolve(routed.astype(float), np.ones(window) / window, mode="same")
         rle_denom = np.convolve(at_risk.astype(float), np.ones(window) / window, mode="same")
