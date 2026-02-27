@@ -18,7 +18,8 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 # Ensure the simulation module is importable
 # ---------------------------------------------------------------------------
-_SIM_DIR = Path(__file__).resolve().parent.parent.parent.parent / "mvp" / "simulation"
+# Simulation dir: two levels above agri-brain-mvp-1.0.0/ (i.e. repo root / mvp / simulation)
+_SIM_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent / "mvp" / "simulation"
 if str(_SIM_DIR) not in sys.path:
     sys.path.insert(0, str(_SIM_DIR))
 

@@ -129,6 +129,7 @@ state: Dict[str, Any] = {
 
 # ---------------------------------------------------------------------------
 # Softmax policy constants (Section 5 — contextual regime-aware policy)
+# Synced with generate_results.py and decide.py router.
 # ---------------------------------------------------------------------------
 ACTIONS = ["cold_chain", "local_redistribute", "recovery"]
 ACTION_KM_KEYS = {"cold_chain": "km_coldchain",
@@ -136,12 +137,23 @@ ACTION_KM_KEYS = {"cold_chain": "km_coldchain",
                   "recovery": "km_recovery"}
 PRICE_FACTOR = {"cold_chain": 1.0, "local_redistribute": 0.95, "recovery": 0.88}
 
-# theta matrix  (3 actions x 6 features)
+# Feature normalization constants (must match generate_results.py)
+INV_CAPACITY = 15000.0
+BASELINE_DEMAND = 20.0
+THERMAL_T0 = 4.0
+THERMAL_DELTA_MAX = 20.0
+
+# THETA matrix (3 actions x 6 features) — single source of truth in
+# generate_results.py; these values must stay in sync.
 THETA = np.array([
-    [ 1.0, -0.5,  0.3, -0.8, -2.0, -1.0],   # ColdChain
-    [-0.3,  1.2, -0.2,  0.3,  1.5,  2.0],   # LocalRedist
-    [-0.8, -0.3, -0.3,  0.8,  1.8,  0.5],   # Recovery
+    [ 0.5,  -0.3,   0.4,  -0.5,  -2.0,  -1.0],   # ColdChain
+    [ 0.0,   0.5,  -0.2,   0.5,   2.0,   1.5],    # LocalRedistribute
+    [-0.5,  -0.3,  -0.2,   0.3,   1.5,  -0.3],    # Recovery
 ])
+
+# SLCA-aware logit bonuses (agribrain mode)
+SLCA_BONUS = np.array([-0.35, 0.60, -0.1])
+SLCA_RHO_BONUS = np.array([-0.5, 1.0, 0.15])
 
 class ChainConfig(BaseModel):
     rpc: Optional[str] = None
@@ -161,25 +173,38 @@ def health() -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 @API.on_event("startup")
 def _warm_case() -> None:
+    # Register app state with routers that need to read/modify it
+    try:
+        _scn.register_app_state(state)
+    except Exception:
+        pass
+    try:
+        _gov.register_app_state(state)
+    except Exception:
+        pass
+
     try:
         case_load()
         print("[startup] spinach CSV loaded")
     except Exception as e:
         print("[startup] case_load skipped:", e)
-    # Let the scenarios router access our state for data modifications
-    try:
-        _scn.register_app_state(state)
-    except Exception:
-        pass
 
 # ---------------------------------------------------------------------------
 # Data endpoints
 # ---------------------------------------------------------------------------
 @API.post("/case/load")
 def case_load():
+    """Load data_spinach.csv, compute PINN spoilage and volatility flags."""
     p = state["policy"]
     df = pd.read_csv(DATA, parse_dates=["timestamp"])
-    df = compute_spoilage(df, k0=p.k0, alpha=p.alpha_decay, T0=p.T0, beta=p.beta_humidity)
+    df = compute_spoilage(
+        df,
+        k_ref=p.k_ref,
+        Ea_R=p.Ea_R,
+        T_ref_K=p.T_ref_K,
+        beta=p.beta_humidity,
+        lag_lambda=p.lag_lambda,
+    )
     df["volatility"] = volatility_flags(df, window=p.boll_window, k=p.boll_k)
     state["df"] = df
     state["df_original"] = df.copy()
@@ -269,14 +294,16 @@ def predictions():
     }
 
 # ---------------------------------------------------------------------------
-# Policy (local)
+# Policy (local) — canonical Policy object lives in state["policy"]
 # ---------------------------------------------------------------------------
 @API.get("/policy")
 def get_policy():
+    """Return the full Policy object (used internally and by /governance/policy)."""
     return state["policy"].model_dump()
 
 @API.post("/policy")
 def set_policy(p: Policy):
+    """Update the canonical Policy object."""
     state["policy"] = p
     return {"ok": True, "policy": p.model_dump()}
 
@@ -329,16 +356,20 @@ def decide(d: DecideIn):
         / max(float(roll_std.iloc[-1]), 1e-12)
     )
 
-    # ---- feature vector  phi(s_t) ----------------------------------------
-    inv_norm = min(inv / 1000.0, 1.0)
-    yhat_norm = min(y_hat / 1000.0, 1.0)
-    temp_norm = min(max(temp / 40.0, 0.0), 1.0)
+    # ---- feature vector phi(s_t) — synced with generate_results.py ------
+    freshness = 1.0 - rho
+    inv_pressure = min(inv / INV_CAPACITY, 1.0)
+    demand_signal = min(y_hat / BASELINE_DEMAND, 1.0)
+    thermal_stress = min(max((temp - THERMAL_T0) / THERMAL_DELTA_MAX, 0.0), 1.0)
+    spoilage_urgency = rho
+    interaction = rho * inv_pressure
 
-    phi = np.array([1.0 - rho, inv_norm, yhat_norm, temp_norm, rho, rho * inv_norm])
+    phi = np.array([freshness, inv_pressure, demand_signal,
+                    thermal_stress, spoilage_urgency, interaction])
 
-    # ---- logits  l_a = theta_a @ phi + gamma_a * tau ---------------------
+    # ---- logits: THETA @ phi + gamma * tau + SLCA bonuses ----------------
     gamma = np.array([p.gamma_coldchain, p.gamma_local, p.gamma_recovery])
-    logits = THETA @ phi + gamma * tau
+    logits = THETA @ phi + gamma * tau + SLCA_BONUS + SLCA_RHO_BONUS * rho
 
     probs = _softmax(logits)
 
@@ -454,9 +485,17 @@ def decision_take(agent: str = "farm", role: str = ""):
     return decide(DecideIn(agent_id=agent, role=role))
 
 
+@API.get("/last-decision")
+def last_decision():
+    """Return the most recent decision memo."""
+    log = state.get("log", [])
+    return log[-1] if log else {}
+
+
 @API.get("/decisions")
 def list_decisions():
-    return {"decisions": state.get("log", [])[-500:]}
+    """Return recent decision memos (newest first)."""
+    return {"decisions": list(reversed(state.get("log", [])[-500:]))}
 
 # ---------------------------------------------------------------------------
 # Chain config (local)

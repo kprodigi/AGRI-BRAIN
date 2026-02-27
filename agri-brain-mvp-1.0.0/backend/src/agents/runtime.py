@@ -72,17 +72,13 @@ async def _policy_watch_loop():
             await BUS.emit("agent/error", {"error": str(e)})
             await asyncio.sleep(15)
 
-async def start_agent_runtime():
-    """
-    Start background tasks on FastAPI startup.
-    """
-    asyncio.create_task(_chain_head_loop())
-    asyncio.create_task(_policy_watch_loop())
+async def start_agent_runtime(app: FastAPI | None = None) -> None:
+    """Start background agentic tasks (chain polling, policy watch).
 
-
-async def start_agent_runtime(app: FastAPI) -> None:
+    Wrapped in try/except so the app can start even if agent loops fail.
     """
-    Start any background agentic tasks.
-    Currently a no-op so the app can start without extra deps.
-    """
-    return
+    try:
+        asyncio.create_task(_chain_head_loop())
+        asyncio.create_task(_policy_watch_loop())
+    except Exception as e:
+        print(f"[agent-runtime] failed to start background tasks: {e}")

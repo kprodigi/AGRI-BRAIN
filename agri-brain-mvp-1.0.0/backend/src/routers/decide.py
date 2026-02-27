@@ -172,9 +172,9 @@ def _decide_standalone(req: DecideRequest) -> dict:
     gamma = GAMMA_DEFAULT
     if policy:
         gamma = np.array([
-            getattr(policy, "gamma_coldchain", 1.5),
-            getattr(policy, "gamma_local", -0.3),
-            getattr(policy, "gamma_recovery", -0.5),
+            getattr(policy, "gamma_coldchain", 0.3),
+            getattr(policy, "gamma_local", 0.05),
+            getattr(policy, "gamma_recovery", -0.3),
         ])
 
     logits = THETA @ phi + gamma * tau + SLCA_BONUS + SLCA_RHO_BONUS * rho

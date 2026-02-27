@@ -18,5 +18,5 @@ export const Governance = {
   saveChain: (c: any) => j('POST', '/governance/chain', c),
 };
 export const Audit = { getLogs: () => j('GET', '/audit/logs') };
-export const Scenarios = { list: () => j('GET', '/scenarios'), apply: (id: string) => j('POST', '/scenarios', { id }) };
+export const Scenarios = { list: () => j('GET', '/scenarios/list'), apply: (id: string, intensity: number = 1.0) => j('POST', '/scenarios/run', { name: id, intensity }) };
 export const Decide = { once: (payload: any) => j('POST', '/decide', payload) };
