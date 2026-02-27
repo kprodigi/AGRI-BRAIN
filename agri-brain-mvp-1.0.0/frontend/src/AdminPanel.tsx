@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Governance, Audit, Scenarios, Decide } from './api';
 
-const API_BASE = (window.API_BASE || localStorage.getItem('API_BASE') || 'http://127.0.0.1:8111').replace(/\/$/, '');
+const API_BASE = (window.API_BASE || localStorage.getItem('API_BASE') || 'http://127.0.0.1:8100').replace(/\/$/, '');
 
 const Card = ({ title, children }) => (
   <div className="p-4 bg-white rounded-2xl shadow mb-6">
@@ -161,6 +161,33 @@ export default function AdminPanel() {
     }
   }
 
+  // ---- Results (simulation)
+  const [resultsData, setResultsData] = useState<any>(null);
+  const [resultsLoading, setResultsLoading] = useState(false);
+  const [resultsErr, setResultsErr] = useState('');
+  const [figFiles, setFigFiles] = useState<string[]>([]);
+
+  async function runSimulation() {
+    setResultsLoading(true);
+    setResultsErr('');
+    try {
+      const r = await postJSON('/results/generate');
+      setResultsData(r.summary || r);
+      // Discover available figures
+      try {
+        const figNames = [
+          'fig2_heatwave.png', 'fig3_reverse.png', 'fig4_cyber.png',
+          'fig5_pricing.png', 'fig6_cross.png', 'fig7_ablation.png', 'fig8_green.png',
+        ];
+        setFigFiles(figNames);
+      } catch { setFigFiles([]); }
+    } catch (e: any) {
+      setResultsErr(e.message || String(e));
+    } finally {
+      setResultsLoading(false);
+    }
+  }
+
   // Optional: keep your advanced simulation button
   const [qd, setQD] = useState({ inventory_units: 500, demand_units: 480, temp_c: 4.6, volatility: 0 });
   const simulateDecision = async () => {
@@ -184,7 +211,7 @@ export default function AdminPanel() {
       )}
 
       <div className="flex gap-2 flex-wrap mb-4">
-        {['Policy', 'Blockchain', 'Audit', 'Scenarios', 'QuickDecision'].map(t => (
+        {['Policy', 'Blockchain', 'Audit', 'Scenarios', 'QuickDecision', 'Results'].map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-3 py-2 rounded-full ${tab === t ? 'bg-black text-white' : 'bg-gray-200'}`}>
             {t}
@@ -288,7 +315,7 @@ export default function AdminPanel() {
           <div className="flex items-center gap-2 mb-3">
             <button onClick={refreshAudit} className="px-3 py-1 rounded bg-gray-200">Refresh</button>
             <a className="px-3 py-1 rounded bg-black text-white"
-              href={`${API_BASE}/report/pdf`} target="_blank" rel="noopener">
+              href={`${API_BASE}/audit/memo.pdf`} target="_blank" rel="noopener">
               Download Decision Memo (PDF)
             </a>
           </div>
@@ -306,15 +333,15 @@ export default function AdminPanel() {
               </thead>
               <tbody>
                 {[...logs].reverse().map((r, i) => {
-                  const ts = r.ts ? new Date(r.ts * 1000).toLocaleString() : '';
+                  const ts = r.ts ? new Date(r.ts * 1000).toLocaleString() : (r.time || '');
                   return (
                     <tr key={i} className="border-b">
                       <td className="py-1 pr-4">{ts}</td>
-                      <td className="py-1 pr-4">{r.action}</td>
-                      <td className="py-1 pr-4">{r.slca_score}</td>
-                      <td className="py-1 pr-4">{r.carbon_kg}</td>
-                      <td className="py-1 pr-4">{r.reason}</td>
-                      <td className="py-1 pr-4">{r.tx_hash}</td>
+                      <td className="py-1 pr-4">{r.action ?? r.decision ?? ''}</td>
+                      <td className="py-1 pr-4">{r.slca_score ?? r.slca ?? ''}</td>
+                      <td className="py-1 pr-4">{r.carbon_kg ?? ''}</td>
+                      <td className="py-1 pr-4">{r.reason ?? r.note ?? ''}</td>
+                      <td className="py-1 pr-4">{r.tx_hash ?? r.tx ?? ''}</td>
                     </tr>
                   );
                 })}
@@ -390,7 +417,7 @@ export default function AdminPanel() {
             <button onClick={quickTake} className="px-4 py-2 bg-black text-white rounded" data-skip-global-take="1">
               Take decision
             </button>
-            <a className="px-4 py-2 rounded bg-gray-200" href={`${API_BASE}/report/pdf`} target="_blank" rel="noopener">
+            <a className="px-4 py-2 rounded bg-gray-200" href={`${API_BASE}/audit/memo.pdf`} target="_blank" rel="noopener">
               Open PDF
             </a>
           </div>
@@ -428,6 +455,75 @@ export default function AdminPanel() {
               Simulate (advanced)
             </button>
           </div>
+        </Card>
+      )}
+
+      {/* RESULTS */}
+      {tab === 'Results' && (
+        <Card title="Simulation Results (5 Scenarios x 5 Modes)">
+          <div className="flex items-center gap-3 mb-4">
+            <button onClick={runSimulation} disabled={resultsLoading}
+              className="px-4 py-2 bg-black text-white rounded disabled:opacity-50">
+              {resultsLoading ? 'Running simulation…' : 'Generate Results'}
+            </button>
+          </div>
+          {resultsErr && <div className="text-red-600 text-sm mb-3">{resultsErr}</div>}
+          {resultsData && (
+            <div className="space-y-4">
+              <h3 className="font-semibold">Summary by Scenario x Mode</h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm border">
+                  <thead>
+                    <tr className="bg-gray-100 text-left">
+                      <th className="p-2 border">Scenario</th>
+                      <th className="p-2 border">Mode</th>
+                      <th className="p-2 border">ARI</th>
+                      <th className="p-2 border">RLE</th>
+                      <th className="p-2 border">Waste</th>
+                      <th className="p-2 border">SLCA</th>
+                      <th className="p-2 border">Carbon</th>
+                      <th className="p-2 border">Equity</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(resultsData).flatMap(([scenario, modes]: [string, any]) =>
+                      Object.entries(modes).map(([mode, m]: [string, any]) => (
+                        <tr key={`${scenario}-${mode}`} className="border-b hover:bg-gray-50">
+                          <td className="p-2 border">{scenario}</td>
+                          <td className="p-2 border font-mono">{mode}</td>
+                          <td className="p-2 border">{m.ari?.toFixed(3)}</td>
+                          <td className="p-2 border">{m.rle?.toFixed(3)}</td>
+                          <td className="p-2 border">{m.waste?.toFixed(3)}</td>
+                          <td className="p-2 border">{m.slca?.toFixed(3)}</td>
+                          <td className="p-2 border">{m.carbon?.toFixed(0)}</td>
+                          <td className="p-2 border">{m.equity?.toFixed(3)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {figFiles.length > 0 && (
+            <div className="mt-6 space-y-4">
+              <h3 className="font-semibold">Generated Figures</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {figFiles.map(f => (
+                  <div key={f} className="border rounded p-2">
+                    <img src={`${API_BASE}/results/figures/${f}`} alt={f}
+                      className="w-full" onError={e => (e.target as HTMLImageElement).style.display = 'none'} />
+                    <div className="text-xs text-gray-500 mt-1">{f}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <p className="mt-4 text-sm text-gray-500">
+            Runs all 5 scenarios (baseline, heatwave, overproduction, cyber_outage, adaptive_pricing) across
+            5 modes (static, hybrid_rl, no_pinn, no_slca, agribrain). Results are saved to
+            mvp/simulation/results/.
+          </p>
         </Card>
       )}
     </div>

@@ -2,7 +2,7 @@
 // -------------------------------------------------------------
 // Smart, single API base with automatic 8111/8100 fallback
 // -------------------------------------------------------------
-let API = (window.API_BASE || localStorage.getItem('API_BASE') || 'http://127.0.0.1:8111').replace(/\/$/, '');
+let API = (window.API_BASE || localStorage.getItem('API_BASE') || 'http://127.0.0.1:8100').replace(/\/$/, '');
 
 export function getApiBase() {
     return API;

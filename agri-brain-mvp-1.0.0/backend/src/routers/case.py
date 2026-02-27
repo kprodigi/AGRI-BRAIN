@@ -68,19 +68,38 @@ def _compute_summary(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 def _default_csv_path() -> str:
+    """Resolve path to data_spinach.csv (lives at backend/src/data_spinach.csv)."""
     here = os.path.dirname(__file__)
-    return os.path.abspath(os.path.join(here, "..", "data", "data_spinach.csv"))
+    return os.path.abspath(os.path.join(here, "..", "data_spinach.csv"))
 
 # ---------- Routes (mounted under prefix="/case") ----------
 
 @router.post("/load")
 def load_case(path: Optional[str] = None):
+    """Load CSV and compute PINN spoilage + volatility flags.
+
+    Delegates to the canonical app.py case_load() if available so that
+    the full Arrhenius spoilage model runs. Falls back to simple CSV
+    load if the app state is not accessible.
     """
-    Loads a CSV of demo spinach data:
-      - if 'path' is provided, use it
-      - else try env DATA_CSV
-      - else fall back to backend/src/data/data_spinach.csv
-    """
+    # Try canonical app.py case_load first (runs PINN spoilage)
+    try:
+        from src.app import case_load as _app_case_load
+        result = _app_case_load()
+        # Also update case.STATE for PDF/audit compatibility
+        csv_path = path or os.environ.get("DATA_CSV") or _default_csv_path()
+        rows = _load_csv(csv_path) if os.path.exists(csv_path) else []
+        STATE.update({
+            "rows": rows,
+            "summary": _compute_summary(rows),
+            "loaded_at": int(time.time()),
+            "path": csv_path,
+        })
+        return result
+    except Exception:
+        pass
+
+    # Fallback: simple CSV load without spoilage model
     csv_path = path or os.environ.get("DATA_CSV") or _default_csv_path()
     if not os.path.exists(csv_path):
         return {"ok": False, "error": f"CSV not found: {csv_path}"}

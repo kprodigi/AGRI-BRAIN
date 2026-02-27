@@ -77,7 +77,7 @@ document.addEventListener('decision:new', (e) => {
         if (window.__takeDecisionInstalled) return
         window.__takeDecisionInstalled = true
 
-        const base = (window.API_BASE || localStorage.getItem('API_BASE') || 'http://127.0.0.1:8111').replace(/\/$/, '')
+        const base = (window.API_BASE || localStorage.getItem('API_BASE') || 'http://127.0.0.1:8100').replace(/\/$/, '')
         console.log('[MVP] decision handler installed; API_BASE =', base)
 
         async function callAny() {
@@ -120,7 +120,7 @@ document.addEventListener('decision:new', (e) => {
 
     // ---------- Fix the "Download Decision Memo (PDF)" button ----------
     ; (function fixMemoDownloadButton() {
-        const base = (window.API_BASE || localStorage.getItem('API_BASE') || 'http://127.0.0.1:8111').replace(/\/$/, '')
+        const base = (window.API_BASE || localStorage.getItem('API_BASE') || 'http://127.0.0.1:8100').replace(/\/$/, '')
         const url = `${base}/report/pdf`  // ← use local report
 
         function attach() {

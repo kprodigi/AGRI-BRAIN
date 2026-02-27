@@ -23,7 +23,7 @@ import {
 } from "recharts";
 
 const API =
-    (window.API_BASE || localStorage.getItem("API_BASE") || "http://127.0.0.1:8111").replace(
+    (window.API_BASE || localStorage.getItem("API_BASE") || "http://127.0.0.1:8100").replace(
         /\/$/,
         ""
     );
