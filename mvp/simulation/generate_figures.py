@@ -547,7 +547,11 @@ def fig5_pricing(data):
     ax.set_xlabel("Hours")
     ax.set_ylabel("Value (rolling avg)")
     ax.set_title("(d) Reward Component Profiles")
-    _legend(ax, loc="center left")
+    _legend(
+    ax,
+    loc="lower left",
+    bbox_to_anchor=(0.02, 0.02)
+)
     _apply_style(ax)
 
     fig.tight_layout(rect=[0, 0, 1, 0.95])
