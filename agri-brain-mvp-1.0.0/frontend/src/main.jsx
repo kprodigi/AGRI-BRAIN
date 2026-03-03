@@ -108,7 +108,8 @@ document.addEventListener('decision:new', (e) => {
 
             e.preventDefault()
             try {
-                const memo = await callAny()
+                const res = await callAny()
+                const memo = res.memo ?? res
                 console.log('Decision memo:', memo)
                 document.dispatchEvent(new CustomEvent('decision:new', { detail: memo }))
             } catch (err) {
