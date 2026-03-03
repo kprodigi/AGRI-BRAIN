@@ -1,0 +1,7 @@
+allowlist:
+  - user:kazi
+retention_days: 90
+rate_limits:
+  calculator: 120/min
+  convert_units: 60/min
+  simulate: 30/min

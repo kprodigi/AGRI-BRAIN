@@ -1,0 +1,185 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "C:\\Users\\kkhoda\\Dropbox\\0. Research Folder\\All Code KMK\\AgriBrain\\ABP4\\agri-brain-mvp-1.0.0\\contracts\\hardhat\\contracts\\AgentRegistry.sol": {
+      "lastModificationDate": 1756571427642,
+      "contentHash": "f7f2d3e4112ee976e4e04f03bebbac0e",
+      "sourceName": "contracts/AgentRegistry.sol",
+      "solcConfig": {
+        "version": "0.8.28",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.28"
+      ],
+      "artifacts": [
+        "AgentRegistry"
+      ]
+    },
+    "C:\\Users\\kkhoda\\Dropbox\\0. Research Folder\\All Code KMK\\AgriBrain\\ABP4\\agri-brain-mvp-1.0.0\\contracts\\hardhat\\contracts\\AgriDAO.sol": {
+      "lastModificationDate": 1756571427642,
+      "contentHash": "33441e975e0c55e5b42c00b13e37467d",
+      "sourceName": "contracts/AgriDAO.sol",
+      "solcConfig": {
+        "version": "0.8.28",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.28"
+      ],
+      "artifacts": [
+        "AgriDAO"
+      ]
+    },
+    "C:\\Users\\kkhoda\\Dropbox\\0. Research Folder\\All Code KMK\\AgriBrain\\ABP4\\agri-brain-mvp-1.0.0\\contracts\\hardhat\\contracts\\DecisionLogger.sol": {
+      "lastModificationDate": 1756571427642,
+      "contentHash": "142d571c52dac4bf4366081c70474a80",
+      "sourceName": "contracts/DecisionLogger.sol",
+      "solcConfig": {
+        "version": "0.8.28",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "DecisionLogger"
+      ]
+    },
+    "C:\\Users\\kkhoda\\Dropbox\\0. Research Folder\\All Code KMK\\AgriBrain\\ABP4\\agri-brain-mvp-1.0.0\\contracts\\hardhat\\contracts\\PolicyStore.sol": {
+      "lastModificationDate": 1756571427642,
+      "contentHash": "39836dc7c8be848979ae7db46a25a02a",
+      "sourceName": "contracts/PolicyStore.sol",
+      "solcConfig": {
+        "version": "0.8.28",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.28"
+      ],
+      "artifacts": [
+        "PolicyStore"
+      ]
+    },
+    "C:\\Users\\kkhoda\\Dropbox\\0. Research Folder\\All Code KMK\\AgriBrain\\ABP4\\agri-brain-mvp-1.0.0\\contracts\\hardhat\\contracts\\SLCARewards.sol": {
+      "lastModificationDate": 1756571427642,
+      "contentHash": "f6f8e87ede0ea2d06474ee8c57ae6939",
+      "sourceName": "contracts/SLCARewards.sol",
+      "solcConfig": {
+        "version": "0.8.28",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.28"
+      ],
+      "artifacts": [
+        "SLCARewards"
+      ]
+    }
+  }
+}

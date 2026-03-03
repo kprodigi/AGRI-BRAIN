@@ -1,0 +1,57 @@
+/* Tailwind entry + a couple of safe defaults */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    color-scheme: light dark;
+}
+
+html,
+body,
+#root {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+}
+
+
+/* Simple rounded pill tabs with active state */
+.nav-tabs a {
+    display: inline-block;
+    padding: 8px 14px;
+    border-radius: 9999px;
+    background: #e5e7eb;
+    /* gray-200 */
+    color: #111827;
+    /* gray-900 */
+    text-decoration: none;
+    margin-right: 8px;
+}
+
+.nav-tabs a.active {
+    background: #111827;
+    /* black */
+    color: #ffffff;
+}
+
+.nav-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.nav-tabs a {
+    cursor: pointer;
+}
+
+.nav-tabs a:focus {
+    outline: 2px solid #111827;
+    outline-offset: 2px;
+}
+
+.nav-tabs a:hover {
+    filter: brightness(0.97);
+}

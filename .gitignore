@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+node_modules/
+dist/
+.venv/
+*.egg-info/
+
+# IDE / editor
+.vscode/
+.idea/
+
+# Hardhat build artifacts
+contracts/hardhat/artifacts/
+contracts/hardhat/cache/
+
+# Environment and secrets
+.env
+.env.local

@@ -1,0 +1,1722 @@
+{
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "agent",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "action",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "slca",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "metaURI",
+          "type": "string"
+        }
+      ],
+      "name": "DecisionLogged",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "agent",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "action",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "slca",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "metaURI",
+          "type": "string"
+        }
+      ],
+      "name": "logDecision",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "allSourcePaths": {
+    "2": "contracts/hardhat/contracts/DecisionLogger.sol"
+  },
+  "ast": {
+    "absolutePath": "contracts/hardhat/contracts/DecisionLogger.sol",
+    "exportedSymbols": {
+      "DecisionLogger": [
+        279
+      ]
+    },
+    "id": 280,
+    "license": "MIT",
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 249,
+        "literals": [
+          "solidity",
+          "^",
+          "0.8",
+          ".28"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "32:24:2"
+      },
+      {
+        "abstract": false,
+        "baseContracts": [],
+        "canonicalName": "DecisionLogger",
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "fullyImplemented": true,
+        "id": 279,
+        "linearizedBaseContracts": [
+          279
+        ],
+        "name": "DecisionLogger",
+        "nameLocation": "66:14:2",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "anonymous": false,
+            "eventSelector": "a16a19c20f5cc848eb68fb732a30346626588c04bab9bf4a43a472a50eb71e6f",
+            "id": 259,
+            "name": "DecisionLogged",
+            "nameLocation": "88:14:2",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 258,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 251,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "agent",
+                  "nameLocation": "119:5:2",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 259,
+                  "src": "103:21:2",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 250,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "103:7:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 253,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "action",
+                  "nameLocation": "134:6:2",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 259,
+                  "src": "126:14:2",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 252,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "126:7:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 255,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "slca",
+                  "nameLocation": "150:4:2",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 259,
+                  "src": "142:12:2",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 254,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "142:7:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 257,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "metaURI",
+                  "nameLocation": "163:7:2",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 259,
+                  "src": "156:14:2",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_memory_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 256,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "156:6:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "102:69:2"
+            },
+            "src": "82:90:2"
+          },
+          {
+            "body": {
+              "id": 277,
+              "nodeType": "Block",
+              "src": "273:50:2",
+              "statements": [
+                {
+                  "eventCall": {
+                    "arguments": [
+                      {
+                        "id": 271,
+                        "name": "agent",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 261,
+                        "src": "295:5:2",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_bytes32",
+                          "typeString": "bytes32"
+                        }
+                      },
+                      {
+                        "id": 272,
+                        "name": "action",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 263,
+                        "src": "301:6:2",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_bytes32",
+                          "typeString": "bytes32"
+                        }
+                      },
+                      {
+                        "id": 273,
+                        "name": "slca",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 265,
+                        "src": "308:4:2",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      },
+                      {
+                        "id": 274,
+                        "name": "metaURI",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 267,
+                        "src": "313:7:2",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_string_calldata_ptr",
+                          "typeString": "string calldata"
+                        }
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_bytes32",
+                          "typeString": "bytes32"
+                        },
+                        {
+                          "typeIdentifier": "t_bytes32",
+                          "typeString": "bytes32"
+                        },
+                        {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        },
+                        {
+                          "typeIdentifier": "t_string_calldata_ptr",
+                          "typeString": "string calldata"
+                        }
+                      ],
+                      "id": 270,
+                      "name": "DecisionLogged",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 259,
+                      "src": "280:14:2",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_event_nonpayable$_t_bytes32_$_t_bytes32_$_t_uint256_$_t_string_memory_ptr_$returns$__$",
+                        "typeString": "function (bytes32,bytes32,uint256,string memory)"
+                      }
+                    },
+                    "id": 275,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "nameLocations": [],
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "280:41:2",
+                    "tryCall": false,
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 276,
+                  "nodeType": "EmitStatement",
+                  "src": "275:46:2"
+                }
+              ]
+            },
+            "functionSelector": "9a2b9bdd",
+            "id": 278,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "logDecision",
+            "nameLocation": "182:11:2",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 268,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 261,
+                  "mutability": "mutable",
+                  "name": "agent",
+                  "nameLocation": "202:5:2",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 278,
+                  "src": "194:13:2",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 260,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "194:7:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 263,
+                  "mutability": "mutable",
+                  "name": "action",
+                  "nameLocation": "217:6:2",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 278,
+                  "src": "209:14:2",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 262,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "209:7:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 265,
+                  "mutability": "mutable",
+                  "name": "slca",
+                  "nameLocation": "233:4:2",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 278,
+                  "src": "225:12:2",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 264,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "225:7:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 267,
+                  "mutability": "mutable",
+                  "name": "metaURI",
+                  "nameLocation": "255:7:2",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 278,
+                  "src": "239:23:2",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 266,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "239:6:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "193:70:2"
+            },
+            "returnParameters": {
+              "id": 269,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "273:0:2"
+            },
+            "scope": 279,
+            "src": "173:150:2",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          }
+        ],
+        "scope": 280,
+        "src": "57:268:2",
+        "usedErrors": [],
+        "usedEvents": [
+          259
+        ]
+      }
+    ],
+    "src": "32:294:2"
+  },
+  "bytecode": "6080604052348015600f57600080fd5b5061018c8061001f6000396000f3fe608060405234801561001057600080fd5b506004361061002b5760003560e01c80639a2b9bdd14610030575b600080fd5b61004361003e36600461008a565b610045565b005b847fa16a19c20f5cc848eb68fb732a30346626588c04bab9bf4a43a472a50eb71e6f8585858560405161007b9493929190610119565b60405180910390a25050505050565b6000806000806000608086880312156100a257600080fd5b853594506020860135935060408601359250606086013567ffffffffffffffff8111156100ce57600080fd5b8601601f810188136100df57600080fd5b803567ffffffffffffffff8111156100f657600080fd5b88602082840101111561010857600080fd5b959894975092955050506020019190565b84815283602082015260606040820152816060820152818360808301376000818301608090810191909152601f909201601f19160101939250505056fea26469706673582212204027b11b2f6beec1856ca11d5063191be5e0aaf08e1c7952a32958dd18ac77b164736f6c634300081e0033",
+  "bytecodeSha1": "276fafff93dcb05e7d7b63131e54d9c2d92c17f5",
+  "compiler": {
+    "evm_version": "istanbul",
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "version": "0.8.30+commit.73712a01"
+  },
+  "contractName": "DecisionLogger",
+  "coverageMap": {
+    "branches": {
+      "2": {}
+    },
+    "statements": {
+      "2": {
+        "DecisionLogger.logDecision": {
+          "0": [
+            275,
+            321
+          ]
+        }
+      }
+    }
+  },
+  "dependencies": [],
+  "deployedBytecode": "608060405234801561001057600080fd5b506004361061002b5760003560e01c80639a2b9bdd14610030575b600080fd5b61004361003e36600461008a565b610045565b005b847fa16a19c20f5cc848eb68fb732a30346626588c04bab9bf4a43a472a50eb71e6f8585858560405161007b9493929190610119565b60405180910390a25050505050565b6000806000806000608086880312156100a257600080fd5b853594506020860135935060408601359250606086013567ffffffffffffffff8111156100ce57600080fd5b8601601f810188136100df57600080fd5b803567ffffffffffffffff8111156100f657600080fd5b88602082840101111561010857600080fd5b959894975092955050506020019190565b84815283602082015260606040820152816060820152818360808301376000818301608090810191909152601f909201601f19160101939250505056fea26469706673582212204027b11b2f6beec1856ca11d5063191be5e0aaf08e1c7952a32958dd18ac77b164736f6c634300081e0033",
+  "deployedSourceMap": "57:268:2:-:0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;173:150;;;;;;:::i;:::-;;:::i;:::-;;;295:5;280:41;301:6;308:4;313:7;;280:41;;;;;;;;;:::i;:::-;;;;;;;;173:150;;;;;:::o;14:890:5:-;112:6;120;128;136;144;197:3;185:9;176:7;172:23;168:33;165:53;;;214:1;211;204:12;165:53;259:23;;;-1:-1:-1;379:2:5;364:18;;351:32;;-1:-1:-1;456:2:5;441:18;;428:32;;-1:-1:-1;511:2:5;496:18;;483:32;538:18;527:30;;524:50;;;570:1;567;560:12;524:50;593:22;;646:4;638:13;;634:27;-1:-1:-1;624:55:5;;675:1;672;665:12;624:55;715:2;702:16;741:18;733:6;730:30;727:50;;;773:1;770;763:12;727:50;818:7;813:2;804:6;800:2;796:15;792:24;789:37;786:57;;;839:1;836;829:12;786:57;14:890;;;;-1:-1:-1;14:890:5;;-1:-1:-1;;;870:2:5;862:11;;892:6;14:890::o;909:535::-;1124:6;1113:9;1106:25;1167:6;1162:2;1151:9;1147:18;1140:34;1210:2;1205;1194:9;1190:18;1183:30;1249:6;1244:2;1233:9;1229:18;1222:34;1307:6;1299;1293:3;1282:9;1278:19;1265:49;1364:1;1334:22;;;1358:3;1330:32;;;1323:43;;;;1427:2;1406:15;;;-1:-1:-1;;1402:29:5;1387:45;1383:55;;909:535;-1:-1:-1;;;909:535:5:o",
+  "language": "Solidity",
+  "natspec": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "offset": [
+    57,
+    325
+  ],
+  "opcodes": "PUSH1 0x80 PUSH1 0x40 MSTORE CALLVALUE DUP1 ISZERO PUSH2 0x10 JUMPI PUSH1 0x0 DUP1 REVERT JUMPDEST POP PUSH1 0x4 CALLDATASIZE LT PUSH2 0x2B JUMPI PUSH1 0x0 CALLDATALOAD PUSH1 0xE0 SHR DUP1 PUSH4 0x9A2B9BDD EQ PUSH2 0x30 JUMPI JUMPDEST PUSH1 0x0 DUP1 REVERT JUMPDEST PUSH2 0x43 PUSH2 0x3E CALLDATASIZE PUSH1 0x4 PUSH2 0x8A JUMP JUMPDEST PUSH2 0x45 JUMP JUMPDEST STOP JUMPDEST DUP5 PUSH32 0xA16A19C20F5CC848EB68FB732A30346626588C04BAB9BF4A43A472A50EB71E6F DUP6 DUP6 DUP6 DUP6 PUSH1 0x40 MLOAD PUSH2 0x7B SWAP5 SWAP4 SWAP3 SWAP2 SWAP1 PUSH2 0x119 JUMP JUMPDEST PUSH1 0x40 MLOAD DUP1 SWAP2 SUB SWAP1 LOG2 POP POP POP POP POP JUMP JUMPDEST PUSH1 0x0 DUP1 PUSH1 0x0 DUP1 PUSH1 0x0 PUSH1 0x80 DUP7 DUP9 SUB SLT ISZERO PUSH2 0xA2 JUMPI PUSH1 0x0 DUP1 REVERT JUMPDEST DUP6 CALLDATALOAD SWAP5 POP PUSH1 0x20 DUP7 ADD CALLDATALOAD SWAP4 POP PUSH1 0x40 DUP7 ADD CALLDATALOAD SWAP3 POP PUSH1 0x60 DUP7 ADD CALLDATALOAD PUSH8 0xFFFFFFFFFFFFFFFF DUP2 GT ISZERO PUSH2 0xCE JUMPI PUSH1 0x0 DUP1 REVERT JUMPDEST DUP7 ADD PUSH1 0x1F DUP2 ADD DUP9 SGT PUSH2 0xDF JUMPI PUSH1 0x0 DUP1 REVERT JUMPDEST DUP1 CALLDATALOAD PUSH8 0xFFFFFFFFFFFFFFFF DUP2 GT ISZERO PUSH2 0xF6 JUMPI PUSH1 0x0 DUP1 REVERT JUMPDEST DUP9 PUSH1 0x20 DUP3 DUP5 ADD ADD GT ISZERO PUSH2 0x108 JUMPI PUSH1 0x0 DUP1 REVERT JUMPDEST SWAP6 SWAP9 SWAP5 SWAP8 POP SWAP3 SWAP6 POP POP POP PUSH1 0x20 ADD SWAP2 SWAP1 JUMP JUMPDEST DUP5 DUP2 MSTORE DUP4 PUSH1 0x20 DUP3 ADD MSTORE PUSH1 0x60 PUSH1 0x40 DUP3 ADD MSTORE DUP2 PUSH1 0x60 DUP3 ADD MSTORE DUP2 DUP4 PUSH1 0x80 DUP4 ADD CALLDATACOPY PUSH1 0x0 DUP2 DUP4 ADD PUSH1 0x80 SWAP1 DUP2 ADD SWAP2 SWAP1 SWAP2 MSTORE PUSH1 0x1F SWAP1 SWAP3 ADD PUSH1 0x1F NOT AND ADD ADD SWAP4 SWAP3 POP POP POP JUMP INVALID LOG2 PUSH5 0x6970667358 0x22 SLT KECCAK256 BLOCKHASH 0x27 0xB1 SHL 0x2F PUSH12 0xEEC1856CA11D5063191BE5E0 0xAA CREATE DUP15 SHR PUSH26 0x52A32958DD18AC77B164736F6C634300081E0033000000000000 ",
+  "pcMap": {
+    "0": {
+      "offset": [
+        57,
+        325
+      ],
+      "op": "PUSH1",
+      "path": "2",
+      "value": "0x80"
+    },
+    "2": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "PUSH1",
+      "path": "2",
+      "value": "0x40"
+    },
+    "4": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "MSTORE",
+      "path": "2"
+    },
+    "5": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "CALLVALUE",
+      "path": "2"
+    },
+    "6": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "DUP1",
+      "path": "2"
+    },
+    "7": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "ISZERO",
+      "path": "2"
+    },
+    "8": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "PUSH2",
+      "path": "2",
+      "value": "0x10"
+    },
+    "11": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "JUMPI",
+      "path": "2"
+    },
+    "12": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "PUSH1",
+      "path": "2",
+      "value": "0x0"
+    },
+    "14": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "DUP1",
+      "path": "2"
+    },
+    "15": {
+      "dev": "Cannot send ether to nonpayable function",
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "REVERT",
+      "path": "2"
+    },
+    "16": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "JUMPDEST",
+      "path": "2"
+    },
+    "17": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "POP",
+      "path": "2"
+    },
+    "18": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "PUSH1",
+      "path": "2",
+      "value": "0x4"
+    },
+    "20": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "CALLDATASIZE",
+      "path": "2"
+    },
+    "21": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "LT",
+      "path": "2"
+    },
+    "22": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "PUSH2",
+      "path": "2",
+      "value": "0x2B"
+    },
+    "25": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "JUMPI",
+      "path": "2"
+    },
+    "26": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "PUSH1",
+      "path": "2",
+      "value": "0x0"
+    },
+    "28": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "CALLDATALOAD",
+      "path": "2"
+    },
+    "29": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "PUSH1",
+      "path": "2",
+      "value": "0xE0"
+    },
+    "31": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "SHR",
+      "path": "2"
+    },
+    "32": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "DUP1",
+      "path": "2"
+    },
+    "33": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "PUSH4",
+      "path": "2",
+      "value": "0x9A2B9BDD"
+    },
+    "38": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "EQ",
+      "path": "2"
+    },
+    "39": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "PUSH2",
+      "path": "2",
+      "value": "0x30"
+    },
+    "42": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "JUMPI",
+      "path": "2"
+    },
+    "43": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "JUMPDEST",
+      "path": "2"
+    },
+    "44": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "PUSH1",
+      "path": "2",
+      "value": "0x0"
+    },
+    "46": {
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "DUP1",
+      "path": "2"
+    },
+    "47": {
+      "first_revert": true,
+      "fn": null,
+      "offset": [
+        57,
+        325
+      ],
+      "op": "REVERT",
+      "path": "2"
+    },
+    "48": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        173,
+        323
+      ],
+      "op": "JUMPDEST",
+      "path": "2"
+    },
+    "49": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        173,
+        323
+      ],
+      "op": "PUSH2",
+      "path": "2",
+      "value": "0x43"
+    },
+    "52": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        173,
+        323
+      ],
+      "op": "PUSH2",
+      "path": "2",
+      "value": "0x3E"
+    },
+    "55": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        173,
+        323
+      ],
+      "op": "CALLDATASIZE",
+      "path": "2"
+    },
+    "56": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        173,
+        323
+      ],
+      "op": "PUSH1",
+      "path": "2",
+      "value": "0x4"
+    },
+    "58": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        173,
+        323
+      ],
+      "op": "PUSH2",
+      "path": "2",
+      "value": "0x8A"
+    },
+    "61": {
+      "fn": "DecisionLogger.logDecision",
+      "jump": "i",
+      "offset": [
+        173,
+        323
+      ],
+      "op": "JUMP",
+      "path": "2"
+    },
+    "62": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        173,
+        323
+      ],
+      "op": "JUMPDEST",
+      "path": "2"
+    },
+    "63": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        173,
+        323
+      ],
+      "op": "PUSH2",
+      "path": "2",
+      "value": "0x45"
+    },
+    "66": {
+      "fn": "DecisionLogger.logDecision",
+      "jump": "i",
+      "offset": [
+        173,
+        323
+      ],
+      "op": "JUMP",
+      "path": "2"
+    },
+    "67": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        173,
+        323
+      ],
+      "op": "JUMPDEST",
+      "path": "2"
+    },
+    "68": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        173,
+        323
+      ],
+      "op": "STOP",
+      "path": "2"
+    },
+    "69": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        173,
+        323
+      ],
+      "op": "JUMPDEST",
+      "path": "2"
+    },
+    "70": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        295,
+        300
+      ],
+      "op": "DUP5",
+      "path": "2",
+      "statement": 0
+    },
+    "71": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        280,
+        321
+      ],
+      "op": "PUSH32",
+      "path": "2",
+      "value": "0xA16A19C20F5CC848EB68FB732A30346626588C04BAB9BF4A43A472A50EB71E6F"
+    },
+    "104": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        301,
+        307
+      ],
+      "op": "DUP6",
+      "path": "2"
+    },
+    "105": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        308,
+        312
+      ],
+      "op": "DUP6",
+      "path": "2"
+    },
+    "106": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        313,
+        320
+      ],
+      "op": "DUP6",
+      "path": "2"
+    },
+    "107": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        313,
+        320
+      ],
+      "op": "DUP6",
+      "path": "2"
+    },
+    "108": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        280,
+        321
+      ],
+      "op": "PUSH1",
+      "path": "2",
+      "value": "0x40"
+    },
+    "110": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        280,
+        321
+      ],
+      "op": "MLOAD",
+      "path": "2"
+    },
+    "111": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        280,
+        321
+      ],
+      "op": "PUSH2",
+      "path": "2",
+      "value": "0x7B"
+    },
+    "114": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        280,
+        321
+      ],
+      "op": "SWAP5",
+      "path": "2"
+    },
+    "115": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        280,
+        321
+      ],
+      "op": "SWAP4",
+      "path": "2"
+    },
+    "116": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        280,
+        321
+      ],
+      "op": "SWAP3",
+      "path": "2"
+    },
+    "117": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        280,
+        321
+      ],
+      "op": "SWAP2",
+      "path": "2"
+    },
+    "118": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        280,
+        321
+      ],
+      "op": "SWAP1",
+      "path": "2"
+    },
+    "119": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        280,
+        321
+      ],
+      "op": "PUSH2",
+      "path": "2",
+      "value": "0x119"
+    },
+    "122": {
+      "fn": "DecisionLogger.logDecision",
+      "jump": "i",
+      "offset": [
+        280,
+        321
+      ],
+      "op": "JUMP",
+      "path": "2"
+    },
+    "123": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        280,
+        321
+      ],
+      "op": "JUMPDEST",
+      "path": "2"
+    },
+    "124": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        280,
+        321
+      ],
+      "op": "PUSH1",
+      "path": "2",
+      "value": "0x40"
+    },
+    "126": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        280,
+        321
+      ],
+      "op": "MLOAD",
+      "path": "2"
+    },
+    "127": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        280,
+        321
+      ],
+      "op": "DUP1",
+      "path": "2"
+    },
+    "128": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        280,
+        321
+      ],
+      "op": "SWAP2",
+      "path": "2"
+    },
+    "129": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        280,
+        321
+      ],
+      "op": "SUB",
+      "path": "2"
+    },
+    "130": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        280,
+        321
+      ],
+      "op": "SWAP1",
+      "path": "2"
+    },
+    "131": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        280,
+        321
+      ],
+      "op": "LOG2",
+      "path": "2"
+    },
+    "132": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        173,
+        323
+      ],
+      "op": "POP",
+      "path": "2"
+    },
+    "133": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        173,
+        323
+      ],
+      "op": "POP",
+      "path": "2"
+    },
+    "134": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        173,
+        323
+      ],
+      "op": "POP",
+      "path": "2"
+    },
+    "135": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        173,
+        323
+      ],
+      "op": "POP",
+      "path": "2"
+    },
+    "136": {
+      "fn": "DecisionLogger.logDecision",
+      "offset": [
+        173,
+        323
+      ],
+      "op": "POP",
+      "path": "2"
+    },
+    "137": {
+      "fn": "DecisionLogger.logDecision",
+      "jump": "o",
+      "offset": [
+        173,
+        323
+      ],
+      "op": "JUMP",
+      "path": "2"
+    },
+    "138": {
+      "op": "JUMPDEST"
+    },
+    "139": {
+      "op": "PUSH1",
+      "value": "0x0"
+    },
+    "141": {
+      "op": "DUP1"
+    },
+    "142": {
+      "op": "PUSH1",
+      "value": "0x0"
+    },
+    "144": {
+      "op": "DUP1"
+    },
+    "145": {
+      "op": "PUSH1",
+      "value": "0x0"
+    },
+    "147": {
+      "op": "PUSH1",
+      "value": "0x80"
+    },
+    "149": {
+      "op": "DUP7"
+    },
+    "150": {
+      "op": "DUP9"
+    },
+    "151": {
+      "op": "SUB"
+    },
+    "152": {
+      "op": "SLT"
+    },
+    "153": {
+      "op": "ISZERO"
+    },
+    "154": {
+      "op": "PUSH2",
+      "value": "0xA2"
+    },
+    "157": {
+      "op": "JUMPI"
+    },
+    "158": {
+      "op": "PUSH1",
+      "value": "0x0"
+    },
+    "160": {
+      "op": "DUP1"
+    },
+    "161": {
+      "op": "REVERT"
+    },
+    "162": {
+      "op": "JUMPDEST"
+    },
+    "163": {
+      "op": "DUP6"
+    },
+    "164": {
+      "op": "CALLDATALOAD"
+    },
+    "165": {
+      "op": "SWAP5"
+    },
+    "166": {
+      "op": "POP"
+    },
+    "167": {
+      "op": "PUSH1",
+      "value": "0x20"
+    },
+    "169": {
+      "op": "DUP7"
+    },
+    "170": {
+      "op": "ADD"
+    },
+    "171": {
+      "op": "CALLDATALOAD"
+    },
+    "172": {
+      "op": "SWAP4"
+    },
+    "173": {
+      "op": "POP"
+    },
+    "174": {
+      "op": "PUSH1",
+      "value": "0x40"
+    },
+    "176": {
+      "op": "DUP7"
+    },
+    "177": {
+      "op": "ADD"
+    },
+    "178": {
+      "op": "CALLDATALOAD"
+    },
+    "179": {
+      "op": "SWAP3"
+    },
+    "180": {
+      "op": "POP"
+    },
+    "181": {
+      "op": "PUSH1",
+      "value": "0x60"
+    },
+    "183": {
+      "op": "DUP7"
+    },
+    "184": {
+      "op": "ADD"
+    },
+    "185": {
+      "op": "CALLDATALOAD"
+    },
+    "186": {
+      "op": "PUSH8",
+      "value": "0xFFFFFFFFFFFFFFFF"
+    },
+    "195": {
+      "op": "DUP2"
+    },
+    "196": {
+      "op": "GT"
+    },
+    "197": {
+      "op": "ISZERO"
+    },
+    "198": {
+      "op": "PUSH2",
+      "value": "0xCE"
+    },
+    "201": {
+      "op": "JUMPI"
+    },
+    "202": {
+      "op": "PUSH1",
+      "value": "0x0"
+    },
+    "204": {
+      "op": "DUP1"
+    },
+    "205": {
+      "op": "REVERT"
+    },
+    "206": {
+      "op": "JUMPDEST"
+    },
+    "207": {
+      "op": "DUP7"
+    },
+    "208": {
+      "op": "ADD"
+    },
+    "209": {
+      "op": "PUSH1",
+      "value": "0x1F"
+    },
+    "211": {
+      "op": "DUP2"
+    },
+    "212": {
+      "op": "ADD"
+    },
+    "213": {
+      "op": "DUP9"
+    },
+    "214": {
+      "op": "SGT"
+    },
+    "215": {
+      "op": "PUSH2",
+      "value": "0xDF"
+    },
+    "218": {
+      "op": "JUMPI"
+    },
+    "219": {
+      "op": "PUSH1",
+      "value": "0x0"
+    },
+    "221": {
+      "op": "DUP1"
+    },
+    "222": {
+      "op": "REVERT"
+    },
+    "223": {
+      "op": "JUMPDEST"
+    },
+    "224": {
+      "op": "DUP1"
+    },
+    "225": {
+      "op": "CALLDATALOAD"
+    },
+    "226": {
+      "op": "PUSH8",
+      "value": "0xFFFFFFFFFFFFFFFF"
+    },
+    "235": {
+      "op": "DUP2"
+    },
+    "236": {
+      "op": "GT"
+    },
+    "237": {
+      "op": "ISZERO"
+    },
+    "238": {
+      "op": "PUSH2",
+      "value": "0xF6"
+    },
+    "241": {
+      "op": "JUMPI"
+    },
+    "242": {
+      "op": "PUSH1",
+      "value": "0x0"
+    },
+    "244": {
+      "op": "DUP1"
+    },
+    "245": {
+      "op": "REVERT"
+    },
+    "246": {
+      "op": "JUMPDEST"
+    },
+    "247": {
+      "op": "DUP9"
+    },
+    "248": {
+      "op": "PUSH1",
+      "value": "0x20"
+    },
+    "250": {
+      "op": "DUP3"
+    },
+    "251": {
+      "op": "DUP5"
+    },
+    "252": {
+      "op": "ADD"
+    },
+    "253": {
+      "op": "ADD"
+    },
+    "254": {
+      "op": "GT"
+    },
+    "255": {
+      "op": "ISZERO"
+    },
+    "256": {
+      "op": "PUSH2",
+      "value": "0x108"
+    },
+    "259": {
+      "op": "JUMPI"
+    },
+    "260": {
+      "op": "PUSH1",
+      "value": "0x0"
+    },
+    "262": {
+      "op": "DUP1"
+    },
+    "263": {
+      "op": "REVERT"
+    },
+    "264": {
+      "op": "JUMPDEST"
+    },
+    "265": {
+      "op": "SWAP6"
+    },
+    "266": {
+      "op": "SWAP9"
+    },
+    "267": {
+      "op": "SWAP5"
+    },
+    "268": {
+      "op": "SWAP8"
+    },
+    "269": {
+      "op": "POP"
+    },
+    "270": {
+      "op": "SWAP3"
+    },
+    "271": {
+      "op": "SWAP6"
+    },
+    "272": {
+      "op": "POP"
+    },
+    "273": {
+      "op": "POP"
+    },
+    "274": {
+      "op": "POP"
+    },
+    "275": {
+      "op": "PUSH1",
+      "value": "0x20"
+    },
+    "277": {
+      "op": "ADD"
+    },
+    "278": {
+      "op": "SWAP2"
+    },
+    "279": {
+      "op": "SWAP1"
+    },
+    "280": {
+      "jump": "o",
+      "op": "JUMP"
+    },
+    "281": {
+      "op": "JUMPDEST"
+    },
+    "282": {
+      "op": "DUP5"
+    },
+    "283": {
+      "op": "DUP2"
+    },
+    "284": {
+      "op": "MSTORE"
+    },
+    "285": {
+      "op": "DUP4"
+    },
+    "286": {
+      "op": "PUSH1",
+      "value": "0x20"
+    },
+    "288": {
+      "op": "DUP3"
+    },
+    "289": {
+      "op": "ADD"
+    },
+    "290": {
+      "op": "MSTORE"
+    },
+    "291": {
+      "op": "PUSH1",
+      "value": "0x60"
+    },
+    "293": {
+      "op": "PUSH1",
+      "value": "0x40"
+    },
+    "295": {
+      "op": "DUP3"
+    },
+    "296": {
+      "op": "ADD"
+    },
+    "297": {
+      "op": "MSTORE"
+    },
+    "298": {
+      "op": "DUP2"
+    },
+    "299": {
+      "op": "PUSH1",
+      "value": "0x60"
+    },
+    "301": {
+      "op": "DUP3"
+    },
+    "302": {
+      "op": "ADD"
+    },
+    "303": {
+      "op": "MSTORE"
+    },
+    "304": {
+      "op": "DUP2"
+    },
+    "305": {
+      "op": "DUP4"
+    },
+    "306": {
+      "op": "PUSH1",
+      "value": "0x80"
+    },
+    "308": {
+      "op": "DUP4"
+    },
+    "309": {
+      "op": "ADD"
+    },
+    "310": {
+      "op": "CALLDATACOPY"
+    },
+    "311": {
+      "op": "PUSH1",
+      "value": "0x0"
+    },
+    "313": {
+      "op": "DUP2"
+    },
+    "314": {
+      "op": "DUP4"
+    },
+    "315": {
+      "op": "ADD"
+    },
+    "316": {
+      "op": "PUSH1",
+      "value": "0x80"
+    },
+    "318": {
+      "op": "SWAP1"
+    },
+    "319": {
+      "op": "DUP2"
+    },
+    "320": {
+      "op": "ADD"
+    },
+    "321": {
+      "op": "SWAP2"
+    },
+    "322": {
+      "op": "SWAP1"
+    },
+    "323": {
+      "op": "SWAP2"
+    },
+    "324": {
+      "op": "MSTORE"
+    },
+    "325": {
+      "op": "PUSH1",
+      "value": "0x1F"
+    },
+    "327": {
+      "op": "SWAP1"
+    },
+    "328": {
+      "op": "SWAP3"
+    },
+    "329": {
+      "op": "ADD"
+    },
+    "330": {
+      "op": "PUSH1",
+      "value": "0x1F"
+    },
+    "332": {
+      "op": "NOT"
+    },
+    "333": {
+      "op": "AND"
+    },
+    "334": {
+      "op": "ADD"
+    },
+    "335": {
+      "op": "ADD"
+    },
+    "336": {
+      "op": "SWAP4"
+    },
+    "337": {
+      "op": "SWAP3"
+    },
+    "338": {
+      "op": "POP"
+    },
+    "339": {
+      "op": "POP"
+    },
+    "340": {
+      "op": "POP"
+    },
+    "341": {
+      "jump": "o",
+      "op": "JUMP"
+    }
+  },
+  "sha1": "0feadf7a0d2dff2bf8df13d66fffa0774a953f03",
+  "source": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28; contract DecisionLogger{ event DecisionLogged(bytes32 indexed agent, bytes32 action, uint256 slca, string metaURI); function logDecision(bytes32 agent, bytes32 action, uint256 slca, string calldata metaURI) external { emit DecisionLogged(agent,action,slca,metaURI);} }\n",
+  "sourceMap": "57:268:2:-:0;;;;;;;;;;;;;;;;;;;",
+  "sourcePath": "contracts/hardhat/contracts/DecisionLogger.sol",
+  "type": "contract"
+}
