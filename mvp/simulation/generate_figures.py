@@ -551,7 +551,7 @@ def fig5_pricing(data):
     ax,
     loc="lower left",
     bbox_to_anchor=(0.02, 0.02)
-)
+    )
     _apply_style(ax)
 
     fig.tight_layout(rect=[0, 0, 1, 0.95])
