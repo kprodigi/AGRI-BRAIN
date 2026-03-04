@@ -81,13 +81,17 @@ document.addEventListener('decision:new', (e) => {
         console.log('[MVP] decision handler installed; API_BASE =', base)
 
         async function callAny() {
+            const roleSelect = document.querySelector('select')
+            const role = (roleSelect && roleSelect.value) || 'farm'
+            const payload = JSON.stringify({ agent_id: role, role })
+            const hdrs = { 'Content-Type': 'application/json' }
             const tries = [
-                [`${base}/decision/take`, {}],
-                [`${base}/decision/take`, { method: 'POST' }],
-                [`${base}/decide`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }],
-                [`${base}/decisions/take`, {}],
-                [`${base}/case/decide`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }],
-                [`${base}/api/decision/take`, { method: 'POST' }]
+                [`${base}/decide`, { method: 'POST', headers: hdrs, body: payload }],
+                [`${base}/decision/take?role=${encodeURIComponent(role)}`, {}],
+                [`${base}/decision/take`, { method: 'POST', headers: hdrs, body: payload }],
+                [`${base}/decisions/take`, { method: 'POST', headers: hdrs, body: payload }],
+                [`${base}/case/decide`, { method: 'POST', headers: hdrs, body: payload }],
+                [`${base}/api/decision/take`, { method: 'POST', headers: hdrs, body: payload }]
             ]
             for (const [url, init] of tries) {
                 try { const r = await fetch(url, init); if (r.ok) return await r.json() } catch { }

@@ -155,6 +155,32 @@ THETA = np.array([
 SLCA_BONUS = np.array([-0.35, 0.60, -0.1])
 SLCA_RHO_BONUS = np.array([-0.5, 1.0, 0.15])
 
+# ---------------------------------------------------------------------------
+# Role-specific profiles — logit biases, km distances, SLCA weight priorities
+# ---------------------------------------------------------------------------
+ROLE_PROFILES: Dict[str, Dict[str, Any]] = {
+    "farm": {
+        "logit_bias": np.array([-0.3, 0.5, 0.1]),
+        "km_overrides": {"km_coldchain": 80.0, "km_local": 25.0, "km_recovery": 40.0},
+        "slca_weights": {"w_c": 0.25, "w_l": 0.30, "w_r": 0.25, "w_p": 0.20},
+    },
+    "processor": {
+        "logit_bias": np.array([0.2, 0.0, 0.1]),
+        "km_overrides": {"km_coldchain": 110.0, "km_local": 50.0, "km_recovery": 60.0},
+        "slca_weights": {"w_c": 0.30, "w_l": 0.25, "w_r": 0.20, "w_p": 0.25},
+    },
+    "distributor": {
+        "logit_bias": np.array([0.5, -0.2, -0.1]),
+        "km_overrides": {"km_coldchain": 180.0, "km_local": 65.0, "km_recovery": 100.0},
+        "slca_weights": {"w_c": 0.35, "w_l": 0.15, "w_r": 0.30, "w_p": 0.20},
+    },
+    "retail": {
+        "logit_bias": np.array([0.3, 0.1, -0.3]),
+        "km_overrides": {"km_coldchain": 130.0, "km_local": 40.0, "km_recovery": 90.0},
+        "slca_weights": {"w_c": 0.25, "w_l": 0.15, "w_r": 0.25, "w_p": 0.35},
+    },
+}
+
 class ChainConfig(BaseModel):
     rpc: Optional[str] = None
     chain_id: int = 31337
@@ -367,9 +393,16 @@ def decide(d: DecideIn):
     phi = np.array([freshness, inv_pressure, demand_signal,
                     thermal_stress, spoilage_urgency, interaction])
 
-    # ---- logits: THETA @ phi + gamma * tau + SLCA bonuses ----------------
+    # ---- role-specific profile ---------------------------------------------
+    role_key = (d.role or "").strip().lower()
+    profile = ROLE_PROFILES.get(role_key, {})
+    role_bias = profile.get("logit_bias", np.zeros(3))
+    km_ov = profile.get("km_overrides", {})
+    slca_w = profile.get("slca_weights", {})
+
+    # ---- logits: THETA @ phi + gamma * tau + SLCA bonuses + role bias ----
     gamma = np.array([p.gamma_coldchain, p.gamma_local, p.gamma_recovery])
-    logits = THETA @ phi + gamma * tau + SLCA_BONUS + SLCA_RHO_BONUS * rho
+    logits = THETA @ phi + gamma * tau + SLCA_BONUS + SLCA_RHO_BONUS * rho + role_bias
 
     probs = _softmax(logits)
 
@@ -380,13 +413,17 @@ def decide(d: DecideIn):
         action_idx = int(np.random.choice(len(ACTIONS), p=probs))
 
     action = ACTIONS[action_idx]
-    km = getattr(p, ACTION_KM_KEYS[action])
+    km_key = ACTION_KM_KEYS[action]
+    km = km_ov.get(km_key, getattr(p, km_key))
 
     # ---- carbon & SLCA ---------------------------------------------------
     carbon = km * p.carbon_per_km
     slca_result = slca_score(
         carbon, action,
-        w_c=p.w_c, w_l=p.w_l, w_r=p.w_r, w_p=p.w_p,
+        w_c=slca_w.get("w_c", p.w_c),
+        w_l=slca_w.get("w_l", p.w_l),
+        w_r=slca_w.get("w_r", p.w_r),
+        w_p=slca_w.get("w_p", p.w_p),
     )
     slca_composite = slca_result["composite"]
 
@@ -481,7 +518,7 @@ def decide(d: DecideIn):
 
 
 @API.get("/decision/take")
-def decision_take(agent: str = "farm", role: str = ""):
+def decision_take(agent: str = "farm", role: str = "farm"):
     return decide(DecideIn(agent_id=agent, role=role))
 
 
