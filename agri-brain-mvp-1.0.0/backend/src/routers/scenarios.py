@@ -27,9 +27,9 @@ SCENARIOS = [
     {"id": "baseline",         "label": "Baseline (no perturbation)",
      "desc": "Original sensor data with no modifications."},
     {"id": "heatwave",         "label": "Climate-Induced Heatwave",
-     "desc": "72 h heatwave: +20 C ramp (hours 24-48) with exponential tail; +10 % RH."},
+     "desc": "72 h heatwave: +20 C sigmoid onset (hours 24-48) with exponential tail; +10 % RH."},
     {"id": "overproduction",   "label": "Overproduction / Glut",
-     "desc": "Inventory multiplied 2.5x during hours 12-60 with +2°C cold storage excursion."},
+     "desc": "Inventory multiplied 2.5x during hours 12-60 with progressive +8°C cold storage excursion."},
     {"id": "cyber_outage",     "label": "Cyber Threat & Node Outage",
      "desc": "Yield drops to 15 % and inventory to 25 % from hour 24 onward."},
     {"id": "adaptive_pricing", "label": "Adaptive Pricing & Demand Oscillation",
@@ -76,7 +76,12 @@ def _recompute_derived(df):
 
 
 def _apply_heatwave(df, intensity: float = 1.0):
-    """Inject +20 C ramp hours 24-48, exponential tail after, +10 % RH."""
+    """Inject +20 C sigmoid onset hours 24-48, exponential tail after, +10 % RH.
+
+    Uses sigmoid onset (reaches ~95% of peak by h ~= 30) rather than a
+    linear ramp — heatwaves build rapidly once they onset (WMO, 2018).
+    Matches the implementation in generate_results.py.
+    """
     df = df.copy()
     hours = _hours_from_start(df)
     n = len(df)
@@ -86,12 +91,10 @@ def _apply_heatwave(df, intensity: float = 1.0):
     for i in range(n):
         h = hours[i]
         if 24.0 <= h <= 48.0:
-            # linear ramp from 0 to +20 over 24 hours
-            frac = (h - 24.0) / 24.0
-            temp_add[i] = 20.0 * frac * intensity
-            rh_add[i] = 10.0 * intensity
+            onset = 1.0 - np.exp(-0.5 * (h - 24.0))
+            temp_add[i] = 20.0 * onset * intensity
+            rh_add[i] = 10.0 * onset * intensity
         elif h > 48.0:
-            # exponential tail  decay constant ~0.1 h^-1
             temp_add[i] = 20.0 * intensity * np.exp(-0.1 * (h - 48.0))
             rh_add[i] = 10.0 * intensity * np.exp(-0.1 * (h - 48.0))
 
@@ -101,20 +104,30 @@ def _apply_heatwave(df, intensity: float = 1.0):
 
 
 def _apply_overproduction(df, intensity: float = 1.0):
-    """Multiply inventory by 2.5x during hours 12-60 with +2°C cold storage excursion.
+    """Multiply inventory by 2.5x during hours 12-60 with progressive cold storage excursion.
 
-    The temperature excursion models overcapacity effects: frequent door
-    openings, some produce in non-refrigerated staging areas, and
-    overwhelmed cold storage (documented in USDA cold chain studies).
+    Overloaded cold storage: at 2.5x capacity, reduced airflow and compressor
+    strain raise cold-room temperature by up to +8°C (James & James, 2010).
+    Sigmoid onset (~95% by h ~= 22), exponential recovery after hour 60.
+    Matches the implementation in generate_results.py.
     """
     df = df.copy()
     df["inventory_units"] = df["inventory_units"].astype(float)
     df["tempC"] = df["tempC"].astype(float)
     hours = _hours_from_start(df)
-    factor = 1.0 + 1.5 * intensity    # intensity=1 -> 2.5x
+    n = len(df)
     mask = (hours >= 12.0) & (hours <= 60.0)
-    df.loc[mask, "inventory_units"] = df.loc[mask, "inventory_units"] * factor
-    df.loc[mask, "tempC"] = df.loc[mask, "tempC"] + 2.0 * intensity
+    df.loc[mask, "inventory_units"] = df.loc[mask, "inventory_units"] * 2.5 * intensity
+
+    temp_add = np.zeros(n)
+    for i in range(n):
+        h = hours[i]
+        if 12.0 <= h <= 60.0:
+            onset = 1.0 - np.exp(-0.3 * (h - 12.0))
+            temp_add[i] = 8.0 * onset * intensity
+        elif h > 60.0:
+            temp_add[i] = 8.0 * intensity * np.exp(-0.15 * (h - 60.0))
+    df["tempC"] = df["tempC"] + temp_add
     return _recompute_derived(df)
 
 
