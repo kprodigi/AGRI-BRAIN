@@ -21,12 +21,9 @@ import {
     Area,
     AreaChart,
 } from "recharts";
+import { getApiBase } from "../../mvp/api.js";
 
-const API =
-    (window.API_BASE || localStorage.getItem("API_BASE") || "http://127.0.0.1:8100").replace(
-        /\/$/,
-        ""
-    );
+const API = getApiBase();
 
 // ---------------- helpers ----------------
 async function jget(path) {

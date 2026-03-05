@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react'
 import Ops from './tabs/Ops'
 import Quality from './tabs/Quality'
 import Decisions from './tabs/Decisions'
+import { getApiBase } from '../mvp/api.js'
 // Optional: uncomment next line to expose the Admin tools as a 4th tab
 // import AdminPanel from './mvp/AdminPanel.jsx'
 
-const API = (window.API_BASE || localStorage.getItem('API_BASE') || 'http://127.0.0.1:8100').replace(/\/$/, '')
+const API = getApiBase()
 
 export default function App() {
     // Add 'Admin' to show the Admin tab; or remove it to keep just the original three

@@ -11,15 +11,7 @@ from typing import Dict, Optional
 from src.models.policy import Policy  # noqa: F401
 
 class ChainConfig(BaseModel):
-    rpc: str = "http://127.0.0.1:8545"
+    rpc: Optional[str] = None
     chain_id: int = 31337
-    private_key: Optional[str] = ""
-    addresses: Dict[str, str] = {"AGRIValidator": ""}
-
-class DecisionMemo(BaseModel):
-    action: str
-    slca_score: float
-    carbon_kg: float
-    route: str
-    reason: str
-    tx_hash: str = "0x0"
+    private_key: Optional[str] = None
+    addresses: Dict[str, str] = {}

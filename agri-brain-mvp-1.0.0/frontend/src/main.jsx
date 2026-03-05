@@ -2,6 +2,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import './index.css'
+import { getApiBase } from './mvp/api.js'
 
 // ⬇️ If your root UI is elsewhere, change this import (e.g. './ui/App.jsx')
 import App from './ui/App.jsx'
@@ -77,7 +78,7 @@ document.addEventListener('decision:new', (e) => {
         if (window.__takeDecisionInstalled) return
         window.__takeDecisionInstalled = true
 
-        const base = (window.API_BASE || localStorage.getItem('API_BASE') || 'http://127.0.0.1:8100').replace(/\/$/, '')
+        const base = getApiBase()
         console.log('[MVP] decision handler installed; API_BASE =', base)
 
         async function callAny() {
@@ -125,7 +126,7 @@ document.addEventListener('decision:new', (e) => {
 
     // ---------- Fix the "Download Decision Memo (PDF)" button ----------
     ; (function fixMemoDownloadButton() {
-        const base = (window.API_BASE || localStorage.getItem('API_BASE') || 'http://127.0.0.1:8100').replace(/\/$/, '')
+        const base = getApiBase()
         const url = `${base}/report/pdf`  // ← use local report
 
         function attach() {

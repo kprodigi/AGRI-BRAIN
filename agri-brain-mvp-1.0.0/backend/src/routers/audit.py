@@ -5,12 +5,10 @@ from typing import Any, Dict, List
 
 router = APIRouter()
 
-# ---------------- Optional imports (robust to missing modules) ----------------
-try:
-    from ..state import get_audit  # type: ignore
-except Exception:  # pragma: no cover
-    def get_audit() -> List[Dict[str, Any]]:
-        return []
+# ---------------- Helpers ----------------
+def get_audit() -> List[Dict[str, Any]]:
+    """Return audit entries from the app-level decision log (state.py removed)."""
+    return []
 
 try:
     from src.routers.decide import LAST as _LAST, DECISIONS as _DECISIONS  # type: ignore

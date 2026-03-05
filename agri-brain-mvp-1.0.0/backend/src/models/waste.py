@@ -87,6 +87,27 @@ SURPLUS_SAVE_PENALTY: float = 0.10
 """Save capacity degradation coefficient under surplus conditions."""
 
 # ---------------------------------------------------------------------------
+# Action alias resolution (so "coldchain", "cold_chain", etc. all work)
+# ---------------------------------------------------------------------------
+_ACTION_ALIASES: dict[str, str] = {
+    "coldchain": "cold_chain",
+    "standard_cold_chain": "cold_chain",
+    "cold_chain": "cold_chain",
+    "local_redistribution": "local_redistribute",
+    "localredistribute": "local_redistribute",
+    "local_redistribute": "local_redistribute",
+    "recover": "recovery",
+    "recovery": "recovery",
+}
+
+
+def _resolve_action(action: str) -> str:
+    """Normalize an action string to the canonical key used by waste dicts."""
+    key = action.strip().lower().replace(" ", "_")
+    return _ACTION_ALIASES.get(key, key)
+
+
+# ---------------------------------------------------------------------------
 # Save factor model
 # ---------------------------------------------------------------------------
 SAVE_FLOOR: dict[str, float] = {
@@ -190,6 +211,7 @@ def compute_save_factor(
     -------
     Effective save factor in [0, 1].
     """
+    action = _resolve_action(action)
     floor_s = SAVE_FLOOR.get(action, 0.0)
     ceil_s = SAVE_CEIL.get(action, 0.0)
     mode_eff = MODE_EFF.get(mode, 0.0)

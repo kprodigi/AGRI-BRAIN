@@ -69,6 +69,27 @@ import numpy as np
 
 
 # ---------------------------------------------------------------------------
+# Action alias resolution
+# ---------------------------------------------------------------------------
+_ACTION_ALIASES: dict[str, str] = {
+    "coldchain": "cold_chain",
+    "standard_cold_chain": "cold_chain",
+    "cold_chain": "cold_chain",
+    "local_redistribution": "local_redistribute",
+    "localredistribute": "local_redistribute",
+    "local_redistribute": "local_redistribute",
+    "recover": "recovery",
+    "recovery": "recovery",
+}
+
+
+def _resolve_action(action: str) -> str:
+    """Normalize an action string to the canonical key."""
+    key = action.strip().lower().replace(" ", "_")
+    return _ACTION_ALIASES.get(key, key)
+
+
+# ---------------------------------------------------------------------------
 # RLE threshold
 # ---------------------------------------------------------------------------
 RLE_THRESHOLD: float = 0.10
@@ -128,7 +149,8 @@ class RLETracker:
         """
         if rho > self.threshold:
             self.at_risk += 1
-            if action in ("local_redistribute", "recovery"):
+            canonical = _resolve_action(action)
+            if canonical in ("local_redistribute", "recovery"):
                 self.routed += 1
 
     @property

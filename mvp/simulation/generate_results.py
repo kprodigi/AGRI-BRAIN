@@ -60,7 +60,6 @@ from src.models.action_selection import (
 # Constants (orchestration-level only — no physics here)
 # ---------------------------------------------------------------------------
 SEED = 42
-N_EPISODES = 50
 
 SCENARIOS = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing", "baseline"]
 MODES = ["static", "hybrid_rl", "no_pinn", "no_slca", "agribrain"]

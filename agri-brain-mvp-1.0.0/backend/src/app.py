@@ -29,17 +29,18 @@ from src.routers import results as _results
 from src.agents.runtime import start_agent_runtime
 
 # Your models/utilities
-from .models.spoilage import compute_spoilage, volatility_flags
+from .models.spoilage import compute_spoilage, volatility_flags, arrhenius_k
 from .models.forecast import yield_demand_forecast
 from .models.slca import slca_score
 from .models.policy import Policy
+from .models.governance_models import ChainConfig
 from .models.footprint import compute_footprint, footprint_meter
 from .models.resilience import RLE_THRESHOLD
 from .models.action_selection import (
     ACTIONS, ACTION_KM_KEYS, THETA, SLCA_BONUS, SLCA_RHO_BONUS,
     _softmax, INV_CAPACITY, BASELINE_DEMAND, THERMAL_T0, THERMAL_DELTA_MAX,
 )
-from .chain.client import ChainClient
+from .models.waste import INV_BASELINE, compute_waste_rate, compute_save_factor
 from .chain.eth import log_decision_onchain
 
 # Static/docs branding
@@ -166,12 +167,6 @@ ROLE_PROFILES: Dict[str, Dict[str, Any]] = {
     },
 }
 
-class ChainConfig(BaseModel):
-    rpc: Optional[str] = None
-    chain_id: int = 31337
-    private_key: Optional[str] = None
-    addresses: Dict[str, str] = {}
-
 # ---------------------------------------------------------------------------
 # Health
 # ---------------------------------------------------------------------------
@@ -243,7 +238,7 @@ def kpis():
         slca_vals.append(slca_c)
 
         rho = m.get("spoilage_risk", 1.0 - m.get("shelf_left", 1.0))
-        waste = rho
+        waste = m.get("waste", rho)
         ari_vals.append((1.0 - waste) * slca_c * (1.0 - rho))
 
         total_carbon += m.get("carbon_kg", 0.0)
@@ -326,6 +321,7 @@ class DecideIn(BaseModel):
     role: str
     step: int | None = None          # optional row index (None → last row)
     deterministic: bool = True       # argmax when True, sample when False
+    mode: str = "agribrain"          # operating mode for waste save factor
 
 
 @API.post("/decide")
@@ -410,8 +406,14 @@ def decide(d: DecideIn):
     # ---- footprint -------------------------------------------------------
     fp = compute_footprint(steps=1)
 
-    # ---- waste & price ---------------------------------------------------
-    waste = rho
+    # ---- waste (full model matching generate_results.py) -----------------
+    rh_val = float(row.get("RH", 50.0))
+    k_inst = arrhenius_k(temp, p.k_ref, p.Ea_R, p.T_ref_K,
+                         rh_val / 100.0, p.beta_humidity)
+    surplus_ratio = max(0.0, inv / INV_BASELINE - 1.0)
+    waste_raw = compute_waste_rate(k_inst, surplus_ratio)
+    save = compute_save_factor(action, d.mode, surplus_ratio)
+    waste = float(waste_raw * (1.0 - save))
     price = p.msrp * PRICE_FACTOR.get(action, 1.0)
 
     # ---- composite reward ------------------------------------------------
@@ -430,6 +432,7 @@ def decide(d: DecideIn):
         "step": idx,
         "agent": d.agent_id,
         "role": d.role,
+        "mode": d.mode,
         "decision": action,
         "action": action,
         "shelf_left": round(shelf, 4),
@@ -437,6 +440,7 @@ def decide(d: DecideIn):
         "volatility": vol,
         "km": round(km, 2),
         "carbon_kg": round(carbon, 4),
+        "waste": round(waste, 4),
         "unit_price": round(price, 2),
         "slca": round(slca_composite, 4),
         "slca_score": round(slca_composite, 4),

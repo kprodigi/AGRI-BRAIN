@@ -38,6 +38,8 @@ from src.models.action_selection import (
 from src.models.carbon import compute_transport_carbon, REFRIG_COP_PENALTY
 from src.models.reward import compute_reward, compute_reward_extended
 from src.models.resilience import compute_ari
+from src.models.spoilage import arrhenius_k
+from src.models.waste import INV_BASELINE, compute_waste_rate, compute_save_factor
 
 # --- Optional shared state for PDF and others
 try:
@@ -71,6 +73,7 @@ class DecideRequest(BaseModel):
     role: str = ""
     step: int | None = None
     deterministic: bool = True
+    mode: str = "agribrain"          # operating mode for waste save factor
 
     # Optional knobs used by the QuickDecision panel
     inventory_units: float | None = None
@@ -130,6 +133,7 @@ def _decide_with_app(req: DecideRequest) -> dict | None:
             role=req.role,
             step=req.step,
             deterministic=req.deterministic,
+            mode=req.mode,
         ))
         return result
     except Exception:
@@ -149,6 +153,7 @@ def _decide_standalone(req: DecideRequest) -> dict:
         rho = float(row.get("spoilage_risk", 1.0 - row.get("shelf_left", 0.5)))
         inv = float(row.get("inventory_units", 100.0))
         temp = float(row.get("tempC", 4.0))
+        rh_val = float(row.get("RH", 50.0))
         tau = 1.0 if str(row.get("volatility", "normal")) == "anomaly" else 0.0
         shelf = float(row.get("shelf_left", 0.5))
         vol = str(row.get("volatility", "normal"))
@@ -156,6 +161,7 @@ def _decide_standalone(req: DecideRequest) -> dict:
         rho = 0.2
         inv = req.inventory_units or 100.0
         temp = req.temp_c or 4.0
+        rh_val = 50.0
         tau = 1.0 if (req.volatility or 0) > 0.5 else 0.0
         shelf = 1.0 - rho
         vol = "anomaly" if tau else "normal"
@@ -209,7 +215,17 @@ def _decide_standalone(req: DecideRequest) -> dict:
     except Exception:
         fp = {"energy_J": 0.05, "water_L": 1.8e-6}
 
-    waste = rho
+    # Full waste model (matching generate_results.py)
+    p_k_ref = getattr(policy, "k_ref", 0.0021) if policy else 0.0021
+    p_Ea_R = getattr(policy, "Ea_R", 8000.0) if policy else 8000.0
+    p_T_ref_K = getattr(policy, "T_ref_K", 277.15) if policy else 277.15
+    p_beta_h = getattr(policy, "beta_humidity", 0.25) if policy else 0.25
+    k_inst = arrhenius_k(temp, p_k_ref, p_Ea_R, p_T_ref_K,
+                         rh_val / 100.0, p_beta_h)
+    surplus_ratio = max(0.0, inv / INV_BASELINE - 1.0)
+    waste_raw = compute_waste_rate(k_inst, surplus_ratio)
+    save = compute_save_factor(action, req.mode, surplus_ratio)
+    waste = float(waste_raw * (1.0 - save))
     eta = getattr(policy, "eta", 0.5) if policy else 0.5
     alpha_E = getattr(policy, "alpha_E", 0.05) if policy else 0.05
     beta_W = getattr(policy, "beta_W", 0.03) if policy else 0.03
@@ -234,6 +250,7 @@ def _decide_standalone(req: DecideRequest) -> dict:
         "ts": int(time()),
         "agent": req.agent,
         "role": req.role,
+        "mode": req.mode,
         "decision": action,
         "action": action,
         "shelf_left": round(shelf, 4),
@@ -241,6 +258,7 @@ def _decide_standalone(req: DecideRequest) -> dict:
         "volatility": vol,
         "km": round(km, 2),
         "carbon_kg": round(carbon, 4),
+        "waste": round(waste, 4),
         "unit_price": round(price, 2),
         "slca": round(slca_composite, 4),
         "slca_score": round(slca_composite, 4),
