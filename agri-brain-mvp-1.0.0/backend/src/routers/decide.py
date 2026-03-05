@@ -16,6 +16,9 @@ a standalone fallback that also implements the softmax policy.
 """
 from __future__ import annotations
 
+import logging
+from typing import Literal
+
 from fastapi import APIRouter
 from pydantic import BaseModel
 from time import time
@@ -25,47 +28,38 @@ import numpy as np
 # --- Layer 1 model imports (scientific logic) ---
 from src.models.action_selection import (
     ACTIONS,
-    THETA,
-    SLCA_BONUS,
-    SLCA_RHO_BONUS,
-    _softmax,
-    build_feature_vector,
-    INV_CAPACITY,
-    BASELINE_DEMAND,
-    THERMAL_T0,
-    THERMAL_DELTA_MAX,
+    PRICE_FACTOR,
+    select_action,
+    compute_thermal_stress,
+    compute_slca_attenuation,
 )
-from src.models.carbon import compute_transport_carbon, REFRIG_COP_PENALTY
-from src.models.reward import compute_reward, compute_reward_extended
-from src.models.resilience import compute_ari
+from src.models.carbon import compute_transport_carbon
+from src.models.reward import compute_reward_extended
 from src.models.spoilage import arrhenius_k
 from src.models.waste import INV_BASELINE, compute_waste_rate, compute_save_factor
+from src.models.policy import Policy
+
+logger = logging.getLogger(__name__)
 
 # --- Optional shared state for PDF and others
 try:
     from src.routers.case import STATE as CASE_STATE
-except Exception:
+except ImportError:
     CASE_STATE = {}
 
 # --- Optional scenario state
 try:
     from src.routers.scenarios import ACTIVE as SCENARIO_ACTIVE
-except Exception:
+except ImportError:
     SCENARIO_ACTIVE = {"name": None, "intensity": 1.0}
 
 # --- Optional chain config
 try:
     from src.routers.governance import CHAIN as CHAIN_CFG
-except Exception:
+except ImportError:
     CHAIN_CFG = {}
 
 router = APIRouter()
-
-# ---------------------------------------------------------------------------
-# Router-local fallback constants (not duplicated from model modules)
-# ---------------------------------------------------------------------------
-GAMMA_DEFAULT = np.array([0.3, 0.05, -0.3])
-
 
 # ---------- Request / Response models ----------
 class DecideRequest(BaseModel):
@@ -73,7 +67,7 @@ class DecideRequest(BaseModel):
     role: str = ""
     step: int | None = None
     deterministic: bool = True
-    mode: str = "agribrain"          # operating mode for waste save factor
+    mode: Literal["static", "hybrid_rl", "no_pinn", "no_slca", "agribrain"] = "agribrain"
 
     # Optional knobs used by the QuickDecision panel
     inventory_units: float | None = None
@@ -92,7 +86,7 @@ def _persist_last(memo: dict) -> None:
     globals()["LAST"] = memo
     try:
         CASE_STATE["last_decision"] = memo
-    except Exception:
+    except (TypeError, KeyError):
         pass
 
 
@@ -120,7 +114,7 @@ def _get_app_state():
     try:
         from src.app import state
         return state
-    except Exception:
+    except ImportError:
         return None
 
 
@@ -136,7 +130,8 @@ def _decide_with_app(req: DecideRequest) -> dict | None:
             mode=req.mode,
         ))
         return result
-    except Exception:
+    except (ImportError, ValueError, KeyError) as e:
+        logger.debug("app delegation failed: %s", e)
         return None
 
 
@@ -167,72 +162,64 @@ def _decide_standalone(req: DecideRequest) -> dict:
         vol = "anomaly" if tau else "normal"
 
     y_hat = 100.0
-    phi = build_feature_vector(rho, inv, y_hat, temp)
+    _defaults = Policy()
+    _policy = policy if policy else _defaults
 
-    gamma = GAMMA_DEFAULT
-    if policy:
-        gamma = np.array([
-            getattr(policy, "gamma_coldchain", 0.3),
-            getattr(policy, "gamma_local", 0.05),
-            getattr(policy, "gamma_recovery", -0.3),
-        ])
-
-    logits = THETA @ phi + gamma * tau + SLCA_BONUS + SLCA_RHO_BONUS * rho
-    probs = _softmax(logits)
-
-    if req.deterministic:
-        action_idx = int(np.argmax(probs))
-    else:
-        action_idx = int(np.random.choice(len(ACTIONS), p=probs))
+    # Use canonical select_action() for mode-aware softmax policy
+    rng = np.random.default_rng()
+    action_idx, probs = select_action(
+        mode=req.mode, rho=rho, inv=inv, y_hat=y_hat, temp=temp,
+        tau=tau, policy=_policy, rng=rng,
+        deterministic=req.deterministic,
+    )
     action = ACTIONS[action_idx]
 
     # Transport emission model (GHG Protocol, WRI/WBCSD, 2004)
-    km_map = {"cold_chain": 120.0, "local_redistribute": 45.0, "recovery": 80.0}
-    carbon_per_km = 0.12
-    if policy:
-        km_map = {
-            "cold_chain": getattr(policy, "km_coldchain", 120.0),
-            "local_redistribute": getattr(policy, "km_local", 45.0),
-            "recovery": getattr(policy, "km_recovery", 80.0),
-        }
-        carbon_per_km = getattr(policy, "carbon_per_km", 0.12)
+    km_map = {
+        "cold_chain": getattr(policy, "km_coldchain", _defaults.km_coldchain) if policy else _defaults.km_coldchain,
+        "local_redistribute": getattr(policy, "km_local", _defaults.km_local) if policy else _defaults.km_local,
+        "recovery": getattr(policy, "km_recovery", _defaults.km_recovery) if policy else _defaults.km_recovery,
+    }
+    carbon_per_km = getattr(policy, "carbon_per_km", _defaults.carbon_per_km) if policy else _defaults.carbon_per_km
 
     km = km_map[action]
-    carbon = compute_transport_carbon(km, carbon_per_km)
+    thermal_stress = compute_thermal_stress(temp)
+    carbon = compute_transport_carbon(km, carbon_per_km, thermal_stress)
 
     try:
         from src.models.slca import slca_score
         slca_result = slca_score(carbon, action)
-    except Exception:
+    except ImportError:
         slca_result = {"C": 0.7, "L": 0.5, "R": 0.4, "P": 0.45, "composite": 0.55,
-                       "action_family": "coldchain"}
+                       "action_family": "cold_chain"}
 
-    slca_composite = slca_result["composite"]
+    # Apply SLCA stress attenuation (Eq. 12) matching generate_results.py
+    surplus_ratio = max(0.0, inv / INV_BASELINE - 1.0)
+    slca_quality = compute_slca_attenuation(thermal_stress, surplus_ratio)
+    slca_composite = slca_result["composite"] * slca_quality
 
     try:
         from src.models.footprint import compute_footprint
         fp = compute_footprint(steps=1)
-    except Exception:
+    except ImportError:
         fp = {"energy_J": 0.05, "water_L": 1.8e-6}
 
     # Full waste model (matching generate_results.py)
-    p_k_ref = getattr(policy, "k_ref", 0.0021) if policy else 0.0021
-    p_Ea_R = getattr(policy, "Ea_R", 8000.0) if policy else 8000.0
-    p_T_ref_K = getattr(policy, "T_ref_K", 277.15) if policy else 277.15
-    p_beta_h = getattr(policy, "beta_humidity", 0.25) if policy else 0.25
+    p_k_ref = getattr(policy, "k_ref", _defaults.k_ref) if policy else _defaults.k_ref
+    p_Ea_R = getattr(policy, "Ea_R", _defaults.Ea_R) if policy else _defaults.Ea_R
+    p_T_ref_K = getattr(policy, "T_ref_K", _defaults.T_ref_K) if policy else _defaults.T_ref_K
+    p_beta_h = getattr(policy, "beta_humidity", _defaults.beta_humidity) if policy else _defaults.beta_humidity
     k_inst = arrhenius_k(temp, p_k_ref, p_Ea_R, p_T_ref_K,
                          rh_val / 100.0, p_beta_h)
-    surplus_ratio = max(0.0, inv / INV_BASELINE - 1.0)
     waste_raw = compute_waste_rate(k_inst, surplus_ratio)
     save = compute_save_factor(action, req.mode, surplus_ratio)
     waste = float(waste_raw * (1.0 - save))
-    eta = getattr(policy, "eta", 0.5) if policy else 0.5
-    alpha_E = getattr(policy, "alpha_E", 0.05) if policy else 0.05
-    beta_W = getattr(policy, "beta_W", 0.03) if policy else 0.03
-    msrp = getattr(policy, "msrp", 1.50) if policy else 1.50
+    eta = getattr(policy, "eta", _defaults.eta) if policy else _defaults.eta
+    alpha_E = getattr(policy, "alpha_E", _defaults.alpha_E) if policy else _defaults.alpha_E
+    beta_W = getattr(policy, "beta_W", _defaults.beta_W) if policy else _defaults.beta_W
+    msrp = getattr(policy, "msrp", _defaults.msrp) if policy else _defaults.msrp
 
-    price_factor = {"cold_chain": 1.0, "local_redistribute": 0.95, "recovery": 0.88}
-    price = msrp * price_factor.get(action, 1.0)
+    price = msrp * PRICE_FACTOR.get(action, 1.0)
 
     # Multi-objective reward via imported reward model
     reward_decomp = compute_reward_extended(
@@ -298,8 +285,8 @@ def _decide_standalone(req: DecideRequest) -> dict:
         txh = log_decision_onchain(memo, CHAIN_CFG or {})
         if txh:
             memo["tx_hash"] = txh
-    except Exception:
-        pass
+    except (ImportError, ConnectionError, TimeoutError, ValueError) as e:
+        logger.debug("on-chain log skipped: %s", e)
 
     return {"ok": True, "memo": memo}
 
@@ -334,7 +321,7 @@ def last_decision():
         data = CASE_STATE.get("last_decision")
         if data:
             return _compat_from_memo(data) if not isinstance(data, dict) else data
-    except Exception:
+    except (TypeError, KeyError, AttributeError):
         pass
     if LAST:
         return _compat_from_memo(LAST)

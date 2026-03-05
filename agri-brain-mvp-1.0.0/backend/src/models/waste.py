@@ -64,6 +64,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from .action_aliases import resolve_action as _resolve_action
+
 
 # ---------------------------------------------------------------------------
 # Waste rate parameters (calibrated for fresh spinach)
@@ -85,26 +87,6 @@ SURPLUS_WASTE_FACTOR: float = 0.25
 
 SURPLUS_SAVE_PENALTY: float = 0.10
 """Save capacity degradation coefficient under surplus conditions."""
-
-# ---------------------------------------------------------------------------
-# Action alias resolution (so "coldchain", "cold_chain", etc. all work)
-# ---------------------------------------------------------------------------
-_ACTION_ALIASES: dict[str, str] = {
-    "coldchain": "cold_chain",
-    "standard_cold_chain": "cold_chain",
-    "cold_chain": "cold_chain",
-    "local_redistribution": "local_redistribute",
-    "localredistribute": "local_redistribute",
-    "local_redistribute": "local_redistribute",
-    "recover": "recovery",
-    "recovery": "recovery",
-}
-
-
-def _resolve_action(action: str) -> str:
-    """Normalize an action string to the canonical key used by waste dicts."""
-    key = action.strip().lower().replace(" ", "_")
-    return _ACTION_ALIASES.get(key, key)
 
 
 # ---------------------------------------------------------------------------

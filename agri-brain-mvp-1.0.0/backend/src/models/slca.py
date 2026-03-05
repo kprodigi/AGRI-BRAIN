@@ -45,41 +45,21 @@ from __future__ import annotations
 
 from typing import Dict, Optional
 
+from .action_aliases import resolve_action as _resolve_action
+
 
 # Per-action base scores keyed by canonical action family.
 # See module docstring for physical justification of each value.
 _ACTION_BASES: Dict[str, Dict[str, float]] = {
-    "coldchain":          {"L": 0.50, "R": 0.40, "P": 0.45},
+    "cold_chain":         {"L": 0.50, "R": 0.40, "P": 0.45},
     "local_redistribute": {"L": 0.92, "R": 0.88, "P": 0.85},
     "recovery":           {"L": 0.72, "R": 0.75, "P": 0.70},
 }
 
-# Alias mapping so various action strings resolve correctly
-_ACTION_ALIASES: Dict[str, str] = {
-    "standard_cold_chain":    "coldchain",
-    "cold_chain":             "coldchain",
-    "expedite_to_retail":     "coldchain",
-    "reroute_to_near_dc":     "coldchain",
-    "local_redistribution":   "local_redistribute",
-    "localredistribute":      "local_redistribute",
-    "redistribute_or_recover":"local_redistribute",
-    "price_adjusted_route":   "local_redistribute",
-    "recovery":               "recovery",
-    "recover":                "recovery",
-}
-
-
-def _resolve_action(action: str) -> str:
-    """Map an action string to a canonical base-score key."""
-    key = action.strip().lower().replace(" ", "_")
-    if key in _ACTION_BASES:
-        return key
-    return _ACTION_ALIASES.get(key, "coldchain")
-
 
 def slca_score(
     carbon_kg: float,
-    action: str = "coldchain",
+    action: str = "cold_chain",
     *,
     w_c: float = 0.30,
     w_l: float = 0.20,

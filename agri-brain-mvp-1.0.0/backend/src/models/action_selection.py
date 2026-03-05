@@ -60,6 +60,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from .action_aliases import resolve_action
+
 
 # ---------------------------------------------------------------------------
 # Actions
@@ -71,6 +73,16 @@ ACTION_KM_KEYS: dict[str, str] = {
     "local_redistribute": "km_local",
     "recovery": "km_recovery",
 }
+
+PRICE_FACTOR: dict[str, float] = {
+    "cold_chain": 1.0,
+    "local_redistribute": 0.95,
+    "recovery": 0.88,
+}
+"""Per-action price multiplier applied to MSRP."""
+
+VALID_MODES: list[str] = ["static", "hybrid_rl", "no_pinn", "no_slca", "agribrain"]
+"""Valid operating modes for the softmax policy."""
 
 # ---------------------------------------------------------------------------
 # Feature normalisation constants
@@ -258,6 +270,8 @@ def select_action(
     rng: np.random.Generator,
     scenario: str = "baseline",
     hour: float = 0.0,
+    role_bias: np.ndarray | None = None,
+    deterministic: bool = False,
 ) -> tuple[int, np.ndarray]:
     """Select routing action based on mode-specific softmax policy.
 
@@ -274,6 +288,8 @@ def select_action(
     rng : numpy random generator.
     scenario : current scenario name.
     hour : hours since start (for cyber outage timing).
+    role_bias : optional per-role logit bias vector (3,).
+    deterministic : if True, use argmax instead of sampling.
 
     Returns
     -------
@@ -306,5 +322,11 @@ def select_action(
     else:  # agribrain
         logits = THETA @ phi + gamma * tau + SLCA_BONUS + SLCA_RHO_BONUS * rho
 
+    if role_bias is not None:
+        logits = logits + role_bias
+
     probs = _softmax(logits)
+
+    if deterministic:
+        return int(np.argmax(probs)), probs
     return int(rng.choice(len(ACTIONS), p=probs)), probs

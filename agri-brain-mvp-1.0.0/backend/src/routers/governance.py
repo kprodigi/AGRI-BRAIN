@@ -195,3 +195,110 @@ def set_chain(c: ChainModel):
         }
 
     return get_chain()
+
+
+# ---------------------------------------------------------------------------
+# Contract integration endpoints (SLCARewards, AgriDAO, PolicyStore, AgentRegistry)
+# ---------------------------------------------------------------------------
+
+class RewardSlashRequest(BaseModel):
+    address: str
+    amount: int
+
+class ProposalRequest(BaseModel):
+    text: str
+
+class VoteRequest(BaseModel):
+    proposal_id: int
+    support: bool
+
+class ExecuteRequest(BaseModel):
+    proposal_id: int
+
+class PolicyStoreSetRequest(BaseModel):
+    key: str
+    value: int
+
+class PolicyStoreGetRequest(BaseModel):
+    key: str
+
+class AgentRegisterRequest(BaseModel):
+    agent_id: str
+    role: str
+    meta: str = ""
+
+class AgentActiveRequest(BaseModel):
+    active: bool
+
+
+@router.post("/contracts/slca-rewards/reward")
+def contract_slca_reward(req: RewardSlashRequest):
+    """Reward an agent with SLCA tokens on-chain."""
+    from src.chain.contracts import slca_reward
+    _try_autoload()
+    txh = slca_reward(req.address, req.amount, CHAIN)
+    return {"ok": txh is not None, "tx_hash": txh}
+
+@router.post("/contracts/slca-rewards/slash")
+def contract_slca_slash(req: RewardSlashRequest):
+    """Slash SLCA tokens from an agent on-chain."""
+    from src.chain.contracts import slca_slash
+    _try_autoload()
+    txh = slca_slash(req.address, req.amount, CHAIN)
+    return {"ok": txh is not None, "tx_hash": txh}
+
+@router.post("/contracts/dao/propose")
+def contract_dao_propose(req: ProposalRequest):
+    """Submit a governance proposal on-chain."""
+    from src.chain.contracts import dao_propose
+    _try_autoload()
+    txh = dao_propose(req.text, CHAIN)
+    return {"ok": txh is not None, "tx_hash": txh}
+
+@router.post("/contracts/dao/vote")
+def contract_dao_vote(req: VoteRequest):
+    """Vote on a governance proposal on-chain."""
+    from src.chain.contracts import dao_vote
+    _try_autoload()
+    txh = dao_vote(req.proposal_id, req.support, CHAIN)
+    return {"ok": txh is not None, "tx_hash": txh}
+
+@router.post("/contracts/dao/execute")
+def contract_dao_execute(req: ExecuteRequest):
+    """Execute an approved governance proposal on-chain."""
+    from src.chain.contracts import dao_execute
+    _try_autoload()
+    txh = dao_execute(req.proposal_id, CHAIN)
+    return {"ok": txh is not None, "tx_hash": txh}
+
+@router.post("/contracts/policy-store/set")
+def contract_policy_store_set(req: PolicyStoreSetRequest):
+    """Store a policy parameter on-chain."""
+    from src.chain.contracts import policy_store_set
+    _try_autoload()
+    txh = policy_store_set(req.key, req.value, CHAIN)
+    return {"ok": txh is not None, "tx_hash": txh}
+
+@router.post("/contracts/policy-store/get")
+def contract_policy_store_get(req: PolicyStoreGetRequest):
+    """Read a policy parameter from on-chain storage."""
+    from src.chain.contracts import policy_store_get
+    _try_autoload()
+    value = policy_store_get(req.key, CHAIN)
+    return {"ok": value is not None, "key": req.key, "value": value}
+
+@router.post("/contracts/agent-registry/register")
+def contract_agent_register(req: AgentRegisterRequest):
+    """Register an agent on-chain."""
+    from src.chain.contracts import agent_register
+    _try_autoload()
+    txh = agent_register(req.agent_id, req.role, req.meta, CHAIN)
+    return {"ok": txh is not None, "tx_hash": txh}
+
+@router.post("/contracts/agent-registry/set-active")
+def contract_agent_set_active(req: AgentActiveRequest):
+    """Toggle an agent's active status on-chain."""
+    from src.chain.contracts import agent_set_active
+    _try_autoload()
+    txh = agent_set_active(req.active, CHAIN)
+    return {"ok": txh is not None, "tx_hash": txh}

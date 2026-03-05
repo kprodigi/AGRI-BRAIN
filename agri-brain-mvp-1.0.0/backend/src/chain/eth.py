@@ -56,7 +56,7 @@ def log_decision_onchain(memo: dict, chain_cfg: dict) -> Optional[str]:
         str(memo.get("action", "")),
         int(round(float(memo.get("slca_score", 0)) * 1000)),
         int(round(float(memo.get("carbon_kg", 0)) * 1000)),
-        str(memo.get("reason", "")),
+        str(memo.get("note", "")),
     ).build_transaction({
         "from": acct.address,
         "nonce": w3.eth.get_transaction_count(acct.address),

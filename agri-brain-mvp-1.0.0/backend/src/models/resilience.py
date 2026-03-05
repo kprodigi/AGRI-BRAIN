@@ -67,26 +67,7 @@ from typing import List
 
 import numpy as np
 
-
-# ---------------------------------------------------------------------------
-# Action alias resolution
-# ---------------------------------------------------------------------------
-_ACTION_ALIASES: dict[str, str] = {
-    "coldchain": "cold_chain",
-    "standard_cold_chain": "cold_chain",
-    "cold_chain": "cold_chain",
-    "local_redistribution": "local_redistribute",
-    "localredistribute": "local_redistribute",
-    "local_redistribute": "local_redistribute",
-    "recover": "recovery",
-    "recovery": "recovery",
-}
-
-
-def _resolve_action(action: str) -> str:
-    """Normalize an action string to the canonical key."""
-    key = action.strip().lower().replace(" ", "_")
-    return _ACTION_ALIASES.get(key, key)
+from .action_aliases import resolve_action as _resolve_action
 
 
 # ---------------------------------------------------------------------------

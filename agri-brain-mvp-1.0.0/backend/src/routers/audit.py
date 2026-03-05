@@ -1,7 +1,11 @@
 # backend/src/routers/audit.py
+import logging
+
 from fastapi import APIRouter, Response
 from io import BytesIO
 from typing import Any, Dict, List
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -12,12 +16,12 @@ def get_audit() -> List[Dict[str, Any]]:
 
 try:
     from src.routers.decide import LAST as _LAST, DECISIONS as _DECISIONS  # type: ignore
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     _LAST, _DECISIONS = None, []
 
 try:
     from src.routers.case import STATE as _CASE_STATE  # type: ignore
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     _CASE_STATE = {}
 
 # --------------------------------- Helpers -----------------------------------
@@ -31,14 +35,14 @@ def _as_dict(x: Any) -> Dict[str, Any]:
     return x if isinstance(x, dict) else {}
 
 def _get_last_decision_raw() -> Dict[str, Any]:
-    """Best-effort: app.state → LAST → DECISIONS → case.STATE['last_decision']."""
+    """Best-effort: app.state -> LAST -> DECISIONS -> case.STATE['last_decision']."""
     # Prefer the app-level log (has full softmax memo)
     try:
         from src.app import state as _app_state  # lazy to avoid circular at import
         log = _app_state.get("log")
         if log:
             return log[-1]
-    except Exception:
+    except ImportError:
         pass
     if _LAST:
         return _as_dict(_LAST)
@@ -48,7 +52,7 @@ def _get_last_decision_raw() -> Dict[str, Any]:
         ld = _CASE_STATE.get("last_decision")
         if isinstance(ld, dict):
             return ld
-    except Exception:
+    except (TypeError, KeyError, AttributeError):
         pass
     return {}
 
@@ -66,7 +70,7 @@ def _map_for_pdf(memo: Dict[str, Any]) -> Dict[str, Any]:
         "unit_price": memo.get("unit_price") or 0,
         "slca":       memo.get("slca_score") or memo.get("slca") or 0,
         "tx":         memo.get("tx_hash") or memo.get("tx") or "",
-        "note":       memo.get("reason") or memo.get("note") or "",
+        "note":       memo.get("note") or "",
     }
     # Extended fields from regime-aware softmax policy
     if memo.get("action_probabilities"):
@@ -103,9 +107,9 @@ def _ensure_state_has_kpis() -> None:
                 "loaded_at": int(_t.time()),
                 "path": csv_path,
             })
-    except Exception:
+    except (ImportError, FileNotFoundError, KeyError, TypeError) as e:
         # If anything fails, we'll just show zeros; keep audit routes resilient.
-        pass
+        logger.debug("KPI auto-load skipped: %s", e)
 
 def _fetch_kpis() -> Dict[str, Any]:
     """
@@ -115,7 +119,7 @@ def _fetch_kpis() -> Dict[str, Any]:
     try:
         from src.app import kpis as _app_kpis
         return _app_kpis()
-    except Exception:
+    except ImportError:
         pass
 
     _ensure_state_has_kpis()
@@ -125,7 +129,7 @@ def _fetch_kpis() -> Dict[str, Any]:
     try:
         metrics = _CASE_STATE.get("summary") or _CASE_STATE.get("metrics") or {}
         rows = _CASE_STATE.get("rows") or []
-    except Exception:
+    except (TypeError, KeyError, AttributeError):
         pass
 
     records = int(metrics.get("records") or (len(rows) if rows else 0))
@@ -248,7 +252,7 @@ def audit_logs():
         from src.app import state as _app_state  # lazy import avoids circular at module level
         for m in _app_state.get("log", []):
             items.append(_map_for_pdf(m))
-    except Exception:
+    except ImportError:
         pass
     return {"items": items}
 
@@ -265,7 +269,7 @@ def audit_memo_pdf():
     last = _map_for_pdf(_get_last_decision_raw())
     try:
         return Response(content=_render_pdf(kpis, last), media_type="application/pdf")
-    except Exception:
+    except ImportError:
         msg = (
             "PDF generator not available.\n"
             "Install with: pip install reportlab\n\n"
@@ -282,7 +286,7 @@ def audit_memo_pdf_alias1():
 def audit_memo_pdf_alias2():
     return audit_memo_pdf()
 
-# Optional on-chain fetch for Admin → Audit
+# Optional on-chain fetch for Admin -> Audit
 @router.get("/chain")
 def audit_chain():
     try:
@@ -290,5 +294,5 @@ def audit_chain():
         from src.chain.eth import fetch_recent_decisions          # type: ignore
         items = fetch_recent_decisions(CHAIN_CFG or {}, 0, "latest")
         return {"items": list(reversed(items))}
-    except Exception as e:
+    except (ImportError, ConnectionError) as e:
         return {"items": [], "error": str(e)}

@@ -1,17 +1,21 @@
 # backend/src/app.py
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Literal, Optional
 
 import inspect
+import logging
 import time as _time
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 # PiRAG / MCP routers
 from pirag.api.routes.rag import router as rag_router
@@ -37,10 +41,11 @@ from .models.governance_models import ChainConfig
 from .models.footprint import compute_footprint, footprint_meter
 from .models.resilience import RLE_THRESHOLD
 from .models.action_selection import (
-    ACTIONS, ACTION_KM_KEYS, THETA, SLCA_BONUS, SLCA_RHO_BONUS,
-    _softmax, INV_CAPACITY, BASELINE_DEMAND, THERMAL_T0, THERMAL_DELTA_MAX,
+    ACTIONS, ACTION_KM_KEYS, PRICE_FACTOR,
+    select_action, compute_thermal_stress, compute_slca_attenuation,
 )
 from .models.waste import INV_BASELINE, compute_waste_rate, compute_save_factor
+from .models.carbon import compute_transport_carbon
 from .chain.eth import log_decision_onchain
 
 # Static/docs branding
@@ -51,12 +56,38 @@ from fastapi.responses import RedirectResponse, FileResponse, HTMLResponse
 # ---------------------------------------------------------------------------
 # FastAPI app
 # ---------------------------------------------------------------------------
-API = FastAPI(title="AGRI BRAIN MVP API")
-#API = FastAPI(
-#    title="AGRI BRAIN MVP API",
-#    docs_url=None,      # <- disable default /docs
-#    redoc_url=None      # <- disable default /redoc
-#)
+
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    """Lifespan context manager replacing deprecated @on_event('startup')."""
+    # --- startup ---
+    try:
+        _scn.register_app_state(state)
+    except Exception:
+        pass
+    try:
+        _gov.register_app_state(state)
+    except Exception:
+        pass
+    try:
+        case_load()
+        print("[startup] spinach CSV loaded")
+    except Exception as e:
+        print("[startup] case_load skipped:", e)
+    try:
+        sig = inspect.signature(start_agent_runtime)
+        if len(sig.parameters) == 0:
+            await start_agent_runtime()
+        else:
+            await start_agent_runtime(app)
+    except Exception as e:
+        print(f"[startup] agent runtime skipped: {e}")
+
+    yield
+    # --- shutdown (none needed) ---
+
+
+API = FastAPI(title="AGRI BRAIN MVP API", lifespan=_lifespan)
 
 
 # CORS (register once)
@@ -135,13 +166,6 @@ state: Dict[str, Any] = {
 }
 
 # ---------------------------------------------------------------------------
-# Softmax policy constants — imported from models/action_selection.py
-# (ACTIONS, ACTION_KM_KEYS, THETA, SLCA_BONUS, SLCA_RHO_BONUS,
-#  INV_CAPACITY, BASELINE_DEMAND, THERMAL_T0, THERMAL_DELTA_MAX, _softmax)
-# ---------------------------------------------------------------------------
-PRICE_FACTOR = {"cold_chain": 1.0, "local_redistribute": 0.95, "recovery": 0.88}
-
-# ---------------------------------------------------------------------------
 # Role-specific profiles — logit biases, km distances, SLCA weight priorities
 # ---------------------------------------------------------------------------
 ROLE_PROFILES: Dict[str, Dict[str, Any]] = {
@@ -174,26 +198,7 @@ ROLE_PROFILES: Dict[str, Dict[str, Any]] = {
 def health() -> Dict[str, Any]:
     return {"ok": True}
 
-# ---------------------------------------------------------------------------
-# Startup: load CSV (sync) — you can have multiple startup handlers
-# ---------------------------------------------------------------------------
-@API.on_event("startup")
-def _warm_case() -> None:
-    # Register app state with routers that need to read/modify it
-    try:
-        _scn.register_app_state(state)
-    except Exception:
-        pass
-    try:
-        _gov.register_app_state(state)
-    except Exception:
-        pass
-
-    try:
-        case_load()
-        print("[startup] spinach CSV loaded")
-    except Exception as e:
-        print("[startup] case_load skipped:", e)
+# (startup logic moved to _lifespan context manager above)
 
 # ---------------------------------------------------------------------------
 # Data endpoints
@@ -321,7 +326,7 @@ class DecideIn(BaseModel):
     role: str
     step: int | None = None          # optional row index (None → last row)
     deterministic: bool = True       # argmax when True, sample when False
-    mode: str = "agribrain"          # operating mode for waste save factor
+    mode: Literal["static", "hybrid_rl", "no_pinn", "no_slca", "agribrain"] = "agribrain"
 
 
 @API.post("/decide")
@@ -358,17 +363,6 @@ def decide(d: DecideIn):
         / max(float(roll_std.iloc[-1]), 1e-12)
     )
 
-    # ---- feature vector phi(s_t) — synced with generate_results.py ------
-    freshness = 1.0 - rho
-    inv_pressure = min(inv / INV_CAPACITY, 1.0)
-    demand_signal = min(y_hat / BASELINE_DEMAND, 1.0)
-    thermal_stress = min(max((temp - THERMAL_T0) / THERMAL_DELTA_MAX, 0.0), 1.0)
-    spoilage_urgency = rho
-    interaction = rho * inv_pressure
-
-    phi = np.array([freshness, inv_pressure, demand_signal,
-                    thermal_stress, spoilage_urgency, interaction])
-
     # ---- role-specific profile ---------------------------------------------
     role_key = (d.role or "").strip().lower()
     profile = ROLE_PROFILES.get(role_key, {})
@@ -376,24 +370,24 @@ def decide(d: DecideIn):
     km_ov = profile.get("km_overrides", {})
     slca_w = profile.get("slca_weights", {})
 
-    # ---- logits: THETA @ phi + gamma * tau + SLCA bonuses + role bias ----
-    gamma = np.array([p.gamma_coldchain, p.gamma_local, p.gamma_recovery])
-    logits = THETA @ phi + gamma * tau + SLCA_BONUS + SLCA_RHO_BONUS * rho + role_bias
-
-    probs = _softmax(logits)
-
-    # ---- action selection ------------------------------------------------
-    if d.deterministic:
-        action_idx = int(np.argmax(probs))
-    else:
-        action_idx = int(np.random.choice(len(ACTIONS), p=probs))
+    # ---- action selection via canonical select_action() -------------------
+    rng = np.random.default_rng()
+    action_idx, probs = select_action(
+        mode=d.mode, rho=rho, inv=inv, y_hat=y_hat, temp=temp,
+        tau=tau, policy=p, rng=rng,
+        role_bias=role_bias, deterministic=d.deterministic,
+    )
 
     action = ACTIONS[action_idx]
     km_key = ACTION_KM_KEYS[action]
     km = km_ov.get(km_key, getattr(p, km_key))
 
-    # ---- carbon & SLCA ---------------------------------------------------
-    carbon = km * p.carbon_per_km
+    # ---- carbon with COP degradation (Eq. 18) ----------------------------
+    thermal_stress = compute_thermal_stress(temp)
+    carbon = compute_transport_carbon(km, p.carbon_per_km, thermal_stress)
+
+    # ---- SLCA with stress attenuation (Eq. 12) ---------------------------
+    surplus_ratio = max(0.0, inv / INV_BASELINE - 1.0)
     slca_result = slca_score(
         carbon, action,
         w_c=slca_w.get("w_c", p.w_c),
@@ -401,7 +395,8 @@ def decide(d: DecideIn):
         w_r=slca_w.get("w_r", p.w_r),
         w_p=slca_w.get("w_p", p.w_p),
     )
-    slca_composite = slca_result["composite"]
+    slca_quality = compute_slca_attenuation(thermal_stress, surplus_ratio)
+    slca_composite = slca_result["composite"] * slca_quality
 
     # ---- footprint -------------------------------------------------------
     fp = compute_footprint(steps=1)
@@ -410,7 +405,6 @@ def decide(d: DecideIn):
     rh_val = float(row.get("RH", 50.0))
     k_inst = arrhenius_k(temp, p.k_ref, p.Ea_R, p.T_ref_K,
                          rh_val / 100.0, p.beta_humidity)
-    surplus_ratio = max(0.0, inv / INV_BASELINE - 1.0)
     waste_raw = compute_waste_rate(k_inst, surplus_ratio)
     save = compute_save_factor(action, d.mode, surplus_ratio)
     waste = float(waste_raw * (1.0 - save))
@@ -477,14 +471,14 @@ def decide(d: DecideIn):
         ),
     }
 
-    # best-effort on-chain log (never break)
+    # best-effort on-chain log (never break the decision flow)
     tx = "0x0"
     try:
         txh = log_decision_onchain(memo, state.get("chain", {}))
         if txh:
             tx = txh
-    except Exception:
-        pass
+    except (ConnectionError, TimeoutError, ValueError) as e:
+        logger.debug("on-chain log skipped: %s", e)
     memo["tx"] = tx
     memo["tx_hash"] = tx
 
@@ -496,8 +490,8 @@ def decide(d: DecideIn):
         from src.agents.bus import BUS
         import anyio
         anyio.from_thread.run(BUS.emit, "decision", memo)
-    except Exception:
-        pass
+    except (ImportError, RuntimeError) as e:
+        logger.debug("websocket broadcast skipped: %s", e)
 
     return {"ok": True, "memo": memo}
 
@@ -575,16 +569,4 @@ def report_pdf(role: str = ""):
     from fastapi.responses import Response
     return Response(content=buf.getvalue(), media_type="application/pdf")
 
-# ---------------------------------------------------------------------------
-# Startup: agent runtime (async)
-# ---------------------------------------------------------------------------
-@API.on_event("startup")
-async def _start_agentic_runtime():
-    try:
-        sig = inspect.signature(start_agent_runtime)
-        if len(sig.parameters) == 0:
-            await start_agent_runtime()
-        else:
-            await start_agent_runtime(API)
-    except Exception as e:
-        print(f"[startup] agent runtime skipped: {e}")
+# (agent runtime startup moved to _lifespan context manager above)
