@@ -34,7 +34,13 @@ from .models.forecast import yield_demand_forecast
 from .models.slca import slca_score
 from .models.policy import Policy
 from .models.footprint import compute_footprint, footprint_meter
+from .models.resilience import RLE_THRESHOLD
+from .models.action_selection import (
+    ACTIONS, ACTION_KM_KEYS, THETA, SLCA_BONUS, SLCA_RHO_BONUS,
+    _softmax, INV_CAPACITY, BASELINE_DEMAND, THERMAL_T0, THERMAL_DELTA_MAX,
+)
 from .chain.client import ChainClient
+from .chain.eth import log_decision_onchain
 
 # Static/docs branding
 from fastapi.staticfiles import StaticFiles
@@ -128,32 +134,11 @@ state: Dict[str, Any] = {
 }
 
 # ---------------------------------------------------------------------------
-# Softmax policy constants (Section 5 — contextual regime-aware policy)
-# Synced with generate_results.py and decide.py router.
+# Softmax policy constants — imported from models/action_selection.py
+# (ACTIONS, ACTION_KM_KEYS, THETA, SLCA_BONUS, SLCA_RHO_BONUS,
+#  INV_CAPACITY, BASELINE_DEMAND, THERMAL_T0, THERMAL_DELTA_MAX, _softmax)
 # ---------------------------------------------------------------------------
-ACTIONS = ["cold_chain", "local_redistribute", "recovery"]
-ACTION_KM_KEYS = {"cold_chain": "km_coldchain",
-                  "local_redistribute": "km_local",
-                  "recovery": "km_recovery"}
 PRICE_FACTOR = {"cold_chain": 1.0, "local_redistribute": 0.95, "recovery": 0.88}
-
-# Feature normalization constants (must match generate_results.py)
-INV_CAPACITY = 15000.0
-BASELINE_DEMAND = 20.0
-THERMAL_T0 = 4.0
-THERMAL_DELTA_MAX = 20.0
-
-# THETA matrix (3 actions x 6 features) — single source of truth in
-# generate_results.py; these values must stay in sync.
-THETA = np.array([
-    [ 0.5,  -0.3,   0.4,  -0.5,  -2.0,  -1.0],   # ColdChain
-    [ 0.0,   0.5,  -0.2,   0.5,   2.0,   1.5],    # LocalRedistribute
-    [-0.5,  -0.3,  -0.2,   0.3,   1.5,  -0.3],    # Recovery
-])
-
-# SLCA-aware logit bonuses (agribrain mode)
-SLCA_BONUS = np.array([-0.35, 0.60, -0.1])
-SLCA_RHO_BONUS = np.array([-0.5, 1.0, 0.15])
 
 # ---------------------------------------------------------------------------
 # Role-specific profiles — logit biases, km distances, SLCA weight priorities
@@ -263,8 +248,8 @@ def kpis():
 
         total_carbon += m.get("carbon_kg", 0.0)
 
-        # RLE: at-risk = rho > 0.3  (shelf_left < 0.7)
-        if rho > 0.3:
+        # RLE: at-risk = rho > RLE_THRESHOLD (from resilience.py)
+        if rho > RLE_THRESHOLD:
             rle_at_risk += 1
             act = m.get("action", "")
             if act in ("local_redistribute", "recovery"):
@@ -341,11 +326,6 @@ class DecideIn(BaseModel):
     role: str
     step: int | None = None          # optional row index (None → last row)
     deterministic: bool = True       # argmax when True, sample when False
-
-
-def _softmax(x: np.ndarray) -> np.ndarray:
-    e = np.exp(x - x.max())
-    return e / e.sum()
 
 
 @API.post("/decide")
@@ -496,8 +476,9 @@ def decide(d: DecideIn):
     # best-effort on-chain log (never break)
     tx = "0x0"
     try:
-        chain = ChainClient(**state["chain"])
-        tx = chain.log_decision(d.agent_id, action, int(slca_composite * 1e6), "")
+        txh = log_decision_onchain(memo, state.get("chain", {}))
+        if txh:
+            tx = txh
     except Exception:
         pass
     memo["tx"] = tx

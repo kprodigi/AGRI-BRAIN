@@ -1,13 +1,14 @@
+"""Governance models — re-exports from canonical modules.
 
-from pydantic import BaseModel, Field
+The canonical Policy class lives in src.models.policy.  This module
+re-exports it (along with related models) so that any legacy imports
+from governance_models continue to work.
+"""
+from pydantic import BaseModel
 from typing import Dict, Optional
 
-class Policy(BaseModel):
-    min_shelf_reroute: float = Field(0.70, ge=0, le=1)
-    min_shelf_expedite: float = Field(0.50, ge=0, le=1)
-    carbon_factors: Dict[str, float] = {"transport": 0.12, "cold_chain": 0.08}
-    distances_km: Dict[str, float] = {"farm_to_dc": 180.0, "dc_to_retail": 220.0}
-    weights: Dict[str, float] = {"carbon": 0.35, "labor_fairness": 0.25, "community_resilience": 0.20, "price_transparency": 0.20}
+# Re-export the canonical Policy to avoid duplicate definitions
+from src.models.policy import Policy  # noqa: F401
 
 class ChainConfig(BaseModel):
     rpc: str = "http://127.0.0.1:8545"
