@@ -63,16 +63,16 @@ async def _lifespan(app: FastAPI):
     # --- startup ---
     try:
         _scn.register_app_state(state)
-    except Exception:
+    except (ImportError, AttributeError, TypeError):
         pass
     try:
         _gov.register_app_state(state)
-    except Exception:
+    except (ImportError, AttributeError, TypeError):
         pass
     try:
         case_load()
         print("[startup] spinach CSV loaded")
-    except Exception as e:
+    except (FileNotFoundError, ValueError, KeyError) as e:
         print("[startup] case_load skipped:", e)
     try:
         sig = inspect.signature(start_agent_runtime)
@@ -80,7 +80,7 @@ async def _lifespan(app: FastAPI):
             await start_agent_runtime()
         else:
             await start_agent_runtime(app)
-    except Exception as e:
+    except (ImportError, RuntimeError, OSError) as e:
         print(f"[startup] agent runtime skipped: {e}")
 
     yield
@@ -239,7 +239,7 @@ def kpis():
 
     for m in logs:
         sc = m.get("slca_components") or {}
-        slca_c = sc.get("composite", m.get("slca", 0.0))
+        slca_c = m.get("slca", sc.get("composite", 0.0))
         slca_vals.append(slca_c)
 
         rho = m.get("spoilage_risk", 1.0 - m.get("shelf_left", 1.0))
@@ -448,7 +448,7 @@ def decide(d: DecideIn):
             "labor": slca_result["L"],
             "resilience": slca_result["R"],
             "transparency": slca_result["P"],
-            "composite": slca_result["composite"],
+            "composite": round(slca_composite, 4),
         },
         "footprint": {
             "energy_J": fp["energy_J"],

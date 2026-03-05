@@ -198,7 +198,7 @@ def run_scenario(req: RunRequest):
     ACTIVE["name"] = req.name
     try:
         ACTIVE["intensity"] = float(req.intensity or 1.0)
-    except Exception:
+    except (TypeError, ValueError):
         ACTIVE["intensity"] = 1.0
 
     ok = _apply_to_state(req.name, ACTIVE["intensity"])

@@ -259,7 +259,7 @@ def _decide_standalone(req: DecideRequest) -> dict:
             "labor": slca_result["L"],
             "resilience": slca_result["R"],
             "transparency": slca_result["P"],
-            "composite": slca_result["composite"],
+            "composite": round(slca_composite, 4),
         },
         "footprint": {
             "energy_J": fp["energy_J"],

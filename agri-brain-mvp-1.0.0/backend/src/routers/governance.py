@@ -11,7 +11,9 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from pathlib import Path
-import os, json
+import logging, os, json
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -134,8 +136,9 @@ def set_policy(payload: Dict[str, Any]):
 
     try:
         new_policy = Policy(**merged)
-    except Exception:
+    except (TypeError, ValueError) as exc:
         # If validation fails, return current policy
+        logger.debug("Policy validation failed: %s", exc)
         return current_dict
 
     if _APP_STATE is not None:
@@ -177,7 +180,7 @@ def set_chain(c: ChainModel):
     if "addresses_json" in data and isinstance(data["addresses_json"], str):
         try:
             data["addresses"] = json.loads(data["addresses_json"])
-        except Exception:
+        except (json.JSONDecodeError, ValueError):
             pass
     for k in ("rpc", "chain_id", "private_key", "auto"):
         if k in data:

@@ -24,7 +24,7 @@ class BroadcastBus:
         for ws in clients:
             try:
                 await ws.send_text(msg)
-            except Exception:
+            except (ConnectionError, RuntimeError, OSError):
                 await self.disconnect(ws)
 
 BUS = BroadcastBus()

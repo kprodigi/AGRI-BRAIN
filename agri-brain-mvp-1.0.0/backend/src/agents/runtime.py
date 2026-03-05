@@ -52,7 +52,7 @@ async def _policy_watch_loop():
             try:
                 from src.routers.case import STATE as _STATE
                 metrics = (_STATE.get("metrics") or {})
-            except Exception:
+            except (ImportError, AttributeError, KeyError):
                 metrics = {}
             wa = float(metrics.get("waste_rate_agri") or 0.0)
             wb = float(metrics.get("waste_rate_baseline") or 0.0)

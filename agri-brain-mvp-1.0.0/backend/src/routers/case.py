@@ -23,7 +23,7 @@ STATE: Dict[str, Any] = {
 def _to_float(x: Any, default: Optional[float] = None) -> Optional[float]:
     try:
         return float(x)
-    except Exception:
+    except (TypeError, ValueError):
         return default
 
 def _load_csv(path: str) -> List[Dict[str, Any]]:
@@ -96,7 +96,7 @@ def load_case(path: Optional[str] = None):
             "path": csv_path,
         })
         return result
-    except Exception:
+    except (ImportError, FileNotFoundError, KeyError, ValueError):
         pass
 
     # Fallback: simple CSV load without spoilage model
