@@ -160,23 +160,23 @@ SLCA_RHO_BONUS = np.array([-0.5, 1.0, 0.15])
 # ---------------------------------------------------------------------------
 ROLE_PROFILES: Dict[str, Dict[str, Any]] = {
     "farm": {
-        "logit_bias": np.array([-0.3, 0.5, 0.1]),
+        "logit_bias": np.array([-0.5, 0.8, 0.0]),
         "km_overrides": {"km_coldchain": 80.0, "km_local": 25.0, "km_recovery": 40.0},
         "slca_weights": {"w_c": 0.25, "w_l": 0.30, "w_r": 0.25, "w_p": 0.20},
     },
     "processor": {
-        "logit_bias": np.array([0.2, 0.0, 0.1]),
+        "logit_bias": np.array([0.8, -0.4, 0.1]),
         "km_overrides": {"km_coldchain": 110.0, "km_local": 50.0, "km_recovery": 60.0},
         "slca_weights": {"w_c": 0.30, "w_l": 0.25, "w_r": 0.20, "w_p": 0.25},
     },
     "distributor": {
-        "logit_bias": np.array([0.5, -0.2, -0.1]),
+        "logit_bias": np.array([1.0, -0.5, -0.2]),
         "km_overrides": {"km_coldchain": 180.0, "km_local": 65.0, "km_recovery": 100.0},
         "slca_weights": {"w_c": 0.35, "w_l": 0.15, "w_r": 0.30, "w_p": 0.20},
     },
     "retail": {
-        "logit_bias": np.array([0.3, 0.1, -0.3]),
-        "km_overrides": {"km_coldchain": 130.0, "km_local": 40.0, "km_recovery": 90.0},
+        "logit_bias": np.array([-0.5, -0.6, 1.2]),
+        "km_overrides": {"km_coldchain": 130.0, "km_local": 40.0, "km_recovery": 50.0},
         "slca_weights": {"w_c": 0.25, "w_l": 0.15, "w_r": 0.25, "w_p": 0.35},
     },
 }
@@ -546,11 +546,16 @@ def chain_config(cfg: ChainConfig):
 # Simple PDF
 # ---------------------------------------------------------------------------
 @API.get("/report/pdf")
-def report_pdf():
+def report_pdf(role: str = ""):
     if state["df"] is None:
         case_load()
     kp = kpis()
-    last = (state.get("log") or [{}])[-1] if state.get("log") else {}
+    logs = state.get("log") or []
+    if role:
+        role_logs = [m for m in logs if m.get("role", "") == role]
+        last = role_logs[-1] if role_logs else {}
+    else:
+        last = logs[-1] if logs else {}
 
     from io import BytesIO
     from reportlab.pdfgen import canvas
