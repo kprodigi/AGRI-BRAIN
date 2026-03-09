@@ -549,8 +549,8 @@ def fig5_pricing(data):
     ax.set_title("(d) Reward Component Profiles")
     _legend(
     ax,
-    loc="lower left",
-    bbox_to_anchor=(0.02, 0.02)
+    loc="upper right",
+    bbox_to_anchor=(0.98, 0.98)
     )
     _apply_style(ax)
 
