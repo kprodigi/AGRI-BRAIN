@@ -76,16 +76,17 @@ All outputs are saved to `mvp/simulation/results/`:
 
 | Scenario | ARI | Waste | RLE | SLCA |
 |----------|-----|-------|-----|------|
-| Heatwave | ~0.18 | ~0.18 | ~1.00 | ~0.87 |
-| Overproduction | ~0.19 | ~0.18 | ~0.98 | ~0.86 |
-| Cyber Outage | ~0.19 | ~0.18 | ~1.00 | ~0.87 |
-| Price Volatility | ~0.19 | ~0.18 | ~1.00 | ~0.87 |
+| Heatwave | ~0.60 | ~0.04 | ~0.94 | ~0.74 |
+| Overproduction | ~0.64 | ~0.04 | ~0.91 | ~0.73 |
+| Cyber Outage | ~0.75 | ~0.02 | ~0.90 | ~0.80 |
+| Price Volatility | ~0.71 | ~0.03 | ~0.58 | ~0.76 |
+| Baseline | ~0.71 | ~0.03 | ~0.71 | ~0.77 |
 
 ### Ablation Impact (largest to smallest)
 
-1. **Removing SLCA** has the largest impact — drops SLCA to 0.50 and ARI to ~0.09
-2. **Removing PINN** degrades waste detection — waste increases to ~0.42
-3. **Hybrid RL** (no SLCA logit bonus) — slightly less optimal routing
+1. **Removing SLCA** (`no_slca`) — drops SLCA to ~0.60–0.71 and ARI to ~0.48–0.64
+2. **Removing PINN** (`no_pinn`) — slight waste increase; ARI ~0.57–0.68
+3. **Hybrid RL** (no SLCA logit bonus) — slightly less optimal routing; ARI ~0.53–0.65
 
 ## Seed & Reproducibility
 
