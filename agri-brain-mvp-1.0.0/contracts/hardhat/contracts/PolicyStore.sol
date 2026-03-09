@@ -12,14 +12,31 @@ pragma solidity ^0.8.28;
 ///         - keccak256("waste_eta"): Waste penalty coefficient * 1000.
 ///           Controls reward trade-off between SLCA and waste reduction.
 contract PolicyStore {
+    address public owner;
+    address public authorizedDAO;
+
     mapping(bytes32 => uint256) public policy;
 
     event PolicyChanged(bytes32 indexed key, uint256 oldValue, uint256 newValue);
 
+    modifier onlyOwner() {
+        require(msg.sender == owner, "not owner");
+        _;
+    }
+
+    constructor() {
+        owner = msg.sender;
+    }
+
     function setPolicy(bytes32 key, uint256 value) external {
+        require(msg.sender == owner || msg.sender == authorizedDAO, "not authorized");
         uint256 oldv = policy[key];
         policy[key] = value;
         emit PolicyChanged(key, oldv, value);
+    }
+
+    function setAuthorizedDAO(address dao) external onlyOwner {
+        authorizedDAO = dao;
     }
 
     function getPolicy(bytes32 key) external view returns (uint256) {

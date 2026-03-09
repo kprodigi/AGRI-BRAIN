@@ -1,5 +1,17 @@
 """
-PINN-based spoilage model with Arrhenius temperature dependence and Baranyi lag phase.
+Physics-informed spoilage model with optional PINN residual correction.
+
+This module provides two entry points:
+
+- ``compute_spoilage``: deterministic ODE integrator using the Arrhenius-Baranyi
+  first-order decay model.  This is the baseline used by all simulation modes.
+
+- ``compute_spoilage_pinn``: adds a lightweight neural network residual
+  correction (from ``pinn_net.SpoilagePINN``) on top of the ODE baseline.
+  The PINN is trained with a physics-informed loss that penalises ODE
+  violations, making the correction consistent with known kinetics.
+
+Arrhenius temperature dependence and Baranyi lag phase.
 
 ODE:  dC/dt = -k_eff(t, T, H) * C
 
@@ -166,9 +178,7 @@ def compute_spoilage(
 
         k_eff = k * alpha
 
-        # First-order kinetic decay model (Labuza, 1982): quality loss over time
-        #   dC/dt = -k_eff * C  =>  C(t+dt) = C(t) * exp(-k_eff * dt)
-        # PINN physics loss: penalizes violation of inventory mass balance ODE
+        # First-order kinetic decay: C(t+dt) = C(t) * exp(-k_eff * dt)
         C[i] = C[i - 1] * np.exp(-k_eff * delta_t)
 
     # Enforce monotone decay: C should never increase
@@ -180,6 +190,88 @@ def compute_spoilage(
 
     df["shelf_left"] = C
     df["spoilage_risk"] = 1.0 - C
+
+    return df
+
+
+# ---------------------------------------------------------------------------
+# PINN-enhanced spoilage model
+# ---------------------------------------------------------------------------
+
+def compute_spoilage_pinn(
+    df: pd.DataFrame,
+    k_ref: float = 0.0021,
+    Ea_R: float = 8000.0,
+    T_ref_K: float = 277.15,
+    beta: float = 0.25,
+    lag_lambda: float = 12.0,
+    pinn_seed: int = 42,
+    pinn_epochs: int = 200,
+) -> pd.DataFrame:
+    """Compute spoilage with PINN residual correction on top of ODE baseline.
+
+    First runs the deterministic ODE integrator (``compute_spoilage``), then
+    trains a small physics-informed neural network to learn residual
+    corrections while satisfying the first-order decay ODE constraint.
+
+    The residual correction is clamped to [-0.08, 0.08], so the PINN
+    output stays within ~8 % of the ODE baseline.
+
+    Parameters
+    ----------
+    df : DataFrame with columns ``tempC``, ``RH``, ``timestamp``.
+    k_ref, Ea_R, T_ref_K, beta, lag_lambda : ODE parameters.
+    pinn_seed : random seed for PINN initialization.
+    pinn_epochs : training epochs for the PINN.
+
+    Returns
+    -------
+    df with ``shelf_left`` and ``spoilage_risk`` columns (PINN-corrected).
+    """
+    from .pinn_net import SpoilagePINN
+
+    # Step 1: get ODE baseline
+    df = compute_spoilage(df, k_ref=k_ref, Ea_R=Ea_R, T_ref_K=T_ref_K,
+                          beta=beta, lag_lambda=lag_lambda)
+
+    C_ode = df["shelf_left"].to_numpy(dtype=np.float64)
+
+    if not np.issubdtype(df["timestamp"].dtype, np.datetime64):
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+
+    dt_sec = (df["timestamp"] - df["timestamp"].iloc[0]).dt.total_seconds()
+    dt_h = dt_sec.to_numpy(dtype=np.float64) / 3600.0
+    temp_C = df["tempC"].to_numpy(dtype=np.float64)
+    rh_frac = df["RH"].to_numpy(dtype=np.float64) / 100.0
+
+    # Step 2: train PINN on ODE baseline
+    pinn = SpoilagePINN(seed=pinn_seed, lambda_phys=0.5)
+    pinn.fit(
+        temp_C=temp_C,
+        rh_frac=rh_frac,
+        dt_h=dt_h,
+        C_target=C_ode,
+        k_ref=k_ref,
+        Ea_R=Ea_R,
+        T_ref_K=T_ref_K,
+        beta=beta,
+        lag_lambda=lag_lambda,
+        epochs=pinn_epochs,
+    )
+
+    # Step 3: apply residual correction
+    delta_C = pinn.predict(temp_C, rh_frac, dt_h)
+    C_pinn = C_ode + delta_C
+
+    # Clamp to [0, 1] and enforce monotone decay
+    C_pinn = np.clip(C_pinn, 0.0, 1.0)
+    for i in range(1, len(C_pinn)):
+        if C_pinn[i] > C_pinn[i - 1]:
+            C_pinn[i] = C_pinn[i - 1]
+
+    df = df.copy()
+    df["shelf_left"] = C_pinn
+    df["spoilage_risk"] = 1.0 - C_pinn
 
     return df
 

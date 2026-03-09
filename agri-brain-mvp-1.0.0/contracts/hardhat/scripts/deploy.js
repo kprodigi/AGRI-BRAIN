@@ -9,7 +9,7 @@ async function deploy(name, ...args) {
     await c.waitForDeployment();
     const addr = await c.getAddress();
     console.log(`${name}: ${addr}`);
-    return addr;
+    return { contract: c, address: addr };
 }
 
 function writeJSON(p, obj) {
@@ -24,11 +24,29 @@ async function main() {
     console.log('Deployer:', deployer.address);
 
     const addresses = {};
-    addresses.AgentRegistry = await deploy('AgentRegistry');
-    addresses.PolicyStore = await deploy('PolicyStore');
-    addresses.DecisionLogger = await deploy('DecisionLogger');
-    addresses.SLCARewards = await deploy('SLCARewards');
-    addresses.AgriDAO = await deploy('AgriDAO');
+
+    // 1. AgentRegistry first (no dependencies)
+    const registry = await deploy('AgentRegistry');
+    addresses.AgentRegistry = registry.address;
+
+    // 2. PolicyStore second (no dependencies)
+    const policyStore = await deploy('PolicyStore');
+    addresses.PolicyStore = policyStore.address;
+
+    // 3. AgriDAO third (receives PolicyStore + AgentRegistry addresses)
+    const dao = await deploy('AgriDAO', policyStore.address, registry.address);
+    addresses.AgriDAO = dao.address;
+
+    // 4. Authorize AgriDAO to update policies via PolicyStore
+    await policyStore.contract.setAuthorizedDAO(dao.address);
+    console.log('PolicyStore: authorized AgriDAO at', dao.address);
+
+    // 5. DecisionLogger and SLCARewards as before
+    const logger = await deploy('DecisionLogger');
+    addresses.DecisionLogger = logger.address;
+
+    const rewards = await deploy('SLCARewards');
+    addresses.SLCARewards = rewards.address;
 
     // Write inside hardhat dir
     const here = path.resolve(__dirname, '..', `deployed-addresses.${hre.network.name}.json`);

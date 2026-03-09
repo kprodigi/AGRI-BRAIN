@@ -28,6 +28,8 @@ class PiRAGResponse:
 class PiRAGPipeline:
     def __init__(self, dense_model_name: Optional[str] = None):
         self.retriever = HybridRetriever(dense_model_name=dense_model_name)
+        from .inference.template_engine import TemplateAnswerEngine
+        self.answer_engine = TemplateAnswerEngine()
 
     def ingest(self, docs: List[Dict[str, Any]]):
         self.retriever.add_documents([Document(id=d["id"], text=d["text"], metadata=d.get("metadata", {})) for d in docs])
@@ -36,7 +38,7 @@ class PiRAGPipeline:
         return {"tools": ["retriever","units","sim"], "k": 6, "constraints": {"min": -1e12, "max": 1e12}}
 
     def _answer_inference(self, question: str, topk: List[Dict[str, Any]]) -> str:
-        raise NotImplementedError("Subclass PiRAGPipeline and override _answer_inference with your inference backend.")
+        return self.answer_engine.synthesize(question, topk)
 
     def ask(self, question: str, k: int = 6, anchor_on_chain: bool = False) -> PiRAGResponse:
         plan = self._plan(question)
@@ -47,10 +49,10 @@ class PiRAGPipeline:
             sha = sha256_hex(h["text"])
             citations.append(Citation(doc_id=h["id"], passage=h["text"], sha256=sha, meta=h["metadata"]))
 
-        try:
+        if hits:
             answer = self._answer_inference(question, hits)
-        except NotImplementedError:
-            answer = f"Provisional answer for: {question}\n\nEvidence 1: {hits[0]['text'][:300]}..." if hits else "No evidence retrieved."
+        else:
+            answer = "No evidence retrieved."
 
         u_ok = units_consistent(answer)
         f_ok = within_ranges(answer, plan["constraints"])

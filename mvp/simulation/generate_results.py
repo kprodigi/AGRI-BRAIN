@@ -5,6 +5,9 @@ AGRI-BRAIN Results Generation
 Runs all 5 scenarios × 5 modes, computes per-run metrics, and saves
 CSV summary tables to mvp/simulation/results/.
 
+Uses an AgentCoordinator to dispatch decisions to role-specific agents
+(farm, processor, distributor, recovery) at each lifecycle stage.
+
 Standalone usage:
     cd mvp/simulation
     python generate_results.py
@@ -24,6 +27,7 @@ and scoring functions live in the backend model files (Layer 1):
     src.models.resilience        — ARI, RLE, equity metrics
     src.models.reward            — Multi-objective reward function
     src.models.action_selection  — Softmax policy, feature vectors
+    src.agents.coordinator       — Multi-agent coordination
 """
 from __future__ import annotations
 
@@ -41,7 +45,7 @@ import numpy as np
 import pandas as pd
 
 # Layer 1 imports — all scientific logic lives here
-from src.models.spoilage import compute_spoilage, arrhenius_k, volatility_flags
+from src.models.spoilage import compute_spoilage, compute_spoilage_pinn, arrhenius_k, volatility_flags
 from src.models.forecast import yield_demand_forecast
 from src.models.slca import slca_score
 from src.models.policy import Policy
@@ -55,6 +59,7 @@ from src.models.action_selection import (
     ACTIONS, ACTION_KM_KEYS, select_action,
     compute_thermal_stress, compute_slca_attenuation,
 )
+from src.agents.coordinator import AgentCoordinator
 
 # ---------------------------------------------------------------------------
 # Constants (orchestration-level only — no physics here)
@@ -141,6 +146,10 @@ def apply_scenario(df: pd.DataFrame, name: str, policy: Policy,
 # ---------------------------------------------------------------------------
 # Single episode runner (orchestration only — calls Layer 1 models)
 # ---------------------------------------------------------------------------
+_PINN_MODES = {"agribrain", "no_slca"}
+"""Modes that use PINN-enhanced spoilage prediction."""
+
+
 def run_episode(
     df: pd.DataFrame, mode: str, policy: Policy,
     rng: np.random.Generator, scenario: str = "baseline",
@@ -148,12 +157,25 @@ def run_episode(
     n = len(df)
     hours = _hours_from_start(df)
 
+    # --- Multi-agent coordinator ---
+    coordinator = AgentCoordinator()
+    coordinator.reset()
+
+    # --- PINN-enhanced spoilage for eligible modes ---
+    if mode in _PINN_MODES:
+        df = compute_spoilage_pinn(
+            df, k_ref=policy.k_ref, Ea_R=policy.Ea_R,
+            T_ref_K=policy.T_ref_K, beta=policy.beta_humidity,
+            lag_lambda=policy.lag_lambda,
+        )
+
     ari_vals, waste_vals, slca_vals = [], [], []
     rle_tracker = RLETracker()
     carbon_total, cum_r = 0.0, 0.0
     cumulative_reward = []
     rho_trace, action_trace, prob_trace = [], [], []
     reward_trace, carbon_trace, slca_component_trace = [], [], []
+    active_agent_trace = []
 
     for idx in range(n):
         row = df.iloc[idx]
@@ -167,20 +189,26 @@ def run_episode(
         yf = yield_demand_forecast(df.iloc[max(0, idx + 1 - lookback):idx + 1], horizon=1)
         y_hat = float(yf["forecast"][0]) if yf["forecast"] else 100.0
 
-        # Action selection (Layer 1: action_selection.py)
-        action_idx, probs = select_action(
-            mode, rho, inv, y_hat, temp, tau, policy, rng,
-            scenario=scenario, hour=hours[idx],
+        # Surplus ratio (computed before env_state for coordinator)
+        surplus_ratio = max(0.0, inv / INV_BASELINE - 1.0)
+
+        # Build env_state for the coordinator
+        env_state = {
+            "rho": rho, "inv": inv, "temp": temp, "rh": rh_val,
+            "y_hat": y_hat, "tau": tau, "surplus_ratio": surplus_ratio,
+        }
+
+        # Action selection via AgentCoordinator
+        action_idx, probs, active_agent = coordinator.step(
+            env_state, hours[idx], mode, policy, rng, scenario,
         )
         action = ACTIONS[action_idx]
+        active_agent_trace.append(active_agent.role)
 
         # Carbon emissions (Layer 1: carbon.py)
         km = getattr(policy, ACTION_KM_KEYS[action])
         thermal_stress = compute_thermal_stress(temp)
         carbon = compute_transport_carbon(km, policy.carbon_per_km, thermal_stress)
-
-        # Surplus ratio for waste and SLCA attenuation
-        surplus_ratio = max(0.0, inv / INV_BASELINE - 1.0)
 
         # SLCA scoring (Layer 1: slca.py) with stress attenuation
         slca_result = slca_score(carbon, action,
@@ -207,6 +235,11 @@ def run_episode(
         # Reward (Layer 1: reward.py)
         reward = compute_reward(slca_c, waste, eta=policy.eta)
         cum_r += reward
+
+        # Post-step: update agent state and route messages
+        obs = active_agent.observe(env_state, hours[idx])
+        outcome = {"waste": waste, "rho": rho}
+        coordinator.post_step(active_agent, action_idx, obs, outcome)
 
         # Collect traces
         ari_vals.append(ari)
@@ -250,6 +283,9 @@ def run_episode(
         "hours": hours.tolist(), "temp_trace": df["tempC"].tolist(),
         "rh_trace": df["RH"].tolist(), "demand_trace": df["demand_units"].tolist(),
         "inventory_trace": df["inventory_units"].tolist(),
+        "active_agent_trace": active_agent_trace,
+        "agent_summaries": coordinator.agent_summaries(),
+        "message_count": len(coordinator.message_log),
     }
 
 

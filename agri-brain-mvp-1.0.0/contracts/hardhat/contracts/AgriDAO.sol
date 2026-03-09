@@ -1,54 +1,218 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-/// @title AgriDAO - Decentralized governance for supply chain policy updates
-/// @notice Enables cooperative stakeholders to propose and vote on policy
-///         parameter changes (e.g., SLCA weights, Arrhenius model parameters,
-///         carbon emission factors). Proposals are text-based and reference
-///         the physical models they affect. Execution triggers PolicyStore
-///         updates that propagate to the PINN-based decision engine.
+interface IAgentRegistry {
+    struct Agent {
+        bytes32 id;
+        string role;
+        string meta;
+        bool active;
+    }
+    function agents(address) external view returns (bytes32, string memory, string memory, bool);
+}
+
+interface IPolicyStore {
+    function setPolicy(bytes32 key, uint256 value) external;
+}
+
+/// @title AgriDAO - Consortium-style governance for supply chain policy updates
+/// @notice Enables cooperative stakeholders to propose, vote on, and execute
+///         policy parameter changes through a quorum-based governance process
+///         with voting periods and timelock execution. Only registered active
+///         agents (verified via AgentRegistry) can propose or vote. Execution
+///         triggers PolicyStore updates that propagate to the decision engine.
 contract AgriDAO {
+
+    // -----------------------------------------------------------------
+    // Enums
+    // -----------------------------------------------------------------
+
+    enum ProposalState {
+        Pending,
+        Active,
+        Succeeded,
+        Defeated,
+        Queued,
+        Executed,
+        Expired
+    }
+
+    // -----------------------------------------------------------------
+    // Structs
+    // -----------------------------------------------------------------
+
     struct Proposal {
         uint256 id;
         address proposer;
-        string text;
+        string description;
+        bytes32 policyKey;
+        uint256 policyValue;
         bool executed;
-        uint256 yes;
-        uint256 no;
+        uint256 yesVotes;
+        uint256 noVotes;
+        uint256 createdAt;
+        uint256 totalVoters;
+        ProposalState state;
+        uint256 queuedAt;
     }
+
+    // -----------------------------------------------------------------
+    // State variables
+    // -----------------------------------------------------------------
+
+    address public owner;
+    address public policyStore;
+    address public agentRegistry;
+
+    uint256 public QUORUM_THRESHOLD = 3;
+    uint256 public VOTING_PERIOD = 86400;    // 24 hours
+    uint256 public EXECUTION_DELAY = 3600;   // 1 hour
 
     uint256 public nextId;
     mapping(uint256 => Proposal) public proposals;
-    mapping(uint256 => mapping(address => bool)) public voted;
+    mapping(uint256 => mapping(address => bool)) public hasVoted;
 
-    event Proposed(uint256 id, address proposer, string text);
-    event Voted(uint256 id, address voter, bool support);
-    event Executed(uint256 id);
+    // -----------------------------------------------------------------
+    // Events
+    // -----------------------------------------------------------------
 
-    function propose(string calldata text) external returns (uint256) {
+    event Proposed(uint256 indexed id, address proposer, string description, bytes32 policyKey, uint256 policyValue);
+    event Voted(uint256 indexed id, address voter, bool support);
+    event Finalized(uint256 indexed id, ProposalState newState);
+    event Queued(uint256 indexed id);
+    event Executed(uint256 indexed id);
+
+    // -----------------------------------------------------------------
+    // Modifiers
+    // -----------------------------------------------------------------
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "not owner");
+        _;
+    }
+
+    modifier onlyRegisteredAgent() {
+        (, , , bool active) = IAgentRegistry(agentRegistry).agents(msg.sender);
+        require(active, "not a registered active agent");
+        _;
+    }
+
+    // -----------------------------------------------------------------
+    // Constructor
+    // -----------------------------------------------------------------
+
+    constructor(address _policyStore, address _agentRegistry) {
+        owner = msg.sender;
+        policyStore = _policyStore;
+        agentRegistry = _agentRegistry;
+    }
+
+    // -----------------------------------------------------------------
+    // Owner setters
+    // -----------------------------------------------------------------
+
+    function setQuorumThreshold(uint256 _quorum) external onlyOwner {
+        QUORUM_THRESHOLD = _quorum;
+    }
+
+    function setVotingPeriod(uint256 _period) external onlyOwner {
+        VOTING_PERIOD = _period;
+    }
+
+    function setExecutionDelay(uint256 _delay) external onlyOwner {
+        EXECUTION_DELAY = _delay;
+    }
+
+    // -----------------------------------------------------------------
+    // Governance functions
+    // -----------------------------------------------------------------
+
+    function propose(
+        string calldata description,
+        bytes32 policyKey,
+        uint256 policyValue
+    ) external onlyRegisteredAgent returns (uint256) {
         uint256 id = ++nextId;
         proposals[id] = Proposal({
             id: id,
             proposer: msg.sender,
-            text: text,
+            description: description,
+            policyKey: policyKey,
+            policyValue: policyValue,
             executed: false,
-            yes: 0,
-            no: 0
+            yesVotes: 0,
+            noVotes: 0,
+            createdAt: block.timestamp,
+            totalVoters: 0,
+            state: ProposalState.Active,
+            queuedAt: 0
         });
-        emit Proposed(id, msg.sender, text);
+        emit Proposed(id, msg.sender, description, policyKey, policyValue);
         return id;
     }
 
-    function vote(uint256 id, bool support) external {
-        require(!voted[id][msg.sender], "already voted");
-        voted[id][msg.sender] = true;
-        if (support) proposals[id].yes++;
-        else proposals[id].no++;
+    function vote(uint256 id, bool support) external onlyRegisteredAgent {
+        Proposal storage p = proposals[id];
+        require(p.state == ProposalState.Active, "not active");
+        require(block.timestamp <= p.createdAt + VOTING_PERIOD, "voting ended");
+        require(!hasVoted[id][msg.sender], "already voted");
+
+        hasVoted[id][msg.sender] = true;
+        p.totalVoters++;
+
+        if (support) {
+            p.yesVotes++;
+        } else {
+            p.noVotes++;
+        }
         emit Voted(id, msg.sender, support);
     }
 
+    function finalize(uint256 id) external {
+        Proposal storage p = proposals[id];
+        require(p.state == ProposalState.Active, "not active");
+        require(block.timestamp > p.createdAt + VOTING_PERIOD, "voting not ended");
+
+        if (p.totalVoters >= QUORUM_THRESHOLD && p.yesVotes > p.noVotes) {
+            p.state = ProposalState.Succeeded;
+        } else {
+            p.state = ProposalState.Defeated;
+        }
+        emit Finalized(id, p.state);
+    }
+
+    function queue(uint256 id) external {
+        Proposal storage p = proposals[id];
+        require(p.state == ProposalState.Succeeded, "not succeeded");
+        p.state = ProposalState.Queued;
+        p.queuedAt = block.timestamp;
+        emit Queued(id);
+    }
+
     function execute(uint256 id) external {
-        proposals[id].executed = true;
+        Proposal storage p = proposals[id];
+        require(p.state == ProposalState.Queued, "not queued");
+        require(block.timestamp >= p.queuedAt + EXECUTION_DELAY, "timelock active");
+
+        p.state = ProposalState.Executed;
+        p.executed = true;
+        IPolicyStore(policyStore).setPolicy(p.policyKey, p.policyValue);
         emit Executed(id);
+    }
+
+    // -----------------------------------------------------------------
+    // View functions
+    // -----------------------------------------------------------------
+
+    function getProposal(uint256 id) external view returns (Proposal memory) {
+        return proposals[id];
+    }
+
+    function getState(uint256 id) external view returns (ProposalState) {
+        return proposals[id].state;
+    }
+
+    function getHasVoted(uint256 id, address voter) external view returns (bool) {
+        return hasVoted[id][voter];
     }
 }

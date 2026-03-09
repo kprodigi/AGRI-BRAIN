@@ -41,6 +41,26 @@ All models are imported from the backend (`backend/src/models/`):
 - **Policy**: Contextual softmax policy with θ matrix (3 actions × 6 features)
   and Bollinger volatility regime tilt
 
+## Multi-Agent Architecture
+
+The simulation dispatches each timestep to a role-specific supply chain
+agent via an `AgentCoordinator`.  Agents are mapped to lifecycle stages
+based on hours since harvest:
+
+| Agent | Role | Stage (hours) | Bias [CC, LR, Rec] | Mandate |
+|-------|------|---------------|---------------------|---------|
+| FarmAgent | farm | [0, 18) | [+0.08, -0.03, -0.05] | Preserve freshness |
+| ProcessorAgent | processor | [18, 36) | [-0.02, +0.06, -0.04] | Processing efficiency |
+| DistributorAgent | distributor | [36, 54) | [-0.05, +0.10, -0.05] | Community redistribution |
+| RecoveryAgent | recovery | [54, +inf) | [-0.06, -0.02, +0.08] | Waste valorization |
+
+**Message types**: `SPOILAGE_ALERT`, `SURPLUS_ALERT`, `CAPACITY_UPDATE`,
+`REROUTE_REQUEST`, `ACK`.
+
+Role biases are small relative to the THETA-phi logits and mode-specific
+bonuses, nudging decisions toward each stage's mandate without overriding
+the global policy.
+
 ## Metrics
 
 | Metric | Formula | Description |
@@ -76,17 +96,17 @@ All outputs are saved to `mvp/simulation/results/`:
 
 | Scenario | ARI | Waste | RLE | SLCA |
 |----------|-----|-------|-----|------|
-| Heatwave | ~0.60 | ~0.04 | ~0.94 | ~0.74 |
-| Overproduction | ~0.64 | ~0.04 | ~0.91 | ~0.73 |
-| Cyber Outage | ~0.75 | ~0.02 | ~0.90 | ~0.80 |
-| Price Volatility | ~0.71 | ~0.03 | ~0.58 | ~0.76 |
-| Baseline | ~0.71 | ~0.03 | ~0.71 | ~0.77 |
+| Heatwave | ~0.61 | ~0.04 | ~0.94 | ~0.75 |
+| Overproduction | ~0.64 | ~0.04 | ~0.86 | ~0.73 |
+| Cyber Outage | ~0.75 | ~0.02 | ~0.00 | ~0.81 |
+| Price Volatility | ~0.71 | ~0.03 | ~0.00 | ~0.77 |
+| Baseline | ~0.72 | ~0.02 | ~0.00 | ~0.77 |
 
 ### Ablation Impact (largest to smallest)
 
-1. **Removing SLCA** (`no_slca`) — drops SLCA to ~0.60–0.71 and ARI to ~0.48–0.64
+1. **Removing SLCA** (`no_slca`) — drops SLCA to ~0.61–0.71 and ARI to ~0.49–0.65
 2. **Removing PINN** (`no_pinn`) — slight waste increase; ARI ~0.57–0.68
-3. **Hybrid RL** (no SLCA logit bonus) — slightly less optimal routing; ARI ~0.53–0.65
+3. **Hybrid RL** (no SLCA logit bonus) — slightly less optimal routing; ARI ~0.54–0.65
 
 ## Seed & Reproducibility
 
