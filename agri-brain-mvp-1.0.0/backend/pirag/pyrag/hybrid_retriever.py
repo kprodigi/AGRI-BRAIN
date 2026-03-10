@@ -7,10 +7,13 @@ from collections import Counter
 
 try:
     from sentence_transformers import SentenceTransformer
-    import numpy as np
 except Exception:
     SentenceTransformer = None
-    np = None
+
+import numpy as np
+
+from ..ingestion.embedder import TFIDFEmbedder
+from ..ingestion.vector_store import VectorStore
 
 @dataclass
 class Document:
@@ -74,11 +77,18 @@ class BM25:
         return scores[:k]
 
 class HybridRetriever:
-    def __init__(self, dense_model_name: Optional[str] = None):
+    def __init__(
+        self,
+        dense_model_name: Optional[str] = None,
+        vector_store: Optional[VectorStore] = None,
+        embedder: Optional[TFIDFEmbedder] = None,
+    ):
         self.bm25 = BM25()
         self.docs: List[Document] = []
         self.dense_model = None
         self.doc_vecs = None
+        self.vector_store = vector_store
+        self.embedder = embedder
         if dense_model_name and SentenceTransformer is not None:
             self.dense_model = SentenceTransformer(dense_model_name)
 
@@ -88,14 +98,37 @@ class HybridRetriever:
         if self.dense_model is not None:
             texts = [d.text for d in self.docs]
             self.doc_vecs = self.dense_model.encode(texts, normalize_embeddings=True)
+        elif self.vector_store is not None and self.embedder is not None:
+            texts = [d.text for d in docs]
+            if not self.embedder._fitted:
+                all_texts = [d.text for d in self.docs]
+                self.embedder.fit(all_texts)
+            else:
+                all_texts = [d.text for d in self.docs]
+                self.embedder.fit(all_texts)
+            for d in docs:
+                vec = self.embedder.transform(d.text)
+                self.vector_store.add(d.id, d.text, vec, d.metadata)
 
     def _dense_search(self, q: str, k: int = 5):
-        if self.dense_model is None or self.doc_vecs is None or np is None:
-            return []
-        qv = self.dense_model.encode([q], normalize_embeddings=True)[0]
-        sims = (self.doc_vecs @ qv)
-        idx = sims.argsort()[-k:][::-1]
-        return [(self.docs[i], float(sims[i])) for i in idx]
+        # Priority 1: SentenceTransformer
+        if self.dense_model is not None and self.doc_vecs is not None:
+            qv = self.dense_model.encode([q], normalize_embeddings=True)[0]
+            sims = (self.doc_vecs @ qv)
+            idx = sims.argsort()[-k:][::-1]
+            return [(self.docs[i], float(sims[i])) for i in idx]
+        # Priority 2: TF-IDF VectorStore
+        if (self.vector_store is not None and self.embedder is not None
+                and self.vector_store.size > 0):
+            qv = self.embedder.transform(q)
+            results = self.vector_store.search(qv, k=k)
+            out = []
+            for r in results:
+                doc = Document(id=r["id"], text=r["text"], metadata=r.get("metadata", {}))
+                out.append((doc, r["score"]))
+            return out
+        # Priority 3: no dense search available
+        return []
 
     def search(self, q: str, k: int = 6) -> List[Dict[str, Any]]:
         sparse = self.bm25.search(q, k)

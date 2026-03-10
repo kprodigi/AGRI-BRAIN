@@ -12,6 +12,7 @@ class MessageType(Enum):
     SURPLUS_ALERT = "surplus_alert"
     CAPACITY_UPDATE = "capacity_update"
     REROUTE_REQUEST = "reroute_request"
+    COORDINATION_UPDATE = "coordination_update"
     ACK = "ack"
 
 

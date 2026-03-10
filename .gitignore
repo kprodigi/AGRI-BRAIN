@@ -10,6 +10,7 @@ dist/
 # IDE / editor
 .vscode/
 .idea/
+.claude/
 
 # Hardhat build artifacts
 contracts/hardhat/artifacts/
@@ -18,3 +19,7 @@ contracts/hardhat/cache/
 # Environment and secrets
 .env
 .env.local
+
+# PiRAG vector store persistence
+*.vectorstore
+pirag_vectors/

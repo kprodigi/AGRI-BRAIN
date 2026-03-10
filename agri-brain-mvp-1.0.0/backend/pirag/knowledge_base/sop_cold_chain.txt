@@ -1,0 +1,7 @@
+Cold Chain Handling Standard Operating Procedure
+
+Temperature Management: All perishable produce must be maintained at 2-5 degrees Celsius throughout the cold chain. Temperature monitoring devices must record readings at 15-minute intervals. Any temperature excursion above 8 degrees Celsius must be documented and reported within 1 hour.
+
+Pre-cooling Requirements: Freshly harvested leafy greens must be pre-cooled to 4 degrees Celsius within 2 hours of harvest using forced-air cooling or hydrocooling methods. Vacuum cooling may be used for head lettuce and similar dense produce. The initial microbial load and temperature at harvest directly affect the lag phase duration before exponential quality decay begins.
+
+Transport Protocol: Refrigerated vehicles must maintain 2-5 degrees Celsius with a tolerance of plus or minus 1 degree Celsius. Relative humidity should be maintained at 85-95 percent to prevent wilting without promoting microbial growth. Loading dock exposure time must not exceed 30 minutes. All transport units must have GPS tracking and real-time temperature telemetry.

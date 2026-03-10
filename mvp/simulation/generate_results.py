@@ -6,7 +6,7 @@ Runs all 5 scenarios × 5 modes, computes per-run metrics, and saves
 CSV summary tables to mvp/simulation/results/.
 
 Uses an AgentCoordinator to dispatch decisions to role-specific agents
-(farm, processor, distributor, recovery) at each lifecycle stage.
+(farm, processor, cooperative, distributor, recovery) at each lifecycle stage.
 
 Standalone usage:
     cd mvp/simulation
@@ -18,16 +18,19 @@ Callable from backend:
 This module is a **Layer 3 orchestrator**.  All scientific models, equations,
 and scoring functions live in the backend model files (Layer 1):
 
-    src.models.spoilage          — Arrhenius decay, Baranyi lag phase
-    src.models.forecast          — Holt-Winters demand forecasting
-    src.models.slca              — 4-component Social LCA scoring
-    src.models.policy            — Policy configuration
-    src.models.waste             — Operational waste model
-    src.models.carbon            — Transport carbon emissions + COP degradation
-    src.models.resilience        — ARI, RLE, equity metrics
-    src.models.reward            — Multi-objective reward function
-    src.models.action_selection  — Softmax policy, feature vectors
-    src.agents.coordinator       — Multi-agent coordination
+    src.models.spoilage           — Arrhenius decay, Baranyi lag phase
+    src.models.forecast           — Holt-Winters demand forecasting (fallback)
+    src.models.lstm_demand        — Numpy-only LSTM demand forecasting (default)
+    src.models.yield_forecast     — Holt-Winters yield/supply forecasting
+    src.models.slca               — 4-component Social LCA scoring
+    src.models.policy             — Policy configuration
+    src.models.waste              — Operational waste model
+    src.models.carbon             — Transport carbon emissions + COP degradation
+    src.models.resilience         — ARI, RLE, equity metrics
+    src.models.reward             — Multi-objective reward function
+    src.models.action_selection   — Softmax policy, feature vectors
+    src.models.reverse_logistics  — Circular economy scoring
+    src.agents.coordinator        — Multi-agent coordination (5 agents)
 """
 from __future__ import annotations
 
@@ -41,12 +44,15 @@ _BACKEND_SRC = Path(__file__).resolve().parent.parent.parent / "agri-brain-mvp-1
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 
+import os
 import numpy as np
 import pandas as pd
 
 # Layer 1 imports — all scientific logic lives here
 from src.models.spoilage import compute_spoilage, compute_spoilage_pinn, arrhenius_k, volatility_flags
 from src.models.forecast import yield_demand_forecast
+from src.models.lstm_demand import lstm_demand_forecast
+from src.models.yield_forecast import yield_supply_forecast
 from src.models.slca import slca_score
 from src.models.policy import Policy
 from src.models.waste import (
@@ -59,7 +65,30 @@ from src.models.action_selection import (
     ACTIONS, ACTION_KM_KEYS, select_action,
     compute_thermal_stress, compute_slca_attenuation,
 )
+from src.models.reverse_logistics import evaluate_recovery_options, compute_circular_economy_score
+from src.models.policy_learner import PolicyLearner
+from src.models.action_selection import build_feature_vector
 from src.agents.coordinator import AgentCoordinator
+
+try:
+    from pirag.context_provider import get_policy_context as _get_policy_context
+except Exception:
+    _get_policy_context = None
+
+# Forecast method selection (default: LSTM, fallback: Holt-Winters)
+FORECAST_METHOD = os.environ.get("FORECAST_METHOD", "lstm")
+
+# Online learning toggle (default: disabled to preserve deterministic results)
+ONLINE_LEARNING = os.environ.get("ONLINE_LEARNING", "false").lower() == "true"
+
+# RAG context toggle (default: enabled; set to "false" for fast batch runs)
+RAG_CONTEXT_ENABLED = os.environ.get("RAG_CONTEXT_ENABLED", "true").lower() != "false"
+
+def _demand_forecast(df, horizon=1, **kwargs):
+    """Dispatch to LSTM or Holt-Winters demand forecaster based on config."""
+    if FORECAST_METHOD == "holt_winters":
+        return yield_demand_forecast(df, horizon=horizon, **kwargs)
+    return lstm_demand_forecast(df, horizon=horizon, **kwargs)
 
 # ---------------------------------------------------------------------------
 # Constants (orchestration-level only — no physics here)
@@ -161,6 +190,9 @@ def run_episode(
     coordinator = AgentCoordinator()
     coordinator.reset()
 
+    # --- PolicyLearner (optional, off by default) ---
+    learner = PolicyLearner() if ONLINE_LEARNING else None
+
     # --- PINN-enhanced spoilage for eligible modes ---
     if mode in _PINN_MODES:
         df = compute_spoilage_pinn(
@@ -176,6 +208,8 @@ def run_episode(
     rho_trace, action_trace, prob_trace = [], [], []
     reward_trace, carbon_trace, slca_component_trace = [], [], []
     active_agent_trace = []
+    circular_scores = []
+    supply_hats = []
 
     for idx in range(n):
         row = df.iloc[idx]
@@ -186,21 +220,37 @@ def run_episode(
         tau = 1.0 if str(row.get("volatility", "normal")) == "anomaly" else 0.0
 
         lookback = min(idx + 1, 48)
-        yf = yield_demand_forecast(df.iloc[max(0, idx + 1 - lookback):idx + 1], horizon=1)
+        hist_slice = df.iloc[max(0, idx + 1 - lookback):idx + 1]
+        yf = _demand_forecast(hist_slice, horizon=1)
         y_hat = float(yf["forecast"][0]) if yf["forecast"] else 100.0
+
+        # Yield/supply forecast (Section 4 — short-term yield forecaster)
+        sf = yield_supply_forecast(hist_slice, horizon=1, series_col="inventory_units")
+        supply_hat = float(sf["forecast"][0]) if sf["forecast"] else inv
+        supply_hats.append(supply_hat)
 
         # Surplus ratio (computed before env_state for coordinator)
         surplus_ratio = max(0.0, inv / INV_BASELINE - 1.0)
+
+        # RAG context (gated for performance in batch runs)
+        rag_context = None
+        if RAG_CONTEXT_ENABLED and _get_policy_context is not None:
+            try:
+                rag_context = _get_policy_context(scenario=scenario, spoilage_risk=rho, temperature=temp)
+            except Exception:
+                pass
 
         # Build env_state for the coordinator
         env_state = {
             "rho": rho, "inv": inv, "temp": temp, "rh": rh_val,
             "y_hat": y_hat, "tau": tau, "surplus_ratio": surplus_ratio,
+            "supply_hat": supply_hat,
         }
 
         # Action selection via AgentCoordinator
         action_idx, probs, active_agent = coordinator.step(
             env_state, hours[idx], mode, policy, rng, scenario,
+            rag_context=rag_context,
         )
         action = ACTIONS[action_idx]
         active_agent_trace.append(active_agent.role)
@@ -226,6 +276,11 @@ def run_episode(
         save = compute_save_factor(action, mode, surplus_ratio)
         waste = float(waste_raw * (1.0 - save))
 
+        # Circular economy score (Layer 1: reverse_logistics.py)
+        recovery_opts = evaluate_recovery_options(rho, inv, temp)
+        circular = compute_circular_economy_score(action, recovery_opts)
+        circular_scores.append(circular)
+
         # ARI (Layer 1: resilience.py)
         ari = compute_ari(waste, slca_c, rho)
 
@@ -239,7 +294,12 @@ def run_episode(
         # Post-step: update agent state and route messages
         obs = active_agent.observe(env_state, hours[idx])
         outcome = {"waste": waste, "rho": rho}
-        coordinator.post_step(active_agent, action_idx, obs, outcome)
+        coordinator.post_step(active_agent, action_idx, obs, outcome, hour=hours[idx])
+
+        # PolicyLearner: record experience for optional online learning
+        if learner is not None:
+            phi = build_feature_vector(rho, inv, y_hat, temp)
+            learner.record(phi, action_idx, reward)
 
         # Collect traces
         ari_vals.append(ari)
@@ -253,6 +313,12 @@ def run_episode(
         reward_trace.append(reward)
         carbon_trace.append(carbon)
         slca_component_trace.append(slca_result)
+
+    # PolicyLearner: apply gradient update at episode end
+    if learner is not None:
+        from src.models.action_selection import THETA
+        updated_theta = learner.update(THETA)
+        print(f"  Policy weights updated via REINFORCE (delta norm: {np.linalg.norm(updated_theta - THETA):.6f})")
 
     # Episode-level metrics (Layer 1: resilience.py)
     rle = rle_tracker.rle
@@ -274,6 +340,8 @@ def run_episode(
         "ari": float(np.mean(ari_vals)), "rle": float(rle),
         "waste": float(np.mean(waste_vals)), "slca": float(np.mean(slca_vals)),
         "carbon": float(carbon_total), "equity": float(equity),
+        "circular_economy": float(np.mean(circular_scores)),
+        "mean_supply_forecast": float(np.mean(supply_hats)),
         "ari_trace": ari_vals, "waste_trace": waste_vals,
         "rho_trace": rho_trace, "action_trace": action_trace,
         "prob_trace": prob_trace, "reward_trace": reward_trace,

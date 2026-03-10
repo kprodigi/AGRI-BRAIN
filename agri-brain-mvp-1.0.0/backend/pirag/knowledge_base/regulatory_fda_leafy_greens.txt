@@ -1,0 +1,7 @@
+FDA Guidelines for Leafy Greens Storage and Handling
+
+Temperature Requirements: According to FDA Food Safety Modernization Act (FSMA) Produce Safety Rule, fresh leafy greens including spinach, lettuce, and kale must be stored at temperatures not exceeding 5 degrees Celsius (41 degrees Fahrenheit). Cold storage facilities must maintain documentation of continuous temperature monitoring.
+
+Shelf Life Standards: Fresh spinach has a typical shelf life of 7-10 days when stored at 4 degrees Celsius and 85-95 percent relative humidity. The Arrhenius model predicts exponential acceleration of quality decay at temperatures above the reference point. At 10 degrees Celsius, the effective decay rate approximately doubles compared to optimal storage at 4 degrees Celsius.
+
+Traceability Requirements: Under FSMA Section 204, leafy greens are designated as high-risk foods requiring enhanced traceability records. All supply chain participants must maintain Key Data Elements (KDEs) including: lot code, harvest date, cooling date, ship date and receiving date. Records must be maintained for 2 years and available within 24 hours upon FDA request.

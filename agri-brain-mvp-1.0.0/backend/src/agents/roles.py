@@ -24,10 +24,18 @@ _STAGE_BOUNDARIES = [
     ("distributor", 36.0, 54.0),
     ("recovery",   54.0,  float("inf")),
 ]
+"""Primary stage boundaries mapping lifecycle hours to the four supply chain
+stages. The cooperative agent does not appear here; it operates as an
+always-active overlay during hours 12-30 (see ``AgentCoordinator.step``).
+"""
 
 
 def stage_for_hour(hour: float) -> str:
-    """Return the supply chain stage name for a given hour."""
+    """Return the primary supply chain stage for a given hour.
+
+    The cooperative agent is not returned here — it participates as an
+    overlay during hours 12-30, handled by the AgentCoordinator.
+    """
     for role, lo, hi in _STAGE_BOUNDARIES:
         if lo <= hour < hi:
             return role
@@ -182,6 +190,71 @@ class DistributorAgent(SupplyChainAgent):
                 hour=obs.hour,
             ))
         return msgs
+
+
+# ---------------------------------------------------------------------------
+# CooperativeAgent
+# ---------------------------------------------------------------------------
+class CooperativeAgent(SupplyChainAgent):
+    """Coordinates supply chain actors; broadcasts COORDINATION_UPDATE when
+    demand forecast exceeds inventory by 20% (max 60 per episode)."""
+
+    MAX_COORDINATION_BROADCASTS = 60
+
+    def __init__(self) -> None:
+        super().__init__(
+            agent_id="cooperative_agent",
+            role="cooperative",
+            role_bias=np.array([-0.04, +0.10, -0.06]),
+        )
+        self._coordination_broadcasts = 0
+
+    def observe(self, env_state: Dict[str, Any], hour: float) -> Observation:
+        return Observation(
+            rho=env_state["rho"],
+            inv=env_state["inv"],
+            temp=env_state["temp"],
+            rh=env_state["rh"],
+            y_hat=env_state["y_hat"],
+            tau=env_state["tau"],
+            hour=hour,
+            surplus_ratio=env_state.get("surplus_ratio", 0.0),
+            raw=env_state,
+            messages=self.flush_inbox(),
+        )
+
+    def update(self, action: int, outcome: Dict[str, Any]) -> None:
+        self.state["steps_handled"] += 1
+        self.state["cumulative_waste"] += outcome.get("waste", 0.0)
+        if outcome.get("rho", 0.0) > 0.10:
+            self.state["at_risk_count"] += 1
+            if action in (1, 2):
+                self.state["routed_count"] += 1
+
+    def generate_messages(
+        self, obs: Observation, action: int
+    ) -> List[InterAgentMessage]:
+        msgs: List[InterAgentMessage] = []
+        # Broadcast coordination update when demand forecast exceeds inventory by 20%
+        if (self._coordination_broadcasts < self.MAX_COORDINATION_BROADCASTS
+                and obs.y_hat > obs.inv * 0.0012):  # y_hat per step vs inv threshold
+            msgs.append(InterAgentMessage(
+                sender=self.agent_id,
+                recipient="broadcast",
+                msg_type=MessageType.COORDINATION_UPDATE,
+                payload={
+                    "demand_forecast": obs.y_hat,
+                    "inventory": obs.inv,
+                    "rho": obs.rho,
+                },
+                hour=obs.hour,
+            ))
+            self._coordination_broadcasts += 1
+        return msgs
+
+    def reset(self) -> None:
+        super().reset()
+        self._coordination_broadcasts = 0
 
 
 # ---------------------------------------------------------------------------

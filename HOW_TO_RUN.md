@@ -34,8 +34,12 @@ AGRI-BRAIN/
 ├── .gitignore
 ├── agri-brain-mvp-1.0.0/
 │   ├── backend/            # FastAPI backend (port 8100)
-│   │   ├── src/            # Application code (app.py, models/, routers/)
-│   │   ├── pirag/          # PiRAG integration (RAG, MCP, provenance)
+│   │   ├── src/            # Application code (app.py, models/, routers/, agents/)
+│   │   ├── pirag/          # PiRAG integration
+│   │   │   ├── ingestion/  # Document parser, TF-IDF embedder, vector store
+│   │   │   ├── inference/  # LLM abstraction (template + API engines)
+│   │   │   ├── knowledge_base/  # SOPs, regulatory docs, SLCA guides
+│   │   │   └── mcp/        # MCP tool server (compliance, slca, chain query)
 │   │   ├── pyproject.toml
 │   │   └── static/         # Swagger branding assets
 │   ├── frontend/           # React + Vite dashboard (port 5173)
@@ -68,7 +72,16 @@ pip install -e agri-brain-mvp-1.0.0/backend
 ```
 
 This installs all dependencies listed in `pyproject.toml`:
-fastapi, uvicorn, pydantic, numpy, pandas, matplotlib, reportlab, orjson, requests, web3, python-multipart.
+fastapi, uvicorn, pydantic, numpy, pandas, matplotlib, reportlab, orjson, requests, web3, python-multipart, pyyaml.
+
+### 2b-extra. Environment variables (optional)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FORECAST_METHOD` | `lstm` | Demand forecaster: `lstm` (numpy LSTM) or `holt_winters` |
+| `ONLINE_LEARNING` | `false` | Enable REINFORCE policy gradient updates |
+| `LLM_PROVIDER` | `template` | RAG answer engine: `template` or `api` |
+| `DATA_CSV` | (auto) | Override path to spinach sensor CSV |
 
 ### 2c. Start the backend
 

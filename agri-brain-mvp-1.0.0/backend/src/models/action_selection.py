@@ -272,6 +272,7 @@ def select_action(
     hour: float = 0.0,
     role_bias: np.ndarray | None = None,
     deterministic: bool = False,
+    rag_context: dict | None = None,
 ) -> tuple[int, np.ndarray]:
     """Select routing action based on mode-specific softmax policy.
 
@@ -290,6 +291,7 @@ def select_action(
     hour : hours since start (for cyber outage timing).
     role_bias : optional per-role logit bias vector (3,).
     deterministic : if True, use argmax instead of sampling.
+    rag_context : optional RAG-retrieved policy context for logging.
 
     Returns
     -------

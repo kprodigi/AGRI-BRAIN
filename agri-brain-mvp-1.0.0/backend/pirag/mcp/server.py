@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import Any, Dict
 
 from .tools import calculator, units, simulator, policy_oracle
+from .tools import compliance, slca_lookup, chain_query
 
 router = APIRouter()
 
@@ -12,6 +13,9 @@ TOOLS = {
     "convert_units": {"fn": units.convert, "schema": {"value": "float", "from_unit": "str", "to_unit": "str"}},
     "simulate": {"fn": simulator.simulate, "schema": {"endpoint": "str", "payload": "dict"}},
     "policy_check": {"fn": policy_oracle.check_access, "schema": {"user_id": "str", "tool_name": "str"}},
+    "check_compliance": {"fn": compliance.check_compliance, "schema": {"temperature": "float", "humidity": "float", "product_type": "str"}},
+    "slca_lookup": {"fn": slca_lookup.lookup_slca_weights, "schema": {"product_type": "str"}},
+    "chain_query": {"fn": chain_query.query_recent_decisions, "schema": {"n": "int"}},
 }
 
 class CallReq(BaseModel):

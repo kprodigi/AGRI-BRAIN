@@ -39,6 +39,8 @@ def _load_csv(path: str) -> List[Dict[str, Any]]:
                 "ambientC": _to_float(row.get("ambientC")),
                 "inventory_units": _to_float(row.get("inventory_units")),
                 "demand_units": _to_float(row.get("demand_units")),
+                "quality_preference": _to_float(row.get("quality_preference")),
+                "regulatory_temp_max": _to_float(row.get("regulatory_temp_max")),
             })
     return rows
 

@@ -1,0 +1,5 @@
+IoT Sensor Calibration Specification for Cold Chain Monitoring
+
+Sensor Requirements: Temperature sensors must have accuracy of plus or minus 0.5 degrees Celsius across the operating range of minus 10 to plus 50 degrees Celsius. Humidity sensors must operate in the 10-100 percent RH range with accuracy of plus or minus 3 percent RH. Shock and vibration sensors must detect impacts exceeding 0.5G with a sampling rate of at least 100 Hz.
+
+Calibration Schedule: All temperature sensors must be calibrated quarterly against NIST-traceable reference standards. Humidity sensors require semi-annual calibration. Shock sensors require annual calibration. Calibration records must include date, reference standard used, pre-calibration reading, post-calibration reading, and technician identification.

@@ -10,7 +10,7 @@ import numpy as np
 from .message import InterAgentMessage
 
 
-VALID_ROLES = ("farm", "processor", "distributor", "recovery")
+VALID_ROLES = ("farm", "processor", "cooperative", "distributor", "recovery")
 
 
 @dataclass

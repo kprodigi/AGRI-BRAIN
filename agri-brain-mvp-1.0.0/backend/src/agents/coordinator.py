@@ -16,6 +16,7 @@ from .message import InterAgentMessage
 from .roles import (
     FarmAgent,
     ProcessorAgent,
+    CooperativeAgent,
     DistributorAgent,
     RecoveryAgent,
     stage_for_hour,
@@ -40,6 +41,7 @@ class AgentCoordinator:
             agent_list: List[SupplyChainAgent] = [
                 FarmAgent(),
                 ProcessorAgent(),
+                CooperativeAgent(),
                 DistributorAgent(),
                 RecoveryAgent(),
             ]
@@ -78,8 +80,13 @@ class AgentCoordinator:
         policy: Any,
         rng: np.random.Generator,
         scenario: str = "baseline",
+        rag_context: Optional[Dict[str, Any]] = None,
     ) -> tuple:
         """Run one decision step through the active agent.
+
+        The cooperative agent additionally participates as an overlay
+        during hours 12-30, observing state and generating messages
+        alongside the primary stage agent.
 
         Returns
         -------
@@ -87,6 +94,11 @@ class AgentCoordinator:
         """
         active = self.get_active_agent(hour)
         obs = active.observe(env_state, hour)
+
+        # Cooperative overlay: observe + generate messages during hours 12-30
+        cooperative = self.agents.get("cooperative")
+        if cooperative is not None and cooperative is not active and 12.0 <= hour < 30.0:
+            cooperative.observe(env_state, hour)
 
         action_idx, probs = select_action(
             mode=mode,
@@ -100,6 +112,7 @@ class AgentCoordinator:
             scenario=scenario,
             hour=hour,
             role_bias=active.role_bias,
+            rag_context=rag_context,
         )
 
         return action_idx, probs, active
@@ -110,6 +123,7 @@ class AgentCoordinator:
         action: int,
         obs: Observation,
         outcome: Dict[str, Any],
+        hour: float = 0.0,
     ) -> None:
         """Update agent state and route inter-agent messages.
 
@@ -119,10 +133,19 @@ class AgentCoordinator:
         action : action index selected.
         obs : the observation built during ``step()``.
         outcome : dict with at least ``waste`` and ``rho`` keys.
+        hour : current hour for cooperative overlay check.
         """
         agent.update(action, outcome)
 
         messages = agent.generate_messages(obs, action)
+
+        # Cooperative overlay: also update and generate messages during hours 12-30
+        cooperative = self.agents.get("cooperative")
+        if cooperative is not None and cooperative is not agent and 12.0 <= hour < 30.0:
+            cooperative.update(action, outcome)
+            coop_obs = cooperative.observe(obs.raw, hour)
+            messages.extend(cooperative.generate_messages(coop_obs, action))
+
         for msg in messages:
             self._message_log.append(msg)
             if msg.recipient == "broadcast":

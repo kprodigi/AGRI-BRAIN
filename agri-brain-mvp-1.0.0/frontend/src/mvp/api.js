@@ -159,6 +159,7 @@ export const Decide = {
                         action: data.action ?? data.route ?? 'standard_cold_chain',
                         slca_score: data.slca_score ?? data.slca ?? 0,
                         carbon_kg: data.carbon_kg ?? data.carbon ?? 0,
+                        circular_economy_score: data.circular_economy_score ?? null,
                         reason: data.reason ?? data.note ?? '—',
                         tx_hash: data.tx_hash ?? data.tx ?? '0x0',
                         ts: data.ts ?? Math.floor(Date.now() / 1000),

@@ -215,7 +215,10 @@ export default function Ops() {
                                 Volatility: <b>{last(pred?.volatility) ?? "—"}</b>
                             </div>
                             <div className="text-sm text-gray-600">
-                                Forecast horizon: <b>{pred?.yield_forecast_24h?.length ?? 0}h</b>
+                                Forecast method: <b>{pred?.demand_forecast?.method ?? "—"}</b>
+                            </div>
+                            <div className="text-sm text-gray-600">
+                                Forecast horizon: <b>{pred?.yield_forecast_24h?.length ?? pred?.demand_forecast?.forecast?.length ?? 0}h</b>
                             </div>
                             {avgTemp > 6 && (
                                 <div className="flex items-start gap-2 text-amber-700 text-sm">

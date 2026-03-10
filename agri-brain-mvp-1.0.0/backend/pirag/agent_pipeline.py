@@ -3,6 +3,8 @@ from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 import os
 from .pyrag.hybrid_retriever import HybridRetriever, Document, sha256_hex
+from .ingestion.embedder import TFIDFEmbedder
+from .ingestion.vector_store import VectorStore
 from .guards.unit_guard import units_consistent
 from .guards.feasibility_guard import within_ranges, verify_with_sim
 from .provenance.hasher import hash_text
@@ -27,9 +29,36 @@ class PiRAGResponse:
 
 class PiRAGPipeline:
     def __init__(self, dense_model_name: Optional[str] = None):
-        self.retriever = HybridRetriever(dense_model_name=dense_model_name)
-        from .inference.template_engine import TemplateAnswerEngine
-        self.answer_engine = TemplateAnswerEngine()
+        self._embedder = TFIDFEmbedder()
+        self._vector_store = VectorStore()
+        self.retriever = HybridRetriever(
+            dense_model_name=dense_model_name,
+            vector_store=self._vector_store,
+            embedder=self._embedder,
+        )
+        from .inference.llm_engine import get_engine
+        self.answer_engine = get_engine()
+
+        # Auto-ingest knowledge base documents on init
+        self._ingest_knowledge_base()
+
+    def _ingest_knowledge_base(self):
+        """Auto-ingest documents from the knowledge_base directory."""
+        from pathlib import Path
+        kb_dir = Path(__file__).parent / "knowledge_base"
+        if not kb_dir.exists():
+            return
+        docs = []
+        for f in sorted(kb_dir.iterdir()):
+            if f.suffix in (".txt", ".json", ".csv"):
+                try:
+                    text = f.read_text(encoding="utf-8").strip()
+                    if text:
+                        docs.append({"id": f.stem, "text": text, "metadata": {"source": f.name}})
+                except Exception:
+                    pass
+        if docs:
+            self.ingest(docs)
 
     def ingest(self, docs: List[Dict[str, Any]]):
         self.retriever.add_documents([Document(id=d["id"], text=d["text"], metadata=d.get("metadata", {})) for d in docs])

@@ -1,0 +1,7 @@
+Social Life-Cycle Assessment (SLCA) Procedure for Agricultural Supply Chains
+
+Assessment Framework: The SLCA methodology evaluates four impact categories aligned with UNEP/SETAC guidelines: Carbon Footprint (environmental sustainability of transport and storage), Labour Fairness (working conditions across supply chain stages), Community Resilience (contribution to local food security and economic stability), and Price Transparency (fairness and accessibility of pricing mechanisms).
+
+Scoring Methodology: Each impact category is scored on a normalized 0-1 scale where 1 represents optimal social performance. The composite SLCA score is computed as a weighted sum: S = w_C times C + w_L times L + w_R times R + w_P times P, where weights reflect stakeholder priorities. Default weights are: w_C = 0.30, w_L = 0.20, w_R = 0.25, w_P = 0.25.
+
+Carbon Component: The carbon score C reflects transport emissions relative to a baseline cap: C = max(0, 1 - carbon_kg / carbon_cap). Lower emissions from local redistribution routes score higher than long-distance cold chain transport. The COP degradation factor accounts for reduced refrigeration efficiency under thermal stress.

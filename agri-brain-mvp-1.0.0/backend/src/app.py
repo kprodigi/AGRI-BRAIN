@@ -35,6 +35,8 @@ from src.agents.runtime import start_agent_runtime
 # Your models/utilities
 from .models.spoilage import compute_spoilage, volatility_flags, arrhenius_k
 from .models.forecast import yield_demand_forecast
+from .models.lstm_demand import lstm_demand_forecast
+from .models.yield_forecast import yield_supply_forecast
 from .models.slca import slca_score
 from .models.policy import Policy
 from .models.governance_models import ChainConfig
@@ -46,7 +48,19 @@ from .models.action_selection import (
 )
 from .models.waste import INV_BASELINE, compute_waste_rate, compute_save_factor
 from .models.carbon import compute_transport_carbon
+from .models.reverse_logistics import evaluate_recovery_options, compute_circular_economy_score
+from .models.policy_learner import PolicyLearner
 from .chain.eth import log_decision_onchain
+
+# Forecast method selection (default: LSTM, fallback: Holt-Winters)
+import os as _os
+FORECAST_METHOD = _os.environ.get("FORECAST_METHOD", "lstm")
+
+def _demand_forecast(df, horizon=1, **kwargs):
+    """Dispatch to LSTM or Holt-Winters demand forecaster based on config."""
+    if FORECAST_METHOD == "holt_winters":
+        return yield_demand_forecast(df, horizon=horizon, **kwargs)
+    return lstm_demand_forecast(df, horizon=horizon, **kwargs)
 
 # Static/docs branding
 from fastapi.staticfiles import StaticFiles
@@ -184,7 +198,7 @@ ROLE_PROFILES: Dict[str, Dict[str, Any]] = {
         "km_overrides": {"km_coldchain": 180.0, "km_local": 65.0, "km_recovery": 100.0},
         "slca_weights": {"w_c": 0.35, "w_l": 0.15, "w_r": 0.30, "w_p": 0.20},
     },
-    "retail": {
+    "recovery": {
         "logit_bias": np.array([-0.5, -0.6, 1.2]),
         "km_overrides": {"km_coldchain": 130.0, "km_local": 40.0, "km_recovery": 50.0},
         "slca_weights": {"w_c": 0.25, "w_l": 0.15, "w_r": 0.25, "w_p": 0.35},
@@ -292,16 +306,20 @@ def predictions():
     if state["df"] is None:
         case_load()
     df = state["df"]
-    yf = yield_demand_forecast(df, horizon=24)
+    demand_fc = _demand_forecast(df, horizon=24)
+    supply_fc = yield_supply_forecast(df, horizon=24)
     return {
         "timestamp": df["timestamp"].astype(str).tolist(),
         "shelf_left": df["shelf_left"].round(4).tolist(),
         "spoilage_risk": df["spoilage_risk"].round(4).tolist() if "spoilage_risk" in df.columns else [],
         "volatility": df["volatility"].tolist(),
-        "yield_forecast_24h": yf["forecast"],
-        "yield_forecast_ci_lower": yf["ci_lower"],
-        "yield_forecast_ci_upper": yf["ci_upper"],
-        "yield_forecast_std": yf["std"],
+        "demand_forecast": demand_fc,
+        "yield_forecast": supply_fc,
+        # Legacy fields for backward compatibility
+        "yield_forecast_24h": demand_fc["forecast"],
+        "yield_forecast_ci_lower": demand_fc["ci_lower"],
+        "yield_forecast_ci_upper": demand_fc["ci_upper"],
+        "yield_forecast_std": demand_fc["std"],
     }
 
 # ---------------------------------------------------------------------------
@@ -347,9 +365,10 @@ def decide(d: DecideIn):
     inv = float(row.get("inventory_units", 100.0))
     temp = float(row["tempC"])
 
-    # Yield forecast (single-step)
-    yf = yield_demand_forecast(df.iloc[: idx + 1], horizon=1)
-    y_hat = float(yf["forecast"][0]) if yf["forecast"] else 100.0
+    # Demand forecast (LSTM or Holt-Winters) and yield forecast
+    demand_fc = _demand_forecast(df.iloc[: idx + 1], horizon=1)
+    y_hat = float(demand_fc["forecast"][0]) if demand_fc["forecast"] else 100.0
+    supply_fc = yield_supply_forecast(df.iloc[: idx + 1], horizon=1)
 
     # Bollinger trigger  (tau = 1 if anomaly)
     tau = 1.0 if str(row.get("volatility", "normal")) == "anomaly" else 0.0
@@ -370,12 +389,21 @@ def decide(d: DecideIn):
     km_ov = profile.get("km_overrides", {})
     slca_w = profile.get("slca_weights", {})
 
+    # ---- RAG context (best effort) — computed before action selection -----
+    rag_context = {}
+    try:
+        from pirag.context_provider import get_policy_context
+        rag_context = get_policy_context(scenario="baseline", spoilage_risk=rho, temperature=temp)
+    except Exception:
+        pass
+
     # ---- action selection via canonical select_action() -------------------
     rng = np.random.default_rng()
     action_idx, probs = select_action(
         mode=d.mode, rho=rho, inv=inv, y_hat=y_hat, temp=temp,
         tau=tau, policy=p, rng=rng,
         role_bias=role_bias, deterministic=d.deterministic,
+        rag_context=rag_context,
     )
 
     action = ACTIONS[action_idx]
@@ -409,6 +437,10 @@ def decide(d: DecideIn):
     save = compute_save_factor(action, d.mode, surplus_ratio)
     waste = float(waste_raw * (1.0 - save))
     price = p.msrp * PRICE_FACTOR.get(action, 1.0)
+
+    # ---- circular economy score ------------------------------------------
+    recovery_opts = evaluate_recovery_options(rho, inv, temp)
+    circular_score = compute_circular_economy_score(action, recovery_opts)
 
     # ---- composite reward ------------------------------------------------
     # R = w_c*C + w_l*L + w_r*R + w_p*P  - alpha_E*E - beta_W*W - eta*waste
@@ -465,6 +497,15 @@ def decide(d: DecideIn):
             "waste_penalty": round(waste_penalty, 4),
             "total": round(reward_total, 4),
         },
+        "circular_economy_score": circular_score,
+        "recovery_options": recovery_opts,
+        "rag_context": {
+            "regulatory_guidance": rag_context.get("regulatory_guidance", ""),
+            "relevant_sops": rag_context.get("relevant_sops", ""),
+            "source_documents": rag_context.get("source_documents", []),
+        },
+        "demand_forecast": {"method": FORECAST_METHOD, "y_hat": round(y_hat, 4)},
+        "yield_forecast": {"y_hat": round(float(supply_fc["forecast"][0]) if supply_fc["forecast"] else 0.0, 4)},
         "note": (
             f"Softmax policy: action={action} "
             f"P={probs[action_idx]:.3f} rho={rho:.3f} tau={tau}"
@@ -481,6 +522,13 @@ def decide(d: DecideIn):
         logger.debug("on-chain log skipped: %s", e)
     memo["tx"] = tx
     memo["tx_hash"] = tx
+
+    # PolicyLearner: record experience for optional online learning
+    if PolicyLearner.is_enabled():
+        _learner = state.setdefault("_policy_learner", PolicyLearner())
+        from .models.action_selection import build_feature_vector
+        phi = build_feature_vector(rho, inv, y_hat, temp)
+        _learner.record(phi, action_idx, reward_total)
 
     # append to in-memory log
     state.setdefault("log", []).append(memo)

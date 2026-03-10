@@ -538,8 +538,9 @@ function QuickDecisionTab() {
                 <select className="border rounded-md px-3 py-2" value={role} onChange={e => setRole(e.target.value)}>
                     <option value="farm">farm</option>
                     <option value="processor">processor</option>
+                    <option value="cooperative">cooperative</option>
                     <option value="distributor">distributor</option>
-                    <option value="retail">retail</option>
+                    <option value="recovery">recovery</option>
                 </select>
                 <button
                     className="px-4 py-2 rounded-md bg-black text-white"
