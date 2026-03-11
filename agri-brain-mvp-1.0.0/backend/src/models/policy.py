@@ -87,7 +87,7 @@ class Policy(BaseModel):
     # When volatility is detected (tau=1), these shift the softmax logits.
     # Positive gamma_coldchain encourages safe routing during uncertainty.
     gamma_coldchain: float = Field(
-        0.3,
+        0.25,
         description="Volatility tilt toward cold-chain (positive = prefer CC under volatility). "
         "Kept small to avoid over-conservative routing during demand noise, which "
         "would degrade SLCA scores and ARI. Range: 0.1-0.8.",
@@ -98,7 +98,7 @@ class Policy(BaseModel):
         "are relatively adaptive to demand changes). Range: -0.5 to 0.5.",
     )
     gamma_recovery: float = Field(
-        -0.3,
+        -0.25,
         description="Volatility tilt for recovery (discouraged under volatility "
         "since recovery capacity may be strained). Range: -1.5 to 0.0.",
     )

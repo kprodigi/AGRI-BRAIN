@@ -162,25 +162,30 @@ def apply_scenario(df: pd.DataFrame, name: str, policy: Policy,
         df["tempC"] = df["tempC"] + temp_add
     elif name == "cyber_outage":
         mask = hours >= 24.0
+        # Processor offline: downstream demand drops to 15% (pipeline broken)
         df.loc[mask, "demand_units"] = df.loc[mask, "demand_units"] * 0.15
-        df.loc[mask, "inventory_units"] = df.loc[mask, "inventory_units"] * 0.25
-        # Refrigeration degradation: IT-controlled cooling partially fails
+        # Inventory stays at 100%: produce keeps arriving from farms,
+        # creating an accumulation crisis with the processor offline.
+        # Refrigeration degradation: IT-controlled cooling fails (+10C)
         temp_add = np.zeros(n)
         for i in range(n):
             h = hours[i]
             if h >= 24.0:
                 onset = 1.0 - np.exp(-0.2 * (h - 24.0))
-                temp_add[i] = 5.0 * onset
+                temp_add[i] = 10.0 * onset
         df["tempC"] = df["tempC"] + temp_add
     elif name == "adaptive_pricing":
         oscillation = 45.0 * np.sin(2.0 * np.pi * np.arange(n) / 60.0)
         noise = rng.normal(0.0, 14.0, size=n)
         df["demand_units"] = (df["demand_units"] + oscillation + noise).clip(0)
-        # Cold-storage stress from demand-supply mismatch
+        # Cold-storage stress from demand volatility: frequent dock openings,
+        # variable loading patterns, and supply-demand mismatch degrade
+        # temperature management (Mercier et al., 2017).
         demand = df["demand_units"].to_numpy()
         inv = df["inventory_units"].to_numpy()
+        demand_dev = np.abs(demand - np.median(demand)) / (np.median(demand) + 1.0)
         surplus_signal = np.clip((inv / 12000.0 - 1.0), 0, 2.0)
-        temp_add = 2.0 * surplus_signal
+        temp_add = 1.5 * np.clip(demand_dev, 0, 1) + 2.0 * surplus_signal
         df["tempC"] = df["tempC"] + temp_add
 
     return _recompute_derived(df, policy)
