@@ -48,8 +48,8 @@ class SpoilagePINN:
         self,
         hidden_size: int = 32,
         n_hidden: int = 2,
-        lambda_phys: float = 0.1,
-        lr: float = 0.001,
+        lambda_phys: float = 1.0,
+        lr: float = 0.02,
         seed: int = 42,
     ) -> None:
         self.hidden_size = hidden_size
@@ -73,11 +73,10 @@ class SpoilagePINN:
             self.biases.append(b)
             in_dim = hidden_size
 
-        # Output layer (positive bias initialises toward quality preservation,
-        # compensating for midpoint rule overestimation of cumulative decay)
-        scale = np.sqrt(2.0 / (in_dim + 1))
-        W = rng.normal(0.0, scale, (in_dim, 1))
-        b = np.array([0.3])
+        # Output layer (zero init — starts with no correction, learns only
+        # when data and physics losses provide a meaningful gradient signal)
+        W = np.zeros((in_dim, 1))
+        b = np.array([0.0])
         self.weights.append(W)
         self.biases.append(b)
 

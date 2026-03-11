@@ -206,7 +206,7 @@ def compute_spoilage_pinn(
     beta: float = 0.25,
     lag_lambda: float = 12.0,
     pinn_seed: int = 42,
-    pinn_epochs: int = 200,
+    pinn_epochs: int = 1000,
 ) -> pd.DataFrame:
     """Compute spoilage with PINN residual correction on top of ODE baseline.
 
@@ -245,7 +245,7 @@ def compute_spoilage_pinn(
     rh_frac = df["RH"].to_numpy(dtype=np.float64) / 100.0
 
     # Step 2: train PINN on ODE baseline
-    pinn = SpoilagePINN(seed=pinn_seed, lambda_phys=0.5)
+    pinn = SpoilagePINN(seed=pinn_seed, lambda_phys=1.0)
     pinn.fit(
         temp_C=temp_C,
         rh_frac=rh_frac,

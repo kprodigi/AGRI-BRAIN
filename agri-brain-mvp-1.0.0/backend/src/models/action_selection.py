@@ -297,19 +297,20 @@ def select_action(
     -------
     (action_index, probability_vector)
     """
+    # Static is ALWAYS cold chain, regardless of scenario
+    if mode == "static":
+        return 0, np.array([1.0, 0.0, 0.0])
+
     phi = build_feature_vector(rho, inv, y_hat, temp)
     gamma = np.array([policy.gamma_coldchain, policy.gamma_local, policy.gamma_recovery])
 
-    # Cyber outage: processor offline from hour 24
+    # Cyber outage: processor offline from hour 24 (applies to all non-static modes)
     if scenario == "cyber_outage" and hour >= 24.0:
         p_success = CYBER_REROUTE_PROB.get(mode, 0.50)
         if rng.random() < p_success:
             return 1, np.array([0.0, 1.0, 0.0])
         else:
             return 0, np.array([1.0, 0.0, 0.0])
-
-    if mode == "static":
-        return 0, np.array([1.0, 0.0, 0.0])
 
     elif mode == "hybrid_rl":
         logits = THETA @ phi + gamma * tau

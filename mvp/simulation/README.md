@@ -15,7 +15,7 @@ variants.
 |----|-------------|
 | `heatwave` | 72 h climate-induced heatwave: +20 °C ramp (hours 24–48) with exponential tail; +10 % RH |
 | `overproduction` | Inventory multiplied 2.5× during hours 12–60; triggers redistribution |
-| `cyber_outage` | Yield drops to 15 % and inventory to 25 % from hour 24 onward |
+| `cyber_outage` | Yield drops to 15 % and inventory to 25 % from hour 24 onward; +5 °C refrigeration degradation |
 | `adaptive_pricing` | Demand oscillation (amplitude 45, period 60) plus Gaussian noise (σ=14) |
 | `baseline` | Original sensor data with no perturbation |
 
@@ -96,17 +96,17 @@ All outputs are saved to `mvp/simulation/results/`:
 
 | Scenario | ARI | Waste | RLE | SLCA |
 |----------|-----|-------|-----|------|
-| Heatwave | ~0.61 | ~0.04 | ~0.94 | ~0.75 |
-| Overproduction | ~0.64 | ~0.04 | ~0.86 | ~0.73 |
-| Cyber Outage | ~0.75 | ~0.02 | ~0.00 | ~0.81 |
-| Price Volatility | ~0.71 | ~0.03 | ~0.00 | ~0.77 |
-| Baseline | ~0.72 | ~0.02 | ~0.00 | ~0.77 |
+| Heatwave | ~0.60 | ~0.03 | ~0.95 | ~0.74 |
+| Overproduction | ~0.63 | ~0.04 | ~0.91 | ~0.73 |
+| Cyber Outage | ~0.71 | ~0.03 | ~0.84 | ~0.78 |
+| Price Volatility | ~0.72 | ~0.02 | ~0.56 | ~0.77 |
+| Baseline | ~0.72 | ~0.02 | ~0.73 | ~0.78 |
 
 ### Ablation Impact (largest to smallest)
 
-1. **Removing SLCA** (`no_slca`) — drops SLCA to ~0.61–0.71 and ARI to ~0.49–0.65
-2. **Removing PINN** (`no_pinn`) — slight waste increase; ARI ~0.57–0.68
-3. **Hybrid RL** (no SLCA logit bonus) — slightly less optimal routing; ARI ~0.54–0.65
+1. **Removing SLCA** (`no_slca`) — drops SLCA to ~0.61–0.68 and ARI to ~0.49–0.57
+2. **Removing PINN** (`no_pinn`) — slight waste increase; ARI ~0.58–0.68
+3. **Hybrid RL** (no SLCA logit bonus) — slightly less optimal routing; ARI ~0.55–0.66
 
 ## Seed & Reproducibility
 
