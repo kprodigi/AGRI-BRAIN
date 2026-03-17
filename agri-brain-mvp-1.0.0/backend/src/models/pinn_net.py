@@ -10,7 +10,7 @@ Architecture:
 
 Input:  3 features [temp_norm, rh_norm, time_norm]
 Hidden: 2 layers of 32 neurons, tanh activation
-Output: scalar delta_C in [-0.05, 0.05]
+Output: scalar delta_C in [-0.08, 0.08]
 
 Loss = MSE(C_ode + delta_C, C_target) + lambda_phys * mean(ODE_residual^2)
 """
