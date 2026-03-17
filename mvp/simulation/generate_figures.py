@@ -2,7 +2,7 @@
 """
 AGRI-BRAIN Figure Generation
 ==============================
-Generates 7 publication-quality figures (PNG + PDF at 300 DPI).
+Generates 7 publication-quality figures (PNG + PDF at 800 DPI).
 
 Standalone usage:
     cd mvp/simulation
@@ -30,20 +30,30 @@ from generate_results import run_all, SCENARIOS, MODES, RESULTS_DIR
 from src.models.resilience import RLE_THRESHOLD
 
 # ---------------------------------------------------------------------------
-# Journal-ready global style (Times New Roman, STIX math)
+# Journal-ready global style (Times New Roman, STIX math, 12pt uniform)
 # ---------------------------------------------------------------------------
 plt.rcParams.update({
     "font.family": "serif",
     "font.serif": ["Times New Roman", "DejaVu Serif", "serif"],
     "mathtext.fontset": "stix",
-    "axes.labelsize": 13,
+    "font.size": 12,
+    "axes.labelsize": 12,
     "axes.labelweight": "bold",
-    "axes.titlesize": 13,
+    "axes.titlesize": 12,
     "axes.titleweight": "bold",
-    "xtick.labelsize": 11,
-    "ytick.labelsize": 11,
-    "legend.fontsize": 10,
-    "figure.dpi": 300,
+    "xtick.labelsize": 12,
+    "ytick.labelsize": 12,
+    "legend.fontsize": 12,
+    "figure.titlesize": 12,
+    "figure.titleweight": "bold",
+    "figure.dpi": 150,
+    "lines.linewidth": 2.0,
+    "lines.markersize": 8,
+    "axes.linewidth": 1.0,
+    "xtick.major.width": 0.8,
+    "ytick.major.width": 0.8,
+    "xtick.major.pad": 4,
+    "ytick.major.pad": 4,
 })
 
 # ---------------------------------------------------------------------------
@@ -89,7 +99,7 @@ SCENARIO_LABELS = {
     "baseline":         "Baseline",
 }
 
-DPI = 300
+DPI = 800
 MARKER_EVERY = 15
 
 
@@ -98,12 +108,12 @@ def _apply_style(ax):
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.grid(True, alpha=0.3, color="lightgray", linewidth=0.5)
-    ax.tick_params(labelsize=11)
-    ax.xaxis.label.set_size(13)
+    ax.tick_params(labelsize=12)
+    ax.xaxis.label.set_size(12)
     ax.xaxis.label.set_weight("bold")
-    ax.yaxis.label.set_size(13)
+    ax.yaxis.label.set_size(12)
     ax.yaxis.label.set_weight("bold")
-    ax.title.set_size(13)
+    ax.title.set_size(12)
     ax.title.set_weight("bold")
 
 
@@ -115,8 +125,8 @@ def _mode_plot(ax, hours, y, mode, **kwargs):
         marker=MARKERS[mode],
         linestyle=LINESTYLES[mode],
         markevery=MARKER_EVERY,
-        markersize=7,
-        linewidth=1.8,
+        markersize=8,
+        linewidth=2.0,
         label=MODE_LABELS[mode],
         **kwargs,
     )
@@ -124,14 +134,14 @@ def _mode_plot(ax, hours, y, mode, **kwargs):
 
 def _legend(ax, **kwargs):
     """Add a styled legend with no overlap."""
-    defaults = dict(fontsize=10, framealpha=0.95, edgecolor="gray",
+    defaults = dict(fontsize=12, framealpha=0.95, edgecolor="gray",
                     fancybox=False, shadow=False)
     defaults.update(kwargs)
     ax.legend(**defaults)
 
 
 def _save(fig, name):
-    """Save figure as PNG (300 DPI) and PDF (vector)."""
+    """Save figure as PNG (800 DPI) and PDF (vector)."""
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     for ext in ("png", "pdf"):
         path = RESULTS_DIR / f"{name}.{ext}"
@@ -146,7 +156,7 @@ def _annotate_window(ax, x0, x1, color, label, alpha=0.12, ypos=0.95):
     ylim = ax.get_ylim()
     ax.text(
         (x0 + x1) / 2, ylim[0] + ypos * (ylim[1] - ylim[0]),
-        label, ha="center", va="top", fontsize=8,
+        label, ha="center", va="top", fontsize=10,
         fontstyle="italic", color=color, alpha=0.8,
     )
 
@@ -161,7 +171,7 @@ def fig2_heatwave(data):
     hours = np.array(ab["hours"])
 
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-    fig.suptitle("Heatwave Scenario Analysis", fontsize=14, fontweight="bold")
+    fig.suptitle("Heatwave Scenario Analysis", fontsize=12, fontweight="bold")
 
     # --- (a) Temperature + Humidity with heatwave window ---
     ax = axes[0, 0]
@@ -173,14 +183,14 @@ def fig2_heatwave(data):
     ax.set_ylabel("Temperature (\u00b0C)")
     ax2.set_ylabel("Relative Humidity (%)")
     ax.set_title("(a) Environmental Exposure")
-    ax.legend(loc="upper left", fontsize=9, framealpha=0.9, edgecolor="gray")
-    ax2.legend(loc="upper right", fontsize=9, framealpha=0.9, edgecolor="gray")
+    ax.legend(loc="upper left", fontsize=12, framealpha=0.9, edgecolor="gray")
+    ax2.legend(loc="upper right", fontsize=12, framealpha=0.9, edgecolor="gray")
     _apply_style(ax)
     ax2.spines["top"].set_visible(False)
-    ax2.tick_params(labelsize=11)
+    ax2.tick_params(labelsize=12)
     ylims = ax.get_ylim()
     ax.text(36, ylims[0] + 0.08 * (ylims[1] - ylims[0]),
-            "Heatwave", ha="center", fontsize=9, fontstyle="italic",
+            "Heatwave", ha="center", fontsize=10, fontstyle="italic",
             color="red", alpha=0.8,
             bbox=dict(boxstyle="round,pad=0.2", facecolor="white",
                       alpha=0.7, edgecolor="none"))
@@ -249,7 +259,7 @@ def fig3_reverse(data):
 
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
     fig.suptitle("Overproduction & Reverse Logistics",
-                 fontsize=14, fontweight="bold")
+                 fontsize=12, fontweight="bold")
 
     # --- (a) Inventory vs Demand (dual y-axis, proper units) ---
     ax = axes[0, 0]
@@ -267,16 +277,16 @@ def fig3_reverse(data):
     ax.axvspan(12, 60, alpha=0.08, color="#f39c12", zorder=0)
     ylims = ax.get_ylim()
     ax.text(0.6, 0.05, "Overproduction\nwindow",
-            transform=ax.transAxes, ha="right", va="bottom", fontsize=8,
+            transform=ax.transAxes, ha="right", va="bottom", fontsize=10,
             fontstyle="italic", color="#e67e22", alpha=0.8,
             bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
                       alpha=0.7, edgecolor="none"))
     ax.set_title("(a) Inventory vs Demand")
-    ax.legend(loc="upper left", fontsize=9, framealpha=0.9, edgecolor="gray")
-    ax2.legend(loc="upper right", fontsize=9, framealpha=0.9, edgecolor="gray")
+    ax.legend(loc="upper left", fontsize=12, framealpha=0.9, edgecolor="gray")
+    ax2.legend(loc="upper right", fontsize=12, framealpha=0.9, edgecolor="gray")
     _apply_style(ax)
     ax2.spines["top"].set_visible(False)
-    ax2.tick_params(labelsize=11)
+    ax2.tick_params(labelsize=12)
 
     # --- (b) Waste rolling average ---
     ax = axes[0, 1]
@@ -318,7 +328,7 @@ def fig3_reverse(data):
                    alpha=0.7)
         ax.text(threshold_hour + 1, 0.50,
                 f"\u03c1 > {RLE_THRESHOLD}\n(h={threshold_hour:.0f})",
-                fontsize=8, color="#7f8c8d", va="top",
+                fontsize=10, color="#7f8c8d", va="top",
                 bbox=dict(boxstyle="round,pad=0.2", facecolor="white",
                           alpha=0.8, edgecolor="none"))
 
@@ -343,7 +353,7 @@ def fig3_reverse(data):
                label=MODE_LABELS[mode], alpha=0.85, edgecolor="white",
                linewidth=0.5)
     ax.set_xticks(x + width)
-    ax.set_xticklabels(comp_labels, fontsize=10)
+    ax.set_xticklabels(comp_labels, fontsize=12)
     ax.set_ylabel("Score")
     ax.set_title("(d) SLCA Components")
     ax.set_ylim(0, 1.1)
@@ -364,7 +374,7 @@ def fig4_cyber(data):
     hours = np.array(ab["hours"])
 
     fig, axes = plt.subplots(1, 3, figsize=(16, 5))
-    fig.suptitle("Cyber Outage Scenario", fontsize=14, fontweight="bold")
+    fig.suptitle("Cyber Outage Scenario", fontsize=12, fontweight="bold")
 
     # --- (a) ARI over time with outage shading ---
     ax = axes[0]
@@ -376,7 +386,7 @@ def fig4_cyber(data):
     ax.axvspan(24, 72, alpha=0.10, color="#8e44ad", zorder=0)
     ylims = ax.get_ylim()
     ax.text(48, ylims[0] + 0.08 * (ylims[1] - ylims[0]),
-            "Outage", ha="center", fontsize=9, fontstyle="italic",
+            "Outage", ha="center", fontsize=10, fontstyle="italic",
             color="#8e44ad", alpha=0.8,
             bbox=dict(boxstyle="round,pad=0.2", facecolor="white",
                       alpha=0.7, edgecolor="none"))
@@ -407,7 +417,7 @@ def fig4_cyber(data):
     ax.bar(bar_x + width / 2, during_counts, width, color="#e74c3c",
            alpha=0.8, label="During outage", edgecolor="white", linewidth=0.5)
     ax.set_xticks(bar_x)
-    ax.set_xticklabels(action_names, fontsize=10)
+    ax.set_xticklabels(action_names, fontsize=12)
     ax.set_ylabel("Fraction")
     ax.set_title("(b) Action Distribution Shift")
     _legend(ax)
@@ -453,7 +463,7 @@ def fig5_pricing(data):
 
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
     fig.suptitle("Adaptive Pricing & Demand Volatility",
-                 fontsize=14, fontweight="bold")
+                 fontsize=12, fontweight="bold")
 
     # --- (a) Demand + Bollinger triggers ---
     ax = axes[0, 0]
@@ -565,7 +575,7 @@ def fig6_cross(data):
     """2x2 grouped bars: ARI, RLE, waste, SLCA across scenarios for 3 methods."""
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
     fig.suptitle("Cross-Scenario Performance Comparison",
-                 fontsize=14, fontweight="bold")
+                 fontsize=12, fontweight="bold")
 
     metrics = [("ari", "ARI", "(a)"), ("rle", "RLE", "(b)"),
                ("waste", "Waste Rate", "(c)"), ("slca", "SLCA Score", "(d)")]
@@ -584,7 +594,7 @@ def fig6_cross(data):
 
         ax.set_xticks(x + width)
         ax.set_xticklabels([SCENARIO_LABELS[s] for s in scenarios_plot],
-                           fontsize=10, rotation=15, ha="right")
+                           fontsize=12, rotation=15, ha="right")
         ax.set_ylabel(ylabel)
         ax.set_title(f"{panel} {ylabel}")
         _apply_style(ax)
@@ -592,7 +602,7 @@ def fig6_cross(data):
     # Single legend at the bottom, shared across all subplots
     handles, labels = axes.flat[0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="lower center", ncol=len(methods),
-               fontsize=10, framealpha=0.95, edgecolor="gray",
+               fontsize=12, framealpha=0.95, edgecolor="gray",
                fancybox=False, shadow=False,
                bbox_to_anchor=(0.5, 0.0))
     fig.tight_layout(rect=[0, 0.05, 1, 0.95])
@@ -605,7 +615,7 @@ def fig6_cross(data):
 def fig7_ablation(data):
     """1x3 grouped bars: ARI, waste, RLE for all 5 variants."""
     fig, axes = plt.subplots(1, 3, figsize=(16, 5.5))
-    fig.suptitle("Ablation Study", fontsize=14, fontweight="bold")
+    fig.suptitle("Ablation Study", fontsize=12, fontweight="bold")
 
     metrics = [("ari", "ARI", "(a)"), ("waste", "Waste Rate", "(b)"),
                ("rle", "RLE", "(c)")]
@@ -623,15 +633,15 @@ def fig7_ablation(data):
 
         ax.set_xticks(x + 2 * width)
         ax.set_xticklabels([SCENARIO_LABELS[s] for s in stress_scenarios],
-                           fontsize=9, rotation=15, ha="right")
-        ax.set_ylabel(ylabel, fontsize=13, fontweight="bold")
-        ax.set_title(f"{panel} {ylabel}", fontsize=13, fontweight="bold")
+                           fontsize=12, rotation=15, ha="right")
+        ax.set_ylabel(ylabel, fontsize=12, fontweight="bold")
+        ax.set_title(f"{panel} {ylabel}", fontsize=12, fontweight="bold")
         _apply_style(ax)
 
     # Single legend at the bottom, shared across all subplots
     handles, labels = axes[0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="lower center", ncol=len(MODES),
-               fontsize=9, framealpha=0.95, edgecolor="gray",
+               fontsize=12, framealpha=0.95, edgecolor="gray",
                fancybox=False, shadow=False,
                bbox_to_anchor=(0.5, 0.0))
     fig.tight_layout(rect=[0, 0.06, 1, 0.93])
@@ -645,7 +655,7 @@ def fig8_green(data):
     """1x2: cumulative CO2 heatwave, total carbon bar chart."""
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     fig.suptitle("Green AI & Carbon Footprint",
-                 fontsize=14, fontweight="bold")
+                 fontsize=12, fontweight="bold")
 
     hw = data["results"]["heatwave"]
     hours = np.array(hw["agribrain"]["hours"])
@@ -659,7 +669,7 @@ def fig8_green(data):
     ax.axvspan(24, 48, alpha=0.12, color="red", zorder=0)
     ylims = ax.get_ylim()
     ax.text(36, ylims[0] + 0.10 * (ylims[1] - ylims[0]),
-            "Heatwave", ha="center", fontsize=9, fontstyle="italic",
+            "Heatwave", ha="center", fontsize=10, fontstyle="italic",
             color="red", alpha=0.8,
             bbox=dict(boxstyle="round,pad=0.2", facecolor="white",
                       alpha=0.7, edgecolor="none"))
@@ -684,7 +694,7 @@ def fig8_green(data):
 
     ax.set_xticks(x + width)
     ax.set_xticklabels([SCENARIO_LABELS[s] for s in scenarios_plot],
-                       fontsize=10, rotation=15, ha="right")
+                       fontsize=12, rotation=15, ha="right")
     ax.set_ylabel("Total CO\u2082 (kg)")
     ax.set_title("(b) Carbon Footprint by Scenario")
     _legend(ax)
