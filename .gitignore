@@ -23,3 +23,4 @@ contracts/hardhat/cache/
 # PiRAG vector store persistence
 *.vectorstore
 pirag_vectors/
+agri-brain-mvp-1.0.0/backend/src/data_spinach_v1.csv
