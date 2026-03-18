@@ -29,27 +29,33 @@ The repository layout:
 
 ```
 AGRI-BRAIN/
-├── README.md               # Project overview and quick start
-├── HOW_TO_RUN.md           # This file
-├── .gitignore
+├── README.md
+├── HOW_TO_RUN.md
+├── docs/screenshots/           # Frontend screenshots
 ├── agri-brain-mvp-1.0.0/
-│   ├── backend/            # FastAPI backend (port 8100)
-│   │   ├── src/            # Application code (app.py, models/, routers/, agents/)
-│   │   ├── pirag/          # PiRAG integration
-│   │   │   ├── ingestion/  # Document parser, TF-IDF embedder, vector store
-│   │   │   ├── inference/  # LLM abstraction (template + API engines)
-│   │   │   ├── knowledge_base/  # SOPs, regulatory docs, SLCA guides
-│   │   │   └── mcp/        # MCP tool server (compliance, slca, chain query)
-│   │   ├── pyproject.toml
-│   │   └── static/         # Swagger branding assets
-│   ├── frontend/           # React + Vite dashboard (port 5173)
-│   └── contracts/          # Solidity smart contracts (Hardhat)
+│   ├── backend/                # FastAPI backend (port 8100)
+│   │   ├── src/                # Application code
+│   │   │   ├── app.py          # Main FastAPI app
+│   │   │   ├── models/         # PINN spoilage, forecast, SLCA, policy
+│   │   │   ├── routers/        # API route handlers
+│   │   │   ├── agents/         # Multi-agent coordinator (5 roles)
+│   │   │   └── chain/          # Blockchain integration
+│   │   ├── pirag/              # PiRAG pipeline (RAG, MCP, provenance)
+│   │   ├── experiments/        # Policy experiment scripts
+│   │   ├── static/             # Swagger branding assets
+│   │   └── pyproject.toml
+│   ├── frontend/               # React + Vite dashboard (port 5173)
+│   │   └── src/
+│   │       ├── pages/          # Ops, Quality, Decisions, Map, Analytics, Admin
+│   │       ├── components/ui/  # shadcn/ui component library
+│   │       ├── layouts/        # MainLayout (sidebar, header, theme toggle)
+│   │       ├── hooks/          # useTheme, useWebSocket
+│   │       ├── lib/            # Utility functions
+│   │       └── mvp/            # API configuration
+│   └── contracts/              # Solidity smart contracts (Hardhat)
 ├── mvp/
-│   └── simulation/         # Standalone simulation & figure scripts
-│       ├── generate_results.py
-│       ├── generate_figures.py
-│       └── results/        # Output CSVs and figures
-└── pirag_patch_v1_fullcode/ # Standalone PiRAG reference code
+│   └── simulation/             # Standalone simulation & figure scripts
+└── data_spinach_v2.csv         # Sensor dataset
 ```
 
 ---
@@ -86,8 +92,7 @@ fastapi, uvicorn, pydantic, numpy, pandas, matplotlib, reportlab, orjson, reques
 ### 2c. Start the backend
 
 ```bash
-cd agri-brain-mvp-1.0.0/backend
-python -m uvicorn src.app:API --host 127.0.0.1 --port 8100 --reload
+python -m uvicorn src.app:API --host 127.0.0.1 --port 8100 --app-dir agri-brain-mvp-1.0.0/backend
 ```
 
 You should see:
@@ -106,6 +111,16 @@ curl http://127.0.0.1:8100/health
 ```
 
 Expected: `{"ok":true}`
+
+### 2e. Load sensor data
+
+```bash
+curl -X POST http://127.0.0.1:8100/case/load
+```
+
+Expected: `{"ok":true,"records":288}`
+
+This step is required before the frontend dashboard will display data.
 
 Browse the interactive API docs at: **http://127.0.0.1:8100/docs**
 
@@ -131,7 +146,25 @@ VITE v7.x.x  ready
 Open **http://localhost:5173** in your browser to see the AGRI-BRAIN dashboard.
 
 The frontend connects to the backend at `http://127.0.0.1:8100`.
-Make sure the backend is running before using the dashboard.
+Make sure the backend is running and data is loaded before using the dashboard.
+
+### Frontend pages
+
+| URL | Page | Description |
+|-----|------|-------------|
+| `/` | Operations | KPI cards (records, temperature, anomalies, waste rate), real-time telemetry line charts with safe/warning/critical temperature zones, spoilage & yield area chart |
+| `/quality` | Quality | Circular spoilage risk gauge, shelf-life countdown timer, current sensor readings, IoT temperature/humidity charts, PINN vs ODE spoilage comparison |
+| `/decisions` | Decisions | Decision timeline with action badges, filters by role and action type, search, decision analytics sidebar with pie chart, CSV export, PDF report |
+| `/map` | Map | Leaflet map centered on South Dakota with 4 supply chain nodes (farm, processor, cooperative, recovery) and route overlays showing cold chain, redistribution, and recovery paths |
+| `/analytics` | Analytics | Executive summary with 5 hero metrics, Table 1 (cross-scenario) and Table 2 (ablation study), grouped bar charts, radar chart, method comparison, scenario deep-dive gallery with figures, carbon footprint analysis, full simulation runner |
+| `/admin` | Admin Panel | Five tabs: Policy (routing/carbon/SLCA parameters), Blockchain (RPC status, config), Audit (searchable log table with expandable rows), Scenarios (5 scenario cards with intensity slider), Quick Decision (role selector + instant decision) |
+
+### Features
+
+- **Dark mode**: Toggle via the sun/moon icon in the header. Persists in localStorage.
+- **WebSocket**: Real-time connection indicator ("Live" badge) in the header. Auto-reconnects.
+- **Notifications**: Bell icon in header shows decision events from the WebSocket stream.
+- **Responsive**: Sidebar collapses on mobile with bottom navigation.
 
 ---
 
@@ -164,10 +197,13 @@ curl http://127.0.0.1:8100/predictions
 # Make a decision (regime-aware softmax policy)
 curl -X POST http://127.0.0.1:8100/decide \
   -H "Content-Type: application/json" \
-  -d '{"agent_id":"farm","role":"grower","step":0}'
+  -d '{"agent_id":"farm","role":"farm"}'
 
 # Get the last decision
 curl http://127.0.0.1:8100/last-decision
+
+# Get decision feed
+curl http://127.0.0.1:8100/decisions
 ```
 
 ### Policy and governance
@@ -236,12 +272,12 @@ curl http://127.0.0.1:8100/debug/routes
 
 Using the frontend dashboard:
 
-1. Navigate to the **Scenarios** tab
-2. Select a scenario from the list (e.g., "Climate-Induced Heatwave")
-3. Click **Run** — the backend applies perturbations to the sensor data
-4. Switch to **Ops** or **Quality** tabs to see updated telemetry and predictions
-5. Go to **Decisions** tab and click **Take Decision** to run the policy engine
-6. View the audit trail in the **Admin** tab
+1. Navigate to **Admin Panel** → **Scenarios** tab
+2. Select a scenario card (e.g., "Heatwave")
+3. Adjust the intensity slider and click **Run**
+4. Switch to **Operations** or **Quality** pages to see updated telemetry
+5. Go to **Decisions** page and click **Take Decision**
+6. View the audit trail under **Admin** → **Audit** tab
 
 Or via the API (run each scenario and make a decision):
 
@@ -254,7 +290,7 @@ for scenario in heatwave overproduction cyber_outage adaptive_pricing baseline; 
   echo ""
   curl -s -X POST http://127.0.0.1:8100/decide \
     -H "Content-Type: application/json" \
-    -d '{"agent_id":"farm","role":"grower","step":0}'
+    -d '{"agent_id":"farm","role":"farm"}'
   echo -e "\n"
 done
 ```
@@ -294,16 +330,6 @@ Results are saved to `mvp/simulation/results/`:
 
 Each figure is also saved as PDF for LaTeX inclusion.
 
-### Expected metric ordering
-
-For each scenario, the modes should rank approximately:
-
-```
-agribrain > no_pinn > hybrid_rl > no_slca > static
-```
-
-in terms of ARI (AGRI-BRAIN Resilience Index) and SLCA composite scores.
-
 ---
 
 ## 7. On-chain features (optional)
@@ -323,10 +349,7 @@ npx hardhat node
 npx hardhat run scripts/deploy.js --network localhost
 ```
 
-The deployed addresses are auto-synced to the backend via
-`backend/runtime/chain/deployed-addresses.localhost.json`.
-
-Configure the chain in the Admin panel or via:
+Configure the chain in the Admin panel (Blockchain tab) or via:
 
 ```bash
 curl -X POST http://127.0.0.1:8100/governance/chain \
@@ -344,8 +367,7 @@ Run everything end-to-end in order:
 # --- Terminal 1: Backend ---
 cd AGRI-BRAIN
 source .venv/bin/activate  # if using venv
-cd agri-brain-mvp-1.0.0/backend
-python -m uvicorn src.app:API --host 127.0.0.1 --port 8100 --reload
+python -m uvicorn src.app:API --host 127.0.0.1 --port 8100 --app-dir agri-brain-mvp-1.0.0/backend
 
 # --- Terminal 2: Frontend ---
 cd AGRI-BRAIN/agri-brain-mvp-1.0.0/frontend
@@ -366,7 +388,7 @@ curl http://127.0.0.1:8100/kpis
 # 4. Run a decision
 curl -X POST http://127.0.0.1:8100/decide \
   -H "Content-Type: application/json" \
-  -d '{"agent_id":"farm","role":"grower"}'
+  -d '{"agent_id":"farm","role":"farm"}'
 
 # 5. Run all scenarios
 for s in heatwave overproduction cyber_outage adaptive_pricing baseline; do
@@ -393,10 +415,14 @@ python generate_figures.py
 
 | Issue | Fix |
 |-------|-----|
-| `ModuleNotFoundError: No module named 'src'` | Run uvicorn from `agri-brain-mvp-1.0.0/backend/` directory |
+| `ModuleNotFoundError: No module named 'src'` | Use `--app-dir agri-brain-mvp-1.0.0/backend` flag or run uvicorn from that directory |
 | `ModuleNotFoundError: No module named 'pirag'` | Run `pip install -e agri-brain-mvp-1.0.0/backend` |
 | Port 8100 already in use | Kill the existing process: `lsof -ti:8100 \| xargs kill` |
-| Frontend CORS errors | Ensure backend is on port 8100, not 8111 |
+| Frontend CORS errors | Ensure backend is on port 8100 and frontend on port 5173 |
+| Charts show skeleton loaders | Ensure `/case/load` was called first |
+| Leaflet map tiles not loading | Check internet connection; map requires OpenStreetMap tile access |
+| Dark mode not working | Clear localStorage (`localStorage.removeItem('agri-brain-theme')`) and refresh |
+| WebSocket disconnected | Ensure backend is running; the header badge shows "Live" or "Offline" |
 | `reportlab` not found (PDF route) | `pip install reportlab` |
 | `matplotlib` not found (figures) | `pip install matplotlib` |
 | Figures directory empty | Run `python generate_results.py` then `python generate_figures.py` |

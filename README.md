@@ -5,6 +5,20 @@ prediction, LSTM demand forecasting, Social Life-Cycle Assessment (SLCA),
 multi-agent coordination, and regime-aware contextual policy for sustainable
 food logistics.
 
+## Screenshots
+
+| Operations Dashboard | Quality Monitoring | Supply Chain Map |
+|:---:|:---:|:---:|
+| ![Ops](docs/screenshots/ops-dashboard-light.png) | ![Quality](docs/screenshots/quality-tab-light.png) | ![Map](docs/screenshots/map-view-light.png) |
+
+| Decisions Timeline | Analytics & Validation | Admin Panel |
+|:---:|:---:|:---:|
+| ![Decisions](docs/screenshots/decisions-timeline-light.png) | ![Analytics](docs/screenshots/analytics-overview-light.png) | ![Admin](docs/screenshots/admin-policy-light.png) |
+
+| Dark Mode — Ops | Dark Mode — Analytics | Dark Mode — Map |
+|:---:|:---:|:---:|
+| ![Ops Dark](docs/screenshots/ops-dashboard-dark.png) | ![Analytics Dark](docs/screenshots/analytics-overview-dark.png) | ![Map Dark](docs/screenshots/map-view-dark.png) |
+
 ## Architecture Highlights
 
 - **LSTM demand forecaster** (numpy-only, 16 hidden units, truncated BPTT)
@@ -20,15 +34,30 @@ food logistics.
 - **Softmax contextual policy** with 6-dimensional feature vector
 - **On-chain governance** via Hardhat/Solidity smart contracts
 
+## Frontend
+
+Modern React dashboard built with shadcn/ui, featuring six pages:
+
+| Page | Description |
+|------|-------------|
+| **Operations** | KPI bento grid, real-time telemetry charts with temperature zones, spoilage & yield preview |
+| **Quality** | Circular spoilage risk gauge, shelf-life countdown, IoT sensor charts, PINN vs ODE comparison |
+| **Decisions** | Timeline view with role/action filters, decision cards, analytics sidebar with pie chart, CSV/PDF export |
+| **Map** | Leaflet map of South Dakota supply chain nodes with route overlays and live KPI popups |
+| **Analytics** | Executive summary banner, interactive cross-scenario tables & charts, ablation study, radar profiles, scenario deep-dive gallery, carbon footprint analysis |
+| **Admin** | Five tabs — Policy parameters, Blockchain status & config, Audit log, Scenario runner, Quick Decision |
+
+**Tech stack:** React 18, React Router 7, shadcn/ui (Radix), Tailwind CSS, Recharts, React-Leaflet, Framer Motion, Sonner toasts, Vite 7
+
 ## Quick Start
 
 ### Backend (port 8100)
 
 ```bash
-cd agri-brain-mvp-1.0.0/backend
+cd AGRI-BRAIN
 python -m venv .venv && source .venv/bin/activate
-pip install -e .
-python -m uvicorn src.app:API --port 8100 --reload
+pip install -e agri-brain-mvp-1.0.0/backend
+python -m uvicorn src.app:API --port 8100 --app-dir agri-brain-mvp-1.0.0/backend
 ```
 
 ### Frontend (port 5173)
@@ -39,9 +68,16 @@ npm install
 npm run dev
 ```
 
-- Main app: http://127.0.0.1:5173 (Operations, Quality, Decisions)
-- Admin panel: http://127.0.0.1:5173/admin (Policy, Scenarios, Results)
-- API docs: http://127.0.0.1:8100/docs
+### Load data and verify
+
+```bash
+curl -X POST http://localhost:8100/case/load    # Load sensor CSV
+curl http://localhost:8100/health                # {"ok":true}
+```
+
+- Dashboard: http://localhost:5173
+- Admin panel: http://localhost:5173/admin
+- API docs: http://localhost:8100/docs
 
 ### Simulation
 
@@ -84,39 +120,45 @@ POST /results/generate       - Run full simulation, return summary JSON
 GET  /results/figures/{name} - Serve generated figure files
 POST /rag/ask                - Query the PiRAG pipeline
 POST /mcp/call               - Call an MCP tool
+WS   /stream                 - WebSocket real-time decision stream
 ```
 
 ## Project Structure
 
 ```
 AGRI-BRAIN/
-  README.md                   # This file
-  HOW_TO_RUN.md               # Detailed setup and run guide
+  README.md
+  HOW_TO_RUN.md
+  docs/screenshots/             # Frontend screenshots (light + dark)
   agri-brain-mvp-1.0.0/
     backend/
       src/
-        app.py                # FastAPI application
-        models/               # Spoilage, LSTM/HW forecast, SLCA, policy,
-                              #   reverse logistics, policy learner, footprint
-        routers/              # API route handlers
-        chain/                # Blockchain integration (Hardhat)
-        agents/               # Multi-agent coordinator (5 roles), runtime, bus
-      pirag/                  # PiRAG integration
-        ingestion/            # Document parser, TF-IDF embedder, vector store
-        inference/            # LLM abstraction (template + API engines)
-        knowledge_base/       # SOPs, regulatory docs, IoT specs, SLCA guides
-        mcp/                  # MCP tool server (compliance, slca, chain query)
-        pyrag/                # Hybrid BM25+dense retriever
-        guards/               # Unit and feasibility guards
-        provenance/           # Merkle tree + on-chain anchoring
+        app.py                  # FastAPI application
+        models/                 # Spoilage, LSTM/HW forecast, SLCA, policy,
+                                #   reverse logistics, policy learner, footprint
+        routers/                # API route handlers
+        chain/                  # Blockchain integration (Hardhat)
+        agents/                 # Multi-agent coordinator (5 roles), runtime, bus
+      pirag/                    # PiRAG integration
+        ingestion/              # Document parser, TF-IDF embedder, vector store
+        inference/              # LLM abstraction (template + API engines)
+        knowledge_base/         # SOPs, regulatory docs, IoT specs, SLCA guides
+        mcp/                    # MCP tool server (compliance, slca, chain query)
+        pyrag/                  # Hybrid BM25+dense retriever
+        guards/                 # Unit and feasibility guards
+        provenance/             # Merkle tree + on-chain anchoring
     frontend/
       src/
-        ui/                   # Main app (Ops, Quality, Decisions tabs)
-        mvp/                  # Admin panel (Policy, Scenarios, Results)
-    contracts/                # Solidity smart contracts
+        pages/                  # Ops, Quality, Decisions, Map, Analytics, Admin
+        components/ui/          # shadcn/ui component library
+        layouts/                # MainLayout (sidebar, header, theme, notifications)
+        hooks/                  # useTheme, useWebSocket
+        lib/                    # Utility functions (cn, fmt, jget, jpost)
+        mvp/                    # API configuration and helpers
+    contracts/                  # Solidity smart contracts
   mvp/
     simulation/
-      generate_results.py     # Scenario x mode simulation runner
-      generate_figures.py     # Publication figure generator
-      results/                # Generated outputs (CSV, PNG, PDF)
+      generate_results.py       # Scenario x mode simulation runner
+      generate_figures.py       # Publication figure generator
+      results/                  # Generated outputs (CSV, PNG, PDF)
 ```
