@@ -276,11 +276,11 @@ def fig3_reverse(data):
     # Surplus fill (need to normalize for comparison)
     ax.axvspan(12, 60, alpha=0.08, color="#f39c12", zorder=0)
     ylims = ax.get_ylim()
-    ax.text(0.6, 0.05, "Overproduction\nwindow",
-            transform=ax.transAxes, ha="right", va="bottom", fontsize=10,
-            fontstyle="italic", color="#e67e22", alpha=0.8,
-            bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
-                      alpha=0.7, edgecolor="none"))
+    ax.text(0.5, 0.8, "Overproduction",
+        transform=ax.transAxes, ha="center", va="top", fontsize=11,
+        fontstyle="italic", color="#e67e22", alpha=0.9,
+        bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
+                  alpha=0.8, edgecolor="none"))
     ax.set_title("(a) Inventory vs Demand")
     ax.legend(loc="upper left", fontsize=12, framealpha=0.9, edgecolor="gray")
     ax2.legend(loc="upper right", fontsize=12, framealpha=0.9, edgecolor="gray")
