@@ -1,6 +1,6 @@
 # backend/experiments/run_experiments.py
 # Reproducible, large-scale experiment runner for AGRI-BRAIN MVP
-# Generates: big CSV + ready-to-publish plots
+# Generates: big CSV + plots
 
 import argparse, json, math, os, random, sys
 from dataclasses import dataclass
