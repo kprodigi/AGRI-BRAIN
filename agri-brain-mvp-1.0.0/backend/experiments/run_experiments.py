@@ -12,7 +12,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # ---- Make sure we can import backend code ----
-# Run this script from backend/, and set PYTHONPATH to backend/ (see instructions).
+_BACKEND_DIR = Path(__file__).resolve().parents[1]
+if str(_BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(_BACKEND_DIR))
+
 from src.models.spoilage import compute_spoilage, volatility_flags
 from src.models.policy import Policy
 

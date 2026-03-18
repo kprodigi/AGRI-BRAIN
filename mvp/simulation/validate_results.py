@@ -5,11 +5,14 @@ Checks ALL metric ranges and orderings against the specification.
 Run after generate_results.py. ALL checks must pass before committing.
 """
 import sys
+from pathlib import Path
+
 import pandas as pd
 import numpy as np
 
-t1 = pd.read_csv("mvp/simulation/results/table1_summary.csv")
-t2 = pd.read_csv("mvp/simulation/results/table2_ablation.csv")
+_RESULTS_DIR = Path(__file__).resolve().parent / "results"
+t1 = pd.read_csv(_RESULTS_DIR / "table1_summary.csv")
+t2 = pd.read_csv(_RESULTS_DIR / "table2_ablation.csv")
 
 errors = []
 

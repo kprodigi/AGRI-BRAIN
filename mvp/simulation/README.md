@@ -15,7 +15,7 @@ variants.
 |----|-------------|
 | `heatwave` | 72 h climate-induced heatwave: +20 °C ramp (hours 24–48) with exponential tail; +10 % RH |
 | `overproduction` | Inventory multiplied 2.5× during hours 12–60; triggers redistribution |
-| `cyber_outage` | Yield drops to 15 % and inventory to 25 % from hour 24 onward; +5 °C refrigeration degradation |
+| `cyber_outage` | Demand drops to 15 % from hour 24 onward; +10 °C refrigeration degradation |
 | `adaptive_pricing` | Demand oscillation (amplitude 45, period 60) plus Gaussian noise (σ=14) |
 | `baseline` | Original sensor data with no perturbation |
 
@@ -33,8 +33,9 @@ variants.
 
 All models are imported from the backend (`backend/src/models/`):
 
-- **Spoilage (PINN)**: First-order ODE decay `dC/dt = -k(T,H) · C` with
-  parameters `k₀=0.04`, `α=0.12`, `T₀=4.0 °C`, `β=0.25`
+- **Spoilage (PINN)**: First-order ODE decay `dC/dt = -k_eff(t,T,H) · C` with
+  Arrhenius parameters `k_ref=0.0021 h⁻¹`, `Ea/R=8000 K`, `T_ref=277.15 K`, `β=0.25`
+  and Baranyi lag phase `λ=12.0 h`
 - **Forecast**: Exponential smoothing with horizon tiling (Section 4.2.2)
 - **SLCA**: 4-component Social Life-Cycle Assessment
   (Carbon, Labour, Resilience, Price transparency)
@@ -70,7 +71,7 @@ the global policy.
 | Waste | `ρ − saved` (intervention model) | Effective produce loss rate |
 | SLCA | `w_c·C + w_l·L + w_r·R + w_p·P` | Social LCA composite score |
 | Carbon | `Σ(km × carbon_per_km)` | Total CO₂ emissions (kg) |
-| Equity | `1 − |price − MSRP| / MSRP` | Price fairness index |
+| Equity | `1 − σ(SLCA_values)` | SLCA uniformity index (Gini-inspired) |
 
 ## Reproducing Results
 
@@ -96,17 +97,17 @@ All outputs are saved to `mvp/simulation/results/`:
 
 | Scenario | ARI | Waste | RLE | SLCA |
 |----------|-----|-------|-----|------|
-| Heatwave | ~0.60 | ~0.03 | ~0.95 | ~0.74 |
-| Overproduction | ~0.63 | ~0.04 | ~0.91 | ~0.73 |
-| Cyber Outage | ~0.71 | ~0.03 | ~0.84 | ~0.78 |
-| Price Volatility | ~0.72 | ~0.02 | ~0.56 | ~0.77 |
-| Baseline | ~0.72 | ~0.02 | ~0.73 | ~0.78 |
+| Heatwave | ~0.60 | ~0.03 | ~0.98 | ~0.74 |
+| Overproduction | ~0.60 | ~0.05 | ~0.95 | ~0.70 |
+| Cyber Outage | ~0.64 | ~0.04 | ~0.84 | ~0.73 |
+| Price Volatility | ~0.72 | ~0.02 | ~0.82 | ~0.78 |
+| Baseline | ~0.72 | ~0.02 | ~0.88 | ~0.78 |
 
 ### Ablation Impact (largest to smallest)
 
-1. **Removing SLCA** (`no_slca`) — drops SLCA to ~0.61–0.68 and ARI to ~0.49–0.57
-2. **Removing PINN** (`no_pinn`) — slight waste increase; ARI ~0.58–0.68
-3. **Hybrid RL** (no SLCA logit bonus) — slightly less optimal routing; ARI ~0.55–0.66
+1. **Removing SLCA** (`no_slca`) — drops SLCA to ~0.59–0.64 and ARI to ~0.49–0.58
+2. **Removing PINN** (`no_pinn`) — slight waste increase; ARI ~0.57–0.69
+3. **Hybrid RL** (no SLCA logit bonus) — slightly less optimal routing; ARI ~0.54–0.67
 
 ## Seed & Reproducibility
 

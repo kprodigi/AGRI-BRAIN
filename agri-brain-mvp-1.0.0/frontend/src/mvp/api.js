@@ -31,7 +31,7 @@ function togglePort(base) {
 }
 
 // -------------------------------------------------------------
-// JSON helper with retry-on-port-swap (keeps your flows running)
+// JSON helper with retry-on-port-swap
 // -------------------------------------------------------------
 async function j(method, path, body) {
     const url1 = `${API}${path}`;
@@ -134,9 +134,9 @@ export const Scenarios = {
 export const Decide = {
     async once(payload = {}) {
         const tries = [
-            // Primary MVP routes you’ve been using:
-            ['/decide', { method: 'POST', body: JSON.stringify(payload) }],
-            // Common alternates we’ve seen in your setup:
+            // Primary endpoint
+            [‘/decide’, { method: ‘POST’, body: JSON.stringify(payload) }],
+            // Alternate endpoint paths
             ['/decision/take', { method: 'POST' }],
             ['/decision/take', { /* GET */ }],
             ['/decisions/take', { method: 'POST' }],

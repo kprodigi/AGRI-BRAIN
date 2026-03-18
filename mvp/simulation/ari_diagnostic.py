@@ -265,10 +265,10 @@ def main():
     print("=" * 78)
 
     readme_expected = {
-        "heatwave":         {"ARI": 0.18, "Waste": 0.18, "RLE": 1.00, "SLCA": 0.87},
-        "overproduction":   {"ARI": 0.19, "Waste": 0.18, "RLE": 0.98, "SLCA": 0.86},
-        "cyber_outage":     {"ARI": 0.19, "Waste": 0.18, "RLE": 1.00, "SLCA": 0.87},
-        "adaptive_pricing": {"ARI": 0.19, "Waste": 0.18, "RLE": 1.00, "SLCA": 0.87},
+        "heatwave":         {"ARI": 0.60, "Waste": 0.03, "RLE": 0.98, "SLCA": 0.74},
+        "overproduction":   {"ARI": 0.60, "Waste": 0.05, "RLE": 0.95, "SLCA": 0.70},
+        "cyber_outage":     {"ARI": 0.64, "Waste": 0.04, "RLE": 0.84, "SLCA": 0.73},
+        "adaptive_pricing": {"ARI": 0.72, "Waste": 0.02, "RLE": 0.82, "SLCA": 0.78},
     }
 
     print(f"\n{'Scenario':>20s} | {'Metric':>6s} {'README':>8s} {'Actual':>8s} {'Diff':>8s}")
@@ -306,11 +306,6 @@ def main():
         all_aris = [results[s][m]["ari"] for s in SCENARIOS for m in MODES]
         print(f"Observed ARI range across all scenarios and modes: "
               f"[{min(all_aris):.3f}, {max(all_aris):.3f}]")
-        print()
-        print("However, the README expected values (~0.18-0.19) do NOT match the")
-        print("current simulation output. The README is OUTDATED. Current AGRI-BRAIN")
-        print("ARI values are 0.597-0.746, which are reasonable for the multiplicative")
-        print("formula given the current component ranges.")
         print()
         print("The relative five-mode ranking is the appropriate basis for")
         print(f"cross-method comparison. Rank inversions: {rank_inversions}/{len(SCENARIOS)}.")
