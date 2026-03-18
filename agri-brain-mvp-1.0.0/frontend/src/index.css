@@ -1,57 +1,122 @@
-/* Tailwind entry + a couple of safe defaults */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-    color-scheme: light dark;
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 174 100% 29%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 24 95% 42%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 174 100% 29%;
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 174 100% 29%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 174 100% 29%;
+
+    --chart-1: 174 100% 29%;
+    --chart-2: 201 100% 35%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 24 95% 42%;
+    --chart-5: 160 84% 39%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 6.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 6.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 174 72% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 24 95% 50%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 174 72% 40%;
+
+    --sidebar-background: 222.2 84% 6%;
+    --sidebar-foreground: 210 40% 90%;
+    --sidebar-primary: 174 72% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217.2 32.6% 14%;
+    --sidebar-accent-foreground: 210 40% 90%;
+    --sidebar-border: 217.2 32.6% 20%;
+    --sidebar-ring: 174 72% 40%;
+  }
 }
 
-html,
-body,
-#root {
-    height: 100%;
-}
-
-body {
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
     margin: 0;
+  }
+  html, body, #root {
+    height: 100%;
+  }
 }
 
-
-/* Simple rounded pill tabs with active state */
-.nav-tabs a {
-    display: inline-block;
-    padding: 8px 14px;
-    border-radius: 9999px;
-    background: #e5e7eb;
-    /* gray-200 */
-    color: #111827;
-    /* gray-900 */
-    text-decoration: none;
-    margin-right: 8px;
+/* Leaflet z-index fix */
+.leaflet-container {
+  z-index: 1;
 }
 
-.nav-tabs a.active {
-    background: #111827;
-    /* black */
-    color: #ffffff;
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
 }
 
-.nav-tabs {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
+/* Smooth transitions for theme switching */
+* {
+  transition-property: background-color, border-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
 }
-
-.nav-tabs a {
-    cursor: pointer;
-}
-
-.nav-tabs a:focus {
-    outline: 2px solid #111827;
-    outline-offset: 2px;
-}
-
-.nav-tabs a:hover {
-    filter: brightness(0.97);
+/* Exclude elements that shouldn't transition */
+canvas, svg, img, video, .recharts-surface, .leaflet-container * {
+  transition: none !important;
 }

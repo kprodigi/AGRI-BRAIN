@@ -3,8 +3,6 @@ import { defineConfig } from 'vite'
 import os from 'node:os'
 import path from 'node:path'
 
-// Put Vite's cache in a non-synced temp dir (outside Dropbox)
-// You can override with env var: VITE_CACHE_DIR="C:\\path\\to\\somewhere"
 const cacheRoot =
   process.env.VITE_CACHE_DIR ||
   path.join(os.tmpdir(), 'vite-cache', 'agri-brain-frontend')
@@ -12,9 +10,14 @@ const cacheRoot =
 export default defineConfig({
   cacheDir: cacheRoot,
 
+  resolve: {
+    alias: {
+      '@': path.resolve(import.meta.dirname, './src'),
+    },
+  },
+
   server: {
     host: true,
-    // Polling avoids rename races on networked/synced filesystems
     watch: {
       usePolling: true,
       interval: 200,
@@ -23,13 +26,26 @@ export default defineConfig({
     }
   },
 
-  // Ensure fresh prebundles go into the temp cache dir
   optimizeDeps: {
     force: true
   },
 
   build: {
     outDir: 'dist',
-    emptyOutDir: true
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'recharts': ['recharts'],
+          'framer': ['framer-motion'],
+          'radix': [
+            '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-tooltip', '@radix-ui/react-select',
+            '@radix-ui/react-tabs', '@radix-ui/react-popover',
+          ],
+        },
+      },
+    },
   }
 })
