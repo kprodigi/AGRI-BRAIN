@@ -241,10 +241,10 @@ export default function OpsPage() {
           label="Avg Temperature"
           value={avgTemp}
           decimals={2}
-          suffix=" \u00B0C"
+          suffix=" °C"
           icon={Thermometer}
           tone={avgTemp > 8 ? "critical" : avgTemp > 6 ? "warn" : "good"}
-          description={avgTemp > 8 ? "Above critical threshold" : avgTemp > 6 ? "Above warning threshold" : "Within safe range (2\u20138\u00B0C)"}
+          description={avgTemp > 8 ? "Above critical threshold" : avgTemp > 6 ? "Above warning threshold" : "Within safe range (2–8°C)"}
           delay={1}
         />
         <KPICard
@@ -315,8 +315,8 @@ export default function OpsPage() {
                   <ReferenceArea y1={12} y2={50} fill="#D55E00" fillOpacity={0.06} label="" />
                   <ReferenceLine y={8} stroke="#F59E0B" strokeDasharray="5 5" strokeWidth={1} />
                   <ReferenceLine y={12} stroke="#D55E00" strokeDasharray="5 5" strokeWidth={1} />
-                  <Line type="monotone" dataKey="tempC" name="Temp (\u00B0C)" stroke="#009688" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="ambientC" name="Ambient (\u00B0C)" stroke="#0072B2" strokeWidth={1.5} dot={false} />
+                  <Line type="monotone" dataKey="tempC" name="Temp (°C)" stroke="#009688" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="ambientC" name="Ambient (°C)" stroke="#0072B2" strokeWidth={1.5} dot={false} />
                   <Line type="monotone" dataKey="shockG" name="Shock (g)" stroke="#D55E00" strokeWidth={1.5} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
@@ -326,9 +326,9 @@ export default function OpsPage() {
             <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
               {[
                 { label: "Timestamp", value: last(tel?.timestamp) },
-                { label: "Temp \u00B0C", value: fmt(last(tel?.tempC)) },
+                { label: "Temp °C", value: fmt(last(tel?.tempC)) },
                 { label: "RH %", value: fmt(last(tel?.RH)) },
-                { label: "Ambient \u00B0C", value: fmt(last(tel?.ambientC)) },
+                { label: "Ambient °C", value: fmt(last(tel?.ambientC)) },
                 { label: "Shock (g)", value: fmt(last(tel?.shockG)) },
                 { label: "Inventory", value: fmt(last(tel?.inventory_units), 0) },
                 { label: "Demand", value: fmt(last(tel?.demand_units), 0) },

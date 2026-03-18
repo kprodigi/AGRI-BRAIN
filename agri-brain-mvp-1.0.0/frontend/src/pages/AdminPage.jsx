@@ -66,7 +66,7 @@ function PolicyTab() {
   const fields = [
     { key: "min_shelf_reroute", label: "Min Shelf for Reroute", unit: "fraction", desc: "Minimum shelf-life fraction before triggering reroute (0-1)", group: "Routing Parameters" },
     { key: "min_shelf_expedite", label: "Min Shelf for Expedite", unit: "fraction", desc: "Minimum shelf-life fraction before expedited delivery (0-1)", group: "Routing Parameters" },
-    { key: "carbon_per_km", label: "Carbon per km", unit: "kg CO\u2082/km", desc: "Carbon emission factor per kilometer of transport", group: "Carbon Parameters" },
+    { key: "carbon_per_km", label: "Carbon per km", unit: "kg CO₂/km", desc: "Carbon emission factor per kilometer of transport", group: "Carbon Parameters" },
     { key: "eta", label: "Waste Penalty (\u03b7)", unit: "weight", desc: "Weight of waste penalty in the objective function (0-1)", group: "SLCA Weights" },
   ];
 

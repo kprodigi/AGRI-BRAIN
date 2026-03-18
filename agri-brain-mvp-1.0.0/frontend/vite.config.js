@@ -1,5 +1,6 @@
 // frontend/vite.config.js
 import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -8,6 +9,7 @@ const cacheRoot =
   path.join(os.tmpdir(), 'vite-cache', 'agri-brain-frontend')
 
 export default defineConfig({
+  plugins: [react()],
   cacheDir: cacheRoot,
 
   resolve: {

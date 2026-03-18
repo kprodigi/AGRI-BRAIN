@@ -204,9 +204,9 @@ export default function QualityPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               {[
-                { icon: Thermometer, label: "Temperature", value: `${fmt(last(tel?.tempC))} \u00B0C`, warn: (last(tel?.tempC) ?? 0) > 8 },
+                { icon: Thermometer, label: "Temperature", value: `${fmt(last(tel?.tempC))} °C`, warn: (last(tel?.tempC) ?? 0) > 8 },
                 { icon: Droplets, label: "Humidity", value: `${fmt(last(tel?.RH))}%` },
-                { icon: Thermometer, label: "Ambient", value: `${fmt(last(tel?.ambientC))} \u00B0C` },
+                { icon: Thermometer, label: "Ambient", value: `${fmt(last(tel?.ambientC))} °C` },
                 { icon: AlertTriangle, label: "Shock", value: `${fmt(last(tel?.shockG))} g`, warn: (last(tel?.shockG) ?? 0) > 0.5 },
               ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between">
@@ -242,7 +242,7 @@ export default function QualityPage() {
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                     <ReferenceArea y1={2} y2={8} fill="#10B981" fillOpacity={0.05} />
                     <ReferenceArea y1={8} y2={12} fill="#F59E0B" fillOpacity={0.05} />
-                    <Line type="monotone" dataKey="tempC" dot={false} name="Temp \u00B0C" stroke="#009688" strokeWidth={2} />
+                    <Line type="monotone" dataKey="tempC" dot={false} name="Temp °C" stroke="#009688" strokeWidth={2} />
                     <Line type="monotone" dataKey="RH" dot={false} name="Humidity %" stroke="#0072B2" strokeWidth={1.5} />
                   </LineChart>
                 </ResponsiveContainer>

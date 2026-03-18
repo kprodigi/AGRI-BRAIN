@@ -85,7 +85,7 @@ function DecisionCard({ memo, index }) {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Carbon</p>
-                  <p className="font-mono font-semibold">{fmt(memo.carbon_kg, 1)} <span className="text-xs font-normal">kg CO\u2082</span></p>
+                  <p className="font-mono font-semibold">{fmt(memo.carbon_kg, 1)} <span className="text-xs font-normal">kg CO₂</span></p>
                 </div>
                 {memo.unit_price != null && (
                   <div>
@@ -331,7 +331,7 @@ export default function DecisionsPage() {
               </div>
               <div className="text-center p-3 rounded-lg bg-muted/50">
                 <p className="text-2xl font-bold font-mono">{fmt(totalCarbon, 0)}</p>
-                <p className="text-xs text-muted-foreground">Total CO\u2082 (kg)</p>
+                <p className="text-xs text-muted-foreground">Total CO₂ (kg)</p>
               </div>
               <div className="text-center p-3 rounded-lg bg-muted/50">
                 <p className="text-2xl font-bold font-mono">{actionDist.length}</p>

@@ -293,7 +293,7 @@ export default function AnalyticsPage() {
             <div className="grid grid-cols-2 md:grid-cols-5 gap-6 max-w-5xl mx-auto">
               <HeroCounter value={73.7} suffix="%" label="ARI Improvement" sublabel="Adaptive Resilience Index" delay={0} />
               <HeroCounter value={76.1} suffix="%" label="Waste Reduction" sublabel="2.7% vs 11.3% produce lost" delay={200} />
-              <HeroCounter value={52.5} suffix="%" label="Carbon Reduction" sublabel="2,328 vs 4,898 kg CO\u2082-eq" delay={400} />
+              <HeroCounter value={52.5} suffix="%" label="Carbon Reduction" sublabel="2,328 vs 4,898 kg CO₂-eq" delay={400} />
               <HeroCounter value={94.9} suffix="%" label="Rerouting Efficiency" sublabel="At-risk batches diverted" delay={600} />
               <HeroCounter value={318500} prefix="$" label="Annual Savings" sublabel="50,000 kg/week cooperative" delay={800} />
             </div>
@@ -644,7 +644,7 @@ export default function AnalyticsPage() {
                   <BarChart data={carbonData} barGap={2}>
                     <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                     <XAxis dataKey="scenario" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} label={{ value: "kg CO\u2082", angle: -90, position: "insideLeft", fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} label={{ value: "kg CO₂", angle: -90, position: "insideLeft", fontSize: 11 }} />
                     <ReTooltip content={<ChartTooltip />} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                     <Bar dataKey="Static" fill={COLORS.static} radius={[2, 2, 0, 0]} />
