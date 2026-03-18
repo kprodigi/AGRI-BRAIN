@@ -15,10 +15,6 @@ food logistics.
 |:---:|:---:|:---:|
 | ![Decisions](docs/screenshots/decisions-timeline-light.png) | ![Analytics](docs/screenshots/analytics-overview-light.png) | ![Admin](docs/screenshots/admin-policy-light.png) |
 
-| Dark Mode — Ops | Dark Mode — Analytics | Dark Mode — Map |
-|:---:|:---:|:---:|
-| ![Ops Dark](docs/screenshots/ops-dashboard-dark.png) | ![Analytics Dark](docs/screenshots/analytics-overview-dark.png) | ![Map Dark](docs/screenshots/map-view-dark.png) |
-
 ## Architecture Highlights
 
 - **LSTM demand forecaster** (numpy-only, 16 hidden units, truncated BPTT)
