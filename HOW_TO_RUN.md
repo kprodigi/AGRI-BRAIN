@@ -55,7 +55,7 @@ AGRI-BRAIN/
 │   └── contracts/              # Solidity smart contracts (Hardhat)
 ├── mvp/
 │   └── simulation/             # Standalone simulation & figure scripts
-└── data_spinach_v2.csv         # Sensor dataset
+└── .gitignore
 ```
 
 ---

@@ -15,6 +15,14 @@ food logistics.
 |:---:|:---:|:---:|
 | ![Decisions](docs/screenshots/decisions-timeline-light.png) | ![Analytics](docs/screenshots/analytics-overview-light.png) | ![Admin](docs/screenshots/admin-policy-light.png) |
 
+| Analytics Tables | Analytics Figures | Admin Blockchain |
+|:---:|:---:|:---:|
+| ![Tables](docs/screenshots/analytics-tables-light.png) | ![Figures](docs/screenshots/analytics-figures-light.png) | ![Blockchain](docs/screenshots/admin-blockchain-light.png) |
+
+| Admin Scenarios |
+|:---:|
+| ![Scenarios](docs/screenshots/admin-scenarios-light.png) |
+
 ## Architecture Highlights
 
 - **LSTM demand forecaster** (numpy-only, 16 hidden units, truncated BPTT)

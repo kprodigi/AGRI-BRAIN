@@ -44,12 +44,12 @@ export function useWebSocket() {
 
         ws.onopen = () => {
           setConnected(true);
-          console.log("[WS] connected:", WS_URL);
+          // connected
         };
 
         ws.onclose = () => {
           setConnected(false);
-          console.log("[WS] disconnected, reconnecting in 5s...");
+          // disconnected, reconnecting
           reconnectTimer = setTimeout(connect, 5000);
         };
 

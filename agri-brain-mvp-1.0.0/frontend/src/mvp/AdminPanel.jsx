@@ -59,8 +59,8 @@ export default function AdminPanel() {
         let ws;
         try {
             ws = new WebSocket(WS_URL);
-            ws.onopen = () => console.log("[WS] connected:", WS_URL);
-            ws.onclose = () => console.log("[WS] disconnected");
+            ws.onopen = () => {};
+            ws.onclose = () => {};
             ws.onmessage = (ev) => {
                 try {
                     const msg = JSON.parse(ev.data || "{}");
