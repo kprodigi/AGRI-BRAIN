@@ -124,7 +124,7 @@ const SCENARIOS = [
       "Carbon reduced 52.5% through shorter community routes",
     ],
   },
-  { id: "overproduction", name: "Overproduction", figure: "fig3_reverse.png", icon: Layers, color: "#E67E22",
+  { id: "overproduction", name: "Overproduction", figure: "fig3_overproduction.png", icon: Layers, color: "#E67E22",
     findings: [
       "Waste reduced from 12.8% to 3.1% via recovery routing",
       "Reverse logistics captured 78% of surplus produce",
@@ -632,11 +632,11 @@ export default function AnalyticsPage() {
             </CardHeader>
             <CardContent>
               <img
-                src={`${API}/results/figures/fig8_green.png`}
+                src={`${API}/results/figures/fig8_green_ai.png`}
                 alt="Carbon footprint analysis"
                 className="w-full rounded-lg border mb-4 cursor-pointer hover:opacity-90"
                 style={{ imageRendering: "auto" }}
-                onClick={() => setLightboxImg(`${API}/results/figures/fig8_green.png`)}
+                onClick={() => setLightboxImg(`${API}/results/figures/fig8_green_ai.png`)}
                 onError={(e) => { e.target.style.display = "none"; }}
               />
               <div className="h-48">

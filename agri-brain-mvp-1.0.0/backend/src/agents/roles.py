@@ -197,7 +197,8 @@ class DistributorAgent(SupplyChainAgent):
 # ---------------------------------------------------------------------------
 class CooperativeAgent(SupplyChainAgent):
     """Coordinates supply chain actors; broadcasts COORDINATION_UPDATE when
-    demand forecast exceeds inventory by 20% (max 60 per episode)."""
+    per-step demand forecast exceeds 0.12% of current inventory (max 60
+    per episode)."""
 
     MAX_COORDINATION_BROADCASTS = 60
 

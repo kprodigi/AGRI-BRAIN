@@ -18,3 +18,9 @@ def merkle_root(hashes_hex: List[str]) -> str:
             nxt.append(_h(a + b))
         nodes = nxt
     return nodes[0].hex()
+
+
+# Note: On-chain anchoring of Merkle roots is performed by the governance
+# router (contracts/hardhat/contracts/ProvenanceRegistry.sol), not by this
+# module directly. This module computes the root hash; the router calls
+# ProvenanceRegistry.anchor() when a decision rationale is finalized.

@@ -32,10 +32,15 @@ contract ProvenanceRegistry {
         owner = msg.sender;
     }
 
+    modifier onlyOwner() {
+        require(msg.sender == owner, "not owner");
+        _;
+    }
+
     /// @notice Anchor a Merkle root hash for a decision explanation.
     /// @param merkleRoot The root hash of the evidence Merkle tree.
     /// @param decisionId The decision identifier (e.g., blockchain tx hash).
-    function anchor(bytes32 merkleRoot, string calldata decisionId) external {
+    function anchor(bytes32 merkleRoot, string calldata decisionId) external onlyOwner {
         records[merkleRoot] = ProvenanceRecord({
             merkleRoot: merkleRoot,
             timestamp: block.timestamp,

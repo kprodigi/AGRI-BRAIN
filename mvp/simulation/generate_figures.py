@@ -251,7 +251,7 @@ def fig2_heatwave(data):
 # ---------------------------------------------------------------------------
 # Figure 3: Overproduction / Reverse Logistics (2x2)
 # ---------------------------------------------------------------------------
-def fig3_reverse(data):
+def fig3_overproduction(data):
     """2x2: inventory vs demand (dual axis), waste, RLE with annotation, SLCA bars."""
     op = data["results"]["overproduction"]
     ab = op["agribrain"]
@@ -361,7 +361,7 @@ def fig3_reverse(data):
     _apply_style(ax)
 
     fig.tight_layout(rect=[0, 0, 1, 0.95])
-    _save(fig, "fig3_reverse")
+    _save(fig, "fig3_overproduction")
 
 
 # ---------------------------------------------------------------------------
@@ -651,7 +651,7 @@ def fig7_ablation(data):
 # ---------------------------------------------------------------------------
 # Figure 8: Green AI / Carbon (1x2)
 # ---------------------------------------------------------------------------
-def fig8_green(data):
+def fig8_green_ai(data):
     """1x2: cumulative CO2 heatwave, total carbon bar chart."""
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     fig.suptitle("Green AI & Carbon Footprint",
@@ -701,7 +701,7 @@ def fig8_green(data):
     _apply_style(ax)
 
     fig.tight_layout(rect=[0, 0, 1, 0.93])
-    _save(fig, "fig8_green")
+    _save(fig, "fig8_green_ai")
 
 
 # ---------------------------------------------------------------------------
@@ -716,12 +716,12 @@ def generate_all_figures(data=None):
 
     print("Generating figures...")
     fig2_heatwave(data)
-    fig3_reverse(data)
+    fig3_overproduction(data)
     fig4_cyber(data)
     fig5_pricing(data)
     fig6_cross(data)
     fig7_ablation(data)
-    fig8_green(data)
+    fig8_green_ai(data)
     print()
     print(f"All figures saved to {RESULTS_DIR}")
 

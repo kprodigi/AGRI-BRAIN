@@ -13,8 +13,8 @@ dist/
 .claude/
 
 # Hardhat build artifacts
-contracts/hardhat/artifacts/
-contracts/hardhat/cache/
+**/hardhat/artifacts/
+**/hardhat/cache/
 
 # Environment and secrets
 .env

@@ -321,12 +321,12 @@ Results are saved to `mvp/simulation/results/`:
 | `table1_summary.csv`   | Per-scenario metrics across all 5 modes           |
 | `table2_ablation.csv`  | Ablation study (agribrain vs no_pinn, no_slca)    |
 | `fig2_heatwave.png`    | Heatwave scenario comparison                      |
-| `fig3_reverse.png`     | Overproduction (reverse logistics) comparison     |
+| `fig3_overproduction.png`     | Overproduction (reverse logistics) comparison     |
 | `fig4_cyber.png`       | Cyber outage scenario comparison                  |
 | `fig5_pricing.png`     | Adaptive pricing scenario comparison              |
 | `fig6_cross.png`       | Cross-scenario radar chart                        |
 | `fig7_ablation.png`    | Ablation bar chart                                |
-| `fig8_green.png`       | Green footprint analysis                          |
+| `fig8_green_ai.png`       | Green footprint analysis                          |
 
 Each figure is also saved as PDF for LaTeX inclusion.
 

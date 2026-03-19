@@ -86,12 +86,12 @@ All outputs are saved to `mvp/simulation/results/`:
 - `table1_summary.csv` — Scenario × Method (static, hybrid_rl, agribrain)
 - `table2_ablation.csv` — Scenario × Variant (all 5 modes)
 - `fig2_heatwave.png/.pdf` — Heatwave deep-dive (2×2)
-- `fig3_reverse.png/.pdf` — Overproduction reverse logistics (2×2)
+- `fig3_overproduction.png/.pdf` — Overproduction reverse logistics (2×2)
 - `fig4_cyber.png/.pdf` — Cyber outage analysis (1×3)
 - `fig5_pricing.png/.pdf` — Demand volatility & pricing (2×2)
 - `fig6_cross.png/.pdf` — Cross-scenario comparison (2×2 bars)
 - `fig7_ablation.png/.pdf` — Ablation study (1×3 bars)
-- `fig8_green.png/.pdf` — Green AI carbon footprint (1×2)
+- `fig8_green_ai.png/.pdf` — Green AI carbon footprint (1×2)
 
 ## Expected Approximate Results (AGRI-BRAIN mode)
 
