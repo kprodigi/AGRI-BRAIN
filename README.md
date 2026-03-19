@@ -125,7 +125,7 @@ WS   /stream                 - WebSocket real-time decision stream
 AGRI-BRAIN/
   README.md
   HOW_TO_RUN.md
-  docs/screenshots/             # Frontend screenshots (light + dark)
+  docs/screenshots/             # Frontend screenshots (light theme)
   agri-brain-mvp-1.0.0/
     backend/
       src/

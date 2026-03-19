@@ -99,14 +99,14 @@ class HybridRetriever:
             texts = [d.text for d in self.docs]
             self.doc_vecs = self.dense_model.encode(texts, normalize_embeddings=True)
         elif self.vector_store is not None and self.embedder is not None:
-            texts = [d.text for d in docs]
-            if not self.embedder._fitted:
-                all_texts = [d.text for d in self.docs]
-                self.embedder.fit(all_texts)
-            else:
-                all_texts = [d.text for d in self.docs]
-                self.embedder.fit(all_texts)
-            for d in docs:
+            all_texts = [d.text for d in self.docs]
+            self.embedder.fit(all_texts)
+            # Re-embed all documents so vectors share the same dimension
+            self.vector_store._ids.clear()
+            self.vector_store._texts.clear()
+            self.vector_store._vectors.clear()
+            self.vector_store._metadata.clear()
+            for d in self.docs:
                 vec = self.embedder.transform(d.text)
                 self.vector_store.add(d.id, d.text, vec, d.metadata)
 

@@ -135,7 +135,7 @@ export const Decide = {
     async once(payload = {}) {
         const tries = [
             // Primary endpoint
-            [‘/decide’, { method: ‘POST’, body: JSON.stringify(payload) }],
+            ['/decide', { method: 'POST', body: JSON.stringify(payload) }],
             // Alternate endpoint paths
             ['/decision/take', { method: 'POST' }],
             ['/decision/take', { /* GET */ }],
