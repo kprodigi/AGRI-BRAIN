@@ -323,7 +323,7 @@ export default function AnalyticsPage() {
       <section>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-lg font-semibold">Table 1: Cross-Scenario Performance</h3>
+            <h3 className="text-lg font-semibold">Cross-Scenario Performance</h3>
             <p className="text-sm text-muted-foreground italic">Comparison of three methods across five stress scenarios (288 timesteps each).</p>
           </div>
           <div className="flex gap-2">
@@ -372,7 +372,7 @@ export default function AnalyticsPage() {
 
         <div className="flex items-center justify-between mt-8 mb-4">
           <div>
-            <h3 className="text-lg font-semibold">Table 2: Ablation Study</h3>
+            <h3 className="text-lg font-semibold">Ablation Study</h3>
             <p className="text-sm text-muted-foreground italic">Component contribution analysis showing marginal impact of each module.</p>
           </div>
           <div className="flex gap-2">
