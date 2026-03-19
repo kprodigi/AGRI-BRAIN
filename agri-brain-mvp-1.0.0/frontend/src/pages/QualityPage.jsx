@@ -291,7 +291,7 @@ export default function QualityPage() {
                   <XAxis dataKey="i" tick={{ fontSize: 11 }} label={{ value: "Timestep", position: "insideBottom", offset: -5, fontSize: 11 }} />
                   <YAxis domain={[0, 1]} tick={{ fontSize: 11 }} />
                   <ReTooltip content={<ChartTooltip />} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 16 }} />
                   <Line type="monotone" dataKey="pinn" name="PINN-corrected" stroke="#009688" strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="ode" name="ODE baseline" stroke="#808080" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
                 </LineChart>
