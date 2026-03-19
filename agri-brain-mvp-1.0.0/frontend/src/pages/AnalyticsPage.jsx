@@ -313,7 +313,7 @@ export default function AnalyticsPage() {
               <HeroCounter value={76.1} suffix="%" label="Waste Reduction" sublabel="2.7% vs 11.3% produce lost" delay={200} />
               <HeroCounter value={52.5} suffix="%" label="Carbon Reduction" sublabel="2,328 vs 4,898 kg CO₂-eq" delay={400} />
               <HeroCounter value={94.9} suffix="%" label="Rerouting Efficiency" sublabel="At-risk batches diverted" delay={600} />
-              <HeroCounter value={318500} prefix="$" label="Annual Savings" sublabel="50,000 kg/week cooperative" delay={800} />
+              <HeroCounter value={199000} prefix="$" label="Annual Savings" sublabel="50,000 kg/week @ $1.50/kg" delay={800} />
             </div>
           </CardContent>
         </Card>

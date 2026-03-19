@@ -306,18 +306,19 @@ export default function OpsPage() {
                       return isNaN(d) ? String(v).slice(-5) : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
                     }}
                   />
-                  <YAxis tick={{ fontSize: 11 }} />
+                  <YAxis yAxisId="temp" tick={{ fontSize: 11 }} label={{ value: "°C", position: "insideTopLeft", fontSize: 10, offset: -5 }} />
+                  <YAxis yAxisId="shock" orientation="right" tick={{ fontSize: 11 }} label={{ value: "g", position: "insideTopRight", fontSize: 10, offset: -5 }} domain={[0, 0.15]} />
                   <ReTooltip content={<ChartTooltip />} />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
                   {/* Temperature zones */}
-                  <ReferenceArea y1={2} y2={8} fill="#10B981" fillOpacity={0.06} label="" />
-                  <ReferenceArea y1={8} y2={12} fill="#F59E0B" fillOpacity={0.06} label="" />
-                  <ReferenceArea y1={12} y2={50} fill="#D55E00" fillOpacity={0.06} label="" />
-                  <ReferenceLine y={8} stroke="#F59E0B" strokeDasharray="5 5" strokeWidth={1} />
-                  <ReferenceLine y={12} stroke="#D55E00" strokeDasharray="5 5" strokeWidth={1} />
-                  <Line type="monotone" dataKey="tempC" name="Temp (°C)" stroke="#009688" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="ambientC" name="Ambient (°C)" stroke="#0072B2" strokeWidth={1.5} dot={false} />
-                  <Line type="monotone" dataKey="shockG" name="Shock (g)" stroke="#D55E00" strokeWidth={1.5} dot={false} />
+                  <ReferenceArea yAxisId="temp" y1={2} y2={8} fill="#10B981" fillOpacity={0.06} label="" />
+                  <ReferenceArea yAxisId="temp" y1={8} y2={12} fill="#F59E0B" fillOpacity={0.06} label="" />
+                  <ReferenceArea yAxisId="temp" y1={12} y2={50} fill="#D55E00" fillOpacity={0.06} label="" />
+                  <ReferenceLine yAxisId="temp" y={8} stroke="#F59E0B" strokeDasharray="5 5" strokeWidth={1} />
+                  <ReferenceLine yAxisId="temp" y={12} stroke="#D55E00" strokeDasharray="5 5" strokeWidth={1} />
+                  <Line yAxisId="temp" type="monotone" dataKey="tempC" name="Temp (°C)" stroke="#009688" strokeWidth={2} dot={false} />
+                  <Line yAxisId="temp" type="monotone" dataKey="ambientC" name="Ambient (°C)" stroke="#0072B2" strokeWidth={1.5} dot={false} />
+                  <Line yAxisId="shock" type="monotone" dataKey="shockG" name="Shock (g)" stroke="#D55E00" strokeWidth={1.5} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
