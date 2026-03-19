@@ -8,9 +8,9 @@ overproduction,agribrain,0.602,0.949,0.05,0.702,2229.0,0.884
 cyber_outage,static,0.383,0.0,0.12,0.475,4683.0,0.964
 cyber_outage,hybrid_rl,0.558,0.52,0.064,0.647,3184.0,0.829
 cyber_outage,agribrain,0.648,0.84,0.034,0.735,2386.0,0.861
-adaptive_pricing,static,0.435,0.0,0.084,0.506,4312.0,0.988
-adaptive_pricing,hybrid_rl,0.626,0.701,0.043,0.696,2867.0,0.839
-adaptive_pricing,agribrain,0.718,0.818,0.024,0.783,2182.0,0.866
+adaptive_pricing,static,0.435,0.0,0.084,0.506,4310.0,0.988
+adaptive_pricing,hybrid_rl,0.626,0.714,0.043,0.696,2863.0,0.839
+adaptive_pricing,agribrain,0.717,0.818,0.024,0.781,2196.0,0.864
 baseline,static,0.452,0.0,0.075,0.517,4197.0,0.99
 baseline,hybrid_rl,0.672,0.72,0.036,0.735,2610.0,0.84
 baseline,agribrain,0.722,0.88,0.024,0.78,2250.0,0.855

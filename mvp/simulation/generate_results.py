@@ -104,92 +104,35 @@ DATA_CSV = _BACKEND_SRC / "src" / "data_spinach.csv"
 
 
 # ---------------------------------------------------------------------------
-# Scenario perturbation (applies environmental stress to the base data)
+# Scenario perturbation — delegates to backend canonical implementations
 # ---------------------------------------------------------------------------
-def _hours_from_start(df: pd.DataFrame) -> np.ndarray:
-    ts = pd.to_datetime(df["timestamp"])
-    return ((ts - ts.iloc[0]).dt.total_seconds() / 3600.0).to_numpy(dtype=np.float64)
+from src.routers.scenarios import (
+    _apply_heatwave, _apply_overproduction,
+    _apply_cyber_outage, _apply_adaptive_pricing,
+    _hours_from_start, register_app_state as _register_scenario_state,
+)
 
-
-def _recompute_derived(df: pd.DataFrame, policy: Policy) -> pd.DataFrame:
-    df = compute_spoilage(df, k_ref=policy.k_ref, Ea_R=policy.Ea_R,
-                          T_ref_K=policy.T_ref_K, beta=policy.beta_humidity,
-                          lag_lambda=policy.lag_lambda)
-    df["volatility"] = volatility_flags(df, window=policy.boll_window, k=policy.boll_k)
-    return df
+_SCENARIO_FN = {
+    "heatwave": _apply_heatwave,
+    "overproduction": _apply_overproduction,
+    "cyber_outage": _apply_cyber_outage,
+    "adaptive_pricing": _apply_adaptive_pricing,
+}
 
 
 def apply_scenario(df: pd.DataFrame, name: str, policy: Policy,
                    rng: np.random.Generator) -> pd.DataFrame:
-    df = df.copy()
-    for col in ("tempC", "RH", "inventory_units", "demand_units"):
-        if col in df.columns:
-            df[col] = df[col].astype(float)
-    hours = _hours_from_start(df)
-    n = len(df)
-
-    if name == "heatwave":
-        temp_add = np.zeros(n)
-        rh_add = np.zeros(n)
-        for i in range(n):
-            h = hours[i]
-            if 24.0 <= h <= 48.0:
-                # Sigmoid onset: reaches ~95 % of peak by h ≈ 30 (6 h ramp).
-                # More realistic than a linear ramp — heatwaves build
-                # rapidly once they onset (WMO, 2018).
-                onset = 1.0 - np.exp(-0.5 * (h - 24.0))
-                temp_add[i] = 20.0 * onset
-                rh_add[i] = 10.0 * onset
-            elif h > 48.0:
-                temp_add[i] = 20.0 * np.exp(-0.1 * (h - 48.0))
-                rh_add[i] = 10.0 * np.exp(-0.1 * (h - 48.0))
-        df["tempC"] = df["tempC"] + temp_add
-        df["RH"] = (df["RH"] + rh_add).clip(0, 100)
-    elif name == "overproduction":
-        mask = (hours >= 12.0) & (hours <= 60.0)
-        df.loc[mask, "inventory_units"] = df.loc[mask, "inventory_units"] * 2.5
-        # Overloaded cold storage: progressive temperature creep.
-        # At 2.5× capacity, reduced airflow and compressor strain raise
-        # cold-room temperature by up to +8 °C (James & James, 2010).
-        # Sigmoid onset (~95 % by h ≈ 22), exponential recovery after.
-        temp_add = np.zeros(n)
-        for i in range(n):
-            h = hours[i]
-            if 12.0 <= h <= 60.0:
-                onset = 1.0 - np.exp(-0.3 * (h - 12.0))
-                temp_add[i] = 8.0 * onset
-            elif h > 60.0:
-                temp_add[i] = 8.0 * np.exp(-0.15 * (h - 60.0))
-        df["tempC"] = df["tempC"] + temp_add
-    elif name == "cyber_outage":
-        mask = hours >= 24.0
-        # Processor offline: downstream demand drops to 15% (pipeline broken)
-        df.loc[mask, "demand_units"] = df.loc[mask, "demand_units"] * 0.15
-        # Inventory stays at 100%: produce keeps arriving from farms,
-        # creating an accumulation crisis with the processor offline.
-        # Refrigeration degradation: IT-controlled cooling fails (+10C)
-        temp_add = np.zeros(n)
-        for i in range(n):
-            h = hours[i]
-            if h >= 24.0:
-                onset = 1.0 - np.exp(-0.2 * (h - 24.0))
-                temp_add[i] = 10.0 * onset
-        df["tempC"] = df["tempC"] + temp_add
-    elif name == "adaptive_pricing":
-        oscillation = 45.0 * np.sin(2.0 * np.pi * np.arange(n) / 60.0)
-        noise = rng.normal(0.0, 14.0, size=n)
-        df["demand_units"] = (df["demand_units"] + oscillation + noise).clip(0)
-        # Cold-storage stress from demand volatility: frequent dock openings,
-        # variable loading patterns, and supply-demand mismatch degrade
-        # temperature management (Mercier et al., 2017).
-        demand = df["demand_units"].to_numpy()
-        inv = df["inventory_units"].to_numpy()
-        demand_dev = np.abs(demand - np.median(demand)) / (np.median(demand) + 1.0)
-        surplus_signal = np.clip((inv / 12000.0 - 1.0), 0, 2.0)
-        temp_add = 1.5 * np.clip(demand_dev, 0, 1) + 2.0 * surplus_signal
-        df["tempC"] = df["tempC"] + temp_add
-
-    return _recompute_derived(df, policy)
+    # Ensure scenario functions use our policy for _recompute_derived
+    _register_scenario_state({"policy": policy})
+    fn = _SCENARIO_FN.get(name)
+    if fn is None:
+        # baseline — just recompute derived columns
+        df = compute_spoilage(df.copy(), k_ref=policy.k_ref, Ea_R=policy.Ea_R,
+                              T_ref_K=policy.T_ref_K, beta=policy.beta_humidity,
+                              lag_lambda=policy.lag_lambda)
+        df["volatility"] = volatility_flags(df, window=policy.boll_window, k=policy.boll_k)
+        return df
+    return fn(df)
 
 
 # ---------------------------------------------------------------------------
@@ -359,7 +302,7 @@ def run_episode(
         start = max(0, idx - eq_window + 1)
         window_slca = slca_vals[start:idx + 1]
         if len(window_slca) > 1:
-            eq_val = 1.0 - float(np.std(window_slca))
+            eq_val = compute_equity(window_slca)
         else:
             eq_val = 1.0
         equity_trace.append(eq_val)

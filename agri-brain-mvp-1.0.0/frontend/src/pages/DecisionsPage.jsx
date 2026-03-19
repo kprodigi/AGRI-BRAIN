@@ -38,12 +38,14 @@ function getActionStyle(action) {
 }
 
 function DecisionCard({ memo, index }) {
+  const [expanded, setExpanded] = useState(false);
   const actionStyle = getActionStyle(memo.decision || memo.action);
   const ts = memo.time || memo.ts;
   const timeStr = ts ? new Date(ts).toLocaleString([], { dateStyle: "short", timeStyle: "short" }) : "\u2014";
 
   const copyDetails = () => {
-    const text = `Decision: ${memo.decision || memo.action}\nAgent: ${memo.agent} (${memo.role})\nSLCA: ${memo.slca}\nCarbon: ${memo.carbon_kg} kg\nTx: ${memo.tx || memo.tx_hash}\nTime: ${timeStr}`;
+    let text = `Decision: ${memo.decision || memo.action}\nAgent: ${memo.agent} (${memo.role})\nSLCA: ${memo.slca}\nCarbon: ${memo.carbon_kg} kg\nTx: ${memo.tx || memo.tx_hash}\nTime: ${timeStr}`;
+    if (memo.memo_text) text += `\n\n${memo.memo_text}`;
     navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard");
   };
@@ -116,7 +118,34 @@ function DecisionCard({ memo, index }) {
                 </div>
               )}
 
-              {memo.note && <p className="mt-2 text-sm text-muted-foreground">{memo.note}</p>}
+              {memo.note && <p className="mt-2 text-sm text-muted-foreground italic">{memo.note}</p>}
+
+              {/* Expandable detailed memo */}
+              {memo.memo_text && (
+                <div className="mt-2">
+                  <button
+                    onClick={() => setExpanded(!expanded)}
+                    className="text-xs text-primary hover:underline font-medium"
+                  >
+                    {expanded ? "Hide details \u25B2" : "Show detailed memo \u25BC"}
+                  </button>
+                  <AnimatePresence>
+                    {expanded && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="mt-2 pl-3 border-l-2 border-primary/30 space-y-2"
+                      >
+                        {memo.memo_text.split("\n\n").map((para, i) => (
+                          <p key={i} className="text-sm text-muted-foreground leading-relaxed">{para}</p>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
             </div>
 
             <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={copyDetails}>
@@ -211,9 +240,13 @@ export default function DecisionsPage() {
   }, [decisions]);
 
   const exportCSV = () => {
-    const headers = "Time,Agent,Role,Action,SLCA,Carbon_kg,Unit_Price,Circular_Score,Tx_Hash,Note\n";
+    const esc = (v) => {
+      const s = String(v ?? "");
+      return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const headers = "Time,Agent,Role,Action,SLCA,Carbon_kg,Unit_Price,Circular_Score,Tx_Hash,Note,Memo_Text\n";
     const rows = decisions.map((d) =>
-      [d.time, d.agent, d.role, d.decision || d.action, d.slca, d.carbon_kg, d.unit_price, d.circular_economy_score, d.tx || d.tx_hash, d.note].join(",")
+      [d.time, d.agent, d.role, d.decision || d.action, d.slca, d.carbon_kg, d.unit_price, d.circular_economy_score, d.tx || d.tx_hash, d.note, d.memo_text].map(esc).join(",")
     ).join("\n");
     const blob = new Blob([headers + rows], { type: "text/csv" });
     const url = URL.createObjectURL(blob);

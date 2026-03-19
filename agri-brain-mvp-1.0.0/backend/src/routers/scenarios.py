@@ -132,28 +132,55 @@ def _apply_overproduction(df, intensity: float = 1.0):
 
 
 def _apply_cyber_outage(df, intensity: float = 1.0):
-    """Set demand to 15 % and inventory to 25 % from hour 24 onward."""
+    """Processor offline from hour 24: demand drops to 15 %, inventory accumulates.
+
+    IT-controlled cooling fails, causing a +10 °C sigmoid temperature
+    excursion (reaches ~95 % of peak within ~5 h of onset).  Inventory
+    stays at 100 % — produce keeps arriving from farms, creating an
+    accumulation crisis while the processor is offline.
+    """
     df = df.copy()
     df["demand_units"] = df["demand_units"].astype(float)
-    df["inventory_units"] = df["inventory_units"].astype(float)
+    df["tempC"] = df["tempC"].astype(float)
     hours = _hours_from_start(df)
+    n = len(df)
     mask = hours >= 24.0
-    demand_frac = 0.15 * intensity
-    inv_frac = 0.25 * intensity
-    df.loc[mask, "demand_units"] = df.loc[mask, "demand_units"] * demand_frac
-    df.loc[mask, "inventory_units"] = df.loc[mask, "inventory_units"] * inv_frac
+    df.loc[mask, "demand_units"] = df.loc[mask, "demand_units"] * 0.15 * intensity
+    # Refrigeration degradation: IT-controlled cooling fails (+10 °C)
+    temp_add = np.zeros(n)
+    for i in range(n):
+        h = hours[i]
+        if h >= 24.0:
+            onset = 1.0 - np.exp(-0.2 * (h - 24.0))
+            temp_add[i] = 10.0 * onset * intensity
+    df["tempC"] = df["tempC"] + temp_add
     return _recompute_derived(df)
 
 
 def _apply_adaptive_pricing(df, intensity: float = 1.0):
-    """Add demand oscillation (amplitude 45, period 60) + noise (std 14)."""
+    """Add demand oscillation (amplitude 45, period 60) + noise (std 14).
+
+    Cold-storage stress from demand volatility: frequent dock openings,
+    variable loading patterns, and supply-demand mismatch degrade
+    temperature management (Mercier et al., 2017).
+    """
+    from src.models.waste import INV_BASELINE
     df = df.copy()
     df["demand_units"] = df["demand_units"].astype(float)
+    df["tempC"] = df["tempC"].astype(float)
+    df["inventory_units"] = df["inventory_units"].astype(float)
     n = len(df)
     rng = np.random.default_rng(42)
     oscillation = 45.0 * intensity * np.sin(2.0 * np.pi * np.arange(n) / 60.0)
     noise = rng.normal(0.0, 14.0 * intensity, size=n)
-    df["demand_units"] = (df["demand_units"].astype(float) + oscillation + noise).clip(0)
+    df["demand_units"] = (df["demand_units"] + oscillation + noise).clip(0)
+    # Temperature stress from demand volatility and inventory surplus
+    demand = df["demand_units"].to_numpy()
+    inv = df["inventory_units"].to_numpy()
+    demand_dev = np.abs(demand - np.median(demand)) / (np.median(demand) + 1.0)
+    surplus_signal = np.clip((inv / INV_BASELINE - 1.0), 0, 2.0)
+    temp_add = 1.5 * intensity * np.clip(demand_dev, 0, 1) + 2.0 * intensity * surplus_signal
+    df["tempC"] = df["tempC"] + temp_add
     return _recompute_derived(df)
 
 

@@ -41,6 +41,22 @@ const METHOD_COLORS = {
   "No SLCA": COLORS.noSlca,
 };
 
+// Map raw CSV method/variant names to display names
+const METHOD_DISPLAY = {
+  static: "Static",
+  hybrid_rl: "Hybrid RL",
+  agribrain: "AGRI-BRAIN",
+  no_pinn: "No PINN",
+  no_slca: "No SLCA",
+  // Also handle already-formatted names (no-op)
+  "Static": "Static",
+  "Hybrid RL": "Hybrid RL",
+  "AGRI-BRAIN": "AGRI-BRAIN",
+  "No PINN": "No PINN",
+  "No SLCA": "No SLCA",
+};
+const displayMethod = (m) => METHOD_DISPLAY[m] || m;
+
 // Animated counter for hero section
 function HeroCounter({ value, suffix = "", prefix = "", label, sublabel, delay = 0 }) {
   const ref = useRef(null);
@@ -83,7 +99,7 @@ function HeroCounter({ value, suffix = "", prefix = "", label, sublabel, delay =
   );
 }
 
-// Parse CSV text
+// Parse CSV text and normalize method/variant names to display format
 function parseCSV(text) {
   const lines = text.trim().split("\n");
   const headers = lines[0].split(",").map((h) => h.trim());
@@ -94,6 +110,8 @@ function parseCSV(text) {
       const num = +vals[i];
       obj[h] = Number.isFinite(num) && vals[i] !== "" ? num : vals[i];
     });
+    if (obj.Method) obj.Method = displayMethod(obj.Method);
+    if (obj.Variant) obj.Variant = displayMethod(obj.Variant);
     return obj;
   });
 }
@@ -409,7 +427,7 @@ export default function AnalyticsPage() {
         <Card className="mb-6">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Figure 6: Method Comparison</CardTitle>
+              <CardTitle className="text-base">Method Comparison</CardTitle>
               <Select value={selectedMetric} onValueChange={setSelectedMetric}>
                 <SelectTrigger className="w-28 h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -443,7 +461,7 @@ export default function AnalyticsPage() {
         <Card className="mb-6">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Figure 7: Ablation Study</CardTitle>
+              <CardTitle className="text-base">Ablation Study</CardTitle>
               <Select value={ablationMetric} onValueChange={setAblationMetric}>
                 <SelectTrigger className="w-28 h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -597,7 +615,7 @@ export default function AnalyticsPage() {
                   onError={(e) => { e.target.style.display = "none"; }}
                 />
                 <p className="text-xs text-muted-foreground italic mt-2">
-                  Figure {SCENARIOS.indexOf(scenarioObj) + 2}: {scenarioObj.name} scenario multi-panel analysis. Click to enlarge.
+                  {scenarioObj.name} scenario multi-panel analysis. Click to enlarge.
                 </p>
               </div>
               <div>
@@ -628,7 +646,7 @@ export default function AnalyticsPage() {
         <div className="grid lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Figure 8: Carbon by Scenario</CardTitle>
+              <CardTitle className="text-base">Carbon by Scenario</CardTitle>
             </CardHeader>
             <CardContent>
               <img

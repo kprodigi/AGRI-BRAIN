@@ -203,6 +203,11 @@ ROLE_PROFILES: Dict[str, Dict[str, Any]] = {
         "km_overrides": {"km_coldchain": 130.0, "km_local": 40.0, "km_recovery": 50.0},
         "slca_weights": {"w_c": 0.25, "w_l": 0.15, "w_r": 0.25, "w_p": 0.35},
     },
+    "cooperative": {
+        "logit_bias": np.array([0.0, 0.5, 0.3]),
+        "km_overrides": {"km_coldchain": 100.0, "km_local": 35.0, "km_recovery": 55.0},
+        "slca_weights": {"w_c": 0.25, "w_l": 0.25, "w_r": 0.25, "w_p": 0.25},
+    },
 }
 
 # ---------------------------------------------------------------------------
@@ -240,8 +245,22 @@ def kpis():
     if state["df"] is None:
         case_load()
     df = state["df"]
-    waste_baseline = float((df["shelf_left"] < 0.0).sum() / len(df))
-    waste_agri = float((df["shelf_left"] < 0.0).rolling(4).max().fillna(0).mean() * 0.6)
+    p = state["policy"]
+    # Compute realistic waste rates using the Arrhenius-based waste model
+    # across all timesteps for static (baseline) and agribrain modes.
+    _waste_baseline_vals = []
+    _waste_agri_vals = []
+    for _, row in df.iterrows():
+        _t = float(row["tempC"])
+        _rh = float(row.get("RH", 50.0)) / 100.0
+        _inv = float(row.get("inventory_units", INV_BASELINE))
+        _k = arrhenius_k(_t, p.k_ref, p.Ea_R, p.T_ref_K, _rh, p.beta_humidity)
+        _surplus = max(0.0, _inv / INV_BASELINE - 1.0)
+        _waste_baseline_vals.append(float(compute_waste_rate(_k, _surplus)))
+        _save = compute_save_factor("local_redistribute", "agribrain", _surplus)
+        _waste_agri_vals.append(float(compute_waste_rate(_k, _surplus) * (1.0 - _save)))
+    waste_baseline = float(np.mean(_waste_baseline_vals))
+    waste_agri = float(np.mean(_waste_agri_vals))
 
     # --- Extended KPIs from decision logs ---------------------------------
     logs = state.get("log", [])
@@ -335,6 +354,129 @@ def set_policy(p: Policy):
     """Update the canonical Policy object."""
     state["policy"] = p
     return {"ok": True, "policy": p.model_dump()}
+
+# ---------------------------------------------------------------------------
+# Memo text generation — detailed human-readable decision narrative
+# ---------------------------------------------------------------------------
+_ACTION_LABELS = {
+    "cold_chain": "cold chain transport",
+    "local_redistribute": "local redistribution",
+    "recovery": "recovery diversion",
+}
+
+_ROLE_CONTEXT = {
+    "farm": (
+        "As a farm-level agent, this decision prioritizes minimizing post-harvest "
+        "losses through proximity-based redistribution and fair labor practices. "
+        "Local redistribution keeps produce within regional markets, supporting "
+        "smallholder income and reducing food miles."
+    ),
+    "processor": (
+        "As a processing facility agent, this decision prioritizes product quality "
+        "preservation and cold chain integrity. Maintaining unbroken refrigeration "
+        "ensures compliance with FDA leafy greens safety guidelines and maximizes "
+        "shelf life for downstream retailers."
+    ),
+    "cooperative": (
+        "As a cooperative agent, this decision balances equity across all supply "
+        "chain stakeholders. The cooperative model weighs carbon, labor, resilience, "
+        "and transparency equally, ensuring no single SLCA pillar is sacrificed for "
+        "short-term efficiency gains."
+    ),
+    "distributor": (
+        "As a distribution agent, this decision optimizes logistics efficiency and "
+        "transport carbon cost. The distributor manages the longest transport legs "
+        "in the supply chain and must balance delivery speed against emissions and "
+        "thermal degradation risk during transit."
+    ),
+    "recovery": (
+        "As a recovery agent, this decision prioritizes diverting at-risk produce "
+        "from landfill into composting, animal feed, or food bank channels. Recovery "
+        "pathways capture residual value from spoiled or surplus inventory while "
+        "reducing the environmental burden of organic waste."
+    ),
+}
+
+def _build_memo_text(
+    action: str, role_key: str, mode: str,
+    rho: float, inv: float, temp: float, y_hat: float,
+    shelf: float, vol: str, tau: float, boll_z: float,
+    probs: np.ndarray, action_idx: int,
+    carbon: float, waste: float, km: float, price: float,
+    slca_composite: float, slca_result: dict,
+    circular_score: float, reward_total: float,
+    energy_penalty: float, water_penalty: float, waste_penalty: float,
+    recovery_opts: dict, rag_context: dict,
+) -> str:
+    """Build a detailed, multi-paragraph decision memo."""
+
+    # --- risk level ---
+    if rho < 0.3:
+        risk_label, risk_desc = "low", "well within acceptable limits"
+    elif rho < 0.6:
+        risk_label, risk_desc = "moderate", "approaching the rerouting threshold"
+    else:
+        risk_label, risk_desc = "high", "exceeding safe thresholds and requiring immediate intervention"
+
+    shelf_hours = max(shelf * 72, 0)  # shelf_left is fraction of 72h window
+    regime = "anomalous (Bollinger band breach)" if tau > 0.5 else "normal"
+
+    # --- paragraph 1: observation ---
+    obs = (
+        f"Current conditions indicate {risk_label} spoilage risk "
+        f"(\u03c1 = {rho:.3f}), {risk_desc}. "
+        f"Cold chain temperature is {temp:.1f} \u00b0C with "
+        f"{shelf_hours:.1f} hours of estimated shelf life remaining. "
+        f"Inventory stands at {inv:.0f} units against a forecasted demand "
+        f"of {y_hat:.1f} units (LSTM). "
+        f"The demand regime is {regime} (Bollinger z = {boll_z:+.2f})."
+    )
+
+    # --- paragraph 2: decision rationale ---
+    chosen = _ACTION_LABELS.get(action, action)
+    alt_actions = [(a, float(probs[i])) for i, a in enumerate(["cold_chain", "local_redistribute", "recovery"])]
+    alt_actions.sort(key=lambda x: x[1], reverse=True)
+    prob_str = ", ".join(f"{_ACTION_LABELS.get(a, a)} (P = {p:.3f})" for a, p in alt_actions)
+
+    rationale = (
+        f"The {mode} policy selected {chosen} with probability "
+        f"{float(probs[action_idx]):.3f}. "
+        f"Full action distribution: {prob_str}. "
+    )
+    if tau > 0.5:
+        rationale += (
+            "The anomaly trigger (\u03c4 = 1) activated regime-aware rerouting, "
+            "shifting probability mass toward redistribution and recovery channels. "
+        )
+    if vol == "anomaly":
+        rationale += "Volatility flags indicate abnormal sensor readings in this window. "
+
+    # --- paragraph 3: impact assessment ---
+    sc = slca_result
+    impact = (
+        f"This routing decision covers {km:.0f} km of transport, producing "
+        f"{carbon:.2f} kg CO\u2082-eq in emissions. "
+        f"The projected waste rate is {waste:.4f} ({waste*100:.2f}%), "
+        f"with a unit price of ${price:.2f}. "
+        f"SLCA composite score: {slca_composite:.3f} "
+        f"(Carbon {sc['C']:.2f}, Labor {sc['L']:.2f}, "
+        f"Resilience {sc['R']:.2f}, Transparency {sc['P']:.2f}). "
+        f"Circular economy score: {circular_score:.3f}. "
+        f"Net reward after penalties (energy {energy_penalty:.4f}, "
+        f"water {water_penalty:.6f}, waste {waste_penalty:.4f}): "
+        f"{reward_total:.4f}."
+    )
+
+    # --- paragraph 4: role context ---
+    role_text = _ROLE_CONTEXT.get(role_key, _ROLE_CONTEXT["cooperative"])
+
+    # --- optional RAG guidance ---
+    rag_text = ""
+    guidance = (rag_context or {}).get("regulatory_guidance", "")
+    if guidance:
+        rag_text = f"\n\nRegulatory guidance: {guidance}"
+
+    return f"{obs}\n\n{rationale}\n\n{impact}\n\n{role_text}{rag_text}"
 
 # ---------------------------------------------------------------------------
 # Decisions — regime-aware contextual softmax policy  (Section 5)
@@ -510,6 +652,18 @@ def decide(d: DecideIn):
             f"Softmax policy: action={action} "
             f"P={probs[action_idx]:.3f} rho={rho:.3f} tau={tau}"
         ),
+        "memo_text": _build_memo_text(
+            action=action, role_key=role_key, mode=d.mode,
+            rho=rho, inv=inv, temp=temp, y_hat=y_hat,
+            shelf=shelf, vol=vol, tau=tau, boll_z=boll_z,
+            probs=probs, action_idx=action_idx,
+            carbon=carbon, waste=waste, km=km, price=price,
+            slca_composite=slca_composite, slca_result=slca_result,
+            circular_score=circular_score, reward_total=reward_total,
+            energy_penalty=energy_penalty, water_penalty=water_penalty,
+            waste_penalty=waste_penalty,
+            recovery_opts=recovery_opts, rag_context=rag_context,
+        ),
     }
 
     # best-effort on-chain log (never break the decision flow)
@@ -585,35 +739,169 @@ def report_pdf(role: str = ""):
         last = logs[-1] if logs else {}
 
     from io import BytesIO
-    from reportlab.pdfgen import canvas
+    from reportlab.platypus import (
+        SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
+    )
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib import colors
+    from reportlab.lib.enums import TA_CENTER
 
     buf = BytesIO()
-    c = canvas.Canvas(buf, pagesize=A4)
-    w, h = A4
-    y = h - 20 * mm
+    doc = SimpleDocTemplate(buf, pagesize=A4,
+                            leftMargin=20*mm, rightMargin=20*mm,
+                            topMargin=15*mm, bottomMargin=15*mm)
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle("MemoTitle", parent=styles["Title"],
+                                  fontSize=18, spaceAfter=4*mm)
+    heading_style = ParagraphStyle("SectionHead", parent=styles["Heading2"],
+                                    fontSize=13, spaceBefore=6*mm, spaceAfter=3*mm,
+                                    textColor=colors.HexColor("#1a5632"))
+    body_style = styles["BodyText"]
+    small_style = ParagraphStyle("Small", parent=body_style, fontSize=9,
+                                  textColor=colors.grey)
 
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(20 * mm, y, "AGRI BRAIN Spinach — Decision Memo")
-    y -= 10 * mm
+    story = []
 
-    c.setFont("Helvetica", 10)
-    for k in ("records", "avg_tempC", "anomaly_points", "waste_rate_baseline", "waste_rate_agri"):
-        c.drawString(20 * mm, y, f"{k}: {kp.get(k)}"); y -= 6 * mm
+    # --- Title ---
+    story.append(Paragraph("AGRI-BRAIN Decision Memo", title_style))
+    ts_str = last.get("time", "N/A")
+    agent_str = f"{last.get('agent', 'N/A')} ({last.get('role', 'N/A')})"
+    story.append(Paragraph(f"<b>Timestamp:</b> {ts_str} &nbsp;&nbsp; "
+                            f"<b>Agent:</b> {agent_str} &nbsp;&nbsp; "
+                            f"<b>Mode:</b> {last.get('mode', 'N/A')}", small_style))
+    story.append(Spacer(1, 4*mm))
 
-    y -= 4 * mm
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(20 * mm, y, "Last Decision")
-    y -= 7 * mm
-    c.setFont("Helvetica", 10)
-    for k in ("time","agent","role","decision","shelf_left","volatility","km","carbon_kg","unit_price","slca","tx","note"):
-        c.drawString(20 * mm, y, f"{k}: {last.get(k, '')}"); y -= 6 * mm
-        if y < 20 * mm:
-            c.showPage(); y = h - 20 * mm
+    def _table(headers, rows, col_widths=None):
+        data = [headers] + rows
+        t = Table(data, colWidths=col_widths, hAlign="LEFT")
+        t.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1a5632")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 9),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.HexColor("#f5f5f5"), colors.white]),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cccccc")),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 6),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+            ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ]))
+        return t
 
-    c.showPage(); c.save()
+    if not last:
+        story.append(Paragraph("No decisions recorded yet. Run a decision first.", body_style))
+    else:
+        # --- Executive Summary (memo_text) ---
+        memo_text = last.get("memo_text", "")
+        if memo_text:
+            story.append(Paragraph("Executive Summary", heading_style))
+            for para in memo_text.split("\n\n"):
+                story.append(Paragraph(para.strip(), body_style))
+                story.append(Spacer(1, 2*mm))
 
+        # --- Current Conditions ---
+        story.append(Paragraph("Current Conditions", heading_style))
+        regime = last.get("regime", {})
+        story.append(_table(
+            ["Parameter", "Value"],
+            [
+                ["Temperature", f"{last.get('shelf_left', 0) and kp.get('avg_tempC', 'N/A')} \u00b0C"],
+                ["Shelf Life Remaining", f"{float(last.get('shelf_left', 0)) * 72:.1f} hours ({float(last.get('shelf_left', 0)):.3f})"],
+                ["Spoilage Risk (\u03c1)", f"{last.get('spoilage_risk', 'N/A')}"],
+                ["Volatility", f"{last.get('volatility', 'N/A')}"],
+                ["Regime Trigger (\u03c4)", f"{regime.get('tau', 'N/A')}"],
+                ["Bollinger z-score", f"{regime.get('bollinger_z', 'N/A')}"],
+            ],
+            col_widths=[55*mm, 80*mm],
+        ))
+
+        # --- Decision ---
+        story.append(Paragraph("Decision", heading_style))
+        ap = last.get("action_probabilities", {})
+        story.append(_table(
+            ["Field", "Value"],
+            [
+                ["Selected Action", last.get("action", "N/A")],
+                ["P(cold_chain)", f"{ap.get('cold_chain', 'N/A')}"],
+                ["P(local_redistribute)", f"{ap.get('local_redistribute', 'N/A')}"],
+                ["P(recovery)", f"{ap.get('recovery', 'N/A')}"],
+                ["Transport Distance", f"{last.get('km', 'N/A')} km"],
+            ],
+            col_widths=[55*mm, 80*mm],
+        ))
+
+        # --- Impact Assessment ---
+        story.append(Paragraph("Impact Assessment", heading_style))
+        story.append(_table(
+            ["Metric", "Value"],
+            [
+                ["Carbon Emissions", f"{last.get('carbon_kg', 'N/A')} kg CO\u2082-eq"],
+                ["Waste Rate", f"{last.get('waste', 'N/A')}"],
+                ["Unit Price", f"${last.get('unit_price', 'N/A')}"],
+                ["SLCA Composite", f"{last.get('slca', 'N/A')}"],
+                ["Circular Economy Score", f"{last.get('circular_economy_score', 'N/A')}"],
+            ],
+            col_widths=[55*mm, 80*mm],
+        ))
+
+        # --- SLCA Breakdown ---
+        sc = last.get("slca_components", {})
+        if sc:
+            story.append(Paragraph("SLCA Breakdown", heading_style))
+            story.append(_table(
+                ["Pillar", "Score"],
+                [
+                    ["Carbon (C)", f"{sc.get('carbon', 'N/A')}"],
+                    ["Labor (L)", f"{sc.get('labor', 'N/A')}"],
+                    ["Resilience (R)", f"{sc.get('resilience', 'N/A')}"],
+                    ["Transparency (P)", f"{sc.get('transparency', 'N/A')}"],
+                    ["Composite", f"{sc.get('composite', 'N/A')}"],
+                ],
+                col_widths=[55*mm, 80*mm],
+            ))
+
+        # --- Reward Decomposition ---
+        rd = last.get("reward_decomposition", {})
+        if rd:
+            story.append(Paragraph("Reward Decomposition", heading_style))
+            story.append(_table(
+                ["Component", "Value"],
+                [
+                    ["SLCA Reward", f"{rd.get('slca', 'N/A')}"],
+                    ["Energy Penalty", f"{rd.get('energy_penalty', 'N/A')}"],
+                    ["Water Penalty", f"{rd.get('water_penalty', 'N/A')}"],
+                    ["Waste Penalty", f"{rd.get('waste_penalty', 'N/A')}"],
+                    ["Net Total", f"{rd.get('total', 'N/A')}"],
+                ],
+                col_widths=[55*mm, 80*mm],
+            ))
+
+        # --- Blockchain ---
+        tx = last.get("tx_hash") or last.get("tx", "")
+        if tx and tx != "0x0":
+            story.append(Paragraph("Blockchain Verification", heading_style))
+            story.append(Paragraph(f"Transaction hash: <font face='Courier'>{tx}</font>", body_style))
+
+    # --- KPI Summary ---
+    story.append(Paragraph("System KPI Summary", heading_style))
+    story.append(_table(
+        ["KPI", "Value"],
+        [
+            ["Records Loaded", str(kp.get("records", 0))],
+            ["Avg Temperature", f"{kp.get('avg_tempC', 0):.2f} \u00b0C"],
+            ["Anomaly Points", str(kp.get("anomaly_points", 0))],
+            ["Waste Rate (Baseline)", f"{kp.get('waste_rate_baseline', 0):.4f}"],
+            ["Waste Rate (AGRI-BRAIN)", f"{kp.get('waste_rate_agri', 0):.4f}"],
+            ["Mean ARI", f"{kp.get('mean_ari', 0)}"],
+            ["Total Carbon", f"{kp.get('total_carbon_kg', 0)} kg"],
+        ],
+        col_widths=[55*mm, 80*mm],
+    ))
+
+    doc.build(story)
     from fastapi.responses import Response
     return Response(content=buf.getvalue(), media_type="application/pdf")
 
