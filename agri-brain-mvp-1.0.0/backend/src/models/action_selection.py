@@ -1,7 +1,7 @@
 """
 Regime-aware contextual softmax policy for routing decisions.
 
-Implements the softmax action selection described in Section 4.3 of the
+Implements the softmax action selection described in Section 4.6 of the
 AGRI-BRAIN paper.  Given a 6-dimensional feature vector φ(s) extracted
 from the current supply chain state, the policy computes action
 probabilities via:
@@ -145,7 +145,7 @@ choice — since it cannot assess social value of alternatives.
 # Cyber outage: rerouting success probabilities
 # ---------------------------------------------------------------------------
 CYBER_REROUTE_PROB: dict[str, float] = {
-    "static": 0.25,
+    # static mode returns ColdChain before reaching cyber logic; no entry needed.
     "hybrid_rl": 0.55,
     "no_pinn": 0.65,
     "no_slca": 0.60,
@@ -291,7 +291,10 @@ def select_action(
     hour : hours since start (for cyber outage timing).
     role_bias : optional per-role logit bias vector (3,).
     deterministic : if True, use argmax instead of sampling.
-    rag_context : optional RAG-retrieved policy context for logging.
+    rag_context : optional RAG-retrieved policy context. In the current
+        implementation, RAG context is used for post-decision explanation
+        generation (Section 4.15) rather than directly influencing the
+        softmax logits. Passed through for decision logging.
 
     Returns
     -------

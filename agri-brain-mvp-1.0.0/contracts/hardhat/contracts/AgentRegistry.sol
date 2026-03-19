@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 /// @title AgentRegistry - Supply chain agent identity and capability registry
-/// @notice Registers agents (farm, processor, distributor, retail) with their
+/// @notice Registers agents (farm, processor, cooperative, distributor, recovery) with their
 ///         roles and metadata. Agents interact with the PINN-based spoilage
 ///         prediction (Arrhenius model) and SLCA routing optimization to make
 ///         physics-informed supply chain decisions. Active status controls

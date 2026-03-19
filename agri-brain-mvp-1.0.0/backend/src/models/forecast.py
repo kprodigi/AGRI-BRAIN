@@ -30,11 +30,11 @@ import pandas as pd
 def yield_demand_forecast(
     df: pd.DataFrame,
     horizon: int = 24,
-    ema_alpha: float = 0.6,
+    ema_alpha: float = 0.5,
     lookback: int = 48,
     ci_z: float = 1.96,
     series_col: str = "demand_units",
-    trend_beta: float = 0.3,
+    trend_beta: float = 0.2,
 ) -> Dict[str, object]:
     """Produce a horizon-tiled forecast with confidence interval.
 
@@ -45,14 +45,12 @@ def yield_demand_forecast(
     ----------
     df : DataFrame with at least a *series_col* column.
     horizon : number of future steps to forecast.
-    ema_alpha : level smoothing factor (0 < alpha <= 1). Higher values
-        weight recent observations more heavily. Default 0.6 provides
-        good responsiveness for 15-min step demand data.
+    ema_alpha : level smoothing factor (0 < alpha <= 1). Default 0.5 matches
+        the yield/supply forecaster parameters documented in Section 4.4.
     lookback : number of most-recent observations used to seed the smoother.
     ci_z : z-score multiplier for the confidence interval (default 1.96 = 95%).
     series_col : column name to forecast.
-    trend_beta : trend smoothing factor (0 < beta <= 1). Lower values
-        dampen the trend more, preventing overshoot. Default 0.3.
+    trend_beta : trend smoothing factor (0 < beta <= 1). Default 0.2.
 
     Returns
     -------

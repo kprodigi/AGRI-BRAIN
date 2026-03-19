@@ -100,6 +100,12 @@ class AgentCoordinator:
         if cooperative is not None and cooperative is not active and 12.0 <= hour < 30.0:
             cooperative.observe(env_state, hour)
 
+        # Compute combined role bias: primary agent + cooperative overlay
+        combined_bias = active.role_bias.copy()
+        cooperative = self.agents.get("cooperative")
+        if cooperative is not None and cooperative is not active and 12.0 <= hour < 30.0:
+            combined_bias = combined_bias + cooperative.role_bias
+
         action_idx, probs = select_action(
             mode=mode,
             rho=obs.rho,
@@ -111,7 +117,7 @@ class AgentCoordinator:
             rng=rng,
             scenario=scenario,
             hour=hour,
-            role_bias=active.role_bias,
+            role_bias=combined_bias,
             rag_context=rag_context,
         )
 

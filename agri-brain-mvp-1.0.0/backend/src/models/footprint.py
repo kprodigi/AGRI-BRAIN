@@ -21,6 +21,8 @@ ML inference on CPU/edge hardware:
         this corresponds to ~1.8 µL per inference step.
         Ref: Patterson, D., et al. (2021). Carbon Emissions and Large
         Neural Network Training. arXiv:2104.10350.
+        Ref: Li, P., Yang, J., Islam, M.A. & Ren, S. (2023). Making AI
+        less thirsty. arXiv:2304.03271.
 
     Additional references:
         - Schwartz et al. (2020). Green AI. Communications of the ACM.

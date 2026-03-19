@@ -65,7 +65,7 @@ def arrhenius_k(
     k_ref: float = 0.0021,
     Ea_R: float = 8000.0,
     T_ref_K: float = 277.15,
-    rh_frac: float | np.ndarray = 0.89,
+    rh_frac: float | np.ndarray = 0.915,
     beta: float = 0.25,
 ) -> float | np.ndarray:
     """Compute Arrhenius decay rate k(T, H) without lag adjustment.

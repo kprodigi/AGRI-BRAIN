@@ -240,7 +240,7 @@ class SpoilagePINN:
             # d(loss)/d(delta_C) = 2 * delta_C / n
             d_delta = (2.0 / n) * data_err
 
-            # Through output tanh and 0.05 scale
+            # Through output tanh and 0.08 scale
             out_pre_tanh = activations[-1]  # tanh output
             d_out = d_delta.reshape(-1, 1) * 0.08 * (1.0 - out_pre_tanh ** 2)
 

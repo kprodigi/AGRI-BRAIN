@@ -235,9 +235,11 @@ class CooperativeAgent(SupplyChainAgent):
         self, obs: Observation, action: int
     ) -> List[InterAgentMessage]:
         msgs: List[InterAgentMessage] = []
-        # Broadcast coordination update when demand forecast exceeds inventory by 20%
+        # Broadcast coordination update when per-step demand forecast
+        # exceeds 0.12% of current inventory (operational trigger for
+        # demand-inventory imbalance detection).
         if (self._coordination_broadcasts < self.MAX_COORDINATION_BROADCASTS
-                and obs.y_hat > obs.inv * 0.0012):  # y_hat per step vs inv threshold
+                and obs.y_hat > obs.inv * 0.0012):
             msgs.append(InterAgentMessage(
                 sender=self.agent_id,
                 recipient="broadcast",

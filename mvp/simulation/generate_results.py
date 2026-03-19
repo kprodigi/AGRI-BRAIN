@@ -50,6 +50,7 @@ import pandas as pd
 
 # Layer 1 imports — all scientific logic lives here
 from src.models.spoilage import compute_spoilage, compute_spoilage_pinn, arrhenius_k, volatility_flags
+from src.models.footprint import FootprintMeter
 from src.models.forecast import yield_demand_forecast
 from src.models.lstm_demand import lstm_demand_forecast
 from src.models.yield_forecast import yield_supply_forecast
@@ -209,6 +210,9 @@ def run_episode(
     coordinator = AgentCoordinator()
     coordinator.reset()
 
+    # --- Green AI footprint meter ---
+    meter = FootprintMeter()
+
     # --- PolicyLearner (optional, off by default) ---
     learner = PolicyLearner() if ONLINE_LEARNING else None
 
@@ -310,6 +314,9 @@ def run_episode(
         reward = compute_reward(slca_c, waste, eta=policy.eta)
         cum_r += reward
 
+        # Green AI footprint tracking (Section 4.12)
+        fp = meter.compute_footprint(steps=1)
+
         # Post-step: update agent state and route messages
         obs = active_agent.observe(env_state, hours[idx])
         outcome = {"waste": waste, "rho": rho}
@@ -333,11 +340,13 @@ def run_episode(
         carbon_trace.append(carbon)
         slca_component_trace.append(slca_result)
 
-    # PolicyLearner: apply gradient update at episode end
+    # PolicyLearner: apply gradient update at episode end (disabled by default)
     if learner is not None:
-        from src.models.action_selection import THETA
-        updated_theta = learner.update(THETA)
-        print(f"  Policy weights updated via REINFORCE (delta norm: {np.linalg.norm(updated_theta - THETA):.6f})")
+        import src.models.action_selection as _as_module
+        updated_theta = learner.update(_as_module.THETA.copy())
+        delta_norm = np.linalg.norm(updated_theta - _as_module.THETA)
+        _as_module.THETA = updated_theta  # persist update for next episode
+        print(f"  Policy weights updated via REINFORCE (delta norm: {delta_norm:.6f})")
 
     # Episode-level metrics (Layer 1: resilience.py)
     rle = rle_tracker.rle
@@ -371,6 +380,7 @@ def run_episode(
         "rh_trace": df["RH"].tolist(), "demand_trace": df["demand_units"].tolist(),
         "inventory_trace": df["inventory_units"].tolist(),
         "active_agent_trace": active_agent_trace,
+        "footprint": meter.summary(),
         "agent_summaries": coordinator.agent_summaries(),
         "message_count": len(coordinator.message_log),
     }
