@@ -117,7 +117,8 @@ const router = createBrowserRouter([
 const rootEl = document.getElementById("root");
 if (!rootEl) throw new Error("Root element #root not found");
 
-ReactDOM.createRoot(rootEl).render(
+const root = rootEl._reactRoot || (rootEl._reactRoot = ReactDOM.createRoot(rootEl));
+root.render(
   <ThemeProvider defaultTheme="system">
     <RouterProvider router={router} />
     <Toaster
