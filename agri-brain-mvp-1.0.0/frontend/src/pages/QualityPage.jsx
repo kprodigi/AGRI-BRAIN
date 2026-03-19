@@ -237,13 +237,14 @@ export default function QualityPage() {
                   <LineChart data={series}>
                     <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                     <XAxis dataKey="t" hide />
-                    <YAxis tick={{ fontSize: 11 }} />
+                    <YAxis yAxisId="temp" tick={{ fontSize: 11 }} label={{ value: "°C", position: "insideTopLeft", fontSize: 10, offset: -5 }} />
+                    <YAxis yAxisId="rh" orientation="right" tick={{ fontSize: 11 }} domain={[60, 100]} label={{ value: "%RH", position: "insideTopRight", fontSize: 10, offset: -5 }} />
                     <ReTooltip content={<ChartTooltip />} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <ReferenceArea y1={2} y2={8} fill="#10B981" fillOpacity={0.05} />
-                    <ReferenceArea y1={8} y2={12} fill="#F59E0B" fillOpacity={0.05} />
-                    <Line type="monotone" dataKey="tempC" dot={false} name="Temp °C" stroke="#009688" strokeWidth={2} />
-                    <Line type="monotone" dataKey="RH" dot={false} name="Humidity %" stroke="#0072B2" strokeWidth={1.5} />
+                    <ReferenceArea yAxisId="temp" y1={2} y2={8} fill="#10B981" fillOpacity={0.05} />
+                    <ReferenceArea yAxisId="temp" y1={8} y2={12} fill="#F59E0B" fillOpacity={0.05} />
+                    <Line yAxisId="temp" type="monotone" dataKey="tempC" dot={false} name="Temp °C" stroke="#009688" strokeWidth={2} />
+                    <Line yAxisId="rh" type="monotone" dataKey="RH" dot={false} name="Humidity %" stroke="#0072B2" strokeWidth={1.5} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
