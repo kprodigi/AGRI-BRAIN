@@ -1,10 +1,14 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "AGRI-BRAIN: Adaptive Green Resilient Intelligence for Blockchain-Regulated Agricultural Networks"
+title: "AGRI-BRAIN: Autonomous Governance and Circular Reverse-Logistics Intelligence in Agri-Food Supply Chains via Blockchain-Regulated AI Agents"
 type: software
 authors:
   - family-names: Sarker
     given-names: Nahid
+    affiliation: "Karen M. Swindler Department of Chemical and Biological Engineering, South Dakota School of Mines and Technology, Rapid City, SD 57701, USA"
+  - family-names: Kazi
+    given-names: Monzure-Khoda
+    affiliation: "Karen M. Swindler Department of Chemical and Biological Engineering, South Dakota School of Mines and Technology, Rapid City, SD 57701, USA"
 license: MIT
 repository-code: "https://github.com/kprodigi/AGRI-BRAIN"
 # doi: "10.xxxx/xxxxx"  # Uncomment and update when preprint DOI is available
