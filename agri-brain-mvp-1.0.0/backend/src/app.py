@@ -184,27 +184,27 @@ state: Dict[str, Any] = {
 # ---------------------------------------------------------------------------
 ROLE_PROFILES: Dict[str, Dict[str, Any]] = {
     "farm": {
-        "logit_bias": np.array([-0.5, 0.8, 0.0]),
+        "logit_bias": np.array([-1.5, 2.5, 0.0]),
         "km_overrides": {"km_coldchain": 80.0, "km_local": 25.0, "km_recovery": 40.0},
         "slca_weights": {"w_c": 0.25, "w_l": 0.30, "w_r": 0.25, "w_p": 0.20},
     },
     "processor": {
-        "logit_bias": np.array([0.8, -0.4, 0.1]),
+        "logit_bias": np.array([3.0, -1.5, -0.5]),
         "km_overrides": {"km_coldchain": 110.0, "km_local": 50.0, "km_recovery": 60.0},
         "slca_weights": {"w_c": 0.30, "w_l": 0.25, "w_r": 0.20, "w_p": 0.25},
     },
     "distributor": {
-        "logit_bias": np.array([1.0, -0.5, -0.2]),
+        "logit_bias": np.array([3.5, -2.0, -1.0]),
         "km_overrides": {"km_coldchain": 180.0, "km_local": 65.0, "km_recovery": 100.0},
         "slca_weights": {"w_c": 0.35, "w_l": 0.15, "w_r": 0.30, "w_p": 0.20},
     },
     "recovery": {
-        "logit_bias": np.array([-0.5, -0.6, 1.2]),
+        "logit_bias": np.array([-1.5, -2.0, 4.0]),
         "km_overrides": {"km_coldchain": 130.0, "km_local": 40.0, "km_recovery": 50.0},
         "slca_weights": {"w_c": 0.25, "w_l": 0.15, "w_r": 0.25, "w_p": 0.35},
     },
     "cooperative": {
-        "logit_bias": np.array([0.0, 0.5, 0.3]),
+        "logit_bias": np.array([0.0, 1.5, 0.8]),
         "km_overrides": {"km_coldchain": 100.0, "km_local": 35.0, "km_recovery": 55.0},
         "slca_weights": {"w_c": 0.25, "w_l": 0.25, "w_r": 0.25, "w_p": 0.25},
     },
@@ -797,6 +797,10 @@ def report_pdf(role: str = ""):
         # --- Executive Summary (memo_text) ---
         memo_text = last.get("memo_text", "")
         if memo_text:
+            # Replace Unicode subscript/superscript chars that ReportLab can't render
+            memo_text = memo_text.replace("CO\u2082", "CO<sub>2</sub>")
+            memo_text = memo_text.replace("\u2082", "<sub>2</sub>")
+            memo_text = memo_text.replace("\u00b2", "<sup>2</sup>")
             story.append(Paragraph("Executive Summary", heading_style))
             for para in memo_text.split("\n\n"):
                 story.append(Paragraph(para.strip(), body_style))
@@ -838,7 +842,7 @@ def report_pdf(role: str = ""):
         story.append(_table(
             ["Metric", "Value"],
             [
-                ["Carbon Emissions", f"{last.get('carbon_kg', 'N/A')} kg CO\u2082-eq"],
+                ["Carbon Emissions", f"{last.get('carbon_kg', 'N/A')} kg CO2-eq"],
                 ["Waste Rate", f"{last.get('waste', 'N/A')}"],
                 ["Unit Price", f"${last.get('unit_price', 'N/A')}"],
                 ["SLCA Composite", f"{last.get('slca', 'N/A')}"],

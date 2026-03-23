@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from src.agents.bus import BUS
 
 # ---- Helpers for chain polling (JSON-RPC, no extra deps) ----
-import json, urllib.request
+import json, urllib.request, urllib.error
 
 def _rpc_numeric_hex(rpc_url: str, method: str, params=None) -> Optional[int]:
     if not rpc_url:
@@ -31,10 +31,14 @@ async def _chain_head_loop():
     while True:
         try:
             rpc_url = (CHAIN_CFG or {}).get("rpc")
-            head = _rpc_numeric_hex(rpc_url, "eth_blockNumber") if rpc_url else None
+            loop = asyncio.get_running_loop()
+            head = (await loop.run_in_executor(None, _rpc_numeric_hex, rpc_url, "eth_blockNumber")) if rpc_url else None
             if head is not None and head != last:
                 last = head
                 await BUS.emit("chain/head", {"block": head})
+        except (ConnectionError, OSError, urllib.error.URLError):
+            # Chain node not running — silently back off
+            pass
         except Exception as e:
             await BUS.emit("chain/error", {"error": str(e)})
         await asyncio.sleep(2.0)
@@ -68,6 +72,9 @@ async def _policy_watch_loop():
 
             # back off a bit (keeps CPU low but still feels reactive)
             await asyncio.sleep(15)
+        except (ConnectionError, OSError):
+            # Backend dependency not reachable — silently back off
+            pass
         except Exception as e:
             await BUS.emit("agent/error", {"error": str(e)})
             await asyncio.sleep(15)
