@@ -39,12 +39,12 @@ plt.rcParams.update({
     "font.size": 12,
     "axes.labelsize": 12,
     "axes.labelweight": "bold",
-    "axes.titlesize": 12,
+    "axes.titlesize": 14,
     "axes.titleweight": "bold",
     "xtick.labelsize": 12,
     "ytick.labelsize": 12,
     "legend.fontsize": 12,
-    "figure.titlesize": 12,
+    "figure.titlesize": 16,
     "figure.titleweight": "bold",
     "figure.dpi": 150,
     "lines.linewidth": 2.0,
@@ -113,7 +113,7 @@ def _apply_style(ax):
     ax.xaxis.label.set_weight("bold")
     ax.yaxis.label.set_size(12)
     ax.yaxis.label.set_weight("bold")
-    ax.title.set_size(12)
+    ax.title.set_size(14)
     ax.title.set_weight("bold")
 
 
@@ -171,7 +171,7 @@ def fig2_heatwave(data):
     hours = np.array(ab["hours"])
 
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-    fig.suptitle("Heatwave Scenario Analysis", fontsize=12, fontweight="bold")
+    fig.suptitle("Heatwave Scenario Analysis", fontsize=18, fontweight="bold")
 
     # --- (a) Temperature + Humidity with heatwave window ---
     ax = axes[0, 0]
@@ -244,7 +244,7 @@ def fig2_heatwave(data):
     _legend(ax, loc="lower left")
     _apply_style(ax)
 
-    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    fig.tight_layout(rect=[0, 0, 1, 0.97])
     _save(fig, "fig2_heatwave")
 
 
@@ -259,7 +259,7 @@ def fig3_overproduction(data):
 
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
     fig.suptitle("Overproduction & Reverse Logistics",
-                 fontsize=12, fontweight="bold")
+                 fontsize=18, fontweight="bold")
 
     # --- (a) Inventory vs Demand (dual y-axis, proper units) ---
     ax = axes[0, 0]
@@ -360,7 +360,7 @@ def fig3_overproduction(data):
     _legend(ax)
     _apply_style(ax)
 
-    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    fig.tight_layout(rect=[0, 0, 1, 0.97])
     _save(fig, "fig3_overproduction")
 
 
@@ -374,7 +374,7 @@ def fig4_cyber(data):
     hours = np.array(ab["hours"])
 
     fig, axes = plt.subplots(1, 3, figsize=(16, 5))
-    fig.suptitle("Cyber Outage Scenario", fontsize=12, fontweight="bold")
+    fig.suptitle("Cyber Outage Scenario", fontsize=16, fontweight="bold")
 
     # --- (a) ARI over time with outage shading ---
     ax = axes[0]
@@ -448,7 +448,7 @@ def fig4_cyber(data):
     _legend(ax, loc="lower left")
     _apply_style(ax)
 
-    fig.tight_layout(rect=[0, 0, 1, 0.93])
+    fig.tight_layout(rect=[0, 0, 1, 0.96])
     _save(fig, "fig4_cyber")
 
 
@@ -463,7 +463,7 @@ def fig5_pricing(data):
 
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
     fig.suptitle("Adaptive Pricing & Demand Volatility",
-                 fontsize=12, fontweight="bold")
+                 fontsize=18, fontweight="bold")
 
     # --- (a) Demand + Bollinger triggers ---
     ax = axes[0, 0]
@@ -564,7 +564,7 @@ def fig5_pricing(data):
     )
     _apply_style(ax)
 
-    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    fig.tight_layout(rect=[0, 0, 1, 0.97])
     _save(fig, "fig5_pricing")
 
 
@@ -575,7 +575,7 @@ def fig6_cross(data):
     """2x2 grouped bars: ARI, RLE, waste, SLCA across scenarios for 3 methods."""
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
     fig.suptitle("Cross-Scenario Performance Comparison",
-                 fontsize=12, fontweight="bold")
+                 fontsize=18, fontweight="bold")
 
     metrics = [("ari", "ARI", "(a)"), ("rle", "RLE", "(b)"),
                ("waste", "Waste Rate", "(c)"), ("slca", "SLCA Score", "(d)")]
@@ -605,7 +605,7 @@ def fig6_cross(data):
                fontsize=12, framealpha=0.95, edgecolor="gray",
                fancybox=False, shadow=False,
                bbox_to_anchor=(0.5, 0.0))
-    fig.tight_layout(rect=[0, 0.05, 1, 0.95])
+    fig.tight_layout(rect=[0, 0.05, 1, 0.97])
     _save(fig, "fig6_cross")
 
 
@@ -615,7 +615,7 @@ def fig6_cross(data):
 def fig7_ablation(data):
     """1x3 grouped bars: ARI, waste, RLE for all 5 variants."""
     fig, axes = plt.subplots(1, 3, figsize=(16, 5.5))
-    fig.suptitle("Ablation Study", fontsize=12, fontweight="bold")
+    fig.suptitle("Ablation Study", fontsize=16, fontweight="bold")
 
     metrics = [("ari", "ARI", "(a)"), ("waste", "Waste Rate", "(b)"),
                ("rle", "RLE", "(c)")]
@@ -635,7 +635,7 @@ def fig7_ablation(data):
         ax.set_xticklabels([SCENARIO_LABELS[s] for s in stress_scenarios],
                            fontsize=12, rotation=15, ha="right")
         ax.set_ylabel(ylabel, fontsize=12, fontweight="bold")
-        ax.set_title(f"{panel} {ylabel}", fontsize=12, fontweight="bold")
+        ax.set_title(f"{panel} {ylabel}", fontsize=14, fontweight="bold")
         _apply_style(ax)
 
     # Single legend at the bottom, shared across all subplots
@@ -644,7 +644,7 @@ def fig7_ablation(data):
                fontsize=12, framealpha=0.95, edgecolor="gray",
                fancybox=False, shadow=False,
                bbox_to_anchor=(0.5, 0.0))
-    fig.tight_layout(rect=[0, 0.06, 1, 0.93])
+    fig.tight_layout(rect=[0, 0.06, 1, 0.96])
     _save(fig, "fig7_ablation")
 
 
@@ -655,7 +655,7 @@ def fig8_green_ai(data):
     """1x2: cumulative CO2 heatwave, total carbon bar chart."""
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     fig.suptitle("Green AI & Carbon Footprint",
-                 fontsize=12, fontweight="bold")
+                 fontsize=14, fontweight="bold")
 
     hw = data["results"]["heatwave"]
     hours = np.array(hw["agribrain"]["hours"])
@@ -700,7 +700,7 @@ def fig8_green_ai(data):
     _legend(ax)
     _apply_style(ax)
 
-    fig.tight_layout(rect=[0, 0, 1, 0.93])
+    fig.tight_layout(rect=[0, 0, 1, 0.96])
     _save(fig, "fig8_green_ai")
 
 
