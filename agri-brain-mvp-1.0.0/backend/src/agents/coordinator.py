@@ -337,11 +337,16 @@ class AgentCoordinator:
             self._context_log.append({
                 "hour": obs.hour,
                 "role": active.role,
-                "tools_invoked": mcp_results.get("_tools_invoked", []),
-                "query": rag_context.get("query", ""),
+                "mcp_tools_invoked": mcp_results.get("_tools_invoked", []),
+                "mcp_tools_skipped": mcp_results.get("_tools_skipped", []),
+                "pirag_query": rag_context.get("query", ""),
+                "pirag_citations": len(rag_context.get("citations", [])),
                 "top_doc_id": rag_context.get("top_doc_id", ""),
+                "top_citation_score": rag_context.get("top_citation_score", 0.0),
+                "context_modifier": modifier.tolist() if modifier is not None else None,
                 "modifier_norm": float(np.linalg.norm(modifier)),
                 "guards_passed": rag_context.get("guards_passed", True),
+                "rules_fired": self._step_rules_fired,
             })
 
             return modifier
@@ -481,19 +486,33 @@ class AgentCoordinator:
         if not self._context_log:
             return {"total_context_steps": 0}
 
-        per_role: Dict[str, Dict[str, int]] = {}
+        per_role: Dict[str, Dict[str, Any]] = {}
         total_tools = 0
         guard_failures = 0
 
         for entry in self._context_log:
             role = entry["role"]
             if role not in per_role:
-                per_role[role] = {"mcp_calls": 0, "pirag_queries": 0}
-            per_role[role]["mcp_calls"] += len(entry.get("tools_invoked", []))
-            per_role[role]["pirag_queries"] += 1 if entry.get("query") else 0
-            total_tools += len(entry.get("tools_invoked", []))
+                per_role[role] = {
+                    "mcp_calls": 0, "pirag_queries": 0,
+                    "modifier_magnitudes": [], "guard_failures": 0,
+                    "rules_fired_total": 0,
+                }
+            n_tools = len(entry.get("mcp_tools_invoked", []))
+            per_role[role]["mcp_calls"] += n_tools
+            per_role[role]["pirag_queries"] += 1 if entry.get("pirag_query") else 0
+            per_role[role]["modifier_magnitudes"].append(entry.get("modifier_norm", 0.0))
             if not entry.get("guards_passed", True):
+                per_role[role]["guard_failures"] += 1
                 guard_failures += 1
+            per_role[role]["rules_fired_total"] += len(entry.get("rules_fired", []))
+            total_tools += n_tools
+
+        # Compute per-role means
+        for role in per_role:
+            mags = per_role[role].pop("modifier_magnitudes")
+            per_role[role]["mean_modifier_magnitude"] = float(np.mean(mags)) if mags else 0.0
+            per_role[role]["nonzero_modifier_count"] = sum(1 for m in mags if m > 1e-9)
 
         modifiers = [e["modifier_norm"] for e in self._context_log]
 
@@ -502,6 +521,7 @@ class AgentCoordinator:
             "total_mcp_tool_calls": total_tools,
             "guard_failures": guard_failures,
             "mean_modifier_magnitude": float(np.mean(modifiers)) if modifiers else 0.0,
+            "nonzero_modifier_steps": sum(1 for m in modifiers if m > 1e-9),
             "per_role": per_role,
         }
 

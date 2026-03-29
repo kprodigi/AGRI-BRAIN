@@ -198,3 +198,30 @@ def test_full_pipeline_one_step():
     # Context log should have entries if context was computed
     if coordinator.context_enabled:
         assert len(coordinator.context_log) >= 0  # May be 0 if imports failed
+
+
+# ---- Test 9: Coordinator context changes probabilities ----
+def test_coordinator_context_changes_probabilities():
+    """Coordinator with context_enabled=True should produce different probs than False."""
+    from src.agents.coordinator import AgentCoordinator
+    from src.models.policy import Policy
+
+    policy = Policy()
+    env_state = {
+        "rho": 0.35, "inv": 10000, "temp": 12.0, "rh": 88.0,
+        "y_hat": 15.0, "tau": 1.0, "surplus_ratio": 0.3, "supply_hat": 10000.0,
+    }
+
+    coord_on = AgentCoordinator(context_enabled=True)
+    coord_on.reset()
+    rng1 = np.random.default_rng(42)
+    _, probs_on, _ = coord_on.step(env_state, 10.0, "agribrain", policy, rng1, "heatwave")
+
+    coord_off = AgentCoordinator(context_enabled=False)
+    coord_off.reset()
+    rng2 = np.random.default_rng(42)
+    _, probs_off, _ = coord_off.step(env_state, 10.0, "agribrain", policy, rng2, "heatwave")
+
+    assert not np.allclose(probs_on, probs_off), (
+        f"Context should shift probabilities. ON={probs_on}, OFF={probs_off}"
+    )

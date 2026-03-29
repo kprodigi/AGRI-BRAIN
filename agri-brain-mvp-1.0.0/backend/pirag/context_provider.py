@@ -111,13 +111,25 @@ def get_policy_context(
                 self.surplus_ratio = surplus
 
         obs = _FakeObs(spoilage_risk, temperature, humidity, inventory, 100.0, tau, hour, surplus_ratio)
-        result = retrieve_role_context(role, obs, scenario, {}, pipeline)
+
+        # Dispatch MCP tools for this role
+        mcp_results: Dict[str, Any] = {}
+        try:
+            from .mcp.tool_dispatch import dispatch_tools
+            from .mcp.registry import get_default_registry
+            registry = get_default_registry()
+            mcp_results = dispatch_tools(role, obs, registry)
+        except Exception:
+            pass
+
+        result = retrieve_role_context(role, obs, scenario, mcp_results, pipeline)
 
         context["regulatory_guidance"] = result.get("regulatory_guidance", "")
         context["relevant_sops"] = result.get("sop_guidance", "")
         context["risk_assessment"] = result.get("slca_guidance", "")
         context["source_documents"] = [c.get("doc_id", "") for c in result.get("citations", [])]
         context["query"] = result.get("query", "")
+        context["mcp_results"] = mcp_results
 
         # Pass through additional fields
         for key in ("waste_hierarchy_guidance", "governance_guidance",
@@ -125,6 +137,14 @@ def get_policy_context(
                      "evidence_hashes"):
             if key in result:
                 context[key] = result[key]
+
+        # Compute context modifier for callers who want it
+        try:
+            from .context_to_logits import compute_context_modifier
+            modifier = compute_context_modifier(mcp_results, result, obs)
+            context["context_modifier"] = modifier.tolist()
+        except Exception:
+            context["context_modifier"] = None
 
         return context
 

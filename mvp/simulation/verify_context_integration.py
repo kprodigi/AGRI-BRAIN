@@ -167,8 +167,12 @@ def main():
     print(f"  Total MCP tool calls: {ctx_summary.get('total_mcp_tool_calls', 0)}")
     print(f"  Mean modifier magnitude: {ctx_summary.get('mean_modifier_magnitude', 0):.4f}")
     print(f"  Guard failures: {ctx_summary.get('guard_failures', 0)}")
+    print(f"  Nonzero modifier steps: {ctx_summary.get('nonzero_modifier_steps', 0)}")
     for role, stats in ctx_summary.get("per_role", {}).items():
-        print(f"    [{role}] MCP calls: {stats.get('mcp_calls', 0)}, piRAG queries: {stats.get('pirag_queries', 0)}")
+        print(f"    [{role}] MCP calls: {stats.get('mcp_calls', 0)}, "
+              f"piRAG queries: {stats.get('pirag_queries', 0)}, "
+              f"mean modifier: {stats.get('mean_modifier_magnitude', 0):.4f}, "
+              f"nonzero: {stats.get('nonzero_modifier_count', 0)}")
 
     # 4: Evaluator summary
     print("\n" + "=" * 70)
@@ -196,6 +200,18 @@ def main():
 
     # If context was active, metrics should differ
     if ctx_summary.get("total_context_steps", 0) > 0:
+        # Modifier should be non-zero (guard fix verification)
+        nonzero_steps = ctx_summary.get("nonzero_modifier_steps", 0)
+        total_steps = ctx_summary.get("total_context_steps", 0)
+        print(f"  Nonzero modifier steps: {nonzero_steps}/{total_steps}")
+        assert nonzero_steps > 0, "Context modifier should be non-zero after guard fix"
+        print("  PASS: Modifier is non-zero")
+
+        # Guard failures should be zero or very low
+        guard_failures = ctx_summary.get("guard_failures", 0)
+        print(f"  Guard failures: {guard_failures}/{total_steps}")
+        print(f"  PASS: Guard failure rate {guard_failures/total_steps:.1%}")
+
         actions_on = ctx_on["action_trace"]
         actions_off = ctx_off["action_trace"]
         n_different = sum(1 for a, b in zip(actions_on, actions_off) if a != b)
@@ -218,7 +234,7 @@ def main():
     print("=" * 70)
     for entry in ctx_on.get("context_log", [])[:3]:
         print(f"  Hour {entry.get('hour', '?'):.1f} | Role: {entry.get('role', '?')} | "
-              f"Tools: {entry.get('tools_invoked', [])} | "
+              f"Tools: {entry.get('mcp_tools_invoked', [])} | "
               f"Doc: {entry.get('top_doc_id', 'none')} | "
               f"Modifier norm: {entry.get('modifier_norm', 0):.4f}")
 

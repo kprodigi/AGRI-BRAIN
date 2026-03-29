@@ -375,6 +375,18 @@ def run_all(seed: int = SEED) -> dict:
                   f"waste={episode['waste']:.3f}  RLE={episode['rle']:.3f}  "
                   f"SLCA={episode['slca']:.3f}  carbon={episode['carbon']:.0f}  "
                   f"equity={episode['equity']:.3f}")
+            if mode == "agribrain" and "context_summary" in episode:
+                ctx = episode["context_summary"]
+                evl = episode.get("evaluator_summary", {})
+                lrn = episode.get("learner_summary", {})
+                print(f"    Context: {ctx.get('total_mcp_tool_calls', 0)} MCP calls, "
+                      f"{ctx.get('total_context_steps', 0)} piRAG queries, "
+                      f"modifier nonzero {ctx.get('nonzero_modifier_steps', 0)}/{ctx.get('total_context_steps', 0)} steps, "
+                      f"guard failures {ctx.get('guard_failures', 0)}")
+                if evl:
+                    print(f"    Evaluator: action changed {evl.get('context_changed_action_count', 0)}/{evl.get('total_steps', 0)} steps")
+                if lrn.get("final_weights"):
+                    print(f"    Learner weights: {[round(w, 3) for w in lrn['final_weights']]}")
 
     table1_methods = ["static", "hybrid_rl", "agribrain"]
     table1_rows = []

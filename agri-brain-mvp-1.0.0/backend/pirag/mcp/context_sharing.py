@@ -91,6 +91,7 @@ class SharedContextStore:
         """Clear all entries (call between episodes)."""
         self._entries.clear()
 
+    @property
     def summary(self) -> Dict[str, int]:
         """Per-role entry counts."""
         counts: Dict[str, int] = {}

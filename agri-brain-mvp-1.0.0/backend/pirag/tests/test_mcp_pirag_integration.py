@@ -335,6 +335,50 @@ def test_transport_in_process():
     client.close()
 
 
+# ---- Test 19: Guards pass with real pipeline data ----
+def test_context_guards_pass_with_real_pipeline():
+    """Verify that retrieve_role_context sets guards_passed=True when citations exist."""
+    from pirag.context_builder import retrieve_role_context
+    from pirag.agent_pipeline import PiRAGPipeline
+
+    pipeline = PiRAGPipeline()
+
+    obs = _Obs(rho=0.30, temp=10.0, rh=88.0, tau=0.0,
+               hour=10.0, surplus_ratio=0.2, inv=10000.0, y_hat=15.0)
+    ctx = retrieve_role_context("farm", obs, "baseline", {}, pipeline, None)
+    assert len(ctx["citations"]) > 0, "Should retrieve at least one citation"
+    assert ctx["top_citation_score"] > 0.15, "Top citation should have nonzero score"
+    assert ctx["guards_passed"] is True, "Guards should pass with real citations"
+
+
+# ---- Test 20: Full pipeline produces non-zero modifier ----
+def test_full_pipeline_nonzero_modifier():
+    """End-to-end: MCP dispatch + piRAG retrieval + modifier computation = non-zero."""
+    from pirag.mcp.tool_dispatch import dispatch_tools
+    from pirag.mcp.registry import get_default_registry
+    from pirag.context_builder import retrieve_role_context
+    from pirag.context_to_logits import compute_context_modifier
+    from pirag.agent_pipeline import PiRAGPipeline
+    import pirag.mcp.registry as _reg_mod
+    _reg_mod._DEFAULT_REGISTRY = None
+
+    obs = _Obs(rho=0.35, temp=12.0, rh=88.0, tau=1.0,
+               hour=10.0, surplus_ratio=0.3, inv=10000.0, y_hat=15.0)
+
+    reg = get_default_registry()
+    pipeline = PiRAGPipeline()
+
+    mcp_results = dispatch_tools("farm", obs, reg)
+    assert len(mcp_results.get("_tools_invoked", [])) > 0, "MCP tools should fire"
+
+    ctx = retrieve_role_context("farm", obs, "heatwave", mcp_results, pipeline, None)
+    assert ctx["guards_passed"] is True, "Guards should pass"
+
+    modifier = compute_context_modifier(mcp_results, ctx, obs)
+    assert not np.allclose(modifier, 0.0), f"Modifier should be non-zero, got {modifier}"
+    assert np.all(np.abs(modifier) <= 0.30), "Modifier should be within bounds"
+
+
 # ---- Helper ----
 class _DummyPolicy:
     gamma_coldchain = 0.1

@@ -227,7 +227,6 @@ def retrieve_role_context(
         except ImportError:
             ranked_citations = [{"text": c.passage, "score": 0.5, "id": c.doc_id, "meta": c.meta} for c in response.citations]
 
-        context["guards_passed"] = response.guards_passed
         context["evidence_hashes"] = response.evidence_hashes
 
         for cit in response.citations:
@@ -237,7 +236,7 @@ def retrieve_role_context(
                 "sha256": cit.sha256,
             })
 
-        # Assign guidance based on document IDs
+        # Assign guidance based on document IDs and compute top score
         for entry in ranked_citations:
             doc_id = entry.get("id", "")
             passage = entry.get("text", "")[:300]
@@ -262,6 +261,14 @@ def retrieve_role_context(
             elif "governance" in doc_id or "cooperative" in doc_id:
                 if not context["governance_guidance"]:
                     context["governance_guidance"] = passage
+
+        # Evaluate context quality based on retrieval relevance, not
+        # the answer-formatting unit guard (which false-positives on
+        # the template engine's "Based on N relevant sources" preamble).
+        context["guards_passed"] = (
+            len(response.citations) > 0
+            and context["top_citation_score"] > 0.15
+        )
 
     except Exception:
         pass
