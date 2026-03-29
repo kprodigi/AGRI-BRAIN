@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -42,6 +42,9 @@ class SupplyChainAgent(ABC):
     role_bias : logit bias vector of shape ``(3,)`` added to the softmax
         policy in ``select_action()``.
     """
+
+    CONTEXT_ENABLED: bool = True
+    """Whether this agent participates in MCP/piRAG context injection."""
 
     def __init__(
         self,
@@ -112,3 +115,79 @@ class SupplyChainAgent(ABC):
             "at_risk_count": 0,
             "routed_count": 0,
         }
+
+    # ------------------------------------------------------------------
+    # MCP / piRAG context interface
+    # ------------------------------------------------------------------
+
+    def invoke_mcp_tools(
+        self,
+        obs: Observation,
+        registry: Optional[Any] = None,
+        shared_context: Optional[Any] = None,
+    ) -> Dict[str, Any]:
+        """Invoke MCP tools for the current observation.
+
+        Delegates to the role-specific tool dispatch workflow.
+        Returns empty dict if MCP infrastructure is unavailable.
+        """
+        if registry is None:
+            return {}
+        try:
+            from pirag.mcp.tool_dispatch import dispatch_tools
+            return dispatch_tools(self.role, obs, registry, shared_context)
+        except ImportError:
+            return {}
+
+    def get_rag_context(
+        self,
+        obs: Observation,
+        scenario: str,
+        mcp_results: Dict[str, Any],
+        pipeline: Optional[Any] = None,
+        mcp_server: Optional[Any] = None,
+    ) -> Dict[str, Any]:
+        """Retrieve piRAG context for the current observation.
+
+        Returns empty dict if piRAG infrastructure is unavailable.
+        """
+        if pipeline is None:
+            return {}
+        try:
+            from pirag.context_builder import retrieve_role_context
+            return retrieve_role_context(
+                self.role, obs, scenario, mcp_results, pipeline, mcp_server,
+            )
+        except ImportError:
+            return {}
+
+    def compute_decision_context(
+        self,
+        obs: Observation,
+        scenario: str,
+        registry: Optional[Any] = None,
+        shared_context: Optional[Any] = None,
+        pipeline: Optional[Any] = None,
+        temporal_window: Optional[Any] = None,
+        mcp_server: Optional[Any] = None,
+        rule_weights: Optional[np.ndarray] = None,
+    ) -> Tuple[Dict[str, Any], Dict[str, Any], Optional[np.ndarray]]:
+        """Compute full decision context: MCP results, RAG context, modifier.
+
+        Returns
+        -------
+        (mcp_results, rag_context, context_modifier)
+        """
+        mcp_results = self.invoke_mcp_tools(obs, registry, shared_context)
+        rag_context = self.get_rag_context(obs, scenario, mcp_results, pipeline, mcp_server)
+
+        context_modifier = None
+        try:
+            from pirag.context_to_logits import compute_context_modifier
+            context_modifier = compute_context_modifier(
+                mcp_results, rag_context, obs, temporal_window, rule_weights,
+            )
+        except ImportError:
+            pass
+
+        return mcp_results, rag_context, context_modifier

@@ -4,9 +4,14 @@ Queries the piRAG knowledge base for relevant policy guidance based on
 the current scenario conditions, spoilage risk, and temperature, then
 returns a structured context dict for use in action selection and
 explanation generation.
+
+Supports both the original 3-parameter signature (backward-compatible)
+and an extended signature with role, humidity, inventory, surplus, tau,
+and hour parameters.
 """
 from __future__ import annotations
 
+import inspect
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -51,6 +56,12 @@ def get_policy_context(
     scenario: str = "baseline",
     spoilage_risk: float = 0.0,
     temperature: float = 4.0,
+    role: str = "farm",
+    humidity: float = 90.0,
+    inventory: float = 12000.0,
+    surplus_ratio: float = 0.0,
+    tau: float = 0.0,
+    hour: float = 0.0,
 ) -> Dict[str, Any]:
     """Query the knowledge base for relevant policy guidance.
 
@@ -59,11 +70,18 @@ def get_policy_context(
     scenario : current scenario name.
     spoilage_risk : current spoilage risk (rho).
     temperature : current temperature in Celsius.
+    role : active agent role (farm, processor, etc.).
+    humidity : current relative humidity in percent.
+    inventory : current inventory level.
+    surplus_ratio : inventory surplus above baseline.
+    tau : volatility indicator.
+    hour : simulation hour.
 
     Returns
     -------
     Dict with keys: regulatory_guidance, relevant_sops, risk_assessment,
-    source_documents, and query used.
+    source_documents, query, and (when new modules available) additional
+    guidance fields.
     """
     context: Dict[str, Any] = {
         "regulatory_guidance": "",
@@ -77,7 +95,43 @@ def get_policy_context(
     if pipeline is None:
         return context
 
-    # Build a contextual query based on conditions
+    # Try the new role-specific context builder first
+    try:
+        from .context_builder import retrieve_role_context
+
+        class _FakeObs:
+            def __init__(self, rho, temp, rh, inv, y_hat, tau_val, hr, surplus):
+                self.rho = rho
+                self.temp = temp
+                self.rh = rh
+                self.inv = inv
+                self.y_hat = 100.0
+                self.tau = tau_val
+                self.hour = hr
+                self.surplus_ratio = surplus
+
+        obs = _FakeObs(spoilage_risk, temperature, humidity, inventory, 100.0, tau, hour, surplus_ratio)
+        result = retrieve_role_context(role, obs, scenario, {}, pipeline)
+
+        context["regulatory_guidance"] = result.get("regulatory_guidance", "")
+        context["relevant_sops"] = result.get("sop_guidance", "")
+        context["risk_assessment"] = result.get("slca_guidance", "")
+        context["source_documents"] = [c.get("doc_id", "") for c in result.get("citations", [])]
+        context["query"] = result.get("query", "")
+
+        # Pass through additional fields
+        for key in ("waste_hierarchy_guidance", "governance_guidance",
+                     "top_citation_score", "top_doc_id", "guards_passed",
+                     "evidence_hashes"):
+            if key in result:
+                context[key] = result[key]
+
+        return context
+
+    except ImportError:
+        pass
+
+    # Fallback: original implementation
     conditions = []
     if temperature > 8.0:
         conditions.append("high temperature excursion")
@@ -98,7 +152,6 @@ def get_policy_context(
     try:
         response = pipeline.ask(query, k=3, anchor_on_chain=False)
 
-        # Extract guidance from retrieved documents
         for citation in response.citations:
             doc_source = citation.meta.get("source", citation.doc_id)
             context["source_documents"].append(doc_source)
@@ -110,7 +163,6 @@ def get_policy_context(
             elif "slca" in citation.doc_id.lower():
                 context["risk_assessment"] = citation.passage[:300]
 
-        # Fill any empty fields with general response
         if not context["regulatory_guidance"] and response.citations:
             context["regulatory_guidance"] = response.citations[0].passage[:200]
 

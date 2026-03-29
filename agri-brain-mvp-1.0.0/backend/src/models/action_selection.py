@@ -81,8 +81,12 @@ PRICE_FACTOR: dict[str, float] = {
 }
 """Per-action price multiplier applied to MSRP."""
 
-VALID_MODES: list[str] = ["static", "hybrid_rl", "no_pinn", "no_slca", "agribrain"]
-"""Valid operating modes for the softmax policy."""
+VALID_MODES: list[str] = ["static", "hybrid_rl", "no_pinn", "no_slca", "agribrain", "no_context"]
+"""Valid operating modes for the softmax policy.
+
+``no_context`` uses the same logits as ``agribrain`` but with
+``context_modifier`` forced to None for ablation studies.
+"""
 
 # ---------------------------------------------------------------------------
 # Feature normalisation constants
@@ -150,6 +154,7 @@ CYBER_REROUTE_PROB: dict[str, float] = {
     "no_pinn": 0.65,
     "no_slca": 0.60,
     "agribrain": 0.82,
+    "no_context": 0.82,
 }
 """Mode-dependent probability of successful rerouting during cyber outage.
 
@@ -273,6 +278,7 @@ def select_action(
     role_bias: np.ndarray | None = None,
     deterministic: bool = False,
     rag_context: dict | None = None,
+    context_modifier: np.ndarray | None = None,
 ) -> tuple[int, np.ndarray]:
     """Select routing action based on mode-specific softmax policy.
 
@@ -291,10 +297,12 @@ def select_action(
     hour : hours since start (for cyber outage timing).
     role_bias : optional per-role logit bias vector (3,).
     deterministic : if True, use argmax instead of sampling.
-    rag_context : optional RAG-retrieved policy context. In the current
-        implementation, RAG context is used for post-decision explanation
-        generation (Section 4.15) rather than directly influencing the
-        softmax logits. Passed through for decision logging.
+    rag_context : deprecated — context is now injected via
+        ``context_modifier``. Retained for backward compatibility.
+    context_modifier : optional logit modifier vector (3,) from the
+        MCP/piRAG context pipeline.  Added to logits after all other
+        mode-specific and role-specific terms, before softmax.
+        When ``None``, behavior is bit-identical to the original policy.
 
     Returns
     -------
@@ -325,11 +333,14 @@ def select_action(
     elif mode == "no_slca":
         logits = THETA @ phi + gamma * tau + NO_SLCA_OFFSET
 
-    else:  # agribrain
+    else:  # agribrain or no_context (same logits, context disabled externally)
         logits = THETA @ phi + gamma * tau + SLCA_BONUS + SLCA_RHO_BONUS * rho
 
     if role_bias is not None:
         logits = logits + role_bias
+
+    if context_modifier is not None:
+        logits = logits + context_modifier
 
     probs = _softmax(logits)
 

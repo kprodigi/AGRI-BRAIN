@@ -2,11 +2,15 @@
 """
 AGRI-BRAIN Results Generation
 ==============================
-Runs all 5 scenarios × 5 modes, computes per-run metrics, and saves
+Runs all 5 scenarios × 6 modes, computes per-run metrics, and saves
 CSV summary tables to mvp/simulation/results/.
 
 Uses an AgentCoordinator to dispatch decisions to role-specific agents
 (farm, processor, cooperative, distributor, recovery) at each lifecycle stage.
+
+MCP/piRAG context injection is enabled for ``agribrain`` mode and disabled
+for all others (including ``no_context`` which uses the same logits as
+agribrain but without context modifier).
 
 Standalone usage:
     cd mvp/simulation
@@ -97,7 +101,7 @@ def _demand_forecast(df, horizon=1, **kwargs):
 SEED = 42
 
 SCENARIOS = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing", "baseline"]
-MODES = ["static", "hybrid_rl", "no_pinn", "no_slca", "agribrain"]
+MODES = ["static", "hybrid_rl", "no_pinn", "no_slca", "agribrain", "no_context"]
 
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 DATA_CSV = _BACKEND_SRC / "src" / "data_spinach.csv"
@@ -138,7 +142,7 @@ def apply_scenario(df: pd.DataFrame, name: str, policy: Policy,
 # ---------------------------------------------------------------------------
 # Single episode runner (orchestration only — calls Layer 1 models)
 # ---------------------------------------------------------------------------
-_PINN_MODES = {"agribrain", "no_slca"}
+_PINN_MODES = {"agribrain", "no_slca", "no_context"}
 """Modes that use PINN-enhanced spoilage prediction."""
 
 
@@ -150,7 +154,9 @@ def run_episode(
     hours = _hours_from_start(df)
 
     # --- Multi-agent coordinator ---
-    coordinator = AgentCoordinator()
+    # Context enabled only for agribrain mode (not no_context)
+    context_mode = (mode == "agribrain")
+    coordinator = AgentCoordinator(context_enabled=context_mode)
     coordinator.reset()
 
     # --- Green AI footprint meter ---
@@ -160,6 +166,8 @@ def run_episode(
     learner = PolicyLearner() if ONLINE_LEARNING else None
 
     # --- PINN-enhanced spoilage for eligible modes ---
+    # For action selection: no_context uses agribrain logits
+    effective_mode = "agribrain" if mode == "no_context" else mode
     if mode in _PINN_MODES:
         df = compute_spoilage_pinn(
             df, k_ref=policy.k_ref, Ea_R=policy.Ea_R,
@@ -198,9 +206,9 @@ def run_episode(
         # Surplus ratio (computed before env_state for coordinator)
         surplus_ratio = max(0.0, inv / INV_BASELINE - 1.0)
 
-        # RAG context (gated for performance in batch runs)
+        # RAG context (legacy path — coordinator now handles MCP/piRAG internally)
         rag_context = None
-        if RAG_CONTEXT_ENABLED and _get_policy_context is not None:
+        if RAG_CONTEXT_ENABLED and not context_mode and _get_policy_context is not None:
             try:
                 rag_context = _get_policy_context(scenario=scenario, spoilage_risk=rho, temperature=temp)
             except Exception:
@@ -215,7 +223,7 @@ def run_episode(
 
         # Action selection via AgentCoordinator
         action_idx, probs, active_agent = coordinator.step(
-            env_state, hours[idx], mode, policy, rng, scenario,
+            env_state, hours[idx], effective_mode, policy, rng, scenario,
             rag_context=rag_context,
         )
         action = ACTIONS[action_idx]
@@ -239,7 +247,7 @@ def run_episode(
                              policy.T_ref_K, rh_val / 100.0,
                              policy.beta_humidity)
         waste_raw = compute_waste_rate(k_inst, surplus_ratio)
-        save = compute_save_factor(action, mode, surplus_ratio)
+        save = compute_save_factor(action, mode if mode != "no_context" else "agribrain", surplus_ratio)
         waste = float(waste_raw * (1.0 - save))
 
         # Circular economy score (Layer 1: reverse_logistics.py)
@@ -262,8 +270,9 @@ def run_episode(
 
         # Post-step: update agent state and route messages
         obs = active_agent.observe(env_state, hours[idx])
-        outcome = {"waste": waste, "rho": rho}
-        coordinator.post_step(active_agent, action_idx, obs, outcome, hour=hours[idx])
+        outcome = {"waste": waste, "rho": rho, "slca": slca_c, "carbon_kg": carbon}
+        coordinator.post_step(active_agent, action_idx, obs, outcome,
+                              hour=hours[idx], reward=reward)
 
         # PolicyLearner: record experience for optional online learning
         if learner is not None:
@@ -307,7 +316,7 @@ def run_episode(
             eq_val = 1.0
         equity_trace.append(eq_val)
 
-    return {
+    result = {
         "ari": float(np.mean(ari_vals)), "rle": float(rle),
         "waste": float(np.mean(waste_vals)), "slca": float(np.mean(slca_vals)),
         "carbon": float(carbon_total), "equity": float(equity),
@@ -327,6 +336,14 @@ def run_episode(
         "agent_summaries": coordinator.agent_summaries(),
         "message_count": len(coordinator.message_log),
     }
+
+    # Context diagnostics for agribrain mode
+    if context_mode:
+        result["context_summary"] = coordinator.context_summary()
+        result["learner_summary"] = coordinator.learner_summary()
+        result["evaluator_summary"] = coordinator.evaluator_summary()
+
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -436,6 +453,27 @@ if __name__ == "__main__":
     print("Table 2 — Ablation (Scenario × Variant)")
     print("=" * 70)
     print(data["table2"].to_string(index=False))
+
+    # Print context summaries for agribrain mode
+    print()
+    print("=" * 70)
+    print("Context Integration Summary (agribrain mode)")
+    print("=" * 70)
+    for scenario in SCENARIOS:
+        ep = data["results"][scenario].get("agribrain", {})
+        ctx = ep.get("context_summary", {})
+        lrn = ep.get("learner_summary", {})
+        evl = ep.get("evaluator_summary", {})
+        if ctx:
+            print(f"\n  [{scenario}]")
+            print(f"    MCP tool calls: {ctx.get('total_mcp_tool_calls', 0)}")
+            print(f"    Mean modifier magnitude: {ctx.get('mean_modifier_magnitude', 0):.4f}")
+            print(f"    Guard failures: {ctx.get('guard_failures', 0)}")
+            if lrn:
+                print(f"    Learner updates: {lrn.get('n_updates', 0)}")
+                print(f"    Mean delta reward: {lrn.get('mean_delta_reward', 0):.4f}")
+            if evl:
+                print(f"    Context change rate: {evl.get('context_change_rate', 0):.3f}")
 
     print()
     print("Done. Results saved to", RESULTS_DIR)

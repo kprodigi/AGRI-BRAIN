@@ -1,0 +1,11 @@
+Green AI Reporting Requirements for Agricultural Decision Systems
+
+Energy Metering: All AI inference operations in the supply chain decision pipeline must track energy consumption per forward pass. The baseline energy budget is 50 millijoules (0.050 joules) per inference step for edge-deployed models. Cloud-deployed models have a higher baseline of 200 millijoules per step due to network and datacenter overhead.
+
+Efficiency Thresholds: Systems exceeding the baseline energy budget by more than 100 percent (above 100 millijoules per step for edge, 400 millijoules for cloud) must undergo an efficiency review. The review evaluates model architecture, quantization opportunities, and batch processing options.
+
+Carbon Equivalence: Energy consumption is converted to carbon emissions using the regional grid factor. The default conversion factor is 1 kilowatt-hour equals 0.42 kilograms of CO2 equivalent. For renewable-powered facilities, the factor may be reduced to 0.05 kilograms CO2 equivalent per kilowatt-hour with appropriate certification.
+
+Water Footprint: AI inference indirectly consumes water through datacenter cooling. The estimated water footprint is 1.8 microlitres per inference step for edge deployment and 18 microlitres per step for cloud deployment. Cumulative water usage must be reported alongside energy metrics.
+
+Edge Versus Cloud Trade-offs: Edge deployment reduces latency (sub-10 millisecond response) and energy per step but limits model complexity. Cloud deployment supports larger models but adds network latency (50 to 200 milliseconds) and higher energy and water costs. The decision pipeline should prefer edge inference for time-critical routing decisions and reserve cloud inference for batch analytics and model retraining.
