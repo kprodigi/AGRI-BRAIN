@@ -76,6 +76,9 @@ class AgentCoordinator:
         self._step_rag_context: Dict[str, Any] = {}
         self._step_context_modifier: Optional[np.ndarray] = None
         self._step_rules_fired: List[int] = []
+        self._step_policy: Any = None
+        self._step_scenario: str = "baseline"
+        self._step_role_bias: Optional[np.ndarray] = None
 
         if context_enabled:
             self._init_context_infrastructure()
@@ -142,6 +145,9 @@ class AgentCoordinator:
         self._step_rag_context = {}
         self._step_context_modifier = None
         self._step_rules_fired = []
+        self._step_policy = None
+        self._step_scenario = "baseline"
+        self._step_role_bias = None
 
         if self._shared_context is not None:
             self._shared_context.reset()
@@ -203,6 +209,9 @@ class AgentCoordinator:
         self._step_rag_context = {}
         self._step_context_modifier = None
         self._step_rules_fired = []
+        self._step_policy = policy
+        self._step_scenario = scenario
+        self._step_role_bias = combined_bias
 
         if (self.context_enabled
                 and mode == "agribrain"
@@ -414,13 +423,15 @@ class AgentCoordinator:
                 and self._context_evaluator is not None):
             # Compute counterfactual action (without modifier)
             try:
-                from ..models.action_selection import select_action as _sa, ACTIONS
+                from ..models.action_selection import select_action as _sa
                 rng_cf = np.random.default_rng(42)
                 action_without, _ = _sa(
                     mode="agribrain", rho=obs.rho, inv=obs.inv,
                     y_hat=obs.y_hat, temp=obs.temp, tau=obs.tau,
-                    policy=None,  # Not needed for counterfactual argmax
-                    rng=rng_cf, scenario="baseline", hour=hour,
+                    policy=self._step_policy,
+                    rng=rng_cf, scenario=self._step_scenario,
+                    hour=hour,
+                    role_bias=self._step_role_bias,
                     deterministic=True, context_modifier=None,
                 )
             except Exception:
