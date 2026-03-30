@@ -2,15 +2,15 @@
 """
 AGRI-BRAIN Results Generation
 ==============================
-Runs all 5 scenarios × 6 modes, computes per-run metrics, and saves
+Runs all 5 scenarios × 8 modes, computes per-run metrics, and saves
 CSV summary tables to mvp/simulation/results/.
 
 Uses an AgentCoordinator to dispatch decisions to role-specific agents
 (farm, processor, cooperative, distributor, recovery) at each lifecycle stage.
 
-MCP/piRAG context injection is enabled for ``agribrain`` mode and disabled
-for all others (including ``no_context`` which uses the same logits as
-agribrain but without context modifier).
+MCP/piRAG context injection is enabled for ``agribrain``, ``mcp_only``,
+and ``pirag_only`` modes.  Disabled for all others (including ``no_context``
+which uses the same logits as agribrain but without context modifier).
 
 Standalone usage:
     cd mvp/simulation
@@ -101,7 +101,17 @@ def _demand_forecast(df, horizon=1, **kwargs):
 SEED = 42
 
 SCENARIOS = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing", "baseline"]
-MODES = ["static", "hybrid_rl", "no_pinn", "no_slca", "agribrain", "no_context"]
+MODES = ["static", "hybrid_rl", "no_pinn", "no_slca",
+         "agribrain", "no_context", "mcp_only", "pirag_only"]
+
+# Modes that enable MCP/piRAG context infrastructure
+_CONTEXT_ENABLED_MODES = {"agribrain", "mcp_only", "pirag_only"}
+
+# Modes that use agribrain logits for action selection
+_AGRIBRAIN_LOGIT_MODES = {"agribrain", "no_context", "mcp_only", "pirag_only"}
+
+# Modes where MCP compliance data feeds waste penalty
+_MCP_WASTE_MODES = {"agribrain", "mcp_only"}
 
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 DATA_CSV = _BACKEND_SRC / "src" / "data_spinach.csv"
@@ -142,7 +152,7 @@ def apply_scenario(df: pd.DataFrame, name: str, policy: Policy,
 # ---------------------------------------------------------------------------
 # Single episode runner (orchestration only — calls Layer 1 models)
 # ---------------------------------------------------------------------------
-_PINN_MODES = {"agribrain", "no_slca", "no_context"}
+_PINN_MODES = {"agribrain", "no_slca", "no_context", "mcp_only", "pirag_only"}
 """Modes that use PINN-enhanced spoilage prediction."""
 
 
@@ -154,8 +164,7 @@ def run_episode(
     hours = _hours_from_start(df)
 
     # --- Multi-agent coordinator ---
-    # Context enabled only for agribrain mode (not no_context)
-    context_mode = (mode == "agribrain")
+    context_mode = mode in _CONTEXT_ENABLED_MODES
     coordinator = AgentCoordinator(context_enabled=context_mode)
     coordinator.reset()
 
@@ -166,8 +175,7 @@ def run_episode(
     learner = PolicyLearner() if ONLINE_LEARNING else None
 
     # --- PINN-enhanced spoilage for eligible modes ---
-    # For action selection: no_context uses agribrain logits
-    effective_mode = "agribrain" if mode == "no_context" else mode
+    effective_mode = "agribrain" if mode in _AGRIBRAIN_LOGIT_MODES else mode
     if mode in _PINN_MODES:
         df = compute_spoilage_pinn(
             df, k_ref=policy.k_ref, Ea_R=policy.Ea_R,
@@ -222,9 +230,10 @@ def run_episode(
         }
 
         # Action selection via AgentCoordinator
+        # Pass the actual mode name so the coordinator can apply context_mode mapping
         action_idx, probs, active_agent = coordinator.step(
-            env_state, hours[idx], effective_mode, policy, rng, scenario,
-            rag_context=rag_context,
+            env_state, hours[idx], effective_mode if mode not in _CONTEXT_ENABLED_MODES else mode,
+            policy, rng, scenario, rag_context=rag_context,
         )
         action = ACTIONS[action_idx]
         active_agent_trace.append(active_agent.role)
@@ -248,13 +257,13 @@ def run_episode(
                              policy.beta_humidity)
         waste_raw = compute_waste_rate(k_inst, surplus_ratio)
 
-        # Pass MCP compliance data to waste model for agribrain mode
+        # Pass MCP compliance data to waste model for MCP-enabled modes
         compliance_data = None
-        if mode == "agribrain" and hasattr(coordinator, '_step_mcp_results'):
+        if mode in _MCP_WASTE_MODES and hasattr(coordinator, '_step_mcp_results'):
             compliance_data = coordinator._step_mcp_results.get("check_compliance")
 
         save = compute_save_factor(
-            action, mode if mode != "no_context" else "agribrain",
+            action, "agribrain" if mode in _AGRIBRAIN_LOGIT_MODES else mode,
             surplus_ratio, compliance_data=compliance_data,
         )
         waste = float(waste_raw * (1.0 - save))
@@ -346,7 +355,7 @@ def run_episode(
         "message_count": len(coordinator.message_log),
     }
 
-    # Context diagnostics for agribrain mode
+    # Context diagnostics for context-enabled modes
     if context_mode:
         result["context_summary"] = coordinator.context_summary()
         result["learner_summary"] = coordinator.learner_summary()
@@ -384,18 +393,27 @@ def run_all(seed: int = SEED) -> dict:
                   f"waste={episode['waste']:.3f}  RLE={episode['rle']:.3f}  "
                   f"SLCA={episode['slca']:.3f}  carbon={episode['carbon']:.0f}  "
                   f"equity={episode['equity']:.3f}")
-            if mode == "agribrain" and "context_summary" in episode:
+            if mode in _CONTEXT_ENABLED_MODES and "context_summary" in episode:
                 ctx = episode["context_summary"]
                 evl = episode.get("evaluator_summary", {})
                 lrn = episode.get("learner_summary", {})
                 print(f"    Context: {ctx.get('total_mcp_tool_calls', 0)} MCP calls, "
                       f"{ctx.get('total_context_steps', 0)} piRAG queries, "
                       f"modifier nonzero {ctx.get('nonzero_modifier_steps', 0)}/{ctx.get('total_context_steps', 0)} steps, "
-                      f"guard failures {ctx.get('guard_failures', 0)}")
+                      f"guard failures {ctx.get('guard_failures', 0)}, "
+                      f"governance overrides {ctx.get('governance_overrides', 0)}")
                 if evl:
                     print(f"    Evaluator: action changed {evl.get('context_changed_action_count', 0)}/{evl.get('total_steps', 0)} steps")
-                if lrn.get("final_weights"):
-                    print(f"    Learner weights: {[round(w, 3) for w in lrn['final_weights']]}")
+                if mode == "agribrain" and lrn.get("final_theta"):
+                    print(f"    Learned THETA_CONTEXT (change norm={lrn['theta_change_norm']:.4f}):")
+                    for i, row_name in enumerate(["ColdChain", "Redist  ", "Recovery"]):
+                        final = lrn["final_theta"][i]
+                        initial = lrn["initial_theta"][i]
+                        delta = [f - ini for ini, f in zip(initial, final)]
+                        print(f"      {row_name}: [{', '.join(f'{v:+.3f}' for v in final)}] "
+                              f"(delta=[{', '.join(f'{d:+.3f}' for d in delta)}])")
+                    print(f"    SLCA amp: {lrn['initial_slca_amp']:.3f} -> {lrn['final_slca_amp']:.3f}  "
+                          f"Signs preserved: {lrn['sign_preserved']}")
 
     table1_methods = ["static", "hybrid_rl", "agribrain"]
     table1_rows = []
@@ -490,9 +508,10 @@ if __name__ == "__main__":
             print(f"    MCP tool calls: {ctx.get('total_mcp_tool_calls', 0)}")
             print(f"    Mean modifier magnitude: {ctx.get('mean_modifier_magnitude', 0):.4f}")
             print(f"    Guard failures: {ctx.get('guard_failures', 0)}")
+            print(f"    Governance overrides: {ctx.get('governance_overrides', 0)}")
             if lrn:
                 print(f"    Learner updates: {lrn.get('n_updates', 0)}")
-                print(f"    Mean delta reward: {lrn.get('mean_delta_reward', 0):.4f}")
+                print(f"    Mean advantage: {lrn.get('mean_advantage', 0):.4f}")
             if evl:
                 print(f"    Context change rate: {evl.get('context_change_rate', 0):.3f}")
 

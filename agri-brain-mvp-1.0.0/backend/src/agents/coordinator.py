@@ -5,9 +5,10 @@ chain agent based on the lifecycle stage, delegates observation building
 and action selection (via ``select_action`` from ``action_selection.py``),
 and routes inter-agent messages after each step.
 
-When ``context_enabled=True`` and mode is ``"agribrain"``, the coordinator
-integrates MCP tool dispatch, piRAG retrieval, physics-informed context
-modifiers, online rule learning, and context quality evaluation.
+When ``context_enabled=True`` and mode is ``"agribrain"`` (or ablation
+modes ``"mcp_only"``/``"pirag_only"``), the coordinator integrates MCP
+tool dispatch, piRAG retrieval, physics-informed context modifiers,
+online REINFORCE learning, and context quality evaluation.
 """
 from __future__ import annotations
 
@@ -26,6 +27,16 @@ from .roles import (
     stage_for_hour,
 )
 from ..models.action_selection import select_action
+
+# Context modes that enable MCP/piRAG infrastructure
+_CONTEXT_MODES = {"agribrain", "mcp_only", "pirag_only"}
+
+# Map operating mode to context_mode parameter for feature masking
+_CONTEXT_MODE_MAP = {
+    "agribrain": "full",
+    "mcp_only": "mcp_only",
+    "pirag_only": "pirag_only",
+}
 
 
 class AgentCoordinator:
@@ -75,10 +86,13 @@ class AgentCoordinator:
         self._step_mcp_results: Dict[str, Any] = {}
         self._step_rag_context: Dict[str, Any] = {}
         self._step_context_modifier: Optional[np.ndarray] = None
+        self._step_context_features: Optional[np.ndarray] = None
+        self._step_probs: Optional[np.ndarray] = None
         self._step_rules_fired: List[int] = []
         self._step_policy: Any = None
         self._step_scenario: str = "baseline"
         self._step_role_bias: Optional[np.ndarray] = None
+        self._step_override: bool = False
 
         if context_enabled:
             self._init_context_infrastructure()
@@ -93,9 +107,9 @@ class AgentCoordinator:
             from pirag.mcp.context_sharing import SharedContextStore
             from pirag.mcp.agent_capabilities import register_all_agent_capabilities
             from pirag.temporal_context import TemporalContextWindow
-            from pirag.context_learner import ContextRuleLearner
+            from pirag.context_learner import ContextMatrixLearner
             from pirag.context_eval import ContextEvaluator
-            from pirag.context_to_logits import MODIFIER_RULES
+            from pirag.context_to_logits import THETA_CONTEXT
 
             self._registry = get_default_registry()
             self._mcp_server = MCPServer(registry=self._registry)
@@ -115,9 +129,9 @@ class AgentCoordinator:
 
             self._shared_context = SharedContextStore()
             self._temporal_window = TemporalContextWindow()
-            self._context_learner = ContextRuleLearner(
-                n_rules=len(MODIFIER_RULES),
-                learning_rate=0.05,
+            self._context_learner = ContextMatrixLearner(
+                initial_theta=THETA_CONTEXT,
+                learning_rate=0.003,
             )
             self._context_evaluator = ContextEvaluator()
 
@@ -144,10 +158,13 @@ class AgentCoordinator:
         self._step_mcp_results = {}
         self._step_rag_context = {}
         self._step_context_modifier = None
+        self._step_context_features = None
+        self._step_probs = None
         self._step_rules_fired = []
         self._step_policy = None
         self._step_scenario = "baseline"
         self._step_role_bias = None
+        self._step_override = False
 
         if self._shared_context is not None:
             self._shared_context.reset()
@@ -203,22 +220,32 @@ class AgentCoordinator:
         if cooperative is not None and cooperative is not active and 12.0 <= hour < 30.0:
             combined_bias = combined_bias + cooperative.role_bias
 
-        # Context injection for agribrain mode
+        # Context injection for context-enabled modes
         context_modifier = None
         self._step_mcp_results = {}
         self._step_rag_context = {}
         self._step_context_modifier = None
+        self._step_context_features = None
+        self._step_probs = None
         self._step_rules_fired = []
         self._step_policy = policy
         self._step_scenario = scenario
         self._step_role_bias = combined_bias
+        self._step_override = False
 
+        context_mode = _CONTEXT_MODE_MAP.get(mode)
         if (self.context_enabled
-                and mode == "agribrain"
+                and context_mode is not None
                 and self._registry is not None):
             context_modifier = self._compute_step_context(
                 active, obs, scenario, hour,
+                context_mode=context_mode,
             )
+
+        # Get learned SLCA amp coefficient
+        slca_amp = None
+        if self._context_learner is not None and hasattr(self._context_learner, 'get_slca_amp'):
+            slca_amp = self._context_learner.get_slca_amp()
 
         action_idx, probs = select_action(
             mode=mode,
@@ -234,7 +261,15 @@ class AgentCoordinator:
             role_bias=combined_bias,
             rag_context=rag_context,
             context_modifier=context_modifier,
+            slca_amp_coeff=slca_amp,
         )
+
+        # Store probs for learner update
+        self._step_probs = probs
+
+        # Track governance override
+        if action_idx == 1 and probs[1] == 1.0 and context_modifier is not None:
+            self._step_override = True
 
         return action_idx, probs, active
 
@@ -244,12 +279,13 @@ class AgentCoordinator:
         obs: Observation,
         scenario: str,
         hour: float,
+        context_mode: str = "full",
     ) -> Optional[np.ndarray]:
         """Compute MCP/piRAG context modifier for the current step."""
         try:
             from pirag.mcp.tool_dispatch import dispatch_tools
             from pirag.context_builder import retrieve_role_context
-            from pirag.context_to_logits import compute_context_modifier
+            from pirag.context_to_logits import compute_context_modifier, extract_context_features
 
             # Update live state snapshot for MCP resources
             self._agent_state_snapshot = {
@@ -294,14 +330,22 @@ class AgentCoordinator:
                     guidance_type,
                 )
 
-            # Compute context modifier
-            rule_weights = None
-            if self._context_learner is not None:
-                rule_weights = self._context_learner.get_weights()
+            # Get learned parameters from ContextMatrixLearner
+            theta_override = None
+            slca_amp_override = None
+            temporal_params_override = None
+            if self._context_learner is not None and hasattr(self._context_learner, 'get_theta'):
+                theta_override = self._context_learner.get_theta()
+                slca_amp_override = self._context_learner.get_slca_amp()
+                temporal_params_override = self._context_learner.get_temporal_params()
 
             modifier = compute_context_modifier(
                 mcp_results, rag_context, obs,
-                self._temporal_window, rule_weights,
+                self._temporal_window,
+                theta_override=theta_override,
+                slca_amp_override=slca_amp_override,
+                temporal_params_override=temporal_params_override,
+                context_mode=context_mode,
             )
 
             # Cooperative overlay blending during hours 12-30
@@ -320,14 +364,16 @@ class AgentCoordinator:
                     )
                     coop_modifier = compute_context_modifier(
                         coop_mcp, coop_rag, coop_obs,
-                        self._temporal_window, rule_weights,
+                        self._temporal_window,
+                        theta_override=theta_override,
+                        temporal_params_override=temporal_params_override,
+                        context_mode=context_mode,
                     )
                     modifier = 0.7 * modifier + 0.3 * coop_modifier
                 except Exception:
                     pass
 
             # Track which features are active (non-zero) for the learner
-            from pirag.context_to_logits import extract_context_features
             psi = extract_context_features(mcp_results, rag_context, obs)
             rules_fired = [i for i in range(len(psi)) if psi[i] > 0.01]
 
@@ -335,6 +381,7 @@ class AgentCoordinator:
             self._step_mcp_results = mcp_results
             self._step_rag_context = rag_context
             self._step_context_modifier = modifier
+            self._step_context_features = psi
             self._step_rules_fired = rules_fired
 
             # Log
@@ -351,6 +398,8 @@ class AgentCoordinator:
                 "modifier_norm": float(np.linalg.norm(modifier)),
                 "guards_passed": rag_context.get("guards_passed", True),
                 "rules_fired": self._step_rules_fired,
+                "context_mode": context_mode,
+                "governance_override": False,  # Updated after select_action
             })
 
             return modifier
@@ -379,6 +428,10 @@ class AgentCoordinator:
         reward : reward received for this step (for context learner).
         """
         agent.update(action, outcome)
+
+        # Tag override on the most recent log entry
+        if self._step_override and self._context_log:
+            self._context_log[-1]["governance_override"] = True
 
         messages = agent.generate_messages(obs, action)
 
@@ -437,13 +490,17 @@ class AgentCoordinator:
                 reward, self._step_context_modifier,
             )
 
-            # Update rule learner
-            if self._context_learner is not None and self._step_rules_fired:
-                # Counterfactual reward estimate (without context = same reward
-                # if action unchanged, otherwise penalized)
-                reward_without = reward if action_without == action else reward * 0.95
+            # Update ContextMatrixLearner via REINFORCE
+            if (self._context_learner is not None
+                    and hasattr(self._context_learner, 'get_theta')
+                    and self._step_context_features is not None
+                    and self._step_probs is not None):
                 self._context_learner.update(
-                    self._step_rules_fired, reward, reward_without,
+                    psi=self._step_context_features,
+                    action=action,
+                    probs=self._step_probs,
+                    reward=reward,
+                    slca_score=outcome.get("slca", 0.0),
                 )
 
         # Decision history for dynamic knowledge ingestion
@@ -528,11 +585,12 @@ class AgentCoordinator:
             "guard_failures": guard_failures,
             "mean_modifier_magnitude": float(np.mean(modifiers)) if modifiers else 0.0,
             "nonzero_modifier_steps": sum(1 for m in modifiers if m > 1e-9),
+            "governance_overrides": sum(1 for e in self._context_log if e.get("governance_override")),
             "per_role": per_role,
         }
 
     def learner_summary(self) -> Dict[str, Any]:
-        """Context rule learner statistics."""
+        """Context learner statistics."""
         if self._context_learner is not None:
             return self._context_learner.summary()
         return {}

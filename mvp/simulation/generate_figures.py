@@ -60,35 +60,47 @@ plt.rcParams.update({
 # Mandatory color, marker, and line style scheme (journal specification)
 # ---------------------------------------------------------------------------
 COLORS = {
-    "static":    "#808080",   # grey
-    "hybrid_rl": "#E67E22",   # orange
-    "no_pinn":   "#E91E63",   # pink
-    "no_slca":   "#7570b3",   # purple
-    "agribrain": "#009688",   # teal
+    "static":     "#808080",   # grey
+    "hybrid_rl":  "#E67E22",   # orange
+    "no_pinn":    "#E91E63",   # pink
+    "no_slca":    "#7570b3",   # purple
+    "agribrain":  "#009688",   # teal
+    "no_context": "#4CAF50",   # green
+    "mcp_only":   "#FF9800",   # amber
+    "pirag_only": "#2196F3",   # blue
 }
 
 MARKERS = {
-    "static":    "o",         # circle
-    "hybrid_rl": "s",         # square
-    "no_pinn":   "v",         # triangle down
-    "no_slca":   "D",         # diamond
-    "agribrain": "^",         # triangle up
+    "static":     "o",         # circle
+    "hybrid_rl":  "s",         # square
+    "no_pinn":    "v",         # triangle down
+    "no_slca":    "D",         # diamond
+    "agribrain":  "^",         # triangle up
+    "no_context": "P",         # plus (filled)
+    "mcp_only":   "X",         # x (filled)
+    "pirag_only": "d",         # thin diamond
 }
 
 LINESTYLES = {
-    "static":    "-",                 # solid
-    "hybrid_rl": "--",                # dashed
-    "no_pinn":   (0, (3, 1, 1, 1)),   # dash-dot-dot
-    "no_slca":   ":",                 # dotted
-    "agribrain": "-.",                # dash-dot
+    "static":     "-",                       # solid
+    "hybrid_rl":  "--",                      # dashed
+    "no_pinn":    (0, (3, 1, 1, 1)),         # dash-dot-dot
+    "no_slca":    ":",                       # dotted
+    "agribrain":  "-.",                      # dash-dot
+    "no_context": (0, (5, 2)),               # long dash
+    "mcp_only":   (0, (3, 1, 1, 1, 1, 1)),  # dash-dot-dot-dot
+    "pirag_only": (0, (1, 1)),               # dotted tight
 }
 
 MODE_LABELS = {
-    "static":    "Static",
-    "hybrid_rl": "Hybrid RL",
-    "no_pinn":   "No PINN",
-    "no_slca":   "No SLCA",
-    "agribrain": "AgriBrain",
+    "static":     "Static",
+    "hybrid_rl":  "Hybrid RL",
+    "no_pinn":    "No PINN",
+    "no_slca":    "No SLCA",
+    "agribrain":  "AgriBrain",
+    "no_context": "No Context",
+    "mcp_only":   "MCP Only",
+    "pirag_only": "piRAG Only",
 }
 
 SCENARIO_LABELS = {
@@ -613,8 +625,8 @@ def fig6_cross(data):
 # Figure 7: Ablation study (1x3 grouped bars)
 # ---------------------------------------------------------------------------
 def fig7_ablation(data):
-    """1x3 grouped bars: ARI, waste, RLE for all 5 variants."""
-    fig, axes = plt.subplots(1, 3, figsize=(16, 5.5))
+    """1x3 grouped bars: ARI, waste, RLE for all 8 variants."""
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5.5))
     fig.suptitle("Ablation Study", fontsize=16, fontweight="bold")
 
     metrics = [("ari", "ARI", "(a)"), ("waste", "Waste Rate", "(b)"),
@@ -623,7 +635,7 @@ def fig7_ablation(data):
 
     for ax, (metric, ylabel, panel) in zip(axes, metrics):
         x = np.arange(len(stress_scenarios))
-        width = 0.15
+        width = 0.10
 
         for i, mode in enumerate(MODES):
             vals = [data["results"][s][mode][metric] for s in stress_scenarios]
@@ -631,7 +643,7 @@ def fig7_ablation(data):
                    label=MODE_LABELS[mode], alpha=0.85, edgecolor="white",
                    linewidth=0.5)
 
-        ax.set_xticks(x + 2 * width)
+        ax.set_xticks(x + 3.5 * width)
         ax.set_xticklabels([SCENARIO_LABELS[s] for s in stress_scenarios],
                            fontsize=12, rotation=15, ha="right")
         ax.set_ylabel(ylabel, fontsize=12, fontweight="bold")

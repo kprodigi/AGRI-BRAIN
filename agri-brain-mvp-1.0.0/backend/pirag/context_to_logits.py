@@ -15,7 +15,7 @@ Set ``CONTEXT_MODIFIER_SCALE = 0.0`` to disable for ablation studies.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -52,6 +52,10 @@ Sign justifications:
 - Regulatory pressure (ψ_3): regulatory docs shift away from cold chain (−0.30).
 - Recovery saturation (ψ_4): heavy recent recovery disfavors further recovery (−0.35).
 """
+
+# Feature masks for ablation modes
+_MCP_FEATURE_MASK = np.array([1.0, 1.0, 0.0, 0.0, 1.0])   # ψ_0, ψ_1, ψ_4
+_PIRAG_FEATURE_MASK = np.array([0.0, 0.0, 1.0, 1.0, 0.0])  # ψ_2, ψ_3
 
 
 def extract_context_features(
@@ -111,6 +115,10 @@ def compute_context_modifier(
     obs: Any,
     temporal_window: Optional[TemporalContextWindow] = None,
     rule_weights: Optional[np.ndarray] = None,
+    theta_override: Optional[np.ndarray] = None,
+    slca_amp_override: Optional[float] = None,
+    temporal_params_override: Optional[Tuple[float, float]] = None,
+    context_mode: str = "full",
 ) -> np.ndarray:
     """Compute context logit adjustment via THETA_CONTEXT @ psi(context).
 
@@ -120,7 +128,12 @@ def compute_context_modifier(
     rag_context : results from piRAG retrieval.
     obs : current Observation.
     temporal_window : optional temporal context for modulation.
-    rule_weights : optional per-feature weights from online learner.
+    rule_weights : optional per-feature weights from legacy learner.
+    theta_override : learned THETA_CONTEXT from ContextMatrixLearner.
+    slca_amp_override : learned SLCA amplification coefficient.
+    temporal_params_override : learned (base, scale) for temporal modulation.
+    context_mode : "full" (all features), "mcp_only" (MCP features),
+        or "pirag_only" (piRAG features).
 
     Returns
     -------
@@ -141,22 +154,31 @@ def compute_context_modifier(
     # Extract context features
     psi = extract_context_features(mcp_results, rag_context, obs)
 
-    # Apply rule weights from online learner (if available)
-    if rule_weights is not None and len(rule_weights) >= 5:
-        feature_weights = np.array(rule_weights[:5], dtype=np.float64)
-        weighted_psi = psi * feature_weights
-        modifier = THETA_CONTEXT @ weighted_psi
-    else:
-        modifier = THETA_CONTEXT @ psi
+    # Apply ablation mask BEFORE matrix multiplication
+    if context_mode == "mcp_only":
+        psi = psi * _MCP_FEATURE_MASK
+    elif context_mode == "pirag_only":
+        psi = psi * _PIRAG_FEATURE_MASK
 
-    # Temporal modulation: low continuity → stronger, high continuity → weaker
+    # Use learned theta if available, else default
+    theta = theta_override if theta_override is not None else THETA_CONTEXT
+
+    # Apply rule weights from legacy learner (if available and no theta_override)
+    if theta_override is None and rule_weights is not None and len(rule_weights) >= 5:
+        feature_weights = np.array(rule_weights[:5], dtype=np.float64)
+        psi = psi * feature_weights
+
+    modifier = theta @ psi
+
+    # Temporal modulation with learned params
     if temporal_window is not None:
         try:
+            t_base, t_scale = temporal_params_override or (1.3, 0.6)
             continuity = temporal_window.context_continuity_score(
                 getattr(obs, "hour", 0.0)
             )
-            temporal_scale = 1.3 - 0.6 * continuity
-            modifier *= temporal_scale
+            temporal_mod = t_base - t_scale * continuity
+            modifier *= temporal_mod
         except Exception:
             pass
 

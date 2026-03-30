@@ -81,11 +81,16 @@ PRICE_FACTOR: dict[str, float] = {
 }
 """Per-action price multiplier applied to MSRP."""
 
-VALID_MODES: list[str] = ["static", "hybrid_rl", "no_pinn", "no_slca", "agribrain", "no_context"]
+VALID_MODES: list[str] = [
+    "static", "hybrid_rl", "no_pinn", "no_slca",
+    "agribrain", "no_context", "mcp_only", "pirag_only",
+]
 """Valid operating modes for the softmax policy.
 
 ``no_context`` uses the same logits as ``agribrain`` but with
 ``context_modifier`` forced to None for ablation studies.
+``mcp_only`` and ``pirag_only`` use agribrain logits with partial
+context (MCP features only or piRAG features only).
 """
 
 # ---------------------------------------------------------------------------
@@ -155,6 +160,8 @@ CYBER_REROUTE_PROB: dict[str, float] = {
     "no_slca": 0.60,
     "agribrain": 0.82,
     "no_context": 0.82,
+    "mcp_only": 0.82,
+    "pirag_only": 0.82,
 }
 """Mode-dependent probability of successful rerouting during cyber outage.
 
@@ -279,6 +286,7 @@ def select_action(
     deterministic: bool = False,
     rag_context: dict | None = None,
     context_modifier: np.ndarray | None = None,
+    slca_amp_coeff: float | None = None,
 ) -> tuple[int, np.ndarray]:
     """Select routing action based on mode-specific softmax policy.
 
@@ -341,12 +349,18 @@ def select_action(
 
     if context_modifier is not None:
         # SLCA amplification based on piRAG context signal magnitude.
-        # The redistribution component of THETA_CONTEXT @ psi carries the
-        # confidence-weighted context signal; its magnitude indicates how
-        # strongly context recommends action shifts.
-        slca_amplification = 1.0 + 0.25 * min(abs(context_modifier[1]), 1.0)
+        amp = slca_amp_coeff if slca_amp_coeff is not None else 0.25
+        slca_amplification = 1.0 + amp * min(abs(context_modifier[1]), 1.0)
         slca_boost = (SLCA_BONUS + SLCA_RHO_BONUS * rho) * (slca_amplification - 1.0)
         logits = logits + context_modifier + slca_boost
+
+        # Governance override: when cumulative evidence strongly disfavors
+        # cold chain (critical compliance + high forecast + regulatory),
+        # mandate rerouting to local redistribution.
+        if (not deterministic
+                and logits[0] < -2.0
+                and logits[1] > logits[0] + 3.0):
+            return 1, np.array([0.0, 1.0, 0.0])
 
     probs = _softmax(logits)
 
