@@ -55,7 +55,8 @@ def _regulatory_compliance_template(
         f"FDA cold chain compliance requirements for {product_type} "
         f"at {temperature} degrees Celsius and {humidity} percent relative humidity. "
         f"Include FSMA Produce Safety Rule thresholds, traceability requirements, "
-        f"and corrective action procedures for temperature excursions."
+        f"corrective action procedures including temperature excursion severity classification, "
+        f"and IoT sensor calibration standards for continuous monitoring."
     )
     return base + _scenario_suffix(scenario)
 
@@ -86,7 +87,8 @@ def _emergency_rerouting_template(
         f"Emergency rerouting standard operating procedure under {scenario} conditions. "
         f"Current routing action is {current_action} with {urgency} urgency. "
         f"Include notification chain requirements, transport time adjustments, "
-        f"and fallback procedures for degraded connectivity."
+        f"fallback procedures for degraded connectivity, "
+        f"and carbon accounting for refrigerated transport emission factors."
     )
     return base + _scenario_suffix(scenario)
 
@@ -101,8 +103,10 @@ def _slca_routing_template(
     base = (
         f"SLCA scoring methodology for {action} routing of {product_type} "
         f"with surplus ratio {surplus_ratio}. "
-        f"Evaluate labour fairness, community resilience, price transparency, "
-        f"and carbon footprint impact of the proposed routing decision."
+        f"Evaluate labour fairness including shift duration standards, "
+        f"community resilience, price transparency, "
+        f"and carbon footprint impact of the proposed routing decision. "
+        f"Include energy consumption reporting and green AI efficiency metrics."
     )
     return base + _scenario_suffix(scenario)
 
@@ -116,8 +120,9 @@ def _governance_policy_template(
     base = (
         f"Cooperative governance policy for {decision_type} decisions "
         f"by {agent_role} agent. Include quorum thresholds, voting periods, "
-        f"SLCA reward and slashing criteria, and parameter bounds for "
-        f"autonomous decision-making authority."
+        f"SLCA reward and slashing criteria, parameter bounds for "
+        f"autonomous decision-making authority, "
+        f"and blockchain audit trail requirements including immutable decision hash."
     )
     return base + _scenario_suffix(scenario)
 

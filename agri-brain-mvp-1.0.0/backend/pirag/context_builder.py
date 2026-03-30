@@ -14,7 +14,9 @@ from .mcp.protocol import MCPMessage, MCPServer
 
 ROLE_QUERY_TEMPLATES: Dict[str, Dict[str, Any]] = {
     "farm": {
-        "base": "FDA cold chain compliance for fresh spinach postharvest storage",
+        "base": ("FDA cold chain compliance for fresh spinach postharvest storage "
+                 "including temperature excursion severity classification "
+                 "and IoT sensor calibration standards for continuous monitoring"),
         "conditions": [
             {"trigger": lambda obs, mcp: obs.temp > 8.0,
              "append": "temperature excursion above safe threshold requiring corrective action"},
@@ -25,7 +27,9 @@ ROLE_QUERY_TEMPLATES: Dict[str, Dict[str, Any]] = {
         ],
     },
     "processor": {
-        "base": "processing facility quality management and throughput optimization",
+        "base": ("processing facility quality management and throughput optimization "
+                 "including energy consumption reporting and green AI efficiency metrics "
+                 "with cooperative governance quorum requirements"),
         "conditions": [
             {"trigger": lambda obs, mcp: obs.surplus_ratio > 0.3,
              "append": "surplus inventory requiring diversion or redistribution planning"},
@@ -36,7 +40,9 @@ ROLE_QUERY_TEMPLATES: Dict[str, Dict[str, Any]] = {
         ],
     },
     "cooperative": {
-        "base": "SLCA scoring methodology and cooperative stakeholder coordination",
+        "base": ("SLCA scoring methodology and cooperative stakeholder coordination "
+                 "with blockchain audit trail requirements including immutable decision hash "
+                 "and labor fairness shift duration standards"),
         "conditions": [
             {"trigger": lambda obs, mcp: obs.tau > 0.5,
              "append": "volatility regime requiring coordinated response across agents"},
@@ -47,7 +53,8 @@ ROLE_QUERY_TEMPLATES: Dict[str, Dict[str, Any]] = {
         ],
     },
     "distributor": {
-        "base": "redistribution routing compliance and community food delivery",
+        "base": ("redistribution routing compliance and community food delivery "
+                 "with carbon accounting for refrigerated transport emission factors"),
         "conditions": [
             {"trigger": lambda obs, mcp: obs.rho > 0.35,
              "append": "time-critical redistribution under elevated spoilage risk"},
@@ -58,7 +65,8 @@ ROLE_QUERY_TEMPLATES: Dict[str, Dict[str, Any]] = {
         ],
     },
     "recovery": {
-        "base": "food waste hierarchy and circular economy valorization pathways",
+        "base": ("food waste hierarchy and circular economy valorization pathways "
+                 "including animal feed diversion standards and composting bioenergy requirements"),
         "conditions": [
             {"trigger": lambda obs, mcp: obs.rho > 0.50,
              "append": "advanced spoilage limiting recovery options to composting or energy"},

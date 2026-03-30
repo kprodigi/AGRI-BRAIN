@@ -219,7 +219,7 @@ class TraceExporter:
             provenance_ready=bool(merkle),
         )
 
-        # Populate keyword fields from rag_context
+        # Populate keyword fields from rag_context (deduplicated)
         keywords = rag_context.get("keywords", {})
         for kw_type in ["regulatory", "sop", "waste_hierarchy", "governance"]:
             kw_data = keywords.get(kw_type, {})
@@ -227,7 +227,19 @@ class TraceExporter:
                 all_kw = (kw_data.get("thresholds", [])
                           + kw_data.get("regulations", [])
                           + kw_data.get("required_actions", []))
-                setattr(trace, f"keywords_{kw_type}", all_kw[:5])
+            elif isinstance(kw_data, list):
+                all_kw = kw_data
+            else:
+                all_kw = []
+            # Deduplicate preserving order
+            seen: set = set()
+            unique: List[str] = []
+            for kw in all_kw:
+                normalized = kw.strip().lower()
+                if normalized not in seen:
+                    seen.add(normalized)
+                    unique.append(kw)
+            setattr(trace, f"keywords_{kw_type}", unique[:5])
 
         # Populate causal explanation data
         if explanation:

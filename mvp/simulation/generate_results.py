@@ -395,8 +395,18 @@ def run_all(seed: int = SEED) -> dict:
         df_scenario = apply_scenario(df_base, scenario, policy, scenario_rng)
         df_scenarios[scenario] = df_scenario
 
+        # Shared seed for context ablation modes so any ARI difference
+        # comes exclusively from the context modifier, not stochastic noise.
+        ablation_seed = rng.integers(0, 2**31)
+        mode_seeds: dict[str, int] = {}
         for mode in MODES:
-            mode_rng = np.random.default_rng(rng.integers(0, 2**31))
+            if mode in _AGRIBRAIN_LOGIT_MODES:
+                mode_seeds[mode] = int(ablation_seed)
+            else:
+                mode_seeds[mode] = int(rng.integers(0, 2**31))
+
+        for mode in MODES:
+            mode_rng = np.random.default_rng(mode_seeds[mode])
             episode = run_episode(df_scenario, mode, policy, mode_rng, scenario)
             results[scenario][mode] = episode
             print(f"  [{scenario:>20s}] [{mode:>12s}] ARI={episode['ari']:.3f}  "
