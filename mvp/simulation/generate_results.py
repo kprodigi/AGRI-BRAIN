@@ -247,7 +247,16 @@ def run_episode(
                              policy.T_ref_K, rh_val / 100.0,
                              policy.beta_humidity)
         waste_raw = compute_waste_rate(k_inst, surplus_ratio)
-        save = compute_save_factor(action, mode if mode != "no_context" else "agribrain", surplus_ratio)
+
+        # Pass MCP compliance data to waste model for agribrain mode
+        compliance_data = None
+        if mode == "agribrain" and hasattr(coordinator, '_step_mcp_results'):
+            compliance_data = coordinator._step_mcp_results.get("check_compliance")
+
+        save = compute_save_factor(
+            action, mode if mode != "no_context" else "agribrain",
+            surplus_ratio, compliance_data=compliance_data,
+        )
         waste = float(waste_raw * (1.0 - save))
 
         # Circular economy score (Layer 1: reverse_logistics.py)

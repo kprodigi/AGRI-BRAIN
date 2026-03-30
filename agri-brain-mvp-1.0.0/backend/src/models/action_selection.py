@@ -340,7 +340,13 @@ def select_action(
         logits = logits + role_bias
 
     if context_modifier is not None:
-        logits = logits + context_modifier
+        # SLCA amplification based on piRAG context signal magnitude.
+        # The redistribution component of THETA_CONTEXT @ psi carries the
+        # confidence-weighted context signal; its magnitude indicates how
+        # strongly context recommends action shifts.
+        slca_amplification = 1.0 + 0.25 * min(abs(context_modifier[1]), 1.0)
+        slca_boost = (SLCA_BONUS + SLCA_RHO_BONUS * rho) * (slca_amplification - 1.0)
+        logits = logits + context_modifier + slca_boost
 
     probs = _softmax(logits)
 

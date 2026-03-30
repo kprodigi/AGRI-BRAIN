@@ -1,6 +1,6 @@
 """Integration tests for MCP + piRAG pipeline (Task 28).
 
-18 tests covering registry discovery, MCP protocol, tool dispatch,
+Tests covering registry discovery, MCP protocol, tool dispatch,
 shared context, role queries, physics reranking, context modifiers,
 backward compatibility, and transport.
 """
@@ -216,7 +216,7 @@ def test_physics_reranking_boosts_relevant():
     assert reranked[0]["id"] == "b"
 
 
-# ---- Test 12: Context modifier bounds ----
+# ---- Test 12: Context modifier bounds (updated: ±1.0) ----
 def test_context_modifier_bounds():
     from pirag.context_to_logits import compute_context_modifier
 
@@ -228,6 +228,7 @@ def test_context_modifier_bounds():
     rag = {
         "guards_passed": True,
         "top_citation_score": 0.9,
+        "top_doc_id": "regulatory_fda_cold_chain",
         "regulatory_guidance": "some guidance",
         "waste_hierarchy_guidance": "waste hierarchy",
         "sop_guidance": "sop guidance",
@@ -236,8 +237,11 @@ def test_context_modifier_bounds():
 
     modifier = compute_context_modifier(mcp, rag, obs)
     assert modifier.shape == (3,)
-    assert np.all(modifier >= -0.30)
-    assert np.all(modifier <= 0.30)
+    assert np.all(modifier >= -1.0), f"Modifier below -1.0: {modifier}"
+    assert np.all(modifier <= 1.0), f"Modifier above +1.0: {modifier}"
+    # With critical compliance + critical forecast + regulatory doc,
+    # modifier should have substantial magnitude
+    assert np.linalg.norm(modifier) > 0.3, f"Modifier too small: {modifier}"
 
 
 # ---- Test 13: Context modifier zero when empty ----
@@ -260,26 +264,71 @@ def test_context_modifier_guard_gate():
     assert np.allclose(modifier, 0.0), "Guard gate should zero modifier when guards_passed=False"
 
 
-# ---- Test 15: Context modifier confidence weighting ----
+# ---- Test 15: Context feature extraction ----
+def test_context_feature_extraction():
+    from pirag.context_to_logits import extract_context_features
+
+    mcp = {
+        "check_compliance": {"compliant": False, "violations": [{"severity": "critical"}]},
+        "spoilage_forecast": {"urgency": "high"},
+        "chain_query": [
+            {"action": "recovery"}, {"action": "recovery"},
+            {"action": "cold_chain"}, {"action": "recovery"},
+        ],
+    }
+    rag = {
+        "top_citation_score": 0.6,
+        "top_doc_id": "regulatory_fda_guideline_v2",
+    }
+    obs = _Obs(rho=0.40)
+
+    psi = extract_context_features(mcp, rag, obs)
+    assert psi.shape == (5,)
+    assert psi[0] == 1.0, "Critical compliance should be 1.0"
+    assert psi[1] == 0.7, f"High urgency should be 0.7, got {psi[1]}"
+    assert abs(psi[2] - 0.6 / 0.8) < 1e-9, f"Confidence should be {0.6/0.8}, got {psi[2]}"
+    assert psi[3] == 1.0, "Regulatory doc with score > 0.4 should be 1.0"
+    assert abs(psi[4] - 0.75) < 1e-9, f"Recovery saturation should be 0.75, got {psi[4]}"
+
+
+# ---- Test 16: THETA_CONTEXT sign consistency ----
+def test_theta_context_sign_consistency():
+    """Verify compliance violation reduces cold chain and increases redistribution."""
+    from pirag.context_to_logits import THETA_CONTEXT
+
+    # Column 0 = compliance severity
+    assert THETA_CONTEXT[0, 0] < 0, "Compliance violation should disfavor cold chain"
+    assert THETA_CONTEXT[1, 0] > 0, "Compliance violation should favor redistribution"
+
+    # Column 4 = recovery saturation
+    assert THETA_CONTEXT[2, 4] < 0, "Recovery saturation should disfavor further recovery"
+    assert THETA_CONTEXT[0, 4] > 0, "Recovery saturation should slightly favor cold chain"
+
+
+# ---- Test 17: Context modifier confidence weighting via features ----
 def test_context_modifier_confidence_weighting():
     from pirag.context_to_logits import compute_context_modifier
 
     mcp = {"check_compliance": {"compliant": False, "violations": [{"severity": "critical"}]}}
     obs = _Obs(rho=0.50)
 
-    # High confidence
-    rag_high = {"guards_passed": True, "top_citation_score": 0.95}
+    # High retrieval confidence
+    rag_high = {"guards_passed": True, "top_citation_score": 0.95, "top_doc_id": ""}
     mod_high = compute_context_modifier(mcp, rag_high, obs)
 
-    # Low confidence
-    rag_low = {"guards_passed": True, "top_citation_score": 0.10}
+    # Low retrieval confidence
+    rag_low = {"guards_passed": True, "top_citation_score": 0.10, "top_doc_id": ""}
     mod_low = compute_context_modifier(mcp, rag_low, obs)
 
-    # Higher confidence should produce equal or larger magnitude (MCP confidence is binary)
-    assert np.linalg.norm(mod_high) >= 0, "High confidence modifier should be non-zero"
+    # Both should be non-zero (compliance violation is MCP-sourced, not retrieval-dependent)
+    assert np.linalg.norm(mod_high) > 0, "High confidence modifier should be non-zero"
+    assert np.linalg.norm(mod_low) > 0, "Low confidence modifier should be non-zero"
+    # Higher confidence should produce different (generally larger) magnitude
+    # because ψ_2 contributes additional signal
+    assert not np.allclose(mod_high, mod_low), "Different confidence should produce different modifiers"
 
 
-# ---- Test 16: Backward compatibility ----
+# ---- Test 18: Backward compatibility ----
 def test_backward_compatibility():
     from src.models.action_selection import select_action
 
@@ -303,11 +352,40 @@ def test_backward_compatibility():
     assert np.allclose(p1, p2)
 
 
-# ---- Test 17: Context learner update ----
+# ---- Test 19: SLCA amplification ----
+def test_slca_amplification():
+    """Verify agribrain logits with context_modifier include SLCA boost."""
+    from src.models.action_selection import select_action, SLCA_BONUS, SLCA_RHO_BONUS
+
+    rng1 = np.random.default_rng(42)
+    rng2 = np.random.default_rng(42)
+
+    # Without context modifier
+    _, probs_no_ctx = select_action(
+        mode="agribrain", rho=0.3, inv=10000, y_hat=100, temp=6.0,
+        tau=0.0, policy=_DummyPolicy(), rng=rng1, deterministic=True,
+        context_modifier=None,
+    )
+
+    # With a non-zero context modifier (redistribution component > 0)
+    ctx_mod = np.array([-0.5, 0.6, 0.1])
+    _, probs_ctx = select_action(
+        mode="agribrain", rho=0.3, inv=10000, y_hat=100, temp=6.0,
+        tau=0.0, policy=_DummyPolicy(), rng=rng2, deterministic=True,
+        context_modifier=ctx_mod,
+    )
+
+    # Context should shift redistribution probability upward
+    assert probs_ctx[1] > probs_no_ctx[1], (
+        f"SLCA amplification should boost redistribution: {probs_ctx[1]} vs {probs_no_ctx[1]}"
+    )
+
+
+# ---- Test 20: Context learner update (now 5 features) ----
 def test_context_learner_update():
     from pirag.context_learner import ContextRuleLearner
 
-    learner = ContextRuleLearner(n_rules=8, learning_rate=0.1)
+    learner = ContextRuleLearner(n_rules=5, learning_rate=0.1)
     initial_weights = learner.get_weights().copy()
 
     # Positive delta should increase fired weights
@@ -318,7 +396,7 @@ def test_context_learner_update():
     assert after[0] > after[3], "Fired rules should increase relative to unfired"
 
 
-# ---- Test 18: Transport in-process ----
+# ---- Test 21: Transport in-process ----
 def test_transport_in_process():
     from pirag.mcp.protocol import MCPServer
     from pirag.mcp.registry import ToolRegistry
@@ -335,7 +413,7 @@ def test_transport_in_process():
     client.close()
 
 
-# ---- Test 19: Guards pass with real pipeline data ----
+# ---- Test 22: Guards pass with real pipeline data ----
 def test_context_guards_pass_with_real_pipeline():
     """Verify that retrieve_role_context sets guards_passed=True when citations exist."""
     from pirag.context_builder import retrieve_role_context
@@ -351,7 +429,7 @@ def test_context_guards_pass_with_real_pipeline():
     assert ctx["guards_passed"] is True, "Guards should pass with real citations"
 
 
-# ---- Test 20: Full pipeline produces non-zero modifier ----
+# ---- Test 23: Full pipeline produces non-zero modifier (updated bounds) ----
 def test_full_pipeline_nonzero_modifier():
     """End-to-end: MCP dispatch + piRAG retrieval + modifier computation = non-zero."""
     from pirag.mcp.tool_dispatch import dispatch_tools
@@ -376,7 +454,38 @@ def test_full_pipeline_nonzero_modifier():
 
     modifier = compute_context_modifier(mcp_results, ctx, obs)
     assert not np.allclose(modifier, 0.0), f"Modifier should be non-zero, got {modifier}"
-    assert np.all(np.abs(modifier) <= 0.30), "Modifier should be within bounds"
+    assert np.all(np.abs(modifier) <= 1.0), f"Modifier should be within ±1.0 bounds"
+    # With the new THETA_CONTEXT approach, modifier norm should be > 0.3
+    assert np.linalg.norm(modifier) > 0.3, (
+        f"Modifier norm should be > 0.3, got {np.linalg.norm(modifier):.4f}"
+    )
+
+
+# ---- Test 24: Waste compliance penalty ----
+def test_waste_compliance_penalty():
+    """Verify save factor reduction under compliance violations."""
+    from src.models.waste import compute_save_factor, context_waste_penalty
+
+    # No compliance data — no penalty
+    assert context_waste_penalty(None) == 1.0
+    assert context_waste_penalty({"compliant": True}) == 1.0
+
+    # Warning violation — 15% reduction
+    assert context_waste_penalty({"compliant": False, "violations": [{"severity": "warning"}]}) == 0.85
+
+    # Critical violation — 30% reduction
+    assert context_waste_penalty({"compliant": False, "violations": [{"severity": "critical"}]}) == 0.70
+
+    # Save factor with and without compliance data
+    sf_clean = compute_save_factor("local_redistribute", "agribrain")
+    sf_critical = compute_save_factor(
+        "local_redistribute", "agribrain",
+        compliance_data={"compliant": False, "violations": [{"severity": "critical"}]},
+    )
+    assert sf_critical < sf_clean, f"Critical violation should reduce save factor: {sf_critical} vs {sf_clean}"
+    assert abs(sf_critical / sf_clean - 0.70) < 0.01, (
+        f"Critical penalty should be ~0.70 ratio, got {sf_critical/sf_clean:.3f}"
+    )
 
 
 # ---- Helper ----

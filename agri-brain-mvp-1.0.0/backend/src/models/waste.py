@@ -171,17 +171,38 @@ def compute_waste_rate(
     return waste_raw
 
 
+def context_waste_penalty(mcp_compliance: dict | None = None) -> float:
+    """Reduce waste saving capacity when compliance violations are detected.
+
+    Returns a multiplier in [0.7, 1.0] applied to the save factor.
+    Critical violations: 0.7 (30% reduction in saving capacity)
+    Warning violations: 0.85 (15% reduction)
+    Compliant: 1.0 (no penalty)
+    """
+    if mcp_compliance is None:
+        return 1.0
+    if mcp_compliance.get("compliant", True):
+        return 1.0
+    violations = mcp_compliance.get("violations", [])
+    if any(v.get("severity") == "critical" for v in violations):
+        return 0.70
+    if violations:
+        return 0.85
+    return 1.0
+
+
 def compute_save_factor(
     action: str,
     mode: str,
     surplus_ratio: float = 0.0,
     surplus_save_penalty: float = SURPLUS_SAVE_PENALTY,
+    compliance_data: dict | None = None,
 ) -> float:
     """Compute the waste prevention factor for a given action and mode.
 
     save_factor = floor[action] + (ceil[action] − floor[action]) × mode_eff
     save_capacity = 1 / (1 + surplus_save_penalty × surplus_ratio)
-    effective_save = save_factor × save_capacity
+    effective_save = save_factor × save_capacity × context_waste_penalty
 
     Parameters
     ----------
@@ -189,6 +210,9 @@ def compute_save_factor(
     mode : operating mode (``static``, ``hybrid_rl``, ``no_pinn``, ``no_slca``, ``agribrain``).
     surplus_ratio : inventory surplus above baseline (0 when at/below baseline).
     surplus_save_penalty : degradation coefficient for surplus conditions.
+    compliance_data : optional MCP compliance check result. When provided,
+        compliance violations reduce the save factor (physically: compromised
+        cold chain reduces operational intervention effectiveness).
 
     Returns
     -------
@@ -200,6 +224,11 @@ def compute_save_factor(
     mode_eff = MODE_EFF.get(mode, 0.0)
 
     save = floor_s + (ceil_s - floor_s) * mode_eff
+
+    # Context-dependent penalty from MCP compliance check
+    if compliance_data is not None:
+        save *= context_waste_penalty(compliance_data)
+
     save_capacity = 1.0 / (1.0 + surplus_save_penalty * surplus_ratio)
     return save * save_capacity
 

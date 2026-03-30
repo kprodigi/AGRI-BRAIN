@@ -30,7 +30,7 @@ class ContextRuleLearner:
 
     def __init__(
         self,
-        n_rules: int,
+        n_rules: int = 5,
         learning_rate: float = 0.05,
         rng: np.random.Generator | None = None,
     ) -> None:

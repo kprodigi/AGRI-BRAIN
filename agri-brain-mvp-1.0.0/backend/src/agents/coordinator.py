@@ -326,15 +326,10 @@ class AgentCoordinator:
                 except Exception:
                     pass
 
-            # Track which rules fired (for learner)
-            from pirag.context_to_logits import MODIFIER_RULES
-            rules_fired = []
-            for idx, rule in enumerate(MODIFIER_RULES):
-                try:
-                    if rule["condition"](mcp_results, rag_context, obs):
-                        rules_fired.append(idx)
-                except Exception:
-                    pass
+            # Track which features are active (non-zero) for the learner
+            from pirag.context_to_logits import extract_context_features
+            psi = extract_context_features(mcp_results, rag_context, obs)
+            rules_fired = [i for i in range(len(psi)) if psi[i] > 0.01]
 
             # Store for post_step
             self._step_mcp_results = mcp_results
