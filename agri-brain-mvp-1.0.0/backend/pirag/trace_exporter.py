@@ -61,6 +61,19 @@ class DecisionTrace:
     action_probabilities: List[float] = field(default_factory=list)
     governance_override: bool = False
 
+    # Extracted keywords per guidance type
+    keywords_regulatory: List[str] = field(default_factory=list)
+    keywords_sop: List[str] = field(default_factory=list)
+    keywords_waste_hierarchy: List[str] = field(default_factory=list)
+    keywords_governance: List[str] = field(default_factory=list)
+
+    # Causal explanation data
+    causal_primary_cause: str = ""
+    causal_primary_contribution: float = 0.0
+    counterfactual_action: str = ""
+    counterfactual_prob_shift: List[float] = field(default_factory=list)
+    action_changed_by_context: bool = False
+
     # Explanation
     explanation_summary: str = ""
     explanation_full: str = ""
@@ -205,6 +218,27 @@ class TraceExporter:
             merkle_root=merkle,
             provenance_ready=bool(merkle),
         )
+
+        # Populate keyword fields from rag_context
+        keywords = rag_context.get("keywords", {})
+        for kw_type in ["regulatory", "sop", "waste_hierarchy", "governance"]:
+            kw_data = keywords.get(kw_type, {})
+            if isinstance(kw_data, dict):
+                all_kw = (kw_data.get("thresholds", [])
+                          + kw_data.get("regulations", [])
+                          + kw_data.get("required_actions", []))
+                setattr(trace, f"keywords_{kw_type}", all_kw[:5])
+
+        # Populate causal explanation data
+        if explanation:
+            causal = explanation.get("causal_chain", {})
+            trace.causal_primary_cause = causal.get("primary_cause", "")
+            trace.causal_primary_contribution = causal.get("primary_contribution", 0.0)
+            cf = explanation.get("counterfactual", {})
+            trace.counterfactual_action = cf.get("action_without_context", "") or ""
+            trace.counterfactual_prob_shift = cf.get("probability_shift", []) or []
+            trace.action_changed_by_context = cf.get("action_changed", False)
+
         self._traces.append(trace)
 
     def export_json(self, filepath: str) -> None:
@@ -249,6 +283,19 @@ class TraceExporter:
                         t.action_probabilities,
                     )) if t.action_probabilities else {},
                 },
+                "keywords": {
+                    "regulatory": t.keywords_regulatory,
+                    "sop": t.keywords_sop,
+                    "waste_hierarchy": t.keywords_waste_hierarchy,
+                    "governance": t.keywords_governance,
+                },
+                "causal_reasoning": {
+                    "primary_cause": t.causal_primary_cause,
+                    "primary_contribution": t.causal_primary_contribution,
+                    "counterfactual_action": t.counterfactual_action,
+                    "probability_shift": t.counterfactual_prob_shift,
+                    "action_changed": t.action_changed_by_context,
+                },
                 "explanation": {
                     "summary": t.explanation_summary,
                     "full": t.explanation_full,
@@ -275,6 +322,8 @@ class TraceExporter:
                     "logit_means": np.zeros(3),
                     "n": 0,
                     "guidance_types": [],
+                    "all_keywords": [],
+                    "causal_causes": [],
                 }
             rd = role_data[t.role]
             rd["mcp_tools"].update(t.mcp_tools_invoked)
@@ -288,6 +337,13 @@ class TraceExporter:
             for gtype in ["regulatory", "sop", "waste_hierarchy", "governance", "slca"]:
                 if getattr(t, f"pirag_{gtype}_text", ""):
                     rd["guidance_types"].append(gtype)
+            # Aggregate keywords
+            for kw_field in ["keywords_regulatory", "keywords_sop",
+                             "keywords_waste_hierarchy", "keywords_governance"]:
+                rd["all_keywords"].extend(getattr(t, kw_field, []))
+            # Aggregate causal causes
+            if t.causal_primary_cause:
+                rd["causal_causes"].append(t.causal_primary_cause)
 
         table = []
         for role, rd in sorted(role_data.items()):
@@ -296,6 +352,12 @@ class TraceExporter:
             top_doc = doc_counts.most_common(1)[0][0] if doc_counts else "none"
             guide_counts = Counter(rd["guidance_types"])
             top_guide = guide_counts.most_common(1)[0][0] if guide_counts else "none"
+            kw_counts = Counter(rd["all_keywords"])
+            top_keywords = [kw for kw, _ in kw_counts.most_common(5)]
+            cause_counts = Counter(rd["causal_causes"])
+            cause_distribution = {
+                cause: round(count / n, 2) for cause, count in cause_counts.most_common()
+            }
             table.append({
                 "role": role,
                 "mcp_tools": sorted(rd["mcp_tools"]),
@@ -304,6 +366,8 @@ class TraceExporter:
                 "mean_features": (rd["feature_means"] / n).tolist(),
                 "mean_logit_shift": (rd["logit_means"] / n).tolist(),
                 "n_traces": rd["n"],
+                "top_keywords": top_keywords,
+                "primary_cause_distribution": cause_distribution,
             })
         return table
 

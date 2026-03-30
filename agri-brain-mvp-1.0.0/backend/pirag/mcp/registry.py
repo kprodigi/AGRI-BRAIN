@@ -206,5 +206,47 @@ def get_default_registry() -> ToolRegistry:
     except ImportError:
         pass
 
+    # piRAG, explanation, and context feature tools
+    try:
+        from .tools.pirag_query import pirag_query
+        registry.register(ToolSpec(
+            name="pirag_query",
+            description="Query the piRAG knowledge base with physics-informed retrieval",
+            capabilities=["retrieval", "knowledge", "pirag", "regulatory"],
+            fn=pirag_query,
+            schema={"query": "str", "k": "int", "role": "str", "temperature": "float",
+                     "rho": "float", "humidity": "float"},
+            cacheable=False,
+        ))
+    except ImportError:
+        pass
+
+    try:
+        from .tools.explain_tool import explain
+        registry.register(ToolSpec(
+            name="explain",
+            description="Generate a causal explanation for a routing decision with provenance",
+            capabilities=["explanation", "explainability", "audit"],
+            fn=explain,
+            schema={"action": "str", "role": "str", "hour": "float", "rho": "float",
+                     "temperature": "float", "scenario": "str"},
+            cacheable=False,
+        ))
+    except ImportError:
+        pass
+
+    try:
+        from .tools.context_features import read_context_features
+        registry.register(ToolSpec(
+            name="context_features",
+            description="Read the current MCP/piRAG context feature vector and logit modifier",
+            capabilities=["context", "monitoring", "transparency"],
+            fn=read_context_features,
+            schema={},
+            cacheable=False,
+        ))
+    except ImportError:
+        pass
+
     _DEFAULT_REGISTRY = registry
     return registry

@@ -367,6 +367,10 @@ def run_episode(
             result["trace_summary"] = coordinator.trace_exporter.summary()
             result["_trace_exporter"] = coordinator.trace_exporter
 
+        # Protocol recorder for genuine MCP interactions
+        if coordinator.protocol_recorder is not None:
+            result["_protocol_recorder"] = coordinator.protocol_recorder
+
     return result
 
 
@@ -432,9 +436,11 @@ def run_all(seed: int = SEED) -> dict:
                 if role_table:
                     print(f"    Role context comparison:")
                     for row in role_table:
+                        kw_str = ", ".join(row.get("top_keywords", [])[:3]) or "none"
                         print(f"      {row['role']:12s}: MCP={row['mcp_tools']}, "
                               f"KB={row['primary_kb_document']}, "
-                              f"guidance={row['primary_guidance_type']}")
+                              f"guidance={row['primary_guidance_type']}, "
+                              f"keywords=[{kw_str}]")
 
                 chains = exporter.export_provenance_chains()
                 print(f"    Provenance: {len(chains)} verifiable chains")
@@ -451,6 +457,17 @@ def run_all(seed: int = SEED) -> dict:
                     interop_path = RESULTS_DIR / f"mcp_interop_{scenario}.json"
                     with open(interop_path, "w") as f:
                         json.dump(interop, f, indent=2, default=str)
+
+            # Export real MCP protocol recordings for agribrain
+            if mode == "agribrain" and "_protocol_recorder" in episode:
+                proto = episode["_protocol_recorder"]
+                proto_summary = proto.summary()
+                if proto_summary["total_interactions"] > 0:
+                    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+                    proto_path = RESULTS_DIR / f"mcp_protocol_{scenario}.json"
+                    proto.export_json(str(proto_path))
+                    print(f"    Protocol: {proto_summary['total_interactions']} real MCP interactions, "
+                          f"methods={proto_summary['methods']}")
 
     table1_methods = ["static", "hybrid_rl", "agribrain"]
     table1_rows = []

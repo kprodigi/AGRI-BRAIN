@@ -1,0 +1,38 @@
+COMPOSTING AND BIOENERGY RECOVERY REQUIREMENTS
+Document ID: KB-CBR-004
+Effective Date: 2025-09-01
+Regulatory Basis: EPA 40 CFR Part 503; State Solid Waste Management Regulations
+
+1. ROUTING CRITERIA
+
+Product with a spoilage index rho exceeding 0.50 that is ineligible for human consumption
+or animal feed diversion must be directed to composting or anaerobic digestion facilities.
+Product with rho above 0.80 is strongly preferred for anaerobic digestion due to higher
+biogas yield from advanced decomposition substrates.
+
+2. THERMOPHILIC COMPOSTING STANDARDS
+
+Composting facilities receiving diverted agricultural product must maintain thermophilic
+conditions of at least 55 degrees Celsius for a minimum of 3 consecutive days within
+the active composting phase. This requirement aligns with EPA 40 CFR Part 503 pathogen
+reduction standards (Process to Further Reduce Pathogens). Temperature must be monitored
+at a minimum of 4 locations within each windrow or vessel, with readings logged every
+6 hours.
+
+3. ANAEROBIC DIGESTION AND METHANE YIELD
+
+Typical methane yield for diverted produce ranges from 250 to 350 cubic meters of CH4
+per tonne of volatile solids, depending on moisture content and commodity type. Digester
+retention time should be a minimum of 20 days at mesophilic temperatures (35-40 degrees
+Celsius).
+
+4. REQUIRED ACTIONS
+
+Action 1: Issue a Composting/Bioenergy Diversion Manifest (CBDM-400) documenting lot
+origin, rho value, estimated tonnage, receiving facility permit number, and transport
+chain of custody. Retain for 3 years.
+
+Action 2: Calculate and register carbon credits generated from methane capture using the
+EPA Waste Reduction Model (WARM). Eligible credits require verified diversion from
+landfill and documented biogas utilization. Credits are reportable under Scope 3
+emissions accounting and may qualify for voluntary carbon market listing.

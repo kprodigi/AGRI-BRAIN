@@ -738,6 +738,122 @@ def test_interoperability_trace_format():
         assert "id" in req
 
 
+# ---- Test 32: Keyword extraction from passages ----
+def test_keyword_extraction():
+    """Verify keyword extraction finds thresholds and regulatory references."""
+    from pirag.keyword_extractor import extract_keywords, extract_keywords_by_type
+
+    passage = (
+        "Fresh leafy greens must be stored at temperatures not exceeding 5 degrees Celsius. "
+        "Under FSMA Section 204, corrective action within 2 hours is required. "
+        "Spoilage risk rho < 0.30 qualifies for redistribution."
+    )
+
+    kw = extract_keywords(passage)
+    assert len(kw) > 0, "Should extract at least one keyword"
+
+    by_type = extract_keywords_by_type(passage)
+    assert len(by_type["thresholds"]) > 0, "Should find temperature threshold"
+    assert any("FSMA" in r for r in by_type["regulations"]), "Should find FSMA reference"
+
+
+# ---- Test 33: Causal explanation contains BECAUSE and counterfactual ----
+def test_causal_explanation_structure():
+    """Verify causal explanation has BECAUSE, counterfactual, and citations."""
+    from pirag.explain_decision import explain_decision
+
+    obs = _Obs(rho=0.40, temp=14.0, rh=85.0, hour=30.0, surplus_ratio=0.2, inv=14000.0)
+
+    mcp = {
+        "_tools_invoked": ["check_compliance", "spoilage_forecast"],
+        "check_compliance": {
+            "compliant": False,
+            "violations": [{"severity": "critical", "parameter": "temperature",
+                           "value": 14.0, "limit": 5.0}],
+        },
+        "spoilage_forecast": {"current_rho": 0.40, "forecast_rho": 0.45,
+                              "hours_ahead": 6, "urgency": "high"},
+    }
+    rag = {
+        "guards_passed": True,
+        "top_citation_score": 0.61,
+        "top_doc_id": "regulatory_fda_leafy_greens",
+        "regulatory_guidance": "Fresh leafy greens must be stored below 5C.",
+        "citations": [],
+        "evidence_hashes": ["abc123"],
+        "keywords": {"regulatory": {"thresholds": ["5C"], "regulations": ["FSMA"], "required_actions": []}},
+    }
+
+    result = explain_decision(
+        action="local_redistribute", role="distributor", hour=30.0, obs=obs,
+        mcp_results=mcp, rag_context=rag,
+        slca_score=0.78, carbon_kg=3.5, waste=0.02,
+        context_features=np.array([1.0, 0.7, 0.76, 1.0, 0.0]),
+        logit_adjustment=np.array([-1.63, 1.18, 0.45]),
+        action_probs=np.array([0.03, 0.93, 0.04]),
+        counterfactual_action="local_redistribute",
+        counterfactual_probs=np.array([0.06, 0.88, 0.06]),
+        keywords=rag["keywords"],
+    )
+
+    assert "BECAUSE" in result["full_explanation"], "Should contain BECAUSE"
+    assert "WITHOUT" in result["full_explanation"], "Should contain WITHOUT"
+    assert "causal_chain" in result
+    assert result["causal_chain"]["primary_cause"] in [
+        "compliance severity", "regulatory pressure",
+    ]
+    assert "counterfactual" in result
+    assert result["counterfactual"]["probs_without_context"] is not None
+
+
+# ---- Test 34: New MCP tools registered ----
+def test_new_mcp_tools_registered():
+    """Verify pirag_query, explain, and context_features tools are registered."""
+    from pirag.mcp.registry import get_default_registry
+    import pirag.mcp.registry as _reg_mod
+    _reg_mod._DEFAULT_REGISTRY = None
+
+    registry = get_default_registry()
+    tool_names = set(registry._tools.keys()) if isinstance(registry._tools, dict) else {t.name for t in registry._tools}
+
+    assert "pirag_query" in tool_names, "pirag_query tool should be registered"
+    assert "explain" in tool_names, "explain tool should be registered"
+    assert "context_features" in tool_names, "context_features tool should be registered"
+
+
+# ---- Test 35: Protocol recorder captures interactions ----
+def test_protocol_recorder():
+    """Verify protocol recorder captures MCP interactions."""
+    from pirag.mcp.protocol import MCPServer, MCPMessage
+    from pirag.mcp.registry import ToolRegistry
+    from pirag.mcp.protocol_recorder import ProtocolRecorder
+
+    server = MCPServer(registry=ToolRegistry())
+    recorder = ProtocolRecorder(server, max_records=10)
+
+    # Send an initialize message
+    resp = server.handle_message(MCPMessage(id=1, method="initialize"))
+    assert resp.result is not None
+
+    records = recorder.get_records()
+    assert len(records) == 1
+    assert records[0]["request"]["method"] == "initialize"
+    assert "result" in records[0]["response"]
+
+    summary = recorder.summary()
+    assert summary["total_interactions"] == 1
+    assert "initialize" in summary["methods"]
+
+
+# ---- Test 36: Knowledge base has 20 documents ----
+def test_knowledge_base_size():
+    """Verify KB has been expanded to 20 documents."""
+    from pathlib import Path
+    kb_dir = Path(__file__).resolve().parent.parent / "knowledge_base"
+    docs = list(kb_dir.glob("*.txt"))
+    assert len(docs) >= 20, f"KB should have at least 20 docs, found {len(docs)}"
+
+
 # ---- Helper ----
 class _DummyPolicy:
     gamma_coldchain = 0.1

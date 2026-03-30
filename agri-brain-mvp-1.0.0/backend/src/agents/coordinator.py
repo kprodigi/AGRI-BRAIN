@@ -93,10 +93,14 @@ class AgentCoordinator:
         self._step_scenario: str = "baseline"
         self._step_role_bias: Optional[np.ndarray] = None
         self._step_override: bool = False
+        self._step_counterfactual_action: int = 0
+        self._step_counterfactual_probs: Optional[np.ndarray] = None
+        self._step_keywords: Dict[str, Any] = {}
         self._last_explanation: Optional[Dict[str, Any]] = None
 
-        # Trace exporter for paper evidence
+        # Trace exporter and protocol recorder for paper evidence
         self._trace_exporter = None
+        self._protocol_recorder = None
 
         if context_enabled:
             self._init_context_infrastructure()
@@ -154,6 +158,13 @@ class AgentCoordinator:
         except ImportError:
             pass
 
+        try:
+            from pirag.mcp.protocol_recorder import ProtocolRecorder
+            if self._mcp_server is not None:
+                self._protocol_recorder = ProtocolRecorder(self._mcp_server, max_records=200)
+        except ImportError:
+            pass
+
     # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------
@@ -175,8 +186,13 @@ class AgentCoordinator:
         self._step_scenario = "baseline"
         self._step_role_bias = None
         self._step_override = False
+        self._step_counterfactual_action = 0
+        self._step_counterfactual_probs = None
+        self._step_keywords = {}
         self._last_explanation = None
 
+        if self._protocol_recorder is not None:
+            self._protocol_recorder.reset()
         if self._trace_exporter is not None:
             self._trace_exporter.reset()
         if self._shared_context is not None:
@@ -306,9 +322,10 @@ class AgentCoordinator:
                 "rho": obs.rho, "y_hat": obs.y_hat, "tau": obs.tau,
             }
 
-            # MCP tool dispatch
+            # MCP tool dispatch (route through protocol for recording)
             mcp_results = dispatch_tools(
                 active.role, obs, self._registry, self._shared_context,
+                mcp_server=self._mcp_server,
             )
 
             # Publish to shared context
@@ -370,6 +387,7 @@ class AgentCoordinator:
                     coop_obs = cooperative.observe(obs.raw, obs.hour)
                     coop_mcp = dispatch_tools(
                         "cooperative", coop_obs, self._registry, self._shared_context,
+                        mcp_server=self._mcp_server,
                     )
                     coop_rag = retrieve_role_context(
                         "cooperative", coop_obs, "", coop_mcp,
@@ -394,6 +412,7 @@ class AgentCoordinator:
             self._step_mcp_results = mcp_results
             self._step_rag_context = rag_context
             self._step_context_modifier = modifier
+            self._step_keywords = rag_context.get("keywords", {})
             self._step_context_features = psi
             self._step_rules_fired = rules_fired
 
@@ -482,11 +501,11 @@ class AgentCoordinator:
         if (self.context_enabled
                 and self._step_context_modifier is not None
                 and self._context_evaluator is not None):
-            # Compute counterfactual action (without modifier)
+            # Compute counterfactual action and probs (without modifier)
             try:
                 from ..models.action_selection import select_action as _sa
                 rng_cf = np.random.default_rng(42)
-                action_without, _ = _sa(
+                action_without, probs_without = _sa(
                     mode="agribrain", rho=obs.rho, inv=obs.inv,
                     y_hat=obs.y_hat, temp=obs.temp, tau=obs.tau,
                     policy=self._step_policy,
@@ -495,6 +514,8 @@ class AgentCoordinator:
                     role_bias=self._step_role_bias,
                     deterministic=True, context_modifier=None,
                 )
+                self._step_counterfactual_action = action_without
+                self._step_counterfactual_probs = probs_without
             except Exception:
                 action_without = action
 
@@ -521,6 +542,7 @@ class AgentCoordinator:
             try:
                 from pirag.explain_decision import explain_decision
                 action_names = ["cold_chain", "local_redistribute", "recovery"]
+                cf_action_name = action_names[self._step_counterfactual_action] if self._step_counterfactual_probs is not None else None
                 self._last_explanation = explain_decision(
                     action=action_names[action],
                     role=agent.role,
@@ -531,9 +553,29 @@ class AgentCoordinator:
                     slca_score=outcome.get("slca", 0.0),
                     carbon_kg=outcome.get("carbon_kg", 0.0),
                     waste=outcome.get("waste", 0.0),
+                    context_features=self._step_context_features,
+                    logit_adjustment=self._step_context_modifier,
+                    action_probs=self._step_probs,
+                    counterfactual_action=cf_action_name,
+                    counterfactual_probs=self._step_counterfactual_probs,
+                    governance_override=self._step_override,
+                    keywords=self._step_keywords,
                 )
             except Exception:
                 self._last_explanation = None
+
+            # Update context cache for MCP resource reads
+            try:
+                from pirag.mcp.tools.context_features import update_context_cache
+                update_context_cache(
+                    features=self._step_context_features,
+                    modifier=self._step_context_modifier,
+                    explanation=self._last_explanation,
+                    hour=hour,
+                    override=self._step_override,
+                )
+            except ImportError:
+                pass
 
             if self._trace_exporter is not None:
                 # Determine if context changed the action
@@ -648,6 +690,11 @@ class AgentCoordinator:
     def trace_exporter(self):
         """Trace exporter for paper evidence (None if not initialized)."""
         return self._trace_exporter
+
+    @property
+    def protocol_recorder(self):
+        """MCP protocol recorder (None if not initialized)."""
+        return self._protocol_recorder
 
     def learner_summary(self) -> Dict[str, Any]:
         """Context learner statistics."""

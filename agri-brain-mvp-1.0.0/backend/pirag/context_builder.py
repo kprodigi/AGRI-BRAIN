@@ -273,4 +273,18 @@ def retrieve_role_context(
     except Exception:
         pass
 
+    # Extract actionable keywords from guidance passages
+    try:
+        from .keyword_extractor import extract_keywords_by_type
+        keywords: Dict[str, Any] = {}
+        for field in ["regulatory_guidance", "sop_guidance", "slca_guidance",
+                      "waste_hierarchy_guidance", "governance_guidance"]:
+            text = context.get(field, "")
+            if text:
+                kw_type = field.replace("_guidance", "")
+                keywords[kw_type] = extract_keywords_by_type(text)
+        context["keywords"] = keywords
+    except ImportError:
+        context["keywords"] = {}
+
     return context

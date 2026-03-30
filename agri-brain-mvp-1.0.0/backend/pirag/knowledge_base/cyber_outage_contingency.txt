@@ -1,0 +1,41 @@
+CYBER AND COMMUNICATIONS OUTAGE CONTINGENCY
+Document ID: KB-COC-010
+Effective Date: 2025-09-01
+Regulatory Basis: NIST Cybersecurity Framework (CSF) v2.0; FSMA Preventive Controls Rule
+
+1. SCOPE AND ACTIVATION
+
+This protocol applies when the central decision engine, sensor telemetry network, or
+blockchain ledger becomes unavailable due to communications failure, cyberattack, or
+infrastructure outage. Activation occurs automatically when the system health monitor
+detects no successful heartbeat response for 3 consecutive polling cycles (default cycle
+interval: 60 seconds, so activation at approximately 3 minutes of sustained failure).
+
+2. FALLBACK OPERATING PROCEDURES
+
+During a communications outage, all field agents and routing operators must fall back
+to cached routing policies. The local policy cache stores the most recent 48 hours of
+validated routing decisions and SLCA parameters. Operators must record all product
+movements, temperature readings, and routing decisions using manual timestamps on
+paper-based Outage Operations Logs (OOL-600).
+
+Within 2 hours of communications restoration, all manual records must be digitized and
+synchronized with the central decision engine. The sync process must reconcile cached
+decisions with any conflicting updates issued during the outage window.
+
+3. BLOCKCHAIN TRANSACTION HANDLING
+
+Blockchain audit transactions that cannot be submitted during the outage must be queued
+locally and batch-submitted upon restoration. Each batched transaction must include the
+original decision timestamp, the outage flag indicator, and a hash linking it to the
+corresponding manual log entry.
+
+4. REQUIRED ACTIONS
+
+Action 1: Conduct a post-outage incident review within 24 hours of restoration per NIST
+CSF Respond (RS) function requirements. Document outage duration, root cause, data gaps,
+and any decisions made under degraded conditions.
+
+Action 2: Verify integrity of all batch-submitted blockchain transactions by comparing
+on-chain records against manual Outage Operations Logs. Flag and investigate any
+discrepancies within 48 hours. Report findings to the cooperative governance board.

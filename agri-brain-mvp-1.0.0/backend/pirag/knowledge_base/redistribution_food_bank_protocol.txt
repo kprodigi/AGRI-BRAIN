@@ -1,0 +1,37 @@
+FOOD BANK REDISTRIBUTION PROTOCOL
+Document ID: KB-RFB-002
+Effective Date: 2025-09-01
+Regulatory Basis: FDA FSMA (21 CFR Parts 112, 117); Feeding America Food Safety Guidelines
+
+1. ELIGIBILITY CRITERIA
+
+Product is eligible for food bank redistribution when the spoilage index rho is below
+0.30. This threshold represents product that remains safe and nutritious for human
+consumption. Products with rho at or above 0.30 must be diverted to alternative recovery
+channels such as animal feed or composting.
+
+Temperature at the point of transfer to the food bank receiving dock must be at or below
+7 degrees Celsius for all refrigerated commodities. Any product arriving above this
+threshold must be rejected and logged as a temperature non-conformance.
+
+2. TRANSPORT CONSTRAINTS
+
+For leafy greens and cut produce, transport from the originating facility to the food
+bank must be completed within 4 hours of initial loading. Refrigerated vehicles must
+maintain continuous temperature logging with readings recorded at minimum 5-minute
+intervals throughout transit.
+
+3. REQUIRED ACTIONS
+
+Action 1: Complete the Redistribution Transfer Form (RTF-200) including lot number,
+commodity description, rho value at time of decision, temperature at loading, estimated
+transit duration, and receiving facility identifier. Both the shipping and receiving
+parties must sign.
+
+Action 2: Conduct a visual and organoleptic inspection at the receiving dock. Record
+results in the Food Bank Intake Log. Reject any units showing visible mold, off-odors,
+or packaging compromise. Notify the originating facility of rejections within 24 hours.
+
+Feeding America member organizations must additionally verify compliance with their
+Product Sourcing and Safety Standards, including traceability documentation linking
+each lot to its origin farm or packing house.

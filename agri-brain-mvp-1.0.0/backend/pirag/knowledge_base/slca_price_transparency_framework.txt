@@ -1,0 +1,40 @@
+SOCIAL LIFE CYCLE ASSESSMENT: PRICE TRANSPARENCY FRAMEWORK
+Document ID: KB-SPT-007
+Effective Date: 2025-09-01
+Regulatory Basis: Fair Trade USA Standards; UNEP-SETAC Social LCA Guidelines
+
+1. TRANSPARENCY SCORES BY PATHWAY
+
+Each routing pathway is assigned a price transparency score reflecting the degree to
+which pricing information is accessible and verifiable by cooperative members and
+external auditors:
+
+  - Cold chain (conventional retail): transparency score 0.45. Pricing is partially
+    opaque due to multi-tier wholesale intermediaries and confidential retailer margins.
+  - Redistribution (food bank/community): transparency score 0.85. Pricing is highly
+    visible because transactions occur at or near cost with documented subsidies and
+    donation valuations.
+  - Recovery (animal feed/composting): transparency score 0.70. Commodity-based pricing
+    with publicly available feed ingredient indices, though processing fees introduce
+    moderate variability.
+
+2. COOPERATIVE AUDIT RIGHTS
+
+All cooperative member organizations retain the right to request a full price
+transparency audit for any routing decision made within the preceding 30 days.
+Audit requests must be acknowledged within 5 business days and completed within
+20 business days of acknowledgment. This provision aligns with Fair Trade criteria
+for producer pricing access and ensures that no member is disadvantaged by opaque
+margin structures.
+
+3. REQUIRED ACTIONS
+
+Action 1: Publish a quarterly Price Transparency Report detailing the average
+transparency score per pathway, the number of transactions per pathway, total revenue
+and cost breakdowns, and any audit findings. Distribute to all cooperative members
+within 30 days of quarter close.
+
+Action 2: Implement automated price transparency score calculation within the routing
+decision engine. The engine must attach the applicable transparency score to each
+routing recommendation and flag any transaction where the effective margin deviates
+more than 15 percent from the pathway benchmark for manual review.

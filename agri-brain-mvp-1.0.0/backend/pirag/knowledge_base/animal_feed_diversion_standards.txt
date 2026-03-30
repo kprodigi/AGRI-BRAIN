@@ -1,0 +1,36 @@
+ANIMAL FEED DIVERSION STANDARDS
+Document ID: KB-AFD-003
+Effective Date: 2025-09-01
+Regulatory Basis: AAFCO Model Regulations; FDA 21 CFR Part 589
+
+1. DIVERSION ELIGIBILITY
+
+Product is eligible for diversion to animal feed when the spoilage index rho falls
+within the range of 0.30 to 0.60. Product below rho 0.30 should be prioritized for
+human consumption or food bank redistribution. Product above rho 0.60 must be routed
+to composting, anaerobic digestion, or landfill disposal channels.
+
+2. MICROBIAL TESTING REQUIREMENTS
+
+When rho exceeds 0.45, a microbial screening panel is required before release to any
+animal feed processor. The panel must include total aerobic plate count, Salmonella spp.,
+and E. coli O157:H7. Testing must be performed by an ISO 17025-accredited laboratory.
+Product may not ship until results confirm compliance with AAFCO microbial limits for
+the target animal species.
+
+3. PROHIBITED CONDITIONS
+
+The following conditions disqualify product from animal feed use regardless of rho value:
+presence of non-food-grade packaging contaminants, chemical adulterants above FDA action
+levels, or visible fungal colonization exceeding 15 percent of surface area.
+
+4. REQUIRED ACTIONS
+
+Action 1: Complete the Animal Feed Diversion Certificate (AFDC-300) documenting commodity
+type, rho at diversion decision, microbial test status (if applicable), and destination
+feed mill or processor. Retain copies for 2 years per AAFCO traceability requirements.
+
+Action 2: Calculate the economic recovery value using the feed value factor of 15 to
+25 percent of retail price, adjusted by commodity type and current feed ingredient market
+rates. Log the recovery value in the financial reconciliation system for SLCA reporting
+and cooperative audit purposes.

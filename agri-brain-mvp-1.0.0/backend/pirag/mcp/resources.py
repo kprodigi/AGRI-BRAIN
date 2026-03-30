@@ -79,3 +79,28 @@ def register_agent_resources(
             description=description,
             read_fn=read_fn,
         ))
+
+    # Context feature and explanation resources
+    try:
+        from .tools.context_features import get_context_cache
+        for uri, name, desc, key in [
+            ("agribrain://context/features",
+             "Context Feature Vector",
+             "Current 5D MCP/piRAG context feature vector",
+             "features"),
+            ("agribrain://context/modifier",
+             "Context Logit Modifier",
+             "Current 3D logit adjustment from MCP/piRAG context",
+             "modifier"),
+            ("agribrain://context/explanation",
+             "Latest Decision Explanation",
+             "Most recent causal decision explanation with provenance",
+             "explanation"),
+        ]:
+            _key = key  # capture for closure
+            server.register_resource(MCPResource(
+                uri=uri, name=name, description=desc,
+                read_fn=lambda _k=_key: get_context_cache().get(_k, {}),
+            ))
+    except ImportError:
+        pass

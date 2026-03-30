@@ -5,12 +5,17 @@ Later steps in a workflow can consume results from earlier steps, enabling
 multi-step composition. The dispatcher also accepts a shared context store
 so agents can reuse results published by upstream agents.
 
+When an ``mcp_server`` is provided, tool invocations are routed through
+the MCP JSON-RPC protocol layer so that the ProtocolRecorder captures
+every interaction as genuine protocol traffic.
+
 Trigger functions receive ``(obs, prior_results, shared_context)`` and
 return True when the tool should be invoked. Argument functions receive
 the same triple and return a kwargs dict for the tool.
 """
 from __future__ import annotations
 
+import json
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ..mcp.registry import ToolRegistry
@@ -170,13 +175,58 @@ ROLE_WORKFLOWS: Dict[str, List[WorkflowStep]] = {
 }
 
 
+def _invoke_via_protocol(
+    server: Any,
+    tool_name: str,
+    kwargs: Dict[str, Any],
+) -> Any:
+    """Invoke a tool through the MCP JSON-RPC protocol layer.
+
+    This ensures the ProtocolRecorder captures the interaction as a
+    genuine ``tools/call`` request/response pair.
+    """
+    from .protocol import MCPMessage
+
+    msg = MCPMessage(
+        id=0,
+        method="tools/call",
+        params={"name": tool_name, "arguments": kwargs},
+    )
+    resp = server.handle_message(msg)
+
+    if resp.error:
+        return None
+
+    # Extract result from MCP response envelope
+    result = resp.result
+    if isinstance(result, dict):
+        content = result.get("content", [])
+        if content and isinstance(content, list) and content[0].get("type") == "text":
+            try:
+                return json.loads(content[0]["text"])
+            except (json.JSONDecodeError, KeyError, TypeError):
+                return content[0].get("text")
+    return result
+
+
 def dispatch_tools(
     role: str,
     obs: Any,
     registry: ToolRegistry,
     shared_context: Any = None,
+    mcp_server: Any = None,
 ) -> Dict[str, Any]:
     """Execute the tool workflow for a given role sequentially.
+
+    Parameters
+    ----------
+    role : agent role name.
+    obs : current Observation.
+    registry : MCP tool registry.
+    shared_context : optional shared context store.
+    mcp_server : optional MCPServer for protocol-level routing.
+        When provided, tool calls go through the JSON-RPC protocol
+        layer so the ProtocolRecorder captures genuine interactions.
 
     Returns a dict mapping tool names to their results, plus metadata keys:
     ``_tools_invoked``, ``_tools_failed``, ``_tools_skipped``.
@@ -204,7 +254,10 @@ def dispatch_tools(
 
         try:
             kwargs = args_fn(obs, results, shared_context)
-            result = registry.invoke(tool_name, **kwargs)
+            if mcp_server is not None:
+                result = _invoke_via_protocol(mcp_server, tool_name, kwargs)
+            else:
+                result = registry.invoke(tool_name, **kwargs)
             results[tool_name] = result
             invoked.append(tool_name)
         except Exception:

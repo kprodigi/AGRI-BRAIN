@@ -1,0 +1,38 @@
+HEATWAVE CONTINGENCY PLAN
+Document ID: KB-HCP-009
+Effective Date: 2025-09-01
+Regulatory Basis: FEMA Heat Emergency Guidelines; OSHA Heat Illness Prevention Standards
+
+1. ACTIVATION CRITERIA
+
+This contingency plan activates when ambient temperature exceeds 35 degrees Celsius
+for 6 or more consecutive hours, as reported by the regional weather monitoring feed
+or on-site environmental sensors. Activation is automatic upon threshold detection and
+remains in effect until ambient temperature drops below 32 degrees Celsius for at least
+2 consecutive hours.
+
+2. OPERATIONAL ADJUSTMENTS
+
+Upon activation, the following modifications to standard routing parameters take effect
+immediately:
+
+  - Maximum cold chain transport distance is reduced from the standard 120 kilometers
+    to 60 kilometers. This reduction limits cumulative thermal exposure and preserves
+    cold chain integrity under degraded refrigeration performance.
+  - The secondary food bank redistribution network is activated, routing eligible product
+    (rho below 0.30) to the nearest qualified food bank within the reduced distance
+    radius rather than holding for long-haul cold chain transport.
+  - Inspection frequency at receiving docks increases from the standard interval of
+    every 4 hours to every 1 hour. Temperature verification, visual quality checks,
+    and packaging integrity assessments must all be performed at the accelerated cadence.
+
+3. REQUIRED ACTIONS
+
+Action 1: Notify all active drivers, warehouse supervisors, and food bank coordinators
+of heatwave contingency activation within 30 minutes of trigger detection. Use the
+automated alert distribution system with confirmation receipt tracking.
+
+Action 2: Increase cold chain monitoring sensor polling frequency from 5-minute intervals
+to 1-minute intervals for the duration of the contingency. Log all readings to the
+real-time telemetry dashboard and flag any excursion above 6 degrees Celsius for
+immediate investigation per the Temperature Excursion Response Protocol (KB-TEX-001).
