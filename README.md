@@ -2,8 +2,9 @@
 
 An adaptive supply-chain intelligence system combining PINN-based spoilage
 prediction, LSTM demand forecasting, Social Life-Cycle Assessment (SLCA),
-multi-agent coordination, and regime-aware contextual policy for sustainable
-food logistics.
+multi-agent coordination, MCP-mediated tool interoperability, physics-informed
+RAG knowledge retrieval, and regime-aware contextual policy with online
+REINFORCE learning for sustainable food logistics.
 
 ## Screenshots
 
@@ -25,14 +26,30 @@ food logistics.
 
 ## Architecture Highlights
 
+- **MCP interoperability layer** with 12 registered tools, 12 resources, and 5 prompts
+  accessible through JSON-RPC 2.0 protocol with InProcess, Stdio, and SSE transports
+- **Physics-informed RAG (piRAG)** with 20-document knowledge base, BM25+TF-IDF hybrid
+  retrieval (k=4, 20% retrieval ratio), physics-aware query expansion, and Arrhenius-based
+  reranking that surfaces different documents under different physical conditions
+- **Causal explanation engine** producing BECAUSE/WITHOUT reasoning with inline [KB:]
+  citations, counterfactual probability comparisons, and Merkle-rooted provenance chains
+- **8 operating modes** for systematic ablation: static, hybrid RL, no PINN, no SLCA,
+  no context, MCP only, piRAG only, and full AGRI-BRAIN
 - **LSTM demand forecaster** (numpy-only, 16 hidden units, truncated BPTT)
   with Holt-Winters fallback controlled by `FORECAST_METHOD` env var
 - **Holt-Winters yield/supply forecaster** for inventory projection
 - **5-agent coordinator** (Farm, Processor, Cooperative, Distributor, Recovery)
   dispatching decisions at lifecycle-stage boundaries
-- **PiRAG pipeline** with TF-IDF ingestion, hybrid BM25+dense retrieval,
-  guard checks, Merkle provenance, and LLM abstraction layer
-- **MCP tool server** exposing compliance, SLCA lookup, and chain query tools
+- **Context feature integration** via 5D feature vector (compliance severity, forecast
+  urgency, retrieval confidence, regulatory pressure, recovery saturation) with learned
+  THETA_CONTEXT weight matrix and SLCA bonus amplification
+- **MCP governance override** that mandates rerouting under simultaneous critical
+  compliance violation and high spoilage forecast
+- **Online REINFORCE learning** of context weights with sign constraints preserving
+  domain-justified directions while adapting magnitudes to scenario conditions
+- **Keyword extraction** from piRAG passages (thresholds, regulatory references,
+  required actions) for human-readable decision evidence
+- **Protocol recording** of genuine MCP JSON-RPC interactions during simulation
 - **Circular economy scoring** for composting, animal feed, food bank pathways
 - **PINN-enhanced Arrhenius spoilage model** with Baranyi lag phase
 - **Softmax contextual policy** with 6-dimensional feature vector
@@ -87,8 +104,8 @@ curl http://localhost:8100/health                # {"ok":true}
 
 ```bash
 cd mvp/simulation
-python generate_results.py    # 5 scenarios x 5 modes
-python generate_figures.py    # Publication figures
+python generate_results.py    # 5 scenarios x 8 modes (40 episodes)
+python generate_figures.py    # 7 publication figures (PNG + PDF)
 ```
 
 ## Environment Variables
@@ -122,8 +139,12 @@ GET  /audit/memo.json        - Decision memo as JSON
 GET  /audit/memo.pdf         - Decision memo as PDF
 POST /results/generate       - Run full simulation, return summary JSON
 GET  /results/figures/{name} - Serve generated figure files
-POST /rag/ask                - Query the PiRAG pipeline
-POST /mcp/call               - Call an MCP tool
+POST /mcp/mcp                - JSON-RPC 2.0 MCP endpoint (tools/call, resources/read, prompts/get)
+GET  /mcp/mcp/resources      - List MCP resources
+GET  /mcp/mcp/prompts        - List MCP prompts
+POST /rag/ask                - Query the piRAG pipeline (physics-informed retrieval)
+POST /rag/ingest             - Ingest documents into the piRAG knowledge base
+POST /mcp/call               - Call an MCP tool (legacy)
 WS   /stream                 - WebSocket real-time decision stream
 ```
 
@@ -144,13 +165,50 @@ AGRI-BRAIN/
         chain/                  # Blockchain integration (Hardhat)
         agents/                 # Multi-agent coordinator (5 roles), runtime, bus
       pirag/                    # PiRAG integration
+        agent_pipeline.py       # Main piRAG pipeline (ingest, retrieve, answer)
+        context_builder.py      # Role-specific query construction with scenario terms
+        context_to_logits.py    # 5D context features + THETA_CONTEXT weight matrix
+        context_learner.py      # Online REINFORCE learning of context weights
+        context_eval.py         # Counterfactual evaluator for context impact
+        context_provider.py     # Unified context provider interface
+        explain_decision.py     # Causal explanation engine (BECAUSE/WITHOUT/citations)
+        keyword_extractor.py    # Extract thresholds, regulations, required actions
+        physics_reranker.py     # Physics-informed document reranking
+        temporal_context.py     # Temporal context window and continuity scoring
+        message_enrichment.py   # Enrich inter-agent messages with piRAG context
+        dynamic_knowledge.py    # Periodic decision history ingestion into KB
+        trace_exporter.py       # Decision trace capture and paper evidence export
         ingestion/              # Document parser, TF-IDF embedder, vector store
         inference/              # LLM abstraction (template + API engines)
-        knowledge_base/         # SOPs, regulatory docs, IoT specs, SLCA guides
-        mcp/                    # MCP tool server (compliance, slca, chain query)
+        knowledge_base/         # 20 domain documents (regulatory, SOP, SLCA, contingency)
+        mcp/                    # MCP implementation
+          protocol.py           # JSON-RPC 2.0 MCPServer with tools/resources/prompts
+          registry.py           # Tool registry with capability-based discovery
+          tool_dispatch.py      # Role-specific tool workflow composition
+          context_sharing.py    # Inter-agent shared context store
+          transport.py          # InProcess, Stdio, SSE transport layers
+          protocol_recorder.py  # Genuine MCP interaction recording
+          agent_capabilities.py # Per-agent capability declarations
+          resources.py          # MCP resource definitions (telemetry, context, quality)
+          prompts.py            # Parameterized query templates with scenario terms
+          server.py             # FastAPI REST wrapper for MCP protocol
+          tools/                # 12 MCP tool implementations
+            compliance.py       # FDA temperature/humidity compliance check
+            slca_lookup.py      # SLCA weight and score lookup
+            chain_query.py      # Blockchain audit trail query
+            spoilage_forecast.py # Arrhenius-Baranyi forward integration
+            footprint_query.py  # Energy and water footprint
+            pirag_query.py      # Physics-informed KB retrieval via MCP
+            explain_tool.py     # Causal explanation generation via MCP
+            context_features.py # Context feature vector readout via MCP
+            calculator.py       # Safe arithmetic evaluation
+            units.py            # Unit conversion
+            simulator.py        # Forward simulation proxy
+            policy_oracle.py    # Governance access check
         pyrag/                  # Hybrid BM25+dense retriever
         guards/                 # Unit and feasibility guards
         provenance/             # Merkle tree + on-chain anchoring
+        tests/                  # 56 tests covering all MCP/piRAG components
     frontend/
       src/
         pages/                  # Ops, Quality, Decisions, Map, Analytics, Admin

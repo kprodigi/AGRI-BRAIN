@@ -14,7 +14,7 @@ class DocIn(BaseModel):
 
 class AskReq(BaseModel):
     question: str
-    k: int = 6
+    k: int = 4
     anchor_on_chain: bool = False
 
 @router.post("/ingest")

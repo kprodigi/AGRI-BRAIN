@@ -88,6 +88,7 @@ fastapi, uvicorn, pydantic, numpy, pandas, matplotlib, reportlab, orjson, reques
 | `ONLINE_LEARNING` | `false` | Enable REINFORCE policy gradient updates |
 | `LLM_PROVIDER` | `template` | RAG answer engine: `template` or `api` |
 | `DATA_CSV` | (auto) | Override path to spinach sensor CSV |
+| `CONTEXT_ENABLED` | `true` | Enable MCP/piRAG context integration in agribrain mode |
 
 ### 2c. Start the backend
 
@@ -252,11 +253,60 @@ curl http://127.0.0.1:8100/audit/memo.pdf -o memo.pdf
 ### Simulation results (via backend)
 
 ```bash
-# Run full simulation (5 scenarios x 5 modes, ~1 min)
+# Run full simulation (5 scenarios x 8 modes, ~1 min)
 curl -X POST http://127.0.0.1:8100/results/generate
 
 # Fetch a generated figure
 curl http://127.0.0.1:8100/results/figures/fig2_heatwave.png -o fig2.png
+```
+
+### MCP Protocol (JSON-RPC 2.0)
+
+```bash
+# Initialize MCP handshake
+curl -X POST http://127.0.0.1:8100/mcp/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","clientInfo":{"name":"test-client","version":"1.0.0"}}}'
+
+# List available tools (12 tools including pirag_query, explain, context_features)
+curl -X POST http://127.0.0.1:8100/mcp/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
+
+# Check compliance via MCP
+curl -X POST http://127.0.0.1:8100/mcp/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"check_compliance","arguments":{"temperature":14.0,"humidity":85.0,"product_type":"spinach"}}}'
+
+# Query the piRAG knowledge base via MCP
+curl -X POST http://127.0.0.1:8100/mcp/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"pirag_query","arguments":{"query":"FDA temperature violation corrective action","k":4,"temperature":14.0,"rho":0.4}}}'
+
+# Get a causal explanation via MCP
+curl -X POST http://127.0.0.1:8100/mcp/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"explain","arguments":{"action":"local_redistribute","role":"farm","rho":0.4,"temperature":14.0,"scenario":"heatwave"}}}'
+
+# List MCP resources (telemetry, quality, context features)
+curl http://127.0.0.1:8100/mcp/mcp/resources
+
+# List MCP prompts (regulatory, SOP, governance query templates)
+curl http://127.0.0.1:8100/mcp/mcp/prompts
+```
+
+### piRAG Knowledge Base
+
+```bash
+# Query the knowledge base directly
+curl -X POST http://127.0.0.1:8100/rag/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question":"FDA cold chain requirements for spinach temperature excursion","k":4}'
+
+# Ingest a custom document
+curl -X POST http://127.0.0.1:8100/rag/ingest \
+  -H "Content-Type: application/json" \
+  -d '[{"id":"custom_doc","text":"Custom regulatory guidance for temperature monitoring...","metadata":{"source":"manual"}}]'
 ```
 
 ### Debug
@@ -299,7 +349,7 @@ done
 
 ## 6. Run standalone simulation and generate figures
 
-The standalone simulation runs all 5 scenarios x 5 modes (50 episodes each)
+The standalone simulation runs all 5 scenarios x 8 modes (40 episodes)
 and produces publication-quality results.
 
 ```bash
@@ -318,15 +368,17 @@ Results are saved to `mvp/simulation/results/`:
 
 | File                   | Description                                       |
 |------------------------|---------------------------------------------------|
-| `table1_summary.csv`   | Per-scenario metrics across all 5 modes           |
-| `table2_ablation.csv`  | Ablation study (agribrain vs no_pinn, no_slca)    |
-| `fig2_heatwave.png`    | Heatwave scenario comparison                      |
-| `fig3_overproduction.png`     | Overproduction (reverse logistics) comparison     |
-| `fig4_cyber.png`       | Cyber outage scenario comparison                  |
-| `fig5_pricing.png`     | Adaptive pricing scenario comparison              |
-| `fig6_cross.png`       | Cross-scenario radar chart                        |
-| `fig7_ablation.png`    | Ablation bar chart                                |
-| `fig8_green_ai.png`       | Green footprint analysis                          |
+| `table1_summary.csv`     | Per-scenario metrics (4 methods x 5 scenarios)              |
+| `table2_ablation.csv`    | Full ablation study (8 modes x 5 scenarios)                 |
+| `traces_*.json`          | Decision traces with keywords, causal reasoning, provenance |
+| `mcp_protocol_*.json`    | Genuine MCP JSON-RPC interaction logs                       |
+| `fig2_heatwave.png/pdf`  | Heatwave scenario comparison (2x2 panel)                    |
+| `fig3_overproduction.png/pdf` | Overproduction scenario comparison (2x2 panel)         |
+| `fig4_cyber.png/pdf`     | Cyber outage scenario comparison (1x3 panel)                |
+| `fig5_pricing.png/pdf`   | Adaptive pricing scenario comparison (2x2 panel)            |
+| `fig6_cross.png/pdf`     | Cross-scenario performance comparison (2x2 grouped bars)    |
+| `fig7_ablation.png/pdf`  | Ablation study (1x3 grouped bars, 8 modes)                  |
+| `fig8_green_ai.png/pdf`  | Green AI and carbon footprint (1x2 panel)                   |
 
 Each figure is also saved as PDF for LaTeX inclusion.
 

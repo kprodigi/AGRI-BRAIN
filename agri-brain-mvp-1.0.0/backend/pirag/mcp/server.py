@@ -17,7 +17,8 @@ from .tools import compliance, slca_lookup, chain_query
 
 router = APIRouter()
 
-# Legacy tool registry (kept for backward-compatible /tools and /call endpoints)
+# Legacy tool registry (kept for backward-compatible /tools and /call endpoints).
+# The full 12-tool registry is available via the JSON-RPC endpoint (POST /mcp).
 TOOLS = {
     "calculator": {"fn": calculator.calculate, "schema": {"expr": "str"}},
     "convert_units": {"fn": units.convert, "schema": {"value": "float", "from_unit": "str", "to_unit": "str"}},
@@ -62,6 +63,30 @@ def _get_mcp_server():
         registry = get_default_registry()
         server = MCPServer(registry=registry)
         register_prompts(server)
+
+        # Register live state resources
+        try:
+            from .resources import register_agent_resources
+
+            def _state_fn():
+                """Return current telemetry (fallback to defaults if backend state unavailable)."""
+                try:
+                    from ...src.routers.state import get_current_state
+                    state = get_current_state()
+                    return {
+                        "temp": state.get("temperature", 4.0),
+                        "rh": state.get("humidity", 92.0),
+                        "inv": state.get("inventory", 10000),
+                        "rho": state.get("spoilage_risk", 0.0),
+                        "y_hat": state.get("demand", 15.0),
+                        "tau": state.get("tau", 0.0),
+                    }
+                except Exception:
+                    return {"temp": 4.0, "rh": 92.0, "inv": 10000, "rho": 0.0, "y_hat": 15.0, "tau": 0.0}
+
+            register_agent_resources(server, _state_fn)
+        except ImportError:
+            pass
 
         _MCP_SERVER = server
     except Exception:

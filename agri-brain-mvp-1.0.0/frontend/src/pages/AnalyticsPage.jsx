@@ -31,6 +31,9 @@ const COLORS = {
   hybrid: "#E67E22",
   noPinn: "#E91E63",
   noSlca: "#7570B3",
+  noContext: "#4CAF50",
+  mcpOnly: "#FF9800",
+  piragOnly: "#2196F3",
 };
 
 const METHOD_COLORS = {
@@ -39,6 +42,9 @@ const METHOD_COLORS = {
   "AGRI-BRAIN": COLORS.agri,
   "No PINN": COLORS.noPinn,
   "No SLCA": COLORS.noSlca,
+  "No Context": COLORS.noContext,
+  "MCP Only": COLORS.mcpOnly,
+  "piRAG Only": COLORS.piragOnly,
 };
 
 // Map raw CSV method/variant names to display names
@@ -48,12 +54,18 @@ const METHOD_DISPLAY = {
   agribrain: "AGRI-BRAIN",
   no_pinn: "No PINN",
   no_slca: "No SLCA",
+  no_context: "No Context",
+  mcp_only: "MCP Only",
+  pirag_only: "piRAG Only",
   // Also handle already-formatted names (no-op)
   "Static": "Static",
   "Hybrid RL": "Hybrid RL",
   "AGRI-BRAIN": "AGRI-BRAIN",
   "No PINN": "No PINN",
   "No SLCA": "No SLCA",
+  "No Context": "No Context",
+  "MCP Only": "MCP Only",
+  "piRAG Only": "piRAG Only",
 };
 const displayMethod = (m) => METHOD_DISPLAY[m] || m;
 
@@ -324,7 +336,7 @@ export default function AnalyticsPage() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-semibold">Cross-Scenario Performance</h3>
-            <p className="text-sm text-muted-foreground italic">Comparison of three methods across five stress scenarios (288 timesteps each).</p>
+            <p className="text-sm text-muted-foreground italic">Comparison of eight ablation variants across five stress scenarios (288 timesteps each). Context ablation modes share the same RNG seed to isolate MCP/piRAG contribution.</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => exportTableCSV(table1, "table1_summary.csv")}>
