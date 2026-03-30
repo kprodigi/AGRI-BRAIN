@@ -1,0 +1,292 @@
+[
+  {
+    "hour": 0.0,
+    "role": "farm",
+    "mcp_interactions": [
+      {
+        "request": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "method": "initialize",
+          "params": {
+            "protocolVersion": "2024-11-05",
+            "clientInfo": {
+              "name": "agribrain-farm",
+              "version": "1.0.0"
+            }
+          }
+        },
+        "response": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "result": {
+            "capabilities": {
+              "tools": {},
+              "resources": {},
+              "prompts": {}
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "jsonrpc": "2.0",
+          "id": 2,
+          "method": "tools/call",
+          "params": {
+            "name": "check_compliance",
+            "arguments": {
+              "temperature": 4.0,
+              "humidity": 92.2
+            }
+          }
+        },
+        "response_summary": "compliant=True, violations=0"
+      },
+      {
+        "request": {
+          "jsonrpc": "2.0",
+          "id": 4,
+          "method": "resources/read",
+          "params": {
+            "uri": "agribrain://quality/spoilage_risk"
+          }
+        },
+        "response_summary": "rho=0.0"
+      }
+    ],
+    "total_protocol_messages": 6
+  },
+  {
+    "hour": 0.25,
+    "role": "farm",
+    "mcp_interactions": [
+      {
+        "request": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "method": "initialize",
+          "params": {
+            "protocolVersion": "2024-11-05",
+            "clientInfo": {
+              "name": "agribrain-farm",
+              "version": "1.0.0"
+            }
+          }
+        },
+        "response": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "result": {
+            "capabilities": {
+              "tools": {},
+              "resources": {},
+              "prompts": {}
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "jsonrpc": "2.0",
+          "id": 2,
+          "method": "tools/call",
+          "params": {
+            "name": "check_compliance",
+            "arguments": {
+              "temperature": 3.95,
+              "humidity": 91.5
+            }
+          }
+        },
+        "response_summary": "compliant=True, violations=0"
+      },
+      {
+        "request": {
+          "jsonrpc": "2.0",
+          "id": 4,
+          "method": "resources/read",
+          "params": {
+            "uri": "agribrain://quality/spoilage_risk"
+          }
+        },
+        "response_summary": "rho=6.637857325242358e-06"
+      }
+    ],
+    "total_protocol_messages": 6
+  },
+  {
+    "hour": 0.5,
+    "role": "farm",
+    "mcp_interactions": [
+      {
+        "request": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "method": "initialize",
+          "params": {
+            "protocolVersion": "2024-11-05",
+            "clientInfo": {
+              "name": "agribrain-farm",
+              "version": "1.0.0"
+            }
+          }
+        },
+        "response": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "result": {
+            "capabilities": {
+              "tools": {},
+              "resources": {},
+              "prompts": {}
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "jsonrpc": "2.0",
+          "id": 2,
+          "method": "tools/call",
+          "params": {
+            "name": "check_compliance",
+            "arguments": {
+              "temperature": 7.18,
+              "humidity": 90.2
+            }
+          }
+        },
+        "response_summary": "compliant=False, violations=1"
+      },
+      {
+        "request": {
+          "jsonrpc": "2.0",
+          "id": 4,
+          "method": "resources/read",
+          "params": {
+            "uri": "agribrain://quality/spoilage_risk"
+          }
+        },
+        "response_summary": "rho=2.9594939914723284e-05"
+      }
+    ],
+    "total_protocol_messages": 6
+  },
+  {
+    "hour": 0.75,
+    "role": "farm",
+    "mcp_interactions": [
+      {
+        "request": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "method": "initialize",
+          "params": {
+            "protocolVersion": "2024-11-05",
+            "clientInfo": {
+              "name": "agribrain-farm",
+              "version": "1.0.0"
+            }
+          }
+        },
+        "response": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "result": {
+            "capabilities": {
+              "tools": {},
+              "resources": {},
+              "prompts": {}
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "jsonrpc": "2.0",
+          "id": 2,
+          "method": "tools/call",
+          "params": {
+            "name": "check_compliance",
+            "arguments": {
+              "temperature": 6.87,
+              "humidity": 89.6
+            }
+          }
+        },
+        "response_summary": "compliant=False, violations=1"
+      },
+      {
+        "request": {
+          "jsonrpc": "2.0",
+          "id": 4,
+          "method": "resources/read",
+          "params": {
+            "uri": "agribrain://quality/spoilage_risk"
+          }
+        },
+        "response_summary": "rho=7.306419542951748e-05"
+      }
+    ],
+    "total_protocol_messages": 6
+  },
+  {
+    "hour": 1.0,
+    "role": "farm",
+    "mcp_interactions": [
+      {
+        "request": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "method": "initialize",
+          "params": {
+            "protocolVersion": "2024-11-05",
+            "clientInfo": {
+              "name": "agribrain-farm",
+              "version": "1.0.0"
+            }
+          }
+        },
+        "response": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "result": {
+            "capabilities": {
+              "tools": {},
+              "resources": {},
+              "prompts": {}
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "jsonrpc": "2.0",
+          "id": 2,
+          "method": "tools/call",
+          "params": {
+            "name": "check_compliance",
+            "arguments": {
+              "temperature": 7.48,
+              "humidity": 89.2
+            }
+          }
+        },
+        "response_summary": "compliant=False, violations=1"
+      },
+      {
+        "request": {
+          "jsonrpc": "2.0",
+          "id": 4,
+          "method": "resources/read",
+          "params": {
+            "uri": "agribrain://quality/spoilage_risk"
+          }
+        },
+        "response_summary": "rho=0.0001335932427285469"
+      }
+    ],
+    "total_protocol_messages": 6
+  }
+]

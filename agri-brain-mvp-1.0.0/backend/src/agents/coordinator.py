@@ -93,6 +93,10 @@ class AgentCoordinator:
         self._step_scenario: str = "baseline"
         self._step_role_bias: Optional[np.ndarray] = None
         self._step_override: bool = False
+        self._last_explanation: Optional[Dict[str, Any]] = None
+
+        # Trace exporter for paper evidence
+        self._trace_exporter = None
 
         if context_enabled:
             self._init_context_infrastructure()
@@ -144,6 +148,12 @@ class AgentCoordinator:
         except ImportError:
             pass
 
+        try:
+            from pirag.trace_exporter import TraceExporter
+            self._trace_exporter = TraceExporter(max_traces=50)
+        except ImportError:
+            pass
+
     # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------
@@ -165,7 +175,10 @@ class AgentCoordinator:
         self._step_scenario = "baseline"
         self._step_role_bias = None
         self._step_override = False
+        self._last_explanation = None
 
+        if self._trace_exporter is not None:
+            self._trace_exporter.reset()
         if self._shared_context is not None:
             self._shared_context.reset()
         if self._temporal_window is not None:
@@ -503,6 +516,48 @@ class AgentCoordinator:
                     slca_score=outcome.get("slca", 0.0),
                 )
 
+        # Generate structured explanation and capture trace
+        if self.context_enabled and self._step_mcp_results:
+            try:
+                from pirag.explain_decision import explain_decision
+                action_names = ["cold_chain", "local_redistribute", "recovery"]
+                self._last_explanation = explain_decision(
+                    action=action_names[action],
+                    role=agent.role,
+                    hour=hour,
+                    obs=obs,
+                    mcp_results=self._step_mcp_results,
+                    rag_context=self._step_rag_context,
+                    slca_score=outcome.get("slca", 0.0),
+                    carbon_kg=outcome.get("carbon_kg", 0.0),
+                    waste=outcome.get("waste", 0.0),
+                )
+            except Exception:
+                self._last_explanation = None
+
+            if self._trace_exporter is not None:
+                # Determine if context changed the action
+                action_without = action
+                if (self._context_evaluator is not None
+                        and self._context_evaluator._records):
+                    last_eval = self._context_evaluator._records[-1]
+                    action_without = last_eval.get("action_without", action)
+
+                self._trace_exporter.capture(
+                    obs=obs,
+                    scenario=self._step_scenario,
+                    action=action_names[action],
+                    probs=self._step_probs,
+                    mcp_results=self._step_mcp_results,
+                    rag_context=self._step_rag_context,
+                    context_features=self._step_context_features,
+                    logit_adjustment=self._step_context_modifier,
+                    explanation=self._last_explanation,
+                    role=agent.role,
+                    action_changed=(action != action_without),
+                    governance_override=self._step_override,
+                )
+
         # Decision history for dynamic knowledge ingestion
         if self.context_enabled:
             self._decision_history.append({
@@ -588,6 +643,11 @@ class AgentCoordinator:
             "governance_overrides": sum(1 for e in self._context_log if e.get("governance_override")),
             "per_role": per_role,
         }
+
+    @property
+    def trace_exporter(self):
+        """Trace exporter for paper evidence (None if not initialized)."""
+        return self._trace_exporter
 
     def learner_summary(self) -> Dict[str, Any]:
         """Context learner statistics."""

@@ -48,6 +48,7 @@ _BACKEND_SRC = Path(__file__).resolve().parent.parent.parent / "agri-brain-mvp-1
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 
+import json
 import os
 import numpy as np
 import pandas as pd
@@ -361,6 +362,11 @@ def run_episode(
         result["learner_summary"] = coordinator.learner_summary()
         result["evaluator_summary"] = coordinator.evaluator_summary()
 
+        # Trace export for paper evidence
+        if coordinator.trace_exporter is not None:
+            result["trace_summary"] = coordinator.trace_exporter.summary()
+            result["_trace_exporter"] = coordinator.trace_exporter
+
     return result
 
 
@@ -414,6 +420,37 @@ def run_all(seed: int = SEED) -> dict:
                               f"(delta=[{', '.join(f'{d:+.3f}' for d in delta)}])")
                     print(f"    SLCA amp: {lrn['initial_slca_amp']:.3f} -> {lrn['final_slca_amp']:.3f}  "
                           f"Signs preserved: {lrn['sign_preserved']}")
+
+            # Export traces for agribrain mode
+            if mode == "agribrain" and "_trace_exporter" in episode:
+                exporter = episode["_trace_exporter"]
+                RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+                trace_path = RESULTS_DIR / f"traces_{scenario}.json"
+                exporter.export_json(str(trace_path))
+
+                role_table = exporter.export_role_comparison_table()
+                if role_table:
+                    print(f"    Role context comparison:")
+                    for row in role_table:
+                        print(f"      {row['role']:12s}: MCP={row['mcp_tools']}, "
+                              f"KB={row['primary_kb_document']}, "
+                              f"guidance={row['primary_guidance_type']}")
+
+                chains = exporter.export_provenance_chains()
+                print(f"    Provenance: {len(chains)} verifiable chains")
+
+                if exporter._traces:
+                    sample = exporter._traces[0]
+                    if sample.explanation_summary:
+                        print(f"    Sample explanation (hour {sample.hour}, {sample.role}):")
+                        print(f"      {sample.explanation_summary[:120]}")
+
+                # Save interoperability traces
+                interop = exporter.export_interoperability_trace()
+                if interop:
+                    interop_path = RESULTS_DIR / f"mcp_interop_{scenario}.json"
+                    with open(interop_path, "w") as f:
+                        json.dump(interop, f, indent=2, default=str)
 
     table1_methods = ["static", "hybrid_rl", "agribrain"]
     table1_rows = []

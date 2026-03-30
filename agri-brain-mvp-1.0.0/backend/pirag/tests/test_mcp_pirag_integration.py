@@ -597,6 +597,147 @@ def test_governance_override():
         assert action_idx in [0, 1, 2], "Action should be valid"
 
 
+# ---- Test 28: TraceExporter captures step data ----
+def test_trace_exporter_captures():
+    """Verify trace exporter captures and exports decision traces."""
+    from pirag.trace_exporter import TraceExporter
+
+    exporter = TraceExporter(max_traces=10)
+    obs = _Obs(rho=0.30, temp=10.0, rh=88.0, hour=5.0, surplus_ratio=0.1)
+
+    mcp = {
+        "_tools_invoked": ["check_compliance", "spoilage_forecast"],
+        "check_compliance": {"compliant": False, "violations": [{"severity": "critical", "parameter": "temp", "value": 10.0, "limit": 5.0}]},
+        "spoilage_forecast": {"current_rho": 0.30, "forecast_rho": 0.35, "hours_ahead": 6, "urgency": "high"},
+    }
+    rag = {
+        "guards_passed": True,
+        "top_citation_score": 0.65,
+        "top_doc_id": "regulatory_fda_leafy_greens",
+        "query": "farm compliance spinach cold chain",
+        "regulatory_guidance": "Fresh leafy greens must be stored below 5C.",
+        "citations": [],
+    }
+
+    exporter.capture(
+        obs=obs, scenario="heatwave", action="local_redistribute",
+        probs=np.array([0.05, 0.90, 0.05]),
+        mcp_results=mcp, rag_context=rag,
+        context_features=np.array([1.0, 0.7, 0.81, 1.0, 0.0]),
+        logit_adjustment=np.array([-0.80, 0.50, 0.30]),
+        explanation={"summary": "Farm agent rerouted due to compliance violation.", "evidence_hashes": ["abc123", "def456"]},
+        role="farm",
+        action_changed=True,
+    )
+
+    assert len(exporter._traces) == 1
+    t = exporter._traces[0]
+    assert t.role == "farm"
+    assert t.action == "local_redistribute"
+    assert t.compliance_result is not None
+    assert not t.compliance_result["compliant"]
+    assert t.pirag_top_doc == "regulatory_fda_leafy_greens"
+    assert len(t.context_features) == 5
+    assert t.explanation_summary != ""
+
+    summary = exporter.summary()
+    assert summary["total_traces"] == 1
+    assert "farm" in summary["roles_captured"]
+
+
+# ---- Test 29: explain_decision produces structured output ----
+def test_explain_decision_output():
+    """Verify explain_decision returns complete structured explanation."""
+    from pirag.explain_decision import explain_decision
+
+    obs = _Obs(rho=0.35, temp=12.0, rh=85.0, hour=10.0, surplus_ratio=0.2, inv=14000.0)
+
+    mcp = {
+        "_tools_invoked": ["check_compliance"],
+        "check_compliance": {"compliant": False, "violations": [{"severity": "critical"}]},
+    }
+    rag = {
+        "guards_passed": True,
+        "top_citation_score": 0.6,
+        "regulatory_guidance": "Temperature must not exceed 5C for leafy greens.",
+        "citations": [],
+        "evidence_hashes": [],
+    }
+
+    result = explain_decision(
+        action="local_redistribute", role="distributor", hour=10.0, obs=obs,
+        mcp_results=mcp, rag_context=rag, slca_score=0.78, carbon_kg=3.5, waste=0.02,
+    )
+
+    assert "summary" in result
+    assert "full_explanation" in result
+    assert "evidence_hashes" in result
+    assert "tools_invoked" in result
+    assert "non-compliant" in result["mcp_evidence"]
+    assert result["provenance_ready"] is True or len(result["evidence_hashes"]) > 0
+
+
+# ---- Test 30: Role comparison table from traces ----
+def test_role_comparison_table():
+    """Verify role comparison table aggregates per-role data."""
+    from pirag.trace_exporter import TraceExporter
+
+    exporter = TraceExporter(max_traces=20)
+
+    for role, hour in [("farm", 2.0), ("processor", 8.0), ("distributor", 20.0)]:
+        obs = _Obs(rho=0.25, temp=8.0, rh=90.0, hour=hour)
+        exporter.capture(
+            obs=obs, scenario="baseline", action="local_redistribute",
+            probs=np.array([0.1, 0.8, 0.1]),
+            mcp_results={"_tools_invoked": ["check_compliance"], "check_compliance": {"compliant": True}},
+            rag_context={"top_doc_id": f"doc_{role}", "top_citation_score": 0.5, "guards_passed": True},
+            context_features=np.array([0.0, 0.0, 0.62, 0.0, 0.0]),
+            logit_adjustment=np.array([-0.1, 0.2, -0.1]),
+            explanation=None, role=role,
+        )
+
+    table = exporter.export_role_comparison_table()
+    assert len(table) == 3
+    roles_in_table = {r["role"] for r in table}
+    assert roles_in_table == {"farm", "processor", "distributor"}
+
+
+# ---- Test 31: Interoperability trace has JSON-RPC structure ----
+def test_interoperability_trace_format():
+    """Verify MCP trace has valid JSON-RPC structure."""
+    from pirag.trace_exporter import TraceExporter
+
+    exporter = TraceExporter(max_traces=5)
+    obs = _Obs(rho=0.30, temp=10.0, rh=88.0, hour=5.0)
+
+    exporter.capture(
+        obs=obs, scenario="heatwave", action="local_redistribute",
+        probs=np.array([0.1, 0.8, 0.1]),
+        mcp_results={
+            "_tools_invoked": ["check_compliance"],
+            "check_compliance": {"compliant": False, "violations": [{"severity": "warning"}]},
+            "spoilage_forecast": {"current_rho": 0.3, "forecast_rho": 0.35, "urgency": "high"},
+        },
+        rag_context={"top_doc_id": "doc1", "top_citation_score": 0.5, "guards_passed": True},
+        context_features=np.array([0.5, 0.7, 0.6, 0.0, 0.0]),
+        logit_adjustment=np.array([-0.5, 0.3, 0.2]),
+        explanation=None, role="farm",
+    )
+
+    interop = exporter.export_interoperability_trace()
+    assert len(interop) == 1
+    entry = interop[0]
+    assert entry["role"] == "farm"
+    assert entry["total_protocol_messages"] > 0
+
+    # Check JSON-RPC structure
+    for msg in entry["mcp_interactions"]:
+        req = msg["request"]
+        assert req["jsonrpc"] == "2.0"
+        assert "method" in req
+        assert "id" in req
+
+
 # ---- Helper ----
 class _DummyPolicy:
     gamma_coldchain = 0.1
