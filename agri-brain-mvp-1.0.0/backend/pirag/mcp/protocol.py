@@ -185,11 +185,17 @@ class MCPServer:
     def _handle_tools_list(self, msg: MCPMessage) -> MCPMessage:
         tools = []
         for spec in self._registry._tools.values():
+            properties: Dict[str, Any] = {}
+            for param_name, param_def in spec.schema.items():
+                if isinstance(param_def, dict):
+                    # New format: {"type": ..., "description": ...}
+                    properties[param_name] = param_def
+                else:
+                    # Legacy format: bare type string
+                    properties[param_name] = {"type": param_def}
             input_schema: Dict[str, Any] = {
                 "type": "object",
-                "properties": {
-                    k: {"type": v} for k, v in spec.schema.items()
-                },
+                "properties": properties,
             }
             tools.append({
                 "name": spec.name,

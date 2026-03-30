@@ -2,39 +2,78 @@
 
 Exposes parameterized query templates as MCP prompts. Each prompt
 generates a role-relevant piRAG query string that can be used for
-knowledge base retrieval.
+knowledge base retrieval.  When a non-baseline ``scenario`` is passed,
+scenario-specific search terms are appended so that BM25 retrieval
+surfaces the corresponding KB documents (e.g. heatwave_contingency_plan
+for heatwave, cyber_outage_contingency for cyber_outage).
 """
 from __future__ import annotations
 
+from typing import Dict
+
 from .protocol import MCPPrompt, MCPServer
+
+
+# Scenario-specific terms that match content in KB documents.
+# Each value contains terms that appear in the corresponding document(s)
+# so BM25/TF-IDF retrieval can discriminate between scenarios.
+SCENARIO_SEARCH_TERMS: Dict[str, str] = {
+    "heatwave": (
+        "heatwave contingency ambient temperature exceedance thermal stress "
+        "cooling capacity reduced transport distance"
+    ),
+    "cyber_outage": (
+        "communications outage fallback cached routing manual override "
+        "offline decision-making reconnection synchronization"
+    ),
+    "overproduction": (
+        "demand volatility surplus redistribution excess inventory "
+        "food bank diversion Bollinger band threshold"
+    ),
+    "adaptive_pricing": (
+        "price transparency cooperative pricing demand surge demand trough "
+        "volatile market pricing audit"
+    ),
+    "baseline": "",
+}
+
+
+def _scenario_suffix(scenario: str) -> str:
+    """Return scenario-specific search terms to append to a query."""
+    terms = SCENARIO_SEARCH_TERMS.get(scenario, "")
+    return f" {terms}" if terms else ""
 
 
 def _regulatory_compliance_template(
     product_type: str = "spinach",
     temperature: str = "4.0",
     humidity: str = "90.0",
+    scenario: str = "baseline",
 ) -> str:
     """Generate a regulatory compliance query."""
-    return (
+    base = (
         f"FDA cold chain compliance requirements for {product_type} "
         f"at {temperature} degrees Celsius and {humidity} percent relative humidity. "
         f"Include FSMA Produce Safety Rule thresholds, traceability requirements, "
         f"and corrective action procedures for temperature excursions."
     )
+    return base + _scenario_suffix(scenario)
 
 
 def _waste_hierarchy_template(
     spoilage_risk: str = "0.30",
     product_type: str = "spinach",
     hours_remaining: str = "12",
+    scenario: str = "baseline",
 ) -> str:
     """Generate a waste hierarchy assessment query."""
-    return (
+    base = (
         f"Food waste hierarchy assessment for {product_type} with spoilage risk {spoilage_risk} "
         f"and {hours_remaining} hours remaining shelf life. "
         f"Evaluate redistribution to food banks, animal feed diversion, composting, "
         f"and anaerobic digestion pathways per EU Waste Framework Directive 2008/98/EC."
     )
+    return base + _scenario_suffix(scenario)
 
 
 def _emergency_rerouting_template(
@@ -43,43 +82,54 @@ def _emergency_rerouting_template(
     urgency: str = "high",
 ) -> str:
     """Generate an emergency rerouting query."""
-    return (
+    base = (
         f"Emergency rerouting standard operating procedure under {scenario} conditions. "
         f"Current routing action is {current_action} with {urgency} urgency. "
         f"Include notification chain requirements, transport time adjustments, "
         f"and fallback procedures for degraded connectivity."
     )
+    return base + _scenario_suffix(scenario)
 
 
 def _slca_routing_template(
     action: str = "local_redistribute",
     surplus_ratio: str = "0.5",
     product_type: str = "spinach",
+    scenario: str = "baseline",
 ) -> str:
     """Generate an SLCA routing guidance query."""
-    return (
+    base = (
         f"SLCA scoring methodology for {action} routing of {product_type} "
         f"with surplus ratio {surplus_ratio}. "
         f"Evaluate labour fairness, community resilience, price transparency, "
         f"and carbon footprint impact of the proposed routing decision."
     )
+    return base + _scenario_suffix(scenario)
 
 
 def _governance_policy_template(
     decision_type: str = "rerouting",
     agent_role: str = "cooperative",
+    scenario: str = "baseline",
 ) -> str:
     """Generate a governance policy lookup query."""
-    return (
+    base = (
         f"Cooperative governance policy for {decision_type} decisions "
         f"by {agent_role} agent. Include quorum thresholds, voting periods, "
         f"SLCA reward and slashing criteria, and parameter bounds for "
         f"autonomous decision-making authority."
     )
+    return base + _scenario_suffix(scenario)
 
 
 def register_prompts(server: MCPServer) -> None:
     """Register all piRAG prompt templates on the MCP server."""
+    _scenario_arg = {
+        "name": "scenario",
+        "description": "Current scenario (baseline, heatwave, cyber_outage, overproduction, adaptive_pricing)",
+        "required": "false",
+    }
+
     server.register_prompt(MCPPrompt(
         name="regulatory_compliance_check",
         description="Generate a regulatory compliance query for FDA cold chain requirements",
@@ -87,6 +137,7 @@ def register_prompts(server: MCPServer) -> None:
             {"name": "product_type", "description": "Produce type (e.g. spinach)", "required": "false"},
             {"name": "temperature", "description": "Current temperature in Celsius", "required": "false"},
             {"name": "humidity", "description": "Current relative humidity in percent", "required": "false"},
+            _scenario_arg,
         ],
         template_fn=_regulatory_compliance_template,
     ))
@@ -98,6 +149,7 @@ def register_prompts(server: MCPServer) -> None:
             {"name": "spoilage_risk", "description": "Current spoilage risk (0-1)", "required": "false"},
             {"name": "product_type", "description": "Produce type", "required": "false"},
             {"name": "hours_remaining", "description": "Remaining shelf life hours", "required": "false"},
+            _scenario_arg,
         ],
         template_fn=_waste_hierarchy_template,
     ))
@@ -120,6 +172,7 @@ def register_prompts(server: MCPServer) -> None:
             {"name": "action", "description": "Proposed routing action", "required": "false"},
             {"name": "surplus_ratio", "description": "Current surplus ratio", "required": "false"},
             {"name": "product_type", "description": "Produce type", "required": "false"},
+            _scenario_arg,
         ],
         template_fn=_slca_routing_template,
     ))
@@ -130,6 +183,7 @@ def register_prompts(server: MCPServer) -> None:
         arguments=[
             {"name": "decision_type", "description": "Type of decision requiring governance", "required": "false"},
             {"name": "agent_role", "description": "Role of the requesting agent", "required": "false"},
+            _scenario_arg,
         ],
         template_fn=_governance_policy_template,
     ))

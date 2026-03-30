@@ -34,7 +34,7 @@ class ToolSpec:
     description: str
     capabilities: List[str]
     fn: Callable[..., Any]
-    schema: Dict[str, str]
+    schema: Dict[str, Any]  # param_name -> {"type": ..., "description": ...} or legacy "type_str"
     cacheable: bool = False
     cache_key_params: List[str] = field(default_factory=list)
 
@@ -124,7 +124,11 @@ def get_default_registry() -> ToolRegistry:
         description="Check FDA temperature and humidity compliance for produce",
         capabilities=["regulatory", "temperature", "quality"],
         fn=check_compliance,
-        schema={"temperature": "float", "humidity": "float", "product_type": "str"},
+        schema={
+            "temperature": {"type": "number", "description": "Current product temperature in degrees Celsius"},
+            "humidity": {"type": "number", "description": "Relative humidity as a percentage (0-100)"},
+            "product_type": {"type": "string", "description": "Produce type (e.g., spinach, lettuce, romaine)"},
+        },
         cacheable=False,
     ))
     registry.register(ToolSpec(
@@ -132,7 +136,9 @@ def get_default_registry() -> ToolRegistry:
         description="Look up SLCA weights and base scores by product type",
         capabilities=["social", "scoring", "routing"],
         fn=lookup_slca_weights,
-        schema={"product_type": "str"},
+        schema={
+            "product_type": {"type": "string", "description": "Produce type for SLCA scoring lookup"},
+        },
         cacheable=True,
         cache_key_params=["product_type"],
     ))
@@ -141,7 +147,9 @@ def get_default_registry() -> ToolRegistry:
         description="Query recent routing decisions from blockchain audit trail",
         capabilities=["blockchain", "audit", "history"],
         fn=query_recent_decisions,
-        schema={"n": "int"},
+        schema={
+            "n": {"type": "integer", "description": "Number of recent decisions to retrieve (default: 10)"},
+        },
         cacheable=False,
     ))
     registry.register(ToolSpec(
@@ -149,7 +157,10 @@ def get_default_registry() -> ToolRegistry:
         description="Check governance policy access for a user and tool",
         capabilities=["governance", "access", "policy"],
         fn=check_access,
-        schema={"user_id": "str", "tool_name": "str"},
+        schema={
+            "user_id": {"type": "string", "description": "Agent or user identifier requesting access"},
+            "tool_name": {"type": "string", "description": "Name of the tool to check access for"},
+        },
         cacheable=True,
         cache_key_params=["user_id", "tool_name"],
     ))
@@ -158,7 +169,9 @@ def get_default_registry() -> ToolRegistry:
         description="Evaluate a safe arithmetic expression",
         capabilities=["math", "estimation"],
         fn=calculate,
-        schema={"expr": "str"},
+        schema={
+            "expr": {"type": "string", "description": "Safe arithmetic expression to evaluate (e.g., '2.5 * 3.14')"},
+        },
         cacheable=False,
     ))
     registry.register(ToolSpec(
@@ -166,7 +179,11 @@ def get_default_registry() -> ToolRegistry:
         description="Convert a numeric value between measurement units",
         capabilities=["units", "conversion"],
         fn=convert,
-        schema={"value": "float", "from_unit": "str", "to_unit": "str"},
+        schema={
+            "value": {"type": "number", "description": "Numeric value to convert"},
+            "from_unit": {"type": "string", "description": "Source unit (e.g., kg, lb, celsius, fahrenheit)"},
+            "to_unit": {"type": "string", "description": "Target unit to convert into"},
+        },
         cacheable=True,
         cache_key_params=["value", "from_unit", "to_unit"],
     ))
@@ -175,11 +192,14 @@ def get_default_registry() -> ToolRegistry:
         description="Run a forward simulation via the simulation API",
         capabilities=["simulation", "forecast"],
         fn=simulate,
-        schema={"endpoint": "str", "payload": "dict"},
+        schema={
+            "endpoint": {"type": "string", "description": "Simulation API endpoint path"},
+            "payload": {"type": "object", "description": "JSON payload with simulation parameters"},
+        },
         cacheable=False,
     ))
 
-    # New tools (Tasks 3–4) — registered if importable
+    # New tools (Tasks 3-4) — registered if importable
     try:
         from .tools.spoilage_forecast import forecast_spoilage
         registry.register(ToolSpec(
@@ -187,7 +207,12 @@ def get_default_registry() -> ToolRegistry:
             description="Integrate Arrhenius-Baranyi ODE forward for spoilage prediction",
             capabilities=["spoilage", "forecast", "physics"],
             fn=forecast_spoilage,
-            schema={"current_rho": "float", "temperature": "float", "humidity": "float", "hours_ahead": "int"},
+            schema={
+                "current_rho": {"type": "number", "description": "Current spoilage risk (0.0 = fresh, 1.0 = fully spoiled)"},
+                "temperature": {"type": "number", "description": "Current product temperature in degrees Celsius"},
+                "humidity": {"type": "number", "description": "Relative humidity as a percentage (0-100)"},
+                "hours_ahead": {"type": "integer", "description": "Hours to forecast ahead (default: 6)"},
+            },
             cacheable=False,
         ))
     except ImportError:
@@ -200,7 +225,11 @@ def get_default_registry() -> ToolRegistry:
             description="Return cumulative and per-step energy and water footprint",
             capabilities=["footprint", "green_ai", "monitoring"],
             fn=query_footprint,
-            schema={"steps_completed": "int", "energy_per_step_j": "float", "water_per_step_l": "float"},
+            schema={
+                "steps_completed": {"type": "integer", "description": "Number of simulation steps completed"},
+                "energy_per_step_j": {"type": "number", "description": "Energy consumption per step in joules"},
+                "water_per_step_l": {"type": "number", "description": "Water consumption per step in litres"},
+            },
             cacheable=False,
         ))
     except ImportError:
@@ -214,8 +243,14 @@ def get_default_registry() -> ToolRegistry:
             description="Query the piRAG knowledge base with physics-informed retrieval",
             capabilities=["retrieval", "knowledge", "pirag", "regulatory"],
             fn=pirag_query,
-            schema={"query": "str", "k": "int", "role": "str", "temperature": "float",
-                     "rho": "float", "humidity": "float"},
+            schema={
+                "query": {"type": "string", "description": "Natural language search query for the knowledge base"},
+                "k": {"type": "integer", "description": "Number of documents to retrieve (default: 4, max: 10)"},
+                "role": {"type": "string", "description": "Agent role for query context (farm, processor, distributor, recovery)"},
+                "temperature": {"type": "number", "description": "Current temperature in Celsius for physics-informed expansion"},
+                "rho": {"type": "number", "description": "Current spoilage risk (0-1) for physics-informed expansion"},
+                "humidity": {"type": "number", "description": "Relative humidity for physics-informed reranking"},
+            },
             cacheable=False,
         ))
     except ImportError:
@@ -228,8 +263,14 @@ def get_default_registry() -> ToolRegistry:
             description="Generate a causal explanation for a routing decision with provenance",
             capabilities=["explanation", "explainability", "audit"],
             fn=explain,
-            schema={"action": "str", "role": "str", "hour": "float", "rho": "float",
-                     "temperature": "float", "scenario": "str"},
+            schema={
+                "action": {"type": "string", "description": "Routing action (cold_chain, local_redistribute, recovery)"},
+                "role": {"type": "string", "description": "Agent role making the decision"},
+                "hour": {"type": "number", "description": "Simulation hour of the decision"},
+                "rho": {"type": "number", "description": "Current spoilage risk (0-1)"},
+                "temperature": {"type": "number", "description": "Current product temperature in Celsius"},
+                "scenario": {"type": "string", "description": "Scenario (baseline, heatwave, cyber_outage, overproduction, adaptive_pricing)"},
+            },
             cacheable=False,
         ))
     except ImportError:

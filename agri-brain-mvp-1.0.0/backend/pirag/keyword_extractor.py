@@ -75,12 +75,21 @@ def extract_keywords(passage: str) -> List[str]:
             if cleaned and cleaned not in keywords:
                 keywords.append(cleaned)
 
-    # 6. Required actions ("must", "shall", "requires")
+    # 6. Required actions ("must", "shall", "requires", "prohibited")
     for m in re.finditer(
-        r'(?:must|shall|should|requires?)\s+(?:be\s+)?(\w+(?:\s+\w+){1,5}?)(?=\.|,|;|$)',
+        r'(?:must|shall|should|requires?)\s+(?:be\s+)?(\w+(?:\s+\w+){1,6}?)(?=\.|,|;|\n|$)',
+        passage, re.IGNORECASE | re.MULTILINE,
+    ):
+        phrase = m.group(0).rstrip('.,;\n').strip()
+        if len(phrase) > 10 and phrase not in keywords:
+            keywords.append(phrase)
+
+    # 6b. Time-bound obligations ("must ... within N hours")
+    for m in re.finditer(
+        r'((?:must|shall)\s+\w+(?:\s+\w+){0,8}?\s+(?:within|before|no later than)\s+\d+\s+\w+)',
         passage, re.IGNORECASE,
     ):
-        phrase = m.group(0).rstrip('.,;').strip()
+        phrase = m.group(1).strip()
         if len(phrase) > 10 and phrase not in keywords:
             keywords.append(phrase)
 
@@ -147,15 +156,42 @@ def extract_keywords_by_type(passage: str) -> Dict[str, List[str]]:
         for m in re.findall(pattern, passage, re.IGNORECASE):
             result["regulations"].append(m.strip())
 
-    # Required actions
-    for pattern in [
-        r'(?:must|shall)\s+(?:be\s+)?(\w+(?:\s+\w+){1,4}?)(?=\.|,|;)',
-        r'(?:within|before)\s+(\d+\s+\w+)(?:\s+of|\s+after)',
-        r'(?:requires?|mandatory)\s+(\w+(?:\s+\w+){1,4}?)(?=\.|,|;)',
-    ]:
-        for m in re.findall(pattern, passage, re.IGNORECASE):
-            if len(m) > 5:
-                result["required_actions"].append(m.strip())
+    # Required actions — broadened patterns with multiline support
+    # Pattern 1: "must/shall [be] + verb phrase" up to 6 words
+    for m in re.finditer(
+        r'(?:must|shall)\s+(?:be\s+)?(\w+(?:\s+\w+){1,6}?)(?=\.|,|;|\n|$)',
+        passage, re.IGNORECASE | re.MULTILINE,
+    ):
+        phrase = m.group(0).rstrip('.,;\n').strip()
+        if len(phrase) > 10:
+            result["required_actions"].append(phrase)
+
+    # Pattern 2: "must/shall ... within/before + time" (time-bound obligations)
+    for m in re.finditer(
+        r'((?:must|shall)\s+\w+(?:\s+\w+){0,8}?\s+(?:within|before|no later than)\s+\d+\s+\w+)',
+        passage, re.IGNORECASE,
+    ):
+        phrase = m.group(1).strip()
+        if phrase not in result["required_actions"]:
+            result["required_actions"].append(phrase)
+
+    # Pattern 3: "requires/requiring + noun phrase"
+    for m in re.finditer(
+        r'(?:requires?|requiring|mandatory)\s+(\w+(?:\s+\w+){1,5}?)(?=\.|,|;|\n|$)',
+        passage, re.IGNORECASE | re.MULTILINE,
+    ):
+        phrase = m.group(0).rstrip('.,;\n').strip()
+        if len(phrase) > 10 and phrase not in result["required_actions"]:
+            result["required_actions"].append(phrase)
+
+    # Pattern 4: "prohibited/not permitted"
+    for m in re.finditer(
+        r'(?:prohibited|not\s+permitted|not\s+acceptable)\s*(?::?\s*)(\w+(?:\s+\w+){1,5}?)(?=\.|,|;|\n|$)',
+        passage, re.IGNORECASE | re.MULTILINE,
+    ):
+        phrase = m.group(0).rstrip('.,;\n').strip()
+        if len(phrase) > 10 and phrase not in result["required_actions"]:
+            result["required_actions"].append(phrase)
 
     # Deduplicate each category
     for key in result:

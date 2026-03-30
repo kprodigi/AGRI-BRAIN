@@ -122,7 +122,12 @@ def build_role_query(
             continue
 
     if scenario != "baseline":
-        parts.append(f"operating under {scenario} scenario conditions")
+        try:
+            from .mcp.prompts import SCENARIO_SEARCH_TERMS
+            scenario_terms = SCENARIO_SEARCH_TERMS.get(scenario, "")
+        except ImportError:
+            scenario_terms = ""
+        parts.append(f"operating under {scenario} scenario conditions {scenario_terms}".strip())
 
     return " with ".join(parts[:2]) + (". " + ". ".join(parts[2:]) if len(parts) > 2 else "")
 
@@ -139,37 +144,43 @@ _ROLE_PROMPT_MAP: Dict[str, str] = {
 def _build_prompt_args(
     role: str, obs: Any, scenario: str, mcp_results: Dict[str, Any],
 ) -> Dict[str, str]:
-    """Build arguments for the MCP prompt based on role."""
+    """Build arguments for the MCP prompt based on role.
+
+    Every role now receives the ``scenario`` parameter so that prompt
+    templates can append scenario-specific search terms for discriminative
+    piRAG retrieval.
+    """
+    base: Dict[str, str] = {"scenario": scenario}
+
     if role == "farm":
-        return {
+        base.update({
             "product_type": "spinach",
             "temperature": str(round(obs.temp, 1)),
             "humidity": str(round(obs.rh, 1)),
-        }
+        })
     elif role == "processor":
-        return {
+        base.update({
             "action": "local_redistribute",
             "surplus_ratio": str(round(obs.surplus_ratio, 2)),
             "product_type": "spinach",
-        }
+        })
     elif role == "cooperative":
-        return {
+        base.update({
             "decision_type": "coordination",
             "agent_role": "cooperative",
-        }
+        })
     elif role == "distributor":
-        return {
-            "scenario": scenario,
+        base.update({
             "current_action": "cold_chain",
             "urgency": "high" if obs.rho > 0.40 else "medium",
-        }
+        })
     elif role == "recovery":
-        return {
+        base.update({
             "spoilage_risk": str(round(obs.rho, 2)),
             "product_type": "spinach",
             "hours_remaining": str(max(1, int(72 - obs.hour))),
-        }
-    return {}
+        })
+    return base
 
 
 def retrieve_role_context(
