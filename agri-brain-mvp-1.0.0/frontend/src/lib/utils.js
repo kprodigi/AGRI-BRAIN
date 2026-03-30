@@ -34,3 +34,32 @@ export async function jpost(apiBase, path, body = {}) {
   if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
   try { return await r.json(); } catch { return {}; }
 }
+
+// MCP JSON-RPC helpers
+// mcpLog is a shared array for protocol interaction logging
+export const mcpLog = [];
+
+export async function mcpRaw(apiBase, method, params = {}) {
+  const req = { jsonrpc: "2.0", id: Date.now(), method, params };
+  const r = await fetch(`${apiBase}/mcp/mcp`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  if (!r.ok) throw new Error(`MCP ${r.status} ${r.statusText}`);
+  const j = await r.json();
+  mcpLog.push({
+    ts: new Date().toISOString(), method, params,
+    status: j.error ? "error" : "success",
+    preview: JSON.stringify(j.result || j.error).substring(0, 200),
+  });
+  if (mcpLog.length > 200) mcpLog.splice(0, mcpLog.length - 200);
+  if (j.error) throw new Error(j.error.message || "MCP error");
+  return j.result;
+}
+
+export async function mcpCall(apiBase, toolName, args = {}) {
+  const result = await mcpRaw(apiBase, "tools/call", { name: toolName, arguments: args });
+  const text = result?.content?.[0]?.text;
+  return text ? JSON.parse(text) : result;
+}

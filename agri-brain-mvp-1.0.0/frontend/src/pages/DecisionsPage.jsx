@@ -15,8 +15,9 @@ import {
 } from "recharts";
 import {
   Leaf, Copy, Download, FileText, Clock, User, Shield, CheckCircle2,
-  Filter, Search, Truck, Recycle, Warehouse, ArrowRight,
+  Filter, Search, Truck, Recycle, Warehouse, ArrowRight, Sparkles,
 } from "lucide-react";
+import ExplainabilityPanel from "@/components/explainability/ExplainabilityPanel";
 
 const API = getApiBase();
 
@@ -39,6 +40,7 @@ function getActionStyle(action) {
 
 function DecisionCard({ memo, index }) {
   const [expanded, setExpanded] = useState(false);
+  const [showExplain, setShowExplain] = useState(false);
   const actionStyle = getActionStyle(memo.decision || memo.action);
   const ts = memo.time || memo.ts;
   const timeStr = ts ? new Date(ts).toLocaleString([], { dateStyle: "short", timeStyle: "short" }) : "\u2014";
@@ -141,6 +143,32 @@ function DecisionCard({ memo, index }) {
                         {memo.memo_text.split("\n\n").map((para, i) => (
                           <p key={i} className="text-sm text-muted-foreground leading-relaxed">{para}</p>
                         ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+
+              {/* Explainability panel */}
+              {memo.explainability && (
+                <div className="mt-2">
+                  <button
+                    onClick={() => setShowExplain(!showExplain)}
+                    className="text-xs text-teal-600 dark:text-teal-400 hover:underline font-medium flex items-center gap-1"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    {showExplain ? "Hide explanation \u25B2" : "Show explanation \u25BC"}
+                  </button>
+                  <AnimatePresence>
+                    {showExplain && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className="mt-2"
+                      >
+                        <ExplainabilityPanel explainability={memo.explainability} memo={memo} />
                       </motion.div>
                     )}
                   </AnimatePresence>

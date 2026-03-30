@@ -19,8 +19,9 @@ import {
   Settings, Link2, Shield, Flame, Zap, Save, RefreshCw, Play, RotateCcw,
   ChevronDown, AlertTriangle, CheckCircle2, XCircle, Loader2, HelpCircle,
   FileText, Cloud, ShieldAlert, DollarSign, Layers, Search, Download,
-  Info,
+  Info, Plug,
 } from "lucide-react";
+import McpTab from "@/components/mcp/McpTab";
 
 const API = getApiBase();
 
@@ -527,6 +528,7 @@ export default function AdminPage() {
           <TabsTrigger value="audit" className="flex items-center gap-1.5"><Shield className="w-4 h-4" /> Audit</TabsTrigger>
           <TabsTrigger value="scenarios" className="flex items-center gap-1.5"><Flame className="w-4 h-4" /> Scenarios</TabsTrigger>
           <TabsTrigger value="quick" className="flex items-center gap-1.5"><Zap className="w-4 h-4" /> Quick Decision</TabsTrigger>
+          <TabsTrigger value="mcp" className="flex items-center gap-1.5"><Plug className="w-4 h-4" /> MCP</TabsTrigger>
         </TabsList>
 
         <div className="mt-6">
@@ -535,6 +537,7 @@ export default function AdminPage() {
           <TabsContent value="audit"><AuditTab /></TabsContent>
           <TabsContent value="scenarios"><ScenariosTab /></TabsContent>
           <TabsContent value="quick"><QuickDecisionTab /></TabsContent>
+          <TabsContent value="mcp"><McpTab /></TabsContent>
         </div>
       </Tabs>
     </div>

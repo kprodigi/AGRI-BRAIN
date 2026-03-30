@@ -277,6 +277,86 @@ def _decide_standalone(req: DecideRequest) -> dict:
         ),
     }
 
+    # --- Explainability enrichment (best-effort) ---
+    try:
+        from pirag.context_provider import get_policy_context
+        from pirag.context_to_logits import extract_context_features, THETA_CONTEXT
+        from pirag.keyword_extractor import extract_keywords_by_type
+        from pirag.explain_decision import explain_decision
+
+        _rc = get_policy_context(
+            scenario="baseline", spoilage_risk=rho, temperature=temp,
+            role=req.role or "farm", humidity=rh_val,
+            inventory=inv, surplus_ratio=surplus_ratio, tau=tau,
+        )
+        _mcp_res = _rc.get("mcp_results", {})
+
+        class _Obs:
+            pass
+        _obs = _Obs()
+        _obs.rho = rho; _obs.temp = temp; _obs.rh = rh_val; _obs.inv = inv
+        _obs.tau = tau; _obs.hour = 0.0; _obs.surplus_ratio = surplus_ratio
+        _obs.y_hat = y_hat
+
+        _psi = extract_context_features(_mcp_res, _rc, _obs)
+        _modifier = THETA_CONTEXT @ _psi
+
+        _, _cf_probs = select_action(
+            mode=req.mode, rho=rho, inv=inv, y_hat=y_hat, temp=temp,
+            tau=tau, policy=_policy, rng=np.random.default_rng(),
+            deterministic=req.deterministic,
+        )
+        _cf_action = ACTIONS[int(np.argmax(_cf_probs))]
+
+        _kw = {}
+        for _gf, _kt in [("regulatory_guidance", "regulatory"), ("relevant_sops", "sop"),
+                          ("waste_hierarchy_guidance", "waste_hierarchy")]:
+            _txt = _rc.get(_gf, "")
+            if _txt:
+                _kw[_kt] = extract_keywords_by_type(_txt)
+
+        _expl = explain_decision(
+            action=action, role=req.role or "farm", hour=0.0, obs=_obs,
+            mcp_results=_mcp_res, rag_context=_rc,
+            slca_score=slca_composite, carbon_kg=carbon, waste=waste,
+            context_features=_psi, logit_adjustment=_modifier,
+            action_probs=probs, counterfactual_action=_cf_action,
+            counterfactual_probs=_cf_probs, keywords=_kw,
+        )
+
+        memo["explainability"] = {
+            "context_features": {
+                "compliance_severity": round(float(_psi[0]), 3),
+                "forecast_urgency": round(float(_psi[1]), 3),
+                "retrieval_confidence": round(float(_psi[2]), 3),
+                "regulatory_pressure": round(float(_psi[3]), 3),
+                "recovery_saturation": round(float(_psi[4]), 3),
+            },
+            "logit_adjustment": {
+                "cold_chain": round(float(_modifier[0]), 3),
+                "local_redistribute": round(float(_modifier[1]), 3),
+                "recovery": round(float(_modifier[2]), 3),
+            },
+            "mcp_tools_invoked": _mcp_res.get("_tools_invoked", []),
+            "compliance": _mcp_res.get("check_compliance", {}),
+            "forecast": _mcp_res.get("spoilage_forecast", {}),
+            "pirag_top_doc": _rc.get("top_doc_id", ""),
+            "pirag_top_score": round(_rc.get("top_citation_score", 0), 3),
+            "keywords": _kw,
+            "provenance": {
+                "evidence_hashes": _rc.get("evidence_hashes", [])[:5],
+                "guards_passed": _rc.get("guards_passed", True),
+                "merkle_root": _expl.get("merkle_root", ""),
+            },
+            "causal_text": _expl.get("full_explanation", ""),
+            "causal_chain": _expl.get("causal_chain", {}),
+            "counterfactual": _expl.get("counterfactual", {}),
+            "summary": _expl.get("summary", ""),
+        }
+    except Exception as _e:
+        logger.debug("explainability enrichment skipped: %s", _e)
+        memo["explainability"] = None
+
     _persist_last(memo)
 
     # Optional: log to blockchain
