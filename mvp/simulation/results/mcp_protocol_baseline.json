@@ -1,0 +1,5634 @@
+[
+  {
+    "timestamp": 1774870299.8877091,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.0,
+          "humidity": 92.2,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.0, \"humidity\": 92.2}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.887765,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.0",
+          "humidity": "92.2"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.8899279,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.95,
+          "humidity": 91.5,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.95, \"humidity\": 91.5}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.8899515,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.0",
+          "humidity": "91.5"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.8978384,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 7.18,
+          "humidity": 90.2,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": false, \"product_type\": \"spinach\", \"violations\": [{\"parameter\": \"temperature\", \"value\": 7.18, \"limit\": 5.0, \"severity\": \"warning\", \"message\": \"Temperature 7.2C exceeds limit of 5.0C\"}], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 7.18, \"humidity\": 90.2}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.8978765,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.8978944,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "7.2",
+          "humidity": "90.2"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.9079943,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 6.87,
+          "humidity": 89.6,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": false, \"product_type\": \"spinach\", \"violations\": [{\"parameter\": \"temperature\", \"value\": 6.87, \"limit\": 5.0, \"severity\": \"warning\", \"message\": \"Temperature 6.9C exceeds limit of 5.0C\"}], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 6.87, \"humidity\": 89.6}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.9080296,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.908048,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "6.9",
+          "humidity": "89.6"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.9205503,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 7.48,
+          "humidity": 89.2,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": false, \"product_type\": \"spinach\", \"violations\": [{\"parameter\": \"temperature\", \"value\": 7.48, \"limit\": 5.0, \"severity\": \"warning\", \"message\": \"Temperature 7.5C exceeds limit of 5.0C\"}], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 7.48, \"humidity\": 89.2}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.9205842,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.9206026,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "7.5",
+          "humidity": "89.2"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.9354057,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 8.04,
+          "humidity": 90.3,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": false, \"product_type\": \"spinach\", \"violations\": [{\"parameter\": \"temperature\", \"value\": 8.04, \"limit\": 5.0, \"severity\": \"critical\", \"message\": \"Temperature 8.0C exceeds limit of 5.0C\"}], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 8.04, \"humidity\": 90.3}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.9354424,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.9354835,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "spoilage_forecast",
+        "arguments": {
+          "current_rho": 0.00021466073553211285,
+          "temperature": 8.04,
+          "humidity": 90.3,
+          "hours_ahead": 6
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"forecast_rho\": 0.0048, \"quality_trajectory\": [0.0002, 0.0002, 0.0003, 0.0003, 0.0004, 0.0005, 0.0006, 0.0007, 0.0009, 0.001, 0.0012, 0.0014, 0.0016, 0.0018, 0.002, 0.0022, 0.0025, 0.0027, 0.003, 0.0033, 0.0035, 0.0038, 0.0041, 0.0045, 0.0048], \"urgency\": \"low\", \"hours_ahead\": 6, \"k_effective\": 0.003897, \"parameters\": {\"temperature_c\": 8.04, \"humidity_pct\": 90.3, \"current_rho\": 0.00021466073553211285}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.9355028,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "8.0",
+          "humidity": "90.3"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.9524257,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 7.18,
+          "humidity": 88.9,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": false, \"product_type\": \"spinach\", \"violations\": [{\"parameter\": \"temperature\", \"value\": 7.18, \"limit\": 5.0, \"severity\": \"warning\", \"message\": \"Temperature 7.2C exceeds limit of 5.0C\"}], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 7.18, \"humidity\": 88.9}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.9524636,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.9524827,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "7.2",
+          "humidity": "88.9"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.9716659,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 7.68,
+          "humidity": 87.5,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": false, \"product_type\": \"spinach\", \"violations\": [{\"parameter\": \"temperature\", \"value\": 7.68, \"limit\": 5.0, \"severity\": \"warning\", \"message\": \"Temperature 7.7C exceeds limit of 5.0C\"}], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 7.68, \"humidity\": 87.5}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.9717019,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.9717202,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "7.7",
+          "humidity": "87.5"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.9939225,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.84,
+          "humidity": 93.3,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.84, \"humidity\": 93.3}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870299.9939494,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "3.8",
+          "humidity": "93.3"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.0177348,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.93,
+          "humidity": 94.0,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.93, \"humidity\": 94.0}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.017761,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "3.9",
+          "humidity": "94.0"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.0439632,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.89,
+          "humidity": 91.7,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.89, \"humidity\": 91.7}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.0439882,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "3.9",
+          "humidity": "91.7"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.0721471,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.61,
+          "humidity": 90.5,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.61, \"humidity\": 90.5}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.0721724,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "3.6",
+          "humidity": "90.5"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.1029377,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.75,
+          "humidity": 91.8,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.75, \"humidity\": 91.8}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.1029673,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "3.8",
+          "humidity": "91.8"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.1360955,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.12,
+          "humidity": 91.7,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.12, \"humidity\": 91.7}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.1361284,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.1",
+          "humidity": "91.7"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.1713498,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.84,
+          "humidity": 91.8,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.84, \"humidity\": 91.8}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.171379,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "3.8",
+          "humidity": "91.8"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.2085972,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.04,
+          "humidity": 91.1,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.04, \"humidity\": 91.1}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.2086287,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.0",
+          "humidity": "91.1"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.2484796,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.99,
+          "humidity": 92.5,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.99, \"humidity\": 92.5}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.248506,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.0",
+          "humidity": "92.5"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.2901285,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.0,
+          "humidity": 92.4,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.0, \"humidity\": 92.4}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.2901545,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.0",
+          "humidity": "92.4"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.334506,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.83,
+          "humidity": 90.8,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.83, \"humidity\": 90.8}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.3345351,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "3.8",
+          "humidity": "90.8"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.3814518,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.82,
+          "humidity": 92.6,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.82, \"humidity\": 92.6}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.381483,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "3.8",
+          "humidity": "92.6"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.4307234,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.1,
+          "humidity": 93.6,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.1, \"humidity\": 93.6}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.4307566,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.1",
+          "humidity": "93.6"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.4824016,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.21,
+          "humidity": 92.0,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.21, \"humidity\": 92.0}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.4824362,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.2",
+          "humidity": "92.0"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.5355113,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.51,
+          "humidity": 91.4,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.51, \"humidity\": 91.4}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.5355422,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.5",
+          "humidity": "91.4"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.590456,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.65,
+          "humidity": 91.4,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.65, \"humidity\": 91.4}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.5904906,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.7",
+          "humidity": "91.4"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.651774,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.63,
+          "humidity": 92.1,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.63, \"humidity\": 92.1}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.6518075,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.6",
+          "humidity": "92.1"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.7117717,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.85,
+          "humidity": 90.0,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.85, \"humidity\": 90.0}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.7118077,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.8",
+          "humidity": "90.0"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.774766,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.8,
+          "humidity": 91.6,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.8, \"humidity\": 91.6}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.774816,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.8",
+          "humidity": "91.6"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.8400762,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.82,
+          "humidity": 91.1,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.82, \"humidity\": 91.1}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.8401098,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.8",
+          "humidity": "91.1"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.9071178,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.64,
+          "humidity": 93.0,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.64, \"humidity\": 93.0}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.9071488,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.6",
+          "humidity": "93.0"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.977301,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.56,
+          "humidity": 91.5,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.56, \"humidity\": 91.5}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870300.9773386,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.6",
+          "humidity": "91.5"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.0489666,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.36,
+          "humidity": 93.1,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.36, \"humidity\": 93.1}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.0489993,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.4",
+          "humidity": "93.1"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.1220896,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.49,
+          "humidity": 90.8,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.49, \"humidity\": 90.8}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.1221187,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.5",
+          "humidity": "90.8"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.1972811,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.2,
+          "humidity": 92.3,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.2, \"humidity\": 92.3}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.1973212,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.2",
+          "humidity": "92.3"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.2754047,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.32,
+          "humidity": 92.0,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.32, \"humidity\": 92.0}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.275437,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.3",
+          "humidity": "92.0"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.3556774,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.25,
+          "humidity": 91.1,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.25, \"humidity\": 91.1}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.3557103,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.2",
+          "humidity": "91.1"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.4382565,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.43,
+          "humidity": 91.8,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.43, \"humidity\": 91.8}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.4383006,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.4",
+          "humidity": "91.8"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.5248666,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.5,
+          "humidity": 92.6,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.5, \"humidity\": 92.6}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.5249007,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.5",
+          "humidity": "92.6"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.6126068,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.75,
+          "humidity": 91.2,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.75, \"humidity\": 91.2}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.6126385,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.8",
+          "humidity": "91.2"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.7017221,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.76,
+          "humidity": 90.1,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.76, \"humidity\": 90.1}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.7017617,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.8",
+          "humidity": "90.1"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.7944133,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.35,
+          "humidity": 91.7,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.35, \"humidity\": 91.7}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.7944503,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.3",
+          "humidity": "91.7"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.890115,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.29,
+          "humidity": 91.1,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.29, \"humidity\": 91.1}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.8901522,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.3",
+          "humidity": "91.1"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.9862924,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 6.83,
+          "humidity": 89.7,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": false, \"product_type\": \"spinach\", \"violations\": [{\"parameter\": \"temperature\", \"value\": 6.83, \"limit\": 5.0, \"severity\": \"warning\", \"message\": \"Temperature 6.8C exceeds limit of 5.0C\"}], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 6.83, \"humidity\": 89.7}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.986344,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870301.986367,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "6.8",
+          "humidity": "89.7"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.0853038,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 5.61,
+          "humidity": 90.8,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": false, \"product_type\": \"spinach\", \"violations\": [{\"parameter\": \"temperature\", \"value\": 5.61, \"limit\": 5.0, \"severity\": \"warning\", \"message\": \"Temperature 5.6C exceeds limit of 5.0C\"}], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 5.61, \"humidity\": 90.8}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.085356,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.0853796,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "5.6",
+          "humidity": "90.8"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.186669,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 6.83,
+          "humidity": 88.7,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": false, \"product_type\": \"spinach\", \"violations\": [{\"parameter\": \"temperature\", \"value\": 6.83, \"limit\": 5.0, \"severity\": \"warning\", \"message\": \"Temperature 6.8C exceeds limit of 5.0C\"}], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 6.83, \"humidity\": 88.7}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.186726,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.1867523,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "6.8",
+          "humidity": "88.7"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.2895036,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 6.47,
+          "humidity": 89.0,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": false, \"product_type\": \"spinach\", \"violations\": [{\"parameter\": \"temperature\", \"value\": 6.47, \"limit\": 5.0, \"severity\": \"warning\", \"message\": \"Temperature 6.5C exceeds limit of 5.0C\"}], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 6.47, \"humidity\": 89.0}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.2895737,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.2896023,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "6.5",
+          "humidity": "89.0"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.395635,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 6.46,
+          "humidity": 90.7,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": false, \"product_type\": \"spinach\", \"violations\": [{\"parameter\": \"temperature\", \"value\": 6.46, \"limit\": 5.0, \"severity\": \"warning\", \"message\": \"Temperature 6.5C exceeds limit of 5.0C\"}], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 6.46, \"humidity\": 90.7}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.3957117,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.395743,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "6.5",
+          "humidity": "90.7"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.5033972,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.93,
+          "humidity": 91.6,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.93, \"humidity\": 91.6}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.5034287,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "3.9",
+          "humidity": "91.6"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.6129413,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.95,
+          "humidity": 89.9,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.95, \"humidity\": 89.9}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.6129694,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.0",
+          "humidity": "89.9"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.7271633,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.74,
+          "humidity": 92.6,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.74, \"humidity\": 92.6}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.7272375,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "3.7",
+          "humidity": "92.6"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.7284517,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.7285163,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "chain_query",
+        "arguments": {
+          "n": 5
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[{\"timestamp\": \"2026-03-30T11:31:42Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:16:42Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:01:42Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:46:42Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:31:42Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.7285435,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "footprint_query",
+        "arguments": {
+          "steps_completed": 1
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"steps_completed\": 1, \"per_step\": {\"energy_j\": 0.05, \"water_l\": 1.8e-06}, \"cumulative\": {\"energy_j\": 0.05, \"energy_kwh\": 1.39e-08, \"water_l\": 1.8e-06, \"co2_kg\": 5.8e-09}, \"efficiency_flag\": \"normal\"}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.7285573,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "governance_policy_lookup",
+        "arguments": {
+          "scenario": "",
+          "decision_type": "coordination",
+          "agent_role": "cooperative"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a cooperative governance policy query",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.8386524,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.67,
+          "humidity": 92.2,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.67, \"humidity\": 92.2}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.8386908,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "3.7",
+          "humidity": "92.2"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.8400462,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.8401072,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "chain_query",
+        "arguments": {
+          "n": 5
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[{\"timestamp\": \"2026-03-30T11:31:42Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:16:42Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:01:42Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:46:42Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:31:42Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.8401337,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "footprint_query",
+        "arguments": {
+          "steps_completed": 1
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"steps_completed\": 1, \"per_step\": {\"energy_j\": 0.05, \"water_l\": 1.8e-06}, \"cumulative\": {\"energy_j\": 0.05, \"energy_kwh\": 1.39e-08, \"water_l\": 1.8e-06, \"co2_kg\": 5.8e-09}, \"efficiency_flag\": \"normal\"}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.8401487,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "governance_policy_lookup",
+        "arguments": {
+          "scenario": "",
+          "decision_type": "coordination",
+          "agent_role": "cooperative"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a cooperative governance policy query",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.9490037,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.78,
+          "humidity": 91.4,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.78, \"humidity\": 91.4}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.949041,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "3.8",
+          "humidity": "91.4"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.950358,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.9504292,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "chain_query",
+        "arguments": {
+          "n": 5
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[{\"timestamp\": \"2026-03-30T11:31:42Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:16:42Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:01:42Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:46:42Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:31:42Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.950456,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "footprint_query",
+        "arguments": {
+          "steps_completed": 1
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"steps_completed\": 1, \"per_step\": {\"energy_j\": 0.05, \"water_l\": 1.8e-06}, \"cumulative\": {\"energy_j\": 0.05, \"energy_kwh\": 1.39e-08, \"water_l\": 1.8e-06, \"co2_kg\": 5.8e-09}, \"efficiency_flag\": \"normal\"}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870302.9504707,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "governance_policy_lookup",
+        "arguments": {
+          "scenario": "",
+          "decision_type": "coordination",
+          "agent_role": "cooperative"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a cooperative governance policy query",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.0616174,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.03,
+          "humidity": 90.9,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.03, \"humidity\": 90.9}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.0616531,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.0",
+          "humidity": "90.9"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.0630834,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.0631468,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "chain_query",
+        "arguments": {
+          "n": 5
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[{\"timestamp\": \"2026-03-30T11:31:43Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:16:43Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:01:43Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:46:43Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:31:43Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.0631733,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "footprint_query",
+        "arguments": {
+          "steps_completed": 1
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"steps_completed\": 1, \"per_step\": {\"energy_j\": 0.05, \"water_l\": 1.8e-06}, \"cumulative\": {\"energy_j\": 0.05, \"energy_kwh\": 1.39e-08, \"water_l\": 1.8e-06, \"co2_kg\": 5.8e-09}, \"efficiency_flag\": \"normal\"}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.0631883,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "governance_policy_lookup",
+        "arguments": {
+          "scenario": "",
+          "decision_type": "coordination",
+          "agent_role": "cooperative"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a cooperative governance policy query",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.1729774,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.12,
+          "humidity": 92.6,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.12, \"humidity\": 92.6}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.1730115,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.1",
+          "humidity": "92.6"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.1742709,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.1743286,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "chain_query",
+        "arguments": {
+          "n": 5
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[{\"timestamp\": \"2026-03-30T11:31:43Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:16:43Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:01:43Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:46:43Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:31:43Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.1743543,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "footprint_query",
+        "arguments": {
+          "steps_completed": 1
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"steps_completed\": 1, \"per_step\": {\"energy_j\": 0.05, \"water_l\": 1.8e-06}, \"cumulative\": {\"energy_j\": 0.05, \"energy_kwh\": 1.39e-08, \"water_l\": 1.8e-06, \"co2_kg\": 5.8e-09}, \"efficiency_flag\": \"normal\"}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.174368,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "governance_policy_lookup",
+        "arguments": {
+          "scenario": "",
+          "decision_type": "coordination",
+          "agent_role": "cooperative"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a cooperative governance policy query",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.2830477,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.68,
+          "humidity": 92.3,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.68, \"humidity\": 92.3}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.2830913,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "3.7",
+          "humidity": "92.3"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.2845156,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.2845852,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "chain_query",
+        "arguments": {
+          "n": 5
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[{\"timestamp\": \"2026-03-30T11:31:43Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:16:43Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:01:43Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:46:43Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:31:43Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.2846122,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "footprint_query",
+        "arguments": {
+          "steps_completed": 1
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"steps_completed\": 1, \"per_step\": {\"energy_j\": 0.05, \"water_l\": 1.8e-06}, \"cumulative\": {\"energy_j\": 0.05, \"energy_kwh\": 1.39e-08, \"water_l\": 1.8e-06, \"co2_kg\": 5.8e-09}, \"efficiency_flag\": \"normal\"}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.2846284,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "governance_policy_lookup",
+        "arguments": {
+          "scenario": "",
+          "decision_type": "coordination",
+          "agent_role": "cooperative"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a cooperative governance policy query",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.3931415,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.78,
+          "humidity": 93.9,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.78, \"humidity\": 93.9}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.3931768,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "3.8",
+          "humidity": "93.9"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.3944366,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.394495,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "chain_query",
+        "arguments": {
+          "n": 5
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[{\"timestamp\": \"2026-03-30T11:31:43Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:16:43Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:01:43Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:46:43Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:31:43Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.3945217,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "footprint_query",
+        "arguments": {
+          "steps_completed": 1
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"steps_completed\": 1, \"per_step\": {\"energy_j\": 0.05, \"water_l\": 1.8e-06}, \"cumulative\": {\"energy_j\": 0.05, \"energy_kwh\": 1.39e-08, \"water_l\": 1.8e-06, \"co2_kg\": 5.8e-09}, \"efficiency_flag\": \"normal\"}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.3945363,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "governance_policy_lookup",
+        "arguments": {
+          "scenario": "",
+          "decision_type": "coordination",
+          "agent_role": "cooperative"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a cooperative governance policy query",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.5051491,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.83,
+          "humidity": 92.3,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.83, \"humidity\": 92.3}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.5051858,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "3.8",
+          "humidity": "92.3"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.5065262,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.5065851,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "chain_query",
+        "arguments": {
+          "n": 5
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[{\"timestamp\": \"2026-03-30T11:31:43Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:16:43Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:01:43Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:46:43Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:31:43Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.5066102,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "footprint_query",
+        "arguments": {
+          "steps_completed": 1
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"steps_completed\": 1, \"per_step\": {\"energy_j\": 0.05, \"water_l\": 1.8e-06}, \"cumulative\": {\"energy_j\": 0.05, \"energy_kwh\": 1.39e-08, \"water_l\": 1.8e-06, \"co2_kg\": 5.8e-09}, \"efficiency_flag\": \"normal\"}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.506625,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "governance_policy_lookup",
+        "arguments": {
+          "scenario": "",
+          "decision_type": "coordination",
+          "agent_role": "cooperative"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a cooperative governance policy query",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.6159906,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.92,
+          "humidity": 92.3,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.92, \"humidity\": 92.3}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.616044,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "3.9",
+          "humidity": "92.3"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.617489,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.6175518,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "chain_query",
+        "arguments": {
+          "n": 5
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[{\"timestamp\": \"2026-03-30T11:31:43Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:16:43Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:01:43Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:46:43Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:31:43Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.6175776,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "footprint_query",
+        "arguments": {
+          "steps_completed": 1
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"steps_completed\": 1, \"per_step\": {\"energy_j\": 0.05, \"water_l\": 1.8e-06}, \"cumulative\": {\"energy_j\": 0.05, \"energy_kwh\": 1.39e-08, \"water_l\": 1.8e-06, \"co2_kg\": 5.8e-09}, \"efficiency_flag\": \"normal\"}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.6175916,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "governance_policy_lookup",
+        "arguments": {
+          "scenario": "",
+          "decision_type": "coordination",
+          "agent_role": "cooperative"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a cooperative governance policy query",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.726308,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 4.22,
+          "humidity": 91.7,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 4.22, \"humidity\": 91.7}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.7263575,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.2",
+          "humidity": "91.7"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.7277691,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.727828,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "chain_query",
+        "arguments": {
+          "n": 5
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[{\"timestamp\": \"2026-03-30T11:31:43Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:16:43Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:01:43Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:46:43Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:31:43Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.7278545,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "footprint_query",
+        "arguments": {
+          "steps_completed": 1
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"steps_completed\": 1, \"per_step\": {\"energy_j\": 0.05, \"water_l\": 1.8e-06}, \"cumulative\": {\"energy_j\": 0.05, \"energy_kwh\": 1.39e-08, \"water_l\": 1.8e-06, \"co2_kg\": 5.8e-09}, \"efficiency_flag\": \"normal\"}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.7278693,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "governance_policy_lookup",
+        "arguments": {
+          "scenario": "",
+          "decision_type": "coordination",
+          "agent_role": "cooperative"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a cooperative governance policy query",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.8376138,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.79,
+          "humidity": 92.7,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.79, \"humidity\": 92.7}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.8376718,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "3.8",
+          "humidity": "92.7"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.8401704,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.840237,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "chain_query",
+        "arguments": {
+          "n": 5
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[{\"timestamp\": \"2026-03-30T11:31:43Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:16:43Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:01:43Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:46:43Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:31:43Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.840264,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "footprint_query",
+        "arguments": {
+          "steps_completed": 1
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"steps_completed\": 1, \"per_step\": {\"energy_j\": 0.05, \"water_l\": 1.8e-06}, \"cumulative\": {\"energy_j\": 0.05, \"energy_kwh\": 1.39e-08, \"water_l\": 1.8e-06, \"co2_kg\": 5.8e-09}, \"efficiency_flag\": \"normal\"}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.8402822,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "governance_policy_lookup",
+        "arguments": {
+          "scenario": "",
+          "decision_type": "coordination",
+          "agent_role": "cooperative"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a cooperative governance policy query",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.9531648,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.71,
+          "humidity": 92.5,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.71, \"humidity\": 92.5}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.9532006,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "3.7",
+          "humidity": "92.5"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.954497,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.9545577,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "chain_query",
+        "arguments": {
+          "n": 5
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[{\"timestamp\": \"2026-03-30T11:31:43Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:16:43Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:01:43Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:46:43Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:31:43Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.9545834,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "footprint_query",
+        "arguments": {
+          "steps_completed": 1
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"steps_completed\": 1, \"per_step\": {\"energy_j\": 0.05, \"water_l\": 1.8e-06}, \"cumulative\": {\"energy_j\": 0.05, \"energy_kwh\": 1.39e-08, \"water_l\": 1.8e-06, \"co2_kg\": 5.8e-09}, \"efficiency_flag\": \"normal\"}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870303.954599,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "governance_policy_lookup",
+        "arguments": {
+          "scenario": "",
+          "decision_type": "coordination",
+          "agent_role": "cooperative"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a cooperative governance policy query",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870304.063909,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.85,
+          "humidity": 93.0,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.85, \"humidity\": 93.0}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870304.0639453,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "3.9",
+          "humidity": "93.0"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870304.0652487,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870304.0653095,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "chain_query",
+        "arguments": {
+          "n": 5
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[{\"timestamp\": \"2026-03-30T11:31:44Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:16:44Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:01:44Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:46:44Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:31:44Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870304.065336,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "footprint_query",
+        "arguments": {
+          "steps_completed": 1
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"steps_completed\": 1, \"per_step\": {\"energy_j\": 0.05, \"water_l\": 1.8e-06}, \"cumulative\": {\"energy_j\": 0.05, \"energy_kwh\": 1.39e-08, \"water_l\": 1.8e-06, \"co2_kg\": 5.8e-09}, \"efficiency_flag\": \"normal\"}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870304.0653498,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "governance_policy_lookup",
+        "arguments": {
+          "scenario": "",
+          "decision_type": "coordination",
+          "agent_role": "cooperative"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a cooperative governance policy query",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870304.1747046,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.58,
+          "humidity": 91.6,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.58, \"humidity\": 91.6}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870304.174738,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "3.6",
+          "humidity": "91.6"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870304.1760497,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870304.1761189,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "chain_query",
+        "arguments": {
+          "n": 5
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[{\"timestamp\": \"2026-03-30T11:31:44Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:16:44Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:01:44Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:46:44Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:31:44Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870304.1761506,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "footprint_query",
+        "arguments": {
+          "steps_completed": 1
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"steps_completed\": 1, \"per_step\": {\"energy_j\": 0.05, \"water_l\": 1.8e-06}, \"cumulative\": {\"energy_j\": 0.05, \"energy_kwh\": 1.39e-08, \"water_l\": 1.8e-06, \"co2_kg\": 5.8e-09}, \"efficiency_flag\": \"normal\"}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870304.176166,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "governance_policy_lookup",
+        "arguments": {
+          "scenario": "",
+          "decision_type": "coordination",
+          "agent_role": "cooperative"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a cooperative governance policy query",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870304.2848735,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.9,
+          "humidity": 91.7,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.9, \"humidity\": 91.7}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870304.2849035,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "3.9",
+          "humidity": "91.7"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870304.286237,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "slca_lookup",
+        "arguments": {
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"product_type\": \"spinach\", \"weights\": {\"w_c\": 0.3, \"w_l\": 0.2, \"w_r\": 0.25, \"w_p\": 0.25}, \"base_scores\": {\"cold_chain\": {\"L\": 0.5, \"R\": 0.4, \"P\": 0.45}, \"local_redistribute\": {\"L\": 0.92, \"R\": 0.88, \"P\": 0.85}, \"recovery\": {\"L\": 0.72, \"R\": 0.75, \"P\": 0.7}}, \"carbon_cap\": 50.0}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870304.286306,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "chain_query",
+        "arguments": {
+          "n": 5
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[{\"timestamp\": \"2026-03-30T11:31:44Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:16:44Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:01:44Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:46:44Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:31:44Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870304.2863338,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "footprint_query",
+        "arguments": {
+          "steps_completed": 1
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"steps_completed\": 1, \"per_step\": {\"energy_j\": 0.05, \"water_l\": 1.8e-06}, \"cumulative\": {\"energy_j\": 0.05, \"energy_kwh\": 1.39e-08, \"water_l\": 1.8e-06, \"co2_kg\": 5.8e-09}, \"efficiency_flag\": \"normal\"}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870304.2863488,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "governance_policy_lookup",
+        "arguments": {
+          "scenario": "",
+          "decision_type": "coordination",
+          "agent_role": "cooperative"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a cooperative governance policy query",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870304.3952034,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "tools/call",
+      "params": {
+        "name": "check_compliance",
+        "arguments": {
+          "temperature": 3.97,
+          "humidity": 91.6,
+          "product_type": "spinach"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"compliant\": true, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 5.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": 3.97, \"humidity\": 91.6}}"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "timestamp": 1774870304.3952417,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "method": "prompts/get",
+      "params": {
+        "name": "regulatory_compliance_check",
+        "arguments": {
+          "scenario": "baseline",
+          "product_type": "spinach",
+          "temperature": "4.0",
+          "humidity": "91.6"
+        }
+      }
+    },
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 0,
+      "result": {
+        "description": "Generate a regulatory compliance query for FDA cold chain requirements",
+        "messages": [
+          {
+            "role": "user",
+            "content": "..."
+          }
+        ]
+      }
+    }
+  }
+]
