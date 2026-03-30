@@ -48,6 +48,8 @@ AGRI-BRAIN/
 │   │   └── src/
 │   │       ├── pages/          # Ops, Quality, Decisions, Map, Analytics, Admin
 │   │       ├── components/ui/  # shadcn/ui component library
+│   │       ├── components/explainability/ # ExplainabilityPanel (causal reasoning, radar, keywords, provenance)
+│   │       ├── components/mcp/            # McpTab (tool browser, resource monitor, invocation, piRAG search)
 │   │       ├── layouts/        # MainLayout (sidebar, header, theme toggle)
 │   │       ├── hooks/          # useTheme, useWebSocket
 │   │       ├── lib/            # Utility functions
@@ -155,13 +157,15 @@ Make sure the backend is running and data is loaded before using the dashboard.
 |-----|------|-------------|
 | `/` | Operations | KPI cards (records, temperature, anomalies, waste rate), real-time telemetry line charts with safe/warning/critical temperature zones, spoilage & yield area chart |
 | `/quality` | Quality | Circular spoilage risk gauge, shelf-life countdown timer, current sensor readings, IoT temperature/humidity charts, PINN vs ODE spoilage comparison |
-| `/decisions` | Decisions | Decision timeline with action badges, filters by role and action type, search, decision analytics sidebar with pie chart, CSV export, PDF report |
+| `/decisions` | Decisions | Decision timeline with action badges, filters by role and action type, search, decision analytics sidebar with pie chart, CSV export, PDF report. Each decision card has an expandable Explainability Panel showing: causal BECAUSE/WITHOUT reasoning with highlighted keywords, 5-axis context feature radar chart with logit adjustment bars, categorized keyword tags (thresholds, regulations, required actions), and Merkle-rooted provenance chain with SHA-256 evidence hashes |
 | `/map` | Map | Leaflet map centered on South Dakota with 4 supply chain nodes (farm, processor, cooperative, recovery) and route overlays showing cold chain, redistribution, and recovery paths |
 | `/analytics` | Analytics | Executive summary with 5 hero metrics, Table 1 (cross-scenario) and Table 2 (ablation study), grouped bar charts, radar chart, method comparison, scenario deep-dive gallery with figures, carbon footprint analysis, full simulation runner |
-| `/admin` | Admin Panel | Five tabs: Policy (routing/carbon/SLCA parameters), Blockchain (RPC status, config), Audit (searchable log table with expandable rows), Scenarios (5 scenario cards with intensity slider), Quick Decision (role selector + instant decision) |
+| `/admin` | Admin Panel | Six tabs: Policy (routing/carbon/SLCA parameters), Blockchain (RPC status, config), Audit (searchable log table with expandable rows), Scenarios (5 scenario cards with intensity slider), Quick Decision (role selector + instant decision), MCP Explorer (tool browser with 12 grouped tools, live resource monitor with 5s auto-refresh, prompt template browser with parameter forms, live tool invocation with presets for compliance/piRAG/explain, piRAG knowledge base search with physics-informed retrieval, JSON-RPC protocol interaction log) |
 
 ### Features
 
+- **Explainability Panel**: Each decision card on the Decisions page has a "Show explanation" button that reveals causal reasoning (BECAUSE/WITHOUT), a 5-axis context feature radar chart, categorized keyword tags from piRAG retrieval, and a Merkle-rooted provenance chain.
+- **MCP Explorer**: The Admin panel's MCP tab provides an interactive tool browser, live resource monitor, prompt template expander, tool invocation console with presets, piRAG knowledge base search, and a JSON-RPC protocol interaction log.
 - **Dark mode**: Toggle via the sun/moon icon in the header. Persists in localStorage.
 - **WebSocket**: Real-time connection indicator ("Live" badge) in the header. Auto-reconnects.
 - **Notifications**: Bell icon in header shows decision events from the WebSocket stream.
@@ -327,7 +331,10 @@ Using the frontend dashboard:
 3. Adjust the intensity slider and click **Run**
 4. Switch to **Operations** or **Quality** pages to see updated telemetry
 5. Go to **Decisions** page and click **Take Decision**
-6. View the audit trail under **Admin** → **Audit** tab
+6. Click **Show explanation** on the decision card to see the causal reasoning, context feature radar, keywords, and provenance chain
+7. View the audit trail under **Admin** → **Audit** tab
+8. Navigate to **Admin** → **MCP** tab to explore tools, resources, prompts, and invoke them live
+9. Try the **piRAG Search** sub-tab to query the knowledge base with physics-informed retrieval
 
 Or via the API (run each scenario and make a decision):
 

@@ -63,10 +63,10 @@ Modern React dashboard built with shadcn/ui, featuring six pages:
 |------|-------------|
 | **Operations** | KPI bento grid, real-time telemetry charts with temperature zones, spoilage & yield preview |
 | **Quality** | Circular spoilage risk gauge, shelf-life countdown, IoT sensor charts, PINN vs ODE comparison |
-| **Decisions** | Timeline view with role/action filters, decision cards, analytics sidebar with pie chart, CSV/PDF export |
+| **Decisions** | Timeline view with role/action filters, decision cards with expandable MCP/piRAG explainability panels (causal BECAUSE/WITHOUT reasoning, 5-axis context feature radar chart, extracted keyword tags, Merkle-rooted provenance chains), analytics sidebar with pie chart, CSV/PDF export |
 | **Map** | Leaflet map of South Dakota supply chain nodes with route overlays and live KPI popups |
 | **Analytics** | Executive summary banner, interactive cross-scenario tables & charts, ablation study, radar profiles, scenario deep-dive gallery, carbon footprint analysis |
-| **Admin** | Five tabs — Policy parameters, Blockchain status & config, Audit log, Scenario runner, Quick Decision |
+| **Admin** | Six tabs — Policy parameters, Blockchain status & config, Audit log, Scenario runner, Quick Decision, MCP Explorer (tool browser with 12 tools, live resource monitor, prompt template browser, live tool invocation with presets, piRAG knowledge base search, JSON-RPC protocol interaction log) |
 
 **Tech stack:** React 18, React Router 7, shadcn/ui (Radix), Tailwind CSS, Recharts, React-Leaflet, Framer Motion, Sonner toasts, Vite 7
 
@@ -213,6 +213,8 @@ AGRI-BRAIN/
       src/
         pages/                  # Ops, Quality, Decisions, Map, Analytics, Admin
         components/ui/          # shadcn/ui component library
+        components/explainability/ # ExplainabilityPanel (causal reasoning, radar, keywords, provenance)
+        components/mcp/         # McpTab (tool browser, resource monitor, invocation, piRAG search)
         layouts/                # MainLayout (sidebar, header, theme, notifications)
         hooks/                  # useTheme, useWebSocket
         lib/                    # Utility functions (cn, fmt, jget, jpost)
