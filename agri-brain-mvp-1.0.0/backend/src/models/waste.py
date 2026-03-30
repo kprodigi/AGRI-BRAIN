@@ -171,24 +171,43 @@ def compute_waste_rate(
     return waste_raw
 
 
-def context_waste_penalty(mcp_compliance: dict | None = None) -> float:
-    """Reduce waste saving capacity when compliance violations are detected.
+def context_waste_penalty(mcp_compliance: dict | None = None, action: str = "cold_chain") -> float:
+    """Reduce waste saving capacity when compliance violations are detected
+    AND the agent continues with cold chain despite the violation.
 
-    Returns a multiplier in [0.7, 1.0] applied to the save factor.
-    Critical violations: 0.7 (30% reduction in saving capacity)
-    Warning violations: 0.85 (15% reduction)
-    Compliant: 1.0 (no penalty)
+    When the agent reroutes (local_redistribute or recovery), the penalty
+    does not apply because successful rerouting is the correct response
+    to a compliance violation. MCP-informed rerouting under violation
+    slightly improves the save factor (1.05 multiplier) due to better
+    situational awareness.
+
+    Returns a multiplier applied to the save factor:
+    - cold_chain + critical violation: 0.70
+    - cold_chain + warning violation: 0.85
+    - cold_chain + compliant: 1.00
+    - local_redistribute/recovery + any violation: 1.05 (awareness bonus)
+    - local_redistribute/recovery + compliant: 1.00
+    - compliance_data=None: 1.00
     """
     if mcp_compliance is None:
         return 1.0
-    if mcp_compliance.get("compliant", True):
-        return 1.0
+
+    compliant = mcp_compliance.get("compliant", True)
     violations = mcp_compliance.get("violations", [])
-    if any(v.get("severity") == "critical" for v in violations):
-        return 0.70
-    if violations:
-        return 0.85
-    return 1.0
+    has_critical = any(v.get("severity") == "critical" for v in violations)
+
+    if action == "cold_chain":
+        # Penalize: agent ignored the violation and continued with cold chain
+        if has_critical:
+            return 0.70
+        if not compliant:
+            return 0.85
+        return 1.0
+    else:
+        # Reward: agent detected violation and rerouted correctly
+        if not compliant:
+            return 1.05
+        return 1.0
 
 
 def compute_save_factor(
@@ -227,7 +246,7 @@ def compute_save_factor(
 
     # Context-dependent penalty from MCP compliance check
     if compliance_data is not None:
-        save *= context_waste_penalty(compliance_data)
+        save *= context_waste_penalty(compliance_data, action)
 
     save_capacity = 1.0 / (1.0 + surplus_save_penalty * surplus_ratio)
     return save * save_capacity

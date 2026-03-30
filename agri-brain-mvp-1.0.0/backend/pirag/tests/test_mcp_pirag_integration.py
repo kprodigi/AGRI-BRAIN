@@ -461,30 +461,52 @@ def test_full_pipeline_nonzero_modifier():
     )
 
 
-# ---- Test 24: Waste compliance penalty ----
+# ---- Test 24: Waste compliance penalty (action-conditional) ----
 def test_waste_compliance_penalty():
-    """Verify save factor reduction under compliance violations."""
+    """Verify action-conditional waste penalty behavior."""
     from src.models.waste import compute_save_factor, context_waste_penalty
 
-    # No compliance data — no penalty
+    critical = {"compliant": False, "violations": [{"severity": "critical"}]}
+    warning = {"compliant": False, "violations": [{"severity": "warning"}]}
+    compliant = {"compliant": True}
+
+    # No compliance data — no penalty regardless of action
     assert context_waste_penalty(None) == 1.0
-    assert context_waste_penalty({"compliant": True}) == 1.0
+    assert context_waste_penalty(None, "local_redistribute") == 1.0
 
-    # Warning violation — 15% reduction
-    assert context_waste_penalty({"compliant": False, "violations": [{"severity": "warning"}]}) == 0.85
+    # Compliant — no penalty regardless of action
+    assert context_waste_penalty(compliant, "cold_chain") == 1.0
+    assert context_waste_penalty(compliant, "local_redistribute") == 1.0
 
-    # Critical violation — 30% reduction
-    assert context_waste_penalty({"compliant": False, "violations": [{"severity": "critical"}]}) == 0.70
+    # ColdChain + violation — penalized (agent ignored the violation)
+    assert context_waste_penalty(critical, "cold_chain") == 0.70
+    assert context_waste_penalty(warning, "cold_chain") == 0.85
 
-    # Save factor with and without compliance data
+    # LocalRedistribute + violation — awareness bonus (agent rerouted correctly)
+    assert context_waste_penalty(critical, "local_redistribute") == 1.05
+    assert context_waste_penalty(warning, "local_redistribute") == 1.05
+
+    # Recovery + violation — awareness bonus
+    assert context_waste_penalty(critical, "recovery") == 1.05
+
+    # Save factor: rerouting under violation should IMPROVE vs no compliance data
     sf_clean = compute_save_factor("local_redistribute", "agribrain")
-    sf_critical = compute_save_factor(
+    sf_rerouted = compute_save_factor(
         "local_redistribute", "agribrain",
-        compliance_data={"compliant": False, "violations": [{"severity": "critical"}]},
+        compliance_data=critical,
     )
-    assert sf_critical < sf_clean, f"Critical violation should reduce save factor: {sf_critical} vs {sf_clean}"
-    assert abs(sf_critical / sf_clean - 0.70) < 0.01, (
-        f"Critical penalty should be ~0.70 ratio, got {sf_critical/sf_clean:.3f}"
+    assert sf_rerouted > sf_clean, (
+        f"Rerouting under violation should improve save factor: {sf_rerouted} vs {sf_clean}"
+    )
+
+    # Save factor: cold chain under violation should be penalized
+    sf_cc_clean = compute_save_factor("cold_chain", "agribrain")
+    sf_cc_violation = compute_save_factor(
+        "cold_chain", "agribrain",
+        compliance_data=critical,
+    )
+    assert sf_cc_violation < sf_cc_clean, (
+        f"ColdChain under violation should reduce save factor: {sf_cc_violation} vs {sf_cc_clean}"
     )
 
 
