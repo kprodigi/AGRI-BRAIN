@@ -27,8 +27,8 @@ const AGENTS = [
 
 const SCENARIOS = [
   { id: "baseline",         label: "Baseline",         trigger: "Normal operating conditions — routine check-in" },
-  { id: "heatwave",         label: "Heatwave",         trigger: "SPOILAGE_ALERT: Temperature spike detected (+20\u00B0C), accelerated decay" },
-  { id: "overproduction",   label: "Overproduction",   trigger: "SURPLUS_ALERT: Inventory at 2.5\u00D7 baseline, redistribution needed" },
+  { id: "heatwave",         label: "Heatwave",         trigger: "SPOILAGE_ALERT: Temperature spike detected (+20°C), accelerated decay" },
+  { id: "overproduction",   label: "Overproduction",   trigger: "SURPLUS_ALERT: Inventory at 2.5× baseline, redistribution needed" },
   { id: "cyber_outage",     label: "Cyber Outage",     trigger: "CAPACITY_UPDATE: Demand dropped to 15%, refrigeration degraded" },
   { id: "adaptive_pricing", label: "Adaptive Pricing", trigger: "REROUTE_REQUEST: Demand oscillation detected, pricing volatility" },
 ];
@@ -159,7 +159,7 @@ function AgentBubble({ agent, memo, isTyping, scenarioTrigger, isFirst }) {
                           <Badge className={cn("text-[8px] border-0", comp.compliant ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-600")}>
                             {comp.compliant ? "\u2713 Compliant" : "\u2717 Violation"}
                           </Badge>
-                          <span className="text-[9px] text-muted-foreground">T={comp.readings?.temperature}\u00B0C max={comp.thresholds?.temp_max_c}\u00B0C</span>
+                          <span className="text-[9px] text-muted-foreground">T={comp.readings?.temperature}°C max={comp.thresholds?.temp_max_c}°C</span>
                         </div>
                       )}
                     </div>
@@ -185,7 +185,7 @@ function AgentBubble({ agent, memo, isTyping, scenarioTrigger, isFirst }) {
 
                     {/* Context Features */}
                     <div>
-                      <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Context Features (\u03C8)</p>
+                      <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Context Features (ψ)</p>
                       <div className="space-y-0.5">
                         {FEATURE_LABELS.map(f => (
                           <div key={f.key} className="flex items-center gap-1.5 text-[10px]">
