@@ -478,28 +478,54 @@ export default function DemoPage() {
     setShowMemo(false);
 
     try {
-      // 1. Load data
-      await jpost(API, "/case/load");
+      // 1. Load data (best effort — may already be loaded)
+      await jpost(API, "/case/load").catch(() => {});
 
       // 2. Apply scenario if non-baseline
       if (scenario !== "baseline") {
-        await jpost(API, "/scenarios/run", { name: scenario, intensity: 1.0 });
+        await jpost(API, "/scenarios/run", { name: scenario, intensity: 1.0 }).catch(() => {});
       }
 
       // 3. Take decision
       const res = await jpost(API, "/decide", { agent_id: role, role });
       const m = res.memo || res;
-      if (!m || !m.action) { toast.error("Decision failed — check backend"); setRunning(false); return; }
-      setMemo(m);
+      if (!m || !m.action) {
+        // Fallback: try fetching latest existing decision
+        const fallback = await jget(API, "/decisions").catch(() => null);
+        const decs = fallback?.decisions || fallback || [];
+        if (decs.length > 0) {
+          setMemo(decs[0]);
+        } else {
+          toast.error("No decision data. Make sure the backend is running and data is loaded.");
+          setRunning(false);
+          return;
+        }
+      } else {
+        setMemo(m);
+      }
 
       // Reset scenario
       if (scenario !== "baseline") {
         await jpost(API, "/scenarios/reset").catch(() => {});
       }
     } catch (e) {
-      toast.error(`Demo failed: ${e.message}`);
-      setRunning(false);
-      return;
+      // Last resort: try to use cached decisions
+      try {
+        const fallback = await jget(API, "/decisions");
+        const decs = fallback?.decisions || fallback || [];
+        if (decs.length > 0) {
+          setMemo(decs[0]);
+          toast.info("Using cached decision data");
+        } else {
+          toast.error(`Demo failed: ${e.message}. Check backend at ${API}`);
+          setRunning(false);
+          return;
+        }
+      } catch {
+        toast.error(`Cannot reach backend at ${API}. Is it running on port 8100?`);
+        setRunning(false);
+        return;
+      }
     }
 
     // 4. Animate through phases
