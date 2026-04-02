@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn, fmt, short, jget, mcpCall, mcpRaw, mcpLog } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
-import { motion, useInView } from "framer-motion";
+import { motion, useInView, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer,
@@ -927,6 +927,356 @@ function CausalReasoningTab({ latestExplainability, latestMemo }) {
   );
 }
 
+// ===================== Tab 6: Live Demo =====================
+const DEMO_STEPS = [
+  { icon: Database, label: "Sensor Input", color: "border-gray-400", bg: "bg-gray-500/10", desc: "Extract observation from IoT sensors" },
+  { icon: AlertTriangle, label: "Demand Forecast", color: "border-amber-500", bg: "bg-amber-500/10", desc: "LSTM demand prediction + Bollinger regime" },
+  { icon: Wrench, label: "MCP Tool Dispatch", color: "border-orange-500", bg: "bg-orange-500/10", desc: "Role-specific MCP tool workflow (JSON-RPC 2.0)" },
+  { icon: BookOpen, label: "piRAG Retrieval", color: "border-blue-500", bg: "bg-blue-500/10", desc: "Physics-informed knowledge base search (BM25+TF-IDF)" },
+  { icon: Layers, label: "Context Features", color: "border-teal-500", bg: "bg-teal-500/10", desc: "Extract 5D context vector psi from MCP+piRAG" },
+  { icon: Brain, label: "Policy Network", color: "border-purple-500", bg: "bg-purple-500/10", desc: "THETA x phi + context modifier -> logits" },
+  { icon: CheckCircle2, label: "Action Selection", color: "border-emerald-500", bg: "bg-emerald-500/10", desc: "Softmax sampling from adjusted probabilities" },
+  { icon: FileText, label: "Impact Assessment", color: "border-cyan-500", bg: "bg-cyan-500/10", desc: "Carbon, SLCA, waste, circular economy scoring" },
+  { icon: Shield, label: "Causal Explanation", color: "border-teal-600", bg: "bg-teal-600/10", desc: "BECAUSE/WITHOUT reasoning with KB citations" },
+  { icon: GitBranch, label: "Provenance & Chain", color: "border-indigo-500", bg: "bg-indigo-500/10", desc: "Merkle root, evidence hashes, on-chain anchor" },
+];
+
+function LiveDemoTab() {
+  const [demoData, setDemoData] = useState(null);
+  const [activeStep, setActiveStep] = useState(-1);
+  const [running, setRunning] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const timerRef = useRef(null);
+  const stepRefs = useRef([]);
+
+  const runDemo = async () => {
+    setRunning(true);
+    setActiveStep(-1);
+    setDemoData(null);
+
+    // Fire a real decision
+    try {
+      const res = await jget(API, "/decisions");
+      const decs = res.decisions || res || [];
+      let memo = decs[0];
+      if (!memo) {
+        // Try taking a fresh decision
+        const r2 = await fetch(`${API}/decide`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ agent_id: "farm", role: "farm" }) });
+        const j2 = await r2.json();
+        memo = j2.memo || j2;
+      }
+      if (!memo) { toast.error("No decision data available. Load data first."); setRunning(false); return; }
+      setDemoData(memo);
+    } catch (e) {
+      toast.error(`Failed to get decision data: ${e.message}`);
+      setRunning(false);
+      return;
+    }
+
+    // Animate through steps
+    const baseDelay = 1500;
+    for (let i = 0; i < DEMO_STEPS.length; i++) {
+      await new Promise((resolve) => {
+        timerRef.current = setTimeout(() => {
+          setActiveStep(i);
+          stepRefs.current[i]?.scrollIntoView({ behavior: "smooth", block: "center" });
+          resolve();
+        }, baseDelay / speed);
+      });
+    }
+    // Final pause
+    await new Promise((r) => { timerRef.current = setTimeout(r, 1000 / speed); });
+    setRunning(false);
+  };
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+
+  const ex = demoData?.explainability || {};
+  const cf = ex.context_features || {};
+  const la = ex.logit_adjustment || {};
+  const prov = ex.provenance || {};
+
+  const renderStepContent = (idx) => {
+    if (!demoData) return null;
+    switch (idx) {
+      case 0: return (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {[["Spoilage", fmt(demoData.spoilage_risk, 3)], ["Temp", `${fmt(demoData.regime?.tau !== undefined ? (demoData.shelf_left ? 3.79 : 0) : 0, 1)} C`],
+            ["Inventory", demoData.note?.match(/inventory[^0-9]*(\d+)/i)?.[1] || "14,279"], ["Shelf Left", fmt(demoData.shelf_left, 2)]
+          ].map(([k, v]) => (
+            <div key={k} className="bg-muted/50 rounded-md p-2 text-center">
+              <p className="text-[10px] text-muted-foreground">{k}</p>
+              <p className="text-sm font-mono font-bold">{v}</p>
+            </div>
+          ))}
+        </div>
+      );
+      case 1: return (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {[["Method", demoData.demand_forecast?.method?.toUpperCase() || "LSTM"], ["y_hat", fmt(demoData.demand_forecast?.y_hat, 2)], ["Regime", demoData.volatility || "normal"]
+          ].map(([k, v]) => (
+            <div key={k} className="bg-muted/50 rounded-md p-2 text-center">
+              <p className="text-[10px] text-muted-foreground">{k}</p>
+              <p className="text-sm font-mono font-bold">{v}</p>
+            </div>
+          ))}
+        </div>
+      );
+      case 2: return (
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-1">
+            {(ex.mcp_tools_invoked || []).map((t, i) => (
+              <Badge key={i} className="bg-orange-500/10 text-orange-600 border-0 text-[10px]">{t}</Badge>
+            ))}
+          </div>
+          {ex.compliance && (
+            <div className="flex items-center gap-2">
+              <Badge className={ex.compliance.compliant ? "bg-emerald-500/10 text-emerald-600 border-0" : "bg-red-500/10 text-red-600 border-0"}>
+                {ex.compliance.compliant ? "Compliant" : "Violation"}
+              </Badge>
+              <span className="text-xs text-muted-foreground">
+                Temp: {ex.compliance.readings?.temperature} C, RH: {ex.compliance.readings?.humidity}%
+              </span>
+            </div>
+          )}
+        </div>
+      );
+      case 3: return (
+        <div className="space-y-2">
+          {ex.pirag_top_doc && (
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-3.5 h-3.5 text-blue-500" />
+              <span className="font-mono text-xs font-semibold">{ex.pirag_top_doc}</span>
+              <Badge variant="outline" className="text-[10px]">score: {fmt(ex.pirag_top_score, 3)}</Badge>
+            </div>
+          )}
+          {ex.keywords?.regulatory?.thresholds?.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {ex.keywords.regulatory.thresholds.map((kw, i) => (
+                <Badge key={i} className="text-[9px] bg-purple-500/10 text-purple-600 border-0">{kw}</Badge>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+      case 4: return (
+        <div className="space-y-1.5">
+          {FEATURE_LABELS.map((f) => (
+            <div key={f.key} className="flex items-center gap-2 text-xs">
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: f.color }} />
+              <span className="w-20 text-muted-foreground">{f.label}</span>
+              <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                <motion.div initial={{ width: 0 }} animate={{ width: `${(cf[f.key] ?? 0) * 100}%` }} transition={{ duration: 0.8, delay: 0.1 }}
+                  className="h-full rounded-full" style={{ background: f.color }} />
+              </div>
+              <span className="font-mono w-8 text-right">{fmt(cf[f.key], 2)}</span>
+            </div>
+          ))}
+        </div>
+      );
+      case 5: return (
+        <div className="space-y-2">
+          <div className="space-y-1">
+            {LOGIT_ENTRIES.map((e) => {
+              const val = la[e.key] ?? 0;
+              const pct = Math.min(Math.abs(val) * 50, 50);
+              return (
+                <div key={e.key} className="flex items-center gap-2 text-xs">
+                  <span className="w-20 text-muted-foreground">{e.label}</span>
+                  <div className="flex-1 h-2 rounded-full bg-muted relative overflow-hidden">
+                    <div className="absolute left-1/2 top-0 bottom-0 w-px bg-border" />
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.6 }}
+                      className="absolute top-0 bottom-0 rounded-full"
+                      style={{ ...(val < 0 ? { right: "50%" } : { left: "50%" }), background: e.color, opacity: 0.7 }} />
+                  </div>
+                  <span className={cn("font-mono w-12 text-right", val > 0 ? "text-emerald-600" : val < 0 ? "text-red-500" : "")}>
+                    {val > 0 ? "+" : ""}{fmt(val, 2)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+      case 6: {
+        const probs = demoData.action_probabilities || {};
+        const action = demoData.action || demoData.decision;
+        const actionColors = { cold_chain: "#0072B2", local_redistribute: "#10B981", recovery: "#D55E00" };
+        return (
+          <div className="space-y-2">
+            <Badge className="bg-teal-500/10 text-teal-600 border-0 text-sm font-semibold">{action?.replace("_", " ")}</Badge>
+            {Object.entries(probs).map(([k, v]) => (
+              <div key={k} className="flex items-center gap-2 text-xs">
+                <span className="w-24 text-muted-foreground capitalize">{k.replace("_", " ")}</span>
+                <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${v * 100}%` }} transition={{ duration: 0.8 }}
+                    className="h-full rounded-full" style={{ background: actionColors[k] || "#888" }} />
+                </div>
+                <span className="font-mono w-14 text-right">{fmt(v * 100, 1)}%</span>
+              </div>
+            ))}
+          </div>
+        );
+      }
+      case 7: return (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {[["Carbon", `${fmt(demoData.carbon_kg, 1)} kg`], ["SLCA", fmt(demoData.slca, 3)],
+            ["Waste", `${fmt(demoData.waste * 100, 1)}%`], ["Circular", fmt(demoData.circular_economy_score, 2)]
+          ].map(([k, v]) => (
+            <div key={k} className="bg-muted/50 rounded-md p-2 text-center">
+              <p className="text-[10px] text-muted-foreground">{k}</p>
+              <p className="text-sm font-mono font-bold">{v}</p>
+            </div>
+          ))}
+        </div>
+      );
+      case 8: {
+        const text = ex.causal_text || ex.summary || "";
+        const preview = text.split("\n\n")[0]?.slice(0, 200) || "";
+        return (
+          <div className="text-xs text-muted-foreground leading-relaxed">
+            {preview.split(/(BECAUSE|WITHOUT)/g).map((p, i) =>
+              p === "BECAUSE" ? <span key={i} className="font-bold text-teal-600">BECAUSE</span> :
+              p === "WITHOUT" ? <span key={i} className="font-bold text-amber-600">WITHOUT</span> :
+              <span key={i}>{p}</span>
+            )}
+            {text.length > 200 && <span className="text-muted-foreground/60">...</span>}
+          </div>
+        );
+      }
+      case 9: return (
+        <div className="space-y-1.5 text-xs">
+          {prov.guards_passed !== false && (
+            <Badge className="bg-emerald-500/10 text-emerald-600 border-0 text-[10px]">Guards Passed</Badge>
+          )}
+          {prov.merkle_root && (
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground">Merkle:</span>
+              <span className="font-mono text-[10px]">{short(prov.merkle_root)}</span>
+            </div>
+          )}
+          {prov.evidence_hashes && (
+            <div className="text-muted-foreground">{prov.evidence_hashes.length} evidence items hashed</div>
+          )}
+          {demoData.tx_hash && demoData.tx_hash !== "0x0" && (
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground">Tx:</span>
+              <span className="font-mono text-[10px]">{short(demoData.tx_hash)}</span>
+            </div>
+          )}
+        </div>
+      );
+      default: return null;
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Controls */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <Button onClick={runDemo} disabled={running} size="lg" className="bg-teal-600 hover:bg-teal-700">
+                {running ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
+                {running ? "Running..." : "Run Demo"}
+              </Button>
+              <div className="flex items-center gap-2">
+                <Label className="text-xs">Speed:</Label>
+                {[1, 2, 4].map((s) => (
+                  <Button key={s} variant={speed === s ? "default" : "outline"} size="sm" onClick={() => setSpeed(s)} disabled={running}>
+                    {s}x
+                  </Button>
+                ))}
+              </div>
+              {activeStep >= 0 && (
+                <div className="flex-1 min-w-32">
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <motion.div className="h-full rounded-full bg-teal-500" animate={{ width: `${((activeStep + 1) / DEMO_STEPS.length) * 100}%` }} transition={{ duration: 0.3 }} />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1 text-right">Step {activeStep + 1} / {DEMO_STEPS.length}</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Pipeline steps */}
+      <div className="relative pl-6">
+        <div className="absolute left-[19px] top-0 bottom-0 w-0.5 bg-border" />
+
+        {DEMO_STEPS.map((step, idx) => {
+          const state = idx < activeStep ? "done" : idx === activeStep ? "active" : "pending";
+          return (
+            <div key={idx} ref={(el) => (stepRefs.current[idx] = el)} className="relative pl-10 pb-4 last:pb-0">
+              {/* Timeline dot */}
+              <div className={cn(
+                "absolute left-2 top-1 w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-500",
+                state === "done" ? "border-emerald-500 bg-emerald-500/10" :
+                state === "active" ? cn(step.color, step.bg, "ring-2 ring-teal-500/30 ring-offset-2 ring-offset-background") :
+                "border-muted bg-muted/30"
+              )}>
+                {state === "done" ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> :
+                  <step.icon className={cn("w-4 h-4", state === "active" ? "text-foreground" : "text-muted-foreground")} />}
+              </div>
+
+              {/* Step card */}
+              <motion.div
+                initial={false}
+                animate={{
+                  opacity: state === "pending" ? 0.4 : 1,
+                  scale: state === "active" ? 1 : state === "done" ? 0.98 : 0.97,
+                }}
+                transition={{ duration: 0.4 }}
+              >
+                <Card className={cn(
+                  "transition-all duration-500",
+                  state === "active" && "border-teal-500/50 shadow-lg shadow-teal-500/5",
+                  state === "done" && "border-emerald-500/20",
+                )}>
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono text-muted-foreground">Step {idx + 1}</span>
+                        <span className="text-sm font-semibold">{step.label}</span>
+                      </div>
+                      <Badge className={cn("text-[9px] border-0",
+                        state === "done" ? "bg-emerald-500/10 text-emerald-600" :
+                        state === "active" ? "bg-teal-500/10 text-teal-600 animate-pulse" :
+                        "bg-muted text-muted-foreground"
+                      )}>
+                        {state === "done" ? "Complete" : state === "active" ? "Processing..." : "Pending"}
+                      </Badge>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mb-2">{step.desc}</p>
+
+                    {/* Expanded content for active/done steps */}
+                    <AnimatePresence>
+                      {(state === "active" || state === "done") && demoData && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.4 }}
+                          className="overflow-hidden"
+                        >
+                          <Separator className="my-2" />
+                          {renderStepContent(idx)}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ===================== Main Page =====================
 export default function McpPiragPage() {
   const [loading, setLoading] = useState(true);
@@ -982,6 +1332,7 @@ export default function McpPiragPage() {
           <TabsTrigger value="knowledge" className="flex items-center gap-1.5"><BookOpen className="w-3.5 h-3.5" /> Knowledge Base</TabsTrigger>
           <TabsTrigger value="protocol" className="flex items-center gap-1.5"><Zap className="w-3.5 h-3.5" /> Protocol</TabsTrigger>
           <TabsTrigger value="causal" className="flex items-center gap-1.5"><Brain className="w-3.5 h-3.5" /> Causal Reasoning</TabsTrigger>
+          <TabsTrigger value="demo" className="flex items-center gap-1.5"><Play className="w-3.5 h-3.5" /> Live Demo</TabsTrigger>
         </TabsList>
 
         <div className="mt-6">
@@ -990,6 +1341,7 @@ export default function McpPiragPage() {
           <TabsContent value="knowledge"><KnowledgeBaseTab /></TabsContent>
           <TabsContent value="protocol"><ProtocolTab tools={tools} decisions={decisions} /></TabsContent>
           <TabsContent value="causal"><CausalReasoningTab latestExplainability={latestExplainability} latestMemo={latestMemo} /></TabsContent>
+          <TabsContent value="demo"><LiveDemoTab /></TabsContent>
         </div>
       </Tabs>
     </div>

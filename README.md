@@ -40,6 +40,10 @@ REINFORCE learning for sustainable food logistics.
 |:---:|:---:|
 | ![Protocol](docs/screenshots/mcp-pirag-protocol-light.png) | ![Causal](docs/screenshots/mcp-pirag-causal-light.png) |
 
+| Live Pipeline Demo |
+|:---:|
+| ![Demo](docs/screenshots/mcp-pirag-demo.gif) |
+
 ## Architecture Highlights
 
 - **MCP interoperability layer** with 12 registered tools, 12 resources, and 5 prompts
