@@ -350,6 +350,38 @@ export default function TheaterPage() {
         </p>
       </motion.div>
 
+      {/* Video Player */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Play className="w-4 h-4 text-teal-600" /> Recorded Demo — All 5 Scenarios
+            </CardTitle>
+            <CardDescription>Pre-recorded walkthrough: Heatwave, Overproduction, Cyber Outage, Adaptive Pricing, Baseline</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <video
+              controls
+              className="w-full rounded-lg border shadow-sm"
+              poster=""
+              preload="metadata"
+            >
+              <source src={`${API}/static/video/agri-brain-agent-theater.mp4`} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      <Separator />
+
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+        <h2 className="text-lg font-semibold">Interactive Mode</h2>
+        <p className="text-sm text-muted-foreground">
+          Or run the theater live — select a scenario, watch agents decide in real-time
+        </p>
+      </motion.div>
+
       {/* Controls */}
       <Card>
         <CardContent className="p-4">
