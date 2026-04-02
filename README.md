@@ -32,6 +32,14 @@ REINFORCE learning for sustainable food logistics.
 |:---:|:---:|
 | ![MCP Invoke](docs/screenshots/admin-mcp-invoke-light.png) | ![piRAG](docs/screenshots/admin-mcp-pirag-light.png) |
 
+| MCP/piRAG Overview | Context Features | Knowledge Base |
+|:---:|:---:|:---:|
+| ![Overview](docs/screenshots/mcp-pirag-overview-light.png) | ![Features](docs/screenshots/mcp-pirag-features-light.png) | ![KB](docs/screenshots/mcp-pirag-knowledge-light.png) |
+
+| Protocol & Traces | Causal Reasoning |
+|:---:|:---:|
+| ![Protocol](docs/screenshots/mcp-pirag-protocol-light.png) | ![Causal](docs/screenshots/mcp-pirag-causal-light.png) |
+
 ## Architecture Highlights
 
 - **MCP interoperability layer** with 12 registered tools, 12 resources, and 5 prompts
