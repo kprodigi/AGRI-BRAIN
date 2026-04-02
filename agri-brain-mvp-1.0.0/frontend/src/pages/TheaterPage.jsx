@@ -204,7 +204,7 @@ function AgentBubble({ agent, memo, isTyping, scenarioTrigger, isFirst }) {
                     <div className="grid grid-cols-4 gap-1.5">
                       {[
                         ["SLCA", fmt(memo.slca, 3)],
-                        ["CO\u2082", `${fmt(memo.carbon_kg, 1)}kg`],
+                        ["CO₂", `${fmt(memo.carbon_kg, 1)}kg`],
                         ["Waste", `${fmt(memo.waste * 100, 1)}%`],
                         ["Circular", fmt(memo.circular_economy_score, 2)],
                       ].map(([k, v]) => (
@@ -438,7 +438,7 @@ export default function TheaterPage() {
                     <p className="text-xl font-bold text-teal-600">{fmt(scenarioSummary.avgSlca, 3)}</p>
                   </div>
                   <div className="text-center bg-muted/30 rounded-lg p-3">
-                    <p className="text-[10px] text-muted-foreground uppercase">Total CO\u2082</p>
+                    <p className="text-[10px] text-muted-foreground uppercase">Total CO₂</p>
                     <p className="text-xl font-bold text-amber-600">{fmt(scenarioSummary.totalCarbon, 1)} kg</p>
                   </div>
                   <div className="text-center bg-muted/30 rounded-lg p-3">
