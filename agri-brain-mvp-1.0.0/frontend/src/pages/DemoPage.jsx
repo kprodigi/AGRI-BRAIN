@@ -10,6 +10,7 @@ import { cn, fmt, short, jget, jpost } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Cell,
@@ -19,8 +20,10 @@ import {
   Play, Thermometer, Zap, TrendingUp, Network, Wrench, BookOpen,
   Layers, Brain, CheckCircle2, Shield, FileText, GitBranch, Copy,
   Loader2, ChevronDown, ChevronUp, ArrowDown, AlertTriangle,
-  Truck, Recycle, Warehouse,
+  Truck, Recycle, Warehouse, MessageCircle, Send,
 } from "lucide-react";
+
+const TheaterPage = React.lazy(() => import("./TheaterPage.jsx"));
 
 const API = getApiBase();
 
@@ -560,6 +563,35 @@ export default function DemoPage() {
         </p>
       </motion.div>
 
+      {/* Video Player */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Play className="w-4 h-4 text-teal-600" /> Recorded Walkthrough
+            </CardTitle>
+            <CardDescription>Pre-recorded video explaining the complete AGRI-BRAIN system</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <video controls className="w-full rounded-lg border shadow-sm" preload="metadata">
+              <source src={`${API}/static/video/agri-brain-agent-theater.mp4`} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      <Separator />
+
+      {/* Tabs: Pipeline + Agent Theater */}
+      <Tabs defaultValue="pipeline">
+        <TabsList className="w-full justify-start">
+          <TabsTrigger value="pipeline" className="flex items-center gap-1.5"><Network className="w-3.5 h-3.5" /> Pipeline Demo</TabsTrigger>
+          <TabsTrigger value="theater" className="flex items-center gap-1.5"><MessageCircle className="w-3.5 h-3.5" /> Agent Theater</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pipeline">
+
       {/* Controls */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
         <Card>
@@ -726,6 +758,16 @@ export default function DemoPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+        </TabsContent>
+
+        <TabsContent value="theater">
+          <React.Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>}>
+            <TheaterPage />
+          </React.Suspense>
+        </TabsContent>
+
+      </Tabs>
     </div>
   );
 }
