@@ -30,6 +30,7 @@ import {
   User,
   Brain,
   Play,
+  MessageCircle,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -40,6 +41,7 @@ const NAV_ITEMS = [
   { key: "analytics", label: "Analytics", icon: BarChart3, path: "/analytics" },
   { key: "mcp-pirag", label: "MCP/piRAG", icon: Brain, path: "/mcp-pirag" },
   { key: "demo", label: "Demo", icon: Play, path: "/demo" },
+  { key: "theater", label: "Theater", icon: MessageCircle, path: "/theater" },
 ];
 
 export default function MainLayout({ children, wsConnected, notifications, unreadCount, onMarkAllRead }) {

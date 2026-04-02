@@ -44,6 +44,10 @@ REINFORCE learning for sustainable food logistics.
 |:---:|:---:|
 | ![Demo Page](docs/screenshots/demo-page-light.png) | ![Pipeline](docs/screenshots/demo-pipeline.gif) |
 
+| Agent Decision Theater | Heatwave Scenario |
+|:---:|:---:|
+| ![Theater](docs/screenshots/theater-page-light.png) | ![Heatwave](docs/screenshots/agent-theater-heatwave.gif) |
+
 ## Architecture Highlights
 
 - **MCP interoperability layer** with 12 registered tools, 12 resources, and 5 prompts
