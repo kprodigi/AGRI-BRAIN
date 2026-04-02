@@ -31,7 +31,7 @@ _RESULTS_DIR = _SIM_DIR / "results"
 # ---------------------------------------------------------------------------
 @router.post("/generate")
 def generate_results():
-    """Run all 5 scenarios x 5 modes and return a summary JSON.
+    """Run all 5 scenarios x 8 modes and return a summary JSON.
 
     Also saves CSV tables and (optionally) figures to disk.
     """

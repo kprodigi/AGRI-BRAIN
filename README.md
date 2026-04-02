@@ -24,6 +24,14 @@ REINFORCE learning for sustainable food logistics.
 |:---:|
 | ![Scenarios](docs/screenshots/admin-scenarios-light.png) |
 
+| Explainability Panel | MCP Tools | MCP Resources |
+|:---:|:---:|:---:|
+| ![Explainability](docs/screenshots/decisions-explainability-light.png) | ![MCP Tools](docs/screenshots/admin-mcp-tools-light.png) | ![MCP Resources](docs/screenshots/admin-mcp-resources-light.png) |
+
+| MCP Invocation | piRAG Search |
+|:---:|:---:|
+| ![MCP Invoke](docs/screenshots/admin-mcp-invoke-light.png) | ![piRAG](docs/screenshots/admin-mcp-pirag-light.png) |
+
 ## Architecture Highlights
 
 - **MCP interoperability layer** with 12 registered tools, 12 resources, and 5 prompts

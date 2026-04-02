@@ -5,42 +5,61 @@ results for the AGRI-BRAIN system.
 
 ## Overview
 
-The simulation runs 5 **scenarios** × 5 **modes** to evaluate the AGRI-BRAIN
-adaptive supply-chain intelligence system against baselines and ablation
-variants.
+The simulation runs 5 **scenarios** x 8 **modes** (40 episodes) to evaluate
+the AGRI-BRAIN adaptive supply-chain intelligence system against baselines and
+ablation variants, including MCP/piRAG context integration ablations.
 
 ### Scenarios
 
 | ID | Description |
 |----|-------------|
-| `heatwave` | 72 h climate-induced heatwave: +20 °C ramp (hours 24–48) with exponential tail; +10 % RH |
-| `overproduction` | Inventory multiplied 2.5× during hours 12–60; triggers redistribution |
-| `cyber_outage` | Demand drops to 15 % from hour 24 onward; +10 °C refrigeration degradation |
-| `adaptive_pricing` | Demand oscillation (amplitude 45, period 60) plus Gaussian noise (σ=14) |
+| `heatwave` | 72 h climate-induced heatwave: +20 C ramp (hours 24-48) with exponential tail; +10 % RH |
+| `overproduction` | Inventory multiplied 2.5x during hours 12-60; triggers redistribution |
+| `cyber_outage` | Demand drops to 15 % from hour 24 onward; +10 C refrigeration degradation |
+| `adaptive_pricing` | Demand oscillation (amplitude 45, period 60) plus Gaussian noise (sigma=14) |
 | `baseline` | Original sensor data with no perturbation |
 
 ### Modes
 
 | Mode | Description |
 |------|-------------|
-| `static` | Always selects cold-chain routing — no intelligence |
+| `static` | Always selects cold-chain routing; no intelligence |
 | `hybrid_rl` | Softmax policy with regime tilt but no SLCA logit correction |
 | `no_pinn` | Degraded spoilage estimate (no PINN integration) |
 | `no_slca` | Full PINN but uniform social scores (no SLCA optimisation) |
-| `agribrain` | Full system: PINN spoilage + SLCA-aware routing + regime tilt |
+| `no_context` | Full agribrain policy but MCP/piRAG context disabled |
+| `mcp_only` | MCP tool outputs only (compliance, forecast); piRAG features zeroed |
+| `pirag_only` | piRAG retrieval only (regulatory, confidence); MCP features zeroed |
+| `agribrain` | Full system: PINN + SLCA + MCP tools + piRAG retrieval + online learning |
+
+The last four modes (`no_context`, `mcp_only`, `pirag_only`, `agribrain`)
+share the same RNG seed per scenario so that ARI differences reflect only
+context injection, not stochastic noise.
 
 ## Models Used
 
 All models are imported from the backend (`backend/src/models/`):
 
-- **Spoilage (PINN)**: First-order ODE decay `dC/dt = -k_eff(t,T,H) · C` with
-  Arrhenius parameters `k_ref=0.0021 h⁻¹`, `Ea/R=8000 K`, `T_ref=277.15 K`, `β=0.25`
-  and Baranyi lag phase `λ=12.0 h`
+- **Spoilage (PINN)**: First-order ODE decay `dC/dt = -k_eff(t,T,H) * C` with
+  Arrhenius parameters `k_ref=0.0021 h^-1`, `Ea/R=8000 K`, `T_ref=277.15 K`, `beta=0.25`
+  and Baranyi lag phase `lambda=12.0 h`
 - **Forecast**: Exponential smoothing with horizon tiling (Section 4.2.2)
 - **SLCA**: 4-component Social Life-Cycle Assessment
   (Carbon, Labour, Resilience, Price transparency)
-- **Policy**: Contextual softmax policy with θ matrix (3 actions × 6 features)
+- **Policy**: Contextual softmax policy with theta matrix (3 actions x 6 features)
   and Bollinger volatility regime tilt
+
+## MCP/piRAG Context Integration
+
+Each agent step invokes role-specific MCP tools and piRAG knowledge retrieval:
+
+- **MCP tools** (JSON-RPC 2.0): 12 registered tools including compliance check, spoilage forecast, SLCA lookup, chain query, policy oracle, calculator, footprint query, recovery capacity, pirag_query, explain, and context_features
+- **piRAG pipeline**: 20-document knowledge base with BM25+TF-IDF hybrid retrieval (k=4), physics-informed reranking, scenario-discriminative query expansion
+- **Context features**: 5D feature vector psi = [compliance severity, forecast urgency, retrieval confidence, regulatory pressure, recovery saturation] with learned Theta_context weight matrix
+- **Governance override**: Deterministic redistribution when cumulative evidence strongly disfavors cold chain
+- **Online REINFORCE learning**: Sign-constrained gradient updates on Theta_context weights
+- **Causal explanation engine**: BECAUSE/WITHOUT reasoning with [KB:] citations and Merkle provenance
+- **Protocol recording**: Every MCP JSON-RPC interaction is captured as genuine protocol traffic
 
 ## Multi-Agent Architecture
 
@@ -52,6 +71,7 @@ based on hours since harvest:
 |-------|------|---------------|---------------------|---------|
 | FarmAgent | farm | [0, 18) | [+0.08, -0.03, -0.05] | Preserve freshness |
 | ProcessorAgent | processor | [18, 36) | [-0.02, +0.06, -0.04] | Processing efficiency |
+| CooperativeAgent | cooperative | [12, 30) overlay | [0.00, +0.04, -0.04] | Governance coordination |
 | DistributorAgent | distributor | [36, 54) | [-0.05, +0.10, -0.05] | Community redistribution |
 | RecoveryAgent | recovery | [54, +inf) | [-0.06, -0.02, +0.08] | Waste valorization |
 
@@ -66,12 +86,12 @@ the global policy.
 
 | Metric | Formula | Description |
 |--------|---------|-------------|
-| ARI | `(1 − waste) · SLCA · shelf_quality` | Adaptive Resilience Index |
+| ARI | `(1 - waste) * SLCA * shelf_quality` | Adaptive Resilience Index |
 | RLE | `routed_at_risk / total_at_risk` | Reverse Logistics Efficiency |
-| Waste | `ρ − saved` (intervention model) | Effective produce loss rate |
-| SLCA | `w_c·C + w_l·L + w_r·R + w_p·P` | Social LCA composite score |
-| Carbon | `Σ(km × carbon_per_km)` | Total CO₂ emissions (kg) |
-| Equity | `1 − σ(SLCA_values)` | SLCA uniformity index (Gini-inspired) |
+| Waste | `rho - saved` (intervention model) | Effective produce loss rate |
+| SLCA | `w_c*C + w_l*L + w_r*R + w_p*P` | Social LCA composite score |
+| Carbon | `sum(km * carbon_per_km)` | Total CO2 emissions (kg) |
+| Equity | `1 - sigma(SLCA_values)` | SLCA uniformity index (Gini-inspired) |
 
 ## Reproducing Results
 
@@ -83,31 +103,43 @@ python generate_figures.py    # generates all 7 publication figures
 ```
 
 All outputs are saved to `mvp/simulation/results/`:
-- `table1_summary.csv` — Scenario × Method (static, hybrid_rl, agribrain)
-- `table2_ablation.csv` — Scenario × Variant (all 5 modes)
-- `fig2_heatwave.png/.pdf` — Heatwave deep-dive (2×2)
-- `fig3_overproduction.png/.pdf` — Overproduction reverse logistics (2×2)
-- `fig4_cyber.png/.pdf` — Cyber outage analysis (1×3)
-- `fig5_pricing.png/.pdf` — Demand volatility & pricing (2×2)
-- `fig6_cross.png/.pdf` — Cross-scenario comparison (2×2 bars)
-- `fig7_ablation.png/.pdf` — Ablation study (1×3 bars)
-- `fig8_green_ai.png/.pdf` — Green AI carbon footprint (1×2)
+- `table1_summary.csv` -- Scenario x Method (static, hybrid_rl, agribrain)
+- `table2_ablation.csv` -- Scenario x Variant (all 8 modes)
+- `traces_*.json` -- Decision traces with keywords, causal reasoning, provenance per scenario
+- `mcp_protocol_*.json` -- Genuine MCP JSON-RPC interaction logs per scenario
+- `fig2_heatwave.png/.pdf` through `fig8_green_ai.png/.pdf` -- 7 publication figures
 
 ## Expected Approximate Results (AGRI-BRAIN mode)
 
 | Scenario | ARI | Waste | RLE | SLCA |
 |----------|-----|-------|-----|------|
-| Heatwave | ~0.60 | ~0.03 | ~0.98 | ~0.74 |
-| Overproduction | ~0.60 | ~0.05 | ~0.95 | ~0.70 |
-| Cyber Outage | ~0.64 | ~0.04 | ~0.84 | ~0.73 |
-| Price Volatility | ~0.72 | ~0.02 | ~0.82 | ~0.78 |
-| Baseline | ~0.72 | ~0.02 | ~0.88 | ~0.78 |
+| Heatwave | 0.614 | 0.021 | 0.994 | 0.756 |
+| Overproduction | 0.628 | 0.042 | 0.985 | 0.726 |
+| Cyber Outage | 0.648 | 0.033 | 0.808 | 0.733 |
+| Adaptive Pricing | 0.742 | 0.019 | 0.909 | 0.805 |
+| Baseline | 0.760 | 0.018 | 0.960 | 0.818 |
 
-### Ablation Impact (largest to smallest)
+### Ablation Impact (ARI, largest to smallest drop from agribrain)
 
-1. **Removing SLCA** (`no_slca`) — drops SLCA to ~0.59–0.64 and ARI to ~0.49–0.58
-2. **Removing PINN** (`no_pinn`) — slight waste increase; ARI ~0.57–0.69
-3. **Hybrid RL** (no SLCA logit bonus) — slightly less optimal routing; ARI ~0.54–0.67
+1. **Removing SLCA** (`no_slca`) -- drops SLCA to ~0.60-0.65 and ARI to ~0.50-0.58
+2. **Removing PINN** (`no_pinn`) -- slight waste increase; ARI ~0.57-0.71
+3. **Hybrid RL only** -- no SLCA logit bonus; ARI ~0.55-0.66
+4. **No context** (`no_context`) -- full policy but no MCP/piRAG; ARI ~0.59-0.73
+5. **MCP only** (`mcp_only`) -- compliance/forecast tools without piRAG retrieval; ARI +0.001-0.022 over no_context
+6. **piRAG only** (`pirag_only`) -- knowledge retrieval without MCP tools; ARI +0.006-0.024 over no_context
+7. **Full AGRI-BRAIN** (`agribrain`) -- all components; ARI +0.008-0.033 over no_context
+
+piRAG consistently contributes more than MCP across all 5 scenarios. Zero rank inversions.
+
+### Context Diagnostics (agribrain mode)
+
+| Scenario | MCP calls | piRAG queries | Governance overrides | Learner delta-theta norm |
+|----------|-----------|---------------|---------------------|--------------------------|
+| Heatwave | ~450 | 288 | ~68 | 0.023 |
+| Overproduction | ~680 | 288 | 0 | 0.032 |
+| Cyber Outage | ~430 | 288 | ~159 | 0.024 |
+| Adaptive Pricing | ~490 | 288 | 0 | 0.042 |
+| Baseline | ~430 | 288 | 0 | 0.048 |
 
 ## Seed & Reproducibility
 
@@ -119,6 +151,6 @@ Deterministic seeding ensures exact reproducibility across platforms.
 The simulation is also accessible via the backend API:
 
 ```
-POST /results/generate    → runs simulation, returns summary JSON
-GET  /results/figures/{filename}  → serves generated figure files
+POST /results/generate    -> runs simulation, returns summary JSON
+GET  /results/figures/{filename}  -> serves generated figure files
 ```
