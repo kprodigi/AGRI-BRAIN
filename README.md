@@ -48,6 +48,8 @@ REINFORCE learning for sustainable food logistics.
 |:---:|:---:|
 | ![Theater](docs/screenshots/theater-page-light.png) | ![Heatwave](docs/screenshots/agent-theater-heatwave.gif) |
 
+> **Full video**: [Agent Decision Theater — All 5 Scenarios (MP4)](docs/screenshots/agri-brain-agent-theater.mp4) — 220 frames showing all 5 agents processing heatwave, overproduction, cyber outage, adaptive pricing, and baseline scenarios.
+
 ## Architecture Highlights
 
 - **MCP interoperability layer** with 12 registered tools, 12 resources, and 5 prompts
