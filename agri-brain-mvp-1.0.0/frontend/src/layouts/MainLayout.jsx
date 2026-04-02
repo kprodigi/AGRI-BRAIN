@@ -29,6 +29,7 @@ import {
   WifiOff,
   User,
   Brain,
+  Play,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -38,6 +39,7 @@ const NAV_ITEMS = [
   { key: "map", label: "Map", icon: MapPin, path: "/map" },
   { key: "analytics", label: "Analytics", icon: BarChart3, path: "/analytics" },
   { key: "mcp-pirag", label: "MCP/piRAG", icon: Brain, path: "/mcp-pirag" },
+  { key: "demo", label: "Demo", icon: Play, path: "/demo" },
 ];
 
 export default function MainLayout({ children, wsConnected, notifications, unreadCount, onMarkAllRead }) {

@@ -40,9 +40,9 @@ REINFORCE learning for sustainable food logistics.
 |:---:|:---:|
 | ![Protocol](docs/screenshots/mcp-pirag-protocol-light.png) | ![Causal](docs/screenshots/mcp-pirag-causal-light.png) |
 
-| Live Pipeline Demo |
-|:---:|
-| ![Demo](docs/screenshots/mcp-pirag-demo.gif) |
+| System Demo | Live Pipeline Walkthrough |
+|:---:|:---:|
+| ![Demo Page](docs/screenshots/demo-page-light.png) | ![Pipeline](docs/screenshots/demo-pipeline.gif) |
 
 ## Architecture Highlights
 

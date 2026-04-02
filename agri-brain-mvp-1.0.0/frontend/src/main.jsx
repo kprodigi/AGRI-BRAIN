@@ -16,6 +16,7 @@ const MapPage = lazy(() => import("./pages/MapPage.jsx"));
 const AnalyticsPage = lazy(() => import("./pages/AnalyticsPage.jsx"));
 const AdminPage = lazy(() => import("./pages/AdminPage.jsx"));
 const McpPiragPage = lazy(() => import("./pages/McpPiragPage.jsx"));
+const DemoPage = lazy(() => import("./pages/DemoPage.jsx"));
 
 function PageLoader() {
   return (
@@ -47,6 +48,7 @@ const router = createBrowserRouter([
   { path: "/map", element: <AppShell><MapPage /></AppShell> },
   { path: "/analytics", element: <AppShell><AnalyticsPage /></AppShell> },
   { path: "/mcp-pirag", element: <AppShell><McpPiragPage /></AppShell> },
+  { path: "/demo", element: <AppShell><DemoPage /></AppShell> },
   { path: "/admin", element: <AppShell><AdminPage /></AppShell> },
 ]);
 
