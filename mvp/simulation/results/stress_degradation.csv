@@ -1,0 +1,9 @@
+Scenario,Stressor,Method,ari_delta,waste_delta,slca_delta,rle_delta,constraint_violation_delta,latency_ms_delta
+baseline,sensor_noise,agribrain,0.000198,-0.000732,-0.00014,0.0,0.0,-1.486775
+baseline,sensor_noise,hybrid_rl,0.000577,0.000203,0.000477,0.0,0.125,0.013325
+baseline,missing_data,agribrain,0.000678,-0.000144,0.000595,0.0,0.0,-5.59645
+baseline,missing_data,hybrid_rl,0.000738,-9.9e-05,0.000669,0.0,0.0,0.030875
+baseline,telemetry_delay,agribrain,-0.027569,0.002203,-0.026361,0.0,-0.5,3.093763
+baseline,telemetry_delay,hybrid_rl,0.019712,-0.006572,0.016514,0.0,-0.125,0.019325
+baseline,mcp_fault_injection,agribrain,-0.047005,0.007654,-0.043448,0.0,-0.25,2.945988
+baseline,mcp_fault_injection,mcp_only,0.075026,-0.008246,0.072434,0.0,-0.25,6.655663

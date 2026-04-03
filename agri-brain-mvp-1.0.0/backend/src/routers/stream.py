@@ -2,11 +2,17 @@
 import asyncio, json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from src.agents.bus import BUS
+from src.security import websocket_auth_ok
 
 router = APIRouter()
 
 @router.websocket("/stream")
 async def stream(ws: WebSocket):
+    if not websocket_auth_ok(ws):
+        await ws.accept()
+        await ws.send_text(json.dumps({"type": "error", "payload": {"detail": "unauthorized"}}))
+        await ws.close(code=1008)
+        return
     await BUS.connect(ws)
     try:
         await ws.send_text(json.dumps({"type": "hello", "payload": {"ok": True}}))

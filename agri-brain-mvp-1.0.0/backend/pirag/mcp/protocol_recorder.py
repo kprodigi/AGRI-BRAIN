@@ -28,7 +28,9 @@ class ProtocolRecorder:
 
     def _recording_handler(self, msg: MCPMessage) -> MCPMessage:
         """Intercept and record every MCP message."""
+        t0 = time.time()
         response = self._original_handler(msg)
+        elapsed_ms = (time.time() - t0) * 1000.0
 
         if self._enabled and len(self._records) < self.max_records:
             record: Dict[str, Any] = {
@@ -43,6 +45,7 @@ class ProtocolRecorder:
                     "jsonrpc": response.jsonrpc,
                     "id": response.id,
                 },
+                "latency_ms": round(elapsed_ms, 3),
             }
             if response.result is not None:
                 record["response"]["result"] = _truncate(response.result, max_depth=3)

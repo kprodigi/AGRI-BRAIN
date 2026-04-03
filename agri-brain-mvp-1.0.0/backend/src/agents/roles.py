@@ -14,6 +14,14 @@ import numpy as np
 from .base import Observation, SupplyChainAgent
 from .message import InterAgentMessage, MessageType
 
+ROLE_MODEL_PROFILES = {
+    "farm": {"decision_style": "physics_first", "preferred_qos": "high_reliability"},
+    "processor": {"decision_style": "forecast_first", "preferred_qos": "low_latency"},
+    "cooperative": {"decision_style": "governance_balanced", "preferred_qos": "high_reliability"},
+    "distributor": {"decision_style": "cost_speed_tradeoff", "preferred_qos": "low_cost"},
+    "recovery": {"decision_style": "circular_economy", "preferred_qos": "best_effort"},
+}
+
 
 # ---------------------------------------------------------------------------
 # Stage boundaries (hours since harvest)
@@ -54,6 +62,7 @@ class FarmAgent(SupplyChainAgent):
             role="farm",
             role_bias=np.array([+0.12, -0.05, -0.07]),
         )
+        self.profile = ROLE_MODEL_PROFILES["farm"]
 
     def observe(self, env_state: Dict[str, Any], hour: float) -> Observation:
         return Observation(
@@ -104,6 +113,7 @@ class ProcessorAgent(SupplyChainAgent):
             role="processor",
             role_bias=np.array([-0.06, +0.14, -0.08]),
         )
+        self.profile = ROLE_MODEL_PROFILES["processor"]
 
     def observe(self, env_state: Dict[str, Any], hour: float) -> Observation:
         return Observation(
@@ -154,6 +164,7 @@ class DistributorAgent(SupplyChainAgent):
             role="distributor",
             role_bias=np.array([-0.12, +0.28, -0.16]),
         )
+        self.profile = ROLE_MODEL_PROFILES["distributor"]
 
     def observe(self, env_state: Dict[str, Any], hour: float) -> Observation:
         return Observation(
@@ -208,6 +219,7 @@ class CooperativeAgent(SupplyChainAgent):
             role="cooperative",
             role_bias=np.array([-0.04, +0.10, -0.06]),
         )
+        self.profile = ROLE_MODEL_PROFILES["cooperative"]
         self._coordination_broadcasts = 0
 
     def observe(self, env_state: Dict[str, Any], hour: float) -> Observation:
@@ -274,6 +286,7 @@ class RecoveryAgent(SupplyChainAgent):
             role="recovery",
             role_bias=np.array([-0.12, -0.05, +0.17]),
         )
+        self.profile = ROLE_MODEL_PROFILES["recovery"]
         self._capacity_broadcasts = 0
 
     def observe(self, env_state: Dict[str, Any], hour: float) -> Observation:

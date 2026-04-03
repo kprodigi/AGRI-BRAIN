@@ -19,7 +19,7 @@ import {
   Settings, Link2, Shield, Flame, Zap, Save, RefreshCw, Play, RotateCcw,
   ChevronDown, AlertTriangle, CheckCircle2, XCircle, Loader2, HelpCircle,
   FileText, Cloud, ShieldAlert, DollarSign, Layers, Search, Download,
-  Info, Plug,
+  Info, Plug, ServerCog,
 } from "lucide-react";
 import McpTab from "@/components/mcp/McpTab";
 
@@ -499,6 +499,114 @@ function QuickDecisionTab() {
   );
 }
 
+// ===================== Runtime Config Tab =====================
+function RuntimeConfigTab() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [cfg, setCfg] = useState(null);
+
+  const load = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const r = await jget("/debug/config");
+      setCfg(r || {});
+    } catch (e) {
+      setCfg(null);
+      setError(e?.message || "Unable to load runtime config");
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const boolBadge = (v) => (
+    <Badge variant={v ? "default" : "secondary"}>{v ? "true" : "false"}</Badge>
+  );
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <ServerCog className="w-4 h-4" />
+                Runtime Config
+              </CardTitle>
+              <CardDescription>
+                Live backend config from <code className="font-mono text-xs">/debug/config</code>.
+              </CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+              {loading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-1" />}
+              Refresh
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="space-y-3">
+              {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
+            </div>
+          ) : error ? (
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+              <p className="font-medium mb-1">Could not fetch runtime config.</p>
+              <p className="text-xs">{error}</p>
+              <p className="text-xs mt-2 text-muted-foreground">
+                If this is expected, enable debug routes on backend and provide API key when required.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="rounded-md border p-3 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Environment</span>
+                <Badge variant="outline" className="font-mono">{cfg?.env ?? "—"}</Badge>
+              </div>
+              <div className="rounded-md border p-3 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Require API Key</span>
+                {boolBadge(Boolean(cfg?.require_api_key))}
+              </div>
+              <div className="rounded-md border p-3 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Allow Local Without Key</span>
+                {boolBadge(Boolean(cfg?.allow_local_without_api_key))}
+              </div>
+              <div className="rounded-md border p-3 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Debug Routes Enabled</span>
+                {boolBadge(Boolean(cfg?.enable_debug_routes))}
+              </div>
+              <div className="rounded-md border p-3 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">WebSocket Key Required</span>
+                {boolBadge(Boolean(cfg?.websocket_require_api_key))}
+              </div>
+              <div className="rounded-md border p-3 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Chain Private Key Required</span>
+                {boolBadge(Boolean(cfg?.chain_require_privkey))}
+              </div>
+              <div className="rounded-md border p-3 md:col-span-2">
+                <p className="text-sm text-muted-foreground mb-2">CORS Origins</p>
+                <div className="flex flex-wrap gap-2">
+                  {(cfg?.cors_origins || []).length === 0 ? (
+                    <span className="text-xs text-muted-foreground">No origins configured</span>
+                  ) : (
+                    (cfg.cors_origins || []).map((o, i) => (
+                      <Badge key={`${o}-${i}`} variant="outline" className="font-mono text-[11px]">
+                        {o}
+                      </Badge>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ===================== Main Admin Page =====================
 export default function AdminPage() {
   const [apiOk, setApiOk] = useState(true);
@@ -528,6 +636,7 @@ export default function AdminPage() {
           <TabsTrigger value="audit" className="flex items-center gap-1.5"><Shield className="w-4 h-4" /> Audit</TabsTrigger>
           <TabsTrigger value="scenarios" className="flex items-center gap-1.5"><Flame className="w-4 h-4" /> Scenarios</TabsTrigger>
           <TabsTrigger value="quick" className="flex items-center gap-1.5"><Zap className="w-4 h-4" /> Quick Decision</TabsTrigger>
+          <TabsTrigger value="runtime" className="flex items-center gap-1.5"><ServerCog className="w-4 h-4" /> Runtime</TabsTrigger>
           <TabsTrigger value="mcp" className="flex items-center gap-1.5"><Plug className="w-4 h-4" /> MCP</TabsTrigger>
         </TabsList>
 
@@ -537,6 +646,7 @@ export default function AdminPage() {
           <TabsContent value="audit"><AuditTab /></TabsContent>
           <TabsContent value="scenarios"><ScenariosTab /></TabsContent>
           <TabsContent value="quick"><QuickDecisionTab /></TabsContent>
+          <TabsContent value="runtime"><RuntimeConfigTab /></TabsContent>
           <TabsContent value="mcp"><McpTab /></TabsContent>
         </div>
       </Tabs>

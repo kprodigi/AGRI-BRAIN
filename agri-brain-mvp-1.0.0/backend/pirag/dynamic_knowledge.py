@@ -95,6 +95,7 @@ def ingest_decision_history(
         return 0
 
     docs_ingested = 0
+    seen_ids = set()
     for start in range(0, len(decisions), block_size):
         block = decisions[start:start + block_size]
         if len(block) < block_size // 2:
@@ -104,10 +105,14 @@ def ingest_decision_history(
         hour_end = block[-1].get("hour", (start + len(block)) * 0.25)
 
         doc = synthesize_decision_document(block, scenario, (hour_start, hour_end))
-        if doc["text"]:
+        if doc["text"] and doc["id"] not in seen_ids:
+            # Guard against injecting very low-information blocks.
+            if "Total decisions in block: 0" in doc["text"]:
+                continue
             try:
                 pipeline.ingest([doc])
                 docs_ingested += 1
+                seen_ids.add(doc["id"])
             except Exception:
                 pass
 

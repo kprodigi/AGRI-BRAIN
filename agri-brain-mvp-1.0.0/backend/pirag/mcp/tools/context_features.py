@@ -19,6 +19,7 @@ def update_context_cache(
     explanation: Optional[Dict[str, Any]] = None,
     hour: float = 0.0,
     override: bool = False,
+    robustness: Optional[Dict[str, Any]] = None,
 ) -> None:
     """Update the module-level cache with current context state."""
     _cache.clear()
@@ -47,6 +48,7 @@ def update_context_cache(
     _cache["hour"] = hour
     _cache["override"] = override
     _cache["explanation"] = explanation or {}
+    _cache["robustness"] = robustness or {}
     _cache["features"] = {
         name: _cache.get(f"psi_{i}", 0.0) for i, name in enumerate(feature_names)
     }

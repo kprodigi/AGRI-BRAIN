@@ -1,8 +1,9 @@
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Header, Request
 from pydantic import BaseModel
 from typing import List, Dict, Any
 from ...agent_pipeline import PiRAGPipeline
+from src.security import enforce_api_key
 
 router = APIRouter()
 _pipe = PiRAGPipeline()
@@ -18,8 +19,13 @@ class AskReq(BaseModel):
     anchor_on_chain: bool = False
 
 @router.post("/ingest")
-def ingest(docs: List[DocIn]):
-    _pipe.ingest([d.dict() for d in docs])
+def ingest(
+    docs: List[DocIn],
+    request: Request,
+    x_api_key: str | None = Header(default=None, alias="x-api-key"),
+):
+    enforce_api_key(request, x_api_key)
+    _pipe.ingest([d.model_dump() for d in docs])
     return {"ok": True, "n": len(docs)}
 
 @router.post("/ask")

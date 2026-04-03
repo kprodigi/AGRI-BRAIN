@@ -16,6 +16,7 @@ class ContextEvaluator:
 
     def __init__(self) -> None:
         self._records: List[Dict[str, Any]] = []
+        self._retrieval_counterfactual: List[Dict[str, Any]] = []
 
     def record(
         self,
@@ -70,6 +71,7 @@ class ContextEvaluator:
         changed = [r for r in self._records if r["changed"]]
         unchanged = [r for r in self._records if not r["changed"]]
 
+        retrieval_changed = [r for r in self._retrieval_counterfactual if r.get("top_doc_changed")]
         return {
             "total_steps": total,
             "context_changed_action_count": len(changed),
@@ -77,8 +79,28 @@ class ContextEvaluator:
             "mean_modifier_magnitude": float(np.mean([r["modifier_magnitude"] for r in self._records])),
             "mean_reward_when_changed": float(np.mean([r["reward"] for r in changed])) if changed else 0.0,
             "mean_reward_when_unchanged": float(np.mean([r["reward"] for r in unchanged])) if unchanged else 0.0,
+            "retrieval_counterfactual_steps": len(self._retrieval_counterfactual),
+            "retrieval_top_doc_change_rate": (
+                len(retrieval_changed) / max(1, len(self._retrieval_counterfactual))
+            ),
         }
+
+    def record_retrieval_counterfactual(
+        self,
+        hour: float,
+        role: str,
+        top_doc_id: str,
+        cf_top_doc_id: str,
+    ) -> None:
+        self._retrieval_counterfactual.append({
+            "hour": hour,
+            "role": role,
+            "top_doc_id": top_doc_id,
+            "cf_top_doc_id": cf_top_doc_id,
+            "top_doc_changed": bool(cf_top_doc_id and cf_top_doc_id != top_doc_id),
+        })
 
     def reset(self) -> None:
         """Clear all records."""
         self._records.clear()
+        self._retrieval_counterfactual.clear()

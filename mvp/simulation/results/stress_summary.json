@@ -1,0 +1,110 @@
+{
+  "meta": {
+    "scenarios": [
+      "baseline"
+    ],
+    "max_rows": 8
+  },
+  "results": {
+    "baseline": {
+      "baseline": {
+        "agribrain": {
+          "ari": 0.7345939064698267,
+          "waste": 0.02927552481646328,
+          "slca": 0.7524952422494926,
+          "rle": 0.0,
+          "constraint_violation_rate": 0.75,
+          "decision_latency_ms": 2051.0031874982815
+        },
+        "hybrid_rl": {
+          "ari": 0.6635535366450628,
+          "waste": 0.0440613757621431,
+          "slca": 0.6910016664924687,
+          "rle": 0.0,
+          "constraint_violation_rate": 0.125,
+          "decision_latency_ms": 0.0991750002867775
+        },
+        "mcp_only": {
+          "ari": 0.6875550283461875,
+          "waste": 0.03284829911749505,
+          "slca": 0.7068915136610374,
+          "rle": 0.0,
+          "constraint_violation_rate": 0.75,
+          "decision_latency_ms": 2045.1316749995385
+        }
+      },
+      "sensor_noise": {
+        "agribrain": {
+          "ari": 0.7347919812333432,
+          "waste": 0.0285436449442946,
+          "slca": 0.7523553479671284,
+          "rle": 0.0,
+          "constraint_violation_rate": 0.75,
+          "decision_latency_ms": 2049.5164125013616
+        },
+        "hybrid_rl": {
+          "ari": 0.6641301388713494,
+          "waste": 0.044264681650915544,
+          "slca": 0.6914783126714528,
+          "rle": 0.0,
+          "constraint_violation_rate": 0.25,
+          "decision_latency_ms": 0.11249999897700036
+        }
+      },
+      "missing_data": {
+        "agribrain": {
+          "ari": 0.7352723371402627,
+          "waste": 0.029131429070408586,
+          "slca": 0.7530902998706206,
+          "rle": 0.0,
+          "constraint_violation_rate": 0.75,
+          "decision_latency_ms": 2045.4067375021623
+        },
+        "hybrid_rl": {
+          "ari": 0.6642912323036774,
+          "waste": 0.043962470040367616,
+          "slca": 0.6916710923086282,
+          "rle": 0.0,
+          "constraint_violation_rate": 0.125,
+          "decision_latency_ms": 0.13004999800614314
+        }
+      },
+      "telemetry_delay": {
+        "agribrain": {
+          "ari": 0.7070250487569314,
+          "waste": 0.031478457807372864,
+          "slca": 0.7261344060611044,
+          "rle": 0.0,
+          "constraint_violation_rate": 0.25,
+          "decision_latency_ms": 2054.0969499988933
+        },
+        "hybrid_rl": {
+          "ari": 0.6832659785500919,
+          "waste": 0.037489681802265466,
+          "slca": 0.7075159993673988,
+          "rle": 0.0,
+          "constraint_violation_rate": 0.0,
+          "decision_latency_ms": 0.1185000028272043
+        }
+      },
+      "mcp_fault_injection": {
+        "agribrain": {
+          "ari": 0.6875885034673229,
+          "waste": 0.036929734956863663,
+          "slca": 0.7090472980321325,
+          "rle": 0.0,
+          "constraint_violation_rate": 0.5,
+          "decision_latency_ms": 2053.9491749987064
+        },
+        "mcp_only": {
+          "ari": 0.7625811935751865,
+          "waste": 0.02460217033109164,
+          "slca": 0.7793259394501132,
+          "rle": 0.0,
+          "constraint_violation_rate": 0.5,
+          "decision_latency_ms": 2051.787337501082
+        }
+      }
+    }
+  }
+}

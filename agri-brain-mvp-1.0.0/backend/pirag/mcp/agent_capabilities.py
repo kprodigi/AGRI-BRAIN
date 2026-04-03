@@ -32,6 +32,7 @@ def register_farm_capabilities(server: MCPServer, farm_agent: Any) -> None:
             "at_risk_count": at_risk,
             "at_risk_fraction": round(at_risk_fraction, 3),
             "recommendation": recommendation,
+            "model_profile": getattr(farm_agent, "profile", {}),
         }
 
     server.registry.register(ToolSpec(
@@ -62,6 +63,7 @@ def register_recovery_capabilities(server: MCPServer, recovery_agent: Any) -> No
             "remaining_broadcasts": remaining,
             "preferred_pathway": preferred_pathway,
             "steps_handled": recovery_agent.state.get("steps_handled", 0),
+            "model_profile": getattr(recovery_agent, "profile", {}),
         }
 
     server.registry.register(ToolSpec(
@@ -83,6 +85,7 @@ def register_cooperative_capabilities(server: MCPServer, cooperative_agent: Any)
         return {
             "broadcasts_remaining": remaining,
             "steps_handled": cooperative_agent.state.get("steps_handled", 0),
+            "model_profile": getattr(cooperative_agent, "profile", {}),
         }
 
     server.registry.register(ToolSpec(
@@ -112,6 +115,7 @@ def register_processor_capabilities(server: MCPServer, processor_agent: Any) -> 
             "steps_handled": steps,
             "cumulative_waste": round(waste, 4),
             "surplus_assessment": surplus_assessment,
+            "model_profile": getattr(processor_agent, "profile", {}),
         }
 
     server.registry.register(ToolSpec(
@@ -136,6 +140,7 @@ def register_distributor_capabilities(server: MCPServer, distributor_agent: Any)
             "reroute_count": reroute_count,
             "at_risk_fraction": round(at_risk_fraction, 3),
             "steps_handled": steps,
+            "model_profile": getattr(distributor_agent, "profile", {}),
         }
 
     server.registry.register(ToolSpec(

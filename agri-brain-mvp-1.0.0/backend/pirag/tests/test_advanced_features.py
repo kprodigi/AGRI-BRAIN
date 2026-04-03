@@ -225,3 +225,31 @@ def test_coordinator_context_changes_probabilities():
     assert not np.allclose(probs_on, probs_off), (
         f"Context should shift probabilities. ON={probs_on}, OFF={probs_off}"
     )
+
+
+def test_reliability_retry_and_quorum():
+    from pirag.mcp.reliability import invoke_with_retry, quorum_success
+
+    calls = {"n": 0}
+
+    def flaky():
+        calls["n"] += 1
+        if calls["n"] < 2:
+            raise RuntimeError("temporary")
+        return {"ok": True}
+
+    out = invoke_with_retry(flaky, retries=2, backoff_s=0.0)
+    assert out["ok"] is True
+    assert quorum_success([None, {"ok": True}], min_success=1)
+
+
+def test_temporal_recency_scores():
+    from pirag.temporal_context import TemporalContextWindow
+
+    tw = TemporalContextWindow(max_entries=10, horizon_hours=10.0)
+    tw.add(1.0, "farm", "q1", "docA", 0.5, "regulatory")
+    tw.add(2.0, "farm", "q2", "docA", 0.6, "regulatory")
+    tw.add(5.0, "farm", "q3", "docB", 0.7, "sop")
+    scores = tw.recency_weighted_doc_scores(6.0)
+    assert "docA" in scores and "docB" in scores
+    assert tw.stale_context_ratio(6.0, stale_after_hours=2.0) >= 0.0

@@ -377,6 +377,11 @@ Results are saved to `mvp/simulation/results/`:
 |------------------------|---------------------------------------------------|
 | `table1_summary.csv`     | Per-scenario metrics (4 methods x 5 scenarios)              |
 | `table2_ablation.csv`    | Full ablation study (8 modes x 5 scenarios)                 |
+| `benchmark_summary.json` | Multi-seed benchmark means/std/CI                           |
+| `benchmark_significance.json` | Permutation-test p-values and effect sizes            |
+| `stress_summary.json`    | Stress-suite per-scenario robustness output                 |
+| `stress_degradation.csv` | Delta metrics under stressors                               |
+| `artifact_manifest.json` | SHA-256 reproducibility manifest                            |
 | `traces_*.json`          | Decision traces with keywords, causal reasoning, provenance |
 | `mcp_protocol_*.json`    | Genuine MCP JSON-RPC interaction logs                       |
 | `fig2_heatwave.png/pdf`  | Heatwave scenario comparison (2x2 panel)                    |
@@ -386,6 +391,8 @@ Results are saved to `mvp/simulation/results/`:
 | `fig6_cross.png/pdf`     | Cross-scenario performance comparison (2x2 grouped bars)    |
 | `fig7_ablation.png/pdf`  | Ablation study (1x3 grouped bars, 8 modes)                  |
 | `fig8_green_ai.png/pdf`  | Green AI and carbon footprint (1x2 panel)                   |
+| `fig9_mcp_pirag_robustness.png/pdf` | MCP/piRAG robustness and benchmark CIs         |
+| `fig10_latency_quality_frontier.png/pdf` | Quality-latency operational frontier       |
 
 Each figure is also saved as PDF for LaTeX inclusion.
 
@@ -467,6 +474,26 @@ python generate_figures.py
 
 # 8. Open browser: http://localhost:5173
 ```
+
+---
+
+## 9. Reproduce core research outputs (one command)
+
+From repo root:
+
+```bash
+python mvp/simulation/reproduce_core.py
+```
+
+This runs, in order:
+- results generation
+- validation checks
+- regression guard check (initialize once with `REGRESSION_GUARD_INIT=true`)
+- multi-seed benchmark with confidence intervals + significance tests
+- stress robustness suite (noise, missing data, telemetry delay, MCP faults)
+- figure generation
+- paper evidence export
+- artifact manifest (SHA-256 hashes for reproducibility)
 
 ---
 

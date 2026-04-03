@@ -50,6 +50,7 @@ if str(_BACKEND_SRC) not in sys.path:
 
 import json
 import os
+import time
 import numpy as np
 import pandas as pd
 
@@ -193,6 +194,11 @@ def run_episode(
     active_agent_trace = []
     circular_scores = []
     supply_hats = []
+    decision_latency_ms = []
+    constraint_violation_steps = 0
+    compliance_violation_steps = 0
+    temperature_violation_steps = 0
+    quality_violation_steps = 0
 
     for idx in range(n):
         row = df.iloc[idx]
@@ -228,14 +234,27 @@ def run_episode(
             "rho": rho, "inv": inv, "temp": temp, "rh": rh_val,
             "y_hat": y_hat, "tau": tau, "surplus_ratio": surplus_ratio,
             "supply_hat": supply_hat,
+            "policy_flags": {
+                "enable_mcp_qos_routing": bool(getattr(policy, "enable_mcp_qos_routing", False)),
+                "enable_mcp_reliability": bool(getattr(policy, "enable_mcp_reliability", False)),
+                "enable_pirag_counterfactual_eval": bool(getattr(policy, "enable_pirag_counterfactual_eval", False)),
+                "enable_physics_consistency_gate": bool(getattr(policy, "enable_physics_consistency_gate", False)),
+                "enable_heterogeneous_profiles": bool(getattr(policy, "enable_heterogeneous_profiles", False)),
+                "enable_temporal_retrieval_weighting": bool(getattr(policy, "enable_temporal_retrieval_weighting", True)),
+                "enable_dynamic_knowledge_feedback": bool(getattr(policy, "enable_dynamic_knowledge_feedback", True)),
+                "enable_failure_injection": bool(getattr(policy, "enable_failure_injection", False)),
+                "enable_research_metrics": bool(getattr(policy, "enable_research_metrics", False)),
+            },
         }
 
         # Action selection via AgentCoordinator
         # Pass the actual mode name so the coordinator can apply context_mode mapping
+        step_t0 = time.perf_counter()
         action_idx, probs, active_agent = coordinator.step(
             env_state, hours[idx], effective_mode if mode not in _CONTEXT_ENABLED_MODES else mode,
             policy, rng, scenario, rag_context=rag_context,
         )
+        decision_latency_ms.append((time.perf_counter() - step_t0) * 1000.0)
         action = ACTIONS[action_idx]
         active_agent_trace.append(active_agent.role)
 
@@ -260,14 +279,28 @@ def run_episode(
 
         # Pass MCP compliance data to waste model for MCP-enabled modes
         compliance_data = None
+        compliance_violation = False
         if mode in _MCP_WASTE_MODES and hasattr(coordinator, '_step_mcp_results'):
             compliance_data = coordinator._step_mcp_results.get("check_compliance")
+            if isinstance(compliance_data, dict):
+                compliance_violation = not bool(compliance_data.get("compliant", True))
+                if compliance_violation:
+                    compliance_violation_steps += 1
 
         save = compute_save_factor(
             action, "agribrain" if mode in _AGRIBRAIN_LOGIT_MODES else mode,
             surplus_ratio, compliance_data=compliance_data,
         )
         waste = float(waste_raw * (1.0 - save))
+
+        temp_violation = temp > float(policy.max_temp_c)
+        quality_violation = float(row.get("shelf_left", 1.0)) < float(policy.min_shelf_expedite)
+        if temp_violation:
+            temperature_violation_steps += 1
+        if quality_violation:
+            quality_violation_steps += 1
+        if temp_violation or quality_violation or compliance_violation:
+            constraint_violation_steps += 1
 
         # Circular economy score (Layer 1: reverse_logistics.py)
         recovery_opts = evaluate_recovery_options(rho, inv, temp)
@@ -335,17 +368,27 @@ def run_episode(
             eq_val = 1.0
         equity_trace.append(eq_val)
 
+    latency_arr = np.array(decision_latency_ms, dtype=float) if decision_latency_ms else np.array([0.0])
+    latency_penalty_usd = float(np.sum(np.maximum(latency_arr - 50.0, 0.0)) * 0.0002)
     result = {
         "ari": float(np.mean(ari_vals)), "rle": float(rle),
         "waste": float(np.mean(waste_vals)), "slca": float(np.mean(slca_vals)),
         "carbon": float(carbon_total), "equity": float(equity),
         "circular_economy": float(np.mean(circular_scores)),
         "mean_supply_forecast": float(np.mean(supply_hats)),
+        "mean_decision_latency_ms": float(np.mean(latency_arr)),
+        "p95_decision_latency_ms": float(np.percentile(latency_arr, 95)),
+        "latency_penalty_usd": latency_penalty_usd,
+        "constraint_violation_rate": float(constraint_violation_steps / max(n, 1)),
+        "compliance_violation_rate": float(compliance_violation_steps / max(n, 1)),
+        "temperature_violation_rate": float(temperature_violation_steps / max(n, 1)),
+        "quality_violation_rate": float(quality_violation_steps / max(n, 1)),
         "ari_trace": ari_vals, "waste_trace": waste_vals,
         "rho_trace": rho_trace, "action_trace": action_trace,
         "prob_trace": prob_trace, "reward_trace": reward_trace,
         "cumulative_reward": cumulative_reward, "carbon_trace": carbon_trace,
         "slca_component_trace": slca_component_trace, "slca_trace": slca_vals,
+        "decision_latency_ms_trace": decision_latency_ms,
         "equity_trace": equity_trace,
         "hours": hours.tolist(), "temp_trace": df["tempC"].tolist(),
         "rh_trace": df["RH"].tolist(), "demand_trace": df["demand_units"].tolist(),
@@ -380,6 +423,14 @@ def run_episode(
 def run_all(seed: int = SEED) -> dict:
     rng = np.random.default_rng(seed)
     policy = Policy()
+    # Optional experiment toggles from environment.
+    policy.enable_failure_injection = os.environ.get("FAILURE_INJECTION", "false").lower() == "true"
+    policy.enable_mcp_reliability = os.environ.get("MCP_RELIABILITY", "false").lower() == "true"
+    policy.enable_mcp_qos_routing = os.environ.get("MCP_QOS_ROUTING", "false").lower() == "true"
+    policy.enable_pirag_counterfactual_eval = os.environ.get("PIRAG_COUNTERFACTUAL", "false").lower() == "true"
+    policy.enable_physics_consistency_gate = os.environ.get("PHYSICS_CONSISTENCY_GATE", "false").lower() == "true"
+    policy.enable_heterogeneous_profiles = os.environ.get("HETEROGENEOUS_PROFILES", "false").lower() == "true"
+    policy.enable_research_metrics = os.environ.get("RESEARCH_METRICS", "false").lower() == "true"
 
     if not DATA_CSV.exists():
         raise FileNotFoundError(f"Data CSV not found: {DATA_CSV}")
@@ -412,7 +463,9 @@ def run_all(seed: int = SEED) -> dict:
             print(f"  [{scenario:>20s}] [{mode:>12s}] ARI={episode['ari']:.3f}  "
                   f"waste={episode['waste']:.3f}  RLE={episode['rle']:.3f}  "
                   f"SLCA={episode['slca']:.3f}  carbon={episode['carbon']:.0f}  "
-                  f"equity={episode['equity']:.3f}")
+                  f"equity={episode['equity']:.3f}  "
+                  f"lat_ms={episode['mean_decision_latency_ms']:.2f}  "
+                  f"cvr={episode['constraint_violation_rate']:.3f}")
             if mode in _CONTEXT_ENABLED_MODES and "context_summary" in episode:
                 ctx = episode["context_summary"]
                 evl = episode.get("evaluator_summary", {})
@@ -489,6 +542,9 @@ def run_all(seed: int = SEED) -> dict:
                 "ARI": round(ep["ari"], 3), "RLE": round(ep["rle"], 3),
                 "Waste": round(ep["waste"], 3), "SLCA": round(ep["slca"], 3),
                 "Carbon": round(ep["carbon"], 0), "Equity": round(ep["equity"], 3),
+                "DecisionLatencyMs": round(ep["mean_decision_latency_ms"], 3),
+                "ConstraintViolationRate": round(ep["constraint_violation_rate"], 4),
+                "ComplianceViolationRate": round(ep["compliance_violation_rate"], 4),
             })
     table1 = pd.DataFrame(table1_rows)
 
@@ -500,6 +556,8 @@ def run_all(seed: int = SEED) -> dict:
                 "Scenario": scenario, "Variant": mode,
                 "ARI": round(ep["ari"], 3), "RLE": round(ep["rle"], 3),
                 "Waste": round(ep["waste"], 3), "SLCA": round(ep["slca"], 3),
+                "DecisionLatencyMs": round(ep["mean_decision_latency_ms"], 3),
+                "ConstraintViolationRate": round(ep["constraint_violation_rate"], 4),
             })
     table2 = pd.DataFrame(table2_rows)
 
@@ -529,6 +587,8 @@ def get_summary_json(run_data: dict | None = None) -> dict:
                 "ari": round(ep["ari"], 4), "rle": round(ep["rle"], 4),
                 "waste": round(ep["waste"], 4), "slca": round(ep["slca"], 4),
                 "carbon": round(ep["carbon"], 2), "equity": round(ep["equity"], 4),
+                "decision_latency_ms": round(ep["mean_decision_latency_ms"], 4),
+                "constraint_violation_rate": round(ep["constraint_violation_rate"], 6),
             }
     return summary
 

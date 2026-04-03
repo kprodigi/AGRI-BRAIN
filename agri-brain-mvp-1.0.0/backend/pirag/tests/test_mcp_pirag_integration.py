@@ -63,6 +63,7 @@ def test_mcp_initialize_handshake():
     assert resp.result is not None
     assert resp.result["protocolVersion"] == "2024-11-05"
     assert "serverInfo" in resp.result
+    assert "extensions" in resp.result
 
 
 # ---- Test 3: MCP resources read ----
@@ -819,6 +820,19 @@ def test_new_mcp_tools_registered():
     assert "pirag_query" in tool_names, "pirag_query tool should be registered"
     assert "explain" in tool_names, "explain tool should be registered"
     assert "context_features" in tool_names, "context_features tool should be registered"
+
+
+def test_tools_list_has_qos_metadata():
+    from pirag.mcp.protocol import MCPServer, MCPMessage
+    from pirag.mcp.registry import get_default_registry
+    import pirag.mcp.registry as _reg_mod
+    _reg_mod._DEFAULT_REGISTRY = None
+
+    server = MCPServer(registry=get_default_registry())
+    resp = server.handle_message(MCPMessage(id=10, method="tools/list"))
+    tools = resp.result.get("tools", [])
+    assert len(tools) > 0
+    assert "x-qos" in tools[0]
 
 
 # ---- Test 35: Protocol recorder captures interactions ----

@@ -97,6 +97,7 @@ class AgentCoordinator:
         self._step_counterfactual_probs: Optional[np.ndarray] = None
         self._step_keywords: Dict[str, Any] = {}
         self._last_explanation: Optional[Dict[str, Any]] = None
+        self._step_dispatch_cfg: Dict[str, Any] = {}
 
         # Trace exporter and protocol recorder for paper evidence
         self._trace_exporter = None
@@ -190,6 +191,7 @@ class AgentCoordinator:
         self._step_counterfactual_probs = None
         self._step_keywords = {}
         self._last_explanation = None
+        self._step_dispatch_cfg = {}
 
         if self._protocol_recorder is not None:
             self._protocol_recorder.reset()
@@ -261,6 +263,15 @@ class AgentCoordinator:
         self._step_scenario = scenario
         self._step_role_bias = combined_bias
         self._step_override = False
+        self._step_dispatch_cfg = {
+            "enable_qos_routing": bool(getattr(policy, "enable_mcp_qos_routing", False)),
+            "enable_reliability": bool(getattr(policy, "enable_mcp_reliability", False)),
+            "qos_profile": "heterogeneous" if bool(getattr(policy, "enable_heterogeneous_profiles", False)) else "legacy",
+            "retries": 1,
+        }
+        if bool(getattr(policy, "enable_heterogeneous_profiles", False)):
+            role_profile = getattr(active, "profile", {})
+            self._step_dispatch_cfg["role_preferred_qos"] = role_profile.get("preferred_qos", "standard")
 
         context_mode = _CONTEXT_MODE_MAP.get(mode)
         if (self.context_enabled
@@ -326,7 +337,16 @@ class AgentCoordinator:
             mcp_results = dispatch_tools(
                 active.role, obs, self._registry, self._shared_context,
                 mcp_server=self._mcp_server,
+                dispatch_config=self._step_dispatch_cfg,
             )
+            if isinstance(obs.raw, dict):
+                flags = obs.raw.get("policy_flags", {})
+                if flags.get("enable_failure_injection", False):
+                    # Deterministic injection pattern for reproducibility.
+                    if int(hour) % 11 == 0:
+                        mcp_results["_fault_injected"] = "drop_tool_results"
+                        for tool_name in list(mcp_results.get("_tools_invoked", [])):
+                            mcp_results[tool_name] = None
 
             # Publish to shared context
             if self._shared_context is not None:
@@ -340,6 +360,15 @@ class AgentCoordinator:
                 active.role, obs, scenario, mcp_results,
                 self._pirag_pipeline, self._mcp_server,
             )
+            if self._context_evaluator is not None:
+                cf = rag_context.get("counterfactual", {})
+                if isinstance(cf, dict) and cf:
+                    self._context_evaluator.record_retrieval_counterfactual(
+                        hour=hour,
+                        role=active.role,
+                        top_doc_id=rag_context.get("top_doc_id", ""),
+                        cf_top_doc_id=cf.get("top_doc_id", ""),
+                    )
 
             # Update temporal window
             if self._temporal_window is not None:
@@ -388,6 +417,7 @@ class AgentCoordinator:
                     coop_mcp = dispatch_tools(
                         "cooperative", coop_obs, self._registry, self._shared_context,
                         mcp_server=self._mcp_server,
+                        dispatch_config=self._step_dispatch_cfg,
                     )
                     coop_rag = retrieve_role_context(
                         "cooperative", coop_obs, "", coop_mcp,
@@ -429,6 +459,9 @@ class AgentCoordinator:
                 "context_modifier": modifier.tolist() if modifier is not None else None,
                 "modifier_norm": float(np.linalg.norm(modifier)),
                 "guards_passed": rag_context.get("guards_passed", True),
+                "physics_consistency_score": rag_context.get("physics_consistency_score", 1.0),
+                "retrieval_metrics": rag_context.get("retrieval_metrics", {}),
+                "retrieval_counterfactual": rag_context.get("counterfactual", {}),
                 "rules_fired": self._step_rules_fired,
                 "context_mode": context_mode,
                 "governance_override": False,  # Updated after select_action
@@ -573,6 +606,11 @@ class AgentCoordinator:
                     explanation=self._last_explanation,
                     hour=hour,
                     override=self._step_override,
+                    robustness={
+                        "dispatch_profile": self._step_dispatch_cfg.get("qos_profile", "legacy"),
+                        "reliability_enabled": bool(self._step_dispatch_cfg.get("enable_reliability", False)),
+                        "fault_injected": bool(self._step_mcp_results.get("_fault_injected")),
+                    },
                 )
             except ImportError:
                 pass
@@ -612,7 +650,12 @@ class AgentCoordinator:
             })
 
             # Periodic piRAG knowledge ingestion (every 24 steps)
-            if len(self._decision_history) % 24 == 0 and self._pirag_pipeline is not None:
+            dyn_feedback_enabled = True
+            if self._step_policy is not None:
+                dyn_feedback_enabled = bool(
+                    getattr(self._step_policy, "enable_dynamic_knowledge_feedback", True)
+                )
+            if dyn_feedback_enabled and len(self._decision_history) % 24 == 0 and self._pirag_pipeline is not None:
                 try:
                     from pirag.dynamic_knowledge import ingest_decision_history
                     ingest_decision_history(
@@ -675,6 +718,12 @@ class AgentCoordinator:
             per_role[role]["nonzero_modifier_count"] = sum(1 for m in mags if m > 1e-9)
 
         modifiers = [e["modifier_norm"] for e in self._context_log]
+        physics_scores = [float(e.get("physics_consistency_score", 1.0)) for e in self._context_log]
+        faithfulness_vals = [
+            float((e.get("retrieval_metrics", {}) or {}).get("faithfulness_at_3", 0.0))
+            for e in self._context_log
+            if e.get("retrieval_metrics")
+        ]
 
         return {
             "total_context_steps": len(self._context_log),
@@ -683,6 +732,8 @@ class AgentCoordinator:
             "mean_modifier_magnitude": float(np.mean(modifiers)) if modifiers else 0.0,
             "nonzero_modifier_steps": sum(1 for m in modifiers if m > 1e-9),
             "governance_overrides": sum(1 for e in self._context_log if e.get("governance_override")),
+            "mean_physics_consistency": float(np.mean(physics_scores)) if physics_scores else 1.0,
+            "mean_retrieval_faithfulness_at_3": float(np.mean(faithfulness_vals)) if faithfulness_vals else 0.0,
             "per_role": per_role,
         }
 

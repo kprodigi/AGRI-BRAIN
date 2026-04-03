@@ -102,6 +102,7 @@ def physics_rerank(
         text = passage.get("text", "")
         base_score = passage.get("score", 0.0)
         physics_bonus = 0.0
+        consistency = 1.0
 
         # Temperature proximity bonus
         mentioned_temps = _extract_temperatures(text)
@@ -109,6 +110,8 @@ def physics_rerank(
             min_diff = min(abs(t - temperature) for t in mentioned_temps)
             temp_bonus = max(0.0, 0.10 - min_diff * 0.005)
             physics_bonus += temp_bonus
+            if min_diff > 12.0:
+                consistency *= 0.65
 
         # Spoilage-stage matching
         if rho > 0.30:
@@ -119,14 +122,23 @@ def physics_rerank(
         # Urgency bonus for high spoilage
         if rho > 0.40:
             physics_bonus += _keyword_density(text, _URGENCY_KEYWORDS) * 0.10
+            if _keyword_density(text, _URGENCY_KEYWORDS) < 0.01:
+                consistency *= 0.8
+
+        # Humidity-sensitive consistency penalty.
+        if humidity > 92 and "humidity" not in text.lower() and "relative humidity" not in text.lower():
+            consistency *= 0.9
 
         # Clamp physics bonus to [0, 0.30]
         physics_bonus = min(max(physics_bonus, 0.0), 0.30)
+        consistency = min(max(consistency, 0.0), 1.0)
+        adjusted_score = (base_score + physics_bonus) * consistency
 
         scored.append({
             **passage,
-            "score": base_score + physics_bonus,
+            "score": adjusted_score,
             "physics_bonus": round(physics_bonus, 4),
+            "physics_consistency": round(consistency, 4),
         })
 
     scored.sort(key=lambda x: x["score"], reverse=True)

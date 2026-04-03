@@ -73,6 +73,10 @@ REINFORCE learning for sustainable food logistics.
   compliance violation and high spoilage forecast
 - **Online REINFORCE learning** of context weights with sign constraints preserving
   domain-justified directions while adapting magnitudes to scenario conditions
+- **Operational feasibility diagnostics** with decision latency and constraint violation
+  rates reported per scenario/method for process-systems interpretation
+- **Robustness + significance toolkit** including stress tests (sensor noise, missing
+  telemetry, delay, MCP fault injection) and permutation-test significance reporting
 - **Keyword extraction** from piRAG passages (thresholds, regulatory references,
   required actions) for human-readable decision evidence
 - **Protocol recording** of genuine MCP JSON-RPC interactions during simulation
@@ -131,7 +135,7 @@ curl http://localhost:8100/health                # {"ok":true}
 ```bash
 cd mvp/simulation
 python generate_results.py    # 5 scenarios x 8 modes (40 episodes)
-python generate_figures.py    # 7 publication figures (PNG + PDF)
+python generate_figures.py    # publication figures (Fig. 2-10, PNG + PDF)
 ```
 
 ## Environment Variables
@@ -142,6 +146,17 @@ python generate_figures.py    # 7 publication figures (PNG + PDF)
 | `ONLINE_LEARNING` | `false` | Enable REINFORCE policy gradient updates |
 | `LLM_PROVIDER` | `template` | RAG answer engine: `template` or `api` |
 | `DATA_CSV` | (auto) | Override path to spinach sensor CSV |
+
+### Security/ops flags
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `APP_ENV` | `dev` | Runtime mode (`dev`/`prod`) |
+| `REQUIRE_API_KEY` | `false` in dev | Require `x-api-key` for MCP/RAG ingest/debug routes |
+| `APP_API_KEY` | (empty) | API key used when `REQUIRE_API_KEY=true` |
+| `ENABLE_DEBUG_ROUTES` | `true` in dev | Enables `/debug/routes` and `/debug/config` |
+| `WS_REQUIRE_API_KEY` | `false` in dev | Require websocket auth via `x-api-key` or `api_key` query |
+| `CORS_ORIGINS` | `*` in dev | Comma-separated allowed origins |
 
 ## Backend API
 

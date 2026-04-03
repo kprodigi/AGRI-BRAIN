@@ -166,8 +166,9 @@ def compute_waste_rate(
     Operational waste fraction (dimensionless, typically 0.02–0.15).
     """
     waste_raw = (k_inst * w_scale) ** w_alpha
-    waste_raw = np.minimum(waste_raw, 0.15)  # Physical cap: FAO upper bound for fresh produce
     waste_raw = waste_raw * (1.0 + surplus_waste_factor * surplus_ratio)
+    # Apply cap after surplus amplification to enforce a true physical upper bound.
+    waste_raw = np.minimum(waste_raw, 0.15)  # FAO upper bound for fresh produce
     return waste_raw
 
 

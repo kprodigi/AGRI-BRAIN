@@ -37,6 +37,10 @@ class ToolSpec:
     schema: Dict[str, Any]  # param_name -> {"type": ..., "description": ...} or legacy "type_str"
     cacheable: bool = False
     cache_key_params: List[str] = field(default_factory=list)
+    latency_tier: str = "medium"
+    reliability_tier: str = "standard"
+    cost_tier: str = "medium"
+    role_affinity: List[str] = field(default_factory=list)
 
 
 class ToolRegistry:
@@ -95,6 +99,12 @@ class ToolRegistry:
                 "description": s.description,
                 "capabilities": s.capabilities,
                 "schema": s.schema,
+                "qos": {
+                    "latency_tier": s.latency_tier,
+                    "reliability_tier": s.reliability_tier,
+                    "cost_tier": s.cost_tier,
+                    "role_affinity": s.role_affinity,
+                },
             }
             for s in self._tools.values()
         ]

@@ -1,6 +1,7 @@
 
 import os
 from typing import Optional
+from src.settings import SETTINGS
 try:
     from web3 import Web3
 except Exception:
@@ -10,8 +11,13 @@ CONTRACT_ADDRESS = os.getenv("PROVENANCE_ADDR", "")
 def anchor_root(root_hex: str, policy_uri: str = "") -> Optional[str]:
     if Web3 is None or not CONTRACT_ADDRESS:
         return None
+    privkey = os.getenv("CHAIN_PRIVKEY", "")
+    if SETTINGS.chain_require_privkey and not privkey:
+        return None
+    if not privkey:
+        return None
     w3 = Web3(Web3.HTTPProvider(os.getenv("CHAIN_RPC","http://localhost:8545")))
-    acct = w3.eth.account.from_key(os.getenv("CHAIN_PRIVKEY","0x"+"0"*64))
+    acct = w3.eth.account.from_key(privkey)
     contract = w3.eth.contract(address=Web3.to_checksum_address(CONTRACT_ADDRESS), abi=ABI)
     tx = contract.functions.anchor(bytes.fromhex(root_hex), policy_uri).build_transaction({
         "from": acct.address,

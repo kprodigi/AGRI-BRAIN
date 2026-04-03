@@ -216,6 +216,9 @@ def retrieve_role_context(
         "top_doc_id": "",
         "guards_passed": True,
         "evidence_hashes": [],
+        "retrieval_metrics": {},
+        "counterfactual": {},
+        "physics_consistency_score": 1.0,
     }
 
     if pipeline is None:
@@ -243,6 +246,10 @@ def retrieve_role_context(
             reranked = physics_rerank(passages, obs.temp, obs.rho, obs.rh)
             # Use reranked order for guidance extraction
             ranked_citations = reranked
+            if reranked:
+                context["physics_consistency_score"] = float(
+                    sum(float(p.get("physics_bonus", 0.0)) for p in reranked) / len(reranked)
+                )
         except ImportError:
             ranked_citations = [{"text": c.passage, "score": 0.5, "id": c.doc_id, "meta": c.meta} for c in response.citations]
 
@@ -288,6 +295,48 @@ def retrieve_role_context(
             len(response.citations) > 0
             and context["top_citation_score"] > 0.15
         )
+
+        # Retrieval quality diagnostics for research reporting.
+        try:
+            from .eval.metrics import (
+                faithfulness_at_k,
+                evidence_coverage,
+            )
+            metric_citations = [
+                {"excerpt": c.get("passage", ""), "id": c.get("doc_id", "")}
+                for c in context.get("citations", [])
+            ]
+            answer_proxy = (
+                context.get("regulatory_guidance")
+                or context.get("sop_guidance")
+                or context.get("slca_guidance")
+                or ""
+            )
+            context["retrieval_metrics"] = {
+                "faithfulness_at_3": faithfulness_at_k(answer_proxy, metric_citations, k=3),
+                "evidence_coverage": evidence_coverage(answer_proxy, metric_citations),
+                "n_citations": len(metric_citations),
+            }
+        except Exception:
+            context["retrieval_metrics"] = {}
+
+        # Optional counterfactual retrieval: remove the top doc and compare.
+        policy_flags = {}
+        if hasattr(obs, "raw") and isinstance(obs.raw, dict):
+            policy_flags = obs.raw.get("policy_flags", {})
+        if policy_flags.get("enable_pirag_counterfactual_eval", False):
+            try:
+                cf_query = query + " counterfactual alternative guidance"
+                cf_resp = pipeline.ask(cf_query, k=4, anchor_on_chain=False)
+                cf_top = cf_resp.citations[0].doc_id if cf_resp.citations else ""
+                context["counterfactual"] = {
+                    "query": cf_query,
+                    "top_doc_id": cf_top,
+                    "top_doc_changed": bool(cf_top and cf_top != context.get("top_doc_id", "")),
+                    "n_citations": len(cf_resp.citations),
+                }
+            except Exception:
+                context["counterfactual"] = {}
 
     except Exception:
         pass

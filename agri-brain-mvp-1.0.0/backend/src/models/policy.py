@@ -180,3 +180,41 @@ class Policy(BaseModel):
         "Default 50 provides good dynamic range across actions. "
         "Range: 20-100.",
     )
+
+    # ---- compatibility-safe research feature flags ----
+    enable_mcp_qos_routing: bool = Field(
+        False,
+        description="Enable QoS-aware MCP routing; false keeps legacy static dispatch.",
+    )
+    enable_mcp_reliability: bool = Field(
+        False,
+        description="Enable MCP retry/fallback/circuit-breaker reliability layer.",
+    )
+    enable_pirag_counterfactual_eval: bool = Field(
+        False,
+        description="Enable counterfactual retrieval-impact evaluation.",
+    )
+    enable_physics_consistency_gate: bool = Field(
+        False,
+        description="Enable additional passage-level physics consistency gating.",
+    )
+    enable_heterogeneous_profiles: bool = Field(
+        False,
+        description="Enable heterogeneous role profiles for multi-model experiments.",
+    )
+    enable_temporal_retrieval_weighting: bool = Field(
+        True,
+        description="Enable temporal recency weighting in context retrieval.",
+    )
+    enable_dynamic_knowledge_feedback: bool = Field(
+        True,
+        description="Enable periodic decision-history ingestion back into the KB.",
+    )
+    enable_failure_injection: bool = Field(
+        False,
+        description="Enable simulation-time MCP fault injection for robustness studies.",
+    )
+    enable_research_metrics: bool = Field(
+        False,
+        description="Enable additional research metrics/artifact outputs.",
+    )

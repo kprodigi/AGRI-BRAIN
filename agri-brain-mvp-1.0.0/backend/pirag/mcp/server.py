@@ -8,8 +8,9 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Header, Request
 from pydantic import BaseModel
+from src.security import enforce_api_key
 
 from .tools import calculator, units, simulator, policy_oracle
 from .tools import compliance, slca_lookup, chain_query
@@ -99,8 +100,13 @@ def _get_mcp_server():
 # New MCP-compliant endpoint (JSON-RPC 2.0)
 # ---------------------------------------------------------------------------
 @router.post("/mcp")
-def mcp_endpoint(req: MCPRequest) -> Dict[str, Any]:
+def mcp_endpoint(
+    req: MCPRequest,
+    request: Request,
+    x_api_key: str | None = Header(default=None, alias="x-api-key"),
+) -> Dict[str, Any]:
     """JSON-RPC 2.0 MCP endpoint. Routes to MCPServer.handle_message()."""
+    enforce_api_key(request, x_api_key)
     server = _get_mcp_server()
     if server is None:
         return {
@@ -130,8 +136,12 @@ def mcp_endpoint(req: MCPRequest) -> Dict[str, Any]:
 # Convenience endpoints for resources and prompts
 # ---------------------------------------------------------------------------
 @router.get("/mcp/resources")
-def list_resources() -> Dict[str, Any]:
+def list_resources(
+    request: Request,
+    x_api_key: str | None = Header(default=None, alias="x-api-key"),
+) -> Dict[str, Any]:
     """List available MCP resources."""
+    enforce_api_key(request, x_api_key)
     server = _get_mcp_server()
     if server is None:
         return {"resources": []}
@@ -141,8 +151,12 @@ def list_resources() -> Dict[str, Any]:
 
 
 @router.get("/mcp/prompts")
-def list_prompts() -> Dict[str, Any]:
+def list_prompts(
+    request: Request,
+    x_api_key: str | None = Header(default=None, alias="x-api-key"),
+) -> Dict[str, Any]:
     """List available MCP prompts."""
+    enforce_api_key(request, x_api_key)
     server = _get_mcp_server()
     if server is None:
         return {"prompts": []}
@@ -155,14 +169,23 @@ def list_prompts() -> Dict[str, Any]:
 # Legacy endpoints (backward-compatible, deprecated)
 # ---------------------------------------------------------------------------
 @router.get("/tools")
-def list_tools():
+def list_tools(
+    request: Request,
+    x_api_key: str | None = Header(default=None, alias="x-api-key"),
+):
     """Legacy: list available tools."""
+    enforce_api_key(request, x_api_key)
     return {"tools": [{"name": k, "schema": v["schema"]} for k, v in TOOLS.items()]}
 
 
 @router.post("/call")
-def call_tool(req: CallReq):
+def call_tool(
+    req: CallReq,
+    request: Request,
+    x_api_key: str | None = Header(default=None, alias="x-api-key"),
+):
     """Legacy: invoke a tool by name."""
+    enforce_api_key(request, x_api_key)
     if req.name not in TOOLS:
         raise HTTPException(404, f"Unknown tool: {req.name}")
     try:

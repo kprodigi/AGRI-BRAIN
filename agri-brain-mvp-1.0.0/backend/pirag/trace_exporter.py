@@ -73,6 +73,8 @@ class DecisionTrace:
     counterfactual_action: str = ""
     counterfactual_prob_shift: List[float] = field(default_factory=list)
     action_changed_by_context: bool = False
+    retrieval_metrics: Dict[str, float] = field(default_factory=dict)
+    retrieval_counterfactual: Dict[str, Any] = field(default_factory=dict)
 
     # Explanation
     explanation_summary: str = ""
@@ -250,6 +252,8 @@ class TraceExporter:
             trace.counterfactual_action = cf.get("action_without_context", "") or ""
             trace.counterfactual_prob_shift = cf.get("probability_shift", []) or []
             trace.action_changed_by_context = cf.get("action_changed", False)
+        trace.retrieval_metrics = rag_context.get("retrieval_metrics", {}) or {}
+        trace.retrieval_counterfactual = rag_context.get("counterfactual", {}) or {}
 
         self._traces.append(trace)
 
@@ -307,6 +311,10 @@ class TraceExporter:
                     "counterfactual_action": t.counterfactual_action,
                     "probability_shift": t.counterfactual_prob_shift,
                     "action_changed": t.action_changed_by_context,
+                },
+                "retrieval_evaluation": {
+                    "metrics": t.retrieval_metrics,
+                    "counterfactual": t.retrieval_counterfactual,
                 },
                 "explanation": {
                     "summary": t.explanation_summary,

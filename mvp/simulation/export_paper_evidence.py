@@ -266,6 +266,92 @@ def export_provenance_summary() -> None:
     print(f"\n  Total: {total_chains} verifiable provenance chains, {total_hashes} evidence items")
 
 
+def export_robustness_and_benchmark() -> None:
+    """Print robustness and benchmark summaries if available."""
+    print("\n" + "=" * 80)
+    print("Robustness / Benchmark Summary")
+    print("=" * 80)
+
+    # MCP protocol robustness summary
+    for scenario in SCENARIOS:
+        proto = RESULTS_DIR / f"mcp_protocol_{scenario}.json"
+        if not proto.exists():
+            continue
+        with open(proto) as f:
+            records = json.load(f)
+        methods = {}
+        errors = 0
+        latencies = []
+        for r in records:
+            req = r.get("request", {})
+            m = req.get("method", "unknown")
+            methods[m] = methods.get(m, 0) + 1
+            if r.get("response", {}).get("error"):
+                errors += 1
+            if "latency_ms" in r:
+                latencies.append(float(r["latency_ms"]))
+        avg_lat = float(np.mean(latencies)) if latencies else 0.0
+        print(f"  {scenario:<18s} interactions={len(records):<5d} errors={errors:<3d} avg_latency_ms={avg_lat:.2f}")
+        print(f"    methods: {methods}")
+
+    bench_path = RESULTS_DIR / "benchmark_summary.json"
+    if bench_path.exists():
+        print("\n  Multi-seed benchmark (from benchmark_summary.json):")
+        data = json.loads(bench_path.read_text(encoding="utf-8"))
+        for scenario in SCENARIOS:
+            if scenario not in data:
+                continue
+            agr = data[scenario].get("agribrain", {}).get("ari", {})
+            if agr:
+                print(
+                    f"    {scenario:<18s} ARI mean={agr.get('mean', 0):.3f} "
+                    f"CI=[{agr.get('ci_low', 0):.3f}, {agr.get('ci_high', 0):.3f}]"
+                )
+
+
+def export_stress_and_significance() -> None:
+    """Print OOD stress degradation and statistical significance summaries."""
+    print("\n" + "=" * 80)
+    print("Stress-Test / Statistical Significance")
+    print("=" * 80)
+
+    stress_path = RESULTS_DIR / "stress_degradation.csv"
+    if stress_path.exists():
+        import pandas as pd
+
+        df = pd.read_csv(stress_path)
+        if not df.empty:
+            print("  Mean degradation by stressor (AGRIBRAIN):")
+            agg = (
+                df[df["Method"] == "agribrain"]
+                .groupby("Stressor")[["ari_delta", "waste_delta", "latency_ms_delta"]]
+                .mean()
+                .reset_index()
+            )
+            for _, row in agg.iterrows():
+                print(
+                    f"    {row['Stressor']:<22s} "
+                    f"dARI={row['ari_delta']:+.4f} "
+                    f"dWaste={row['waste_delta']:+.4f} "
+                    f"dLatencyMs={row['latency_ms_delta']:+.2f}"
+                )
+
+    sig_path = RESULTS_DIR / "benchmark_significance.json"
+    if sig_path.exists():
+        data = json.loads(sig_path.read_text(encoding="utf-8"))
+        print("\n  Benchmark significance (ARI):")
+        for scenario in SCENARIOS:
+            sc = data.get(scenario, {})
+            for comp in ("agribrain_vs_mcp_only", "agribrain_vs_pirag_only", "agribrain_vs_no_context"):
+                rec = sc.get(comp, {}).get("ari")
+                if not rec:
+                    continue
+                print(
+                    f"    {scenario:<18s} {comp:<26s} "
+                    f"p={rec.get('p_value', 1.0):.4f} d={rec.get('cohens_d', 0.0):+.3f}"
+                )
+
+
 if __name__ == "__main__":
     print("AGRI-BRAIN Paper Evidence Export")
     print("=" * 80)
@@ -275,5 +361,7 @@ if __name__ == "__main__":
     export_feature_heatmap_data()
     export_interop_summary()
     export_provenance_summary()
+    export_robustness_and_benchmark()
+    export_stress_and_significance()
 
     print("\nDone.")

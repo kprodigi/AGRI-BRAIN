@@ -2,7 +2,8 @@
 """
 AGRI-BRAIN Figure Generation
 ==============================
-Generates 7 publication-quality figures (PNG + PDF at 800 DPI).
+Generates publication-quality figures (Figure 2 through Figure 10)
+as PNG + PDF at 800 DPI.
 
 Standalone usage:
     cd mvp/simulation
@@ -716,11 +717,102 @@ def fig8_green_ai(data):
     _save(fig, "fig8_green_ai")
 
 
+def fig9_mcp_pirag_robustness():
+    """Robustness figure from protocol logs and benchmark summaries."""
+    proto_files = [RESULTS_DIR / f"mcp_protocol_{s}.json" for s in SCENARIOS]
+    bench_file = RESULTS_DIR / "benchmark_summary.json"
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    fig.suptitle("MCP + piRAG Robustness", fontsize=14, fontweight="bold")
+
+    # (a) Protocol error counts by scenario
+    ax = axes[0]
+    scenarios = []
+    errs = []
+    calls = []
+    for s, p in zip(SCENARIOS, proto_files):
+        if not p.exists():
+            continue
+        import json
+        rows = json.loads(p.read_text(encoding="utf-8"))
+        scenarios.append(SCENARIO_LABELS.get(s, s))
+        errs.append(sum(1 for r in rows if r.get("response", {}).get("error")))
+        calls.append(len(rows))
+    if scenarios:
+        x = np.arange(len(scenarios))
+        ax.bar(x, calls, color="#90caf9", label="Total calls")
+        ax.bar(x, errs, color="#ef5350", label="Errors")
+        ax.set_xticks(x)
+        ax.set_xticklabels(scenarios, rotation=20, ha="right")
+    ax.set_title("(a) MCP Call Reliability")
+    ax.set_ylabel("Count")
+    _legend(ax)
+    _apply_style(ax)
+
+    # (b) ARI confidence intervals from benchmark
+    ax = axes[1]
+    if bench_file.exists():
+        import json
+        bench = json.loads(bench_file.read_text(encoding="utf-8"))
+        xs = []
+        means = []
+        lows = []
+        highs = []
+        for i, s in enumerate(SCENARIOS):
+            ari = bench.get(s, {}).get("agribrain", {}).get("ari")
+            if not ari:
+                continue
+            xs.append(i)
+            means.append(float(ari.get("mean", 0.0)))
+            lows.append(float(ari.get("ci_low", 0.0)))
+            highs.append(float(ari.get("ci_high", 0.0)))
+        if xs:
+            means_arr = np.array(means)
+            yerr = np.vstack([means_arr - np.array(lows), np.array(highs) - means_arr])
+            ax.errorbar(xs, means_arr, yerr=yerr, fmt="o", color="#26a69a", capsize=4, linewidth=1.4)
+            ax.set_xticks(xs)
+            ax.set_xticklabels([SCENARIO_LABELS.get(SCENARIOS[i], SCENARIOS[i]) for i in xs], rotation=20, ha="right")
+    ax.set_ylim(0.0, 1.0)
+    ax.set_title("(b) ARI Confidence Intervals")
+    ax.set_ylabel("ARI")
+    _apply_style(ax)
+
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    _save(fig, "fig9_mcp_pirag_robustness")
+
+
+def fig10_latency_quality_frontier(data):
+    """Latency-quality-feasibility frontier for operational trade-off reporting."""
+    fig, ax = plt.subplots(1, 1, figsize=(7.5, 5.5))
+    fig.suptitle("Operational Frontier: Quality vs Latency", fontsize=14, fontweight="bold")
+
+    modes = ["static", "hybrid_rl", "no_pinn", "no_slca", "agribrain", "no_context", "mcp_only", "pirag_only"]
+    xs, ys = [], []
+    for mode in modes:
+        ari_vals = [data["results"][s][mode]["ari"] for s in SCENARIOS]
+        lat_vals = [data["results"][s][mode].get("mean_decision_latency_ms", 0.0) for s in SCENARIOS]
+        x = float(np.mean(lat_vals))
+        y = float(np.mean(ari_vals))
+        xs.append(x)
+        ys.append(y)
+        ax.scatter(
+            x, y, s=90, color=COLORS[mode], marker=MARKERS[mode],
+            edgecolor="black", linewidth=0.4, alpha=0.9,
+        )
+        ax.text(x + 0.02, y + 0.001, MODE_LABELS[mode], fontsize=9)
+
+    ax.set_xlabel("Mean decision latency (ms)")
+    ax.set_ylabel("Mean ARI")
+    ax.set_title("Higher is better ARI, lower is better latency")
+    _apply_style(ax)
+    _save(fig, "fig10_latency_quality_frontier")
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 def generate_all_figures(data=None):
-    """Generate all 7 figures. If *data* is None, runs the simulation first."""
+    """Generate all configured figures. If *data* is None, runs simulation first."""
     if data is None:
         print("Running simulation...")
         data = run_all()
@@ -734,6 +826,8 @@ def generate_all_figures(data=None):
     fig6_cross(data)
     fig7_ablation(data)
     fig8_green_ai(data)
+    fig9_mcp_pirag_robustness()
+    fig10_latency_quality_frontier(data)
     print()
     print(f"All figures saved to {RESULTS_DIR}")
 

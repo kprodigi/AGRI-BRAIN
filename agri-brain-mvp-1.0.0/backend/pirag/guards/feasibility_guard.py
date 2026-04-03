@@ -1,6 +1,7 @@
 
 import os, json, re
 from typing import Dict, Any
+from src.settings import SETTINGS
 try:
     import requests
 except Exception:
@@ -18,7 +19,7 @@ def within_ranges(answer: str, constraints: Dict[str, Any]) -> bool:
     return all(mn <= v <= mx for v in xs)
 
 def verify_with_sim(answer: str, context: Dict[str, Any], timeout: int = 30) -> bool:
-    base = os.getenv("SIM_API_BASE", "").rstrip("/")
+    base = SETTINGS.sim_api_base.rstrip("/")
     if not base or requests is None:
         return True
     url = f"{base}/sim/validate"

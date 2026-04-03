@@ -215,6 +215,7 @@ def dispatch_tools(
     registry: ToolRegistry,
     shared_context: Any = None,
     mcp_server: Any = None,
+    dispatch_config: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Execute the tool workflow for a given role sequentially.
 
@@ -231,7 +232,8 @@ def dispatch_tools(
     Returns a dict mapping tool names to their results, plus metadata keys:
     ``_tools_invoked``, ``_tools_failed``, ``_tools_skipped``.
     """
-    workflow = ROLE_WORKFLOWS.get(role, [])
+    cfg = dispatch_config or {}
+    workflow = _select_workflow(role, registry, cfg)
     results: Dict[str, Any] = {}
     invoked: List[str] = []
     failed: List[str] = []
@@ -254,10 +256,13 @@ def dispatch_tools(
 
         try:
             kwargs = args_fn(obs, results, shared_context)
-            if mcp_server is not None:
-                result = _invoke_via_protocol(mcp_server, tool_name, kwargs)
-            else:
-                result = registry.invoke(tool_name, **kwargs)
+            result = _invoke_with_reliability(
+                registry=registry,
+                mcp_server=mcp_server,
+                tool_name=tool_name,
+                kwargs=kwargs,
+                cfg=cfg,
+            )
             results[tool_name] = result
             invoked.append(tool_name)
         except Exception:
@@ -267,4 +272,71 @@ def dispatch_tools(
     results["_tools_invoked"] = invoked
     results["_tools_failed"] = failed
     results["_tools_skipped"] = skipped
+    results["_dispatch_profile"] = cfg.get("qos_profile", "legacy")
     return results
+
+
+def _select_workflow(role: str, registry: ToolRegistry, cfg: Dict[str, Any]) -> List[WorkflowStep]:
+    workflow = ROLE_WORKFLOWS.get(role, [])
+    if not cfg.get("enable_qos_routing", False):
+        return workflow
+    # QoS profile currently reorders by latency/cost tiers while preserving role workflow membership.
+    scored: List[Tuple[int, WorkflowStep]] = []
+    preferred_qos = cfg.get("role_preferred_qos", "standard")
+    for step in workflow:
+        tool_name = step[0]
+        spec = registry.get(tool_name)
+        if spec is None:
+            scored.append((999, step))
+            continue
+        latency_rank = {"low": 0, "medium": 1, "high": 2}.get(spec.latency_tier, 1)
+        cost_rank = {"low": 0, "medium": 1, "high": 2}.get(spec.cost_tier, 1)
+        rel_rank = {"high": 0, "standard": 1, "best_effort": 2}.get(spec.reliability_tier, 1)
+        score = latency_rank * 3 + cost_rank * 2 + rel_rank
+        if preferred_qos == "low_latency":
+            score = latency_rank * 4 + cost_rank + rel_rank
+        elif preferred_qos == "low_cost":
+            score = cost_rank * 4 + latency_rank + rel_rank
+        elif preferred_qos == "high_reliability":
+            score = rel_rank * 4 + latency_rank + cost_rank
+        scored.append((score, step))
+    scored.sort(key=lambda x: x[0])
+    return [s for _, s in scored]
+
+
+_CB = None
+
+
+def _invoke_with_reliability(
+    registry: ToolRegistry,
+    mcp_server: Any,
+    tool_name: str,
+    kwargs: Dict[str, Any],
+    cfg: Dict[str, Any],
+) -> Any:
+    if not cfg.get("enable_reliability", False):
+        if mcp_server is not None:
+            return _invoke_via_protocol(mcp_server, tool_name, kwargs)
+        return registry.invoke(tool_name, **kwargs)
+
+    from .reliability import CircuitBreaker, invoke_with_retry
+
+    global _CB
+    if _CB is None:
+        _CB = CircuitBreaker()
+
+    if not _CB.allow(tool_name):
+        return None
+
+    def _do_call() -> Any:
+        if mcp_server is not None:
+            return _invoke_via_protocol(mcp_server, tool_name, kwargs)
+        return registry.invoke(tool_name, **kwargs)
+
+    try:
+        out = invoke_with_retry(_do_call, retries=cfg.get("retries", 1))
+        _CB.on_success(tool_name)
+        return out
+    except Exception:
+        _CB.on_failure(tool_name)
+        raise

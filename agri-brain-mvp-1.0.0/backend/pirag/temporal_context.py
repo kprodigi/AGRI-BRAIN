@@ -100,6 +100,30 @@ class TemporalContextWindow:
         most_common_count = counts.most_common(1)[0][1]
         return most_common_count / len(doc_ids)
 
+    def recency_weighted_doc_scores(self, current_hour: float, half_life_hours: float = 2.0) -> Dict[str, float]:
+        """Return recency-weighted score per top_doc_id."""
+        recent = self._recent(current_hour)
+        if not recent:
+            return {}
+        scores: Dict[str, float] = {}
+        for e in recent:
+            doc = e.get("top_doc_id", "")
+            if not doc:
+                continue
+            age = max(0.0, current_hour - float(e["hour"]))
+            weight = 0.5 ** (age / max(half_life_hours, 1e-6))
+            scores[doc] = scores.get(doc, 0.0) + weight
+        return scores
+
+    def stale_context_ratio(self, current_hour: float, stale_after_hours: float = 3.0) -> float:
+        recent = self._recent(current_hour)
+        if not recent:
+            return 0.0
+        stale = sum(
+            1 for e in recent if (current_hour - float(e.get("hour", current_hour))) > stale_after_hours
+        )
+        return stale / len(recent)
+
     def reset(self) -> None:
         """Clear all entries (call between episodes)."""
         self._entries.clear()

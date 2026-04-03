@@ -19,6 +19,7 @@ import os
 import urllib.request
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
+from src.settings import SETTINGS
 
 
 class ExplanationEngine(ABC):
@@ -113,6 +114,9 @@ def get_engine() -> ExplanationEngine:
         LLM_MODEL   - model name/identifier
         LLM_API_KEY - API key (optional for local endpoints)
     """
+    if SETTINGS.llm_provider == "template":
+        return TemplateEngine()
+
     api_url = os.environ.get("LLM_API_URL", "")
     model = os.environ.get("LLM_MODEL", "")
 

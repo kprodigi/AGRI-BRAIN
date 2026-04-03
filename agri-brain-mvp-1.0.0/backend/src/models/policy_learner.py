@@ -13,8 +13,8 @@ References
 """
 from __future__ import annotations
 
-import os
 from typing import List, Optional, Tuple
+from src.settings import SETTINGS
 
 import numpy as np
 
@@ -49,7 +49,7 @@ class PolicyLearner:
     @staticmethod
     def is_enabled() -> bool:
         """Check if online learning is enabled via environment variable."""
-        val = os.environ.get("ONLINE_LEARNING", "false").lower()
+        val = str(SETTINGS.online_learning).lower()
         return val in ("true", "1", "yes")
 
     def record(self, features: np.ndarray, action: int, reward: float) -> None:

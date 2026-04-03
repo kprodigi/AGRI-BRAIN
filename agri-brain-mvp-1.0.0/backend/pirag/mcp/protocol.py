@@ -162,6 +162,8 @@ class MCPServer:
 
     def _handle_initialize(self, msg: MCPMessage) -> MCPMessage:
         """Return protocol version, server info, and capabilities dict."""
+        params = msg.params or {}
+        client_caps = params.get("capabilities", {})
         capabilities: Dict[str, Any] = {}
         if self._registry.list_tools():
             capabilities["tools"] = {}
@@ -169,6 +171,11 @@ class MCPServer:
             capabilities["resources"] = {}
         if self._prompts:
             capabilities["prompts"] = {}
+        capabilities["experimental"] = {
+            "qosNegotiation": True,
+            "reliabilityHints": True,
+            "clientCapabilitiesEcho": client_caps,
+        }
 
         return MCPMessage(
             id=msg.id,
@@ -179,6 +186,13 @@ class MCPServer:
                     "version": self.SERVER_VERSION,
                 },
                 "capabilities": capabilities,
+                "extensions": {
+                    "qosPolicy": {
+                        "supportedLatencyTiers": ["low", "medium", "high"],
+                        "supportedReliabilityTiers": ["best_effort", "standard", "high"],
+                        "supportedCostTiers": ["low", "medium", "high"],
+                    }
+                },
             },
         )
 
@@ -201,6 +215,12 @@ class MCPServer:
                 "name": spec.name,
                 "description": spec.description,
                 "inputSchema": input_schema,
+                "x-qos": {
+                    "latency_tier": spec.latency_tier,
+                    "reliability_tier": spec.reliability_tier,
+                    "cost_tier": spec.cost_tier,
+                    "role_affinity": spec.role_affinity,
+                },
             })
         return MCPMessage(id=msg.id, result={"tools": tools})
 

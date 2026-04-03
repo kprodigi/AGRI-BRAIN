@@ -76,8 +76,14 @@ def extract_context_features(
     """
     psi = np.zeros(5, dtype=np.float64)
 
+    # Defensive normalization: fault injection can return None payloads.
+    if mcp_results is None:
+        mcp_results = {}
+    if rag_context is None:
+        rag_context = {}
+
     # ψ_0: Compliance severity
-    compliance = mcp_results.get("check_compliance", {})
+    compliance = mcp_results.get("check_compliance") or {}
     if not compliance.get("compliant", True):
         violations = compliance.get("violations", [])
         if any(v.get("severity") == "critical" for v in violations):
@@ -86,7 +92,7 @@ def extract_context_features(
             psi[0] = 0.5
 
     # ψ_1: Forecast urgency
-    forecast = mcp_results.get("spoilage_forecast", {})
+    forecast = mcp_results.get("spoilage_forecast") or {}
     urgency = forecast.get("urgency", "")
     psi[1] = URGENCY_MAP.get(urgency, 0.0)
 
@@ -147,6 +153,15 @@ def compute_context_modifier(
     if not rag_context.get("guards_passed", True):
         return np.zeros(3)
 
+    # Optional physics consistency gate.
+    physics_score = float(rag_context.get("physics_consistency_score", 1.0))
+    physics_gate_enabled = False
+    if hasattr(obs, "raw") and isinstance(obs.raw, dict):
+        flags = obs.raw.get("policy_flags", {})
+        physics_gate_enabled = bool(flags.get("enable_physics_consistency_gate", False))
+    if physics_gate_enabled and physics_score < 0.03:
+        return np.zeros(3)
+
     # If both inputs are empty/missing, return zeros
     if not mcp_results and not rag_context:
         return np.zeros(3)
@@ -184,6 +199,8 @@ def compute_context_modifier(
 
     # Scale and clamp
     modifier *= CONTEXT_MODIFIER_SCALE
+    if physics_gate_enabled:
+        modifier *= max(0.0, min(1.0, physics_score / 0.15))
     modifier = np.clip(modifier, -_MODIFIER_CLAMP, _MODIFIER_CLAMP)
 
     return modifier

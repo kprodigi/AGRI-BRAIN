@@ -88,7 +88,7 @@ the global policy.
 |--------|---------|-------------|
 | ARI | `(1 - waste) * SLCA * shelf_quality` | Adaptive Resilience Index |
 | RLE | `routed_at_risk / total_at_risk` | Reverse Logistics Efficiency |
-| Waste | `rho - saved` (intervention model) | Effective produce loss rate |
+| Waste | `(k_inst * W_SCALE)^W_ALPHA * (1 + surplus_penalty)` then `* (1 - save_factor)` | Effective produce loss rate |
 | SLCA | `w_c*C + w_l*L + w_r*R + w_p*P` | Social LCA composite score |
 | Carbon | `sum(km * carbon_per_km)` | Total CO2 emissions (kg) |
 | Equity | `1 - sigma(SLCA_values)` | SLCA uniformity index (Gini-inspired) |
@@ -99,15 +99,20 @@ the global policy.
 cd mvp/simulation
 pip install numpy pandas matplotlib scipy
 python generate_results.py    # runs all scenarios, saves tables
-python generate_figures.py    # generates all 7 publication figures
+python generate_figures.py    # generates publication figures (Fig. 2-10)
 ```
 
 All outputs are saved to `mvp/simulation/results/`:
 - `table1_summary.csv` -- Scenario x Method (static, hybrid_rl, agribrain)
 - `table2_ablation.csv` -- Scenario x Variant (all 8 modes)
+- `benchmark_summary.json` -- Multi-seed means/std/CI
+- `benchmark_significance.json` -- Permutation-test p-values + effect sizes
+- `stress_summary.json` -- Stress-suite robustness outputs
+- `stress_degradation.csv` -- Delta metrics under stressors
+- `artifact_manifest.json` -- SHA-256 reproducibility manifest
 - `traces_*.json` -- Decision traces with keywords, causal reasoning, provenance per scenario
 - `mcp_protocol_*.json` -- Genuine MCP JSON-RPC interaction logs per scenario
-- `fig2_heatwave.png/.pdf` through `fig8_green_ai.png/.pdf` -- 7 publication figures
+- `fig2_heatwave.png/.pdf` through `fig10_latency_quality_frontier.png/.pdf` -- publication figures
 
 ## Expected Approximate Results (AGRI-BRAIN mode)
 

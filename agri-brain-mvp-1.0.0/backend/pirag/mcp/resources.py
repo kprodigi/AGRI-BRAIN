@@ -96,6 +96,10 @@ def register_agent_resources(
              "Latest Decision Explanation",
              "Most recent causal decision explanation with provenance",
              "explanation"),
+            ("agribrain://context/robustness",
+             "Context Robustness",
+             "Runtime reliability and dispatch profile details",
+             "robustness"),
         ]:
             _key = key  # capture for closure
             server.register_resource(MCPResource(

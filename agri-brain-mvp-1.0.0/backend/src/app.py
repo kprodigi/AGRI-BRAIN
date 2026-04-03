@@ -5,13 +5,14 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, Literal, Optional
+import uuid
 
 import inspect
 import logging
 import time as _time
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -31,6 +32,7 @@ from src.routers import debug as _debug
 from src.routers import stream as _stream
 from src.routers import results as _results
 from src.agents.runtime import start_agent_runtime
+from src.settings import SETTINGS
 
 # Your models/utilities
 from .models.spoilage import compute_spoilage, volatility_flags, arrhenius_k
@@ -53,8 +55,7 @@ from .models.policy_learner import PolicyLearner
 from .chain.eth import log_decision_onchain
 
 # Forecast method selection (default: LSTM, fallback: Holt-Winters)
-import os as _os
-FORECAST_METHOD = _os.environ.get("FORECAST_METHOD", "lstm")
+FORECAST_METHOD = SETTINGS.forecast_method
 
 def _demand_forecast(df, horizon=1, **kwargs):
     """Dispatch to LSTM or Holt-Winters demand forecaster based on config."""
@@ -85,9 +86,9 @@ async def _lifespan(app: FastAPI):
         pass
     try:
         case_load()
-        print("[startup] spinach CSV loaded")
+        logger.info("startup spinach_csv_loaded=true")
     except (FileNotFoundError, ValueError, KeyError) as e:
-        print("[startup] case_load skipped:", e)
+        logger.warning("startup case_load_skipped error=%s", e)
     try:
         sig = inspect.signature(start_agent_runtime)
         if len(sig.parameters) == 0:
@@ -95,7 +96,7 @@ async def _lifespan(app: FastAPI):
         else:
             await start_agent_runtime(app)
     except (ImportError, RuntimeError, OSError) as e:
-        print(f"[startup] agent runtime skipped: {e}")
+        logger.warning("startup agent_runtime_skipped error=%s", e)
 
     yield
     # --- shutdown (none needed) ---
@@ -107,11 +108,29 @@ API = FastAPI(title="AGRI BRAIN MVP API", lifespan=_lifespan)
 # CORS (register once)
 API.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=SETTINGS.cors_origins,
+    allow_credentials=False if SETTINGS.cors_origins == ["*"] else True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@API.middleware("http")
+async def request_logging_middleware(request: Request, call_next):
+    req_id = request.headers.get("x-request-id") or str(uuid.uuid4())
+    start = _time.perf_counter()
+    response = await call_next(request)
+    elapsed_ms = (_time.perf_counter() - start) * 1000.0
+    response.headers["x-request-id"] = req_id
+    logger.info(
+        "http request_id=%s method=%s path=%s status=%s latency_ms=%.2f",
+        req_id,
+        request.method,
+        request.url.path,
+        response.status_code,
+        elapsed_ms,
+    )
+    return response
 
 # ---------------------------------------------------------------------------
 # Mount routers (each once)

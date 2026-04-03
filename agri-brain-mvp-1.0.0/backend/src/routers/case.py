@@ -2,6 +2,7 @@
 from fastapi import APIRouter
 from typing import Any, Dict, List, Optional
 import os, csv, statistics, time
+from src.settings import SETTINGS
 
 router = APIRouter()
 
@@ -89,7 +90,7 @@ def load_case(path: Optional[str] = None):
         from src.app import case_load as _app_case_load
         result = _app_case_load()
         # Also update case.STATE for PDF/audit compatibility
-        csv_path = path or os.environ.get("DATA_CSV") or _default_csv_path()
+        csv_path = path or SETTINGS.data_csv or _default_csv_path()
         rows = _load_csv(csv_path) if os.path.exists(csv_path) else []
         STATE.update({
             "rows": rows,
@@ -102,7 +103,7 @@ def load_case(path: Optional[str] = None):
         pass
 
     # Fallback: simple CSV load without spoilage model
-    csv_path = path or os.environ.get("DATA_CSV") or _default_csv_path()
+    csv_path = path or SETTINGS.data_csv or _default_csv_path()
     if not os.path.exists(csv_path):
         return {"ok": False, "error": f"CSV not found: {csv_path}"}
 
