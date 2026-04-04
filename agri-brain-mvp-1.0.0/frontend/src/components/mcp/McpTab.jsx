@@ -105,7 +105,7 @@ function ResourceMonitor() {
 
   const loadResources = useCallback(async () => {
     try {
-      const res = await fetch(`${API}/mcp/mcp/resources`);
+      const res = await fetch(`${API}/mcp/resources`);
       const data = await res.json();
       setResources(data.resources || []);
     } catch { /* ignore */ }
@@ -180,7 +180,7 @@ function PromptBrowser() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`${API}/mcp/mcp/prompts`);
+        const res = await fetch(`${API}/mcp/prompts`);
         const data = await res.json();
         setPrompts(data.prompts || []);
       } catch { /* ignore */ }

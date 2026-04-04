@@ -393,8 +393,8 @@ function ScenariosTab() {
     const [msg, setMsg] = useState("");
 
     const FALLBACK = [
-        { id: "climate_shock", name: "Climate-Induced Supply Shock", desc: "72h heatwave; accelerated spoilage; reconfigure routes." },
-        { id: "reverse_logistics", name: "Reverse Logistics of Spoiled Food", desc: "Glut / overproduction; trigger redistribution and recovery." },
+        { id: "heatwave", name: "Climate-Induced Heatwave", desc: "72h heatwave; accelerated spoilage; reconfigure routes." },
+        { id: "overproduction", name: "Overproduction / Glut", desc: "Glut / overproduction; trigger redistribution and recovery." },
         { id: "cyber_outage", name: "Cyber Threat & Node Outage", desc: "Processor offline; unauthorized tx blocked; reroute flows." },
         { id: "adaptive_pricing", name: "Adaptive Pricing & Cooperative Auctions", desc: "Learned pricing; equity-aware redistribution when saturated." },
     ];

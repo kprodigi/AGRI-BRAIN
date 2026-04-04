@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException, Header, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from src.security import enforce_api_key
 
 from .tools import calculator, units, simulator, policy_oracle
@@ -41,7 +41,7 @@ class MCPRequest(BaseModel):
     jsonrpc: str = "2.0"
     id: int | None = None
     method: str | None = None
-    params: Dict[str, Any] = {}
+    params: Dict[str, Any] = Field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -72,15 +72,17 @@ def _get_mcp_server():
             def _state_fn():
                 """Return current telemetry (fallback to defaults if backend state unavailable)."""
                 try:
-                    from ...src.routers.state import get_current_state
-                    state = get_current_state()
+                    from src.routers.case import STATE as _case_state
+                    summary = _case_state.get("summary", {})
+                    rows = _case_state.get("rows", [])
+                    last_row = rows[-1] if rows else {}
                     return {
-                        "temp": state.get("temperature", 4.0),
-                        "rh": state.get("humidity", 92.0),
-                        "inv": state.get("inventory", 10000),
-                        "rho": state.get("spoilage_risk", 0.0),
-                        "y_hat": state.get("demand", 15.0),
-                        "tau": state.get("tau", 0.0),
+                        "temp": last_row.get("tempC", 4.0) or 4.0,
+                        "rh": last_row.get("RH", 92.0) or 92.0,
+                        "inv": last_row.get("inventory_units", 10000) or 10000,
+                        "rho": 0.0,
+                        "y_hat": last_row.get("demand_units", 15.0) or 15.0,
+                        "tau": 0.0,
                     }
                 except Exception:
                     return {"temp": 4.0, "rh": 92.0, "inv": 10000, "rho": 0.0, "y_hat": 15.0, "tau": 0.0}
@@ -135,7 +137,7 @@ def mcp_endpoint(
 # ---------------------------------------------------------------------------
 # Convenience endpoints for resources and prompts
 # ---------------------------------------------------------------------------
-@router.get("/mcp/resources")
+@router.get("/resources")
 def list_resources(
     request: Request,
     x_api_key: str | None = Header(default=None, alias="x-api-key"),
@@ -150,7 +152,7 @@ def list_resources(
     return resp.result or {"resources": []}
 
 
-@router.get("/mcp/prompts")
+@router.get("/prompts")
 def list_prompts(
     request: Request,
     x_api_key: str | None = Header(default=None, alias="x-api-key"),

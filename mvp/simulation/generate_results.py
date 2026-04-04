@@ -111,43 +111,14 @@ def _demand_forecast(df, horizon=1, **kwargs):
 
 
 def _apply_stochastic_variability(df: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
-    """Inject controlled, physically plausible stochastic variability.
+    """No-op: global DataFrame perturbation removed to prevent double-layer noise.
 
-    This is intentionally off by default (DETERMINISTIC_MODE=true).
+    Stochastic perturbation is applied exclusively per-step via StochasticLayer
+    (perturb_temperature, perturb_humidity, etc.) inside run_episode(). This
+    avoids compounding noise (global + per-step) and keeps the effective sigma
+    equal to the documented single-layer assumptions.
     """
-    if DETERMINISTIC_MODE:
-        return df
-
-    out = df.copy()
-    n = len(out)
-    if n == 0:
-        return out
-
-    if "tempC" in out.columns:
-        out["tempC"] = out["tempC"].astype(float) + rng.normal(0.0, STOCH_TEMP_STD_C, size=n)
-        out["tempC"] = out["tempC"].clip(lower=-5.0, upper=55.0)
-    if "RH" in out.columns:
-        out["RH"] = out["RH"].astype(float) + rng.normal(0.0, STOCH_RH_STD, size=n)
-        out["RH"] = out["RH"].clip(lower=10.0, upper=100.0)
-    if "demand_units" in out.columns:
-        mult = 1.0 + rng.normal(0.0, STOCH_DEMAND_FRAC_STD, size=n)
-        out["demand_units"] = (out["demand_units"].astype(float) * mult).clip(lower=0.0)
-    if "inventory_units" in out.columns:
-        mult = 1.0 + rng.normal(0.0, STOCH_INVENTORY_FRAC_STD, size=n)
-        out["inventory_units"] = (out["inventory_units"].astype(float) * mult).clip(lower=0.0)
-
-    # Random telemetry lag events: use previous sample values.
-    if n > 1 and STOCH_DELAY_PROB > 0.0:
-        lag_mask = rng.random(n) < STOCH_DELAY_PROB
-        lag_mask[0] = False
-        if "tempC" in out.columns:
-            prev = out["tempC"].shift(1).bfill()
-            out.loc[lag_mask, "tempC"] = prev.loc[lag_mask]
-        if "RH" in out.columns:
-            prev = out["RH"].shift(1).bfill()
-            out.loc[lag_mask, "RH"] = prev.loc[lag_mask]
-
-    return out
+    return df
 
 # ---------------------------------------------------------------------------
 # Constants (orchestration-level only — no physics here)
@@ -168,7 +139,7 @@ _AGRIBRAIN_LOGIT_MODES = {"agribrain", "no_context", "mcp_only", "pirag_only"}
 _MCP_WASTE_MODES = {"agribrain", "mcp_only"}
 
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
-DATA_CSV = _BACKEND_SRC / "src" / "data_spinach.csv"
+DATA_CSV = Path(os.environ.get("DATA_CSV", "")) if os.environ.get("DATA_CSV") else _BACKEND_SRC / "src" / "data_spinach.csv"
 
 
 # ---------------------------------------------------------------------------
@@ -267,6 +238,14 @@ def run_episode(
         temp = stoch.perturb_temperature(temp)
         rh_val = stoch.perturb_humidity(rh_val)
         inv = stoch.perturb_inventory(inv)
+
+        # Recompute spoilage risk from perturbed temp/RH so derived columns
+        # stay consistent with the perturbed sensor readings.
+        if stoch.enabled:
+            k_perturbed = arrhenius_k(temp, policy.k_ref, policy.Ea_R,
+                                      policy.T_ref_K, rh_val / 100.0,
+                                      policy.beta_humidity)
+            rho = min(1.0, max(0.0, k_perturbed / (policy.k_ref + 1e-12)))
 
         lookback = min(idx + 1, 48)
         hist_slice = df.iloc[max(0, idx + 1 - lookback):idx + 1]

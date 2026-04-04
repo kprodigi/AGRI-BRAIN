@@ -120,7 +120,7 @@ export default function MapPage() {
     jget(API, "/kpis").then(setKpis).catch(() => {});
     fetch(`${API}/decisions`).then((r) => r.json()).then((d) => {
       const list = d.decisions || [];
-      if (list.length) setLastDecision(list[list.length - 1]);
+      if (list.length) setLastDecision(list[0]);
     }).catch(() => {});
   }, []);
 

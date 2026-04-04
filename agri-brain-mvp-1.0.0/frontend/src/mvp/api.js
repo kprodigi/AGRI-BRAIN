@@ -14,7 +14,7 @@ export function setApiBase(url) {
 
 // Build the PDF URL in one place (used by Admin/Audit buttons)
 export function memoPdfUrl() {
-    return `${API}/audit/memo.pdf`;
+    return `${API}/report/pdf`;
 }
 
 // Toggle port 8111 <-> 8100 if the current base is unreachable
@@ -96,8 +96,8 @@ export const Scenarios = {
         // Fallback so Admin still renders something
         return {
             options: [
-                { id: 'climate_shock', name: 'Climate-Induced Supply Shock' },
-                { id: 'reverse_logistics', name: 'Reverse Logistics of Spoiled Food' },
+                { id: 'heatwave', name: 'Climate-Induced Heatwave' },
+                { id: 'overproduction', name: 'Overproduction / Glut' },
                 { id: 'cyber_outage', name: 'Cyber Threat & Node Outage' },
                 { id: 'adaptive_pricing', name: 'Adaptive Pricing & Cooperative Auctions' },
             ],

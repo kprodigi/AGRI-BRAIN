@@ -149,7 +149,7 @@ piRAG consistently contributes more than MCP across all 5 scenarios. Zero rank i
 ## Seed & Reproducibility
 
 All runs use `seed=42` via `numpy.random.default_rng(42)`.
-Deterministic seeding ensures exact reproducibility across platforms.
+Deterministic seeding ensures reproducibility of decision and metric traces across platforms. Wall-clock latency metrics are inherently runtime-dependent and may vary.
 
 ## API Integration
 

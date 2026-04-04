@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 from generate_results import DATA_CSV, SCENARIOS, Policy, apply_scenario, run_episode
+from stochastic import make_stochastic_layer
 
 
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
@@ -49,7 +50,9 @@ def _run_pair(
     results: Dict[str, Dict[str, float]] = {}
     for mode in modes:
         print(f"  running mode={mode} scenario={scenario} faults={with_faults}")
-        ep = run_episode(df, mode, policy, np.random.default_rng(rng.integers(0, 2**31)), scenario)
+        mode_seed = int(rng.integers(0, 2**31))
+        stoch = make_stochastic_layer(np.random.default_rng(mode_seed + 1))
+        ep = run_episode(df, mode, policy, np.random.default_rng(mode_seed), scenario, stoch=stoch)
         if not np.isfinite(ep["ari"]) or not np.isfinite(ep["waste"]) or not np.isfinite(ep["slca"]):
             raise ValueError(f"Non-finite episode metrics for mode={mode}, scenario={scenario}")
         results[mode] = {

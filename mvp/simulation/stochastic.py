@@ -12,7 +12,11 @@ from dataclasses import dataclass
 import numpy as np
 
 
-DETERMINISTIC_MODE: bool = os.environ.get("DETERMINISTIC_MODE", "false").lower() == "true"
+def _is_deterministic() -> bool:
+    """Read DETERMINISTIC_MODE at call time, not import time."""
+    return os.environ.get("DETERMINISTIC_MODE", "false").lower() == "true"
+
+DETERMINISTIC_MODE: bool = _is_deterministic()
 
 
 @dataclass(frozen=True)
@@ -65,7 +69,7 @@ _DISABLED = StochasticLayer(
 
 
 def make_stochastic_layer(rng: np.random.Generator) -> StochasticLayer:
-    if DETERMINISTIC_MODE:
+    if _is_deterministic():
         return _DISABLED
     return StochasticLayer(
         rng=rng,

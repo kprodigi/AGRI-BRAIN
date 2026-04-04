@@ -337,8 +337,8 @@ function AuditTab() {
 
 // ===================== Scenarios Tab =====================
 const SCENARIO_CARDS = [
-  { id: "climate_shock", name: "Heatwave", desc: "72h heatwave; accelerated spoilage; reconfigure routes.", icon: Flame, color: "#D55E00" },
-  { id: "reverse_logistics", name: "Overproduction", desc: "Glut / overproduction; trigger redistribution and recovery.", icon: Layers, color: "#E67E22" },
+  { id: "heatwave", name: "Heatwave", desc: "72h heatwave; accelerated spoilage; reconfigure routes.", icon: Flame, color: "#D55E00" },
+  { id: "overproduction", name: "Overproduction", desc: "Glut / overproduction; trigger redistribution and recovery.", icon: Layers, color: "#E67E22" },
   { id: "cyber_outage", name: "Cyber Outage", desc: "Processor offline; unauthorized tx blocked; reroute flows.", icon: ShieldAlert, color: "#7570B3" },
   { id: "adaptive_pricing", name: "Adaptive Pricing", desc: "Learned pricing; equity-aware redistribution when saturated.", icon: DollarSign, color: "#0072B2" },
   { id: "baseline", name: "Baseline", desc: "Normal operating conditions for reference comparison.", icon: Shield, color: "#808080" },

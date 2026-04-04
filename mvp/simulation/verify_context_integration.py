@@ -46,7 +46,7 @@ def _run_short_episode(df, mode, context_enabled, n_steps=48):
     policy = Policy()
     # Optional robustness mode controlled by env.
     import os
-    if os.environ.get("FAULT_INJECTION", "false").lower() == "true":
+    if os.environ.get("FAILURE_INJECTION", "false").lower() == "true":
         policy.enable_failure_injection = True
         policy.enable_mcp_reliability = True
     rng = np.random.default_rng(SEED)
@@ -129,7 +129,7 @@ def main():
     print("=" * 70)
     print("MCP + piRAG Context Integration Verification")
     print("=" * 70)
-    print("  (set FAULT_INJECTION=true to verify reliability under injected MCP faults)")
+    print("  (set FAILURE_INJECTION=true to verify reliability under injected MCP faults)")
 
     if not DATA_CSV.exists():
         print(f"ERROR: Data CSV not found: {DATA_CSV}")

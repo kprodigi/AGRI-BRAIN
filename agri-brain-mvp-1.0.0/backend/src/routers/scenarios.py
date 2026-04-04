@@ -31,7 +31,7 @@ SCENARIOS = [
     {"id": "overproduction",   "label": "Overproduction / Glut",
      "desc": "Inventory multiplied 2.5x during hours 12-60 with progressive +8°C cold storage excursion."},
     {"id": "cyber_outage",     "label": "Cyber Threat & Node Outage",
-     "desc": "Yield drops to 15 % and inventory to 25 % from hour 24 onward."},
+     "desc": "Processor offline from hour 24: demand drops to 15 %, inventory accumulates, +10 C refrigeration degradation."},
     {"id": "adaptive_pricing", "label": "Adaptive Pricing & Demand Oscillation",
      "desc": "Demand oscillation (amp 45, period 60) plus Gaussian noise (std 14)."},
 ]

@@ -55,7 +55,7 @@ async def _policy_watch_loop():
             # pull KPIs from the case state (or compute via route)
             try:
                 from src.routers.case import STATE as _STATE
-                metrics = (_STATE.get("metrics") or {})
+                metrics = (_STATE.get("summary") or {})
             except (ImportError, AttributeError, KeyError):
                 metrics = {}
             wa = float(metrics.get("waste_rate_agri") or 0.0)

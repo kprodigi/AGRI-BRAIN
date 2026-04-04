@@ -90,7 +90,7 @@ fastapi, uvicorn, pydantic, numpy, pandas, matplotlib, reportlab, orjson, reques
 | `ONLINE_LEARNING` | `false` | Enable REINFORCE policy gradient updates |
 | `LLM_PROVIDER` | `template` | RAG answer engine: `template` or `api` |
 | `DATA_CSV` | (auto) | Override path to spinach sensor CSV |
-| `CONTEXT_ENABLED` | `true` | Enable MCP/piRAG context integration in agribrain mode |
+| `RAG_CONTEXT_ENABLED` | `true` | Enable MCP/piRAG context integration in agribrain mode |
 | `DETERMINISTIC_MODE` | `false` | `true` = exact reproducibility (audit), `false` = stochastic perturbations |
 | `STOCH_TEMP_STD_C` | `0.35` | Stochastic: temperature noise sigma (°C) |
 | `STOCH_RH_STD` | `1.5` | Stochastic: humidity noise sigma (%) |

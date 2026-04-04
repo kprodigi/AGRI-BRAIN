@@ -29,7 +29,12 @@ def ingest(
     return {"ok": True, "n": len(docs)}
 
 @router.post("/ask")
-def ask(req: AskReq):
+def ask(
+    req: AskReq,
+    request: Request,
+    x_api_key: str | None = Header(default=None, alias="x-api-key"),
+):
+    enforce_api_key(request, x_api_key)
     try:
         out = _pipe.ask(req.question, k=req.k, anchor_on_chain=req.anchor_on_chain)
         return {

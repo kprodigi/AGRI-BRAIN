@@ -78,7 +78,7 @@ REINFORCE learning for sustainable food logistics.
 - **Dual-mode stochastic simulation** — stochastic by default with seeded Gaussian
   perturbations on sensor data (tempC ±0.35°C, RH ±1.5%), demand (CV 4%), and
   inventory (CV 3%), producing meaningful CIs, p-values, and effect sizes across
-  5 benchmark seeds; set `DETERMINISTIC_MODE=true` for exact bit-for-bit audit mode
+  5 benchmark seeds; set `DETERMINISTIC_MODE=true` for deterministic audit mode (note: wall-clock latency metrics are inherently runtime-dependent)
 - **Robustness + significance toolkit** including stress tests (sensor noise, missing
   telemetry, delay, MCP fault injection) and permutation-test significance reporting
 - **Keyword extraction** from piRAG passages (thresholds, regulatory references,
