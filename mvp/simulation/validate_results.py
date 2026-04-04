@@ -25,8 +25,8 @@ _RESULTS_DIR = Path(__file__).resolve().parent / "results"
 t1 = pd.read_csv(_RESULTS_DIR / "table1_summary.csv")
 t2 = pd.read_csv(_RESULTS_DIR / "table2_ablation.csv")
 
-# Ordering tolerance: 0.0 for deterministic, 0.025 for stochastic (realistic amplitudes)
-_TOL = 0.0 if DETERMINISTIC_MODE else 0.025
+# Ordering tolerance: 0.0 for deterministic, 0.04 for stochastic (7 realistic uncertainty sources)
+_TOL = 0.0 if DETERMINISTIC_MODE else 0.04
 
 errors = []
 
@@ -54,11 +54,11 @@ if DETERMINISTIC_MODE:
         "baseline": (0.68, 0.78),
     }
 else:
-    # Stochastic: widen by ±0.10 for realistic field-level perturbation amplitudes
+    # Stochastic: widen by ±0.15 for 7 realistic uncertainty sources
     ari_ranges = {
-        "heatwave": (0.45, 0.75), "overproduction": (0.48, 0.78),
-        "cyber_outage": (0.48, 0.78), "adaptive_pricing": (0.56, 0.86),
-        "baseline": (0.58, 0.88),
+        "heatwave": (0.40, 0.80), "overproduction": (0.43, 0.83),
+        "cyber_outage": (0.43, 0.83), "adaptive_pricing": (0.51, 0.91),
+        "baseline": (0.53, 0.93),
     }
 for sc, (lo, hi) in ari_ranges.items():
     v = get(sc, "agribrain", "ARI")

@@ -91,12 +91,17 @@ fastapi, uvicorn, pydantic, numpy, pandas, matplotlib, reportlab, orjson, reques
 | `LLM_PROVIDER` | `template` | RAG answer engine: `template` or `api` |
 | `DATA_CSV` | (auto) | Override path to spinach sensor CSV |
 | `RAG_CONTEXT_ENABLED` | `true` | Enable MCP/piRAG context integration in agribrain mode |
-| `DETERMINISTIC_MODE` | `false` | `true` = exact reproducibility (audit), `false` = stochastic perturbations |
-| `STOCH_TEMP_STD_C` | `1.0` | Stochastic: temperature noise sigma (°C), field-realistic cold-chain sensor accuracy |
-| `STOCH_RH_STD` | `4.0` | Stochastic: humidity noise sigma (%), typical capacitive sensor uncertainty |
-| `STOCH_DEMAND_FRAC_STD` | `0.12` | Stochastic: demand multiplicative noise CV, realistic daily retail variability |
-| `STOCH_INVENTORY_FRAC_STD` | `0.08` | Stochastic: inventory multiplicative noise CV, warehouse counting/shrinkage uncertainty |
-| `STOCH_DELAY_PROB` | `0.05` | Temporal lag injection probability (5% per step), intermittent telemetry dropouts |
+| `DETERMINISTIC_MODE` | `false` | `true` = exact reproducibility (audit), `false` = 7-source stochastic perturbations |
+| `STOCH_TEMP_STD_C` | `1.5` | Source 1: temperature sensor noise sigma (°C) |
+| `STOCH_RH_STD` | `5.0` | Source 1: humidity sensor noise sigma (%) |
+| `STOCH_DEMAND_FRAC_STD` | `0.18` | Source 2: demand multiplicative CV (daily retail variability) |
+| `STOCH_INVENTORY_FRAC_STD` | `0.15` | Source 3: inventory/yield multiplicative CV (shrinkage, weather) |
+| `STOCH_TRANSPORT_KM_STD` | `0.15` | Source 4: transport distance jitter CV (detours, traffic, loading) |
+| `STOCH_K_REF_STD` | `0.15` | Source 5: Arrhenius decay rate k_ref CV (batch-to-batch biological variability) |
+| `STOCH_EA_R_STD` | `0.10` | Source 5: Arrhenius activation energy Ea/R CV |
+| `STOCH_ONSET_JITTER_H` | `4.0` | Source 6: scenario onset timing jitter ±hours (uniform) |
+| `STOCH_THETA_NOISE_STD` | `0.03` | Source 7: policy weight THETA noise sigma (per element) |
+| `STOCH_DELAY_PROB` | `0.05` | Telemetry lag probability per step (intermittent dropouts) |
 | `BENCHMARK_SEEDS` | `42,1337,2024,7,99` | Comma-separated seeds for multi-seed benchmark |
 
 ### 2c. Start the backend

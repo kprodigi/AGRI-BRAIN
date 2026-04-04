@@ -75,10 +75,12 @@ REINFORCE learning for sustainable food logistics.
   domain-justified directions while adapting magnitudes to scenario conditions
 - **Operational feasibility diagnostics** with decision latency and constraint violation
   rates reported per scenario/method for process-systems interpretation
-- **Dual-mode stochastic simulation** — stochastic by default with seeded Gaussian
-  perturbations on sensor data (tempC ±1.0°C, RH ±4.0%), demand (CV 12%), and
-  inventory (CV 8%), producing meaningful CIs, p-values, and effect sizes across
-  5 benchmark seeds; set `DETERMINISTIC_MODE=true` for deterministic audit mode (note: wall-clock latency metrics are inherently runtime-dependent)
+- **Dual-mode stochastic simulation** with 7 field-realistic uncertainty sources:
+  sensor noise (tempC ±1.5°C, RH ±5%), demand variability (CV 18%), inventory/yield
+  uncertainty (CV 15%), transport distance jitter (CV 15%), spoilage model error
+  (k_ref CV 15%, Ea_R CV 10%), scenario onset timing jitter (±4h), and policy weight
+  perturbation (sigma 0.03). Produces meaningful CIs, p-values, and effect sizes
+  across 5 benchmark seeds; set `DETERMINISTIC_MODE=true` for audit mode
 - **Robustness + significance toolkit** including stress tests (sensor noise, missing
   telemetry, delay, MCP fault injection) and permutation-test significance reporting
 - **Keyword extraction** from piRAG passages (thresholds, regulatory references,

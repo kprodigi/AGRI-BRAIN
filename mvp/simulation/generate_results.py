@@ -97,10 +97,6 @@ RAG_CONTEXT_ENABLED = os.environ.get("RAG_CONTEXT_ENABLED", "true").lower() != "
 
 # Re-export for backward compat; prefer _is_deterministic() at call sites.
 DETERMINISTIC_MODE = _is_deterministic()
-STOCH_TEMP_STD_C = float(os.environ.get("STOCH_TEMP_STD_C", "0.35"))
-STOCH_RH_STD = float(os.environ.get("STOCH_RH_STD", "1.5"))
-STOCH_DEMAND_FRAC_STD = float(os.environ.get("STOCH_DEMAND_FRAC_STD", "0.04"))
-STOCH_INVENTORY_FRAC_STD = float(os.environ.get("STOCH_INVENTORY_FRAC_STD", "0.03"))
 
 def _demand_forecast(df, horizon=1, **kwargs):
     """Dispatch to LSTM or Holt-Winters demand forecaster based on config."""
@@ -108,16 +104,6 @@ def _demand_forecast(df, horizon=1, **kwargs):
         return yield_demand_forecast(df, horizon=horizon, **kwargs)
     return lstm_demand_forecast(df, horizon=horizon, **kwargs)
 
-
-def _apply_stochastic_variability(df: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
-    """No-op: global DataFrame perturbation removed to prevent double-layer noise.
-
-    Stochastic perturbation is applied exclusively per-step via StochasticLayer
-    (perturb_temperature, perturb_humidity, etc.) inside run_episode(). This
-    avoids compounding noise (global + per-step) and keeps the effective sigma
-    equal to the documented single-layer assumptions.
-    """
-    return df
 
 # ---------------------------------------------------------------------------
 # Constants (orchestration-level only — no physics here)
@@ -159,7 +145,13 @@ _SCENARIO_FN = {
 
 
 def apply_scenario(df: pd.DataFrame, name: str, policy: Policy,
-                   rng: np.random.Generator) -> pd.DataFrame:
+                   rng: np.random.Generator, stoch=None) -> pd.DataFrame:
+    """Apply scenario perturbation with optional onset-time jitter (Source 6).
+
+    When stochastic mode is active, the scenario onset is shifted by
+    ±onset_jitter_hours via a timestamp offset before calling the
+    canonical scenario function.
+    """
     # Ensure scenario functions use our policy for _recompute_derived
     _register_scenario_state({"policy": policy})
     fn = _SCENARIO_FN.get(name)
@@ -170,7 +162,24 @@ def apply_scenario(df: pd.DataFrame, name: str, policy: Policy,
                               lag_lambda=policy.lag_lambda)
         df["volatility"] = volatility_flags(df, window=policy.boll_window, k=policy.boll_k)
         return df
-    return fn(df)
+
+    # Source 6: Scenario onset jitter — shift timestamps so the scenario
+    # function (which uses _hours_from_start) sees a shifted timeline.
+    # baseline and adaptive_pricing have no fixed onset, so skip jitter.
+    jitter_td = pd.Timedelta(0)
+    if stoch is not None and stoch.enabled and name not in ("baseline", "adaptive_pricing"):
+        jitter_h = stoch.jitter_onset_hour(0.0)  # get signed offset
+        jitter_td = pd.Timedelta(hours=jitter_h)
+        df = df.copy()
+        df["timestamp"] = df["timestamp"] - jitter_td  # shift earlier = scenario starts later
+
+    result = fn(df)
+
+    # Restore original timestamps after scenario application
+    if jitter_td != pd.Timedelta(0):
+        result["timestamp"] = result["timestamp"] + jitter_td
+
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -189,6 +198,11 @@ def run_episode(
         stoch = _STOCH_DISABLED
     n = len(df)
     hours = _hours_from_start(df)
+
+    # --- Source 5: Spoilage model error (once per episode) ---
+    # Perturb Arrhenius parameters to model batch-to-batch biological variability
+    eff_k_ref = stoch.perturb_k_ref(policy.k_ref)
+    eff_ea_r = stoch.perturb_ea_r(policy.Ea_R)
 
     # --- Multi-agent coordinator ---
     context_mode = mode in _CONTEXT_ENABLED_MODES
@@ -252,10 +266,10 @@ def run_episode(
         # spoilage pipeline (compute_spoilage_pinn) requires the entire
         # DataFrame and produces cumulative values, not per-step updates.
         if stoch.enabled:
-            k_perturbed = arrhenius_k(temp, policy.k_ref, policy.Ea_R,
+            k_perturbed = arrhenius_k(temp, eff_k_ref, eff_ea_r,
                                       policy.T_ref_K, rh_val / 100.0,
                                       policy.beta_humidity)
-            rho = min(1.0, max(0.0, k_perturbed / (policy.k_ref + 1e-12)))
+            rho = min(1.0, max(0.0, k_perturbed / (eff_k_ref + 1e-12)))
 
         # Track perturbed values for next step's potential delay event
         prev_temp, prev_rh = temp, rh_val
@@ -318,7 +332,8 @@ def run_episode(
         active_agent_trace.append(active_agent.role)
 
         # Carbon emissions (Layer 1: carbon.py)
-        km = getattr(policy, ACTION_KM_KEYS[action])
+        # Source 4: Transport distance jitter (detours, traffic, loading delays)
+        km = stoch.perturb_transport_km(getattr(policy, ACTION_KM_KEYS[action]))
         thermal_stress = compute_thermal_stress(temp)
         carbon = compute_transport_carbon(km, policy.carbon_per_km, thermal_stress)
 
@@ -331,7 +346,8 @@ def run_episode(
         slca_c = slca_raw * slca_quality
 
         # Waste computation (Layer 1: waste.py + spoilage.py)
-        k_inst = arrhenius_k(temp, policy.k_ref, policy.Ea_R,
+        # Uses perturbed Arrhenius params (Source 5: spoilage model error)
+        k_inst = arrhenius_k(temp, eff_k_ref, eff_ea_r,
                              policy.T_ref_K, rh_val / 100.0,
                              policy.beta_humidity)
         waste_raw = compute_waste_rate(k_inst, surplus_ratio)
@@ -502,11 +518,20 @@ def run_all(seed: int = SEED) -> dict:
     results: dict[str, dict[str, dict]] = {}
     df_scenarios: dict[str, pd.DataFrame] = {}
 
+    # --- Source 7: Policy weight perturbation (once per seed) ---
+    import src.models.action_selection as _as_module
+    _original_theta = _as_module.THETA.copy()
+    # Create a stochastic layer just for the seed-level perturbation
+    _seed_stoch = make_stochastic_layer(np.random.default_rng(seed + 7))
+    _as_module.THETA = _seed_stoch.perturb_theta(_original_theta)
+
     for scenario in SCENARIOS:
         results[scenario] = {}
         scenario_rng = np.random.default_rng(rng.integers(0, 2**31))
-        df_scenario = apply_scenario(df_base, scenario, policy, scenario_rng)
-        df_scenario = _apply_stochastic_variability(df_scenario, scenario_rng)
+
+        # Create a scenario-level stochastic layer for onset jitter (Source 6)
+        scenario_stoch = make_stochastic_layer(np.random.default_rng(scenario_rng.integers(0, 2**31)))
+        df_scenario = apply_scenario(df_base, scenario, policy, scenario_rng, stoch=scenario_stoch)
         df_scenarios[scenario] = df_scenario
 
         # Shared seed for context ablation modes so any ARI difference
@@ -596,6 +621,9 @@ def run_all(seed: int = SEED) -> dict:
                     proto.export_json(str(proto_path))
                     print(f"    Protocol: {proto_summary['total_interactions']} real MCP interactions, "
                           f"methods={proto_summary['methods']}")
+
+    # Restore original THETA after all episodes (Source 7 cleanup)
+    _as_module.THETA = _original_theta
 
     table1_methods = ["static", "hybrid_rl", "agribrain"]
     table1_rows = []
