@@ -52,6 +52,13 @@ class StochasticLayer:
         return float(max(0.0, inv * mult))
 
     def perturb_latency(self, latency_ms: float) -> float:
+        """Reserved latency perturbation helper (intentionally unused in runtime).
+
+        Decision latency in generate_results.py is recorded from wall-clock
+        execution time as observed, without synthetic perturbation. Latency lag
+        injection for telemetry is modeled separately by STOCH_DELAY_PROB over
+        whole time-series in _apply_stochastic_variability().
+        """
         if not self.enabled or self.latency_max_ms <= 0.0:
             return float(latency_ms)
         return float(latency_ms + self.rng.uniform(0.0, self.latency_max_ms))

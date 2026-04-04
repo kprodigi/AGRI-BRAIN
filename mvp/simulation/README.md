@@ -36,6 +36,12 @@ The last four modes (`no_context`, `mcp_only`, `pirag_only`, `agribrain`)
 share the same RNG seed per scenario so that ARI differences reflect only
 context injection, not stochastic noise.
 
+Stochastic perturbations apply to `tempC`, `RH`, `demand_units`, and
+`inventory_units`. Decision latency is recorded as observed wall-clock
+execution time (deterministic observation, not synthetically perturbed).
+`STOCH_DELAY_PROB` (default `0.02`) is a separate temporal-lag mechanism that
+acts on whole time series by carrying forward the previous sample.
+
 ## Models Used
 
 All models are imported from the backend (`backend/src/models/`):

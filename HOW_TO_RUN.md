@@ -96,6 +96,7 @@ fastapi, uvicorn, pydantic, numpy, pandas, matplotlib, reportlab, orjson, reques
 | `STOCH_RH_STD` | `1.5` | Stochastic: humidity noise sigma (%) |
 | `STOCH_DEMAND_FRAC_STD` | `0.04` | Stochastic: demand multiplicative noise CV |
 | `STOCH_INVENTORY_FRAC_STD` | `0.03` | Stochastic: inventory multiplicative noise CV |
+| `STOCH_DELAY_PROB` | `0.02` | Temporal lag injection probability (series-level, previous-sample carryover), separate from per-value StochasticLayer perturbations |
 | `BENCHMARK_SEEDS` | `42,1337,2024,7,99` | Comma-separated seeds for multi-seed benchmark |
 
 ### 2c. Start the backend

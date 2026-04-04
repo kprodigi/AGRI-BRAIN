@@ -1,6 +1,6 @@
 [
   {
-    "timestamp": 1774870062.331247,
+    "timestamp": 1775233277.5089543,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -25,10 +25,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.033
   },
   {
-    "timestamp": 1774870062.3312929,
+    "timestamp": 1775233277.509285,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -55,10 +56,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.011
   },
   {
-    "timestamp": 1774870062.3332572,
+    "timestamp": 1775233277.5115457,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -83,10 +85,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.03
   },
   {
-    "timestamp": 1774870062.3332927,
+    "timestamp": 1775233277.5116048,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -109,10 +112,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.035
   },
   {
-    "timestamp": 1774870062.3333118,
+    "timestamp": 1775233277.5116296,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -139,10 +143,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774870062.3412645,
+    "timestamp": 1775233277.5196755,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -167,10 +172,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.018
   },
   {
-    "timestamp": 1774870062.341304,
+    "timestamp": 1775233277.51971,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -193,10 +199,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.018
   },
   {
-    "timestamp": 1774870062.3413458,
+    "timestamp": 1775233277.519753,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -222,10 +229,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.03
   },
   {
-    "timestamp": 1774870062.341364,
+    "timestamp": 1775233277.519771,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -252,10 +260,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.003
   },
   {
-    "timestamp": 1774870062.35141,
+    "timestamp": 1775233277.5299969,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -280,10 +289,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.022
   },
   {
-    "timestamp": 1774870062.3514452,
+    "timestamp": 1775233277.5300372,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -306,10 +316,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.02
   },
   {
-    "timestamp": 1774870062.3515003,
+    "timestamp": 1775233277.5300796,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -335,10 +346,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.029
   },
   {
-    "timestamp": 1774870062.3515224,
+    "timestamp": 1775233277.5300987,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -365,10 +377,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774870062.3640037,
+    "timestamp": 1775233277.5426857,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -393,10 +406,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.022
   },
   {
-    "timestamp": 1774870062.364037,
+    "timestamp": 1775233277.542727,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -419,10 +433,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.021
   },
   {
-    "timestamp": 1774870062.3640552,
+    "timestamp": 1775233277.5427475,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -449,10 +464,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774870062.3787854,
+    "timestamp": 1775233277.557347,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -477,10 +493,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.017
   },
   {
-    "timestamp": 1774870062.3788216,
+    "timestamp": 1775233277.557382,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -503,10 +520,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.018
   },
   {
-    "timestamp": 1774870062.378863,
+    "timestamp": 1775233277.557422,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -532,10 +550,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.027
   },
   {
-    "timestamp": 1774870062.3788824,
+    "timestamp": 1775233277.5574408,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -562,10 +581,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.003
   },
   {
-    "timestamp": 1774870062.3958137,
+    "timestamp": 1775233277.5743814,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -590,10 +610,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.02
   },
   {
-    "timestamp": 1774870062.3958514,
+    "timestamp": 1775233277.574421,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -616,10 +637,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.021
   },
   {
-    "timestamp": 1774870062.3958907,
+    "timestamp": 1775233277.5744617,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -645,10 +667,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.028
   },
   {
-    "timestamp": 1774870062.3959086,
+    "timestamp": 1775233277.5744815,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -675,10 +698,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774870062.414909,
+    "timestamp": 1775233277.593714,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -703,10 +727,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.022
   },
   {
-    "timestamp": 1774870062.4149487,
+    "timestamp": 1775233277.5937607,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -729,10 +754,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.025
   },
   {
-    "timestamp": 1774870062.4149885,
+    "timestamp": 1775233277.5938056,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -758,10 +784,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.031
   },
   {
-    "timestamp": 1774870062.4150078,
+    "timestamp": 1775233277.5938265,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -788,10 +815,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774870062.436393,
+    "timestamp": 1775233277.6160476,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -816,10 +844,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.021
   },
   {
-    "timestamp": 1774870062.4364352,
+    "timestamp": 1775233277.616092,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -842,10 +871,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.024
   },
   {
-    "timestamp": 1774870062.4364538,
+    "timestamp": 1775233277.6161134,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -872,10 +902,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774870062.4601269,
+    "timestamp": 1775233277.6405125,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -900,10 +931,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.021
   },
   {
-    "timestamp": 1774870062.4601636,
+    "timestamp": 1775233277.6405568,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -926,10 +958,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.024
   },
   {
-    "timestamp": 1774870062.4601824,
+    "timestamp": 1775233277.640579,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -956,10 +989,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774870062.4859924,
+    "timestamp": 1775233277.6671946,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -984,10 +1018,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.022
   },
   {
-    "timestamp": 1774870062.486035,
+    "timestamp": 1775233277.667236,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1010,10 +1045,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.021
   },
   {
-    "timestamp": 1774870062.4860551,
+    "timestamp": 1775233277.667257,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1040,10 +1076,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774870062.5140097,
+    "timestamp": 1775233277.696182,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1068,10 +1105,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.03
   },
   {
-    "timestamp": 1774870062.5140467,
+    "timestamp": 1775233277.6962354,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1094,10 +1132,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.028
   },
   {
-    "timestamp": 1774870062.5140662,
+    "timestamp": 1775233277.6962602,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1124,10 +1163,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774870062.5450258,
+    "timestamp": 1775233277.727265,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1152,10 +1192,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.03
   },
   {
-    "timestamp": 1774870062.5450678,
+    "timestamp": 1775233277.7273247,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1178,10 +1219,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.03
   },
   {
-    "timestamp": 1774870062.5450883,
+    "timestamp": 1775233277.7273526,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1208,10 +1250,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.007
   },
   {
-    "timestamp": 1774870062.5782523,
+    "timestamp": 1775233277.7609558,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1236,10 +1279,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.027
   },
   {
-    "timestamp": 1774870062.5782957,
+    "timestamp": 1775233277.7610095,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1262,10 +1306,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.029
   },
   {
-    "timestamp": 1774870062.5783167,
+    "timestamp": 1775233277.7610347,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1292,10 +1337,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774870062.6134436,
+    "timestamp": 1775233277.7964716,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1320,10 +1366,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.027
   },
   {
-    "timestamp": 1774870062.61349,
+    "timestamp": 1775233277.796525,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1346,10 +1393,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.029
   },
   {
-    "timestamp": 1774870062.6135135,
+    "timestamp": 1775233277.7965498,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1376,10 +1424,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774870062.6508343,
+    "timestamp": 1775233277.8342068,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1404,10 +1453,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.024
   },
   {
-    "timestamp": 1774870062.6508737,
+    "timestamp": 1775233277.834254,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1430,10 +1480,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.025
   },
   {
-    "timestamp": 1774870062.6508942,
+    "timestamp": 1775233277.8342774,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1460,10 +1511,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774870062.691189,
+    "timestamp": 1775233277.8743598,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1488,10 +1540,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.024
   },
   {
-    "timestamp": 1774870062.6912382,
+    "timestamp": 1775233277.8744838,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1514,10 +1567,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.031
   },
   {
-    "timestamp": 1774870062.6912618,
+    "timestamp": 1775233277.8745096,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1544,10 +1598,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774870062.7328265,
+    "timestamp": 1775233277.917063,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1572,10 +1627,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.022
   },
   {
-    "timestamp": 1774870062.732867,
+    "timestamp": 1775233277.917107,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1598,10 +1654,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.023
   },
   {
-    "timestamp": 1774870062.732887,
+    "timestamp": 1775233277.9171288,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1628,10 +1685,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774870062.7768912,
+    "timestamp": 1775233277.962897,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1656,10 +1714,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.024
   },
   {
-    "timestamp": 1774870062.776932,
+    "timestamp": 1775233277.9629447,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1682,10 +1741,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.025
   },
   {
-    "timestamp": 1774870062.7769516,
+    "timestamp": 1775233277.96297,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1712,10 +1772,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774870062.8230247,
+    "timestamp": 1775233278.0105586,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1740,10 +1801,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.027
   },
   {
-    "timestamp": 1774870062.8230653,
+    "timestamp": 1775233278.0106132,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1766,10 +1828,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.03
   },
   {
-    "timestamp": 1774870062.8230853,
+    "timestamp": 1775233278.010638,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1796,10 +1859,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774870062.8715203,
+    "timestamp": 1775233278.0606947,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1824,10 +1888,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.028
   },
   {
-    "timestamp": 1774870062.871569,
+    "timestamp": 1775233278.0607526,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1850,10 +1915,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.031
   },
   {
-    "timestamp": 1774870062.871592,
+    "timestamp": 1775233278.0607789,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1880,10 +1946,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774870062.9231079,
+    "timestamp": 1775233278.1114614,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1908,10 +1975,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.027
   },
   {
-    "timestamp": 1774870062.923163,
+    "timestamp": 1775233278.1115146,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1934,10 +2002,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.026
   },
   {
-    "timestamp": 1774870062.9231875,
+    "timestamp": 1775233278.1115391,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1964,10 +2033,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774870062.97656,
+    "timestamp": 1775233278.165243,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1992,10 +2062,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.026
   },
   {
-    "timestamp": 1774870062.9766037,
+    "timestamp": 1775233278.1652956,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2018,10 +2089,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.028
   },
   {
-    "timestamp": 1774870062.9766257,
+    "timestamp": 1775233278.1653197,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2048,10 +2120,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774870063.0319574,
+    "timestamp": 1775233278.221306,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2076,10 +2149,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.025
   },
   {
-    "timestamp": 1774870063.032009,
+    "timestamp": 1775233278.221356,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2102,10 +2176,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.026
   },
   {
-    "timestamp": 1774870063.0320344,
+    "timestamp": 1775233278.2213798,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2132,10 +2207,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774870063.09424,
+    "timestamp": 1775233278.2824764,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2160,10 +2236,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.025
   },
   {
-    "timestamp": 1774870063.0942974,
+    "timestamp": 1775233278.2825313,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2186,10 +2263,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.029
   },
   {
-    "timestamp": 1774870063.0943222,
+    "timestamp": 1775233278.2825568,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2216,10 +2294,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774870063.154707,
+    "timestamp": 1775233278.3413572,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2244,10 +2323,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.024
   },
   {
-    "timestamp": 1774870063.1547718,
+    "timestamp": 1775233278.3414044,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2270,10 +2350,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.024
   },
   {
-    "timestamp": 1774870063.1547978,
+    "timestamp": 1775233278.3414276,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2300,10 +2381,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774870063.2170525,
+    "timestamp": 1775233278.4050462,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2328,10 +2410,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.028
   },
   {
-    "timestamp": 1774870063.217105,
+    "timestamp": 1775233278.4050992,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2354,10 +2437,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.029
   },
   {
-    "timestamp": 1774870063.2171276,
+    "timestamp": 1775233278.4051251,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2384,10 +2468,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.007
   },
   {
-    "timestamp": 1774870063.2822697,
+    "timestamp": 1775233278.4709523,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2412,10 +2497,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.03
   },
   {
-    "timestamp": 1774870063.2823198,
+    "timestamp": 1775233278.4710116,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2438,10 +2524,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.033
   },
   {
-    "timestamp": 1774870063.2823434,
+    "timestamp": 1775233278.4710405,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2468,10 +2555,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.008
   },
   {
-    "timestamp": 1774870063.3491004,
+    "timestamp": 1775233278.537899,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2496,10 +2584,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.028
   },
   {
-    "timestamp": 1774870063.3491569,
+    "timestamp": 1775233278.5379543,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2522,10 +2611,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.03
   },
   {
-    "timestamp": 1774870063.349181,
+    "timestamp": 1775233278.537981,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2552,10 +2642,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.007
   },
   {
-    "timestamp": 1774870063.4183571,
+    "timestamp": 1775233278.6071424,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2580,10 +2671,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.03
   },
   {
-    "timestamp": 1774870063.4184258,
+    "timestamp": 1775233278.6071942,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2606,10 +2698,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.027
   },
   {
-    "timestamp": 1774870063.41846,
+    "timestamp": 1775233278.607221,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2636,10 +2729,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774870063.4902549,
+    "timestamp": 1775233278.6793346,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2664,10 +2758,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.027
   },
   {
-    "timestamp": 1774870063.4903076,
+    "timestamp": 1775233278.6793852,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2690,10 +2785,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.026
   },
   {
-    "timestamp": 1774870063.490332,
+    "timestamp": 1775233278.6794116,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2720,10 +2816,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774870063.5648844,
+    "timestamp": 1775233278.7523263,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2748,10 +2845,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.03
   },
   {
-    "timestamp": 1774870063.564942,
+    "timestamp": 1775233278.7523806,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2774,10 +2872,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.029
   },
   {
-    "timestamp": 1774870063.564965,
+    "timestamp": 1775233278.7524052,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2804,10 +2903,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774870063.640539,
+    "timestamp": 1775233278.829857,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2832,10 +2932,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.032
   },
   {
-    "timestamp": 1774870063.6405826,
+    "timestamp": 1775233278.829916,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2858,10 +2959,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.031
   },
   {
-    "timestamp": 1774870063.6406035,
+    "timestamp": 1775233278.8299417,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2888,10 +2990,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.007
   },
   {
-    "timestamp": 1774870063.7180715,
+    "timestamp": 1775233278.9080384,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2916,10 +3019,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.041
   },
   {
-    "timestamp": 1774870063.7181127,
+    "timestamp": 1775233278.9081123,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2942,10 +3046,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.039
   },
   {
-    "timestamp": 1774870063.718133,
+    "timestamp": 1775233278.908145,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2972,10 +3077,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.009
   },
   {
-    "timestamp": 1774870063.7970862,
+    "timestamp": 1775233278.9897914,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3000,10 +3106,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.022
   },
   {
-    "timestamp": 1774870063.797109,
+    "timestamp": 1775233278.9898274,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3030,10 +3137,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774870063.8787684,
+    "timestamp": 1775233279.0736766,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3058,10 +3166,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.025
   },
   {
-    "timestamp": 1774870063.8787985,
+    "timestamp": 1775233279.0737162,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3088,10 +3197,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.007
   },
   {
-    "timestamp": 1774870063.963258,
+    "timestamp": 1775233279.1594179,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3116,10 +3226,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.043
   },
   {
-    "timestamp": 1774870063.9633214,
+    "timestamp": 1775233279.1595044,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3142,10 +3253,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.052
   },
   {
-    "timestamp": 1774870063.9633465,
+    "timestamp": 1775233279.159533,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3172,10 +3284,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.008
   },
   {
-    "timestamp": 1774870064.0510345,
+    "timestamp": 1775233279.2473233,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3200,10 +3313,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.028
   },
   {
-    "timestamp": 1774870064.0511115,
+    "timestamp": 1775233279.2473764,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3226,10 +3340,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.027
   },
   {
-    "timestamp": 1774870064.0511456,
+    "timestamp": 1775233279.2474024,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3256,10 +3371,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774870064.1400158,
+    "timestamp": 1775233279.3378177,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3284,10 +3400,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.04
   },
   {
-    "timestamp": 1774870064.1400604,
+    "timestamp": 1775233279.3378837,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3310,10 +3427,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.035
   },
   {
-    "timestamp": 1774870064.1400833,
+    "timestamp": 1775233279.3379154,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3340,10 +3458,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.008
   },
   {
-    "timestamp": 1774870064.2311795,
+    "timestamp": 1775233279.428629,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3368,10 +3487,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.033
   },
   {
-    "timestamp": 1774870064.2312286,
+    "timestamp": 1775233279.428684,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3394,10 +3514,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.029
   },
   {
-    "timestamp": 1774870064.2312515,
+    "timestamp": 1775233279.4287105,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3424,10 +3545,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774870064.324898,
+    "timestamp": 1775233279.523275,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3452,10 +3574,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.031
   },
   {
-    "timestamp": 1774870064.324961,
+    "timestamp": 1775233279.5233333,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3478,10 +3601,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.032
   },
   {
-    "timestamp": 1774870064.3249888,
+    "timestamp": 1775233279.52336,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3508,10 +3632,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.007
   },
   {
-    "timestamp": 1774870064.420278,
+    "timestamp": 1775233279.6204264,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3536,10 +3661,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.033
   },
   {
-    "timestamp": 1774870064.4203281,
+    "timestamp": 1775233279.620485,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3562,10 +3688,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.032
   },
   {
-    "timestamp": 1774870064.4203742,
+    "timestamp": 1775233279.62053,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3591,10 +3718,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.031
   },
   {
-    "timestamp": 1774870064.420397,
+    "timestamp": 1775233279.620554,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3621,10 +3749,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774870064.518005,
+    "timestamp": 1775233279.7167811,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3649,10 +3778,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.029
   },
   {
-    "timestamp": 1774870064.518059,
+    "timestamp": 1775233279.7168329,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3675,10 +3805,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.026
   },
   {
-    "timestamp": 1774870064.5180829,
+    "timestamp": 1775233279.7168581,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3705,10 +3836,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774870064.6186135,
+    "timestamp": 1775233279.8175933,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3733,10 +3865,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.031
   },
   {
-    "timestamp": 1774870064.618671,
+    "timestamp": 1775233279.8176491,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3759,10 +3892,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.029
   },
   {
-    "timestamp": 1774870064.6187167,
+    "timestamp": 1775233279.8176942,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3788,10 +3922,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.031
   },
   {
-    "timestamp": 1774870064.6187396,
+    "timestamp": 1775233279.8177183,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3818,10 +3953,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774870064.7221553,
+    "timestamp": 1775233279.9215517,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3846,10 +3982,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.029
   },
   {
-    "timestamp": 1774870064.7222416,
+    "timestamp": 1775233279.9216077,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3872,10 +4009,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.03
   },
   {
-    "timestamp": 1774870064.7222753,
+    "timestamp": 1775233279.9216335,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3902,10 +4040,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774870064.8278234,
+    "timestamp": 1775233280.0275826,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3930,10 +4069,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.033
   },
   {
-    "timestamp": 1774870064.8278756,
+    "timestamp": 1775233280.0276423,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3956,10 +4096,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.033
   },
   {
-    "timestamp": 1774870064.8279002,
+    "timestamp": 1775233280.0276713,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3986,10 +4127,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.007
   },
   {
-    "timestamp": 1774870064.9356863,
+    "timestamp": 1775233280.1356869,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4014,10 +4156,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.031
   },
   {
-    "timestamp": 1774870064.935744,
+    "timestamp": 1775233280.1357417,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4040,10 +4183,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.029
   },
   {
-    "timestamp": 1774870064.93577,
+    "timestamp": 1775233280.1357675,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4070,10 +4214,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774870065.0465703,
+    "timestamp": 1775233280.2466507,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4098,10 +4243,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.031
   },
   {
-    "timestamp": 1774870065.0466278,
+    "timestamp": 1775233280.246707,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4124,10 +4270,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.03
   },
   {
-    "timestamp": 1774870065.0466537,
+    "timestamp": 1775233280.246734,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4154,10 +4301,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.007
   },
   {
-    "timestamp": 1774870065.1620004,
+    "timestamp": 1775233280.364157,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4182,10 +4330,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.034
   },
   {
-    "timestamp": 1774870065.1620667,
+    "timestamp": 1775233280.3642192,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4208,10 +4357,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.034
   },
   {
-    "timestamp": 1774870065.162094,
+    "timestamp": 1775233280.3642461,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4238,10 +4388,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.007
   },
   {
-    "timestamp": 1774870065.1635334,
+    "timestamp": 1775233280.365774,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4264,10 +4415,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.023
   },
   {
-    "timestamp": 1774870065.1635973,
+    "timestamp": 1775233280.3658392,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4286,14 +4438,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:27:45Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:12:45Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:57:45Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:42:45Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:27:45Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:21:20Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:06:20Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:51:20Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:36:20Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:21:20Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.05
   },
   {
-    "timestamp": 1774870065.1636243,
+    "timestamp": 1775233280.3658667,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4316,10 +4469,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.011
   },
   {
-    "timestamp": 1774870065.1636393,
+    "timestamp": 1775233280.3658826,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4345,10 +4499,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774870065.2719634,
+    "timestamp": 1775233280.4771464,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4373,10 +4528,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.034
   },
   {
-    "timestamp": 1774870065.2720122,
+    "timestamp": 1775233280.477209,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4399,10 +4555,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.033
   },
   {
-    "timestamp": 1774870065.2720354,
+    "timestamp": 1775233280.4772365,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4429,10 +4586,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774870065.273375,
+    "timestamp": 1775233280.4787548,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4455,10 +4613,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.024
   },
   {
-    "timestamp": 1774870065.273431,
+    "timestamp": 1775233280.478819,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4477,14 +4636,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:27:45Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:12:45Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:57:45Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:42:45Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:27:45Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:21:20Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:06:20Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:51:20Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:36:20Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:21:20Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.048
   },
   {
-    "timestamp": 1774870065.2734563,
+    "timestamp": 1775233280.4788458,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4507,10 +4667,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.011
   },
   {
-    "timestamp": 1774870065.2734697,
+    "timestamp": 1775233280.478861,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4536,10 +4697,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774870065.3828156,
+    "timestamp": 1775233280.5904374,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4564,10 +4726,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.065
   },
   {
-    "timestamp": 1774870065.3828692,
+    "timestamp": 1775233280.590501,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4590,10 +4753,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.034
   },
   {
-    "timestamp": 1774870065.3828926,
+    "timestamp": 1775233280.5905278,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4620,10 +4784,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.007
   },
   {
-    "timestamp": 1774870065.3842764,
+    "timestamp": 1775233280.5920877,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4646,10 +4811,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.024
   },
   {
-    "timestamp": 1774870065.384335,
+    "timestamp": 1775233280.5921507,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4668,14 +4834,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:27:45Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:12:45Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:57:45Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:42:45Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:27:45Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:21:20Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:06:20Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:51:20Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:36:20Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:21:20Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.046
   },
   {
-    "timestamp": 1774870065.38436,
+    "timestamp": 1775233280.5921783,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4698,10 +4865,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.011
   },
   {
-    "timestamp": 1774870065.3843749,
+    "timestamp": 1775233280.5921938,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4727,10 +4895,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774870065.4934664,
+    "timestamp": 1775233280.701919,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4755,10 +4924,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.031
   },
   {
-    "timestamp": 1774870065.4935198,
+    "timestamp": 1775233280.7019782,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4781,10 +4951,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.032
   },
   {
-    "timestamp": 1774870065.4935439,
+    "timestamp": 1775233280.7020047,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4811,10 +4982,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.007
   },
   {
-    "timestamp": 1774870065.4950397,
+    "timestamp": 1775233280.7034965,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4837,10 +5009,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.024
   },
   {
-    "timestamp": 1774870065.4950986,
+    "timestamp": 1775233280.7035592,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4859,14 +5032,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:27:45Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:12:45Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:57:45Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:42:45Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:27:45Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:21:20Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:06:20Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:51:20Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:36:20Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:21:20Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.046
   },
   {
-    "timestamp": 1774870065.4951243,
+    "timestamp": 1775233280.7035842,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4889,10 +5063,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.01
   },
   {
-    "timestamp": 1774870065.495137,
+    "timestamp": 1775233280.7036002,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4918,10 +5093,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774870065.603622,
+    "timestamp": 1775233280.8136127,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4946,10 +5122,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.032
   },
   {
-    "timestamp": 1774870065.603689,
+    "timestamp": 1775233280.8136723,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4972,10 +5149,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.032
   },
   {
-    "timestamp": 1774870065.6037166,
+    "timestamp": 1775233280.8136995,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5002,10 +5180,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.007
   },
   {
-    "timestamp": 1774870065.605229,
+    "timestamp": 1775233280.815215,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5028,10 +5207,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.023
   },
   {
-    "timestamp": 1774870065.6052954,
+    "timestamp": 1775233280.8152769,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5050,14 +5230,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:27:45Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:12:45Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:57:45Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:42:45Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:27:45Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:21:20Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:06:20Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:51:20Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:36:20Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:21:20Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.046
   },
   {
-    "timestamp": 1774870065.605323,
+    "timestamp": 1775233280.8153033,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5080,10 +5261,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.011
   },
   {
-    "timestamp": 1774870065.605338,
+    "timestamp": 1775233280.8153188,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5109,10 +5291,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774870065.7136385,
+    "timestamp": 1775233280.9247086,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5137,10 +5320,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.039
   },
   {
-    "timestamp": 1774870065.7136924,
+    "timestamp": 1775233280.9247825,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5163,10 +5347,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.039
   },
   {
-    "timestamp": 1774870065.7137167,
+    "timestamp": 1775233280.924812,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5193,10 +5378,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.008
   },
   {
-    "timestamp": 1774870065.7151234,
+    "timestamp": 1775233280.9264493,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5219,10 +5405,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.022
   },
   {
-    "timestamp": 1774870065.715183,
+    "timestamp": 1775233280.9265106,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5241,14 +5428,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:27:45Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:12:45Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:57:45Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:42:45Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:27:45Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:21:20Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:06:20Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:51:20Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:36:20Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:21:20Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.046
   },
   {
-    "timestamp": 1774870065.715208,
+    "timestamp": 1775233280.9265368,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5271,10 +5459,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.011
   },
   {
-    "timestamp": 1774870065.715223,
+    "timestamp": 1775233280.9265518,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5300,10 +5489,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774870065.8240669,
+    "timestamp": 1775233281.055027,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5328,10 +5518,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.033
   },
   {
-    "timestamp": 1774870065.8241384,
+    "timestamp": 1775233281.055088,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5354,10 +5545,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.033
   },
   {
-    "timestamp": 1774870065.8241684,
+    "timestamp": 1775233281.0551145,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5384,10 +5576,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774870065.8257155,
+    "timestamp": 1775233281.056653,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5410,10 +5603,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.022
   },
   {
-    "timestamp": 1774870065.8257852,
+    "timestamp": 1775233281.056714,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5432,14 +5626,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:27:45Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:12:45Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:57:45Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:42:45Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:27:45Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:21:21Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:06:21Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:51:21Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:36:21Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:21:21Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.045
   },
   {
-    "timestamp": 1774870065.8258135,
+    "timestamp": 1775233281.0567398,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5462,10 +5657,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.01
   },
   {
-    "timestamp": 1774870065.8258293,
+    "timestamp": 1775233281.0567546,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5491,10 +5687,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774870065.9343383,
+    "timestamp": 1775233281.168601,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5519,10 +5716,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.032
   },
   {
-    "timestamp": 1774870065.934415,
+    "timestamp": 1775233281.1686625,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5545,10 +5743,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.033
   },
   {
-    "timestamp": 1774870065.9344468,
+    "timestamp": 1775233281.1686885,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5575,6 +5774,7 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   }
 ]

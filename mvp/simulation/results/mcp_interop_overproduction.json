@@ -36,8 +36,8 @@
           "params": {
             "name": "check_compliance",
             "arguments": {
-              "temperature": 4.0,
-              "humidity": 92.2
+              "temperature": 3.343610311400889,
+              "humidity": 92.44191771349668
             }
           }
         },
@@ -94,8 +94,8 @@
           "params": {
             "name": "check_compliance",
             "arguments": {
-              "temperature": 3.95,
-              "humidity": 91.5
+              "temperature": 4.287821570265858,
+              "humidity": 90.83519931839132
             }
           }
         },
@@ -110,7 +110,7 @@
             "uri": "agribrain://quality/spoilage_risk"
           }
         },
-        "response_summary": "rho=6.637857325242358e-06"
+        "response_summary": "rho=6.834149297918479e-06"
       }
     ],
     "total_protocol_messages": 6
@@ -152,8 +152,8 @@
           "params": {
             "name": "check_compliance",
             "arguments": {
-              "temperature": 7.18,
-              "humidity": 90.2
+              "temperature": 7.184183967931075,
+              "humidity": 91.69060150893799
             }
           }
         },
@@ -168,7 +168,7 @@
             "uri": "agribrain://quality/spoilage_risk"
           }
         },
-        "response_summary": "rho=2.9594939914723284e-05"
+        "response_summary": "rho=3.099523712912777e-05"
       }
     ],
     "total_protocol_messages": 6
@@ -210,8 +210,8 @@
           "params": {
             "name": "check_compliance",
             "arguments": {
-              "temperature": 6.87,
-              "humidity": 89.6
+              "temperature": 7.748356934487886,
+              "humidity": 88.3070669315132
             }
           }
         },
@@ -226,7 +226,7 @@
             "uri": "agribrain://quality/spoilage_risk"
           }
         },
-        "response_summary": "rho=7.306419542951748e-05"
+        "response_summary": "rho=7.694008730596558e-05"
       }
     ],
     "total_protocol_messages": 6
@@ -268,8 +268,8 @@
           "params": {
             "name": "check_compliance",
             "arguments": {
-              "temperature": 7.48,
-              "humidity": 89.2
+              "temperature": 7.229875290503064,
+              "humidity": 89.13644521852083
             }
           }
         },
@@ -284,7 +284,7 @@
             "uri": "agribrain://quality/spoilage_risk"
           }
         },
-        "response_summary": "rho=0.0001335932427285469"
+        "response_summary": "rho=0.00014003679578244999"
       }
     ],
     "total_protocol_messages": 6

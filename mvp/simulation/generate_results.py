@@ -101,6 +101,7 @@ STOCH_TEMP_STD_C = float(os.environ.get("STOCH_TEMP_STD_C", "0.35"))
 STOCH_RH_STD = float(os.environ.get("STOCH_RH_STD", "1.5"))
 STOCH_DEMAND_FRAC_STD = float(os.environ.get("STOCH_DEMAND_FRAC_STD", "0.04"))
 STOCH_INVENTORY_FRAC_STD = float(os.environ.get("STOCH_INVENTORY_FRAC_STD", "0.03"))
+# Separate mechanism from StochasticLayer: temporal lag on whole traces.
 STOCH_DELAY_PROB = float(os.environ.get("STOCH_DELAY_PROB", "0.02"))
 
 def _demand_forecast(df, horizon=1, **kwargs):
@@ -294,6 +295,8 @@ def run_episode(
             env_state, hours[idx], effective_mode if mode not in _CONTEXT_ENABLED_MODES else mode,
             policy, rng, scenario, rag_context=rag_context,
         )
+        # Latency is recorded as observed wall-clock time (deterministic observation);
+        # no synthetic latency perturbation is applied.
         decision_latency_ms.append((time.perf_counter() - step_t0) * 1000.0)
         action = ACTIONS[action_idx]
         active_agent_trace.append(active_agent.role)

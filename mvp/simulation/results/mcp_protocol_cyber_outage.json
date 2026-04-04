@@ -1,6 +1,6 @@
 [
   {
-    "timestamp": 1774869823.4975772,
+    "timestamp": 1775233039.493129,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -25,10 +25,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.026
   },
   {
-    "timestamp": 1774869823.4976315,
+    "timestamp": 1775233039.4931684,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -55,10 +56,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.007
   },
   {
-    "timestamp": 1774869823.499729,
+    "timestamp": 1775233039.4951942,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -83,10 +85,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.014
   },
   {
-    "timestamp": 1774869823.4997513,
+    "timestamp": 1775233039.4952173,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -113,10 +116,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869823.507611,
+    "timestamp": 1775233039.503068,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -141,10 +145,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.019
   },
   {
-    "timestamp": 1774869823.5076509,
+    "timestamp": 1775233039.503108,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -167,10 +172,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.022
   },
   {
-    "timestamp": 1774869823.50767,
+    "timestamp": 1775233039.503129,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -197,10 +203,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869823.5175838,
+    "timestamp": 1775233039.5130432,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -225,10 +232,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.017
   },
   {
-    "timestamp": 1774869823.517617,
+    "timestamp": 1775233039.513078,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -251,10 +259,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.018
   },
   {
-    "timestamp": 1774869823.5176349,
+    "timestamp": 1775233039.5130973,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -281,10 +290,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869823.529929,
+    "timestamp": 1775233039.525212,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -309,10 +319,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.017
   },
   {
-    "timestamp": 1774869823.5299623,
+    "timestamp": 1775233039.5252457,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -335,10 +346,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.017
   },
   {
-    "timestamp": 1774869823.5299804,
+    "timestamp": 1775233039.5252647,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -365,10 +377,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.003
   },
   {
-    "timestamp": 1774869823.544679,
+    "timestamp": 1775233039.539486,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -393,10 +406,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.017
   },
   {
-    "timestamp": 1774869823.544713,
+    "timestamp": 1775233039.5395195,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -419,10 +433,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.017
   },
   {
-    "timestamp": 1774869823.5447528,
+    "timestamp": 1775233039.53956,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -448,10 +463,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.028
   },
   {
-    "timestamp": 1774869823.544771,
+    "timestamp": 1775233039.5395792,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -478,10 +494,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.003
   },
   {
-    "timestamp": 1774869823.5620313,
+    "timestamp": 1775233039.5565288,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -506,10 +523,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.021
   },
   {
-    "timestamp": 1774869823.5620687,
+    "timestamp": 1775233039.556569,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -532,10 +550,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.021
   },
   {
-    "timestamp": 1774869823.5620883,
+    "timestamp": 1775233039.5565915,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -562,10 +581,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869823.5812743,
+    "timestamp": 1775233039.5760372,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -590,10 +610,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.02
   },
   {
-    "timestamp": 1774869823.581312,
+    "timestamp": 1775233039.5760775,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -616,10 +637,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.021
   },
   {
-    "timestamp": 1774869823.5813315,
+    "timestamp": 1775233039.5760999,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -646,10 +668,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869823.6026309,
+    "timestamp": 1775233039.5969949,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -674,10 +697,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.014
   },
   {
-    "timestamp": 1774869823.6026564,
+    "timestamp": 1775233039.5970175,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -704,10 +728,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.003
   },
   {
-    "timestamp": 1774869823.626651,
+    "timestamp": 1775233039.62011,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -732,10 +757,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.014
   },
   {
-    "timestamp": 1774869823.626683,
+    "timestamp": 1775233039.620133,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -762,10 +788,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.003
   },
   {
-    "timestamp": 1774869823.6526597,
+    "timestamp": 1775233039.6453428,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -790,10 +817,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.015
   },
   {
-    "timestamp": 1774869823.6526916,
+    "timestamp": 1775233039.6453655,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -820,10 +848,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.003
   },
   {
-    "timestamp": 1774869823.6811812,
+    "timestamp": 1775233039.6730025,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -848,10 +877,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.017
   },
   {
-    "timestamp": 1774869823.6812167,
+    "timestamp": 1775233039.673029,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -878,10 +908,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869823.711829,
+    "timestamp": 1775233039.7027328,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -906,10 +937,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.015
   },
   {
-    "timestamp": 1774869823.7118573,
+    "timestamp": 1775233039.702756,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -936,10 +968,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.003
   },
   {
-    "timestamp": 1774869823.7445707,
+    "timestamp": 1775233039.7344134,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -964,10 +997,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.015
   },
   {
-    "timestamp": 1774869823.7445965,
+    "timestamp": 1775233039.734438,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -994,10 +1028,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.003
   },
   {
-    "timestamp": 1774869823.7798157,
+    "timestamp": 1775233039.7682393,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1022,10 +1057,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.014
   },
   {
-    "timestamp": 1774869823.7798455,
+    "timestamp": 1775233039.7682629,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1052,10 +1088,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.003
   },
   {
-    "timestamp": 1774869823.8175378,
+    "timestamp": 1775233039.8043025,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1080,10 +1117,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.018
   },
   {
-    "timestamp": 1774869823.8175657,
+    "timestamp": 1775233039.8043306,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1110,10 +1148,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774869823.8574607,
+    "timestamp": 1775233039.8426275,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1138,10 +1177,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.017
   },
   {
-    "timestamp": 1774869823.8574917,
+    "timestamp": 1775233039.8426557,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1168,10 +1208,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774869823.8995466,
+    "timestamp": 1775233039.884363,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1196,10 +1237,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.024
   },
   {
-    "timestamp": 1774869823.8995788,
+    "timestamp": 1775233039.8844013,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1226,10 +1268,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774869823.9439802,
+    "timestamp": 1775233039.929003,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1254,10 +1297,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.026
   },
   {
-    "timestamp": 1774869823.9440136,
+    "timestamp": 1775233039.9290416,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1284,10 +1328,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.007
   },
   {
-    "timestamp": 1774869823.9910114,
+    "timestamp": 1775233039.9936874,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1312,10 +1357,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.024
   },
   {
-    "timestamp": 1774869823.991041,
+    "timestamp": 1775233039.9937263,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1342,10 +1388,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774869824.0396743,
+    "timestamp": 1775233040.0457647,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1370,10 +1417,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.025
   },
   {
-    "timestamp": 1774869824.0397038,
+    "timestamp": 1775233040.045808,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1400,10 +1448,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774869824.0906837,
+    "timestamp": 1775233040.0964613,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1428,10 +1477,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.025
   },
   {
-    "timestamp": 1774869824.0907125,
+    "timestamp": 1775233040.0964992,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1458,10 +1508,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.007
   },
   {
-    "timestamp": 1774869824.143904,
+    "timestamp": 1775233040.1503692,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1486,10 +1537,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.026
   },
   {
-    "timestamp": 1774869824.1439323,
+    "timestamp": 1775233040.1504078,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1516,10 +1568,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774869824.1999807,
+    "timestamp": 1775233040.2049718,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1544,10 +1597,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.018
   },
   {
-    "timestamp": 1774869824.20001,
+    "timestamp": 1775233040.2050009,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1574,10 +1628,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774869824.2611814,
+    "timestamp": 1775233040.265146,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1602,10 +1657,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.02
   },
   {
-    "timestamp": 1774869824.2612174,
+    "timestamp": 1775233040.265175,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1632,10 +1688,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774869824.3219278,
+    "timestamp": 1775233040.3250144,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1660,10 +1717,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.018
   },
   {
-    "timestamp": 1774869824.321968,
+    "timestamp": 1775233040.3250418,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1690,10 +1748,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869824.3849194,
+    "timestamp": 1775233040.3866458,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1718,10 +1777,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.024
   },
   {
-    "timestamp": 1774869824.3849487,
+    "timestamp": 1775233040.3866806,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1748,10 +1808,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774869824.449186,
+    "timestamp": 1775233040.4502783,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1776,10 +1837,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.016
   },
   {
-    "timestamp": 1774869824.4492133,
+    "timestamp": 1775233040.4503047,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1806,10 +1868,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869824.5162442,
+    "timestamp": 1775233040.5154393,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1834,10 +1897,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.015
   },
   {
-    "timestamp": 1774869824.5162761,
+    "timestamp": 1775233040.5154648,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1864,10 +1928,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869824.5853066,
+    "timestamp": 1775233040.584277,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1892,10 +1957,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.022
   },
   {
-    "timestamp": 1774869824.5853405,
+    "timestamp": 1775233040.5843117,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1922,10 +1988,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774869824.657701,
+    "timestamp": 1775233040.6544771,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1950,10 +2017,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.025
   },
   {
-    "timestamp": 1774869824.6577463,
+    "timestamp": 1775233040.6545157,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -1980,10 +2048,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.007
   },
   {
-    "timestamp": 1774869824.7334049,
+    "timestamp": 1775233040.7277093,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2008,10 +2077,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.02
   },
   {
-    "timestamp": 1774869824.733453,
+    "timestamp": 1775233040.7277408,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2038,10 +2108,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774869824.8102622,
+    "timestamp": 1775233040.8042622,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2066,10 +2137,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.02
   },
   {
-    "timestamp": 1774869824.8102949,
+    "timestamp": 1775233040.804301,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2096,10 +2168,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774869824.887885,
+    "timestamp": 1775233040.8819518,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2124,10 +2197,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.019
   },
   {
-    "timestamp": 1774869824.8879209,
+    "timestamp": 1775233040.881985,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2154,10 +2228,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774869824.9691947,
+    "timestamp": 1775233040.9612823,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2182,10 +2257,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.016
   },
   {
-    "timestamp": 1774869824.9692595,
+    "timestamp": 1775233040.9613078,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2212,10 +2288,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869825.0519943,
+    "timestamp": 1775233041.0418875,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2240,10 +2317,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.015
   },
   {
-    "timestamp": 1774869825.0520291,
+    "timestamp": 1775233041.0419116,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2270,10 +2348,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869825.1361058,
+    "timestamp": 1775233041.125542,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2298,10 +2377,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.025
   },
   {
-    "timestamp": 1774869825.1361475,
+    "timestamp": 1775233041.1255784,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2328,10 +2408,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774869825.223319,
+    "timestamp": 1775233041.21146,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2356,10 +2437,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.018
   },
   {
-    "timestamp": 1774869825.2233505,
+    "timestamp": 1775233041.2114909,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2386,10 +2468,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774869825.312614,
+    "timestamp": 1775233041.299456,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2414,10 +2497,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.015
   },
   {
-    "timestamp": 1774869825.3126504,
+    "timestamp": 1775233041.2994816,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2444,10 +2528,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869825.404458,
+    "timestamp": 1775233041.3904436,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2472,10 +2557,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.022
   },
   {
-    "timestamp": 1774869825.4044943,
+    "timestamp": 1775233041.3904777,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2502,10 +2588,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774869825.4986837,
+    "timestamp": 1775233041.4851854,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2530,10 +2617,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.029
   },
   {
-    "timestamp": 1774869825.4987156,
+    "timestamp": 1775233041.4852278,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2560,10 +2648,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.008
   },
   {
-    "timestamp": 1774869825.594028,
+    "timestamp": 1775233041.5799685,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2588,10 +2677,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.022
   },
   {
-    "timestamp": 1774869825.5940726,
+    "timestamp": 1775233041.5800126,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2614,10 +2704,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.024
   },
   {
-    "timestamp": 1774869825.594093,
+    "timestamp": 1775233041.580035,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2644,10 +2735,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774869825.6909096,
+    "timestamp": 1775233041.676374,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2672,10 +2764,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.029
   },
   {
-    "timestamp": 1774869825.6909735,
+    "timestamp": 1775233041.67643,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2698,10 +2791,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.028
   },
   {
-    "timestamp": 1774869825.6909997,
+    "timestamp": 1775233041.6764543,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2728,10 +2822,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774869825.7906528,
+    "timestamp": 1775233041.7745454,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2756,10 +2851,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.022
   },
   {
-    "timestamp": 1774869825.7907035,
+    "timestamp": 1775233041.7745905,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2782,10 +2878,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.023
   },
   {
-    "timestamp": 1774869825.7907279,
+    "timestamp": 1775233041.7746155,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2812,10 +2909,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.007
   },
   {
-    "timestamp": 1774869825.8931231,
+    "timestamp": 1775233041.8763237,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2840,10 +2938,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.031
   },
   {
-    "timestamp": 1774869825.8932014,
+    "timestamp": 1775233041.876387,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2866,10 +2965,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.034
   },
   {
-    "timestamp": 1774869825.8932347,
+    "timestamp": 1775233041.8764145,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2896,10 +2996,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.007
   },
   {
-    "timestamp": 1774869825.9991314,
+    "timestamp": 1775233041.9791875,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2924,10 +3025,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.022
   },
   {
-    "timestamp": 1774869825.9991882,
+    "timestamp": 1775233041.9792325,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2950,10 +3052,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.024
   },
   {
-    "timestamp": 1774869825.9992132,
+    "timestamp": 1775233041.979256,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -2980,10 +3083,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774869826.1067255,
+    "timestamp": 1775233042.0841923,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3008,10 +3112,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.017
   },
   {
-    "timestamp": 1774869826.1068017,
+    "timestamp": 1775233042.0842187,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3038,10 +3143,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774869826.2159553,
+    "timestamp": 1775233042.1926312,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3066,10 +3172,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.027
   },
   {
-    "timestamp": 1774869826.2159896,
+    "timestamp": 1775233042.1926732,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3096,10 +3203,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.007
   },
   {
-    "timestamp": 1774869826.3314698,
+    "timestamp": 1775233042.3072631,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3124,10 +3232,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.026
   },
   {
-    "timestamp": 1774869826.331508,
+    "timestamp": 1775233042.3073056,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3154,10 +3263,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.007
   },
   {
-    "timestamp": 1774869826.3329024,
+    "timestamp": 1775233042.30887,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3180,10 +3290,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.039
   },
   {
-    "timestamp": 1774869826.3329632,
+    "timestamp": 1775233042.3089309,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3202,14 +3313,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:23:46Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:08:46Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:53:46Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:38:46Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:23:46Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:17:22Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:02:22Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:47:22Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:32:22Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:17:22Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.045
   },
   {
-    "timestamp": 1774869826.3329895,
+    "timestamp": 1775233042.3089578,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3232,10 +3344,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.011
   },
   {
-    "timestamp": 1774869826.333004,
+    "timestamp": 1775233042.308973,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3261,10 +3374,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869826.4449112,
+    "timestamp": 1775233042.4178717,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3289,10 +3403,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.024
   },
   {
-    "timestamp": 1774869826.4449487,
+    "timestamp": 1775233042.417909,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3319,10 +3434,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.007
   },
   {
-    "timestamp": 1774869826.4463649,
+    "timestamp": 1775233042.4196773,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3345,10 +3461,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.031
   },
   {
-    "timestamp": 1774869826.4464238,
+    "timestamp": 1775233042.4197454,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3367,14 +3484,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:23:46Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:08:46Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:53:46Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:38:46Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:23:46Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:17:22Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:02:22Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:47:22Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:32:22Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:17:22Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.049
   },
   {
-    "timestamp": 1774869826.4464495,
+    "timestamp": 1775233042.4197721,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3397,10 +3515,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.011
   },
   {
-    "timestamp": 1774869826.4464636,
+    "timestamp": 1775233042.4197884,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3426,10 +3545,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774869826.5571685,
+    "timestamp": 1775233042.5278106,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3454,10 +3574,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.021
   },
   {
-    "timestamp": 1774869826.557206,
+    "timestamp": 1775233042.5278444,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3484,10 +3605,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774869826.5586107,
+    "timestamp": 1775233042.5293045,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3510,10 +3632,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.028
   },
   {
-    "timestamp": 1774869826.5586693,
+    "timestamp": 1775233042.5293734,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3532,14 +3655,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:23:46Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:08:46Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:53:46Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:38:46Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:23:46Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:17:22Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:02:22Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:47:22Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:32:22Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:17:22Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.052
   },
   {
-    "timestamp": 1774869826.5586948,
+    "timestamp": 1775233042.5294006,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3562,10 +3686,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.011
   },
   {
-    "timestamp": 1774869826.55871,
+    "timestamp": 1775233042.5294168,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3591,10 +3716,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774869826.6683812,
+    "timestamp": 1775233042.6366692,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3619,10 +3745,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.016
   },
   {
-    "timestamp": 1774869826.668418,
+    "timestamp": 1775233042.6366944,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3649,10 +3776,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869826.669841,
+    "timestamp": 1775233042.6379786,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3675,10 +3803,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.021
   },
   {
-    "timestamp": 1774869826.6699026,
+    "timestamp": 1775233042.6380317,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3697,14 +3826,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:23:46Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:08:46Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:53:46Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:38:46Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:23:46Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:17:22Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:02:22Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:47:22Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:32:22Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:17:22Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.038
   },
   {
-    "timestamp": 1774869826.669928,
+    "timestamp": 1775233042.638056,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3727,10 +3857,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.01
   },
   {
-    "timestamp": 1774869826.6699424,
+    "timestamp": 1775233042.6380715,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3756,10 +3887,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.003
   },
   {
-    "timestamp": 1774869826.7791834,
+    "timestamp": 1775233042.747332,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3784,10 +3916,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.023
   },
   {
-    "timestamp": 1774869826.7792156,
+    "timestamp": 1775233042.747368,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3814,10 +3947,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774869826.780528,
+    "timestamp": 1775233042.7488012,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3840,10 +3974,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.027
   },
   {
-    "timestamp": 1774869826.7805867,
+    "timestamp": 1775233042.7488625,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3862,14 +3997,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:23:46Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:08:46Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:53:46Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:38:46Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:23:46Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:17:22Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:02:22Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:47:22Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:32:22Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:17:22Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.045
   },
   {
-    "timestamp": 1774869826.7806125,
+    "timestamp": 1775233042.748889,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3892,10 +4028,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.011
   },
   {
-    "timestamp": 1774869826.7806256,
+    "timestamp": 1775233042.7489047,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3921,10 +4058,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869826.890786,
+    "timestamp": 1775233042.8575888,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3949,10 +4087,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.029
   },
   {
-    "timestamp": 1774869826.8908224,
+    "timestamp": 1775233042.857632,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -3979,10 +4118,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.008
   },
   {
-    "timestamp": 1774869826.8922365,
+    "timestamp": 1775233042.8593004,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4005,10 +4145,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.034
   },
   {
-    "timestamp": 1774869826.8923001,
+    "timestamp": 1775233042.8593726,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4027,14 +4168,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:23:46Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:08:46Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:53:46Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:38:46Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:23:46Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:17:22Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:02:22Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:47:22Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:32:22Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:17:22Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.054
   },
   {
-    "timestamp": 1774869826.8923266,
+    "timestamp": 1775233042.8594012,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4057,10 +4199,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.012
   },
   {
-    "timestamp": 1774869826.8923428,
+    "timestamp": 1775233042.8594208,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4086,10 +4229,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774869827.001348,
+    "timestamp": 1775233042.9672296,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4114,10 +4258,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.021
   },
   {
-    "timestamp": 1774869827.0013976,
+    "timestamp": 1775233042.967261,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4144,10 +4289,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774869827.002979,
+    "timestamp": 1775233042.9686122,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4170,10 +4316,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.024
   },
   {
-    "timestamp": 1774869827.003051,
+    "timestamp": 1775233042.968667,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4192,14 +4339,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:23:47Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:08:47Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:53:47Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:38:47Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:23:47Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:17:22Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:02:22Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:47:22Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:32:22Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:17:22Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.04
   },
   {
-    "timestamp": 1774869827.0030792,
+    "timestamp": 1775233042.9686923,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4222,10 +4370,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.01
   },
   {
-    "timestamp": 1774869827.0030963,
+    "timestamp": 1775233042.9687057,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4251,10 +4400,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.003
   },
   {
-    "timestamp": 1774869827.1118195,
+    "timestamp": 1775233043.0761185,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4279,10 +4429,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.015
   },
   {
-    "timestamp": 1774869827.1118553,
+    "timestamp": 1775233043.0761435,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4309,10 +4460,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869827.1132042,
+    "timestamp": 1775233043.0773892,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4335,10 +4487,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.021
   },
   {
-    "timestamp": 1774869827.1132627,
+    "timestamp": 1775233043.077441,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4357,14 +4510,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:23:47Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:08:47Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:53:47Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:38:47Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:23:47Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:17:23Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:02:23Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:47:23Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:32:23Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:17:23Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.038
   },
   {
-    "timestamp": 1774869827.1132877,
+    "timestamp": 1775233043.077466,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4387,10 +4541,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.01
   },
   {
-    "timestamp": 1774869827.113302,
+    "timestamp": 1775233043.0774786,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4416,10 +4571,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.003
   },
   {
-    "timestamp": 1774869827.2229042,
+    "timestamp": 1775233043.1849906,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4444,10 +4600,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.02
   },
   {
-    "timestamp": 1774869827.2229402,
+    "timestamp": 1775233043.1850224,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4474,10 +4631,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774869827.2244694,
+    "timestamp": 1775233043.1863947,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4500,10 +4658,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.025
   },
   {
-    "timestamp": 1774869827.2245364,
+    "timestamp": 1775233043.186452,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4522,14 +4681,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:23:47Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:08:47Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:53:47Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:38:47Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:23:47Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:17:23Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:02:23Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:47:23Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:32:23Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:17:23Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.042
   },
   {
-    "timestamp": 1774869827.2245724,
+    "timestamp": 1775233043.186478,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4552,10 +4712,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.01
   },
   {
-    "timestamp": 1774869827.2245889,
+    "timestamp": 1775233043.1864924,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4581,10 +4742,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869827.3345578,
+    "timestamp": 1775233043.2939909,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4609,10 +4771,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.023
   },
   {
-    "timestamp": 1774869827.3346114,
+    "timestamp": 1775233043.294027,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4639,10 +4802,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774869827.336202,
+    "timestamp": 1775233043.2955043,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4665,10 +4829,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.025
   },
   {
-    "timestamp": 1774869827.3362637,
+    "timestamp": 1775233043.2955654,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4687,14 +4852,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:23:47Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:08:47Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:53:47Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:38:47Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:23:47Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:17:23Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:02:23Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:47:23Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:32:23Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:17:23Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.045
   },
   {
-    "timestamp": 1774869827.3363085,
+    "timestamp": 1775233043.2955914,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4717,10 +4883,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.01
   },
   {
-    "timestamp": 1774869827.3363268,
+    "timestamp": 1775233043.2956064,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4746,10 +4913,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869827.4457982,
+    "timestamp": 1775233043.4026468,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4774,10 +4942,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.029
   },
   {
-    "timestamp": 1774869827.4458365,
+    "timestamp": 1775233043.4026952,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4804,10 +4973,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.008
   },
   {
-    "timestamp": 1774869827.4472692,
+    "timestamp": 1775233043.4045098,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4830,10 +5000,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.03
   },
   {
-    "timestamp": 1774869827.4473443,
+    "timestamp": 1775233043.4045758,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4852,14 +5023,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:23:47Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:08:47Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:53:47Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:38:47Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:23:47Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:17:23Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:02:23Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:47:23Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:32:23Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:17:23Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.05
   },
   {
-    "timestamp": 1774869827.4473746,
+    "timestamp": 1775233043.404604,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4882,10 +5054,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.012
   },
   {
-    "timestamp": 1774869827.4473915,
+    "timestamp": 1775233043.4046195,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4911,10 +5084,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869827.5577414,
+    "timestamp": 1775233043.5138996,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4939,10 +5113,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.029
   },
   {
-    "timestamp": 1774869827.5577893,
+    "timestamp": 1775233043.513945,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4969,10 +5144,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.008
   },
   {
-    "timestamp": 1774869827.5593495,
+    "timestamp": 1775233043.5155137,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -4995,10 +5171,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.027
   },
   {
-    "timestamp": 1774869827.5594232,
+    "timestamp": 1775233043.515577,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5017,14 +5194,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:23:47Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:08:47Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:53:47Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:38:47Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:23:47Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:17:23Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:02:23Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:47:23Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:32:23Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:17:23Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.047
   },
   {
-    "timestamp": 1774869827.5594509,
+    "timestamp": 1775233043.5156033,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5047,10 +5225,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.011
   },
   {
-    "timestamp": 1774869827.5594673,
+    "timestamp": 1775233043.5156186,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5076,10 +5255,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869827.6673021,
+    "timestamp": 1775233043.623147,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5104,10 +5284,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.022
   },
   {
-    "timestamp": 1774869827.6673298,
+    "timestamp": 1775233043.623183,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5134,10 +5315,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774869827.6687026,
+    "timestamp": 1775233043.624764,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5160,10 +5342,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.028
   },
   {
-    "timestamp": 1774869827.6687593,
+    "timestamp": 1775233043.624827,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5182,14 +5365,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:23:47Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:08:47Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:53:47Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:38:47Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:23:47Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:17:23Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:02:23Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:47:23Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:32:23Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:17:23Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.046
   },
   {
-    "timestamp": 1774869827.6687844,
+    "timestamp": 1775233043.6248538,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5212,10 +5396,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.011
   },
   {
-    "timestamp": 1774869827.6687968,
+    "timestamp": 1775233043.6248689,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5241,10 +5426,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869827.7783155,
+    "timestamp": 1775233043.7323682,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5269,10 +5455,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.021
   },
   {
-    "timestamp": 1774869827.7783587,
+    "timestamp": 1775233043.7324007,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5299,10 +5486,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   },
   {
-    "timestamp": 1774869827.7797818,
+    "timestamp": 1775233043.7337687,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5325,10 +5513,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.024
   },
   {
-    "timestamp": 1774869827.7798395,
+    "timestamp": 1775233043.733828,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5347,14 +5536,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:23:47Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:08:47Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:53:47Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:38:47Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:23:47Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:17:23Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:02:23Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:47:23Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:32:23Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:17:23Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.044
   },
   {
-    "timestamp": 1774869827.7798643,
+    "timestamp": 1775233043.7338536,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5377,10 +5567,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.011
   },
   {
-    "timestamp": 1774869827.7798784,
+    "timestamp": 1775233043.7338674,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5406,10 +5597,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869827.8888693,
+    "timestamp": 1775233043.8433,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5434,10 +5626,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.025
   },
   {
-    "timestamp": 1774869827.8889034,
+    "timestamp": 1775233043.8433373,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5464,10 +5657,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.006
   },
   {
-    "timestamp": 1774869827.890249,
+    "timestamp": 1775233043.8447893,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5490,10 +5684,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.025
   },
   {
-    "timestamp": 1774869827.890308,
+    "timestamp": 1775233043.8448508,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5512,14 +5707,15 @@
         "content": [
           {
             "type": "text",
-            "text": "[{\"timestamp\": \"2026-03-30T11:23:47Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T11:08:47Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:53:47Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:38:47Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-03-30T10:23:47Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
+            "text": "[{\"timestamp\": \"2026-04-03T16:17:23Z\", \"action\": \"cold_chain\", \"agent\": \"agent_0\", \"role\": \"farm\", \"slca_score\": 0.65, \"carbon_kg\": 8.5, \"waste\": 0.05, \"tx_hash\": \"0xabababababababababababababababab0000\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T16:02:23Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_1\", \"role\": \"processor\", \"slca_score\": 0.68, \"carbon_kg\": 8.0, \"waste\": 0.06, \"tx_hash\": \"0xabababababababababababababababab0001\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:47:23Z\", \"action\": \"recovery\", \"agent\": \"agent_2\", \"role\": \"cooperative\", \"slca_score\": 0.71, \"carbon_kg\": 7.5, \"waste\": 0.07, \"tx_hash\": \"0xabababababababababababababababab0002\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:32:23Z\", \"action\": \"cold_chain\", \"agent\": \"agent_3\", \"role\": \"distributor\", \"slca_score\": 0.74, \"carbon_kg\": 7.0, \"waste\": 0.08, \"tx_hash\": \"0xabababababababababababababababab0003\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}, {\"timestamp\": \"2026-04-03T15:17:23Z\", \"action\": \"local_redistribute\", \"agent\": \"agent_4\", \"role\": \"recovery\", \"slca_score\": 0.77, \"carbon_kg\": 6.5, \"waste\": 0.09, \"tx_hash\": \"0xabababababababababababababababab0004\", \"mode\": \"agribrain\", \"note\": \"mock record (no live blockchain connection)\"}]"
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.046
   },
   {
-    "timestamp": 1774869827.8903325,
+    "timestamp": 1775233043.8448763,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5542,10 +5738,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.01
   },
   {
-    "timestamp": 1774869827.8903472,
+    "timestamp": 1775233043.8448906,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5571,10 +5768,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.004
   },
   {
-    "timestamp": 1774869827.9988365,
+    "timestamp": 1775233043.952878,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5599,10 +5797,11 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.019
   },
   {
-    "timestamp": 1774869827.9988701,
+    "timestamp": 1775233043.952908,
     "request": {
       "jsonrpc": "2.0",
       "id": 0,
@@ -5629,6 +5828,7 @@
           }
         ]
       }
-    }
+    },
+    "latency_ms": 0.005
   }
 ]

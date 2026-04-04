@@ -78,6 +78,14 @@
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected local_redistribute at hour 0.0. Spoilage risk: 0.000. SLCA: 0.884.",
       "full": "The farm agent routed produce to local redistribution at hour 0.0 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.42 and the redistribution logit by +0.42, making local redistribution 77.2% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 30.5% and redistribution 60.2%. Context injection shifted 17.1 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
@@ -100,7 +108,7 @@
       "hour": 0.25,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "local_redistribute",
+      "action": "cold_chain",
       "governance_override": false
     },
     "observation": {
@@ -165,18 +173,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": 0.25,
+      "primary_contribution": -0.3,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
         -0.12212502231259617,
         0.13283917201149142,
         -0.010714149698895281
       ],
-      "action_changed": false
+      "action_changed": true
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected local_redistribute at hour 0.2. Spoilage risk: 0.000. SLCA: 0.884.",
-      "full": "The farm agent routed produce to local redistribution at hour 0.2 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 70.6% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 33.8% and redistribution 57.3%. Context injection shifted 13.3 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
+      "summary": "farm agent selected cold_chain at hour 0.2. Spoilage risk: 0.000. SLCA: 0.526.",
+      "full": "The farm agent routed produce to cold chain (long-haul) at hour 0.2 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making cold chain (long-haul) 21.5% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 33.8% and redistribution 57.3%. Context injection shifted 13.3 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
     },
     "provenance": {
       "evidence_hashes": [
@@ -273,14 +289,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.5762417737777518,
-        "LocalRedistribute": 0.4650762619002084,
-        "Recovery": 0.11116551187754338
+        "ColdChain": -0.5744524789618198,
+        "LocalRedistribute": 0.4631877687707472,
+        "Recovery": 0.11126471019107273
       },
       "probabilities": {
-        "ColdChain": 0.12503947170851504,
-        "LocalRedistribute": 0.7970816131936338,
-        "Recovery": 0.07787891509785111
+        "ColdChain": 0.12548063556552883,
+        "LocalRedistribute": 0.7965092035086465,
+        "Recovery": 0.0780101609258246
       }
     },
     "keywords": {
@@ -299,15 +315,23 @@
       "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.1763487502087489,
-        0.19015019230429175,
-        -0.013801442095542835
+        -0.17590758635173512,
+        0.18957778261930447,
+        -0.013670196267569337
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected local_redistribute at hour 0.5. Spoilage risk: 0.000. SLCA: 0.848. Compliance violations detected.",
-      "full": "The farm agent routed produce to local redistribution at hour 0.5 BECAUSE the MCP compliance check detected a warning temperature violation (7.2C exceeding the 5.0C limit by 2.2C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.65) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=0.5) context feature, shifting the cold chain logit by -0.58 and the redistribution logit by +0.47, making local redistribution 79.7% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 30.1% and redistribution 60.7%. Context injection shifted 19.0 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.65] (key: 5\u00b0C) and [KB"
+      "full": "The farm agent routed produce to local redistribution at hour 0.5 BECAUSE the MCP compliance check detected a warning temperature violation (7.2C exceeding the 5.0C limit by 2.2C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.65) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=0.5) context feature, shifting the cold chain logit by -0.57 and the redistribution logit by +0.46, making local redistribution 79.7% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 30.1% and redistribution 60.7%. Context injection shifted 19.0 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.65] (key: 5\u00b0C) and [KB"
     },
     "provenance": {
       "evidence_hashes": [
@@ -327,7 +351,7 @@
       "hour": 0.75,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "cold_chain",
+      "action": "local_redistribute",
       "governance_override": false
     },
     "observation": {
@@ -404,14 +428,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.5768071662950487,
-        "LocalRedistribute": 0.4659346982625006,
-        "Recovery": 0.11087246803254802
+        "ColdChain": -0.5750264954701187,
+        "LocalRedistribute": 0.46406074762885796,
+        "Recovery": 0.11096574784126077
       },
       "probabilities": {
-        "ColdChain": 0.12498726876358249,
-        "LocalRedistribute": 0.7969463775009057,
-        "Recovery": 0.07806635373551188
+        "ColdChain": 0.12542502437875397,
+        "LocalRedistribute": 0.7963786874739891,
+        "Recovery": 0.07819628814725693
       }
     },
     "keywords": {
@@ -427,18 +451,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "compliance severity",
-      "primary_contribution": -0.4,
+      "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.17663422772011136,
-        0.1905419655759365,
-        -0.01390773785582508
+        -0.17619647210493988,
+        0.1899742755490199,
+        -0.013777803444080028
       ],
-      "action_changed": true
+      "action_changed": false
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected cold_chain at hour 0.8. Spoilage risk: 0.000. SLCA: 0.503. Compliance violations detected.",
-      "full": "The farm agent routed produce to cold chain (long-haul) at hour 0.8 BECAUSE the MCP compliance check detected a warning temperature violation (6.9C exceeding the 5.0C limit by 1.9C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.65) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=0.5) context feature, shifting the cold chain logit by -0.58 and the redistribution logit by +0.47, making cold chain (long-haul) 12.5% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 30.2% and redistribution 60.6%. Context injection shifted 19.1 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decisio"
+      "summary": "farm agent selected local_redistribute at hour 0.8. Spoilage risk: 0.000. SLCA: 0.852. Compliance violations detected.",
+      "full": "The farm agent routed produce to local redistribution at hour 0.8 BECAUSE the MCP compliance check detected a warning temperature violation (6.9C exceeding the 5.0C limit by 1.9C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.65) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=0.5) context feature, shifting the cold chain logit by -0.58 and the redistribution logit by +0.46, making local redistribution 79.6% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 30.2% and redistribution 60.6%. Context injection shifted 19.0 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.65] (key: 5\u00b0C) and [KB"
     },
     "provenance": {
       "evidence_hashes": [
@@ -458,7 +490,7 @@
       "hour": 1.0,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "cold_chain",
+      "action": "local_redistribute",
       "governance_override": false
     },
     "observation": {
@@ -535,14 +567,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.5752550326124475,
-        "LocalRedistribute": 0.4643504751795485,
-        "Recovery": 0.110904557432899
+        "ColdChain": -0.5749809299643694,
+        "LocalRedistribute": 0.4641014064961179,
+        "Recovery": 0.11087952346825151
       },
       "probabilities": {
-        "ColdChain": 0.13217653580892827,
-        "LocalRedistribute": 0.7906055762430009,
-        "Recovery": 0.07721788794807083
+        "ColdChain": 0.13223786416868955,
+        "LocalRedistribute": 0.7905322068943259,
+        "Recovery": 0.07722992893698459
       }
     },
     "keywords": {
@@ -558,18 +590,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "compliance severity",
-      "primary_contribution": -0.4,
+      "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.18247976786717687,
-        0.19514815455474577,
-        -0.012668386687568978
+        -0.1824184395074156,
+        0.1950747852060708,
+        -0.012656345698655216
       ],
-      "action_changed": true
+      "action_changed": false
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected cold_chain at hour 1.0. Spoilage risk: 0.000. SLCA: 0.498. Compliance violations detected.",
-      "full": "The farm agent routed produce to cold chain (long-haul) at hour 1.0 BECAUSE the MCP compliance check detected a warning temperature violation (7.5C exceeding the 5.0C limit by 2.5C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.65) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=0.5) context feature, shifting the cold chain logit by -0.58 and the redistribution logit by +0.46, making cold chain (long-haul) 13.2% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 31.5% and redistribution 59.5%. Context injection shifted 19.5 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decisio"
+      "summary": "farm agent selected local_redistribute at hour 1.0. Spoilage risk: 0.000. SLCA: 0.845. Compliance violations detected.",
+      "full": "The farm agent routed produce to local redistribution at hour 1.0 BECAUSE the MCP compliance check detected a warning temperature violation (7.5C exceeding the 5.0C limit by 2.5C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.65) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=0.5) context feature, shifting the cold chain logit by -0.57 and the redistribution logit by +0.46, making local redistribution 79.1% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 31.5% and redistribution 59.5%. Context injection shifted 19.5 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.65] (key: 5\u00b0C) and [KB"
     },
     "provenance": {
       "evidence_hashes": [
@@ -672,14 +712,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.8962923854328815,
-        "LocalRedistribute": 0.666652470091424,
-        "Recovery": 0.22963991534145753
+        "ColdChain": -0.8978139476365163,
+        "LocalRedistribute": 0.6683403123616083,
+        "Recovery": 0.22947363527490805
       },
       "probabilities": {
-        "ColdChain": 0.08380763010221078,
-        "LocalRedistribute": 0.8433761093843902,
-        "Recovery": 0.07281626051339891
+        "ColdChain": 0.08352799395904324,
+        "LocalRedistribute": 0.8437883932812688,
+        "Recovery": 0.07268361275968804
       }
     },
     "keywords": {
@@ -698,15 +738,23 @@
       "primary_contribution": 0.5,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.24222304110024734,
-        0.25750083211814456,
-        -0.015277791017897419
+        -0.24250267724341484,
+        0.2579131160150231,
+        -0.01541043877160829
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected local_redistribute at hour 1.2. Spoilage risk: 0.000. SLCA: 0.839. Compliance violations detected. Spoilage forecast: low.",
-      "full": "The farm agent routed produce to local redistribution at hour 1.2 BECAUSE the MCP compliance check detected a critical temperature violation (8.0C exceeding the 5.0C limit by 3.0C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.65) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=1.0) context feature, shifting the cold chain logit by -0.90 and the redistribution logit by +0.67, making local redistribution 84.3% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 32.6% and redistribution 58.6%. Context injection shifted 25.8 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.65] (key: 5\u00b0C) and [K"
+      "full": "The farm agent routed produce to local redistribution at hour 1.2 BECAUSE the MCP compliance check detected a critical temperature violation (8.0C exceeding the 5.0C limit by 3.0C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.65) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=1.0) context feature, shifting the cold chain logit by -0.90 and the redistribution logit by +0.67, making local redistribution 84.4% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 32.6% and redistribution 58.6%. Context injection shifted 25.8 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.65] (key: 5\u00b0C) and [K"
     },
     "provenance": {
       "evidence_hashes": [
@@ -726,7 +774,7 @@
       "hour": 1.5,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "recovery",
+      "action": "local_redistribute",
       "governance_override": false
     },
     "observation": {
@@ -803,14 +851,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.574635251259335,
-        "LocalRedistribute": 0.4641037761232636,
-        "Recovery": 0.11053147513607135
+        "ColdChain": -0.5757646640255517,
+        "LocalRedistribute": 0.4653618222195003,
+        "Recovery": 0.11040284180605146
       },
       "probabilities": {
-        "ColdChain": 0.15222422228782126,
-        "LocalRedistribute": 0.771918845003192,
-        "Recovery": 0.07585693270898672
+        "ColdChain": 0.1518786522928205,
+        "LocalRedistribute": 0.77235194053107,
+        "Recovery": 0.07576940717610944
       }
     },
     "keywords": {
@@ -826,18 +874,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "compliance severity",
-      "primary_contribution": 0.15,
+      "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.19876214494670066,
-        0.20850796593472776,
-        -0.009745820988027079
+        -0.19910771494170143,
+        0.20894106146260583,
+        -0.009833346520904354
       ],
-      "action_changed": true
+      "action_changed": false
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected recovery at hour 1.5. Spoilage risk: 0.000. SLCA: 0.717. Compliance violations detected.",
-      "full": "The farm agent routed produce to recovery/composting at hour 1.5 BECAUSE the MCP compliance check detected a warning temperature violation (7.2C exceeding the 5.0C limit by 2.2C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.65) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=0.5) context feature, shifting the cold chain logit by -0.57 and the redistribution logit by +0.46, making recovery/composting 7.6% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 35.1% and redistribution 56.3%. Context injection shifted 20.9 percentage points toward redistribution, changing the selected action from local redistribution to recovery/composting.\n\nThis decision is suppo"
+      "summary": "farm agent selected local_redistribute at hour 1.5. Spoilage risk: 0.000. SLCA: 0.848. Compliance violations detected.",
+      "full": "The farm agent routed produce to local redistribution at hour 1.5 BECAUSE the MCP compliance check detected a warning temperature violation (7.2C exceeding the 5.0C limit by 2.2C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.65) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=0.5) context feature, shifting the cold chain logit by -0.58 and the redistribution logit by +0.47, making local redistribution 77.2% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 35.1% and redistribution 56.3%. Context injection shifted 20.9 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.65] (key: 5\u00b0C) and [KB"
     },
     "provenance": {
       "evidence_hashes": [
@@ -934,14 +990,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.5748389213450908,
-        "LocalRedistribute": 0.46248311423623095,
-        "Recovery": 0.11235580710885988
+        "ColdChain": -0.5760385134535381,
+        "LocalRedistribute": 0.4657871205580326,
+        "Recovery": 0.11025139289550537
       },
       "probabilities": {
-        "ColdChain": 0.14934424115971315,
-        "LocalRedistribute": 0.774533182373053,
-        "Recovery": 0.07612257646723386
+        "ColdChain": 0.1487182607088998,
+        "LocalRedistribute": 0.7755272604016126,
+        "Recovery": 0.0757544788894877
       }
     },
     "keywords": {
@@ -960,15 +1016,23 @@
       "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.1962749283113068,
-        0.2062022146803002,
-        -0.009927286368993343
+        -0.19690090876212016,
+        0.20719629270885975,
+        -0.010295383946739498
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected local_redistribute at hour 1.8. Spoilage risk: 0.000. SLCA: 0.843. Compliance violations detected.",
-      "full": "The farm agent routed produce to local redistribution at hour 1.8 BECAUSE the MCP compliance check detected a warning temperature violation (7.7C exceeding the 5.0C limit by 2.7C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.65) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=0.5) context feature, shifting the cold chain logit by -0.57 and the redistribution logit by +0.46, making local redistribution 77.5% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 34.6% and redistribution 56.8%. Context injection shifted 20.6 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.65] (key: 5\u00b0C) and [KB"
+      "full": "The farm agent routed produce to local redistribution at hour 1.8 BECAUSE the MCP compliance check detected a warning temperature violation (7.7C exceeding the 5.0C limit by 2.7C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.65) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=0.5) context feature, shifting the cold chain logit by -0.58 and the redistribution logit by +0.47, making local redistribution 77.6% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 34.6% and redistribution 56.8%. Context injection shifted 20.7 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.65] (key: 5\u00b0C) and [KB"
     },
     "provenance": {
       "evidence_hashes": [
@@ -1030,14 +1094,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.29671174651507015,
-        "LocalRedistribute": 0.2901125898434232,
-        "Recovery": 0.006599156671646863
+        "ColdChain": -0.29751178512101084,
+        "LocalRedistribute": 0.29273369707844016,
+        "Recovery": 0.0047780880425706985
       },
       "probabilities": {
-        "ColdChain": 0.2543985771609579,
-        "LocalRedistribute": 0.6701402479347343,
-        "Recovery": 0.07546117490430793
+        "ColdChain": 0.2537049615127256,
+        "LocalRedistribute": 0.6711017029889261,
+        "Recovery": 0.0751933354983483
       }
     },
     "keywords": {
@@ -1056,15 +1120,23 @@
       "primary_contribution": -0.3,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.13306398983965567,
-        0.14091562004286695,
-        -0.007851630203211266
+        -0.13375760548788795,
+        0.14187707509705882,
+        -0.008119469609170898
       ],
       "action_changed": true
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected cold_chain at hour 2.0. Spoilage risk: 0.001. SLCA: 0.526.",
-      "full": "The farm agent routed produce to cold chain (long-haul) at hour 2.0 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making cold chain (long-haul) 25.4% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.7% and redistribution 52.9%. Context injection shifted 14.1 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
+      "full": "The farm agent routed produce to cold chain (long-haul) at hour 2.0 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making cold chain (long-haul) 25.4% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.7% and redistribution 52.9%. Context injection shifted 14.2 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
     },
     "provenance": {
       "evidence_hashes": [
@@ -1084,7 +1156,7 @@
       "hour": 2.25,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "cold_chain",
+      "action": "local_redistribute",
       "governance_override": false
     },
     "observation": {
@@ -1126,14 +1198,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.296140241983518,
-        "LocalRedistribute": 0.28962447821189535,
-        "Recovery": 0.006515763771622591
+        "ColdChain": -0.297001006173874,
+        "LocalRedistribute": 0.292300426365195,
+        "Recovery": 0.004700579808679024
       },
       "probabilities": {
-        "ColdChain": 0.25463477349217645,
-        "LocalRedistribute": 0.6698431736652952,
-        "Recovery": 0.07552205284252833
+        "ColdChain": 0.2539182471693974,
+        "LocalRedistribute": 0.6708291555515863,
+        "Recovery": 0.07525259727901627
       }
     },
     "keywords": {
@@ -1149,18 +1221,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": -0.3,
+      "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.13286114318837,
-        0.14070474167853697,
-        -0.007843598490166886
+        -0.13357766951114902,
+        0.14169072356482804,
+        -0.008113054053678945
       ],
-      "action_changed": true
+      "action_changed": false
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected cold_chain at hour 2.2. Spoilage risk: 0.001. SLCA: 0.526.",
-      "full": "The farm agent routed produce to cold chain (long-haul) at hour 2.2 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making cold chain (long-haul) 25.5% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.7% and redistribution 52.9%. Context injection shifted 14.1 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
+      "summary": "farm agent selected local_redistribute at hour 2.2. Spoilage risk: 0.001. SLCA: 0.884.",
+      "full": "The farm agent routed produce to local redistribution at hour 2.2 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 67.1% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.7% and redistribution 52.9%. Context injection shifted 14.2 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
     },
     "provenance": {
       "evidence_hashes": [
@@ -1222,14 +1302,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.29551557550142826,
-        "LocalRedistribute": 0.28905174498175157,
-        "Recovery": 0.006463830519676562
+        "ColdChain": -0.2974814641218397,
+        "LocalRedistribute": 0.29292214433340236,
+        "Recovery": 0.004559319788437379
       },
       "probabilities": {
-        "ColdChain": 0.2549944339142306,
-        "LocalRedistribute": 0.6693840305228885,
-        "Recovery": 0.07562153556288084
+        "ColdChain": 0.2538043668547667,
+        "LocalRedistribute": 0.6709005058925847,
+        "Recovery": 0.07529512725264856
       }
     },
     "keywords": {
@@ -1248,15 +1328,23 @@
       "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.13264914375107018,
-        0.14047523562178665,
-        -0.00782609187071645
+        -0.13383921081053407,
+        0.14199171099148278,
+        -0.008152500180948735
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected local_redistribute at hour 2.5. Spoilage risk: 0.001. SLCA: 0.884.",
-      "full": "The farm agent routed produce to local redistribution at hour 2.5 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 66.9% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.8% and redistribution 52.9%. Context injection shifted 14.0 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
+      "full": "The farm agent routed produce to local redistribution at hour 2.5 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 67.1% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.8% and redistribution 52.9%. Context injection shifted 14.2 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
     },
     "provenance": {
       "evidence_hashes": [
@@ -1276,7 +1364,7 @@
       "hour": 2.75,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "recovery",
+      "action": "local_redistribute",
       "governance_override": false
     },
     "observation": {
@@ -1318,14 +1406,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.29585073387526767,
-        "LocalRedistribute": 0.28947954259053404,
-        "Recovery": 0.0063711912847336065
+        "ColdChain": -0.29777769167605256,
+        "LocalRedistribute": 0.2932983901609745,
+        "Recovery": 0.004479301515078121
       },
       "probabilities": {
-        "ColdChain": 0.25489254162601505,
-        "LocalRedistribute": 0.6694447704229357,
-        "Recovery": 0.07566268795104927
+        "ColdChain": 0.25372184444803986,
+        "LocalRedistribute": 0.670938773595382,
+        "Recovery": 0.075339381956578
       }
     },
     "keywords": {
@@ -1341,18 +1429,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": 0.05,
+      "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.13283169985104276,
-        0.1406874889300953,
-        -0.007855789079052475
+        -0.13400239702901795,
+        0.1421814921025416,
+        -0.008179095073523754
       ],
-      "action_changed": true
+      "action_changed": false
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected recovery at hour 2.8. Spoilage risk: 0.001. SLCA: 0.749.",
-      "full": "The farm agent routed produce to recovery/composting at hour 2.8 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making recovery/composting 7.6% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.8% and redistribution 52.9%. Context injection shifted 14.1 percentage points toward redistribution, changing the selected action from local redistribution to recovery/composting.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_fda_leafy_greens, rel"
+      "summary": "farm agent selected local_redistribute at hour 2.8. Spoilage risk: 0.001. SLCA: 0.884.",
+      "full": "The farm agent routed produce to local redistribution at hour 2.8 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 67.1% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.8% and redistribution 52.9%. Context injection shifted 14.2 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
     },
     "provenance": {
       "evidence_hashes": [
@@ -1372,7 +1468,7 @@
       "hour": 3.0,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "local_redistribute",
+      "action": "recovery",
       "governance_override": false
     },
     "observation": {
@@ -1414,14 +1510,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.2963119865672583,
-        "LocalRedistribute": 0.2886310558934856,
-        "Recovery": 0.007680930673772584
+        "ColdChain": -0.2983266486235493,
+        "LocalRedistribute": 0.2940142588248523,
+        "Recovery": 0.004312389798697004
       },
       "probabilities": {
-        "ColdChain": 0.2550968996159581,
-        "LocalRedistribute": 0.6689957677782906,
-        "Recovery": 0.07590733260575129
+        "ColdChain": 0.253601435097778,
+        "LocalRedistribute": 0.6710088148947745,
+        "Recovery": 0.07538975000744756
       }
     },
     "keywords": {
@@ -1437,18 +1533,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": 0.25,
+      "primary_contribution": 0.05,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.13280377267322208,
-        0.14051010390002006,
-        -0.007706331226797966
+        -0.1342992371914022,
+        0.14252315101650392,
+        -0.008223913825101695
       ],
-      "action_changed": false
+      "action_changed": true
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected local_redistribute at hour 3.0. Spoilage risk: 0.001. SLCA: 0.884.",
-      "full": "The farm agent routed produce to local redistribution at hour 3.0 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 66.9% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.8% and redistribution 52.8%. Context injection shifted 14.1 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
+      "summary": "farm agent selected recovery at hour 3.0. Spoilage risk: 0.001. SLCA: 0.749.",
+      "full": "The farm agent routed produce to recovery/composting at hour 3.0 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making recovery/composting 7.5% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.8% and redistribution 52.8%. Context injection shifted 14.3 percentage points toward redistribution, changing the selected action from local redistribution to recovery/composting.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_fda_leafy_greens, rel"
     },
     "provenance": {
       "evidence_hashes": [
@@ -1510,14 +1614,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.29687129867216555,
-        "LocalRedistribute": 0.289359272004733,
-        "Recovery": 0.007512026667432512
+        "ColdChain": -0.29872466128679964,
+        "LocalRedistribute": 0.2933040600110829,
+        "Recovery": 0.00542060127571677
       },
       "probabilities": {
-        "ColdChain": 0.25381162590231904,
-        "LocalRedistribute": 0.6702074204473093,
-        "Recovery": 0.07598095365037162
+        "ColdChain": 0.25263757939197296,
+        "LocalRedistribute": 0.6717289002645245,
+        "Recovery": 0.07563352034350267
       }
     },
     "keywords": {
@@ -1536,15 +1640,23 @@
       "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.1328263253673861,
-        0.14065082590601896,
-        -0.007824500538632886
+        -0.13400037187773217,
+        0.14217230572323414,
+        -0.008171933845501841
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected local_redistribute at hour 3.2. Spoilage risk: 0.001. SLCA: 0.883.",
-      "full": "The farm agent routed produce to local redistribution at hour 3.2 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 67.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.7% and redistribution 53.0%. Context injection shifted 14.1 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
+      "full": "The farm agent routed produce to local redistribution at hour 3.2 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 67.2% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.7% and redistribution 53.0%. Context injection shifted 14.2 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
     },
     "provenance": {
       "evidence_hashes": [
@@ -1564,7 +1676,7 @@
       "hour": 3.5,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "local_redistribute",
+      "action": "cold_chain",
       "governance_override": false
     },
     "observation": {
@@ -1606,14 +1718,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.297291876047921,
-        "LocalRedistribute": 0.2899050394119635,
-        "Recovery": 0.007386836635957433
+        "ColdChain": -0.2991134961303117,
+        "LocalRedistribute": 0.29380840196886926,
+        "Recovery": 0.005305094161442452
       },
       "probabilities": {
-        "ColdChain": 0.25485390040956685,
-        "LocalRedistribute": 0.669130098306279,
-        "Recovery": 0.07601600128415423
+        "ColdChain": 0.2536922941264242,
+        "LocalRedistribute": 0.6706361006719184,
+        "Recovery": 0.07567160520165744
       }
     },
     "keywords": {
@@ -1629,18 +1741,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": 0.25,
+      "primary_contribution": -0.3,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.13333015780755259,
-        0.14111898771187636,
-        -0.007788829904323669
+        -0.13449176409069524,
+        0.14262499007751572,
+        -0.008133225986820453
       ],
-      "action_changed": false
+      "action_changed": true
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected local_redistribute at hour 3.5. Spoilage risk: 0.001. SLCA: 0.884.",
-      "full": "The farm agent routed produce to local redistribution at hour 3.5 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 66.9% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.8% and redistribution 52.8%. Context injection shifted 14.1 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
+      "summary": "farm agent selected cold_chain at hour 3.5. Spoilage risk: 0.001. SLCA: 0.526.",
+      "full": "The farm agent routed produce to cold chain (long-haul) at hour 3.5 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making cold chain (long-haul) 25.4% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.8% and redistribution 52.8%. Context injection shifted 14.3 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
     },
     "provenance": {
       "evidence_hashes": [
@@ -1660,7 +1780,7 @@
       "hour": 3.75,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "recovery",
+      "action": "cold_chain",
       "governance_override": false
     },
     "observation": {
@@ -1702,14 +1822,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.2977985997911842,
-        "LocalRedistribute": 0.29056513255386146,
-        "Recovery": 0.007233467237322615
+        "ColdChain": -0.29897111646039964,
+        "LocalRedistribute": 0.2937151012691211,
+        "Recovery": 0.005256015191278615
       },
       "probabilities": {
-        "ColdChain": 0.25446913591229076,
-        "LocalRedistribute": 0.6694116346608852,
-        "Recovery": 0.07611922942682411
+        "ColdChain": 0.25360236703320377,
+        "LocalRedistribute": 0.6705820094305699,
+        "Recovery": 0.07581562353622623
       }
     },
     "keywords": {
@@ -1725,18 +1845,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": 0.05,
+      "primary_contribution": -0.3,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.13353301982881483,
-        0.1413841520875283,
-        -0.007851132258713436
+        -0.1343997887079018,
+        0.14255452685721304,
+        -0.008154738149311322
       ],
       "action_changed": true
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
-      "summary": "farm agent selected recovery at hour 3.8. Spoilage risk: 0.001. SLCA: 0.749.",
-      "full": "The farm agent routed produce to recovery/composting at hour 3.8 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making recovery/composting 7.6% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.8% and redistribution 52.8%. Context injection shifted 14.1 percentage points toward redistribution, changing the selected action from local redistribution to recovery/composting.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_fda_leafy_greens, rel"
+      "summary": "farm agent selected cold_chain at hour 3.8. Spoilage risk: 0.001. SLCA: 0.526.",
+      "full": "The farm agent routed produce to cold chain (long-haul) at hour 3.8 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making cold chain (long-haul) 25.4% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.8% and redistribution 52.8%. Context injection shifted 14.3 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
     },
     "provenance": {
       "evidence_hashes": [
@@ -1756,7 +1884,7 @@
       "hour": 4.0,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "cold_chain",
+      "action": "local_redistribute",
       "governance_override": false
     },
     "observation": {
@@ -1798,14 +1926,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.29810140997770684,
-        "LocalRedistribute": 0.2898468973605811,
-        "Recovery": 0.008254512617125662
+        "ColdChain": -0.2987817763306558,
+        "LocalRedistribute": 0.29355365764098457,
+        "Recovery": 0.005228118689671228
       },
       "probabilities": {
-        "ColdChain": 0.25495647392847914,
-        "LocalRedistribute": 0.668733140354749,
-        "Recovery": 0.07631038571677191
+        "ColdChain": 0.25409150257091095,
+        "LocalRedistribute": 0.6700166390644502,
+        "Recovery": 0.07589185836463892
       }
     },
     "keywords": {
@@ -1821,18 +1949,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": -0.3,
+      "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.13356310680189692,
-        0.1412757308839041,
-        -0.007712624082007041
+        -0.13442807815946511,
+        0.14255922959360534,
+        -0.008131151434140033
       ],
-      "action_changed": true
+      "action_changed": false
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected cold_chain at hour 4.0. Spoilage risk: 0.002. SLCA: 0.526.",
-      "full": "The farm agent routed produce to cold chain (long-haul) at hour 4.0 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making cold chain (long-haul) 25.5% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.9% and redistribution 52.7%. Context injection shifted 14.1 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
+      "summary": "farm agent selected local_redistribute at hour 4.0. Spoilage risk: 0.002. SLCA: 0.884.",
+      "full": "The farm agent routed produce to local redistribution at hour 4.0 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 67.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.9% and redistribution 52.7%. Context injection shifted 14.3 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
     },
     "provenance": {
       "evidence_hashes": [
@@ -1852,7 +1988,7 @@
       "hour": 4.25,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "cold_chain",
+      "action": "local_redistribute",
       "governance_override": false
     },
     "observation": {
@@ -1894,14 +2030,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.29790842313428334,
-        "LocalRedistribute": 0.2896764764155398,
-        "Recovery": 0.008231946718743485
+        "ColdChain": -0.29917949573968833,
+        "LocalRedistribute": 0.2940704026363174,
+        "Recovery": 0.005109093103370902
       },
       "probabilities": {
-        "ColdChain": 0.25509407608186296,
-        "LocalRedistribute": 0.6684993056662195,
-        "Recovery": 0.07640661825191755
+        "ColdChain": 0.2539606301878762,
+        "LocalRedistribute": 0.6700896664663223,
+        "Recovery": 0.07594970334580148
       }
     },
     "keywords": {
@@ -1917,18 +2053,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": -0.3,
+      "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.1335008247510907,
-        0.14121216648726365,
-        -0.007711341736173077
+        -0.1346342706450775,
+        0.14280252728736642,
+        -0.008168256642289151
       ],
-      "action_changed": true
+      "action_changed": false
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected cold_chain at hour 4.2. Spoilage risk: 0.002. SLCA: 0.526.",
-      "full": "The farm agent routed produce to cold chain (long-haul) at hour 4.2 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making cold chain (long-haul) 25.5% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.9% and redistribution 52.7%. Context injection shifted 14.1 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
+      "summary": "farm agent selected local_redistribute at hour 4.2. Spoilage risk: 0.002. SLCA: 0.884.",
+      "full": "The farm agent routed produce to local redistribution at hour 4.2 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 67.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.9% and redistribution 52.7%. Context injection shifted 14.3 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
     },
     "provenance": {
       "evidence_hashes": [
@@ -1990,14 +2134,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.297606741383515,
-        "LocalRedistribute": 0.28935813236692426,
-        "Recovery": 0.008248609016590656
+        "ColdChain": -0.2994377703810374,
+        "LocalRedistribute": 0.2944019643167139,
+        "Recovery": 0.005035806064323489
       },
       "probabilities": {
-        "ColdChain": 0.25521129809761167,
-        "LocalRedistribute": 0.6682954665575349,
-        "Recovery": 0.07649323534485343
+        "ColdChain": 0.25382361855462643,
+        "LocalRedistribute": 0.6701763138391847,
+        "Recovery": 0.07600006760618871
       }
     },
     "keywords": {
@@ -2016,15 +2160,23 @@
       "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.13337225078299025,
-        0.1410759253345627,
-        -0.0077036745515723926
+        -0.1347599303259755,
+        0.14295677261621254,
+        -0.008196842290237108
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected local_redistribute at hour 4.5. Spoilage risk: 0.002. SLCA: 0.884.",
-      "full": "The farm agent routed produce to local redistribution at hour 4.5 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 66.8% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.9% and redistribution 52.7%. Context injection shifted 14.1 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
+      "full": "The farm agent routed produce to local redistribution at hour 4.5 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 67.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.9% and redistribution 52.7%. Context injection shifted 14.3 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
     },
     "provenance": {
       "evidence_hashes": [
@@ -2044,7 +2196,7 @@
       "hour": 4.75,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "cold_chain",
+      "action": "local_redistribute",
       "governance_override": false
     },
     "observation": {
@@ -2086,14 +2238,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.29798600324740754,
-        "LocalRedistribute": 0.2898509218185497,
-        "Recovery": 0.008135081428857695
+        "ColdChain": -0.299783406312795,
+        "LocalRedistribute": 0.2948508607061631,
+        "Recovery": 0.004932545606631833
       },
       "probabilities": {
-        "ColdChain": 0.25500016497143085,
-        "LocalRedistribute": 0.6684685932791962,
-        "Recovery": 0.07653124174937305
+        "ColdChain": 0.25362955556310085,
+        "LocalRedistribute": 0.6703299160697335,
+        "Recovery": 0.07604052836716578
       }
     },
     "keywords": {
@@ -2109,18 +2261,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": -0.3,
+      "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.13355161760300843,
-        0.1412944312781409,
-        -0.007742813675132271
+        -0.13492222701133844,
+        0.1431557540686782,
+        -0.00823352705733954
       ],
-      "action_changed": true
+      "action_changed": false
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected cold_chain at hour 4.8. Spoilage risk: 0.002. SLCA: 0.526.",
-      "full": "The farm agent routed produce to cold chain (long-haul) at hour 4.8 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making cold chain (long-haul) 25.5% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.9% and redistribution 52.7%. Context injection shifted 14.1 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
+      "summary": "farm agent selected local_redistribute at hour 4.8. Spoilage risk: 0.002. SLCA: 0.884.",
+      "full": "The farm agent routed produce to local redistribution at hour 4.8 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 67.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.9% and redistribution 52.7%. Context injection shifted 14.3 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
     },
     "provenance": {
       "evidence_hashes": [
@@ -2182,14 +2342,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.29791437312523855,
-        "LocalRedistribute": 0.28980909929681214,
-        "Recovery": 0.008105273828426277
+        "ColdChain": -0.30017118692028466,
+        "LocalRedistribute": 0.29535672187625095,
+        "Recovery": 0.004814465044033778
       },
       "probabilities": {
-        "ColdChain": 0.25397381661483626,
-        "LocalRedistribute": 0.669423874835944,
-        "Recovery": 0.07660230854921968
+        "ColdChain": 0.2523946369680001,
+        "LocalRedistribute": 0.6715265551644013,
+        "Recovery": 0.07607880786759853
       }
     },
     "keywords": {
@@ -2208,15 +2368,23 @@
       "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.1332753571487189,
-        0.14109014847218282,
-        -0.007814791323464021
+        -0.1348545367955551,
+        0.1431928288006401,
+        -0.008338292005085166
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected local_redistribute at hour 5.0. Spoilage risk: 0.002. SLCA: 0.883.",
-      "full": "The farm agent routed produce to local redistribution at hour 5.0 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 66.9% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.7% and redistribution 52.8%. Context injection shifted 14.1 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
+      "full": "The farm agent routed produce to local redistribution at hour 5.0 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making local redistribution 67.2% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.7% and redistribution 52.8%. Context injection shifted 14.3 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
     },
     "provenance": {
       "evidence_hashes": [
@@ -2278,14 +2446,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.29820329870527557,
-        "LocalRedistribute": 0.2901836756610164,
-        "Recovery": 0.008019623044259083
+        "ColdChain": -0.30041284440708,
+        "LocalRedistribute": 0.29566883760434026,
+        "Recovery": 0.004744006802739739
       },
       "probabilities": {
-        "ColdChain": 0.2527302338745918,
-        "LocalRedistribute": 0.6706015031624787,
-        "Recovery": 0.07666826296292958
+        "ColdChain": 0.2511790637494351,
+        "LocalRedistribute": 0.6726733618958393,
+        "Recovery": 0.07614757435472569
       }
     },
     "keywords": {
@@ -2304,15 +2472,23 @@
       "primary_contribution": -0.3,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.1331500098887322,
-        0.1410654181263783,
-        -0.007915408237646138
+        -0.13470118001388892,
+        0.14313727685973887,
+        -0.008436096845850033
       ],
       "action_changed": true
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected cold_chain at hour 5.2. Spoilage risk: 0.002. SLCA: 0.524.",
-      "full": "The farm agent routed produce to cold chain (long-haul) at hour 5.2 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making cold chain (long-haul) 25.3% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.6% and redistribution 53.0%. Context injection shifted 14.1 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
+      "full": "The farm agent routed produce to cold chain (long-haul) at hour 5.2 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making cold chain (long-haul) 25.1% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.6% and redistribution 53.0%. Context injection shifted 14.3 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
     },
     "provenance": {
       "evidence_hashes": [
@@ -2332,7 +2508,7 @@
       "hour": 5.5,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "recovery",
+      "action": "cold_chain",
       "governance_override": false
     },
     "observation": {
@@ -2374,14 +2550,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.29795908914524455,
-        "LocalRedistribute": 0.28988584718794236,
-        "Recovery": 0.00807324195730212
+        "ColdChain": -0.30029125184812083,
+        "LocalRedistribute": 0.29547811445306765,
+        "Recovery": 0.004813137395053182
       },
       "probabilities": {
-        "ColdChain": 0.2499882129157254,
-        "LocalRedistribute": 0.6731851262848296,
-        "Recovery": 0.07682666079944488
+        "ColdChain": 0.24840375776803958,
+        "LocalRedistribute": 0.6752958352746897,
+        "Recovery": 0.07630040695727065
       }
     },
     "keywords": {
@@ -2397,18 +2573,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": 0.05,
+      "primary_contribution": -0.3,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.1323333176465639,
-        0.14042138976522311,
-        -0.008088072118659334
+        -0.1339177727942497,
+        0.14253209875508321,
+        -0.008614325960833558
       ],
       "action_changed": true
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
-      "summary": "farm agent selected recovery at hour 5.5. Spoilage risk: 0.003. SLCA: 0.744.",
-      "full": "The farm agent routed produce to recovery/composting at hour 5.5 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making recovery/composting 7.7% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.2% and redistribution 53.3%. Context injection shifted 14.0 percentage points toward redistribution, changing the selected action from local redistribution to recovery/composting.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_fda_leafy_greens, rel"
+      "summary": "farm agent selected cold_chain at hour 5.5. Spoilage risk: 0.003. SLCA: 0.522.",
+      "full": "The farm agent routed produce to cold chain (long-haul) at hour 5.5 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making cold chain (long-haul) 24.8% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.2% and redistribution 53.3%. Context injection shifted 14.3 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
     },
     "provenance": {
       "evidence_hashes": [
@@ -2470,14 +2654,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.298264369258898,
-        "LocalRedistribute": 0.28943552863424715,
-        "Recovery": 0.008828840624650771
+        "ColdChain": -0.3004549493833603,
+        "LocalRedistribute": 0.2956659253298396,
+        "Recovery": 0.004789024053520721
       },
       "probabilities": {
-        "ColdChain": 0.24863828648116512,
-        "LocalRedistribute": 0.6743447111600362,
-        "Recovery": 0.07701700235879855
+        "ColdChain": 0.24697571265049537,
+        "LocalRedistribute": 0.6766299266672863,
+        "Recovery": 0.07639436068221837
       }
     },
     "keywords": {
@@ -2496,15 +2680,23 @@
       "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.1319714872518946,
-        0.14006879518345783,
-        -0.008097307931563408
+        -0.13363406108256434,
+        0.14235401069070786,
+        -0.008719949608143582
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected local_redistribute at hour 5.8. Spoilage risk: 0.003. SLCA: 0.877.",
-      "full": "The farm agent routed produce to local redistribution at hour 5.8 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 67.4% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.1% and redistribution 53.4%. Context injection shifted 14.0 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
+      "full": "The farm agent routed produce to local redistribution at hour 5.8 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making local redistribution 67.7% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.1% and redistribution 53.4%. Context injection shifted 14.2 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
     },
     "provenance": {
       "evidence_hashes": [
@@ -2524,7 +2716,7 @@
       "hour": 6.0,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "local_redistribute",
+      "action": "recovery",
       "governance_override": false
     },
     "observation": {
@@ -2566,14 +2758,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.29856998734924733,
-        "LocalRedistribute": 0.2898357003584655,
-        "Recovery": 0.008734286990781708
+        "ColdChain": -0.30073092129014267,
+        "LocalRedistribute": 0.29602693609532704,
+        "Recovery": 0.004703985194815734
       },
       "probabilities": {
-        "ColdChain": 0.24852289396904967,
-        "LocalRedistribute": 0.6744383553705013,
-        "Recovery": 0.07703875066044903
+        "ColdChain": 0.24687500296461623,
+        "LocalRedistribute": 0.6767065538577998,
+        "Recovery": 0.07641844317758398
       }
     },
     "keywords": {
@@ -2589,18 +2781,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": 0.25,
+      "primary_contribution": 0.05,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.13213107004366856,
-        0.14025744446517796,
-        -0.008126374421509333
+        -0.133778961048102,
+        0.14252564295247638,
+        -0.008746681904374387
       ],
-      "action_changed": false
+      "action_changed": true
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected local_redistribute at hour 6.0. Spoilage risk: 0.003. SLCA: 0.877.",
-      "full": "The farm agent routed produce to local redistribution at hour 6.0 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 67.4% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.1% and redistribution 53.4%. Context injection shifted 14.0 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
+      "summary": "farm agent selected recovery at hour 6.0. Spoilage risk: 0.003. SLCA: 0.742.",
+      "full": "The farm agent routed produce to recovery/composting at hour 6.0 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making recovery/composting 7.6% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.1% and redistribution 53.4%. Context injection shifted 14.3 percentage points toward redistribution, changing the selected action from local redistribution to recovery/composting.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_fda_leafy_greens, rel"
     },
     "provenance": {
       "evidence_hashes": [
@@ -2662,14 +2862,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.29901898809107114,
-        "LocalRedistribute": 0.2904250962924535,
-        "Recovery": 0.008593891798617548
+        "ColdChain": -0.30103498251795024,
+        "LocalRedistribute": 0.2957936745019909,
+        "Recovery": 0.005241308015959401
       },
       "probabilities": {
-        "ColdChain": 0.24620581373042935,
-        "LocalRedistribute": 0.6766679449420975,
-        "Recovery": 0.07712624132747312
+        "ColdChain": 0.24475820028670933,
+        "LocalRedistribute": 0.6786426032597147,
+        "Recovery": 0.07659919645357594
       }
     },
     "keywords": {
@@ -2688,15 +2888,23 @@
       "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.1318066472442064,
-        0.14011536527428403,
-        -0.008308718030077641
+        -0.13325426068792642,
+        0.14209002359190126,
+        -0.008835762903974823
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected local_redistribute at hour 6.2. Spoilage risk: 0.003. SLCA: 0.874.",
-      "full": "The farm agent routed produce to local redistribution at hour 6.2 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 67.7% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 37.8% and redistribution 53.7%. Context injection shifted 14.0 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
+      "full": "The farm agent routed produce to local redistribution at hour 6.2 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making local redistribution 67.9% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 37.8% and redistribution 53.7%. Context injection shifted 14.2 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
     },
     "provenance": {
       "evidence_hashes": [
@@ -2758,14 +2966,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.29926904794663445,
-        "LocalRedistribute": 0.2907533231137778,
-        "Recovery": 0.008515724832856553
+        "ColdChain": -0.30126442408797083,
+        "LocalRedistribute": 0.29609432954053094,
+        "Recovery": 0.005170094547439878
       },
       "probabilities": {
-        "ColdChain": 0.246330686372301,
-        "LocalRedistribute": 0.6765351349406645,
-        "Recovery": 0.07713417868703457
+        "ColdChain": 0.24489242173095807,
+        "LocalRedistribute": 0.6784985655134489,
+        "Recovery": 0.07660901275559294
       }
     },
     "keywords": {
@@ -2784,15 +2992,23 @@
       "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.13199626880477694,
-        0.14031467641391637,
-        -0.008318407609139239
+        -0.13343453344611986,
+        0.14227810698670074,
+        -0.008843573540580865
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected local_redistribute at hour 6.5. Spoilage risk: 0.004. SLCA: 0.875.",
-      "full": "The farm agent routed produce to local redistribution at hour 6.5 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 67.7% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 37.8% and redistribution 53.6%. Context injection shifted 14.0 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
+      "full": "The farm agent routed produce to local redistribution at hour 6.5 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making local redistribution 67.8% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 37.8% and redistribution 53.6%. Context injection shifted 14.2 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
     },
     "provenance": {
       "evidence_hashes": [
@@ -2812,7 +3028,7 @@
       "hour": 6.75,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "local_redistribute",
+      "action": "cold_chain",
       "governance_override": false
     },
     "observation": {
@@ -2854,14 +3070,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.2995520828544463,
-        "LocalRedistribute": 0.2911250538089485,
-        "Recovery": 0.008427029045497612
+        "ColdChain": -0.30152828208979465,
+        "LocalRedistribute": 0.29644096817051696,
+        "Recovery": 0.005087313919277652
       },
       "probabilities": {
-        "ColdChain": 0.24583252108212955,
-        "LocalRedistribute": 0.6770001961746203,
-        "Recovery": 0.07716728274325012
+        "ColdChain": 0.24440517389080116,
+        "LocalRedistribute": 0.6789515985248139,
+        "Recovery": 0.07664322758438491
       }
     },
     "keywords": {
@@ -2877,18 +3093,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": 0.25,
+      "primary_contribution": -0.3,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.1320419928858535,
-        0.1404137172969262,
-        -0.008371724411072798
+        -0.1334693400771819,
+        0.14236511964711984,
+        -0.008895779569938006
       ],
-      "action_changed": false
+      "action_changed": true
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected local_redistribute at hour 6.8. Spoilage risk: 0.004. SLCA: 0.875.",
-      "full": "The farm agent routed produce to local redistribution at hour 6.8 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 67.7% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 37.8% and redistribution 53.7%. Context injection shifted 14.0 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
+      "summary": "farm agent selected cold_chain at hour 6.8. Spoilage risk: 0.004. SLCA: 0.519.",
+      "full": "The farm agent routed produce to cold chain (long-haul) at hour 6.8 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making cold chain (long-haul) 24.4% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 37.8% and redistribution 53.7%. Context injection shifted 14.2 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
     },
     "provenance": {
       "evidence_hashes": [
@@ -2908,7 +3132,7 @@
       "hour": 7.0,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "cold_chain",
+      "action": "local_redistribute",
       "governance_override": false
     },
     "observation": {
@@ -2950,14 +3174,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.2996876993528063,
-        "LocalRedistribute": 0.2913027178660594,
-        "Recovery": 0.008384981486746818
+        "ColdChain": -0.30162982458141707,
+        "LocalRedistribute": 0.296479983335416,
+        "Recovery": 0.005149841246001113
       },
       "probabilities": {
-        "ColdChain": 0.24723307564284097,
-        "LocalRedistribute": 0.6755962953327325,
-        "Recovery": 0.07717062902442655
+        "ColdChain": 0.2458460875322276,
+        "LocalRedistribute": 0.6774889607287816,
+        "Recovery": 0.07666495173899067
       }
     },
     "keywords": {
@@ -2973,18 +3197,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": -0.3,
+      "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.1324918592527921,
-        0.14078458270501282,
-        -0.008292723452220763
+        -0.1338788473634055,
+        0.14267724810106197,
+        -0.008798400737656642
       ],
-      "action_changed": true
+      "action_changed": false
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected cold_chain at hour 7.0. Spoilage risk: 0.004. SLCA: 0.521.",
-      "full": "The farm agent routed produce to cold chain (long-haul) at hour 7.0 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making cold chain (long-haul) 24.7% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.0% and redistribution 53.5%. Context injection shifted 14.1 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
+      "summary": "farm agent selected local_redistribute at hour 7.0. Spoilage risk: 0.004. SLCA: 0.877.",
+      "full": "The farm agent routed produce to local redistribution at hour 7.0 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making local redistribution 67.7% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.0% and redistribution 53.5%. Context injection shifted 14.3 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
     },
     "provenance": {
       "evidence_hashes": [
@@ -3046,14 +3278,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.29983876045512725,
-        "LocalRedistribute": 0.2914158605398928,
-        "Recovery": 0.00842289991523431
+        "ColdChain": -0.3018197520457883,
+        "LocalRedistribute": 0.29672815294981825,
+        "Recovery": 0.005091599095970063
       },
       "probabilities": {
-        "ColdChain": 0.24778846267061527,
-        "LocalRedistribute": 0.6749875777937593,
-        "Recovery": 0.07722395953562552
+        "ColdChain": 0.24635410552068449,
+        "LocalRedistribute": 0.676944050039404,
+        "Recovery": 0.07670184443991149
       }
     },
     "keywords": {
@@ -3072,15 +3304,23 @@
       "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.1326947386321008,
-        0.14095437727389026,
-        -0.008259638641789357
+        -0.13412909578203158,
+        0.14291084951953503,
+        -0.008781753737503395
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected local_redistribute at hour 7.2. Spoilage risk: 0.004. SLCA: 0.878.",
-      "full": "The farm agent routed produce to local redistribution at hour 7.2 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 67.5% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.0% and redistribution 53.4%. Context injection shifted 14.1 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
+      "full": "The farm agent routed produce to local redistribution at hour 7.2 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making local redistribution 67.7% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.0% and redistribution 53.4%. Context injection shifted 14.3 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
     },
     "provenance": {
       "evidence_hashes": [
@@ -3100,7 +3340,7 @@
       "hour": 7.5,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "cold_chain",
+      "action": "local_redistribute",
       "governance_override": false
     },
     "observation": {
@@ -3142,14 +3382,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.30014238938521115,
-        "LocalRedistribute": 0.2918144477140626,
-        "Recovery": 0.008327941671148406
+        "ColdChain": -0.3021063540737448,
+        "LocalRedistribute": 0.29710499955935304,
+        "Recovery": 0.005001354514391803
       },
       "probabilities": {
-        "ColdChain": 0.24932494423322898,
-        "LocalRedistribute": 0.6734592208275103,
-        "Recovery": 0.0772158349392607
+        "ColdChain": 0.24789292899136678,
+        "LocalRedistribute": 0.6754109007724112,
+        "Recovery": 0.07669617023622197
       }
     },
     "keywords": {
@@ -3165,18 +3405,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": -0.3,
+      "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.13326955527381196,
-        0.141450622961526,
-        -0.00818106768771408
+        -0.13470157051567416,
+        0.14340230290642686,
+        -0.008700732390752808
       ],
-      "action_changed": true
+      "action_changed": false
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected cold_chain at hour 7.5. Spoilage risk: 0.005. SLCA: 0.523.",
-      "full": "The farm agent routed produce to cold chain (long-haul) at hour 7.5 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making cold chain (long-haul) 24.9% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.3% and redistribution 53.2%. Context injection shifted 14.1 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
+      "summary": "farm agent selected local_redistribute at hour 7.5. Spoilage risk: 0.005. SLCA: 0.880.",
+      "full": "The farm agent routed produce to local redistribution at hour 7.5 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making local redistribution 67.5% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.3% and redistribution 53.2%. Context injection shifted 14.3 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
     },
     "provenance": {
       "evidence_hashes": [
@@ -3238,14 +3486,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.3002797863366704,
-        "LocalRedistribute": 0.2919011880138288,
-        "Recovery": 0.008378598322841425
+        "ColdChain": -0.3022432709214944,
+        "LocalRedistribute": 0.2972824622451269,
+        "Recovery": 0.0049608086763675155
       },
       "probabilities": {
-        "ColdChain": 0.24790672454002413,
-        "LocalRedistribute": 0.6747868052822908,
-        "Recovery": 0.07730647017768498
+        "ColdChain": 0.24645153479579526,
+        "LocalRedistribute": 0.6767772624802635,
+        "Recovery": 0.07677120272394121
       }
     },
     "keywords": {
@@ -3264,15 +3512,23 @@
       "primary_contribution": -0.3,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.13296192920027047,
-        0.1412365228010528,
-        -0.008274593600782323
+        -0.13441711894449934,
+        0.14322697999902545,
+        -0.008809861054526094
       ],
       "action_changed": true
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected cold_chain at hour 7.8. Spoilage risk: 0.005. SLCA: 0.522.",
-      "full": "The farm agent routed produce to cold chain (long-haul) at hour 7.8 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making cold chain (long-haul) 24.8% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.1% and redistribution 53.4%. Context injection shifted 14.1 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
+      "full": "The farm agent routed produce to cold chain (long-haul) at hour 7.8 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making cold chain (long-haul) 24.6% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.1% and redistribution 53.4%. Context injection shifted 14.3 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
     },
     "provenance": {
       "evidence_hashes": [
@@ -3334,14 +3590,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.30069022580311233,
-        "LocalRedistribute": 0.2923509008681973,
-        "Recovery": 0.008339324934914873
+        "ColdChain": -0.30274793603802364,
+        "LocalRedistribute": 0.29782020063511805,
+        "Recovery": 0.004927735402905585
       },
       "probabilities": {
-        "ColdChain": 0.2502862651149518,
-        "LocalRedistribute": 0.6724188616266954,
-        "Recovery": 0.07729487325835276
+        "ColdChain": 0.24878710051153652,
+        "LocalRedistribute": 0.6744544375114854,
+        "Recovery": 0.07675846197697819
       }
     },
     "keywords": {
@@ -3360,15 +3616,23 @@
       "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.1337727413024365,
-        0.14190754329814792,
-        -0.008134801995711483
+        -0.13527190590585175,
+        0.1439431191829379,
+        -0.008671213277086046
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected local_redistribute at hour 8.0. Spoilage risk: 0.005. SLCA: 0.882.",
-      "full": "The farm agent routed produce to local redistribution at hour 8.0 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 67.2% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.4% and redistribution 53.1%. Context injection shifted 14.2 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
+      "full": "The farm agent routed produce to local redistribution at hour 8.0 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making local redistribution 67.4% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.4% and redistribution 53.1%. Context injection shifted 14.4 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
     },
     "provenance": {
       "evidence_hashes": [
@@ -3430,14 +3694,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.3008613062455405,
-        "LocalRedistribute": 0.29257415841921797,
-        "Recovery": 0.008287147826322437
+        "ColdChain": -0.3028878666004832,
+        "LocalRedistribute": 0.2980016054141279,
+        "Recovery": 0.004886261186355309
       },
       "probabilities": {
-        "ColdChain": 0.24903094289026403,
-        "LocalRedistribute": 0.6735632011712738,
-        "Recovery": 0.07740585593846216
+        "ColdChain": 0.24755191524286094,
+        "LocalRedistribute": 0.6755773567976827,
+        "Recovery": 0.0768707279594563
       }
     },
     "keywords": {
@@ -3456,15 +3720,23 @@
       "primary_contribution": -0.3,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.13356009324009863,
-        0.1417954095295978,
-        -0.008235316289499237
+        -0.13503912088750172,
+        0.14380956515600674,
+        -0.008770444268505095
       ],
       "action_changed": true
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected cold_chain at hour 8.2. Spoilage risk: 0.005. SLCA: 0.523.",
-      "full": "The farm agent routed produce to cold chain (long-haul) at hour 8.2 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making cold chain (long-haul) 24.9% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.3% and redistribution 53.2%. Context injection shifted 14.2 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
+      "full": "The farm agent routed produce to cold chain (long-haul) at hour 8.2 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making cold chain (long-haul) 24.8% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.3% and redistribution 53.2%. Context injection shifted 14.4 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
     },
     "provenance": {
       "evidence_hashes": [
@@ -3484,7 +3756,7 @@
       "hour": 8.5,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "cold_chain",
+      "action": "local_redistribute",
       "governance_override": false
     },
     "observation": {
@@ -3526,14 +3798,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.3011473780102911,
-        "LocalRedistribute": 0.2928504422836069,
-        "Recovery": 0.00829693572668409
+        "ColdChain": -0.30325785029858826,
+        "LocalRedistribute": 0.29835421779437526,
+        "Recovery": 0.004903632504212955
       },
       "probabilities": {
-        "ColdChain": 0.2494165420643539,
-        "LocalRedistribute": 0.6731309541747976,
-        "Recovery": 0.07745250376084842
+        "ColdChain": 0.2479053367445927,
+        "LocalRedistribute": 0.6751795667806169,
+        "Recovery": 0.0769150964747904
       }
     },
     "keywords": {
@@ -3549,18 +3821,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": -0.3,
+      "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.1337926534229201,
-        0.14201103760600597,
-        -0.008218384183085986
+        -0.1353038587426813,
+        0.1440596502118252,
+        -0.008755791469144
       ],
-      "action_changed": true
+      "action_changed": false
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected cold_chain at hour 8.5. Spoilage risk: 0.006. SLCA: 0.524.",
-      "full": "The farm agent routed produce to cold chain (long-haul) at hour 8.5 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making cold chain (long-haul) 24.9% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.3% and redistribution 53.1%. Context injection shifted 14.2 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
+      "summary": "farm agent selected local_redistribute at hour 8.5. Spoilage risk: 0.006. SLCA: 0.881.",
+      "full": "The farm agent routed produce to local redistribution at hour 8.5 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making local redistribution 67.5% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.3% and redistribution 53.1%. Context injection shifted 14.4 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
     },
     "provenance": {
       "evidence_hashes": [
@@ -3580,7 +3860,7 @@
       "hour": 8.75,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "local_redistribute",
+      "action": "cold_chain",
       "governance_override": false
     },
     "observation": {
@@ -3622,14 +3902,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.3012515835283898,
-        "LocalRedistribute": 0.29289322680718566,
-        "Recovery": 0.008358356721204056
+        "ColdChain": -0.30334982817527106,
+        "LocalRedistribute": 0.2984724686026003,
+        "Recovery": 0.004877359572670768
       },
       "probabilities": {
-        "ColdChain": 0.2476249098513584,
-        "LocalRedistribute": 0.6747881471631177,
-        "Recovery": 0.07758694298552371
+        "ColdChain": 0.24609802812804418,
+        "LocalRedistribute": 0.6768676754718826,
+        "Recovery": 0.07703429640007321
       }
     },
     "keywords": {
@@ -3645,18 +3925,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": 0.25,
+      "primary_contribution": -0.3,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.13336640691681292,
-        0.14170441684982193,
-        -0.008338009933009177
+        -0.13489328864012715,
+        0.14378394515858683,
+        -0.008890656518459675
       ],
-      "action_changed": false
+      "action_changed": true
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected local_redistribute at hour 8.8. Spoilage risk: 0.006. SLCA: 0.879.",
-      "full": "The farm agent routed produce to local redistribution at hour 8.8 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 67.5% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.1% and redistribution 53.3%. Context injection shifted 14.2 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
+      "summary": "farm agent selected cold_chain at hour 8.8. Spoilage risk: 0.006. SLCA: 0.523.",
+      "full": "The farm agent routed produce to cold chain (long-haul) at hour 8.8 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making cold chain (long-haul) 24.6% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.1% and redistribution 53.3%. Context injection shifted 14.4 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
     },
     "provenance": {
       "evidence_hashes": [
@@ -3718,14 +4006,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.3014458793416559,
-        "LocalRedistribute": 0.29314826948225775,
-        "Recovery": 0.008297609859398033
+        "ColdChain": -0.30364427382918896,
+        "LocalRedistribute": 0.2987163811497796,
+        "Recovery": 0.0049278926794093575
       },
       "probabilities": {
-        "ColdChain": 0.24677756743144458,
-        "LocalRedistribute": 0.6755451332601891,
-        "Recovery": 0.07767729930836638
+        "ColdChain": 0.24524901407049052,
+        "LocalRedistribute": 0.6776144507726451,
+        "Recovery": 0.07713653515686435
       }
     },
     "keywords": {
@@ -3744,15 +4032,23 @@
       "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.1332671728995264,
-        0.14168046095079312,
-        -0.008413288051266801
+        -0.13479572626048045,
+        0.1437497784632492,
+        -0.008954052202768834
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected local_redistribute at hour 9.0. Spoilage risk: 0.006. SLCA: 0.878.",
-      "full": "The farm agent routed produce to local redistribution at hour 9.0 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 67.6% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.0% and redistribution 53.4%. Context injection shifted 14.2 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
+      "full": "The farm agent routed produce to local redistribution at hour 9.0 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making local redistribution 67.8% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.0% and redistribution 53.4%. Context injection shifted 14.4 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
     },
     "provenance": {
       "evidence_hashes": [
@@ -3772,7 +4068,7 @@
       "hour": 9.25,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "local_redistribute",
+      "action": "recovery",
       "governance_override": false
     },
     "observation": {
@@ -3814,14 +4110,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.30184180367837427,
-        "LocalRedistribute": 0.29366904227393953,
-        "Recovery": 0.008172761404434606
+        "ColdChain": -0.3040180367972595,
+        "LocalRedistribute": 0.2992100143434339,
+        "Recovery": 0.004808022453825528
       },
       "probabilities": {
-        "ColdChain": 0.2882052921273498,
-        "LocalRedistribute": 0.6561072769191996,
-        "Recovery": 0.055687430953450634
+        "ColdChain": 0.28647829493152793,
+        "LocalRedistribute": 0.658211809615638,
+        "Recovery": 0.055309895452834074
       }
     },
     "keywords": {
@@ -3837,18 +4133,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": 0.25,
+      "primary_contribution": 0.05,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.14546486047975676,
-        0.15006151017367764,
-        -0.004596649693920832
+        -0.14719185767557863,
+        0.15216604287011604,
+        -0.004974185194537392
       ],
-      "action_changed": false
+      "action_changed": true
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected local_redistribute at hour 9.2. Spoilage risk: 0.006. SLCA: 0.875.",
-      "full": "The farm agent routed produce to local redistribution at hour 9.2 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 65.6% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 43.4% and redistribution 50.6%. Context injection shifted 15.0 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
+      "summary": "farm agent selected recovery at hour 9.2. Spoilage risk: 0.006. SLCA: 0.741.",
+      "full": "The farm agent routed produce to recovery/composting at hour 9.2 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making recovery/composting 5.5% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 43.4% and redistribution 50.6%. Context injection shifted 15.2 percentage points toward redistribution, changing the selected action from local redistribution to recovery/composting.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_fda_leafy_greens, rel"
     },
     "provenance": {
       "evidence_hashes": [
@@ -3868,7 +4172,7 @@
       "hour": 9.5,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "local_redistribute",
+      "action": "cold_chain",
       "governance_override": false
     },
     "observation": {
@@ -3910,14 +4214,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.3020986822417815,
-        "LocalRedistribute": 0.29397638198797266,
-        "Recovery": 0.008122300253808763
+        "ColdChain": -0.30411126032503677,
+        "LocalRedistribute": 0.2990204567098138,
+        "Recovery": 0.005090803615222965
       },
       "probabilities": {
-        "ColdChain": 0.2878581295913482,
-        "LocalRedistribute": 0.6563900644067936,
-        "Recovery": 0.05575180600185821
+        "ColdChain": 0.2862835550326113,
+        "LocalRedistribute": 0.6583063451328646,
+        "Recovery": 0.05541009983452416
       }
     },
     "keywords": {
@@ -3933,18 +4237,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": 0.25,
+      "primary_contribution": -0.3,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.14555600036377198,
-        0.15017976115530463,
-        -0.004623760791532663
+        -0.14713057492250886,
+        0.1520960418813756,
+        -0.00496546695886671
       ],
-      "action_changed": false
+      "action_changed": true
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected local_redistribute at hour 9.5. Spoilage risk: 0.007. SLCA: 0.875.",
-      "full": "The farm agent routed produce to local redistribution at hour 9.5 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 65.6% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 43.3% and redistribution 50.6%. Context injection shifted 15.0 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_f"
+      "summary": "farm agent selected cold_chain at hour 9.5. Spoilage risk: 0.007. SLCA: 0.520.",
+      "full": "The farm agent routed produce to cold chain (long-haul) at hour 9.5 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making cold chain (long-haul) 28.6% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 43.3% and redistribution 50.6%. Context injection shifted 15.2 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
     },
     "provenance": {
       "evidence_hashes": [
@@ -3964,7 +4276,7 @@
       "hour": 9.75,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "cold_chain",
+      "action": "recovery",
       "governance_override": false
     },
     "observation": {
@@ -4006,14 +4318,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.3022617773481717,
-        "LocalRedistribute": 0.29416200501755496,
-        "Recovery": 0.008099772330616784
+        "ColdChain": -0.3043927919016509,
+        "LocalRedistribute": 0.29924990071243096,
+        "Recovery": 0.005142891189219907
       },
       "probabilities": {
-        "ColdChain": 0.2914940860082425,
-        "LocalRedistribute": 0.6528634208070349,
-        "Recovery": 0.05564249318472267
+        "ColdChain": 0.28988565792607046,
+        "LocalRedistribute": 0.654805725847404,
+        "Recovery": 0.05530861622652545
       }
     },
     "keywords": {
@@ -4029,18 +4341,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": -0.3,
+      "primary_contribution": 0.05,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.14634910266320494,
-        0.1508094957591869,
-        -0.004460393095981834
+        -0.147957530745377,
+        0.15275180079955608,
+        -0.004794270054179053
       ],
       "action_changed": true
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
-      "summary": "farm agent selected cold_chain at hour 9.8. Spoilage risk: 0.007. SLCA: 0.523.",
-      "full": "The farm agent routed produce to cold chain (long-haul) at hour 9.8 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making cold chain (long-haul) 29.1% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 43.8% and redistribution 50.2%. Context injection shifted 15.1 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported"
+      "summary": "farm agent selected recovery at hour 9.8. Spoilage risk: 0.007. SLCA: 0.745.",
+      "full": "The farm agent routed produce to recovery/composting at hour 9.8 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making recovery/composting 5.5% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 43.8% and redistribution 50.2%. Context injection shifted 15.3 percentage points toward redistribution, changing the selected action from local redistribution to recovery/composting.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_fda_leafy_greens, rel"
     },
     "provenance": {
       "evidence_hashes": [
@@ -4102,14 +4422,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.30263371919801846,
-        "LocalRedistribute": 0.29452069094631744,
-        "Recovery": 0.008113028251701009
+        "ColdChain": -0.3045283923497241,
+        "LocalRedistribute": 0.29909002408656793,
+        "Recovery": 0.005438368263156182
       },
       "probabilities": {
-        "ColdChain": 0.2470634316899651,
-        "LocalRedistribute": 0.6752040231087488,
-        "Recovery": 0.07773254520128611
+        "ColdChain": 0.24579567262604737,
+        "LocalRedistribute": 0.6769063880854902,
+        "Recovery": 0.0772979392884626
       }
     },
     "keywords": {
@@ -4128,15 +4448,23 @@
       "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.13401184493909793,
-        0.14246276347190368,
-        -0.008450918532805746
+        -0.13527960400301567,
+        0.14416512844864504,
+        -0.008885524445629261
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected local_redistribute at hour 10.0. Spoilage risk: 0.007. SLCA: 0.881.",
-      "full": "The farm agent routed produce to local redistribution at hour 10.0 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.29, making local redistribution 67.5% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.1% and redistribution 53.3%. Context injection shifted 14.2 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_"
+      "full": "The farm agent routed produce to local redistribution at hour 10.0 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making local redistribution 67.7% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.1% and redistribution 53.3%. Context injection shifted 14.4 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_"
     },
     "provenance": {
       "evidence_hashes": [
@@ -4233,14 +4561,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.5816957701106137,
-        "LocalRedistribute": 0.468211729303835,
-        "Recovery": 0.11348404080677871
+        "ColdChain": -0.5839613493391201,
+        "LocalRedistribute": 0.4734235941005474,
+        "Recovery": 0.11053775523857266
       },
       "probabilities": {
-        "ColdChain": 0.15113729927605501,
-        "LocalRedistribute": 0.7705062883024965,
-        "Recovery": 0.07835641242144858
+        "ColdChain": 0.1501103059417998,
+        "LocalRedistribute": 0.7720899197447263,
+        "Recovery": 0.0777997743134739
       }
     },
     "keywords": {
@@ -4259,15 +4587,23 @@
       "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.20111859464901377,
-        0.21111773639371345,
-        -0.00999914174469961
+        -0.20214558798326898,
+        0.2127013678359433,
+        -0.010555779852674294
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected local_redistribute at hour 10.2. Spoilage risk: 0.008. SLCA: 0.852. Compliance violations detected.",
-      "full": "The farm agent routed produce to local redistribution at hour 10.2 BECAUSE the MCP compliance check detected a warning temperature violation (6.8C exceeding the 5.0C limit by 1.8C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.65) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=0.5) context feature, shifting the cold chain logit by -0.58 and the redistribution logit by +0.47, making local redistribution 77.1% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 35.2% and redistribution 55.9%. Context injection shifted 21.1 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.65] (key: 5\u00b0C) and [K"
+      "full": "The farm agent routed produce to local redistribution at hour 10.2 BECAUSE the MCP compliance check detected a warning temperature violation (6.8C exceeding the 5.0C limit by 1.8C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.65) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=0.5) context feature, shifting the cold chain logit by -0.58 and the redistribution logit by +0.47, making local redistribution 77.2% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 35.2% and redistribution 55.9%. Context injection shifted 21.3 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.65] (key: 5\u00b0C) and [K"
     },
     "provenance": {
       "evidence_hashes": [
@@ -4364,14 +4700,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.5826396813373101,
-        "LocalRedistribute": 0.4694774388459591,
-        "Recovery": 0.11316224249135115
+        "ColdChain": -0.5849061771873137,
+        "LocalRedistribute": 0.4746969973286603,
+        "Recovery": 0.11020917985865326
       },
       "probabilities": {
-        "ColdChain": 0.1585145810673196,
-        "LocalRedistribute": 0.7629954156946471,
-        "Recovery": 0.0784900032380334
+        "ColdChain": 0.15744686233601463,
+        "LocalRedistribute": 0.764616495540557,
+        "Recovery": 0.07793664212342834
       }
     },
     "keywords": {
@@ -4390,15 +4726,23 @@
       "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.2071496239259524,
-        0.216192902951458,
-        -0.009043279025505419
+        -0.2082173426572574,
+        0.21781398279736786,
+        -0.009596640140110482
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected local_redistribute at hour 10.5. Spoilage risk: 0.008. SLCA: 0.866. Compliance violations detected.",
-      "full": "The farm agent routed produce to local redistribution at hour 10.5 BECAUSE the MCP compliance check detected a warning temperature violation (5.6C exceeding the 5.0C limit by 0.6C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=0.5) context feature, shifting the cold chain logit by -0.58 and the redistribution logit by +0.47, making local redistribution 76.3% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 36.6% and redistribution 54.7%. Context injection shifted 21.6 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [K"
+      "full": "The farm agent routed produce to local redistribution at hour 10.5 BECAUSE the MCP compliance check detected a warning temperature violation (5.6C exceeding the 5.0C limit by 0.6C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=0.5) context feature, shifting the cold chain logit by -0.58 and the redistribution logit by +0.47, making local redistribution 76.5% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 36.6% and redistribution 54.7%. Context injection shifted 21.8 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [K"
     },
     "provenance": {
       "evidence_hashes": [
@@ -4495,14 +4839,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.5819420087690833,
-        "LocalRedistribute": 0.4685826643858511,
-        "Recovery": 0.11335934438323218
+        "ColdChain": -0.5841954688623132,
+        "LocalRedistribute": 0.47377623140425273,
+        "Recovery": 0.11041923745806037
       },
       "probabilities": {
-        "ColdChain": 0.15066549144529032,
-        "LocalRedistribute": 0.7708739511723298,
-        "Recovery": 0.07846055738237992
+        "ColdChain": 0.14964563236222705,
+        "LocalRedistribute": 0.7724497289524797,
+        "Recovery": 0.0779046386852932
       }
     },
     "keywords": {
@@ -4521,15 +4865,23 @@
       "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.2009429764040865,
-        0.21104796903714917,
-        -0.010104992633062623
+        -0.20196283548714977,
+        0.212623746817299,
+        -0.010660911330149347
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected local_redistribute at hour 10.8. Spoilage risk: 0.008. SLCA: 0.852. Compliance violations detected.",
-      "full": "The farm agent routed produce to local redistribution at hour 10.8 BECAUSE the MCP compliance check detected a warning temperature violation (6.8C exceeding the 5.0C limit by 1.8C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.65) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=0.5) context feature, shifting the cold chain logit by -0.58 and the redistribution logit by +0.47, making local redistribution 77.1% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 35.2% and redistribution 56.0%. Context injection shifted 21.1 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.65] (key: 5\u00b0C) and [K"
+      "full": "The farm agent routed produce to local redistribution at hour 10.8 BECAUSE the MCP compliance check detected a warning temperature violation (6.8C exceeding the 5.0C limit by 1.8C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.65) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=0.5) context feature, shifting the cold chain logit by -0.58 and the redistribution logit by +0.47, making local redistribution 77.2% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 35.2% and redistribution 56.0%. Context injection shifted 21.3 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.65] (key: 5\u00b0C) and [K"
     },
     "provenance": {
       "evidence_hashes": [
@@ -4626,14 +4978,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.5822922640020085,
-        "LocalRedistribute": 0.46906530559702053,
-        "Recovery": 0.11322695840498809
+        "ColdChain": -0.5845423397103612,
+        "LocalRedistribute": 0.4742555692992262,
+        "Recovery": 0.11028677041113485
       },
       "probabilities": {
-        "ColdChain": 0.15261103467001777,
-        "LocalRedistribute": 0.768852812642167,
-        "Recovery": 0.07853615268781523
+        "ColdChain": 0.15158174937445187,
+        "LocalRedistribute": 0.7704369233987698,
+        "Recovery": 0.07798132722677836
       }
     },
     "keywords": {
@@ -4652,15 +5004,23 @@
       "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.20264079049295167,
-        0.2125059493584126,
-        -0.009865158865461049
+        -0.20367007578851756,
+        0.2140900601150154,
+        -0.01041998432649792
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected local_redistribute at hour 11.0. Spoilage risk: 0.009. SLCA: 0.856. Compliance violations detected.",
-      "full": "The farm agent routed produce to local redistribution at hour 11.0 BECAUSE the MCP compliance check detected a warning temperature violation (6.5C exceeding the 5.0C limit by 1.5C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.65) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=0.5) context feature, shifting the cold chain logit by -0.58 and the redistribution logit by +0.47, making local redistribution 76.9% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 35.5% and redistribution 55.6%. Context injection shifted 21.3 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.65] (key: 5\u00b0C) and [K"
+      "full": "The farm agent routed produce to local redistribution at hour 11.0 BECAUSE the MCP compliance check detected a warning temperature violation (6.5C exceeding the 5.0C limit by 1.5C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.65) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=0.5) context feature, shifting the cold chain logit by -0.58 and the redistribution logit by +0.47, making local redistribution 77.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 35.5% and redistribution 55.6%. Context injection shifted 21.4 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.65] (key: 5\u00b0C) and [K"
     },
     "provenance": {
       "evidence_hashes": [
@@ -4680,7 +5040,7 @@
       "hour": 11.25,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "cold_chain",
+      "action": "local_redistribute",
       "governance_override": false
     },
     "observation": {
@@ -4757,14 +5117,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.5824041556922784,
-        "LocalRedistribute": 0.46923343092884867,
-        "Recovery": 0.11317072476342982
+        "ColdChain": -0.5846490443156844,
+        "LocalRedistribute": 0.4744158736458947,
+        "Recovery": 0.11023317066978965
       },
       "probabilities": {
-        "ColdChain": 0.15252139104119217,
-        "LocalRedistribute": 0.7688370106953935,
-        "Recovery": 0.07864159826341448
+        "ColdChain": 0.15149463191283433,
+        "LocalRedistribute": 0.7704185982909932,
+        "Recovery": 0.07808676979617242
       }
     },
     "keywords": {
@@ -4780,18 +5140,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "compliance severity",
-      "primary_contribution": -0.4,
+      "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.2026509734907902,
-        0.21255151175255294,
-        -0.009900538261762626
+        -0.20367773261914804,
+        0.21413309934815272,
+        -0.010455366729004684
       ],
-      "action_changed": true
+      "action_changed": false
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected cold_chain at hour 11.2. Spoilage risk: 0.009. SLCA: 0.506. Compliance violations detected.",
-      "full": "The farm agent routed produce to cold chain (long-haul) at hour 11.2 BECAUSE the MCP compliance check detected a warning temperature violation (6.5C exceeding the 5.0C limit by 1.5C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.65) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=0.5) context feature, shifting the cold chain logit by -0.58 and the redistribution logit by +0.47, making cold chain (long-haul) 15.3% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 35.5% and redistribution 55.6%. Context injection shifted 21.3 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decisi"
+      "summary": "farm agent selected local_redistribute at hour 11.2. Spoilage risk: 0.009. SLCA: 0.856. Compliance violations detected.",
+      "full": "The farm agent routed produce to local redistribution at hour 11.2 BECAUSE the MCP compliance check detected a warning temperature violation (6.5C exceeding the 5.0C limit by 1.5C) AND piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.65) indicating regulatory pressure for shorter transport routes.\n\nThese signals activated the compliance severity (psi=0.5) context feature, shifting the cold chain logit by -0.58 and the redistribution logit by +0.47, making local redistribution 77.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 35.5% and redistribution 55.6%. Context injection shifted 21.4 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.65] (key: 5\u00b0C) and [K"
     },
     "provenance": {
       "evidence_hashes": [
@@ -4853,14 +5221,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.3039729984048633,
-        "LocalRedistribute": 0.2961212939261089,
-        "Recovery": 0.00785170447875431
+        "ColdChain": -0.3053363563239708,
+        "LocalRedistribute": 0.3002451407346129,
+        "Recovery": 0.00509121558935791
       },
       "probabilities": {
-        "ColdChain": 0.24775319834160547,
-        "LocalRedistribute": 0.6741171452477368,
-        "Recovery": 0.07812965641065782
+        "ColdChain": 0.24666443788587086,
+        "LocalRedistribute": 0.6756338156314233,
+        "Recovery": 0.07770174648270575
       }
     },
     "keywords": {
@@ -4879,15 +5247,23 @@
       "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.13494663512655553,
-        0.14345177657417396,
-        -0.008505141447618228
+        -0.13603539558229014,
+        0.1449684469578605,
+        -0.008933051375570294
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "farm agent selected local_redistribute at hour 11.5. Spoilage risk: 0.010. SLCA: 0.884.",
-      "full": "The farm agent routed produce to local redistribution at hour 11.5 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making local redistribution 67.4% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.3% and redistribution 53.1%. Context injection shifted 14.3 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_"
+      "full": "The farm agent routed produce to local redistribution at hour 11.5 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.31 and the redistribution logit by +0.30, making local redistribution 67.6% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.3% and redistribution 53.1%. Context injection shifted 14.5 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_"
     },
     "provenance": {
       "evidence_hashes": [
@@ -4907,7 +5283,7 @@
       "hour": 11.75,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "local_redistribute",
+      "action": "cold_chain",
       "governance_override": false
     },
     "observation": {
@@ -4949,14 +5325,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.3041601084080636,
-        "LocalRedistribute": 0.2963673982110154,
-        "Recovery": 0.0077927101970482636
+        "ColdChain": -0.30550129006532334,
+        "LocalRedistribute": 0.300462165734512,
+        "Recovery": 0.005039124330811295
       },
       "probabilities": {
-        "ColdChain": 0.24755535783965363,
-        "LocalRedistribute": 0.6742277120150956,
-        "Recovery": 0.0782169301452509
+        "ColdChain": 0.2464779957701989,
+        "LocalRedistribute": 0.6757315436164967,
+        "Recovery": 0.07779046061330452
       }
     },
     "keywords": {
@@ -4972,18 +5348,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": 0.25,
+      "primary_contribution": -0.3,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.1350065944056625,
-        0.1435445106628841,
-        -0.008537916257221362
+        -0.13608395647511723,
+        0.1450483422642852,
+        -0.008964385789167736
       ],
-      "action_changed": false
+      "action_changed": true
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected local_redistribute at hour 11.8. Spoilage risk: 0.010. SLCA: 0.884.",
-      "full": "The farm agent routed produce to local redistribution at hour 11.8 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.30 and the redistribution logit by +0.30, making local redistribution 67.4% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.3% and redistribution 53.1%. Context injection shifted 14.4 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_"
+      "summary": "farm agent selected cold_chain at hour 11.8. Spoilage risk: 0.010. SLCA: 0.526.",
+      "full": "The farm agent routed produce to cold chain (long-haul) at hour 11.8 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.31 and the redistribution logit by +0.30, making cold chain (long-haul) 24.6% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 38.3% and redistribution 53.1%. Context injection shifted 14.5 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supporte"
     },
     "provenance": {
       "evidence_hashes": [
@@ -5003,7 +5387,7 @@
       "hour": 12.0,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "cold_chain",
+      "action": "local_redistribute",
       "governance_override": false
     },
     "observation": {
@@ -5045,14 +5429,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.22716290147015403,
-        "LocalRedistribute": 0.24419271937731132,
-        "Recovery": -0.017029817907157324
+        "ColdChain": -0.2260430977015188,
+        "LocalRedistribute": 0.2444113389522832,
+        "Recovery": -0.018368241250764455
       },
       "probabilities": {
-        "ColdChain": 0.2499861773656995,
-        "LocalRedistribute": 0.6802061590025795,
-        "Recovery": 0.06980766363172095
+        "ColdChain": 0.25016506798899035,
+        "LocalRedistribute": 0.6801469972462691,
+        "Recovery": 0.06968793476474046
       }
     },
     "keywords": {
@@ -5068,18 +5452,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": -0.3,
+      "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.10459108722753763,
-        0.11373824992612602,
-        -0.009147162698588354
+        -0.10441219660424678,
+        0.11367908816981565,
+        -0.009266891565568841
       ],
-      "action_changed": true
+      "action_changed": false
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected cold_chain at hour 12.0. Spoilage risk: 0.010. SLCA: 0.526.",
-      "full": "The farm agent routed produce to cold chain (long-haul) at hour 12.0 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.23 and the redistribution logit by +0.24, making cold chain (long-haul) 25.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 35.5% and redistribution 56.6%. Context injection shifted 11.4 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supporte"
+      "summary": "farm agent selected local_redistribute at hour 12.0. Spoilage risk: 0.010. SLCA: 0.884.",
+      "full": "The farm agent routed produce to local redistribution at hour 12.0 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.23 and the redistribution logit by +0.24, making local redistribution 68.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 35.5% and redistribution 56.6%. Context injection shifted 11.4 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_"
     },
     "provenance": {
       "evidence_hashes": [
@@ -5099,7 +5491,7 @@
       "hour": 12.25,
       "role": "farm",
       "scenario": "cyber_outage",
-      "action": "cold_chain",
+      "action": "local_redistribute",
       "governance_override": false
     },
     "observation": {
@@ -5141,14 +5533,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.2275312735282138,
-        "LocalRedistribute": 0.24451904508859978,
-        "Recovery": -0.016987771560386014
+        "ColdChain": -0.22614590348578395,
+        "LocalRedistribute": 0.24454184774013532,
+        "Recovery": -0.01839594425435141
       },
       "probabilities": {
-        "ColdChain": 0.24960998842570523,
-        "LocalRedistribute": 0.6805348093525364,
-        "Recovery": 0.0698552022217585
+        "ColdChain": 0.24987155596736585,
+        "LocalRedistribute": 0.6803931311079832,
+        "Recovery": 0.06973531292465095
       }
     },
     "keywords": {
@@ -5164,18 +5556,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "regulatory pressure",
-      "primary_contribution": -0.3,
+      "primary_contribution": 0.25,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.10467491436329815,
-        0.11384757278109592,
-        -0.00917265841779763
+        -0.10441334682163753,
+        0.11370589453654267,
+        -0.009292547714905189
       ],
-      "action_changed": true
+      "action_changed": false
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "farm agent selected cold_chain at hour 12.2. Spoilage risk: 0.011. SLCA: 0.526.",
-      "full": "The farm agent routed produce to cold chain (long-haul) at hour 12.2 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.23 and the redistribution logit by +0.24, making cold chain (long-haul) 25.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 35.4% and redistribution 56.7%. Context injection shifted 11.4 percentage points toward redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supporte"
+      "summary": "farm agent selected local_redistribute at hour 12.2. Spoilage risk: 0.011. SLCA: 0.884.",
+      "full": "The farm agent routed produce to local redistribution at hour 12.2 BECAUSE piRAG retrieved regulatory guidance from regulatory_fda_leafy_greens (relevance: 0.66) indicating regulatory pressure for shorter transport routes AND piRAG retrieved high-confidence guidance from regulatory_fda_leafy_greens (relevance: 0.66).\n\nThese signals activated the regulatory pressure (psi=1.0) context feature, shifting the cold chain logit by -0.23 and the redistribution logit by +0.24, making local redistribution 68.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 35.4% and redistribution 56.7%. Context injection shifted 11.4 percentage points toward redistribution.\n\nThis decision is supported by [KB: regulatory_fda_leafy_greens, relevance=0.66] (key: 5\u00b0C) and [KB: regulatory_"
     },
     "provenance": {
       "evidence_hashes": [
@@ -5235,14 +5635,14 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.06852437729720792,
-        "LocalRedistribute": 0.10827662747779229,
-        "Recovery": -0.039752250180584356
+        "ColdChain": -0.06881612661386548,
+        "LocalRedistribute": 0.10951109684992372,
+        "Recovery": -0.04069497023605825
       },
       "probabilities": {
-        "ColdChain": 0.20253687804763973,
-        "LocalRedistribute": 0.7274581242521917,
-        "Recovery": 0.07000499770016849
+        "ColdChain": 0.2022671015041683,
+        "LocalRedistribute": 0.7278599222005725,
+        "Recovery": 0.0698729762952592
       }
     },
     "keywords": {
@@ -5256,15 +5656,23 @@
       "primary_contribution": 0.13,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        -0.03213356232896372,
-        0.0403601426645378,
-        -0.008226580335574135
+        -0.032403338872435156,
+        0.0407619406129186,
+        -0.008358601740483432
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "processor agent selected local_redistribute at hour 18.0. Spoilage risk: 0.019. SLCA: 0.884.",
-      "full": "The processor agent routed produce to local redistribution at hour 18.0 BECAUSE piRAG retrieved high-confidence guidance from slca_community_resilience_metrics (relevance: 0.52).\n\nThese signals activated the retrieval confidence (psi=0.7) context feature, shifting the cold chain logit by -0.07 and the redistribution logit by +0.11, making local redistribution 72.7% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 23.5% and redistribution 68.7%. Context injection shifted 4.0 percentage points toward redistribution.\n\nThis decision is supported by [KB: slca_community_resilience_metrics, relevance=0.52].\n\nProvenance: 7 evidence items (1 MCP tool outputs + 6 piRAG citations), Merkle root: 901dc0584292...."
+      "full": "The processor agent routed produce to local redistribution at hour 18.0 BECAUSE piRAG retrieved high-confidence guidance from slca_community_resilience_metrics (relevance: 0.52).\n\nThese signals activated the retrieval confidence (psi=0.7) context feature, shifting the cold chain logit by -0.07 and the redistribution logit by +0.11, making local redistribution 72.8% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 23.5% and redistribution 68.7%. Context injection shifted 4.1 percentage points toward redistribution.\n\nThis decision is supported by [KB: slca_community_resilience_metrics, relevance=0.52].\n\nProvenance: 7 evidence items (1 MCP tool outputs + 6 piRAG citations), Merkle root: 901dc0584292...."
     },
     "provenance": {
       "evidence_hashes": [
@@ -5326,9 +5734,9 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.0673190558289406,
-        "LocalRedistribute": 0.1054692056293959,
-        "Recovery": -0.03815014980045528
+        "ColdChain": -0.06709809560163783,
+        "LocalRedistribute": 0.1062324781966992,
+        "Recovery": -0.0391343825950614
       },
       "probabilities": {
         "ColdChain": 0.0,
@@ -5353,6 +5761,14 @@
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "processor agent selected local_redistribute at hour 24.0. Spoilage risk: 0.028. SLCA: 0.871.",
       "full": "The processor agent MANDATED local redistribution at hour 24.0 via governance override BECAUSE simultaneous critical compliance violation AND high spoilage forecast triggered the MCP governance constraint. This override bypasses probabilistic routing and deterministically selects the safest routing pathway.\n\nThese signals activated the retrieval confidence (psi=0.7) context feature, shifting the cold chain logit by -0.07 and the redistribution logit by +0.11, making local redistribution 100.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 0.0% and redistribution 100.0%. Context injection shifted 0.0 percentage points away from redistribution.\n\nThis decision is supported by [KB: slca_community_resilience_metrics, relevance=0.52].\n\nProvenance: 7 evidence items "
@@ -5360,13 +5776,13 @@
     "provenance": {
       "evidence_hashes": [
         "67e8bb77ab63a454f6670f2beadbfc4dfee083cae8a9f278cc1ec277278ea9ff",
-        "152ab732b3d092d4a467445e83837051de7e0f7df9bd04805291db1e2b5a2d73",
         "4fafd8bb7a35e507445e876824ac26699453342baedb66bec730b1f1d9929b83",
+        "152ab732b3d092d4a467445e83837051de7e0f7df9bd04805291db1e2b5a2d73",
         "feefb22d6faa504006c1bca995cbf4ff93aba2fbc99beab57d0b8e1ed67a2e87",
         "d8becfe9c67509a6288782f1169f452705a9c287da71005353314778b9f14e4f"
       ],
       "total_evidence_items": 7,
-      "merkle_root": "721d2db6964fb0669c70200d3eddc3c4411bf8f49c88a511060b630fb7504ea8",
+      "merkle_root": "009127480e3ccd7945083943b576d1c77b4de2608afc984992d0caf196160295",
       "provenance_ready": true
     }
   },
@@ -5425,9 +5841,9 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.6342317009058357,
-        "LocalRedistribute": 0.4464036516384803,
-        "Recovery": 0.18782804926735555
+        "ColdChain": -0.6346419940986833,
+        "LocalRedistribute": 0.44835161938967233,
+        "Recovery": 0.18629037470901066
       },
       "probabilities": {
         "ColdChain": 0.0,
@@ -5451,6 +5867,14 @@
         0.0
       ],
       "action_changed": false
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
       "summary": "processor agent selected local_redistribute at hour 30.0. Spoilage risk: 0.046. SLCA: 0.799. Compliance violations detected.",
@@ -5508,7 +5932,7 @@
     "pirag_retrieval": {
       "query": "Emergency rerouting standard operating procedure under cyber_outage conditions. Current routing action is cold_chain with medium urgency. Include notification chain requirements, transport time adjustments, fallback procedures for degraded connectivity, and carbon accounting for refrigerated transport emission factors. communications outage fallback cached routing manual override offline decision-making reconnection synchronization accelerated thermal degradation",
       "top_document": "heatwave_contingency_plan",
-      "top_score": 0.5648358976644706,
+      "top_score": 0.5083523078980235,
       "regulatory_guidance": "",
       "sop_guidance": "Emergency Rerouting Standard Operating Procedure\n\nNotification Chain: Upon detection of a routing emergency (temperature excursion, equipment failure, or cyber incident), the responsible agent must initiate the notification chain within 30 minutes. Notification sequence: immediate supervisor, qualit",
       "waste_hierarchy": "",
@@ -5519,14 +5943,14 @@
       "features": {
         "compliance_severity": 1.0,
         "forecast_urgency": 0.0,
-        "retrieval_confidence": 0.7060448720805882,
+        "retrieval_confidence": 0.6354403848725294,
         "regulatory_pressure": 0.0,
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.6680794566159647,
-        "LocalRedistribute": 0.47421049923307307,
-        "Recovery": 0.19386895738289173
+        "ColdChain": -0.6601140243413317,
+        "LocalRedistribute": 0.46529599971763896,
+        "Recovery": 0.1948180246236925
       },
       "probabilities": {
         "ColdChain": 1.0,
@@ -5554,9 +5978,17 @@
       ],
       "action_changed": true
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "distributor agent selected cold_chain at hour 36.0. Spoilage risk: 0.071. SLCA: 0.456. Compliance violations detected.",
-      "full": "The distributor agent routed produce to cold chain (long-haul) at hour 36.0 BECAUSE the MCP compliance check detected a critical temperature violation (13.0C exceeding the 5.0C limit by 8.0C).\n\nThese signals activated the compliance severity (psi=1.0) context feature, shifting the cold chain logit by -0.67 and the redistribution logit by +0.47, making cold chain (long-haul) 100.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 0.0% and redistribution 100.0%. Context injection shifted 100.0 percentage points away from redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported by [KB: heatwave_contingency_plan, relevance=0.56] (key: 30 minutes, must initiate the notification chain within 30 minut"
+      "full": "The distributor agent routed produce to cold chain (long-haul) at hour 36.0 BECAUSE the MCP compliance check detected a critical temperature violation (13.0C exceeding the 5.0C limit by 8.0C).\n\nThese signals activated the compliance severity (psi=1.0) context feature, shifting the cold chain logit by -0.66 and the redistribution logit by +0.47, making cold chain (long-haul) 100.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 0.0% and redistribution 100.0%. Context injection shifted 100.0 percentage points away from redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported by [KB: heatwave_contingency_plan, relevance=0.51] (key: 30 minutes, must initiate the notification chain within 30 minut"
     },
     "provenance": {
       "evidence_hashes": [
@@ -5576,8 +6008,8 @@
       "hour": 42.0,
       "role": "distributor",
       "scenario": "cyber_outage",
-      "action": "cold_chain",
-      "governance_override": false
+      "action": "local_redistribute",
+      "governance_override": true
     },
     "observation": {
       "rho": 0.10626500547562479,
@@ -5626,13 +6058,13 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.8591524754731049,
-        "LocalRedistribute": 0.6091772341928943,
-        "Recovery": 0.24997524128021079
+        "ColdChain": -0.8048088966296599,
+        "LocalRedistribute": 0.5728110451379519,
+        "Recovery": 0.23199785149170768
       },
       "probabilities": {
-        "ColdChain": 1.0,
-        "LocalRedistribute": 0.0,
+        "ColdChain": 0.0,
+        "LocalRedistribute": 1.0,
         "Recovery": 0.0
       }
     },
@@ -5647,18 +6079,26 @@
     },
     "causal_reasoning": {
       "primary_cause": "compliance severity",
-      "primary_contribution": -0.8,
+      "primary_contribution": 0.5,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
-        1.0,
-        -1.0,
+        0.0,
+        0.0,
         0.0
       ],
-      "action_changed": true
+      "action_changed": false
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
-      "summary": "distributor agent selected cold_chain at hour 42.0. Spoilage risk: 0.106. SLCA: 0.449. Compliance violations detected.",
-      "full": "The distributor agent routed produce to cold chain (long-haul) at hour 42.0 BECAUSE the MCP compliance check detected a critical temperature violation (14.2C exceeding the 5.0C limit by 9.2C).\n\nThese signals activated the compliance severity (psi=1.0) context feature, shifting the cold chain logit by -0.86 and the redistribution logit by +0.61, making cold chain (long-haul) 100.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 0.0% and redistribution 100.0%. Context injection shifted 100.0 percentage points away from redistribution, changing the selected action from local redistribution to cold chain (long-haul).\n\nThis decision is supported by [KB: heatwave_contingency_plan, relevance=0.56] (key: 30 minutes, must initiate the notification chain within 30 minut"
+      "summary": "distributor agent selected local_redistribute at hour 42.0. Spoilage risk: 0.106. SLCA: 0.776. Compliance violations detected.",
+      "full": "The distributor agent MANDATED local redistribution at hour 42.0 via governance override BECAUSE simultaneous critical compliance violation AND high spoilage forecast triggered the MCP governance constraint. This override bypasses probabilistic routing and deterministically selects the safest routing pathway.\n\nThese signals activated the compliance severity (psi=1.0) context feature, shifting the cold chain logit by -0.80 and the redistribution logit by +0.57, making local redistribution 100.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 0.0% and redistribution 100.0%. Context injection shifted 0.0 percentage points away from redistribution.\n\nThis decision is supported by [KB: heatwave_contingency_plan, relevance=0.56] (key: 30 minutes, must initiate the no"
     },
     "provenance": {
       "evidence_hashes": [
@@ -5728,9 +6168,9 @@
         "recovery_saturation": 0.0
       },
       "logit_adjustment": {
-        "ColdChain": -0.6397081822754446,
-        "LocalRedistribute": 0.45353042684844397,
-        "Recovery": 0.18617775542700074
+        "ColdChain": -0.6401029254907786,
+        "LocalRedistribute": 0.4555321095663655,
+        "Recovery": 0.18457081592441302
       },
       "probabilities": {
         "ColdChain": 0.0,
@@ -5758,9 +6198,17 @@
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "distributor agent selected local_redistribute at hour 48.0. Spoilage risk: 0.135. SLCA: 0.757. Compliance violations detected.",
-      "full": "The distributor agent MANDATED local redistribution at hour 48.0 via governance override BECAUSE simultaneous critical compliance violation AND high spoilage forecast triggered the MCP governance constraint. This override bypasses probabilistic routing and deterministically selects the safest routing pathway.\n\nThese signals activated the compliance severity (psi=1.0) context feature, shifting the cold chain logit by -0.64 and the redistribution logit by +0.45, making local redistribution 100.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 0.0% and redistribution 100.0%. Context injection shifted 0.0 percentage points away from redistribution.\n\nThis decision is supported by [KB: heatwave_contingency_plan, relevance=0.56] (key: 30 minutes, must initiate the no"
+      "full": "The distributor agent MANDATED local redistribution at hour 48.0 via governance override BECAUSE simultaneous critical compliance violation AND high spoilage forecast triggered the MCP governance constraint. This override bypasses probabilistic routing and deterministically selects the safest routing pathway.\n\nThese signals activated the compliance severity (psi=1.0) context feature, shifting the cold chain logit by -0.64 and the redistribution logit by +0.46, making local redistribution 100.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 0.0% and redistribution 100.0%. Context injection shifted 0.0 percentage points away from redistribution.\n\nThis decision is supported by [KB: heatwave_contingency_plan, relevance=0.56] (key: 30 minutes, must initiate the no"
     },
     "provenance": {
       "evidence_hashes": [
@@ -5831,7 +6279,7 @@
     "pirag_retrieval": {
       "query": "Food waste hierarchy assessment for spinach with spoilage risk 0.17 and 18 hours remaining shelf life. Evaluate redistribution to food banks, animal feed diversion, composting, and anaerobic digestion pathways per EU Waste Framework Directive 2008/98/EC. communications outage fallback cached routing manual override offline decision-making reconnection synchronization accelerated thermal degradation early quality decline during lag phase transition",
       "top_document": "waste_hierarchy_protocol",
-      "top_score": 0.6217739376088334,
+      "top_score": 0.5595965438479501,
       "regulatory_guidance": "",
       "sop_guidance": "Emergency Rerouting Standard Operating Procedure\n\nNotification Chain: Upon detection of a routing emergency (temperature excursion, equipment failure, or cyber incident), the responsible agent must initiate the notification chain within 30 minutes. Notification sequence: immediate supervisor, qualit",
       "waste_hierarchy": "Food Waste Hierarchy Protocol for Perishable Produce\n\nHierarchy Assessment: In accordance with EU Waste Framework Directive 2008/98/EC, food waste management follows a strict hierarchy prioritizing prevention, then redistribution, then recycling, then recovery, and finally disposal. For perishable p",
@@ -5842,14 +6290,14 @@
       "features": {
         "compliance_severity": 0.0,
         "forecast_urgency": 0.0,
-        "retrieval_confidence": 0.7772174220110417,
+        "retrieval_confidence": 0.6994956798099375,
         "regulatory_pressure": 0.0,
         "recovery_saturation": 0.2
       },
       "logit_adjustment": {
-        "ColdChain": -0.06974347808852935,
-        "LocalRedistribute": 0.168171178083271,
-        "Recovery": -0.09842769999474162
+        "ColdChain": -0.05792462911465816,
+        "LocalRedistribute": 0.15419136851652754,
+        "Recovery": -0.09626673940186933
       },
       "probabilities": {
         "ColdChain": 0.0,
@@ -5870,7 +6318,7 @@
     },
     "causal_reasoning": {
       "primary_cause": "retrieval confidence",
-      "primary_contribution": 0.15544348440220834,
+      "primary_contribution": 0.13989913596198753,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
         0.0,
@@ -5879,9 +6327,17 @@
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "recovery agent selected local_redistribute at hour 54.0. Spoilage risk: 0.167. SLCA: 0.767.",
-      "full": "The recovery agent MANDATED local redistribution at hour 54.0 via governance override BECAUSE simultaneous critical compliance violation AND high spoilage forecast triggered the MCP governance constraint. This override bypasses probabilistic routing and deterministically selects the safest routing pathway.\n\nThese signals activated the retrieval confidence (psi=0.8) context feature, shifting the cold chain logit by -0.07 and the redistribution logit by +0.17, making local redistribution 100.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 0.0% and redistribution 100.0%. Context injection shifted 0.0 percentage points away from redistribution.\n\nThis decision is supported by [KB: waste_hierarchy_protocol, relevance=0.62] (key: 30 minutes, must initiate the notif"
+      "full": "The recovery agent MANDATED local redistribution at hour 54.0 via governance override BECAUSE simultaneous critical compliance violation AND high spoilage forecast triggered the MCP governance constraint. This override bypasses probabilistic routing and deterministically selects the safest routing pathway.\n\nThese signals activated the retrieval confidence (psi=0.7) context feature, shifting the cold chain logit by -0.06 and the redistribution logit by +0.15, making local redistribution 100.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 0.0% and redistribution 100.0%. Context injection shifted 0.0 percentage points away from redistribution.\n\nThis decision is supported by [KB: waste_hierarchy_protocol, relevance=0.56] (key: 30 minutes, must initiate the notif"
     },
     "provenance": {
       "evidence_hashes": [
@@ -5968,9 +6424,9 @@
         "recovery_saturation": 0.2
       },
       "logit_adjustment": {
-        "ColdChain": -0.05310895721009685,
-        "LocalRedistribute": 0.12865988645653315,
-        "Recovery": -0.07555092924643626
+        "ColdChain": -0.05285877973100551,
+        "LocalRedistribute": 0.12952408545324157,
+        "Recovery": -0.07666530572223608
       },
       "probabilities": {
         "ColdChain": 0.0,
@@ -5999,6 +6455,14 @@
         0.0
       ],
       "action_changed": false
+    },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
     },
     "explanation": {
       "summary": "recovery agent selected local_redistribute at hour 60.0. Spoilage risk: 0.197. SLCA: 0.764.",
@@ -6073,7 +6537,7 @@
     "pirag_retrieval": {
       "query": "Food waste hierarchy assessment for spinach with spoilage risk 0.22 and 6 hours remaining shelf life. Evaluate redistribution to food banks, animal feed diversion, composting, and anaerobic digestion pathways per EU Waste Framework Directive 2008/98/EC. communications outage fallback cached routing manual override offline decision-making reconnection synchronization accelerated thermal degradation early quality decline during lag phase transition",
       "top_document": "waste_hierarchy_protocol",
-      "top_score": 0.619911243366209,
+      "top_score": 0.557920119029588,
       "regulatory_guidance": "",
       "sop_guidance": "Emergency Rerouting Standard Operating Procedure\n\nNotification Chain: Upon detection of a routing emergency (temperature excursion, equipment failure, or cyber incident), the responsible agent must initiate the notification chain within 30 minutes. Notification sequence: immediate supervisor, qualit",
       "waste_hierarchy": "Food Waste Hierarchy Protocol for Perishable Produce\n\nHierarchy Assessment: In accordance with EU Waste Framework Directive 2008/98/EC, food waste management follows a strict hierarchy prioritizing prevention, then redistribution, then recycling, then recovery, and finally disposal. For perishable p",
@@ -6084,14 +6548,14 @@
       "features": {
         "compliance_severity": 0.0,
         "forecast_urgency": 0.0,
-        "retrieval_confidence": 0.7748890542077611,
+        "retrieval_confidence": 0.697400148786985,
         "regulatory_pressure": 0.0,
         "recovery_saturation": 0.2
       },
       "logit_adjustment": {
-        "ColdChain": -0.053383257434301,
-        "LocalRedistribute": 0.12901684485847237,
-        "Recovery": -0.07563358742417135
+        "ColdChain": -0.04431907099389927,
+        "LocalRedistribute": 0.11829536084641548,
+        "Recovery": -0.07397628985251624
       },
       "probabilities": {
         "ColdChain": 0.0,
@@ -6112,7 +6576,7 @@
     },
     "causal_reasoning": {
       "primary_cause": "retrieval confidence",
-      "primary_contribution": 0.15497781084155224,
+      "primary_contribution": 0.139480029757397,
       "counterfactual_action": "local_redistribute",
       "probability_shift": [
         0.0,
@@ -6121,9 +6585,17 @@
       ],
       "action_changed": false
     },
+    "retrieval_evaluation": {
+      "metrics": {
+        "faithfulness_at_3": 1.0,
+        "evidence_coverage": 1.0,
+        "n_citations": 6
+      },
+      "counterfactual": {}
+    },
     "explanation": {
       "summary": "recovery agent selected local_redistribute at hour 66.0. Spoilage risk: 0.225. SLCA: 0.769.",
-      "full": "The recovery agent MANDATED local redistribution at hour 66.0 via governance override BECAUSE simultaneous critical compliance violation AND high spoilage forecast triggered the MCP governance constraint. This override bypasses probabilistic routing and deterministically selects the safest routing pathway.\n\nThese signals activated the retrieval confidence (psi=0.8) context feature, shifting the cold chain logit by -0.05 and the redistribution logit by +0.13, making local redistribution 100.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 0.0% and redistribution 100.0%. Context injection shifted 0.0 percentage points away from redistribution.\n\nThis decision is supported by [KB: waste_hierarchy_protocol, relevance=0.62] (key: 30 minutes, must initiate the notif"
+      "full": "The recovery agent MANDATED local redistribution at hour 66.0 via governance override BECAUSE simultaneous critical compliance violation AND high spoilage forecast triggered the MCP governance constraint. This override bypasses probabilistic routing and deterministically selects the safest routing pathway.\n\nThese signals activated the retrieval confidence (psi=0.7) context feature, shifting the cold chain logit by -0.04 and the redistribution logit by +0.12, making local redistribution 100.0% probable.\n\nWITHOUT MCP/piRAG context, cold chain probability would have been 0.0% and redistribution 100.0%. Context injection shifted 0.0 percentage points away from redistribution.\n\nThis decision is supported by [KB: waste_hierarchy_protocol, relevance=0.56] (key: 30 minutes, must initiate the notif"
     },
     "provenance": {
       "evidence_hashes": [
