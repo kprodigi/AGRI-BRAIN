@@ -16,9 +16,15 @@ def _is_deterministic() -> bool:
     """Read DETERMINISTIC_MODE at call time, not import time."""
     return os.environ.get("DETERMINISTIC_MODE", "false").lower() == "true"
 
-# Deprecated: prefer _is_deterministic() for call-time evaluation.
-# Kept for backward compatibility with existing imports.
-DETERMINISTIC_MODE: bool = _is_deterministic()
+
+# Property-like module attribute for backward-compatible imports.
+# Always delegates to _is_deterministic() so env changes take effect.
+class _DetFlag:
+    def __bool__(self): return _is_deterministic()
+    def __repr__(self): return str(_is_deterministic())
+    def __eq__(self, other): return _is_deterministic() == other
+
+DETERMINISTIC_MODE = _DetFlag()
 
 
 @dataclass(frozen=True)

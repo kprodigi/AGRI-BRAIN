@@ -64,7 +64,7 @@ export default function AdminPanel() {
     useEffect(() => {
         let ws;
         try {
-            const apiKey = localStorage.getItem("API_KEY");
+            const apiKey = localStorage.getItem("WS_API_KEY") || localStorage.getItem("API_KEY");
             const wsUrl = apiKey ? `${WS_URL}?api_key=${encodeURIComponent(apiKey)}` : WS_URL;
             ws = new WebSocket(wsUrl);
             ws.onopen = () => {};

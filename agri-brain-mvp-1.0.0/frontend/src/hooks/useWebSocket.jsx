@@ -39,7 +39,8 @@ export function useWebSocket() {
 
     const connect = () => {
       try {
-        const apiKey = localStorage.getItem("API_KEY");
+        // Prefer dedicated WS key; fall back to general API key
+        const apiKey = localStorage.getItem("WS_API_KEY") || localStorage.getItem("API_KEY");
         const url = apiKey ? `${WS_URL}?api_key=${encodeURIComponent(apiKey)}` : WS_URL;
         ws = new WebSocket(url);
         wsRef.current = ws;
