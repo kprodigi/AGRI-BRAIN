@@ -783,6 +783,13 @@ def decide(d: DecideIn):
     # append to in-memory log
     state.setdefault("log", []).append(memo)
 
+    # mirror last decision into case.STATE so /case/last_decision stays current
+    try:
+        from src.routers.case import STATE as _case_state
+        _case_state["last_decision"] = memo
+    except (ImportError, KeyError):
+        pass
+
     # broadcast to websockets (best effort)
     try:
         from src.agents.bus import BUS

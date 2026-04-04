@@ -156,11 +156,13 @@ def get_chain():
     _try_autoload()
     # Sync from app state: app-state values always win so that runtime
     # updates (e.g. from decide.py or lifespan) are reflected here.
+    # Uses `is not None` instead of truthiness so that explicit empty
+    # values (e.g. clearing addresses to {}) propagate correctly.
     if _APP_STATE and "chain" in _APP_STATE:
         app_chain = _APP_STATE["chain"]
         for k in ("rpc", "chain_id", "private_key", "addresses"):
             val = app_chain.get(k)
-            if val:
+            if val is not None:
                 CHAIN[k] = val
 
     addrs = CHAIN.get("addresses") or {}

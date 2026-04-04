@@ -225,6 +225,8 @@ def run_episode(
     temperature_violation_steps = 0
     quality_violation_steps = 0
 
+    prev_temp, prev_rh = float(df.iloc[0]["tempC"]), float(df.iloc[0]["RH"])
+
     for idx in range(n):
         row = df.iloc[idx]
         rho = float(row.get("spoilage_risk", 1.0 - row["shelf_left"]))
@@ -238,10 +240,10 @@ def run_episode(
         rh_val = stoch.perturb_humidity(rh_val)
         inv = stoch.perturb_inventory(inv)
 
-        # Telemetry delay: carry over previous step's readings (STOCH_DELAY_PROB)
+        # Telemetry delay: carry over previous perturbed step's readings
         if idx > 0 and stoch.should_delay():
-            temp = float(df.iloc[idx - 1]["tempC"])
-            rh_val = float(df.iloc[idx - 1]["RH"])
+            temp = prev_temp
+            rh_val = prev_rh
 
         # Recompute spoilage risk from perturbed temp/RH so derived columns
         # stay consistent with the perturbed sensor readings.
@@ -250,6 +252,9 @@ def run_episode(
                                       policy.T_ref_K, rh_val / 100.0,
                                       policy.beta_humidity)
             rho = min(1.0, max(0.0, k_perturbed / (policy.k_ref + 1e-12)))
+
+        # Track perturbed values for next step's potential delay event
+        prev_temp, prev_rh = temp, rh_val
 
         lookback = min(idx + 1, 48)
         hist_slice = df.iloc[max(0, idx + 1 - lookback):idx + 1]
@@ -340,7 +345,8 @@ def run_episode(
         waste = float(waste_raw * (1.0 - save))
 
         temp_violation = temp > float(policy.max_temp_c)
-        quality_violation = float(row.get("shelf_left", 1.0)) < float(policy.min_shelf_expedite)
+        shelf_left = 1.0 - rho  # derived from (possibly perturbed) rho
+        quality_violation = shelf_left < float(policy.min_shelf_expedite)
         if temp_violation:
             temperature_violation_steps += 1
         if quality_violation:
