@@ -72,5 +72,12 @@ def get_figure(filename: str):
     if not path.exists():
         raise HTTPException(status_code=404, detail=f"Figure not found: {filename}")
 
-    media = "image/png" if path.suffix == ".png" else "application/pdf"
+    _MIME = {
+        ".png": "image/png",
+        ".pdf": "application/pdf",
+        ".csv": "text/csv",
+        ".json": "application/json",
+        ".svg": "image/svg+xml",
+    }
+    media = _MIME.get(path.suffix.lower(), "application/octet-stream")
     return FileResponse(str(path), media_type=media)

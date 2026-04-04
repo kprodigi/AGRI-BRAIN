@@ -281,7 +281,7 @@ export default function AnalyticsPage() {
     setSimRunning(true);
     try {
       await jpost(API, "/results/generate");
-      toast.success("Simulation complete: 25 conditions evaluated, all validation checks passed");
+      toast.success("Simulation complete: 40 conditions evaluated (5 scenarios x 8 modes)");
       // Reload data
       const [t1Text, t2Text] = await Promise.all([
         fetch(`${API}/results/figures/table1_summary.csv`).then((r) => r.text()),
@@ -722,7 +722,7 @@ export default function AnalyticsPage() {
             <FlaskConical className="w-10 h-10 mx-auto mb-3 text-primary" />
             <h3 className="text-lg font-semibold mb-2">Run Full Simulation</h3>
             <p className="text-sm text-muted-foreground mb-4 max-w-lg mx-auto">
-              Runs all 5 scenarios x 5 methods, 288 timesteps each. Regenerates all figures and CSV tables with the latest model parameters.
+              Runs all 5 scenarios x 8 modes, 288 timesteps each. Generates summary CSV tables with the latest model parameters.
             </p>
             <Button size="lg" onClick={runSimulation} disabled={simRunning}>
               {simRunning ? (

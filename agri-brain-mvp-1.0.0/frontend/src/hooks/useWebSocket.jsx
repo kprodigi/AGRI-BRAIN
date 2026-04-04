@@ -39,7 +39,9 @@ export function useWebSocket() {
 
     const connect = () => {
       try {
-        ws = new WebSocket(WS_URL);
+        const apiKey = localStorage.getItem("API_KEY");
+        const url = apiKey ? `${WS_URL}?api_key=${encodeURIComponent(apiKey)}` : WS_URL;
+        ws = new WebSocket(url);
         wsRef.current = ws;
 
         ws.onopen = () => {

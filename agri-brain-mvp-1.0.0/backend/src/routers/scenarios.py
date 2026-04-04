@@ -241,9 +241,16 @@ def reset_scenario():
 
 
 # ---------- LEGACY FALLBACK (old UI calling POST /scenarios) ----------
+class LegacyApplyBody(BaseModel):
+    id: str | None = None
+    name: str | None = None
+
 @router.post("", include_in_schema=False)
-def legacy_apply(id: str | None = None, name: str | None = None):
-    chosen = (name or id or "").strip()
+def legacy_apply(body: LegacyApplyBody | None = None,
+                 id: str | None = None, name: str | None = None):
+    # Accept both JSON body and query params
+    bid = getattr(body, "id", None) or getattr(body, "name", None) if body else None
+    chosen = (name or id or bid or "").strip()
     if not chosen:
         return {"ok": False, "error": "missing scenario id"}
     ACTIVE["name"] = chosen

@@ -382,16 +382,8 @@ def decide(req: DecideRequest):
     return _decide_standalone(req)
 
 
-# GET alias for quick testing in a browser
-@router.get("/decide")
-def decide_get(agent: str = "farm", role: str = ""):
-    return decide(DecideRequest(agent=agent, role=role))
-
-
-# Legacy/compat endpoint some frontends call
-@router.api_route("/decision/take", methods=["GET", "POST"])
-def decision_take(agent: str = "farm", role: str = ""):
-    return decide(DecideRequest(agent=agent, role=role))
+# Note: GET /decide and /decision/take aliases live in compat.py.
+# This router is not mounted directly; only decide() is imported.
 
 
 # Public read used by the PDF (compatibility dict)
