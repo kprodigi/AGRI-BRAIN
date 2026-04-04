@@ -76,7 +76,10 @@ from src.models.reverse_logistics import evaluate_recovery_options, compute_circ
 from src.models.policy_learner import PolicyLearner
 from src.models.action_selection import build_feature_vector
 from src.agents.coordinator import AgentCoordinator
-from stochastic import DETERMINISTIC_MODE, make_stochastic_layer, _DISABLED as _STOCH_DISABLED
+try:
+    from .stochastic import DETERMINISTIC_MODE, make_stochastic_layer, _DISABLED as _STOCH_DISABLED
+except ImportError:
+    from stochastic import DETERMINISTIC_MODE, make_stochastic_layer, _DISABLED as _STOCH_DISABLED
 
 try:
     from pirag.context_provider import get_policy_context as _get_policy_context
@@ -92,8 +95,8 @@ ONLINE_LEARNING = os.environ.get("ONLINE_LEARNING", "false").lower() == "true"
 # RAG context toggle (default: enabled; set to "false" for fast batch runs)
 RAG_CONTEXT_ENABLED = os.environ.get("RAG_CONTEXT_ENABLED", "true").lower() != "false"
 
-# Deterministic by default for strict reproducibility.
-DETERMINISTIC_MODE = os.environ.get("DETERMINISTIC_MODE", "true").lower() == "true"
+# Stochastic by default; set DETERMINISTIC_MODE=true for strict reproducibility.
+DETERMINISTIC_MODE = os.environ.get("DETERMINISTIC_MODE", "false").lower() == "true"
 STOCH_TEMP_STD_C = float(os.environ.get("STOCH_TEMP_STD_C", "0.35"))
 STOCH_RH_STD = float(os.environ.get("STOCH_RH_STD", "1.5"))
 STOCH_DEMAND_FRAC_STD = float(os.environ.get("STOCH_DEMAND_FRAC_STD", "0.04"))

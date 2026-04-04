@@ -352,6 +352,62 @@ def export_stress_and_significance() -> None:
                 )
 
 
+def export_latex_benchmark_table() -> None:
+    """Export a LaTeX-ready benchmark table with mean +/- CI and p-values."""
+    print("\n" + "=" * 80)
+    print("LaTeX-Ready Stochastic Benchmark Table")
+    print("=" * 80)
+
+    bench_path = RESULTS_DIR / "benchmark_summary.json"
+    sig_path = RESULTS_DIR / "benchmark_significance.json"
+    if not bench_path.exists():
+        print("  benchmark_summary.json not found — run run_benchmark_suite.py first.")
+        return
+
+    bench = json.loads(bench_path.read_text(encoding="utf-8"))
+    sig = json.loads(sig_path.read_text(encoding="utf-8")) if sig_path.exists() else {}
+
+    methods = ["agribrain", "mcp_only", "pirag_only", "no_context"]
+    metrics = ["ari", "waste", "slca"]
+
+    # Print human-readable table
+    print(f"\n  {'Scenario':<18s} {'Method':<14s} {'Metric':>6s} {'Mean':>8s} {'95% CI':>18s} {'Std':>8s}")
+    print("  " + "-" * 76)
+    for scenario in SCENARIOS:
+        for method in methods:
+            m_data = bench.get(scenario, {}).get(method, {})
+            if not m_data:
+                continue
+            for metric in metrics:
+                d = m_data.get(metric, {})
+                if not d:
+                    continue
+                ci_str = f"[{d.get('ci_low', 0):.4f}, {d.get('ci_high', 0):.4f}]"
+                print(f"  {scenario:<18s} {method:<14s} {metric:>6s} "
+                      f"{d.get('mean', 0):8.4f} {ci_str:>18s} {d.get('std', 0):8.6f}")
+
+    # Print significance summary
+    if sig:
+        print(f"\n  {'Scenario':<18s} {'Comparison':<30s} {'p-value':>8s} {'Cohen d':>8s} {'Mean diff':>10s}")
+        print("  " + "-" * 78)
+        for scenario in SCENARIOS:
+            sc = sig.get(scenario, {})
+            for comp_key, comp_data in sc.items():
+                ari = comp_data.get("ari", {})
+                if not ari:
+                    continue
+                print(f"  {scenario:<18s} {comp_key:<30s} "
+                      f"{ari.get('p_value', 1.0):8.4f} "
+                      f"{ari.get('cohens_d', 0.0):+8.3f} "
+                      f"{ari.get('mean_diff', 0.0):+10.4f}")
+
+    # Save as JSON for downstream LaTeX generation
+    out_path = RESULTS_DIR / "paper_benchmark_table.json"
+    export = {"benchmark": bench, "significance": sig}
+    out_path.write_text(json.dumps(export, indent=2), encoding="utf-8")
+    print(f"\n  Saved combined export: {out_path}")
+
+
 if __name__ == "__main__":
     print("AGRI-BRAIN Paper Evidence Export")
     print("=" * 80)
@@ -363,5 +419,6 @@ if __name__ == "__main__":
     export_provenance_summary()
     export_robustness_and_benchmark()
     export_stress_and_significance()
+    export_latex_benchmark_table()
 
     print("\nDone.")

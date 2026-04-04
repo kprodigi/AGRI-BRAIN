@@ -584,8 +584,20 @@ def fig5_pricing(data):
 # ---------------------------------------------------------------------------
 # Figure 6: Cross-scenario comparison (2x2 grouped bars)
 # ---------------------------------------------------------------------------
+def _load_benchmark_ci() -> dict | None:
+    """Load benchmark_summary.json for CI error bars (returns None if unavailable)."""
+    bench_file = RESULTS_DIR / "benchmark_summary.json"
+    if not bench_file.exists():
+        return None
+    import json
+    return json.loads(bench_file.read_text(encoding="utf-8"))
+
+
 def fig6_cross(data):
-    """2x2 grouped bars: ARI, RLE, waste, SLCA across scenarios for 3 methods."""
+    """2x2 grouped bars: ARI, RLE, waste, SLCA across scenarios for 3 methods.
+    Adds error bars from benchmark_summary.json when available."""
+    bench = _load_benchmark_ci()
+
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
     fig.suptitle("Cross-Scenario Performance Comparison",
                  fontsize=18, fontweight="bold")
@@ -601,9 +613,26 @@ def fig6_cross(data):
 
         for i, mode in enumerate(methods):
             vals = [data["results"][s][mode][metric] for s in scenarios_plot]
+            # Try to add error bars from benchmark data
+            yerr = None
+            if bench is not None:
+                ci_data = []
+                for s in scenarios_plot:
+                    m_data = bench.get(s, {}).get(mode, {}).get(metric, {})
+                    if m_data and "ci_low" in m_data and "ci_high" in m_data:
+                        ci_data.append((m_data["mean"], m_data["ci_low"], m_data["ci_high"]))
+                if len(ci_data) == len(scenarios_plot):
+                    means = np.array([c[0] for c in ci_data])
+                    lows = np.array([c[1] for c in ci_data])
+                    highs = np.array([c[2] for c in ci_data])
+                    yerr = np.vstack([means - lows, highs - means])
+                    vals = means.tolist()
+
             ax.bar(x + i * width, vals, width, color=COLORS[mode],
                    label=MODE_LABELS[mode], alpha=0.85, edgecolor="white",
-                   linewidth=0.5)
+                   linewidth=0.5, yerr=yerr,
+                   capsize=3 if yerr is not None else 0,
+                   error_kw={"linewidth": 1.0, "capthick": 1.0})
 
         ax.set_xticks(x + width)
         ax.set_xticklabels([SCENARIO_LABELS[s] for s in scenarios_plot],
@@ -626,7 +655,10 @@ def fig6_cross(data):
 # Figure 7: Ablation study (1x3 grouped bars)
 # ---------------------------------------------------------------------------
 def fig7_ablation(data):
-    """1x3 grouped bars: ARI, waste, RLE for all 8 variants."""
+    """1x3 grouped bars: ARI, waste, RLE for all 8 variants.
+    Adds error bars from benchmark_summary.json when available."""
+    bench = _load_benchmark_ci()
+
     fig, axes = plt.subplots(1, 3, figsize=(18, 5.5))
     fig.suptitle("Ablation Study", fontsize=16, fontweight="bold")
 
@@ -640,9 +672,25 @@ def fig7_ablation(data):
 
         for i, mode in enumerate(MODES):
             vals = [data["results"][s][mode][metric] for s in stress_scenarios]
+            yerr = None
+            if bench is not None:
+                ci_data = []
+                for s in stress_scenarios:
+                    m_data = bench.get(s, {}).get(mode, {}).get(metric, {})
+                    if m_data and "ci_low" in m_data and "ci_high" in m_data:
+                        ci_data.append((m_data["mean"], m_data["ci_low"], m_data["ci_high"]))
+                if len(ci_data) == len(stress_scenarios):
+                    means = np.array([c[0] for c in ci_data])
+                    lows = np.array([c[1] for c in ci_data])
+                    highs = np.array([c[2] for c in ci_data])
+                    yerr = np.vstack([means - lows, highs - means])
+                    vals = means.tolist()
+
             ax.bar(x + i * width, vals, width, color=COLORS[mode],
                    label=MODE_LABELS[mode], alpha=0.85, edgecolor="white",
-                   linewidth=0.5)
+                   linewidth=0.5, yerr=yerr,
+                   capsize=2 if yerr is not None else 0,
+                   error_kw={"linewidth": 0.8, "capthick": 0.8})
 
         ax.set_xticks(x + 3.5 * width)
         ax.set_xticklabels([SCENARIO_LABELS[s] for s in stress_scenarios],

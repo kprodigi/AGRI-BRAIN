@@ -1,83 +1,78 @@
-"""
-Dual-mode stochastic perturbation layer for AgriBrain simulation.
+#!/usr/bin/env python3
+"""Dual-mode stochastic perturbation layer for simulation.
 
-DETERMINISTIC_MODE=true  (default) -> all perturbations are no-ops, exact reproducibility.
-DETERMINISTIC_MODE=false            -> seeded Gaussian/uniform noise on sensor, demand, inventory.
-
-Perturbation amplitudes are physically plausible and configurable via env vars.
-The StochasticLayer is stateless except for the RNG, so given the same seed it
-always produces the same perturbation sequence (stochastic-but-reproducible).
+DETERMINISTIC_MODE=false (default) enables seeded, bounded perturbations.
+DETERMINISTIC_MODE=true disables perturbations for strict reproducibility.
 """
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass
+
 import numpy as np
 
-# ---------------------------------------------------------------------------
-# Configuration (read once at import time)
-# ---------------------------------------------------------------------------
+
 DETERMINISTIC_MODE: bool = os.environ.get("DETERMINISTIC_MODE", "false").lower() == "true"
 
-# Perturbation amplitudes (sensible defaults, all overridable)
-STOCH_TEMP_SIGMA: float = float(os.environ.get("STOCH_TEMP_SIGMA", "0.3"))       # degrees C
-STOCH_RH_SIGMA: float = float(os.environ.get("STOCH_RH_SIGMA", "1.5"))           # percent
-STOCH_DEMAND_CV: float = float(os.environ.get("STOCH_DEMAND_CV", "0.05"))         # coefficient of variation
-STOCH_INVENTORY_CV: float = float(os.environ.get("STOCH_INVENTORY_CV", "0.03"))   # coefficient of variation
-STOCH_LATENCY_MAX: float = float(os.environ.get("STOCH_LATENCY_MAX", "15.0"))     # ms (future use)
 
-
+@dataclass(frozen=True)
 class StochasticLayer:
-    """Per-episode perturbation engine.
+    rng: np.random.Generator
+    enabled: bool
+    temp_std_c: float
+    rh_std: float
+    demand_frac_std: float
+    inventory_frac_std: float
+    latency_max_ms: float
 
-    When ``enabled=False`` every method is an identity function.
-    When ``enabled=True`` each call draws from *rng*, advancing its state
-    deterministically so repeated runs with the same seed are reproducible.
-    """
-
-    __slots__ = ("_rng", "_enabled")
-
-    def __init__(self, rng: np.random.Generator, enabled: bool) -> None:
-        self._rng = rng
-        self._enabled = enabled
-
-    @property
-    def enabled(self) -> bool:
-        return self._enabled
-
-    def perturb_temperature(self, temp: float) -> float:
-        if not self._enabled:
-            return temp
-        return temp + self._rng.normal(0.0, STOCH_TEMP_SIGMA)
+    def perturb_temperature(self, temp_c: float) -> float:
+        if not self.enabled or self.temp_std_c <= 0.0:
+            return float(temp_c)
+        return float(np.clip(temp_c + self.rng.normal(0.0, self.temp_std_c), -5.0, 55.0))
 
     def perturb_humidity(self, rh: float) -> float:
-        if not self._enabled:
-            return rh
-        return float(np.clip(rh + self._rng.normal(0.0, STOCH_RH_SIGMA), 0.0, 100.0))
+        if not self.enabled or self.rh_std <= 0.0:
+            return float(rh)
+        return float(np.clip(rh + self.rng.normal(0.0, self.rh_std), 0.0, 100.0))
 
     def perturb_demand(self, demand: float) -> float:
-        if not self._enabled:
-            return demand
-        return max(0.0, demand * (1.0 + self._rng.normal(0.0, STOCH_DEMAND_CV)))
+        if not self.enabled or self.demand_frac_std <= 0.0:
+            return float(demand)
+        mult = 1.0 + float(self.rng.normal(0.0, self.demand_frac_std))
+        return float(max(0.0, demand * mult))
 
     def perturb_inventory(self, inv: float) -> float:
-        if not self._enabled:
-            return inv
-        return max(0.0, inv * (1.0 + self._rng.normal(0.0, STOCH_INVENTORY_CV)))
+        if not self.enabled or self.inventory_frac_std <= 0.0:
+            return float(inv)
+        mult = 1.0 + float(self.rng.normal(0.0, self.inventory_frac_std))
+        return float(max(0.0, inv * mult))
 
     def perturb_latency(self, latency_ms: float) -> float:
-        """Additive latency jitter (for future latency-quality frontier work)."""
-        if not self._enabled:
-            return latency_ms
-        return latency_ms + self._rng.uniform(0.0, STOCH_LATENCY_MAX)
+        if not self.enabled or self.latency_max_ms <= 0.0:
+            return float(latency_ms)
+        return float(latency_ms + self.rng.uniform(0.0, self.latency_max_ms))
 
 
-# ---------------------------------------------------------------------------
-# Factory
-# ---------------------------------------------------------------------------
+_DISABLED = StochasticLayer(
+    rng=np.random.default_rng(0),
+    enabled=False,
+    temp_std_c=0.0,
+    rh_std=0.0,
+    demand_frac_std=0.0,
+    inventory_frac_std=0.0,
+    latency_max_ms=0.0,
+)
+
+
 def make_stochastic_layer(rng: np.random.Generator) -> StochasticLayer:
-    """Create a StochasticLayer that respects the global DETERMINISTIC_MODE flag."""
-    return StochasticLayer(rng=rng, enabled=not DETERMINISTIC_MODE)
-
-
-# Disabled singleton for backward-compatible callers
-_DISABLED = StochasticLayer(rng=np.random.default_rng(0), enabled=False)
+    if DETERMINISTIC_MODE:
+        return _DISABLED
+    return StochasticLayer(
+        rng=rng,
+        enabled=True,
+        temp_std_c=float(os.environ.get("STOCH_TEMP_STD_C", "0.35")),
+        rh_std=float(os.environ.get("STOCH_RH_STD", "1.5")),
+        demand_frac_std=float(os.environ.get("STOCH_DEMAND_FRAC_STD", "0.04")),
+        inventory_frac_std=float(os.environ.get("STOCH_INVENTORY_FRAC_STD", "0.03")),
+        latency_max_ms=float(os.environ.get("STOCH_LATENCY_MAX_MS", "15.0")),
+    )

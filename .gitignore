@@ -2,6 +2,9 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
+
+# Stochastic feasibility test scripts (diagnostic, not production)
+mvp/simulation/test_stochastic_*.py
 node_modules/
 dist/
 .venv/

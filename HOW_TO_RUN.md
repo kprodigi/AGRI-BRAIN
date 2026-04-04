@@ -91,6 +91,12 @@ fastapi, uvicorn, pydantic, numpy, pandas, matplotlib, reportlab, orjson, reques
 | `LLM_PROVIDER` | `template` | RAG answer engine: `template` or `api` |
 | `DATA_CSV` | (auto) | Override path to spinach sensor CSV |
 | `CONTEXT_ENABLED` | `true` | Enable MCP/piRAG context integration in agribrain mode |
+| `DETERMINISTIC_MODE` | `false` | `true` = exact reproducibility (audit), `false` = stochastic perturbations |
+| `STOCH_TEMP_STD_C` | `0.35` | Stochastic: temperature noise sigma (°C) |
+| `STOCH_RH_STD` | `1.5` | Stochastic: humidity noise sigma (%) |
+| `STOCH_DEMAND_FRAC_STD` | `0.04` | Stochastic: demand multiplicative noise CV |
+| `STOCH_INVENTORY_FRAC_STD` | `0.03` | Stochastic: inventory multiplicative noise CV |
+| `BENCHMARK_SEEDS` | `42,1337,2024,7,99` | Comma-separated seeds for multi-seed benchmark |
 
 ### 2c. Start the backend
 
