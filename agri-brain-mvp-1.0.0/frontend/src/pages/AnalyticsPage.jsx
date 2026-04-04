@@ -280,8 +280,25 @@ export default function AnalyticsPage() {
   const runSimulation = async () => {
     setSimRunning(true);
     try {
+      // Kick off background job
       await jpost(API, "/results/generate");
-      toast.success("Simulation complete: 40 conditions evaluated (5 scenarios x 8 modes)");
+      toast.info("Simulation started (5 scenarios x 8 modes). Polling for completion...");
+
+      // Poll /results/status until done
+      let status = "running";
+      while (status === "running" || status === "started") {
+        await new Promise((r) => setTimeout(r, 5000));
+        const st = await jget(API, "/results/status");
+        status = st.status;
+        if (status === "running") {
+          toast.info(`Simulation running... (${st.elapsed_s || 0}s elapsed)`, { id: "sim-poll" });
+        }
+      }
+
+      const st = await jget(API, "/results/status");
+      if (st.status === "error") throw new Error(st.error);
+
+      toast.success(`Simulation complete in ${st.duration_s || "?"}s`);
       // Reload data
       const [t1Text, t2Text] = await Promise.all([
         authFetch(`${API}/results/figures/table1_summary.csv`).then((r) => r.text()),
@@ -289,8 +306,8 @@ export default function AnalyticsPage() {
       ]);
       setTable1(parseCSV(t1Text));
       setTable2(parseCSV(t2Text));
-    } catch {
-      toast.error("Simulation failed. Check backend logs.");
+    } catch (e) {
+      toast.error(`Simulation failed: ${e.message || "Check backend logs."}`);
     }
     setSimRunning(false);
   };

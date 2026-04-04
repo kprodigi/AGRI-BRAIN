@@ -48,7 +48,7 @@ REINFORCE learning for sustainable food logistics.
 |:---:|:---:|
 | ![Theater](docs/screenshots/theater-page-light.png) | ![Heatwave](docs/screenshots/agent-theater-heatwave.gif) |
 
-> **Full video**: [Agent Decision Theater — All 5 Scenarios (MP4)](docs/screenshots/agri-brain-agent-theater.mp4) — 220 frames showing all 5 agents processing heatwave, overproduction, cyber outage, adaptive pricing, and baseline scenarios.
+> **Scenario GIFs**: See `docs/screenshots/agent-theater-*.gif` for animated walkthroughs of all 5 agents processing heatwave, overproduction, cyber outage, adaptive pricing, and baseline scenarios.
 
 ## Architecture Highlights
 
@@ -185,7 +185,9 @@ GET  /governance/chain       - Blockchain configuration
 GET  /audit/logs             - Audit log array
 GET  /audit/memo.json        - Decision memo as JSON
 GET  /audit/memo.pdf         - Decision memo as PDF
-POST /results/generate       - Run full simulation, return summary JSON
+POST /results/generate       - Start simulation in background (returns immediately)
+GET  /results/status          - Poll simulation job progress
+GET  /results/summary         - Fetch last completed summary JSON
 GET  /results/figures/{name} - Serve generated figure files
 POST /mcp/mcp                - JSON-RPC 2.0 MCP endpoint (tools/call, resources/read, prompts/get)
 GET  /mcp/resources           - List MCP resources

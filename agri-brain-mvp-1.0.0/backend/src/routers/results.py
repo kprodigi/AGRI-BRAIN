@@ -2,12 +2,17 @@
 """
 API endpoints for running simulations and serving generated figures.
 
-POST /results/generate  — triggers the full simulation run, returns summary JSON
+POST /results/generate  — kicks off simulation in background, returns job ID
+GET  /results/status     — poll for completion
+GET  /results/summary    — fetch last completed summary
 GET  /results/figures/{filename} — serves a generated figure file
 """
 from __future__ import annotations
 
+import json
 import sys
+import threading
+import time
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
@@ -18,25 +23,49 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 # Ensure the simulation module is importable
 # ---------------------------------------------------------------------------
-# Simulation dir: two levels above agri-brain-mvp-1.0.0/ (i.e. repo root / mvp / simulation)
 _SIM_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent / "mvp" / "simulation"
 if str(_SIM_DIR) not in sys.path:
     sys.path.insert(0, str(_SIM_DIR))
 
 _RESULTS_DIR = _SIM_DIR / "results"
 
+# Background job state
+_JOB = {"running": False, "started_at": None, "finished_at": None,
+        "error": None, "summary": None}
+
+
+def _run_in_background():
+    """Worker: run simulation and save tables."""
+    try:
+        from generate_results import run_all, save_tables, get_summary_json
+        data = run_all()
+        save_tables(data["table1"], data["table2"])
+        _JOB["summary"] = get_summary_json(data)
+        _JOB["error"] = None
+    except Exception as exc:
+        _JOB["error"] = str(exc)
+        _JOB["summary"] = None
+    finally:
+        _JOB["running"] = False
+        _JOB["finished_at"] = time.time()
+
 
 # ---------------------------------------------------------------------------
-# POST /results/generate
+# POST /results/generate — non-blocking: kicks off background job
 # ---------------------------------------------------------------------------
 @router.post("/generate")
 def generate_results():
-    """Run all 5 scenarios x 8 modes and return a summary JSON.
+    """Start full simulation (5 scenarios x 8 modes) in the background.
 
-    Also saves CSV tables and (optionally) figures to disk.
+    Returns immediately with a job status. Poll GET /results/status for
+    completion. This avoids HTTP timeouts for long-running simulations.
     """
+    if _JOB["running"]:
+        elapsed = time.time() - (_JOB["started_at"] or time.time())
+        return {"ok": True, "status": "running", "elapsed_s": round(elapsed, 1)}
+
     try:
-        from generate_results import run_all, save_tables, get_summary_json
+        from generate_results import run_all  # noqa: F401 — verify import
     except ImportError as exc:
         raise HTTPException(
             status_code=500,
@@ -44,18 +73,45 @@ def generate_results():
                    f"Ensure mvp/simulation/ exists relative to the backend.",
         )
 
-    data = run_all()
-    save_tables(data["table1"], data["table2"])
-    summary = get_summary_json(data)
+    _JOB["running"] = True
+    _JOB["started_at"] = time.time()
+    _JOB["finished_at"] = None
+    _JOB["error"] = None
+    _JOB["summary"] = None
 
-    return {
-        "ok": True,
-        "summary": summary,
-        "tables": {
-            "table1": str(_RESULTS_DIR / "table1_summary.csv"),
-            "table2": str(_RESULTS_DIR / "table2_ablation.csv"),
-        },
-    }
+    t = threading.Thread(target=_run_in_background, daemon=True)
+    t.start()
+
+    return {"ok": True, "status": "started"}
+
+
+@router.get("/status")
+def results_status():
+    """Poll simulation job status."""
+    if _JOB["running"]:
+        elapsed = time.time() - (_JOB["started_at"] or time.time())
+        return {"status": "running", "elapsed_s": round(elapsed, 1)}
+    if _JOB["finished_at"]:
+        duration = round((_JOB["finished_at"] - (_JOB["started_at"] or _JOB["finished_at"])), 1)
+        if _JOB["error"]:
+            return {"status": "error", "error": _JOB["error"], "duration_s": duration}
+        return {"status": "complete", "duration_s": duration}
+    return {"status": "idle"}
+
+
+@router.get("/summary")
+def results_summary():
+    """Return the last completed simulation summary."""
+    if _JOB["summary"]:
+        return {"ok": True, "summary": _JOB["summary"],
+                "tables": {"table1": str(_RESULTS_DIR / "table1_summary.csv"),
+                           "table2": str(_RESULTS_DIR / "table2_ablation.csv")}}
+    # Fallback: try loading from disk
+    t1 = _RESULTS_DIR / "table1_summary.csv"
+    if t1.exists():
+        return {"ok": True, "summary": None, "tables_on_disk": True,
+                "tables": {"table1": str(t1), "table2": str(_RESULTS_DIR / "table2_ablation.csv")}}
+    return {"ok": False, "error": "No simulation results available. Run POST /results/generate first."}
 
 
 # ---------------------------------------------------------------------------
