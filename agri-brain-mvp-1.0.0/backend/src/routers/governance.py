@@ -154,13 +154,14 @@ def set_policy(payload: Dict[str, Any]):
 def get_chain():
     """Return blockchain configuration with auto-synced addresses."""
     _try_autoload()
-    # Sync from app state if available (use update, not setdefault, so
-    # changes made via app state propagate back to CHAIN)
+    # Sync from app state: app-state values always win so that runtime
+    # updates (e.g. from decide.py or lifespan) are reflected here.
     if _APP_STATE and "chain" in _APP_STATE:
         app_chain = _APP_STATE["chain"]
         for k in ("rpc", "chain_id", "private_key", "addresses"):
-            if app_chain.get(k) and not CHAIN.get(k):
-                CHAIN[k] = app_chain[k]
+            val = app_chain.get(k)
+            if val:
+                CHAIN[k] = val
 
     addrs = CHAIN.get("addresses") or {}
     addresses_json = json.dumps(addrs, indent=2, ensure_ascii=False)

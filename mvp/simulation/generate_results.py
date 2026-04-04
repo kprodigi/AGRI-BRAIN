@@ -101,8 +101,6 @@ STOCH_TEMP_STD_C = float(os.environ.get("STOCH_TEMP_STD_C", "0.35"))
 STOCH_RH_STD = float(os.environ.get("STOCH_RH_STD", "1.5"))
 STOCH_DEMAND_FRAC_STD = float(os.environ.get("STOCH_DEMAND_FRAC_STD", "0.04"))
 STOCH_INVENTORY_FRAC_STD = float(os.environ.get("STOCH_INVENTORY_FRAC_STD", "0.03"))
-# Separate mechanism from StochasticLayer: temporal lag on whole traces.
-STOCH_DELAY_PROB = float(os.environ.get("STOCH_DELAY_PROB", "0.02"))
 
 def _demand_forecast(df, horizon=1, **kwargs):
     """Dispatch to LSTM or Holt-Winters demand forecaster based on config."""
@@ -239,6 +237,11 @@ def run_episode(
         temp = stoch.perturb_temperature(temp)
         rh_val = stoch.perturb_humidity(rh_val)
         inv = stoch.perturb_inventory(inv)
+
+        # Telemetry delay: carry over previous step's readings (STOCH_DELAY_PROB)
+        if idx > 0 and stoch.should_delay():
+            temp = float(df.iloc[idx - 1]["tempC"])
+            rh_val = float(df.iloc[idx - 1]["RH"])
 
         # Recompute spoilage risk from perturbed temp/RH so derived columns
         # stay consistent with the perturbed sensor readings.

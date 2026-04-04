@@ -185,8 +185,8 @@ GET  /audit/memo.pdf         - Decision memo as PDF
 POST /results/generate       - Run full simulation, return summary JSON
 GET  /results/figures/{name} - Serve generated figure files
 POST /mcp/mcp                - JSON-RPC 2.0 MCP endpoint (tools/call, resources/read, prompts/get)
-GET  /mcp/mcp/resources      - List MCP resources
-GET  /mcp/mcp/prompts        - List MCP prompts
+GET  /mcp/resources           - List MCP resources
+GET  /mcp/prompts             - List MCP prompts
 POST /rag/ask                - Query the piRAG pipeline (physics-informed retrieval)
 POST /rag/ingest             - Ingest documents into the piRAG knowledge base
 POST /mcp/call               - Call an MCP tool (legacy)

@@ -190,7 +190,7 @@ def root():
 # ---------------------------------------------------------------------------
 # In-memory state + config
 # ---------------------------------------------------------------------------
-DATA = Path(__file__).parent / "data_spinach.csv"
+DATA = Path(SETTINGS.data_csv) if SETTINGS.data_csv else Path(__file__).parent / "data_spinach.csv"
 state: Dict[str, Any] = {
     "df": None,
     "df_original": None,        # pristine copy for scenario reset

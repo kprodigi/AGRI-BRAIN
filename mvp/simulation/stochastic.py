@@ -28,6 +28,7 @@ class StochasticLayer:
     demand_frac_std: float
     inventory_frac_std: float
     latency_max_ms: float
+    delay_prob: float
 
     def perturb_temperature(self, temp_c: float) -> float:
         if not self.enabled or self.temp_std_c <= 0.0:
@@ -51,17 +52,11 @@ class StochasticLayer:
         mult = 1.0 + float(self.rng.normal(0.0, self.inventory_frac_std))
         return float(max(0.0, inv * mult))
 
-    def perturb_latency(self, latency_ms: float) -> float:
-        """Reserved latency perturbation helper (intentionally unused in runtime).
-
-        Decision latency in generate_results.py is recorded from wall-clock
-        execution time as observed, without synthetic perturbation. Latency lag
-        injection for telemetry is modeled separately by STOCH_DELAY_PROB over
-        whole time-series in _apply_stochastic_variability().
-        """
-        if not self.enabled or self.latency_max_ms <= 0.0:
-            return float(latency_ms)
-        return float(latency_ms + self.rng.uniform(0.0, self.latency_max_ms))
+    def should_delay(self) -> bool:
+        """Return True with probability delay_prob (telemetry lag event)."""
+        if not self.enabled or self.delay_prob <= 0.0:
+            return False
+        return float(self.rng.random()) < self.delay_prob
 
 
 _DISABLED = StochasticLayer(
@@ -72,6 +67,7 @@ _DISABLED = StochasticLayer(
     demand_frac_std=0.0,
     inventory_frac_std=0.0,
     latency_max_ms=0.0,
+    delay_prob=0.0,
 )
 
 
@@ -86,4 +82,5 @@ def make_stochastic_layer(rng: np.random.Generator) -> StochasticLayer:
         demand_frac_std=float(os.environ.get("STOCH_DEMAND_FRAC_STD", "0.04")),
         inventory_frac_std=float(os.environ.get("STOCH_INVENTORY_FRAC_STD", "0.03")),
         latency_max_ms=float(os.environ.get("STOCH_LATENCY_MAX_MS", "15.0")),
+        delay_prob=float(os.environ.get("STOCH_DELAY_PROB", "0.02")),
     )

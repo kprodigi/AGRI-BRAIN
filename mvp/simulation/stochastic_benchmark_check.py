@@ -8,11 +8,14 @@ import os
 from contextlib import redirect_stdout
 from statistics import mean, pstdev
 
+# Set DETERMINISTIC_MODE before importing generate_results so module-level
+# constants pick up the correct value.
+os.environ["DETERMINISTIC_MODE"] = "false"
+
 from generate_results import SCENARIOS, run_all
 
 
 def main() -> None:
-    os.environ["DETERMINISTIC_MODE"] = "false"
     seeds = [42, 1337, 2024, 7, 99]
     vals = {s: {"ari": [], "waste": []} for s in SCENARIOS}
 

@@ -13,6 +13,10 @@ import os
 from pathlib import Path
 from statistics import mean, pstdev
 
+# Set DETERMINISTIC_MODE before importing generate_results/stochastic so
+# module-level constants pick up the correct value.
+os.environ["DETERMINISTIC_MODE"] = "false"
+
 import numpy as np
 import pandas as pd
 
@@ -30,7 +34,6 @@ RESULTS_DIR = Path(__file__).resolve().parent / "results"
 
 
 def main() -> None:
-    os.environ["DETERMINISTIC_MODE"] = "false"
     seeds = [42, 1337, 2024, 7, 99]
 
     det_path = RESULTS_DIR / "table1_summary_deterministic_ref.csv"

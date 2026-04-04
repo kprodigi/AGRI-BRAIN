@@ -300,10 +300,10 @@ curl -X POST http://127.0.0.1:8100/mcp/mcp \
   -d '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"explain","arguments":{"action":"local_redistribute","role":"farm","rho":0.4,"temperature":14.0,"scenario":"heatwave"}}}'
 
 # List MCP resources (telemetry, quality, context features)
-curl http://127.0.0.1:8100/mcp/mcp/resources
+curl http://127.0.0.1:8100/mcp/resources
 
 # List MCP prompts (regulatory, SOP, governance query templates)
-curl http://127.0.0.1:8100/mcp/mcp/prompts
+curl http://127.0.0.1:8100/mcp/prompts
 ```
 
 ### piRAG Knowledge Base
