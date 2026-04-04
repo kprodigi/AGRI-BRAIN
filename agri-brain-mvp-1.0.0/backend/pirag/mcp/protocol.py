@@ -224,9 +224,15 @@ class MCPServer:
             })
         return MCPMessage(id=msg.id, result={"tools": tools})
 
+    # Backward-compatible argument aliases for common tool parameter names
+    _ARG_ALIASES = {
+        "calculator": {"expression": "expr"},
+        "pirag_query": {"q": "query"},
+    }
+
     def _handle_tools_call(self, msg: MCPMessage) -> MCPMessage:
         name = msg.params.get("name", "")
-        arguments = msg.params.get("arguments", {})
+        arguments = dict(msg.params.get("arguments", {}))
 
         spec = self._registry.get(name)
         if spec is None:
@@ -234,6 +240,12 @@ class MCPServer:
                 id=msg.id,
                 error={"code": _METHOD_NOT_FOUND, "message": f"Unknown tool: {name}"},
             )
+
+        # Apply argument aliases so callers using common alternative names work
+        aliases = self._ARG_ALIASES.get(name, {})
+        for alt, canonical in aliases.items():
+            if alt in arguments and canonical not in arguments:
+                arguments[canonical] = arguments.pop(alt)
 
         try:
             result = self._registry.invoke(name, **arguments)

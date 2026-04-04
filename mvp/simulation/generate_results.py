@@ -261,15 +261,22 @@ def run_episode(
             temp = prev_temp
             rh_val = prev_rh
 
-        # Recompute spoilage risk from perturbed temp/RH.
-        # Uses instantaneous Arrhenius k-ratio as proxy since the full
-        # spoilage pipeline (compute_spoilage_pinn) requires the entire
-        # DataFrame and produces cumulative values, not per-step updates.
+        # Adjust spoilage risk proportionally to perturbed vs original
+        # Arrhenius rate. rho from the DataFrame is cumulative spoilage [0,1];
+        # we scale it by the ratio of perturbed k to original k so that
+        # temperature/humidity perturbations shift rho without replacing it
+        # with a raw rate value.
         if stoch.enabled:
+            orig_temp = float(row["tempC"])
+            orig_rh = float(row["RH"]) / 100.0
+            k_orig = arrhenius_k(orig_temp, eff_k_ref, eff_ea_r,
+                                 policy.T_ref_K, orig_rh,
+                                 policy.beta_humidity)
             k_perturbed = arrhenius_k(temp, eff_k_ref, eff_ea_r,
                                       policy.T_ref_K, rh_val / 100.0,
                                       policy.beta_humidity)
-            rho = min(1.0, max(0.0, k_perturbed / (eff_k_ref + 1e-12)))
+            if k_orig > 0:
+                rho = min(1.0, max(0.0, rho * (k_perturbed / k_orig)))
 
         # Track perturbed values for next step's potential delay event
         prev_temp, prev_rh = temp, rh_val

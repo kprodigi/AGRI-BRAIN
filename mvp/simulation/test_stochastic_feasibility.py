@@ -38,9 +38,11 @@ from generate_results import (
 )
 from stochastic import make_stochastic_layer, StochasticLayer
 
-SEEDS = [42, 1337, 2024, 7, 99]
+_QUICK = "--quick" in sys.argv
+SEEDS = [42, 1337] if _QUICK else [42, 1337, 2024, 7, 99]
 CORE_METHODS = ["static", "hybrid_rl", "agribrain"]
 METRICS = ["ari", "waste", "rle", "slca"]
+MAX_ROWS = 50 if _QUICK else 0  # 0 = full data
 
 BOUNDS = {
     "ari":   (0.0, 1.0),
@@ -55,6 +57,8 @@ def run_fast(seed: int, stochastic: bool) -> dict:
     rng = np.random.default_rng(seed)
     policy = Policy()
     df_base = pd.read_csv(DATA_CSV, parse_dates=["timestamp"])
+    if MAX_ROWS > 0:
+        df_base = df_base.head(MAX_ROWS)
 
     results = {}
     for scenario in SCENARIOS:
@@ -94,11 +98,14 @@ def run_fast(seed: int, stochastic: bool) -> dict:
 
 def main():
     print("=" * 70)
-    print("STOCHASTIC FEASIBILITY TEST (fast, 3 methods only)")
+    mode_str = "QUICK" if _QUICK else "FULL"
+    print(f"STOCHASTIC FEASIBILITY TEST ({mode_str}, 3 methods only)")
     print("=" * 70)
     print(f"Seeds: {SEEDS}")
     print(f"Methods: {CORE_METHODS}")
     print(f"Scenarios: {SCENARIOS}")
+    if MAX_ROWS > 0:
+        print(f"Truncated to {MAX_ROWS} timesteps (--quick mode)")
     print()
 
     # --- Deterministic baseline ---
