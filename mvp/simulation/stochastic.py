@@ -83,9 +83,9 @@ def make_stochastic_layer(rng: np.random.Generator) -> StochasticLayer:
     return StochasticLayer(
         rng=rng,
         enabled=True,
-        temp_std_c=float(os.environ.get("STOCH_TEMP_STD_C", "0.35")),
-        rh_std=float(os.environ.get("STOCH_RH_STD", "1.5")),
-        demand_frac_std=float(os.environ.get("STOCH_DEMAND_FRAC_STD", "0.04")),
-        inventory_frac_std=float(os.environ.get("STOCH_INVENTORY_FRAC_STD", "0.03")),
-        delay_prob=float(os.environ.get("STOCH_DELAY_PROB", "0.02")),
+        temp_std_c=float(os.environ.get("STOCH_TEMP_STD_C", "1.0")),
+        rh_std=float(os.environ.get("STOCH_RH_STD", "4.0")),
+        demand_frac_std=float(os.environ.get("STOCH_DEMAND_FRAC_STD", "0.12")),
+        inventory_frac_std=float(os.environ.get("STOCH_INVENTORY_FRAC_STD", "0.08")),
+        delay_prob=float(os.environ.get("STOCH_DELAY_PROB", "0.05")),
     )

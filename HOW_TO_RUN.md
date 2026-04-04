@@ -92,11 +92,11 @@ fastapi, uvicorn, pydantic, numpy, pandas, matplotlib, reportlab, orjson, reques
 | `DATA_CSV` | (auto) | Override path to spinach sensor CSV |
 | `RAG_CONTEXT_ENABLED` | `true` | Enable MCP/piRAG context integration in agribrain mode |
 | `DETERMINISTIC_MODE` | `false` | `true` = exact reproducibility (audit), `false` = stochastic perturbations |
-| `STOCH_TEMP_STD_C` | `0.35` | Stochastic: temperature noise sigma (°C) |
-| `STOCH_RH_STD` | `1.5` | Stochastic: humidity noise sigma (%) |
-| `STOCH_DEMAND_FRAC_STD` | `0.04` | Stochastic: demand multiplicative noise CV |
-| `STOCH_INVENTORY_FRAC_STD` | `0.03` | Stochastic: inventory multiplicative noise CV |
-| `STOCH_DELAY_PROB` | `0.02` | Temporal lag injection probability (series-level, previous-sample carryover), separate from per-value StochasticLayer perturbations |
+| `STOCH_TEMP_STD_C` | `1.0` | Stochastic: temperature noise sigma (°C), field-realistic cold-chain sensor accuracy |
+| `STOCH_RH_STD` | `4.0` | Stochastic: humidity noise sigma (%), typical capacitive sensor uncertainty |
+| `STOCH_DEMAND_FRAC_STD` | `0.12` | Stochastic: demand multiplicative noise CV, realistic daily retail variability |
+| `STOCH_INVENTORY_FRAC_STD` | `0.08` | Stochastic: inventory multiplicative noise CV, warehouse counting/shrinkage uncertainty |
+| `STOCH_DELAY_PROB` | `0.05` | Temporal lag injection probability (5% per step), intermittent telemetry dropouts |
 | `BENCHMARK_SEEDS` | `42,1337,2024,7,99` | Comma-separated seeds for multi-seed benchmark |
 
 ### 2c. Start the backend

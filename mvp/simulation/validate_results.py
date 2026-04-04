@@ -25,8 +25,8 @@ _RESULTS_DIR = Path(__file__).resolve().parent / "results"
 t1 = pd.read_csv(_RESULTS_DIR / "table1_summary.csv")
 t2 = pd.read_csv(_RESULTS_DIR / "table2_ablation.csv")
 
-# Ordering tolerance: 0.0 for deterministic, 0.01 for stochastic
-_TOL = 0.0 if DETERMINISTIC_MODE else 0.01
+# Ordering tolerance: 0.0 for deterministic, 0.025 for stochastic (realistic amplitudes)
+_TOL = 0.0 if DETERMINISTIC_MODE else 0.025
 
 errors = []
 
@@ -54,11 +54,11 @@ if DETERMINISTIC_MODE:
         "baseline": (0.68, 0.78),
     }
 else:
-    # Stochastic: widen by ±0.05 to accommodate seed-to-seed variation
+    # Stochastic: widen by ±0.10 for realistic field-level perturbation amplitudes
     ari_ranges = {
-        "heatwave": (0.50, 0.70), "overproduction": (0.53, 0.73),
-        "cyber_outage": (0.53, 0.73), "adaptive_pricing": (0.61, 0.81),
-        "baseline": (0.63, 0.83),
+        "heatwave": (0.45, 0.75), "overproduction": (0.48, 0.78),
+        "cyber_outage": (0.48, 0.78), "adaptive_pricing": (0.56, 0.86),
+        "baseline": (0.58, 0.88),
     }
 for sc, (lo, hi) in ari_ranges.items():
     v = get(sc, "agribrain", "ARI")
@@ -128,11 +128,11 @@ if DETERMINISTIC_MODE:
         "baseline": (0.018, 0.03),
     }
 else:
-    # Stochastic: widen by ±0.01
+    # Stochastic: widen for realistic field-level perturbation amplitudes
     waste_ranges_ab = {
-        "heatwave": (0.01, 0.06), "overproduction": (0.02, 0.06),
-        "cyber_outage": (0.02, 0.06), "adaptive_pricing": (0.009, 0.05),
-        "baseline": (0.008, 0.04),
+        "heatwave": (0.005, 0.08), "overproduction": (0.01, 0.08),
+        "cyber_outage": (0.01, 0.08), "adaptive_pricing": (0.005, 0.06),
+        "baseline": (0.005, 0.05),
     }
 for sc, (lo, hi) in waste_ranges_ab.items():
     v = get(sc, "agribrain", "Waste")
@@ -211,16 +211,17 @@ for sc in t2["Scenario"].unique():
     if len(vals) == 5:
         for i in range(len(expected_ablation) - 1):
             a, b = expected_ablation[i], expected_ablation[i+1]
-            if vals[a] < vals[b] - 0.005:
+            abl_tol = 0.005 if DETERMINISTIC_MODE else 0.02
+            if vals[a] < vals[b] - abl_tol:
                 errors.append(f"Ablation ARI inversion: {sc}: {a}={vals[a]:.3f} < {b}={vals[b]:.3f}")
 
 # ============================================================
 # CHECK 10: Global sanity bounds
 # ============================================================
-_waste_hi = 0.20 if DETERMINISTIC_MODE else 0.25
-_slca_lo = 0.35 if DETERMINISTIC_MODE else 0.30
-_carbon_lo = 1500 if DETERMINISTIC_MODE else 1400
-_carbon_hi = 5500 if DETERMINISTIC_MODE else 5800
+_waste_hi = 0.20 if DETERMINISTIC_MODE else 0.30
+_slca_lo = 0.35 if DETERMINISTIC_MODE else 0.25
+_carbon_lo = 1500 if DETERMINISTIC_MODE else 1200
+_carbon_hi = 5500 if DETERMINISTIC_MODE else 6200
 for _, row in t1.iterrows():
     if not (0.01 <= row["Waste"] <= _waste_hi):
         errors.append(f"Waste out of bounds: {row['Method']}/{row['Scenario']} = {row['Waste']}")
