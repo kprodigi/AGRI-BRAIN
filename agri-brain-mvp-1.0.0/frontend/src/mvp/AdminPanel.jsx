@@ -6,15 +6,21 @@ const API = getApiBase();
 const WS_URL = (API || "").replace(/^http/i, "ws") + "/stream";
 
 // ---------------- small JSON helpers ----------------
+function _authHeaders(extra = {}) {
+    const h = { "Content-Type": "application/json", ...extra };
+    const key = localStorage.getItem("API_KEY");
+    if (key) h["x-api-key"] = key;
+    return h;
+}
 async function jget(path) {
-    const r = await fetch(`${API}${path}`);
+    const r = await fetch(`${API}${path}`, { headers: _authHeaders() });
     if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
     return r.json();
 }
 async function jpost(path, body = {}) {
     const r = await fetch(`${API}${path}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: _authHeaders(),
         body: JSON.stringify(body),
     });
     if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);

@@ -384,23 +384,4 @@ def decide(req: DecideRequest):
 
 # Note: GET /decide and /decision/take aliases live in compat.py.
 # This router is not mounted directly; only decide() is imported.
-
-
-# Public read used by the PDF (compatibility dict)
-@router.get("/last-decision", response_model=dict)
-def last_decision():
-    try:
-        data = CASE_STATE.get("last_decision")
-        if data:
-            return _compat_from_memo(data) if not isinstance(data, dict) else data
-    except (TypeError, KeyError, AttributeError):
-        pass
-    if LAST:
-        return _compat_from_memo(LAST)
-    return {}
-
-
-# Optional: recent memos feed
-@router.get("/decisions", response_model=list[dict])
-def decisions_feed():
-    return list(reversed(DECISIONS[-50:]))
+# Data endpoints (/last-decision, /decisions) live in app.py.

@@ -26,6 +26,15 @@ function _apiHeaders(extra = {}) {
   return h;
 }
 
+// Authenticated fetch wrapper for pages using direct fetch()
+export function authFetch(url, opts = {}) {
+  const key = localStorage.getItem("API_KEY");
+  const headers = { ...(opts.headers || {}) };
+  if (key) headers["x-api-key"] = key;
+  if (opts.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
+  return fetch(url, { ...opts, headers });
+}
+
 // API fetch helper
 export async function jget(apiBase, path) {
   const r = await fetch(`${apiBase}${path}`, { headers: _apiHeaders() });

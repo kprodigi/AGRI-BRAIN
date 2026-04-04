@@ -33,12 +33,19 @@ function togglePort(base) {
 // -------------------------------------------------------------
 // JSON helper with retry-on-port-swap
 // -------------------------------------------------------------
+function _headers() {
+    const h = { 'Content-Type': 'application/json' };
+    const key = localStorage.getItem('API_KEY');
+    if (key) h['x-api-key'] = key;
+    return h;
+}
+
 async function j(method, path, body) {
     const url1 = `${API}${path}`;
     try {
         const res = await fetch(url1, {
             method,
-            headers: { 'Content-Type': 'application/json' },
+            headers: _headers(),
             body: body ? JSON.stringify(body) : undefined,
         });
         if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
@@ -51,7 +58,7 @@ async function j(method, path, body) {
                 const url2 = `${alt}${path}`;
                 const res2 = await fetch(url2, {
                     method,
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: _headers(),
                     body: body ? JSON.stringify(body) : undefined,
                 });
                 if (!res2.ok) throw new Error(`${res2.status} ${res2.statusText}`);
@@ -90,7 +97,7 @@ export const Scenarios = {
     async list() {
         // Prefer new backend
         try {
-            const res = await fetch(`${API}/scenarios/list`);
+            const res = await fetch(`${API}/scenarios/list`, { headers: _headers() });
             if (res.ok) return await res.json(); // {scenarios:[{id,label,desc}], active}
         } catch { }
         // Fallback so Admin still renders something
@@ -110,7 +117,7 @@ export const Scenarios = {
         try {
             const r = await fetch(`${API}/scenarios/run`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: _headers(),
                 body: JSON.stringify({ name: id, intensity }),
             });
             if (r.ok) return await r.json();
@@ -121,7 +128,7 @@ export const Scenarios = {
 
     async reset() {
         try {
-            const r = await fetch(`${API}/scenarios/reset`, { method: 'POST' });
+            const r = await fetch(`${API}/scenarios/reset`, { method: 'POST', headers: _headers() });
             if (r.ok) return await r.json();
         } catch { }
         return { ok: true };
@@ -148,7 +155,7 @@ export const Decide = {
         for (const [p, init] of tries) {
             try {
                 const res = await fetch(`${API}${p}`, {
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: _headers(),
                     ...init,
                 });
                 if (res.ok) {

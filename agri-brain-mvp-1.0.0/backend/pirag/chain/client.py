@@ -28,5 +28,5 @@ def anchor_root(root_hex: str, policy_uri: str = "") -> Optional[str]:
         "chainId": w3.eth.chain_id,
     })
     signed = acct.sign_transaction(tx)
-    txh = w3.eth.send_raw_transaction(signed.rawTransaction)
+    txh = w3.eth.send_raw_transaction(signed.raw_transaction)
     return txh.hex()

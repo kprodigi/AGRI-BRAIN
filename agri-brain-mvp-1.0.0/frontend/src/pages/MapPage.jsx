@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { cn, fmt, jget } from "@/lib/utils";
+import { cn, fmt, jget, authFetch } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -118,7 +118,11 @@ export default function MapPage() {
 
   useEffect(() => {
     jget(API, "/kpis").then(setKpis).catch(() => {});
-    fetch(`${API}/decisions`).then((r) => r.json()).then((d) => {
+    authFetch(`${API}/decisions`).then((r) => {
+      if (!r.ok) return;
+      return r.json();
+    }).then((d) => {
+      if (!d) return;
       const list = d.decisions || [];
       if (list.length) setLastDecision(list[0]);
     }).catch(() => {});

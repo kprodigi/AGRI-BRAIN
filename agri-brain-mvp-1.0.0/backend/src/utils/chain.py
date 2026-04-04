@@ -28,5 +28,5 @@ class ChainClient:
             "maxPriorityFeePerGas": self.w3.to_wei("1", "gwei"),
         })
         signed = self.acc.sign_transaction(tx)
-        txh = self.w3.eth.send_raw_transaction(signed.rawTransaction)
+        txh = self.w3.eth.send_raw_transaction(signed.raw_transaction)
         return self.w3.to_hex(txh)

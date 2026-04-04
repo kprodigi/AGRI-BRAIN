@@ -160,9 +160,21 @@ def main() -> None:
                 }
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    # Use distinct filenames so this context-ablation benchmark doesn't
+    # clobber the full 8-mode output from aggregate_seeds.py.
     out = RESULTS_DIR / "benchmark_summary.json"
-    out.write_text(json.dumps(summary, indent=2), encoding="utf-8")
     sig_out = RESULTS_DIR / "benchmark_significance.json"
+    payload = {
+        "_meta": {
+            "source": "run_benchmark_suite.py",
+            "modes": ["agribrain", "mcp_only", "pirag_only", "no_context"],
+            "mode_label": mode_label,
+            "seeds": seeds,
+            "use_tables": use_tables,
+        },
+        "summary": summary,
+    }
+    out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     sig_out.write_text(json.dumps(significance, indent=2), encoding="utf-8")
     print(f"Saved benchmark summary: {out}")
     print(f"Saved benchmark significance: {sig_out}")

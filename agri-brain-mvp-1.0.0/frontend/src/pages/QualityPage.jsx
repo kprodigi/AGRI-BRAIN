@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn, n, fmt, last, jget } from "@/lib/utils";
+import { cn, n, fmt, last, jget, authFetch } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
 import { motion } from "framer-motion";
 import {
@@ -110,10 +110,12 @@ export default function QualityPage() {
     let ok = true;
     const f = async () => {
       try {
-        const [t, p] = await Promise.all([
-          fetch(`${API}/telemetry`).then((r) => r.json()),
-          fetch(`${API}/predictions`).then((r) => r.json()),
+        const [tRes, pRes] = await Promise.all([
+          authFetch(`${API}/telemetry`),
+          authFetch(`${API}/predictions`),
         ]);
+        if (!tRes.ok || !pRes.ok) throw new Error("API error");
+        const [t, p] = await Promise.all([tRes.json(), pRes.json()]);
         if (ok) { setTel(t); setPred(p); setLoading(false); }
       } catch {
         if (ok) setLoading(false);

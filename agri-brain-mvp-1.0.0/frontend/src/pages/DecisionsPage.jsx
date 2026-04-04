@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { cn, fmt, short } from "@/lib/utils";
+import { cn, fmt, short, authFetch } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -195,7 +195,9 @@ export default function DecisionsPage() {
 
   const load = async () => {
     try {
-      const r = await (await fetch(`${API}/decisions`)).json();
+      const res = await authFetch(`${API}/decisions`);
+      if (!res.ok) throw new Error(res.status);
+      const r = await res.json();
       setDecisions(r.decisions || []);
       setLoading(false);
     } catch {
@@ -206,9 +208,8 @@ export default function DecisionsPage() {
   const takeDecision = async () => {
     const selectedRole = role === "all" ? "farm" : role;
     try {
-      await fetch(`${API}/decide`, {
+      await authFetch(`${API}/decide`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ agent_id: "demo:" + selectedRole, role: selectedRole }),
       });
       toast.success("Decision taken successfully");

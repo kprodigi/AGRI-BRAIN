@@ -239,7 +239,7 @@ def _send_tx(w3, acct, tx_fn, chain_cfg: dict) -> Optional[str]:
         "chainId": int(chain_cfg.get("chain_id", 31337)),
     })
     signed = acct.sign_transaction(tx)
-    txh = w3.eth.send_raw_transaction(signed.rawTransaction)
+    txh = w3.eth.send_raw_transaction(signed.raw_transaction)
     rcpt = w3.eth.wait_for_transaction_receipt(txh)
     return rcpt.transactionHash.hex()
 
