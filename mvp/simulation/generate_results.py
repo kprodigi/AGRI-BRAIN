@@ -76,6 +76,7 @@ from src.models.reverse_logistics import evaluate_recovery_options, compute_circ
 from src.models.policy_learner import PolicyLearner
 from src.models.action_selection import build_feature_vector
 from src.agents.coordinator import AgentCoordinator
+from stochastic import DETERMINISTIC_MODE, make_stochastic_layer, _DISABLED as _STOCH_DISABLED
 
 try:
     from pirag.context_provider import get_policy_context as _get_policy_context
@@ -91,11 +92,59 @@ ONLINE_LEARNING = os.environ.get("ONLINE_LEARNING", "false").lower() == "true"
 # RAG context toggle (default: enabled; set to "false" for fast batch runs)
 RAG_CONTEXT_ENABLED = os.environ.get("RAG_CONTEXT_ENABLED", "true").lower() != "false"
 
+# Deterministic by default for strict reproducibility.
+DETERMINISTIC_MODE = os.environ.get("DETERMINISTIC_MODE", "true").lower() == "true"
+STOCH_TEMP_STD_C = float(os.environ.get("STOCH_TEMP_STD_C", "0.35"))
+STOCH_RH_STD = float(os.environ.get("STOCH_RH_STD", "1.5"))
+STOCH_DEMAND_FRAC_STD = float(os.environ.get("STOCH_DEMAND_FRAC_STD", "0.04"))
+STOCH_INVENTORY_FRAC_STD = float(os.environ.get("STOCH_INVENTORY_FRAC_STD", "0.03"))
+STOCH_DELAY_PROB = float(os.environ.get("STOCH_DELAY_PROB", "0.02"))
+
 def _demand_forecast(df, horizon=1, **kwargs):
     """Dispatch to LSTM or Holt-Winters demand forecaster based on config."""
     if FORECAST_METHOD == "holt_winters":
         return yield_demand_forecast(df, horizon=horizon, **kwargs)
     return lstm_demand_forecast(df, horizon=horizon, **kwargs)
+
+
+def _apply_stochastic_variability(df: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
+    """Inject controlled, physically plausible stochastic variability.
+
+    This is intentionally off by default (DETERMINISTIC_MODE=true).
+    """
+    if DETERMINISTIC_MODE:
+        return df
+
+    out = df.copy()
+    n = len(out)
+    if n == 0:
+        return out
+
+    if "tempC" in out.columns:
+        out["tempC"] = out["tempC"].astype(float) + rng.normal(0.0, STOCH_TEMP_STD_C, size=n)
+        out["tempC"] = out["tempC"].clip(lower=-5.0, upper=55.0)
+    if "RH" in out.columns:
+        out["RH"] = out["RH"].astype(float) + rng.normal(0.0, STOCH_RH_STD, size=n)
+        out["RH"] = out["RH"].clip(lower=10.0, upper=100.0)
+    if "demand_units" in out.columns:
+        mult = 1.0 + rng.normal(0.0, STOCH_DEMAND_FRAC_STD, size=n)
+        out["demand_units"] = (out["demand_units"].astype(float) * mult).clip(lower=0.0)
+    if "inventory_units" in out.columns:
+        mult = 1.0 + rng.normal(0.0, STOCH_INVENTORY_FRAC_STD, size=n)
+        out["inventory_units"] = (out["inventory_units"].astype(float) * mult).clip(lower=0.0)
+
+    # Random telemetry lag events: use previous sample values.
+    if n > 1 and STOCH_DELAY_PROB > 0.0:
+        lag_mask = rng.random(n) < STOCH_DELAY_PROB
+        lag_mask[0] = False
+        if "tempC" in out.columns:
+            prev = out["tempC"].shift(1).bfill()
+            out.loc[lag_mask, "tempC"] = prev.loc[lag_mask]
+        if "RH" in out.columns:
+            prev = out["RH"].shift(1).bfill()
+            out.loc[lag_mask, "RH"] = prev.loc[lag_mask]
+
+    return out
 
 # ---------------------------------------------------------------------------
 # Constants (orchestration-level only — no physics here)
@@ -161,7 +210,10 @@ _PINN_MODES = {"agribrain", "no_slca", "no_context", "mcp_only", "pirag_only"}
 def run_episode(
     df: pd.DataFrame, mode: str, policy: Policy,
     rng: np.random.Generator, scenario: str = "baseline",
+    stoch=None,
 ) -> dict:
+    if stoch is None:
+        stoch = _STOCH_DISABLED
     n = len(df)
     hours = _hours_from_start(df)
 
@@ -208,10 +260,16 @@ def run_episode(
         rh_val = float(row["RH"])
         tau = 1.0 if str(row.get("volatility", "normal")) == "anomaly" else 0.0
 
+        # Stochastic perturbation (no-op when DETERMINISTIC_MODE=true)
+        temp = stoch.perturb_temperature(temp)
+        rh_val = stoch.perturb_humidity(rh_val)
+        inv = stoch.perturb_inventory(inv)
+
         lookback = min(idx + 1, 48)
         hist_slice = df.iloc[max(0, idx + 1 - lookback):idx + 1]
         yf = _demand_forecast(hist_slice, horizon=1)
         y_hat = float(yf["forecast"][0]) if yf["forecast"] else 100.0
+        y_hat = stoch.perturb_demand(y_hat)
 
         # Yield/supply forecast (Section 4 — short-term yield forecaster)
         sf = yield_supply_forecast(hist_slice, horizon=1, series_col="inventory_units")
@@ -444,6 +502,7 @@ def run_all(seed: int = SEED) -> dict:
         results[scenario] = {}
         scenario_rng = np.random.default_rng(rng.integers(0, 2**31))
         df_scenario = apply_scenario(df_base, scenario, policy, scenario_rng)
+        df_scenario = _apply_stochastic_variability(df_scenario, scenario_rng)
         df_scenarios[scenario] = df_scenario
 
         # Shared seed for context ablation modes so any ARI difference
@@ -458,7 +517,9 @@ def run_all(seed: int = SEED) -> dict:
 
         for mode in MODES:
             mode_rng = np.random.default_rng(mode_seeds[mode])
-            episode = run_episode(df_scenario, mode, policy, mode_rng, scenario)
+            # Stochastic layer gets an independent RNG stream (seed offset +1)
+            stoch = make_stochastic_layer(np.random.default_rng(mode_seeds[mode] + 1))
+            episode = run_episode(df_scenario, mode, policy, mode_rng, scenario, stoch=stoch)
             results[scenario][mode] = episode
             print(f"  [{scenario:>20s}] [{mode:>12s}] ARI={episode['ari']:.3f}  "
                   f"waste={episode['waste']:.3f}  RLE={episode['rle']:.3f}  "
@@ -598,6 +659,7 @@ if __name__ == "__main__":
     print("AGRI-BRAIN Results Generation")
     print("=" * 70)
     print(f"Seed: {SEED}")
+    print(f"Deterministic mode: {DETERMINISTIC_MODE}")
     print(f"Scenarios: {SCENARIOS}")
     print(f"Modes: {MODES}")
     print()

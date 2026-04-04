@@ -1,15 +1,27 @@
 #!/usr/bin/env python3
-"""Multi-seed benchmark suite with bootstrap confidence intervals."""
+"""Multi-seed benchmark suite with bootstrap confidence intervals.
+
+In stochastic mode (default), different seeds produce genuinely different
+results, yielding meaningful CIs, p-values, and effect sizes.
+In deterministic mode, all seeds produce identical results — statistics
+are degenerate (std=0, p=1).
+"""
 from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
 
+_SIM_DIR = Path(__file__).resolve().parent
+if str(_SIM_DIR) not in sys.path:
+    sys.path.insert(0, str(_SIM_DIR))
+
+from stochastic import DETERMINISTIC_MODE
 from generate_results import run_all, SCENARIOS
 
 
@@ -65,6 +77,12 @@ def _cohens_d(a: List[float], b: List[float]) -> float:
 
 
 def main() -> None:
+    mode_label = "STOCHASTIC" if not DETERMINISTIC_MODE else "DETERMINISTIC"
+    print(f"Benchmark suite — mode: {mode_label}")
+    if DETERMINISTIC_MODE:
+        print("  WARNING: deterministic mode — all seeds produce identical results.")
+        print("  Set DETERMINISTIC_MODE=false for meaningful statistics.")
+
     seeds_env = os.environ.get("BENCHMARK_SEEDS", "").strip()
     if seeds_env:
         seeds = [int(s.strip()) for s in seeds_env.split(",") if s.strip()]

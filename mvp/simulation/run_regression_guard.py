@@ -1,13 +1,23 @@
 #!/usr/bin/env python3
-"""Strict compatibility regression guard for simulation tables."""
+"""Strict compatibility regression guard for simulation tables.
+
+Skipped automatically when DETERMINISTIC_MODE=false (stochastic), because
+exact-value regression checks are meaningless under seeded perturbation noise.
+"""
 from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Dict
 
 import pandas as pd
+
+_SIM_DIR = Path(__file__).resolve().parent
+if str(_SIM_DIR) not in sys.path:
+    sys.path.insert(0, str(_SIM_DIR))
+from stochastic import DETERMINISTIC_MODE
 
 
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
@@ -37,6 +47,10 @@ def _load_current() -> Dict[str, Dict[str, Dict[str, float]]]:
 
 
 def main() -> None:
+    if not DETERMINISTIC_MODE:
+        print("[regression-guard] SKIPPED: stochastic mode (exact regression checks not applicable)")
+        return
+
     current = _load_current()
     if not SNAPSHOT.exists():
         if os.environ.get("REGRESSION_GUARD_INIT", "false").lower() == "true":

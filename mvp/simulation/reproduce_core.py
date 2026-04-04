@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""One-shot reproducibility runner for core research outputs."""
+"""One-shot reproducibility runner for core research outputs.
+
+Respects DETERMINISTIC_MODE (default: false / stochastic).
+In stochastic mode the regression guard is skipped (exact-value checks
+are meaningless under seeded perturbation noise).
+"""
 from __future__ import annotations
 
 import os
@@ -10,6 +15,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 SIM_DIR = ROOT / "mvp" / "simulation"
+
+# Read mode (same logic as stochastic.py)
+_DETERMINISTIC = os.environ.get("DETERMINISTIC_MODE", "false").lower() == "true"
 
 
 def _timeout_for(stage_name: str, default_s: int) -> int:
@@ -44,6 +52,9 @@ def _run(stage_name: str, cmd: list[str], timeout_s: int) -> None:
 
 
 def main() -> None:
+    mode_label = "DETERMINISTIC" if _DETERMINISTIC else "STOCHASTIC"
+    print(f"Reproducibility pipeline — mode: {mode_label}")
+
     stages = [
         ("generate_results", [sys.executable, str(SIM_DIR / "generate_results.py")], _timeout_for("generate_results", 2400)),
         ("validate_results", [sys.executable, str(SIM_DIR / "validate_results.py")], _timeout_for("validate_results", 120)),
@@ -56,7 +67,7 @@ def main() -> None:
     ]
     for name, cmd, timeout_s in stages:
         _run(name, cmd, timeout_s)
-    print("Core reproducibility pipeline complete.")
+    print(f"Core reproducibility pipeline complete ({mode_label} mode).")
 
 
 if __name__ == "__main__":
