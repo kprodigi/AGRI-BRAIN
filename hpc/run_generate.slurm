@@ -1,41 +1,45 @@
 #!/bin/bash
-#SBATCH --job-name=agribrain-generate
+#SBATCH --job-name=agribrain-gen
 #SBATCH --output=agribrain-generate-%j.out
 #SBATCH --error=agribrain-generate-%j.err
-#SBATCH --time=12:00:00
+#SBATCH --time=06:00:00
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=8G
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=16G
 #SBATCH --partition=compute
 
 # ============================================================
 # Stage 1: Generate base results (single seed, stochastic mode)
-# Expected runtime: ~2-4 hours on HPC
+# SDSU Innovator: 48 cores/node, 256 GB RAM
+# Expected runtime: ~1-2 hours
 # ============================================================
 
-echo "Job started: $(date)"
+echo "=== AgriBrain Generate Results ==="
+echo "Job ID: $SLURM_JOB_ID"
 echo "Node: $(hostname)"
+echo "Started: $(date)"
+echo ""
 
 cd $HOME/AgriBrain
 
-# Activate environment
-source .venv/bin/activate 2>/dev/null || module load python/3.11
+# Load Python and activate venv
+module load python 2>/dev/null || true
+source .venv/bin/activate
 
 # Stochastic mode with LSTM demand forecasting
 export DETERMINISTIC_MODE=false
 export FORECAST_METHOD=lstm
 
 cd mvp/simulation
+echo "Running generate_results.py..."
 python generate_results.py
 
 echo ""
-echo "Generate results done: $(date)"
-echo "Running validation..."
-
+echo "Running post-generation stages..."
 python validate_results.py
 python generate_figures.py
 python export_paper_evidence.py
 python build_artifact_manifest.py
 
 echo ""
-echo "Full pipeline complete: $(date)"
+echo "=== Stage 1 complete: $(date) ==="
