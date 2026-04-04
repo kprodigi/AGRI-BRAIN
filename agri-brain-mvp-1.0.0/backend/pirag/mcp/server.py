@@ -190,9 +190,15 @@ def call_tool(
     enforce_api_key(request, x_api_key)
     if req.name not in TOOLS:
         raise HTTPException(404, f"Unknown tool: {req.name}")
+    # Backward-compatible argument aliases
+    _ALIASES = {"calculator": {"expression": "expr"}, "pirag_query": {"q": "query"}}
+    args = dict(req.args)
+    for alt, canonical in _ALIASES.get(req.name, {}).items():
+        if alt in args and canonical not in args:
+            args[canonical] = args.pop(alt)
     try:
         fn = TOOLS[req.name]["fn"]
-        out = fn(**req.args)
+        out = fn(**args)
         return {"ok": True, "result": out}
     except Exception as e:
         raise HTTPException(400, f"Tool error: {e}")

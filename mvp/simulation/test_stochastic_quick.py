@@ -61,7 +61,10 @@ def run_mini(seed, stochastic):
             else:
                 stoch = StochasticLayer(rng=np.random.default_rng(0), enabled=False,
                                        temp_std_c=0.0, rh_std=0.0, demand_frac_std=0.0,
-                                       inventory_frac_std=0.0, delay_prob=0.0)
+                                       inventory_frac_std=0.0, transport_km_frac_std=0.0,
+                                       k_ref_frac_std=0.0, ea_r_frac_std=0.0,
+                                       onset_jitter_hours=0.0, theta_noise_std=0.0,
+                                       delay_prob=0.0)
             ep = run_episode(df_sc, m, policy, mrng, sc, stoch=stoch)
             out[sc][m] = {k: ep[k] for k in METRICS}
             print(f"  [{sc:>15s}] [{m:>12s}] ARI={ep['ari']:.4f} waste={ep['waste']:.4f} "
