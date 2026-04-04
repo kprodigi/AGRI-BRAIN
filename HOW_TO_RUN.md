@@ -270,8 +270,14 @@ curl http://127.0.0.1:8100/audit/memo.pdf -o memo.pdf
 ### Simulation results (via backend)
 
 ```bash
-# Run full simulation (5 scenarios x 8 modes, ~1 min)
+# Start simulation in background (5 scenarios x 8 modes, typically 3-10 min)
 curl -X POST http://127.0.0.1:8100/results/generate
+
+# Poll progress
+curl http://127.0.0.1:8100/results/status
+
+# Fetch summary once complete
+curl http://127.0.0.1:8100/results/summary
 
 # Fetch a generated figure
 curl http://127.0.0.1:8100/results/figures/fig2_heatwave.png -o fig2.png
