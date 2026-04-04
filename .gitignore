@@ -28,7 +28,7 @@ dist/
 pirag_vectors/
 agri-brain-mvp-1.0.0/backend/src/data_spinach_v1.csv
 
-# Simulation results: keep canonical + reproducibility artifacts
+# Simulation results: keep canonical tables + figures, ignore volatile runtime outputs
 mvp/simulation/results/*
 !mvp/simulation/results/table1_summary.csv
 !mvp/simulation/results/table2_ablation.csv
@@ -38,3 +38,5 @@ mvp/simulation/results/*
 !mvp/simulation/results/stress_degradation.csv
 !mvp/simulation/results/feature_heatmap_data.json
 !mvp/simulation/results/artifact_manifest.json
+!mvp/simulation/results/fig*.png
+!mvp/simulation/results/fig*.pdf

@@ -207,6 +207,7 @@ curl http://127.0.0.1:8100/predictions
 
 ```bash
 # Make a decision (regime-aware softmax policy)
+# Required fields: agent_id (str), role (str). Optional: mode, step, deterministic.
 curl -X POST http://127.0.0.1:8100/decide \
   -H "Content-Type: application/json" \
   -d '{"agent_id":"farm","role":"farm"}'
@@ -310,6 +311,7 @@ curl http://127.0.0.1:8100/mcp/prompts
 
 ```bash
 # Query the knowledge base directly
+# Required field: question (str). Optional: k (int), anchor_on_chain (bool).
 curl -X POST http://127.0.0.1:8100/rag/ask \
   -H "Content-Type: application/json" \
   -d '{"question":"FDA cold chain requirements for spinach temperature excursion","k":4}'

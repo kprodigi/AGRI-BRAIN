@@ -19,7 +19,8 @@ def main() -> None:
     seeds = [42, 1337, 2024, 7, 99]
     vals = {s: {"ari": [], "waste": []} for s in SCENARIOS}
 
-    for seed in seeds:
+    for i, seed in enumerate(seeds):
+        print(f"  [{i+1}/{len(seeds)}] Running seed={seed}...", flush=True)
         with redirect_stdout(io.StringIO()):
             out = run_all(seed=seed)
         for s in SCENARIOS:

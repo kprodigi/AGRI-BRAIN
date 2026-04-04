@@ -35,6 +35,8 @@ def _run(stage_name: str, cmd: list[str], timeout_s: int) -> None:
     proc = subprocess.Popen(
         cmd,
         cwd=str(ROOT),
+        stdout=sys.stdout,
+        stderr=sys.stderr,
     )
     try:
         code = proc.wait(timeout=timeout_s)
