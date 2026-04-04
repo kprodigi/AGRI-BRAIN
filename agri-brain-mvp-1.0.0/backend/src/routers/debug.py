@@ -37,6 +37,7 @@ def debug_config(
         "cors_origins": SETTINGS.cors_origins,
         "require_api_key": SETTINGS.require_api_key,
         "allow_local_without_api_key": SETTINGS.allow_local_without_api_key,
+        "enable_debug_routes": SETTINGS.enable_debug_routes,
         "websocket_require_api_key": SETTINGS.websocket_require_api_key,
         "chain_require_privkey": SETTINGS.chain_require_privkey,
     }

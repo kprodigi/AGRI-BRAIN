@@ -115,6 +115,22 @@ API.add_middleware(
 )
 
 
+_AUTH_EXEMPT_PATHS = {"/health", "/docs", "/redoc", "/openapi.json", "/favicon.ico", "/"}
+
+@API.middleware("http")
+async def api_key_middleware(request: Request, call_next):
+    """Enforce API key on all routes when REQUIRE_API_KEY=true."""
+    path = request.url.path.rstrip("/") or "/"
+    if path not in _AUTH_EXEMPT_PATHS and not path.startswith("/static"):
+        from src.security import enforce_api_key
+        try:
+            enforce_api_key(request, request.headers.get("x-api-key"))
+        except Exception as exc:
+            from fastapi.responses import JSONResponse
+            return JSONResponse(status_code=getattr(exc, "status_code", 401),
+                                content={"detail": str(getattr(exc, "detail", "Unauthorized"))})
+    return await call_next(request)
+
 @API.middleware("http")
 async def request_logging_middleware(request: Request, call_next):
     req_id = request.headers.get("x-request-id") or str(uuid.uuid4())
@@ -241,7 +257,6 @@ def health() -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Data endpoints
 # ---------------------------------------------------------------------------
-@API.post("/case/load")
 def case_load():
     """Load data_spinach.csv, compute PINN spoilage and volatility flags."""
     p = state["policy"]
@@ -353,11 +368,11 @@ def predictions():
         "volatility": df["volatility"].tolist(),
         "demand_forecast": demand_fc,
         "yield_forecast": supply_fc,
-        # Legacy fields for backward compatibility
-        "yield_forecast_24h": demand_fc["forecast"],
-        "yield_forecast_ci_lower": demand_fc["ci_lower"],
-        "yield_forecast_ci_upper": demand_fc["ci_upper"],
-        "yield_forecast_std": demand_fc["std"],
+        # Legacy fields — mapped to supply (yield) forecast, not demand
+        "yield_forecast_24h": supply_fc["forecast"],
+        "yield_forecast_ci_lower": supply_fc["ci_lower"],
+        "yield_forecast_ci_upper": supply_fc["ci_upper"],
+        "yield_forecast_std": supply_fc["std"],
     }
 
 # ---------------------------------------------------------------------------
@@ -915,7 +930,7 @@ def report_pdf(role: str = ""):
         story.append(_table(
             ["Parameter", "Value"],
             [
-                ["Temperature", f"{last.get('shelf_left', 0) and kp.get('avg_tempC', 'N/A')} \u00b0C"],
+                ["Temperature", f"{kp.get('avg_tempC', 'N/A')} \u00b0C"],
                 ["Shelf Life Remaining", f"{float(last.get('shelf_left', 0)) * 72:.1f} hours ({float(last.get('shelf_left', 0)):.3f})"],
                 ["Spoilage Risk (\u03c1)", f"{last.get('spoilage_risk', 'N/A')}"],
                 ["Volatility", f"{last.get('volatility', 'N/A')}"],

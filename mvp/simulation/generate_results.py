@@ -220,6 +220,8 @@ def run_episode(
     circular_scores = []
     supply_hats = []
     decision_latency_ms = []
+    observed_temp_trace, observed_rh_trace = [], []
+    observed_demand_trace, observed_inv_trace = [], []
     constraint_violation_steps = 0
     compliance_violation_steps = 0
     temperature_violation_steps = 0
@@ -245,8 +247,10 @@ def run_episode(
             temp = prev_temp
             rh_val = prev_rh
 
-        # Recompute spoilage risk from perturbed temp/RH so derived columns
-        # stay consistent with the perturbed sensor readings.
+        # Recompute spoilage risk from perturbed temp/RH.
+        # Uses instantaneous Arrhenius k-ratio as proxy since the full
+        # spoilage pipeline (compute_spoilage_pinn) requires the entire
+        # DataFrame and produces cumulative values, not per-step updates.
         if stoch.enabled:
             k_perturbed = arrhenius_k(temp, policy.k_ref, policy.Ea_R,
                                       policy.T_ref_K, rh_val / 100.0,
@@ -255,12 +259,16 @@ def run_episode(
 
         # Track perturbed values for next step's potential delay event
         prev_temp, prev_rh = temp, rh_val
+        observed_temp_trace.append(temp)
+        observed_rh_trace.append(rh_val)
+        observed_inv_trace.append(inv)
 
         lookback = min(idx + 1, 48)
         hist_slice = df.iloc[max(0, idx + 1 - lookback):idx + 1]
         yf = _demand_forecast(hist_slice, horizon=1)
         y_hat = float(yf["forecast"][0]) if yf["forecast"] else 100.0
         y_hat = stoch.perturb_demand(y_hat)
+        observed_demand_trace.append(y_hat)
 
         # Yield/supply forecast (Section 4 — short-term yield forecaster)
         sf = yield_supply_forecast(hist_slice, horizon=1, series_col="inventory_units")
@@ -442,9 +450,11 @@ def run_episode(
         "slca_component_trace": slca_component_trace, "slca_trace": slca_vals,
         "decision_latency_ms_trace": decision_latency_ms,
         "equity_trace": equity_trace,
-        "hours": hours.tolist(), "temp_trace": df["tempC"].tolist(),
-        "rh_trace": df["RH"].tolist(), "demand_trace": df["demand_units"].tolist(),
-        "inventory_trace": df["inventory_units"].tolist(),
+        "hours": hours.tolist(),
+        "temp_trace": observed_temp_trace,
+        "rh_trace": observed_rh_trace,
+        "demand_trace": observed_demand_trace,
+        "inventory_trace": observed_inv_trace,
         "active_agent_trace": active_agent_trace,
         "footprint": meter.summary(),
         "agent_summaries": coordinator.agent_summaries(),

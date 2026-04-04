@@ -18,9 +18,17 @@ export const fmtK = (v) => {
 export const last = (arr) => (Array.isArray(arr) && arr.length ? arr[arr.length - 1] : null);
 export const short = (s) => (s && s.length > 12 ? `${s.slice(0, 8)}\u2026${s.slice(-4)}` : s || "");
 
+// Shared API key helper — reads from localStorage once per call
+function _apiHeaders(extra = {}) {
+  const h = { "Content-Type": "application/json", ...extra };
+  const key = localStorage.getItem("API_KEY");
+  if (key) h["x-api-key"] = key;
+  return h;
+}
+
 // API fetch helper
 export async function jget(apiBase, path) {
-  const r = await fetch(`${apiBase}${path}`);
+  const r = await fetch(`${apiBase}${path}`, { headers: _apiHeaders() });
   if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
   return r.json();
 }
@@ -28,7 +36,7 @@ export async function jget(apiBase, path) {
 export async function jpost(apiBase, path, body = {}) {
   const r = await fetch(`${apiBase}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: _apiHeaders(),
     body: JSON.stringify(body),
   });
   if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
@@ -43,7 +51,7 @@ export async function mcpRaw(apiBase, method, params = {}) {
   const req = { jsonrpc: "2.0", id: Date.now(), method, params };
   const r = await fetch(`${apiBase}/mcp/mcp`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: _apiHeaders(),
     body: JSON.stringify(req),
   });
   if (!r.ok) throw new Error(`MCP ${r.status} ${r.statusText}`);

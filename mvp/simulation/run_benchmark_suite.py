@@ -96,6 +96,8 @@ def main() -> None:
         if not t2_path.exists():
             raise FileNotFoundError(f"Missing {t2_path}; run generate_results.py first.")
         t2 = pd.read_csv(t2_path)
+        print("  WARNING: BENCHMARK_USE_TABLES=true loads single-run data from CSV.")
+        print("  CIs and p-values will be degenerate (n=1). Use multi-seed runs for meaningful statistics.")
         for scenario in SCENARIOS:
             collected.setdefault(scenario, {})
             for mode in ("agribrain", "mcp_only", "pirag_only", "no_context"):

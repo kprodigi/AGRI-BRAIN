@@ -8,7 +8,12 @@ router = APIRouter()
 
 def _coerce(payload: Dict[str, Any] | None) -> DecideRequest:
     d = dict(payload or {})
-    return DecideRequest(agent=str(d.get("agent") or "farm"))
+    return DecideRequest(
+        agent=str(d.get("agent") or d.get("agent_id") or "farm"),
+        role=str(d.get("role") or ""),
+        mode=d.get("mode", "agribrain"),
+        deterministic=d.get("deterministic", True),
+    )
 
 async def _payload(req: Request) -> Dict[str, Any]:
     data: Dict[str, Any] = {}

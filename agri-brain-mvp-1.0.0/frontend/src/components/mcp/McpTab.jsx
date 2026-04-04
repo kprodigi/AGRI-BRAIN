@@ -105,7 +105,9 @@ function ResourceMonitor() {
 
   const loadResources = useCallback(async () => {
     try {
-      const res = await fetch(`${API}/mcp/resources`);
+      const key = localStorage.getItem("API_KEY");
+      const headers = key ? { "x-api-key": key } : {};
+      const res = await fetch(`${API}/mcp/resources`, { headers });
       const data = await res.json();
       setResources(data.resources || []);
     } catch { /* ignore */ }
@@ -180,7 +182,9 @@ function PromptBrowser() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`${API}/mcp/prompts`);
+        const key = localStorage.getItem("API_KEY");
+        const headers = key ? { "x-api-key": key } : {};
+        const res = await fetch(`${API}/mcp/prompts`, { headers });
         const data = await res.json();
         setPrompts(data.prompts || []);
       } catch { /* ignore */ }

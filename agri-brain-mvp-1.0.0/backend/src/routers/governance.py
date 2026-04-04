@@ -167,10 +167,11 @@ def get_chain():
 
     addrs = CHAIN.get("addresses") or {}
     addresses_json = json.dumps(addrs, indent=2, ensure_ascii=False)
+    pk = CHAIN.get("private_key") or ""
     return {
         "rpc": CHAIN.get("rpc"),
         "chain_id": CHAIN.get("chain_id"),
-        "private_key": CHAIN.get("private_key") or "",
+        "private_key_set": bool(pk),
         "auto": CHAIN.get("auto", True),
         "addresses": addrs,
         "addresses_json": addresses_json,

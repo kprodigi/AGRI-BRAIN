@@ -27,7 +27,6 @@ class StochasticLayer:
     rh_std: float
     demand_frac_std: float
     inventory_frac_std: float
-    latency_max_ms: float
     delay_prob: float
 
     def perturb_temperature(self, temp_c: float) -> float:
@@ -66,7 +65,6 @@ _DISABLED = StochasticLayer(
     rh_std=0.0,
     demand_frac_std=0.0,
     inventory_frac_std=0.0,
-    latency_max_ms=0.0,
     delay_prob=0.0,
 )
 
@@ -81,6 +79,5 @@ def make_stochastic_layer(rng: np.random.Generator) -> StochasticLayer:
         rh_std=float(os.environ.get("STOCH_RH_STD", "1.5")),
         demand_frac_std=float(os.environ.get("STOCH_DEMAND_FRAC_STD", "0.04")),
         inventory_frac_std=float(os.environ.get("STOCH_INVENTORY_FRAC_STD", "0.03")),
-        latency_max_ms=float(os.environ.get("STOCH_LATENCY_MAX_MS", "15.0")),
         delay_prob=float(os.environ.get("STOCH_DELAY_PROB", "0.02")),
     )
