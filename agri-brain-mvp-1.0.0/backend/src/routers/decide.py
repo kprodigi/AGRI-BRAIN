@@ -67,7 +67,7 @@ class DecideRequest(BaseModel):
     role: str = ""
     step: int | None = None
     deterministic: bool = True
-    mode: Literal["static", "hybrid_rl", "no_pinn", "no_slca", "agribrain"] = "agribrain"
+    mode: Literal["static", "hybrid_rl", "no_pinn", "no_slca", "agribrain", "no_context", "mcp_only", "pirag_only"] = "agribrain"
 
     # Optional knobs used by the QuickDecision panel
     inventory_units: float | None = None

@@ -159,7 +159,9 @@ export const Decide = {
                     ...init,
                 });
                 if (res.ok) {
-                    const data = await res.json();
+                    const raw = await res.json();
+                    // Unwrap { ok, memo } response shape from canonical endpoint
+                    const data = raw.memo ?? raw;
                     // normalize a minimal memo shape so UI always has fields
                     return {
                         agent: data.agent ?? payload.agent ?? 'farm',

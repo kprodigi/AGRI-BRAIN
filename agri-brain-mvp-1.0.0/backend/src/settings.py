@@ -44,7 +44,7 @@ def load_settings() -> RuntimeSettings:
         cors_origins=_csv("CORS_ORIGINS", default_cors),
         require_api_key=_bool("REQUIRE_API_KEY", env != "dev"),
         api_key=os.getenv("APP_API_KEY", ""),
-        allow_local_without_api_key=_bool("ALLOW_LOCAL_WITHOUT_API_KEY", True),
+        allow_local_without_api_key=_bool("ALLOW_LOCAL_WITHOUT_API_KEY", env == "dev"),
         enable_debug_routes=_bool("ENABLE_DEBUG_ROUTES", env == "dev"),
         websocket_require_api_key=_bool("WS_REQUIRE_API_KEY", env != "dev"),
         websocket_api_key=os.getenv("WS_API_KEY", os.getenv("APP_API_KEY", "")),

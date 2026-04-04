@@ -326,6 +326,12 @@ def select_action(
     # Cyber outage: processor offline from hour 24 (applies to all non-static modes)
     if scenario == "cyber_outage" and hour >= 24.0:
         p_success = CYBER_REROUTE_PROB.get(mode, 0.50)
+        if deterministic:
+            # Deterministic: use threshold comparison, no RNG
+            if p_success >= 0.5:
+                return 1, np.array([0.0, 1.0, 0.0])
+            else:
+                return 0, np.array([1.0, 0.0, 0.0])
         if rng.random() < p_success:
             return 1, np.array([0.0, 1.0, 0.0])
         else:

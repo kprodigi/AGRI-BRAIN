@@ -156,10 +156,11 @@ python generate_figures.py    # publication figures (Fig. 2-10, PNG + PDF)
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `APP_ENV` | `dev` | Runtime mode (`dev`/`prod`) |
-| `REQUIRE_API_KEY` | `false` in dev | Require `x-api-key` for MCP/RAG ingest/debug routes |
-| `APP_API_KEY` | (empty) | API key used when `REQUIRE_API_KEY=true` |
+| `REQUIRE_API_KEY` | `false` in dev | Require `x-api-key` header on all routes (except `/health`, `/docs`, `/static`) |
+| `APP_API_KEY` | (empty) | API key value when `REQUIRE_API_KEY=true` |
+| `ALLOW_LOCAL_WITHOUT_API_KEY` | `true` in dev only | Skip key check for loopback requests (disabled behind reverse proxies via X-Forwarded-For) |
 | `ENABLE_DEBUG_ROUTES` | `true` in dev | Enables `/debug/routes` and `/debug/config` |
-| `WS_REQUIRE_API_KEY` | `false` in dev | Require websocket auth via `x-api-key` or `api_key` query |
+| `WS_REQUIRE_API_KEY` | `false` in dev | Require websocket auth via `x-api-key` header or `api_key` query param |
 | `CORS_ORIGINS` | `*` in dev | Comma-separated allowed origins |
 
 ## Backend API

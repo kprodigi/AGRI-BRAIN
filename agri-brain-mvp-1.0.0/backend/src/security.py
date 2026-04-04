@@ -13,9 +13,13 @@ def _is_local_host(host: str) -> bool:
 def enforce_api_key(request: Request, x_api_key: str | None) -> None:
     if not SETTINGS.require_api_key:
         return
-    host = request.client.host if request.client else ""
-    if SETTINGS.allow_local_without_api_key and _is_local_host(host):
-        return
+    # Check X-Forwarded-For first; if present, the real client is remote
+    # and loopback bypass should not apply (reverse-proxy scenario).
+    forwarded = request.headers.get("x-forwarded-for")
+    if not forwarded:
+        host = request.client.host if request.client else ""
+        if SETTINGS.allow_local_without_api_key and _is_local_host(host):
+            return
     if not SETTINGS.api_key:
         raise HTTPException(status_code=503, detail="Server API key not configured")
     if x_api_key != SETTINGS.api_key:

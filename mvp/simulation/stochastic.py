@@ -16,6 +16,8 @@ def _is_deterministic() -> bool:
     """Read DETERMINISTIC_MODE at call time, not import time."""
     return os.environ.get("DETERMINISTIC_MODE", "false").lower() == "true"
 
+# Deprecated: prefer _is_deterministic() for call-time evaluation.
+# Kept for backward compatibility with existing imports.
 DETERMINISTIC_MODE: bool = _is_deterministic()
 
 

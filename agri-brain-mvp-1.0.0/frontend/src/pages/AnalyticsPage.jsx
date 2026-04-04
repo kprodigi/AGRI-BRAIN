@@ -284,8 +284,8 @@ export default function AnalyticsPage() {
       toast.success("Simulation complete: 40 conditions evaluated (5 scenarios x 8 modes)");
       // Reload data
       const [t1Text, t2Text] = await Promise.all([
-        fetch(`${API}/results/figures/table1_summary.csv`).then((r) => r.text()),
-        fetch(`${API}/results/figures/table2_ablation.csv`).then((r) => r.text()),
+        authFetch(`${API}/results/figures/table1_summary.csv`).then((r) => r.text()),
+        authFetch(`${API}/results/figures/table2_ablation.csv`).then((r) => r.text()),
       ]);
       setTable1(parseCSV(t1Text));
       setTable2(parseCSV(t2Text));
