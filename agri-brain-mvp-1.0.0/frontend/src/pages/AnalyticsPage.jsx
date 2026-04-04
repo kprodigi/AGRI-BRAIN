@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { cn, fmt, jget, jpost } from "@/lib/utils";
+import { cn, fmt, jget, jpost, authFetch } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
 import { motion, useInView } from "framer-motion";
 import { toast } from "sonner";
@@ -198,8 +198,8 @@ export default function AnalyticsPage() {
     const loadData = async () => {
       try {
         const [t1Text, t2Text] = await Promise.all([
-          fetch(`${API}/results/figures/table1_summary.csv`).then((r) => r.text()),
-          fetch(`${API}/results/figures/table2_ablation.csv`).then((r) => r.text()),
+          authFetch(`${API}/results/figures/table1_summary.csv`).then((r) => r.text()),
+          authFetch(`${API}/results/figures/table2_ablation.csv`).then((r) => r.text()),
         ]);
         setTable1(parseCSV(t1Text));
         setTable2(parseCSV(t2Text));

@@ -126,44 +126,59 @@ def main() -> None:
                     rec["rle"].append(float(ep["rle"]))
                     rec["slca"].append(float(ep["slca"]))
 
+    # Check if we have enough samples for meaningful inference
+    sample_counts = [len(v) for modes in collected.values() for m in modes.values() for v in m.values()]
+    min_samples = min(sample_counts) if sample_counts else 0
+    degenerate = min_samples < 2
+
     summary: Dict[str, Dict[str, Dict[str, Dict[str, float]]]] = {}
     for scenario, modes in collected.items():
         summary[scenario] = {}
         for mode, metrics in modes.items():
             summary[scenario][mode] = {}
             for metric, vals in metrics.items():
-                lo, hi = _bootstrap_ci(vals)
-                summary[scenario][mode][metric] = {
+                entry: Dict[str, Any] = {
                     "mean": float(np.mean(vals)),
                     "std": float(np.std(vals)),
-                    "ci_low": lo,
-                    "ci_high": hi,
+                    "n": len(vals),
                 }
+                if not degenerate:
+                    lo, hi = _bootstrap_ci(vals)
+                    entry["ci_low"] = lo
+                    entry["ci_high"] = hi
+                else:
+                    entry["ci_low"] = None
+                    entry["ci_high"] = None
+                    entry["degenerate"] = True
+                summary[scenario][mode][metric] = entry
 
-    significance: Dict[str, Dict[str, Dict[str, float]]] = {}
-    for scenario, modes in collected.items():
-        significance[scenario] = {}
-        agri = modes.get("agribrain", {})
-        for baseline in ("mcp_only", "pirag_only", "no_context"):
-            base = modes.get(baseline, {})
-            if not agri or not base:
-                continue
-            comp_key = f"agribrain_vs_{baseline}"
-            significance[scenario][comp_key] = {}
-            for metric in ("ari", "waste", "rle", "slca"):
-                a_vals = agri.get(metric, [])
-                b_vals = base.get(metric, [])
-                significance[scenario][comp_key][metric] = {
-                    "p_value": _mean_diff_pvalue(a_vals, b_vals),
-                    "cohens_d": _cohens_d(a_vals, b_vals),
-                    "mean_diff": float(np.mean(a_vals) - np.mean(b_vals)) if a_vals and b_vals else 0.0,
-                }
+    significance: Dict[str, Dict[str, Dict[str, Any]]] = {}
+    if degenerate:
+        print("  Skipping significance tests: degenerate sample size (n < 2)")
+    else:
+        for scenario, modes in collected.items():
+            significance[scenario] = {}
+            agri = modes.get("agribrain", {})
+            for baseline in ("mcp_only", "pirag_only", "no_context"):
+                base = modes.get(baseline, {})
+                if not agri or not base:
+                    continue
+                comp_key = f"agribrain_vs_{baseline}"
+                significance[scenario][comp_key] = {}
+                for metric in ("ari", "waste", "rle", "slca"):
+                    a_vals = agri.get(metric, [])
+                    b_vals = base.get(metric, [])
+                    significance[scenario][comp_key][metric] = {
+                        "p_value": _mean_diff_pvalue(a_vals, b_vals),
+                        "cohens_d": _cohens_d(a_vals, b_vals),
+                        "mean_diff": float(np.mean(a_vals) - np.mean(b_vals)) if a_vals and b_vals else 0.0,
+                    }
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     # Use distinct filenames so this context-ablation benchmark doesn't
     # clobber the full 8-mode output from aggregate_seeds.py.
-    out = RESULTS_DIR / "benchmark_summary.json"
-    sig_out = RESULTS_DIR / "benchmark_significance.json"
+    out = RESULTS_DIR / "benchmark_context_summary.json"
+    sig_out = RESULTS_DIR / "benchmark_context_significance.json"
     payload = {
         "_meta": {
             "source": "run_benchmark_suite.py",

@@ -27,7 +27,9 @@ const API = getApiBase();
 
 // ---------------- helpers ----------------
 async function jget(path) {
-    const r = await fetch(`${API}${path}`);
+    const key = localStorage.getItem("API_KEY");
+    const headers = key ? { "x-api-key": key } : {};
+    const r = await fetch(`${API}${path}`, { headers });
     if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
     return r.json();
 }

@@ -8,12 +8,18 @@ router = APIRouter()
 
 def _coerce(payload: Dict[str, Any] | None) -> DecideRequest:
     d = dict(payload or {})
-    return DecideRequest(
-        agent=str(d.get("agent") or d.get("agent_id") or "farm"),
-        role=str(d.get("role") or ""),
-        mode=d.get("mode", "agribrain"),
-        deterministic=d.get("deterministic", True),
-    )
+    kwargs: Dict[str, Any] = {
+        "agent": str(d.get("agent") or d.get("agent_id") or "farm"),
+        "role": str(d.get("role") or ""),
+        "mode": d.get("mode", "agribrain"),
+        "deterministic": d.get("deterministic", True),
+    }
+    if d.get("step") is not None:
+        kwargs["step"] = int(d["step"])
+    for fld in ("inventory_units", "demand_units", "temp_c", "volatility"):
+        if d.get(fld) is not None:
+            kwargs[fld] = float(d[fld])
+    return DecideRequest(**kwargs)
 
 async def _payload(req: Request) -> Dict[str, Any]:
     data: Dict[str, Any] = {}

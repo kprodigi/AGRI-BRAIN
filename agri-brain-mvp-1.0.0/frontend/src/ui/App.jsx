@@ -15,7 +15,9 @@ export default function App() {
 
     // keep your original warm-up call
     useEffect(() => {
-        fetch(`${API}/case/load`, { method: 'POST' }).catch(() => { })
+        const key = localStorage.getItem("API_KEY");
+        const headers = key ? { "x-api-key": key } : {};
+        fetch(`${API}/case/load`, { method: 'POST', headers }).catch(() => { })
     }, [])
 
     return (

@@ -228,6 +228,20 @@ def _get_contract(chain_cfg: dict, name: str):
     return w3, acct, contract
 
 
+def _get_contract_readonly(chain_cfg: dict, name: str):
+    """Return (w3, contract) for read-only calls — no private key needed."""
+    if not chain_cfg or not chain_cfg.get("rpc"):
+        return None
+    addrs = chain_cfg.get("addresses") or {}
+    addr = addrs.get(name)
+    if not addr:
+        return None
+    abi, _ = _CONTRACTS[name]
+    w3 = Web3(Web3.HTTPProvider(chain_cfg["rpc"]))
+    contract = w3.eth.contract(address=_checksum(addr), abi=abi)
+    return w3, contract
+
+
 def _send_tx(w3, acct, tx_fn, chain_cfg: dict) -> Optional[str]:
     """Build, sign, and send a transaction. Returns tx hash hex or None."""
     tx = tx_fn.build_transaction({
@@ -317,11 +331,14 @@ def policy_store_set(key_name: str, value: int, chain_cfg: dict) -> Optional[str
 
 
 def policy_store_get(key_name: str, chain_cfg: dict) -> Optional[int]:
-    """Read a policy parameter from on-chain storage. Returns value or None."""
-    result = _get_contract(chain_cfg, "PolicyStore")
+    """Read a policy parameter from on-chain storage. Returns value or None.
+
+    Uses read-only contract access — no private key required.
+    """
+    result = _get_contract_readonly(chain_cfg, "PolicyStore")
     if result is None:
         return None
-    _, _, contract = result
+    _, contract = result
     key = _policy_key(key_name)
     return contract.functions.getPolicy(key).call()
 
