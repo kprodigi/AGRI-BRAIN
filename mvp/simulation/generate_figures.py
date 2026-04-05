@@ -882,29 +882,88 @@ def fig9_mcp_pirag_robustness():
 
 
 def fig10_latency_quality_frontier(data):
-    """Latency-quality-feasibility frontier for operational trade-off reporting."""
-    fig, ax = plt.subplots(1, 1, figsize=(7.5, 5.5))
-    fig.suptitle("Operational Frontier: Quality vs Latency", fontsize=14, fontweight="bold")
+    """Latency-quality frontier with two zones and smart label placement."""
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5.5), gridspec_kw={"width_ratios": [1, 1]})
+    fig.suptitle("Operational Frontier: Quality vs Latency",
+                 fontsize=14, fontweight="bold")
 
-    modes = ["static", "hybrid_rl", "no_pinn", "no_slca", "agribrain", "no_context", "mcp_only", "pirag_only"]
-    xs, ys = [], []
-    for mode in modes:
-        ari_vals = [data["results"][s][mode]["ari"] for s in SCENARIOS]
-        lat_vals = [data["results"][s][mode].get("mean_decision_latency_ms", 0.0) for s in SCENARIOS]
-        x = float(np.mean(lat_vals))
-        y = float(np.mean(ari_vals))
-        xs.append(x)
-        ys.append(y)
-        ax.scatter(
-            x, y, s=90, color=COLORS[mode], marker=MARKERS[mode],
-            edgecolor="black", linewidth=0.4, alpha=0.9,
-        )
-        ax.text(x + 0.02, y + 0.001, MODE_LABELS[mode], fontsize=9)
+    # Split modes into two groups for clarity
+    fast_modes = ["static", "hybrid_rl", "no_pinn", "no_slca", "no_context"]
+    context_modes = ["agribrain", "mcp_only", "pirag_only"]
 
+    def _collect(modes):
+        pts = []
+        for mode in modes:
+            ari_vals = [data["results"][s][mode]["ari"] for s in SCENARIOS]
+            lat_vals = [data["results"][s][mode].get("mean_decision_latency_ms", 0.0) for s in SCENARIOS]
+            pts.append((mode, float(np.mean(lat_vals)), float(np.mean(ari_vals))))
+        return pts
+
+    fast_pts = _collect(fast_modes)
+    ctx_pts = _collect(context_modes)
+
+    # --- (a) Fast modes (sub-millisecond) ---
+    ax = axes[0]
+    for mode, x, y in fast_pts:
+        ax.scatter(x, y, s=180, color=COLORS[mode], marker=MARKERS[mode],
+                   edgecolor="black", linewidth=0.6, alpha=0.9, zorder=5)
+    # Smart label placement: sort by ARI and stagger
+    fast_sorted = sorted(fast_pts, key=lambda p: p[2])
+    for i, (mode, x, y) in enumerate(fast_sorted):
+        offset_x = 0.015
+        offset_y = 0.008 if i % 2 == 0 else -0.012
+        ax.annotate(MODE_LABELS[mode], (x, y), xytext=(x + offset_x, y + offset_y),
+                    fontsize=11, fontweight="bold",
+                    arrowprops=dict(arrowstyle="-", color="gray", lw=0.5),
+                    bbox=dict(boxstyle="round,pad=0.2", facecolor="white",
+                              alpha=0.8, edgecolor="none"))
     ax.set_xlabel("Mean decision latency (ms)")
     ax.set_ylabel("Mean ARI")
-    ax.set_title("Higher is better ARI, lower is better latency")
+    ax.set_title("(a) Lightweight Methods (<1 ms)")
+    ax.set_xlim(-0.02, max(p[1] for p in fast_pts) * 2.5)
     _apply_style(ax)
+
+    # --- (b) Context-aware modes (MCP/piRAG overhead) ---
+    ax = axes[1]
+    # Also show no_context as reference
+    ref = [p for p in fast_pts if p[0] == "no_context"][0]
+    ax.scatter(ref[1], ref[2], s=140, color=COLORS["no_context"], marker=MARKERS["no_context"],
+               edgecolor="black", linewidth=0.6, alpha=0.6, zorder=4)
+    ax.annotate("No Context\n(reference)", (ref[1], ref[2]),
+                xytext=(ref[1] + 0.5, ref[2] - 0.015),
+                fontsize=10, fontstyle="italic", color="gray",
+                arrowprops=dict(arrowstyle="->", color="gray", lw=0.8))
+
+    for mode, x, y in ctx_pts:
+        ax.scatter(x, y, s=220, color=COLORS[mode], marker=MARKERS[mode],
+                   edgecolor="black", linewidth=0.8, alpha=0.9, zorder=5)
+    # Labels with offsets to avoid overlap
+    label_offsets = {"agribrain": (0.15, 0.008), "mcp_only": (0.15, -0.015), "pirag_only": (-1.5, 0.010)}
+    for mode, x, y in ctx_pts:
+        dx, dy = label_offsets.get(mode, (0.15, 0))
+        ax.annotate(MODE_LABELS[mode], (x, y), xytext=(x + dx, y + dy),
+                    fontsize=11, fontweight="bold",
+                    arrowprops=dict(arrowstyle="-", color="gray", lw=0.5),
+                    bbox=dict(boxstyle="round,pad=0.2", facecolor="white",
+                              alpha=0.8, edgecolor="none"))
+    # Draw arrow showing "context overhead"
+    ctx_mean_lat = np.mean([p[1] for p in ctx_pts])
+    ctx_mean_ari = np.mean([p[2] for p in ctx_pts])
+    ax.annotate("", xy=(ctx_mean_lat, ctx_mean_ari),
+                xytext=(ref[1], ref[2]),
+                arrowprops=dict(arrowstyle="->", color="#009688", lw=2.0,
+                                linestyle="--", alpha=0.5))
+    mid_x = (ref[1] + ctx_mean_lat) / 2
+    mid_y = (ref[2] + ctx_mean_ari) / 2
+    ax.text(mid_x, mid_y + 0.012, f"+{ctx_mean_lat - ref[1]:.1f} ms\n+{(ctx_mean_ari - ref[2]):.3f} ARI",
+            fontsize=9, ha="center", color="#009688", fontstyle="italic",
+            bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.9, edgecolor="#009688"))
+    ax.set_xlabel("Mean decision latency (ms)")
+    ax.set_ylabel("Mean ARI")
+    ax.set_title("(b) Context-Aware Methods (MCP/piRAG overhead)")
+    _apply_style(ax)
+
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
     _save(fig, "fig10_latency_quality_frontier")
 
 
