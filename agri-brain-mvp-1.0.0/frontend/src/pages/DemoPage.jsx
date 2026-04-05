@@ -563,24 +563,6 @@ export default function DemoPage() {
         </p>
       </motion.div>
 
-      {/* Video Player */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Play className="w-4 h-4 text-teal-600" /> Recorded Walkthrough
-            </CardTitle>
-            <CardDescription>Pre-recorded video explaining the complete AGRI-BRAIN system</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <video controls className="w-full rounded-lg border shadow-sm" preload="metadata">
-              <source src={`${API}/static/video/agri-brain-agent-theater.mp4`} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-          </CardContent>
-        </Card>
-      </motion.div>
-
       <Separator />
 
       {/* Tabs: Pipeline + Agent Theater */}

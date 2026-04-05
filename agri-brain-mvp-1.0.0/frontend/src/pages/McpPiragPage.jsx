@@ -43,14 +43,26 @@ const LOGIT_ENTRIES = [
   { key: "recovery", label: "Recovery", color: "#D55E00" },
 ];
 
-// Ablation data from committed table2_ablation.csv (cross-scenario averages)
-const ABLATION_DATA = [
-  { scenario: "Heatwave", no_context: 0.591, mcp_only: 0.598, pirag_only: 0.609, agribrain: 0.614 },
-  { scenario: "Overproduction", no_context: 0.596, mcp_only: 0.614, pirag_only: 0.617, agribrain: 0.628 },
-  { scenario: "Cyber Outage", no_context: 0.640, mcp_only: 0.641, pirag_only: 0.646, agribrain: 0.648 },
-  { scenario: "Pricing", no_context: 0.709, mcp_only: 0.731, pirag_only: 0.732, agribrain: 0.742 },
-  { scenario: "Baseline", no_context: 0.732, mcp_only: 0.737, pirag_only: 0.756, agribrain: 0.760 },
-];
+// Ablation data — loaded dynamically from table2_ablation.csv via API
+const ABLATION_DATA_FALLBACK = [];
+
+function parseAblationCSV(text) {
+  const lines = text.trim().split("\n");
+  const headers = lines[0].split(",").map((h) => h.trim());
+  const rows = lines.slice(1).map((line) => {
+    const vals = line.split(",").map((v) => v.trim());
+    const obj = {};
+    headers.forEach((h, i) => { const n = +vals[i]; obj[h] = Number.isFinite(n) && vals[i] !== "" ? n : vals[i]; });
+    return obj;
+  });
+  const scenarioNames = { heatwave: "Heatwave", overproduction: "Overproduction", cyber_outage: "Cyber Outage", adaptive_pricing: "Pricing", baseline: "Baseline" };
+  const scenarios = [...new Set(rows.map((r) => r.Scenario))];
+  return scenarios.map((sc) => {
+    const scRows = rows.filter((r) => r.Scenario === sc);
+    const get = (v) => scRows.find((r) => r.Variant === v)?.ARI ?? 0;
+    return { scenario: scenarioNames[sc] || sc, no_context: get("no_context"), mcp_only: get("mcp_only"), pirag_only: get("pirag_only"), agribrain: get("agribrain") };
+  });
+}
 
 const KB_DOCUMENTS = [
   { id: "regulatory_fda_leafy_greens", category: "Regulatory", title: "FDA Guidelines for Leafy Greens Storage" },
@@ -100,12 +112,13 @@ const TOOL_PRESETS = {
 };
 
 // ===================== Tab 1: Overview =====================
-function OverviewTab({ tools }) {
+function OverviewTab({ tools, ablationData = [] }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true });
 
-  const avgNoCtx = ABLATION_DATA.reduce((s, d) => s + d.no_context, 0) / ABLATION_DATA.length;
-  const avgFull = ABLATION_DATA.reduce((s, d) => s + d.agribrain, 0) / ABLATION_DATA.length;
+  const data = ablationData.length ? ablationData : ABLATION_DATA_FALLBACK;
+  const avgNoCtx = data.length ? data.reduce((s, d) => s + d.no_context, 0) / data.length : 0;
+  const avgFull = data.length ? data.reduce((s, d) => s + d.agribrain, 0) / data.length : 0;
   const improvement = ((avgFull - avgNoCtx) / avgNoCtx * 100).toFixed(1);
 
   const metrics = [
@@ -177,7 +190,7 @@ function OverviewTab({ tools }) {
           <CardContent>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={ABLATION_DATA} barGap={2}>
+                <BarChart data={data} barGap={2}>
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                   <XAxis dataKey="scenario" tick={{ fontSize: 11 }} />
                   <YAxis domain={[0.5, 0.8]} tick={{ fontSize: 11 }} />
@@ -932,6 +945,7 @@ export default function McpPiragPage() {
   const [loading, setLoading] = useState(true);
   const [decisions, setDecisions] = useState([]);
   const [tools, setTools] = useState([]);
+  const [ablationData, setAblationData] = useState(ABLATION_DATA_FALLBACK);
   const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
@@ -942,6 +956,11 @@ export default function McpPiragPage() {
       ]);
       setDecisions(decData.decisions || decData || []);
       setTools(toolsData.tools || []);
+      // Fetch live ablation data from CSV
+      try {
+        const resp = await fetch(`${API}/results/figures/table2_ablation.csv`);
+        if (resp.ok) setAblationData(parseAblationCSV(await resp.text()));
+      } catch (e) { console.warn("Could not load ablation CSV:", e); }
       setLoading(false);
     };
     load();
@@ -985,7 +1004,7 @@ export default function McpPiragPage() {
         </TabsList>
 
         <div className="mt-6">
-          <TabsContent value="overview"><OverviewTab tools={tools} /></TabsContent>
+          <TabsContent value="overview"><OverviewTab tools={tools} ablationData={ablationData} /></TabsContent>
           <TabsContent value="features"><ContextFeaturesTab latestExplainability={latestExplainability} /></TabsContent>
           <TabsContent value="knowledge"><KnowledgeBaseTab /></TabsContent>
           <TabsContent value="protocol"><ProtocolTab tools={tools} decisions={decisions} /></TabsContent>

@@ -148,16 +148,16 @@ function ChartTooltip({ active, payload, label }) {
 const SCENARIOS = [
   { id: "heatwave", name: "Heatwave", figure: "fig2_heatwave.png", icon: Flame, color: "#D55E00",
     findings: [
-      "ARI improved 73.7% over static logistics",
-      "94.9% of at-risk batches proactively rerouted",
-      "Policy shifted to 90% local redistribution during peak stress",
-      "Carbon reduced 52.5% through shorter community routes",
+      "AGRI-BRAIN maintained highest ARI under extreme thermal stress",
+      "PINN-enhanced spoilage model anticipated quality degradation",
+      "Policy shifted to local redistribution during peak stress",
+      "Carbon emissions reduced through shorter community routes",
     ],
   },
   { id: "overproduction", name: "Overproduction", figure: "fig3_overproduction.png", icon: Layers, color: "#E67E22",
     findings: [
-      "Waste reduced from 12.8% to 3.1% via recovery routing",
-      "Reverse logistics captured 78% of surplus produce",
+      "Waste reduced via proactive recovery routing of surplus",
+      "Reverse logistics captured majority of surplus produce",
       "Cooperative equity scores maintained above 0.85",
       "Composting/bioenergy channels activated autonomously",
     ],
@@ -165,17 +165,17 @@ const SCENARIOS = [
   { id: "cyber", name: "Cyber Outage", figure: "fig4_cyber.png", icon: ShieldAlert, color: "#7570B3",
     findings: [
       "System maintained operations through processor outage",
-      "Autonomous rerouting avoided 91% of potential spoilage",
-      "Recovery within 12 timesteps of outage detection",
+      "Autonomous rerouting avoided majority of potential spoilage",
+      "MCP governance overrides activated for compliance",
       "Blockchain audit trail preserved transaction integrity",
     ],
   },
   { id: "pricing", name: "Adaptive Pricing", figure: "fig5_pricing.png", icon: DollarSign, color: "#0072B2",
     findings: [
-      "Dynamic pricing improved revenue by 23% vs fixed pricing",
+      "Highest ARI and SLCA scores across all scenarios",
       "Equity-aware redistribution prevented price exploitation",
       "Cooperative members received fair-share allocations",
-      "SLCA composite scores highest across all scenarios",
+      "Context-aware policy adapted to demand oscillations",
     ],
   },
 ];
@@ -326,6 +326,28 @@ export default function AnalyticsPage() {
 
   const scenarioObj = SCENARIOS.find((s) => s.id === selectedScenario) || SCENARIOS[0];
 
+  // Compute executive summary KPIs dynamically from loaded CSV data
+  const summaryKPIs = useMemo(() => {
+    if (!table1.length) return { ariPct: 0, wastePct: 0, carbonPct: 0, rleMean: 0, savings: 0, abWaste: 0, stWaste: 0, abCarbon: 0, stCarbon: 0 };
+    const ab = table1.filter((r) => r.Method === "AGRI-BRAIN" || r.Method === "agribrain");
+    const st = table1.filter((r) => r.Method === "Static" || r.Method === "static");
+    if (!ab.length || !st.length) return { ariPct: 0, wastePct: 0, carbonPct: 0, rleMean: 0, savings: 0, abWaste: 0, stWaste: 0, abCarbon: 0, stCarbon: 0 };
+    const mean = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
+    const abARI = mean(ab.map((r) => r.ARI));
+    const stARI = mean(st.map((r) => r.ARI));
+    const abWaste = mean(ab.map((r) => r.Waste));
+    const stWaste = mean(st.map((r) => r.Waste));
+    const abCarbon = mean(ab.map((r) => r.Carbon ?? r["Carbon (kg)"] ?? 0));
+    const stCarbon = mean(st.map((r) => r.Carbon ?? r["Carbon (kg)"] ?? 0));
+    const rleMean = mean(ab.map((r) => r.RLE));
+    const ariPct = stARI > 0 ? ((abARI - stARI) / stARI) * 100 : 0;
+    const wastePct = stWaste > 0 ? (1 - abWaste / stWaste) * 100 : 0;
+    const carbonPct = stCarbon > 0 ? (1 - abCarbon / stCarbon) * 100 : 0;
+    const wasteReductionKgWeek = (stWaste - abWaste) * 50000;
+    const savings = wasteReductionKgWeek * 52 * 1.5;
+    return { ariPct, wastePct, carbonPct, rleMean: rleMean * 100, savings: Math.round(savings), abWaste: (abWaste * 100).toFixed(1), stWaste: (stWaste * 100).toFixed(1), abCarbon: Math.round(abCarbon), stCarbon: Math.round(stCarbon) };
+  }, [table1]);
+
   return (
     <div className="space-y-8 pb-12">
       {/* 8.1 Executive Summary Banner */}
@@ -338,11 +360,11 @@ export default function AnalyticsPage() {
               <p className="text-sm text-muted-foreground mt-1">Cross-scenario improvements vs. static logistics baseline</p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-6 max-w-5xl mx-auto">
-              <HeroCounter value={73.7} suffix="%" label="ARI Improvement" sublabel="Adaptive Resilience Index" delay={0} />
-              <HeroCounter value={76.1} suffix="%" label="Waste Reduction" sublabel="2.7% vs 11.3% produce lost" delay={200} />
-              <HeroCounter value={52.5} suffix="%" label="Carbon Reduction" sublabel="2,328 vs 4,898 kg CO₂-eq" delay={400} />
-              <HeroCounter value={94.9} suffix="%" label="Rerouting Efficiency" sublabel="At-risk batches diverted" delay={600} />
-              <HeroCounter value={199000} prefix="$" label="Annual Savings" sublabel="50,000 kg/week @ $1.50/kg" delay={800} />
+              <HeroCounter value={+summaryKPIs.ariPct.toFixed(1)} suffix="%" label="ARI Improvement" sublabel="Adaptive Resilience Index" delay={0} />
+              <HeroCounter value={+summaryKPIs.wastePct.toFixed(1)} suffix="%" label="Waste Reduction" sublabel={`${summaryKPIs.abWaste}% vs ${summaryKPIs.stWaste}% produce lost`} delay={200} />
+              <HeroCounter value={+summaryKPIs.carbonPct.toFixed(1)} suffix="%" label="Carbon Reduction" sublabel={`${summaryKPIs.abCarbon} vs ${summaryKPIs.stCarbon} kg CO₂-eq`} delay={400} />
+              <HeroCounter value={+summaryKPIs.rleMean.toFixed(1)} suffix="%" label="Rerouting Efficiency" sublabel="At-risk batches diverted" delay={600} />
+              <HeroCounter value={summaryKPIs.savings} prefix="$" label="Annual Savings" sublabel="50,000 kg/week @ $1.50/kg" delay={800} />
             </div>
           </CardContent>
         </Card>
@@ -713,15 +735,15 @@ export default function AnalyticsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-3 rounded-lg bg-background border">
                   <span className="text-sm">Energy per episode</span>
-                  <span className="font-mono font-bold text-emerald-600">14.4 J</span>
+                  <span className="font-mono font-bold text-emerald-600">{table1.length ? `${(288 * 0.05).toFixed(1)} J` : "..."}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-lg bg-background border">
                   <span className="text-sm">Episode duration</span>
-                  <span className="font-mono font-bold">72 hours</span>
+                  <span className="font-mono font-bold">{table1.length ? "72 hours (288 steps)" : "..."}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-lg bg-background border">
-                  <span className="text-sm">vs. transport savings</span>
-                  <span className="font-mono font-bold text-emerald-600">5 orders of magnitude below</span>
+                  <span className="text-sm">Carbon saved vs compute</span>
+                  <span className="font-mono font-bold text-emerald-600">{table1.length ? `${Math.round(summaryKPIs.stCarbon - summaryKPIs.abCarbon)} kg CO₂` : "..."}</span>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mt-4 text-center italic">
