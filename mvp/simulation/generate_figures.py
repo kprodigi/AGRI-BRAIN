@@ -352,7 +352,7 @@ def fig3_overproduction(data):
     _legend(ax)
     _apply_style(ax)
 
-    # --- (d) SLCA component grouped bars ---
+    # --- (d) SLCA component grouped bars with std error bars ---
     ax = axes[1, 1]
     components = ["C", "L", "R", "P"]
     comp_labels = ["Carbon", "Labour", "Resilience", "Price Transp."]
@@ -362,9 +362,12 @@ def fig3_overproduction(data):
         ep = op[mode]
         vals = [np.mean([s[comp] for s in ep["slca_component_trace"]])
                 for comp in components]
+        stds = [np.std([s[comp] for s in ep["slca_component_trace"]])
+                for comp in components]
         ax.bar(x + i * width, vals, width, color=COLORS[mode],
                label=MODE_LABELS[mode], alpha=0.85, edgecolor="white",
-               linewidth=0.5)
+               linewidth=0.5, yerr=stds, capsize=3,
+               error_kw={"linewidth": 0.8, "capthick": 0.8})
     ax.set_xticks(x + width)
     ax.set_xticklabels(comp_labels, fontsize=12)
     ax.set_ylabel("Score")
@@ -421,14 +424,21 @@ def fig4_cyber(data):
     pre_counts = np.zeros(3)
     during_counts = np.zeros(3)
     actions = np.array(ab["action_trace"])
+    n_pre = max(np.sum(pre_mask), 1)
+    n_during = max(np.sum(during_mask), 1)
     for a in range(3):
-        pre_counts[a] = np.sum((actions == a) & pre_mask) / max(np.sum(pre_mask), 1)
-        during_counts[a] = np.sum((actions == a) & during_mask) / max(np.sum(during_mask), 1)
+        pre_counts[a] = np.sum((actions == a) & pre_mask) / n_pre
+        during_counts[a] = np.sum((actions == a) & during_mask) / n_during
+    # Binomial standard error for proportions
+    pre_se = np.sqrt(pre_counts * (1 - pre_counts) / n_pre)
+    during_se = np.sqrt(during_counts * (1 - during_counts) / n_during)
 
     ax.bar(bar_x - width / 2, pre_counts, width, color="#3498db",
-           alpha=0.8, label="Pre-outage", edgecolor="white", linewidth=0.5)
+           alpha=0.8, label="Pre-outage", edgecolor="white", linewidth=0.5,
+           yerr=1.96 * pre_se, capsize=4, error_kw={"linewidth": 1.0, "capthick": 1.0})
     ax.bar(bar_x + width / 2, during_counts, width, color="#e74c3c",
-           alpha=0.8, label="During outage", edgecolor="white", linewidth=0.5)
+           alpha=0.8, label="During outage", edgecolor="white", linewidth=0.5,
+           yerr=1.96 * during_se, capsize=4, error_kw={"linewidth": 1.0, "capthick": 1.0})
     ax.set_xticks(bar_x)
     ax.set_xticklabels(action_names, fontsize=12)
     ax.set_ylabel("Fraction")
@@ -552,24 +562,33 @@ def fig5_pricing(data):
     _legend(ax)
     _apply_style(ax)
 
-    # --- (d) Reward component profiles (smoothed rolling averages) ---
+    # --- (d) Reward decomposition: SLCA vs waste penalty ---
     ax = axes[1, 1]
     slca_vals = np.array(ab["slca_trace"])
     waste_vals = np.array(ab["waste_trace"])
     reward_vals = np.array(ab["reward_trace"])
     window = 12  # 3-hour rolling window for readability
     slca_smooth = np.convolve(slca_vals, np.ones(window) / window, mode="same")
-    waste_smooth = np.convolve(waste_vals * 0.5, np.ones(window) / window, mode="same")
+    # Show waste penalty on its own y-scale using twin axis
     reward_smooth = np.convolve(reward_vals, np.ones(window) / window, mode="same")
-    ax.plot(hours, slca_smooth, color="#27ae60", linewidth=1.2,
-            label="SLCA reward", alpha=0.8)
-    ax.plot(hours, waste_smooth, color="#e74c3c", linewidth=1.2,
-            label="Waste penalty (\u03b7=0.5)", alpha=0.8)
-    ax.plot(hours, reward_smooth, color="#2c3e50", linewidth=1.4,
-            label="Net reward")
+    ax.plot(hours, slca_smooth, color="#27ae60", linewidth=1.5,
+            label="SLCA reward", alpha=0.9)
+    ax.plot(hours, reward_smooth, color="#2c3e50", linewidth=1.5,
+            label="Net reward", alpha=0.9)
     ax.set_xlabel("Hours")
-    ax.set_ylabel("Value (rolling avg)")
-    ax.set_title("(d) Reward Component Profiles")
+    ax.set_ylabel("SLCA / Net Reward")
+    ax.set_ylim(0.0, 1.0)
+    _legend(ax, loc="upper left")
+    _apply_style(ax)
+    # Twin axis for waste penalty at appropriate scale
+    ax2 = ax.twinx()
+    waste_smooth = np.convolve(waste_vals, np.ones(window) / window, mode="same")
+    ax2.plot(hours, waste_smooth * 100, color="#e74c3c", linewidth=1.5,
+             linestyle="--", label="Waste rate (%)", alpha=0.9)
+    ax2.set_ylabel("Waste Rate (%)", color="#e74c3c")
+    ax2.tick_params(axis="y", labelcolor="#e74c3c")
+    ax2.legend(loc="upper right", fontsize=10, framealpha=0.9)
+    ax.set_title("(d) Reward Decomposition")
     _legend(
     ax,
     loc="center",
@@ -656,8 +675,12 @@ def fig6_cross(data):
 # ---------------------------------------------------------------------------
 def fig7_ablation(data):
     """1x3 grouped bars: ARI, waste, RLE for all 8 variants.
-    Adds error bars from benchmark_summary.json when available."""
+    Adds error bars from benchmark_summary.json when available.
+    AGRI-BRAIN is always the last bar in each group."""
     bench = _load_benchmark_ci()
+
+    # Reorder so AGRI-BRAIN is last
+    fig7_modes = [m for m in MODES if m != "agribrain"] + ["agribrain"]
 
     fig, axes = plt.subplots(1, 3, figsize=(18, 5.5))
     fig.suptitle("Ablation Study", fontsize=16, fontweight="bold")
@@ -670,7 +693,7 @@ def fig7_ablation(data):
         x = np.arange(len(stress_scenarios))
         width = 0.10
 
-        for i, mode in enumerate(MODES):
+        for i, mode in enumerate(fig7_modes):
             vals = [data["results"][s][mode][metric] for s in stress_scenarios]
             yerr = None
             if bench is not None:
@@ -701,7 +724,7 @@ def fig7_ablation(data):
 
     # Single legend at the bottom, shared across all subplots
     handles, labels = axes[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="lower center", ncol=len(MODES),
+    fig.legend(handles, labels, loc="lower center", ncol=len(fig7_modes),
                fontsize=12, framealpha=0.95, edgecolor="gray",
                fancybox=False, shadow=False,
                bbox_to_anchor=(0.5, 0.0))
@@ -713,7 +736,9 @@ def fig7_ablation(data):
 # Figure 8: Green AI / Carbon (1x2)
 # ---------------------------------------------------------------------------
 def fig8_green_ai(data):
-    """1x2: cumulative CO2 heatwave, total carbon bar chart."""
+    """1x2: cumulative CO2 heatwave, total carbon bar chart with CI error bars."""
+    bench = _load_benchmark_ci()
+
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     fig.suptitle("Green AI & Carbon Footprint",
                  fontsize=14, fontweight="bold")
@@ -749,9 +774,27 @@ def fig8_green_ai(data):
 
     for i, mode in enumerate(methods_plot):
         vals = [data["results"][s][mode]["carbon"] for s in scenarios_plot]
+        yerr = None
+        if bench is not None:
+            ci_data = []
+            for s in scenarios_plot:
+                m_data = bench.get(s, {}).get(mode, {}).get("carbon", {})
+                if not m_data:
+                    # carbon may not be in benchmark; try slca as proxy
+                    pass
+                if m_data and "ci_low" in m_data and "ci_high" in m_data:
+                    ci_data.append((m_data["mean"], m_data["ci_low"], m_data["ci_high"]))
+            if len(ci_data) == len(scenarios_plot):
+                means = np.array([c[0] for c in ci_data])
+                lows = np.array([c[1] for c in ci_data])
+                highs = np.array([c[2] for c in ci_data])
+                yerr = np.vstack([means - lows, highs - means])
+                vals = means.tolist()
         ax.bar(x + i * width, vals, width, color=COLORS[mode],
                label=MODE_LABELS[mode], alpha=0.85, edgecolor="white",
-               linewidth=0.5)
+               linewidth=0.5, yerr=yerr,
+               capsize=3 if yerr is not None else 0,
+               error_kw={"linewidth": 1.0, "capthick": 1.0})
 
     ax.set_xticks(x + width)
     ax.set_xticklabels([SCENARIO_LABELS[s] for s in scenarios_plot],
@@ -797,32 +840,41 @@ def fig9_mcp_pirag_robustness():
     _legend(ax)
     _apply_style(ax)
 
-    # (b) ARI confidence intervals from benchmark
+    # (b) ARI confidence intervals — all context ablation methods
     ax = axes[1]
+    ci_methods = [
+        ("agribrain", "#009688", "AgriBrain"),
+        ("pirag_only", "#2196F3", "piRAG Only"),
+        ("mcp_only", "#FF9800", "MCP Only"),
+        ("no_context", "#4CAF50", "No Context"),
+    ]
     if bench_file.exists():
         import json
         bench = json.loads(bench_file.read_text(encoding="utf-8"))
-        xs = []
-        means = []
-        lows = []
-        highs = []
-        for i, s in enumerate(SCENARIOS):
-            ari = bench.get(s, {}).get("agribrain", {}).get("ari")
-            if not ari:
-                continue
-            xs.append(i)
-            means.append(float(ari.get("mean", 0.0)))
-            lows.append(float(ari.get("ci_low", 0.0)))
-            highs.append(float(ari.get("ci_high", 0.0)))
-        if xs:
-            means_arr = np.array(means)
-            yerr = np.vstack([means_arr - np.array(lows), np.array(highs) - means_arr])
-            ax.errorbar(xs, means_arr, yerr=yerr, fmt="o", color="#26a69a", capsize=4, linewidth=1.4)
-            ax.set_xticks(xs)
-            ax.set_xticklabels([SCENARIO_LABELS.get(SCENARIOS[i], SCENARIOS[i]) for i in xs], rotation=20, ha="right")
-    ax.set_ylim(0.0, 1.0)
-    ax.set_title("(b) ARI Confidence Intervals")
+        scenarios_plot = [s for s in SCENARIOS if s != "baseline"]
+        x = np.arange(len(scenarios_plot))
+        width = 0.18
+        for j, (mode, color, label) in enumerate(ci_methods):
+            means, lo_err, hi_err = [], [], []
+            for s in scenarios_plot:
+                ari = bench.get(s, {}).get(mode, {}).get("ari", {})
+                m = float(ari.get("mean", 0.0))
+                means.append(m)
+                lo_err.append(m - float(ari.get("ci_low", m)))
+                hi_err.append(float(ari.get("ci_high", m)) - m)
+            if means:
+                yerr = np.vstack([lo_err, hi_err])
+                ax.bar(x + j * width, means, width, color=color, label=label,
+                       alpha=0.85, edgecolor="white", linewidth=0.5,
+                       yerr=yerr, capsize=3,
+                       error_kw={"linewidth": 1.0, "capthick": 1.0})
+        ax.set_xticks(x + 1.5 * width)
+        ax.set_xticklabels([SCENARIO_LABELS.get(s, s) for s in scenarios_plot],
+                           rotation=20, ha="right")
+    ax.set_ylim(0.5, 0.8)
+    ax.set_title("(b) Context Ablation ARI (95% CI)")
     ax.set_ylabel("ARI")
+    _legend(ax)
     _apply_style(ax)
 
     fig.tight_layout(rect=[0, 0, 1, 0.95])
