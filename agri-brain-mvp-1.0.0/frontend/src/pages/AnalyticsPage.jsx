@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer,
   CartesianGrid, Legend, RadarChart, Radar, PolarGrid, PolarAngleAxis,
-  PolarRadiusAxis, LineChart, Line,
+  PolarRadiusAxis, LineChart, Line, ErrorBar,
 } from "recharts";
 import {
   TrendingUp, Award, Leaf, Zap, ArrowUpRight, ArrowDownRight,
@@ -193,6 +193,8 @@ export default function AnalyticsPage() {
   const [simRunning, setSimRunning] = useState(false);
   const [showImprovement, setShowImprovement] = useState(false);
   const [lightboxImg, setLightboxImg] = useState(null);
+  const [benchSummary, setBenchSummary] = useState(null);
+  const [benchSignificance, setBenchSignificance] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -206,32 +208,68 @@ export default function AnalyticsPage() {
       } catch (e) {
         console.warn("Could not load CSV data:", e);
       }
+      // Load benchmark CI/significance data
+      try {
+        const [bs, bsig] = await Promise.all([
+          authFetch(`${API}/results/figures/benchmark_summary.json`).then((r) => r.json()),
+          authFetch(`${API}/results/figures/benchmark_significance.json`).then((r) => r.json()),
+        ]);
+        setBenchSummary(bs);
+        setBenchSignificance(bsig);
+      } catch (e) {
+        console.warn("Could not load benchmark data:", e);
+      }
       setLoading(false);
     };
     loadData();
   }, []);
 
-  // Grouped bar chart data
+  // Map display method names back to raw names for benchmark lookup
+  const methodKeyMap = { "Static": "static", "Hybrid RL": "hybrid_rl", "AGRI-BRAIN": "agribrain" };
+  const variantKeyMap = { "Static": "static", "Hybrid RL": "hybrid_rl", "No PINN": "no_pinn", "No SLCA": "no_slca",
+    "AGRI-BRAIN": "agribrain", "No Context": "no_context", "MCP Only": "mcp_only", "piRAG Only": "pirag_only" };
+
+  // Grouped bar chart data with CI error bars from benchmark
   const barChartData = useMemo(() => {
     const scenarios = [...new Set(table1.map((r) => r.Scenario))];
+    const metricKey = selectedMetric.toLowerCase();
     return scenarios.map((scenario) => {
       const rows = table1.filter((r) => r.Scenario === scenario);
       const obj = { scenario };
-      rows.forEach((r) => { obj[r.Method] = r[selectedMetric]; });
+      rows.forEach((r) => {
+        const val = r[selectedMetric];
+        obj[r.Method] = val;
+        // Add CI error if benchmark data available
+        const rawKey = methodKeyMap[r.Method];
+        const ci = benchSummary?.[scenario]?.[rawKey]?.[metricKey];
+        if (ci && ci.ci_low != null && ci.ci_high != null) {
+          obj[r.Method] = ci.mean;
+          obj[`${r.Method}_err`] = [ci.mean - ci.ci_low, ci.ci_high - ci.mean];
+        }
+      });
       return obj;
     });
-  }, [table1, selectedMetric]);
+  }, [table1, selectedMetric, benchSummary]);
 
-  // Ablation bar data
+  // Ablation bar data with CI error bars
   const ablationData = useMemo(() => {
     const scenarios = [...new Set(table2.map((r) => r.Scenario))];
+    const metricKey = ablationMetric.toLowerCase();
     return scenarios.map((scenario) => {
       const rows = table2.filter((r) => r.Scenario === scenario);
       const obj = { scenario };
-      rows.forEach((r) => { obj[r.Variant] = r[ablationMetric]; });
+      rows.forEach((r) => {
+        obj[r.Variant] = r[ablationMetric];
+        const rawKey = variantKeyMap[r.Variant];
+        const ci = benchSummary?.[scenario]?.[rawKey]?.[metricKey];
+        if (ci && ci.ci_low != null && ci.ci_high != null) {
+          obj[r.Variant] = ci.mean;
+          obj[`${r.Variant}_err`] = [ci.mean - ci.ci_low, ci.ci_high - ci.mean];
+        }
+      });
       return obj;
     });
-  }, [table2, ablationMetric]);
+  }, [table2, ablationMetric, benchSummary]);
 
   // Radar chart data
   const radarData = useMemo(() => {
@@ -499,9 +537,15 @@ export default function AnalyticsPage() {
                   <YAxis tick={{ fontSize: 11 }} />
                   <ReTooltip content={<ChartTooltip />} />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="Static" fill={COLORS.static} radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="Hybrid RL" fill={COLORS.hybrid} radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="AGRI-BRAIN" fill={COLORS.agri} radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="Static" fill={COLORS.static} radius={[2, 2, 0, 0]}>
+                    {benchSummary && <ErrorBar dataKey="Static_err" width={4} strokeWidth={1.5} stroke="#555" />}
+                  </Bar>
+                  <Bar dataKey="Hybrid RL" fill={COLORS.hybrid} radius={[2, 2, 0, 0]}>
+                    {benchSummary && <ErrorBar dataKey="Hybrid RL_err" width={4} strokeWidth={1.5} stroke="#555" />}
+                  </Bar>
+                  <Bar dataKey="AGRI-BRAIN" fill={COLORS.agri} radius={[2, 2, 0, 0]}>
+                    {benchSummary && <ErrorBar dataKey="AGRI-BRAIN_err" width={4} strokeWidth={1.5} stroke="#555" />}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -533,16 +577,70 @@ export default function AnalyticsPage() {
                   <YAxis tick={{ fontSize: 11 }} />
                   <ReTooltip content={<ChartTooltip />} />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="Static" fill={COLORS.static} radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="Hybrid RL" fill={COLORS.hybrid} radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="No PINN" fill={COLORS.noPinn} radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="No SLCA" fill={COLORS.noSlca} radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="AGRI-BRAIN" fill={COLORS.agri} radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="Static" fill={COLORS.static} radius={[2, 2, 0, 0]}>
+                    {benchSummary && <ErrorBar dataKey="Static_err" width={3} strokeWidth={1} stroke="#555" />}
+                  </Bar>
+                  <Bar dataKey="Hybrid RL" fill={COLORS.hybrid} radius={[2, 2, 0, 0]}>
+                    {benchSummary && <ErrorBar dataKey="Hybrid RL_err" width={3} strokeWidth={1} stroke="#555" />}
+                  </Bar>
+                  <Bar dataKey="No PINN" fill={COLORS.noPinn} radius={[2, 2, 0, 0]}>
+                    {benchSummary && <ErrorBar dataKey="No PINN_err" width={3} strokeWidth={1} stroke="#555" />}
+                  </Bar>
+                  <Bar dataKey="No SLCA" fill={COLORS.noSlca} radius={[2, 2, 0, 0]}>
+                    {benchSummary && <ErrorBar dataKey="No SLCA_err" width={3} strokeWidth={1} stroke="#555" />}
+                  </Bar>
+                  <Bar dataKey="AGRI-BRAIN" fill={COLORS.agri} radius={[2, 2, 0, 0]}>
+                    {benchSummary && <ErrorBar dataKey="AGRI-BRAIN_err" width={3} strokeWidth={1} stroke="#555" />}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
+
+        {/* Statistical Significance (from benchmark) */}
+        {benchSignificance && (
+          <Card className="mb-6 border-primary/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Statistical Significance (5-Seed Stochastic Benchmark)</CardTitle>
+              <CardDescription>Permutation test p-values and Cohen's d effect sizes for AGRI-BRAIN vs. baselines</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2 px-3 font-semibold">Scenario</th>
+                      <th className="text-left py-2 px-3 font-semibold">Comparison</th>
+                      <th className="text-right py-2 px-3 font-semibold">p-value</th>
+                      <th className="text-right py-2 px-3 font-semibold">Cohen's d</th>
+                      <th className="text-right py-2 px-3 font-semibold">ARI diff</th>
+                      <th className="text-center py-2 px-3 font-semibold">Sig.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(benchSignificance).map(([scenario, comps]) =>
+                      Object.entries(comps).map(([comp, metrics]) => {
+                        const ari = metrics.ari || {};
+                        const sig = (ari.p_value || 1) < 0.05;
+                        return (
+                          <tr key={`${scenario}-${comp}`} className="border-b border-muted/50 hover:bg-muted/30">
+                            <td className="py-1.5 px-3 font-mono text-xs">{scenario}</td>
+                            <td className="py-1.5 px-3 text-xs">{comp.replace("agribrain_vs_", "vs ")}</td>
+                            <td className="py-1.5 px-3 text-right font-mono text-xs">{(ari.p_value || 1).toFixed(4)}</td>
+                            <td className="py-1.5 px-3 text-right font-mono text-xs">{(ari.cohens_d || 0).toFixed(2)}</td>
+                            <td className="py-1.5 px-3 text-right font-mono text-xs">{(ari.mean_diff || 0) > 0 ? "+" : ""}{(ari.mean_diff || 0).toFixed(4)}</td>
+                            <td className="py-1.5 px-3 text-center">{sig ? <Badge variant="default" className="text-[10px] px-1.5 py-0 bg-emerald-600">p&lt;0.05</Badge> : <Badge variant="outline" className="text-[10px] px-1.5 py-0">n.s.</Badge>}</td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Radar chart + Method comparison */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
