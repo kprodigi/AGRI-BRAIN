@@ -1,5 +1,4 @@
-allowlist:
-  - user:kazi
+allowlist: []
 retention_days: 90
 rate_limits:
   calculator: 120/min

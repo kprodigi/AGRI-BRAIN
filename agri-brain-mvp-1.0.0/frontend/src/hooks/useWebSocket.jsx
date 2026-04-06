@@ -39,7 +39,10 @@ export function useWebSocket() {
 
     const connect = () => {
       try {
-        // Prefer dedicated WS key; fall back to general API key
+        // Prefer dedicated WS key; fall back to general API key.
+        // Note: browser WebSocket API does not support custom headers,
+        // so the key is passed as a query parameter. Server-side logs
+        // should be configured to redact query strings in production.
         const apiKey = localStorage.getItem("WS_API_KEY") || localStorage.getItem("API_KEY");
         const url = apiKey ? `${WS_URL}?api_key=${encodeURIComponent(apiKey)}` : WS_URL;
         ws = new WebSocket(url);

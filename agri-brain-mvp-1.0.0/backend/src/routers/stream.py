@@ -26,7 +26,10 @@ async def stream(ws: WebSocket):
     try:
         await ws.send_text(json.dumps({"type": "hello", "payload": {"ok": True}}))
         while True:
-            await asyncio.sleep(60)
+            try:
+                await asyncio.wait_for(ws.receive_text(), timeout=60)
+            except asyncio.TimeoutError:
+                continue
     except WebSocketDisconnect:
         pass
     finally:

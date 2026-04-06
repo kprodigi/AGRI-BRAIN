@@ -15,7 +15,7 @@ def merkle_root(hashes_hex: List[str]) -> str:
                 b = next(it)
             except StopIteration:
                 b = a
-            nxt.append(_h(a + b))
+            nxt.append(_h(min(a, b) + max(a, b)))
         nodes = nxt
     return nodes[0].hex()
 

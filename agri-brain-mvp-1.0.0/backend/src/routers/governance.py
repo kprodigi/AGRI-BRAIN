@@ -214,7 +214,9 @@ class RewardSlashRequest(BaseModel):
     amount: int
 
 class ProposalRequest(BaseModel):
-    text: str
+    description: str
+    policy_key: str = ""
+    policy_value: int = 0
 
 class VoteRequest(BaseModel):
     proposal_id: int
@@ -260,7 +262,8 @@ def contract_dao_propose(req: ProposalRequest):
     """Submit a governance proposal on-chain."""
     from src.chain.contracts import dao_propose
     _try_autoload()
-    txh = dao_propose(req.text, CHAIN)
+    key_bytes = bytes.fromhex(req.policy_key.replace("0x", "").ljust(64, "0")) if req.policy_key else b"\x00" * 32
+    txh = dao_propose(req.description, key_bytes, req.policy_value, CHAIN)
     return {"ok": txh is not None, "tx_hash": txh}
 
 @router.post("/contracts/dao/vote")

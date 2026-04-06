@@ -1,6 +1,8 @@
 """Shared security helpers for HTTP and websocket routes."""
 from __future__ import annotations
 
+import hmac
+
 from fastapi import Header, HTTPException, Request, WebSocket
 
 from .settings import SETTINGS
@@ -22,7 +24,7 @@ def enforce_api_key(request: Request, x_api_key: str | None) -> None:
             return
     if not SETTINGS.api_key:
         raise HTTPException(status_code=503, detail="Server API key not configured")
-    if x_api_key != SETTINGS.api_key:
+    if not hmac.compare_digest(x_api_key or "", SETTINGS.api_key):
         raise HTTPException(status_code=401, detail="Invalid API key")
 
 
@@ -35,5 +37,5 @@ def websocket_auth_ok(ws: WebSocket) -> bool:
     token = ws.query_params.get("api_key") or ws.headers.get("x-api-key")
     if not SETTINGS.websocket_api_key:
         return False
-    return token == SETTINGS.websocket_api_key
+    return hmac.compare_digest(token or "", SETTINGS.websocket_api_key)
 

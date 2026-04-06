@@ -72,6 +72,12 @@ class PolicyLearner:
     def update(self, theta: np.ndarray) -> np.ndarray:
         """Apply REINFORCE gradient update to a copy of the policy weights.
 
+        Uses a batch-gradient approximation: all buffered samples compute
+        their gradient against the current theta snapshot rather than the
+        behavior policy that generated the action. This is acceptable for
+        the small buffer sizes and learning rates used here, but does not
+        include importance-sampling correction for off-policy samples.
+
         Parameters
         ----------
         theta : current policy weight matrix of shape (n_actions, n_features).

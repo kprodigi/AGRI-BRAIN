@@ -36,9 +36,10 @@ RESULTS_DIR = Path(__file__).resolve().parent / "results"
 def main() -> None:
     seeds = [42, 1337, 2024, 7, 99]
 
-    det_path = RESULTS_DIR / "table1_summary_deterministic_ref.csv"
+    # Use table1_summary.csv as reference (generated with seed=42 deterministic)
+    det_path = RESULTS_DIR / "table1_summary.csv"
     if not det_path.exists():
-        raise FileNotFoundError(f"Missing deterministic reference: {det_path}")
+        raise FileNotFoundError(f"Missing reference table: {det_path}")
     det = pd.read_csv(det_path)
     det_ag = det[det["Method"] == "agribrain"].set_index("Scenario")
 

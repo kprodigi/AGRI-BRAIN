@@ -35,10 +35,10 @@ def query_footprint(
     cumulative_co2_kg = cumulative_energy_kwh * CO2_PER_KWH
 
     efficiency_flag = "normal"
-    if energy_per_step_j > 0.050:
-        efficiency_flag = "above_baseline"
-    elif energy_per_step_j > 0.100:
+    if energy_per_step_j > 0.100:
         efficiency_flag = "review_required"
+    elif energy_per_step_j > 0.050:
+        efficiency_flag = "above_baseline"
 
     return {
         "steps_completed": steps_completed,

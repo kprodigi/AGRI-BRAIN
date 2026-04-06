@@ -52,7 +52,7 @@ REINFORCE learning for sustainable food logistics.
 
 ## Architecture Highlights
 
-- **MCP interoperability layer** with 12 registered tools, 12 resources, and 5 prompts
+- **MCP interoperability layer** with 12 registered tools, 13 resources, and 5 prompts
   accessible through JSON-RPC 2.0 protocol with InProcess, Stdio, and SSE transports
 - **Physics-informed RAG (piRAG)** with 20-document knowledge base, BM25+TF-IDF hybrid
   retrieval (k=4, 20% retrieval ratio), physics-aware query expansion, and Arrhenius-based
@@ -93,7 +93,7 @@ REINFORCE learning for sustainable food logistics.
 
 ## Frontend
 
-Modern React dashboard built with shadcn/ui, featuring six pages:
+Modern React dashboard built with shadcn/ui, featuring eight pages:
 
 | Page | Description |
 |------|-------------|
@@ -102,7 +102,9 @@ Modern React dashboard built with shadcn/ui, featuring six pages:
 | **Decisions** | Timeline view with role/action filters, decision cards with expandable MCP/piRAG explainability panels (causal BECAUSE/WITHOUT reasoning, 5-axis context feature radar chart, extracted keyword tags, Merkle-rooted provenance chains), analytics sidebar with pie chart, CSV/PDF export |
 | **Map** | Leaflet map of South Dakota supply chain nodes with route overlays and live KPI popups |
 | **Analytics** | Executive summary banner, interactive cross-scenario tables & charts, ablation study, radar profiles, scenario deep-dive gallery, carbon footprint analysis |
-| **Admin** | Six tabs — Policy parameters, Blockchain status & config, Audit log, Scenario runner, Quick Decision, MCP Explorer (tool browser with 12 tools, live resource monitor, prompt template browser, live tool invocation with presets, piRAG knowledge base search, JSON-RPC protocol interaction log) |
+| **MCP/piRAG** | MCP protocol overview, context feature visualization, knowledge base browser, protocol traces, causal reasoning panel |
+| **Demo** | Interactive system demo with live pipeline walkthrough and agent decision theater |
+| **Admin** | Seven tabs — Policy parameters, Blockchain status & config, Audit log, Scenario runner, Quick Decision, Runtime config, MCP Explorer (tool browser with 12 tools, live resource monitor, prompt template browser, live tool invocation with presets, piRAG knowledge base search, JSON-RPC protocol interaction log) |
 
 **Tech stack:** React 18, React Router 7, shadcn/ui (Radix), Tailwind CSS, Recharts, React-Leaflet, Framer Motion, Sonner toasts, Vite 7
 
@@ -152,6 +154,9 @@ python generate_figures.py    # publication figures (Fig. 2-10, PNG + PDF)
 | `ONLINE_LEARNING` | `false` | Enable REINFORCE policy gradient updates |
 | `LLM_PROVIDER` | `template` | RAG answer engine: `template` or `api` |
 | `DATA_CSV` | (auto) | Override path to spinach sensor CSV |
+| `RAG_CONTEXT_ENABLED` | `true` | Enable MCP/piRAG context integration in agribrain mode |
+| `SIM_API_BASE` | `http://127.0.0.1:8100` | Base URL for simulation API |
+| `DETERMINISTIC_MODE` | `false` | `true` = exact reproducibility (audit), `false` = 7-source stochastic perturbations |
 
 ### Security/ops flags
 
@@ -163,7 +168,9 @@ python generate_figures.py    # publication figures (Fig. 2-10, PNG + PDF)
 | `ALLOW_LOCAL_WITHOUT_API_KEY` | `true` in dev only | Skip key check for loopback requests (disabled behind reverse proxies via X-Forwarded-For) |
 | `ENABLE_DEBUG_ROUTES` | `true` in dev | Enables `/debug/routes` and `/debug/config` |
 | `WS_REQUIRE_API_KEY` | `false` in dev | Require websocket auth via `x-api-key` header or `api_key` query param |
+| `WS_API_KEY` | (empty) | WebSocket API key (falls back to `APP_API_KEY` if unset) |
 | `CORS_ORIGINS` | `*` in dev | Comma-separated allowed origins |
+| `CHAIN_REQUIRE_PRIVKEY` | `true` | Require private key for on-chain transactions |
 
 ## Backend API
 

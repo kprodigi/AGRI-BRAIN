@@ -51,8 +51,6 @@ def explain(
         obs.surplus_ratio = max(0.0, inventory / 12000.0 - 1.0)
         obs.raw = {"rho": rho, "temp": temperature, "rh": humidity, "inv": inventory}
 
-        import pirag.mcp.registry as _reg_mod
-        _reg_mod._DEFAULT_REGISTRY = None
         registry = get_default_registry()
         pipeline = PiRAGPipeline()
 

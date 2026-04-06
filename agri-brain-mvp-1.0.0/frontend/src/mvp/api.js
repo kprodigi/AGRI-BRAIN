@@ -140,45 +140,24 @@ export const Scenarios = {
 // -------------------------------------------------------------
 export const Decide = {
     async once(payload = {}) {
-        const tries = [
-            // Primary endpoint
-            ['/decide', { method: 'POST', body: JSON.stringify(payload) }],
-            // Alternate endpoint paths
-            ['/decision/take', { method: 'POST' }],
-            ['/decision/take', { /* GET */ }],
-            ['/decisions/take', { method: 'POST' }],
-            ['/case/decide', { method: 'POST', body: JSON.stringify(payload) }],
-            ['/api/decision/take', { method: 'POST' }],
-        ];
-
-        let lastErr;
-        for (const [p, init] of tries) {
-            try {
-                const res = await fetch(`${API}${p}`, {
-                    headers: _headers(),
-                    ...init,
-                });
-                if (res.ok) {
-                    const raw = await res.json();
-                    // Unwrap { ok, memo } response shape from canonical endpoint
-                    const data = raw.memo ?? raw;
-                    // normalize a minimal memo shape so UI always has fields
-                    return {
-                        agent: data.agent ?? payload.agent ?? 'farm',
-                        action: data.action ?? data.route ?? 'standard_cold_chain',
-                        slca_score: data.slca_score ?? data.slca ?? 0,
-                        carbon_kg: data.carbon_kg ?? data.carbon ?? 0,
-                        circular_economy_score: data.circular_economy_score ?? null,
-                        reason: data.reason ?? data.note ?? '—',
-                        tx_hash: data.tx_hash ?? data.tx ?? '0x0',
-                        ts: data.ts ?? Math.floor(Date.now() / 1000),
-                        ...data,
-                    };
-                }
-            } catch (e) {
-                lastErr = e;
-            }
-        }
-        throw lastErr || new Error('Could not reach any decision endpoint.');
+        const res = await fetch(`${API}/decide`, {
+            method: 'POST',
+            headers: _headers(),
+            body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        const raw = await res.json();
+        const data = raw.memo ?? raw;
+        return {
+            agent: data.agent ?? payload.agent ?? 'farm',
+            action: data.action ?? data.route ?? 'standard_cold_chain',
+            slca_score: data.slca_score ?? data.slca ?? 0,
+            carbon_kg: data.carbon_kg ?? data.carbon ?? 0,
+            circular_economy_score: data.circular_economy_score ?? null,
+            reason: data.reason ?? data.note ?? '—',
+            tx_hash: data.tx_hash ?? data.tx ?? '0x0',
+            ts: data.ts ?? Math.floor(Date.now() / 1000),
+            ...data,
+        };
     },
 };

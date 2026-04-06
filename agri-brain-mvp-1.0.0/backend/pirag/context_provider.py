@@ -27,23 +27,8 @@ def _get_pipeline():
     try:
         from .agent_pipeline import PiRAGPipeline
 
+        # PiRAGPipeline auto-ingests the knowledge_base/ directory on init
         pipeline = PiRAGPipeline()
-
-        # Ingest knowledge base documents
-        kb_dir = Path(__file__).parent / "knowledge_base"
-        if kb_dir.exists():
-            docs = []
-            for f in sorted(kb_dir.iterdir()):
-                if f.suffix in (".txt", ".json", ".csv"):
-                    text = f.read_text(encoding="utf-8").strip()
-                    if text:
-                        docs.append({
-                            "id": f.stem,
-                            "text": text,
-                            "metadata": {"source": f.name},
-                        })
-            if docs:
-                pipeline.ingest(docs)
 
         _PIPELINE = pipeline
     except Exception:

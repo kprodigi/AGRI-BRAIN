@@ -18,10 +18,11 @@ def within_ranges(answer: str, constraints: Dict[str, Any]) -> bool:
     mx = constraints.get("max", float("inf"))
     return all(mn <= v <= mx for v in xs)
 
-def verify_with_sim(answer: str, context: Dict[str, Any], timeout: int = 30) -> bool:
+def verify_with_sim(answer: str, context: Dict[str, Any], timeout: int = 30):
+    """Returns True/False for pass/fail, or None if the guard could not be evaluated."""
     base = SETTINGS.sim_api_base.rstrip("/")
     if not base or requests is None:
-        return True
+        return None  # guard not evaluated — sim API unavailable
     url = f"{base}/sim/validate"
     headers: Dict[str, str] = {}
     if SETTINGS.require_api_key and SETTINGS.api_key:

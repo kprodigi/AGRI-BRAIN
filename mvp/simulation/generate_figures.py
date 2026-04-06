@@ -466,7 +466,7 @@ def fig4_cyber(data):
                label="Integrity threshold")
     ax.set_xlabel("Hours")
     ax.set_ylabel("Audit Integrity Score")
-    ax.set_title("(c) Blockchain Audit Trail")
+    ax.set_title("(c) Blockchain Audit Trail (illustrative)")
     ax.set_ylim(0.7, 1.02)
     _legend(ax, loc="lower left")
     _apply_style(ax)

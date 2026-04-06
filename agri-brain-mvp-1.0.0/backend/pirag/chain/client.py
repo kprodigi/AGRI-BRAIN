@@ -69,4 +69,5 @@ def anchor_root(root_hex: str, policy_uri: str = "") -> Optional[str]:
     })
     signed = acct.sign_transaction(tx)
     txh = w3.eth.send_raw_transaction(signed.raw_transaction)
-    return txh.hex()
+    rcpt = w3.eth.wait_for_transaction_receipt(txh, timeout=30)
+    return rcpt.transactionHash.hex()

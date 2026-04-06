@@ -72,7 +72,9 @@ SLCA_REWARDS_ABI = [
 AGRI_DAO_ABI = [
     {
         "inputs": [
-            {"internalType": "string", "name": "text", "type": "string"},
+            {"internalType": "string", "name": "description", "type": "string"},
+            {"internalType": "bytes32", "name": "policyKey", "type": "bytes32"},
+            {"internalType": "uint256", "name": "policyValue", "type": "uint256"},
         ],
         "name": "propose",
         "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
@@ -90,9 +92,21 @@ AGRI_DAO_ABI = [
         "type": "function",
     },
     {
-        "inputs": [
-            {"internalType": "uint256", "name": "id", "type": "uint256"},
-        ],
+        "inputs": [{"internalType": "uint256", "name": "id", "type": "uint256"}],
+        "name": "finalize",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
+    {
+        "inputs": [{"internalType": "uint256", "name": "id", "type": "uint256"}],
+        "name": "queue",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
+    {
+        "inputs": [{"internalType": "uint256", "name": "id", "type": "uint256"}],
         "name": "execute",
         "outputs": [],
         "stateMutability": "nonpayable",
@@ -101,9 +115,11 @@ AGRI_DAO_ABI = [
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": False, "internalType": "uint256", "name": "id", "type": "uint256"},
+            {"indexed": True, "internalType": "uint256", "name": "id", "type": "uint256"},
             {"indexed": False, "internalType": "address", "name": "proposer", "type": "address"},
-            {"indexed": False, "internalType": "string", "name": "text", "type": "string"},
+            {"indexed": False, "internalType": "string", "name": "description", "type": "string"},
+            {"indexed": False, "internalType": "bytes32", "name": "policyKey", "type": "bytes32"},
+            {"indexed": False, "internalType": "uint256", "name": "policyValue", "type": "uint256"},
         ],
         "name": "Proposed",
         "type": "event",
@@ -284,13 +300,16 @@ def slca_slash(from_address: str, amount: int, chain_cfg: dict) -> Optional[str]
 # AgriDAO
 # ---------------------------------------------------------------------------
 
-def dao_propose(text: str, chain_cfg: dict) -> Optional[str]:
+def dao_propose(description: str, policy_key: bytes, policy_value: int,
+                chain_cfg: dict) -> Optional[str]:
     """Submit a governance proposal. Returns tx hash or None."""
     result = _get_contract(chain_cfg, "AgriDAO")
     if result is None:
         return None
     w3, acct, contract = result
-    return _send_tx(w3, acct, contract.functions.propose(text), chain_cfg)
+    return _send_tx(w3, acct,
+                    contract.functions.propose(description, policy_key, policy_value),
+                    chain_cfg)
 
 
 def dao_vote(proposal_id: int, support: bool, chain_cfg: dict) -> Optional[str]:

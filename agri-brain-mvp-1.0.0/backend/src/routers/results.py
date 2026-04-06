@@ -29,7 +29,8 @@ if str(_SIM_DIR) not in sys.path:
 
 _RESULTS_DIR = _SIM_DIR / "results"
 
-# Background job state
+# Background job state (guarded by _JOB_LOCK for thread safety)
+_JOB_LOCK = threading.Lock()
 _JOB = {"running": False, "started_at": None, "finished_at": None,
         "error": None, "summary": None}
 
@@ -40,14 +41,17 @@ def _run_in_background():
         from generate_results import run_all, save_tables, get_summary_json
         data = run_all()
         save_tables(data["table1"], data["table2"])
-        _JOB["summary"] = get_summary_json(data)
-        _JOB["error"] = None
+        with _JOB_LOCK:
+            _JOB["summary"] = get_summary_json(data)
+            _JOB["error"] = None
     except Exception as exc:
-        _JOB["error"] = str(exc)
-        _JOB["summary"] = None
+        with _JOB_LOCK:
+            _JOB["error"] = str(exc)
+            _JOB["summary"] = None
     finally:
-        _JOB["running"] = False
-        _JOB["finished_at"] = time.time()
+        with _JOB_LOCK:
+            _JOB["running"] = False
+            _JOB["finished_at"] = time.time()
 
 
 # ---------------------------------------------------------------------------
@@ -60,9 +64,10 @@ def generate_results():
     Returns immediately with a job status. Poll GET /results/status for
     completion. This avoids HTTP timeouts for long-running simulations.
     """
-    if _JOB["running"]:
-        elapsed = time.time() - (_JOB["started_at"] or time.time())
-        return {"ok": True, "status": "running", "elapsed_s": round(elapsed, 1)}
+    with _JOB_LOCK:
+        if _JOB["running"]:
+            elapsed = time.time() - (_JOB["started_at"] or time.time())
+            return {"ok": True, "status": "running", "elapsed_s": round(elapsed, 1)}
 
     try:
         from generate_results import run_all  # noqa: F401 — verify import
@@ -73,11 +78,14 @@ def generate_results():
                    f"Ensure mvp/simulation/ exists relative to the backend.",
         )
 
-    _JOB["running"] = True
-    _JOB["started_at"] = time.time()
-    _JOB["finished_at"] = None
-    _JOB["error"] = None
-    _JOB["summary"] = None
+    with _JOB_LOCK:
+        if _JOB["running"]:
+            return {"ok": True, "status": "running"}
+        _JOB["running"] = True
+        _JOB["started_at"] = time.time()
+        _JOB["finished_at"] = None
+        _JOB["error"] = None
+        _JOB["summary"] = None
 
     t = threading.Thread(target=_run_in_background, daemon=True)
     t.start()
@@ -88,15 +96,16 @@ def generate_results():
 @router.get("/status")
 def results_status():
     """Poll simulation job status."""
-    if _JOB["running"]:
-        elapsed = time.time() - (_JOB["started_at"] or time.time())
-        return {"status": "running", "elapsed_s": round(elapsed, 1)}
-    if _JOB["finished_at"]:
-        duration = round((_JOB["finished_at"] - (_JOB["started_at"] or _JOB["finished_at"])), 1)
-        if _JOB["error"]:
-            return {"status": "error", "error": _JOB["error"], "duration_s": duration}
-        return {"status": "complete", "duration_s": duration}
-    return {"status": "idle"}
+    with _JOB_LOCK:
+        if _JOB["running"]:
+            elapsed = time.time() - (_JOB["started_at"] or time.time())
+            return {"status": "running", "elapsed_s": round(elapsed, 1)}
+        if _JOB["finished_at"]:
+            duration = round((_JOB["finished_at"] - (_JOB["started_at"] or _JOB["finished_at"])), 1)
+            if _JOB["error"]:
+                return {"status": "error", "error": _JOB["error"], "duration_s": duration}
+            return {"status": "complete", "duration_s": duration}
+        return {"status": "idle"}
 
 
 @router.get("/summary")
@@ -125,6 +134,9 @@ def get_figure(filename: str):
         raise HTTPException(status_code=400, detail="Invalid filename")
 
     path = _RESULTS_DIR / filename
+    # Verify resolved path stays inside the results directory
+    if not path.resolve().is_relative_to(_RESULTS_DIR.resolve()):
+        raise HTTPException(status_code=400, detail="Invalid filename")
     if not path.exists():
         raise HTTPException(status_code=404, detail=f"Figure not found: {filename}")
 

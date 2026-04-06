@@ -48,6 +48,10 @@ async function main() {
     const rewards = await deploy('SLCARewards');
     addresses.SLCARewards = rewards.address;
 
+    // 6. ProvenanceRegistry for Merkle root anchoring
+    const provenance = await deploy('ProvenanceRegistry');
+    addresses.ProvenanceRegistry = provenance.address;
+
     // Write inside hardhat dir
     const here = path.resolve(__dirname, '..', `deployed-addresses.${hre.network.name}.json`);
     writeJSON(here, addresses);

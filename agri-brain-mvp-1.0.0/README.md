@@ -34,14 +34,16 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173 — dashboard with six pages:
+Open http://localhost:5173 — dashboard with eight pages:
 
 - **Operations** — KPI cards, real-time telemetry charts, spoilage & yield preview
 - **Quality** — Spoilage risk gauge, shelf-life countdown, IoT sensor charts, PINN vs ODE comparison
 - **Decisions** — Timeline view with filters, decision analytics sidebar, CSV/PDF export
 - **Map** — Leaflet map of South Dakota supply chain nodes with route overlays
 - **Analytics** — Cross-scenario tables, charts, radar profiles, scenario deep-dive gallery
-- **Admin** — Policy, Blockchain, Audit, Scenarios, Quick Decision tabs
+- **MCP/piRAG** — Protocol overview, context features, knowledge base, traces, causal reasoning
+- **Demo** — Interactive system demo with pipeline walkthrough and agent decision theater
+- **Admin** — Policy, Blockchain, Audit, Scenarios, Quick Decision, Runtime, MCP tabs
 
 Features: dark mode toggle, WebSocket live indicator, notification bell, responsive sidebar.
 

@@ -316,6 +316,9 @@ def select_action(
     -------
     (action_index, probability_vector)
     """
+    if mode not in VALID_MODES:
+        raise ValueError(f"Invalid mode: {mode!r}. Must be one of {VALID_MODES}")
+
     # Static is ALWAYS cold chain, regardless of scenario
     if mode == "static":
         return 0, np.array([1.0, 0.0, 0.0])
@@ -363,9 +366,7 @@ def select_action(
         # Governance override: when cumulative evidence strongly disfavors
         # cold chain (critical compliance + high forecast + regulatory),
         # mandate rerouting to local redistribution.
-        if (not deterministic
-                and logits[0] < -2.0
-                and logits[1] > logits[0] + 3.0):
+        if logits[0] < -2.0 and logits[1] > logits[0] + 3.0:
             return 1, np.array([0.0, 1.0, 0.0])
 
     probs = _softmax(logits)
