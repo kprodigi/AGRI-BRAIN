@@ -35,6 +35,7 @@ async function rpc(rpcUrl, method, params = []) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
   });
+  if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
   const j = await r.json();
   if (j.error) throw new Error(j.error.message || "RPC error");
   return j.result;
@@ -462,8 +463,8 @@ function QuickDecisionTab() {
               {taking ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Zap className="w-4 h-4 mr-2" />}
               Take Decision
             </Button>
-            <Button variant="outline" asChild>
-              <a href={`${API}/report/pdf`} target="_blank" rel="noopener"><FileText className="w-4 h-4" /></a>
+            <Button variant="outline" onClick={() => authDownload(`${API}/report/pdf`, "decision-report.pdf")}>
+              <FileText className="w-4 h-4" />
             </Button>
           </div>
 

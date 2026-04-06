@@ -73,4 +73,11 @@ describe("DecisionLogger", function () {
     expect(r1.status).to.equal(1);
     expect(r2.status).to.equal(1);
   });
+
+  it("should reject duplicate decision IDs from identical payload", async function () {
+    await logger.logDecision(1234, "farm:dup", "farm", "cold_chain", 700, 500, "first");
+    await expect(
+      logger.logDecision(1234, "farm:dup", "farm", "cold_chain", 700, 500, "second")
+    ).to.be.revertedWith("duplicate decision id");
+  });
 });

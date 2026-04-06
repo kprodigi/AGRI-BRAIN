@@ -41,13 +41,16 @@ contract ProvenanceRegistry {
     /// @param merkleRoot The root hash of the evidence Merkle tree.
     /// @param decisionId The decision identifier (e.g., blockchain tx hash).
     function anchor(bytes32 merkleRoot, string calldata decisionId) external onlyOwner {
+        bool isNewRoot = records[merkleRoot].timestamp == 0;
         records[merkleRoot] = ProvenanceRecord({
             merkleRoot: merkleRoot,
             timestamp: block.timestamp,
             decisionId: decisionId,
             submitter: msg.sender
         });
-        rootHashes.push(merkleRoot);
+        if (isNewRoot) {
+            rootHashes.push(merkleRoot);
+        }
         emit ProvenanceAnchored(merkleRoot, decisionId, msg.sender, block.timestamp);
     }
 

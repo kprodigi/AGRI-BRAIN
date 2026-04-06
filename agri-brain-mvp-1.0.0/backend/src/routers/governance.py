@@ -7,7 +7,7 @@ GET/POST /governance/chain — read/update on-chain connection settings.
 Policy changes propagate to app.py's state["policy"] (the single source of
 truth for the decision engine).
 """
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from pathlib import Path
@@ -247,6 +247,27 @@ class AgentActiveRequest(BaseModel):
     active: bool
 
 
+def _parse_policy_key(value: str | None) -> bytes:
+    """Accept bytes32 hex keys or hash plain-text keys for DAO proposals."""
+    if not value:
+        return b"\x00" * 32
+    raw = value.strip()
+    if raw.startswith("0x"):
+        raw = raw[2:]
+    if raw and all(c in "0123456789abcdefABCDEF" for c in raw):
+        if len(raw) > 64:
+            raise HTTPException(400, "policy_key hex too long (max 32 bytes)")
+        try:
+            return bytes.fromhex(raw.ljust(64, "0"))
+        except ValueError as exc:
+            raise HTTPException(400, f"Invalid policy_key hex: {exc}")
+    try:
+        from web3 import Web3
+        return bytes(Web3.keccak(text=value))
+    except Exception as exc:
+        raise HTTPException(400, f"Invalid policy_key: {exc}")
+
+
 @router.post("/contracts/slca-rewards/reward")
 def contract_slca_reward(req: RewardSlashRequest):
     """Reward an agent with SLCA tokens on-chain."""
@@ -268,7 +289,7 @@ def contract_dao_propose(req: ProposalRequest):
     """Submit a governance proposal on-chain."""
     from src.chain.contracts import dao_propose
     _try_autoload()
-    key_bytes = bytes.fromhex(req.policy_key.replace("0x", "").ljust(64, "0")) if req.policy_key else b"\x00" * 32
+    key_bytes = _parse_policy_key(req.policy_key)
     txh = dao_propose(req.description, key_bytes, req.policy_value, CHAIN)
     return {"ok": txh is not None, "tx_hash": txh}
 
@@ -286,6 +307,24 @@ def contract_dao_execute(req: ExecuteRequest):
     from src.chain.contracts import dao_execute
     _try_autoload()
     txh = dao_execute(req.proposal_id, CHAIN)
+    return {"ok": txh is not None, "tx_hash": txh}
+
+
+@router.post("/contracts/dao/finalize")
+def contract_dao_finalize(req: ExecuteRequest):
+    """Finalize voting outcome for a governance proposal on-chain."""
+    from src.chain.contracts import dao_finalize
+    _try_autoload()
+    txh = dao_finalize(req.proposal_id, CHAIN)
+    return {"ok": txh is not None, "tx_hash": txh}
+
+
+@router.post("/contracts/dao/queue")
+def contract_dao_queue(req: ExecuteRequest):
+    """Queue a succeeded governance proposal for timelocked execution."""
+    from src.chain.contracts import dao_queue
+    _try_autoload()
+    txh = dao_queue(req.proposal_id, CHAIN)
     return {"ok": txh is not None, "tx_hash": txh}
 
 @router.post("/contracts/policy-store/set")

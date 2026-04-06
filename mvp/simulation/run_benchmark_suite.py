@@ -12,7 +12,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -185,6 +185,8 @@ def main() -> None:
     # clobber the full 8-mode output from aggregate_seeds.py.
     out = RESULTS_DIR / "benchmark_context_summary.json"
     sig_out = RESULTS_DIR / "benchmark_context_significance.json"
+    compat_out = RESULTS_DIR / "benchmark_summary.json"
+    compat_sig_out = RESULTS_DIR / "benchmark_significance.json"
     payload = {
         "_meta": {
             "source": "run_benchmark_suite.py",
@@ -197,8 +199,13 @@ def main() -> None:
     }
     out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     sig_out.write_text(json.dumps(significance, indent=2), encoding="utf-8")
+    # Compatibility exports for downstream scripts expecting flat benchmark files.
+    compat_out.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    compat_sig_out.write_text(json.dumps(significance, indent=2), encoding="utf-8")
     print(f"Saved benchmark summary: {out}")
     print(f"Saved benchmark significance: {sig_out}")
+    print(f"Saved benchmark summary (compat): {compat_out}")
+    print(f"Saved benchmark significance (compat): {compat_sig_out}")
 
 
 if __name__ == "__main__":

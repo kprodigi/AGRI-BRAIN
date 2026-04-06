@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { getApiBase } from "@/mvp/api.js";
+import { authFetch } from "@/lib/utils";
 
 export function useWebSocket() {
   const [connected, setConnected] = useState(false);
@@ -37,14 +38,20 @@ export function useWebSocket() {
     let ws;
     let reconnectTimer;
 
-    const connect = () => {
+    const connect = async () => {
       try {
-        // Prefer dedicated WS key; fall back to general API key.
-        // Note: browser WebSocket API does not support custom headers,
-        // so the key is passed as a query parameter. Server-side logs
-        // should be configured to redact query strings in production.
-        const apiKey = localStorage.getItem("WS_API_KEY") || localStorage.getItem("API_KEY");
-        const url = apiKey ? `${WS_URL}?api_key=${encodeURIComponent(apiKey)}` : WS_URL;
+        let url = WS_URL;
+        try {
+          const tokenRes = await authFetch(`${API}/stream/token`);
+          if (tokenRes.ok) {
+            const data = await tokenRes.json();
+            if (data?.token) {
+              url = `${WS_URL}?ws_token=${encodeURIComponent(data.token)}`;
+            }
+          }
+        } catch {
+          // In local dev, websocket may still work without an explicit token.
+        }
         ws = new WebSocket(url);
         wsRef.current = ws;
 

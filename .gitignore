@@ -4,7 +4,6 @@ __pycache__/
 .pytest_cache/
 
 # Stochastic feasibility test scripts (diagnostic, not production)
-mvp/simulation/test_stochastic_*.py
 docs/screenshots/_check/
 node_modules/
 dist/

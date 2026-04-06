@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn, fmt, short, mcpRaw, mcpCall, mcpLog } from "@/lib/utils";
+import { cn, fmt, short, mcpRaw, mcpCall, mcpLog, getApiKey } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
 import { toast } from "sonner";
 import {
@@ -105,7 +105,7 @@ function ResourceMonitor() {
 
   const loadResources = useCallback(async () => {
     try {
-      const key = localStorage.getItem("API_KEY");
+      const key = getApiKey();
       const headers = key ? { "x-api-key": key } : {};
       const res = await fetch(`${API}/mcp/resources`, { headers });
       const data = await res.json();
@@ -182,7 +182,7 @@ function PromptBrowser() {
   useEffect(() => {
     (async () => {
       try {
-        const key = localStorage.getItem("API_KEY");
+        const key = getApiKey();
         const headers = key ? { "x-api-key": key } : {};
         const res = await fetch(`${API}/mcp/prompts`, { headers });
         if (!res.ok) throw new Error(res.statusText);

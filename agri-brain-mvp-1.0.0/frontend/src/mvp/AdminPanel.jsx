@@ -1,6 +1,7 @@
 // frontend/src/mvp/AdminPanel.jsx
 import React, { useEffect, useState } from "react";
 import { getApiBase } from "./api.js";
+import { getApiKey } from "@/lib/utils";
 
 const API = getApiBase();
 const WS_URL = (API || "").replace(/^http/i, "ws") + "/stream";
@@ -8,7 +9,7 @@ const WS_URL = (API || "").replace(/^http/i, "ws") + "/stream";
 // ---------------- small JSON helpers ----------------
 function _authHeaders(extra = {}) {
     const h = { "Content-Type": "application/json", ...extra };
-    const key = localStorage.getItem("API_KEY");
+    const key = getApiKey();
     if (key) h["x-api-key"] = key;
     return h;
 }
@@ -63,9 +64,16 @@ export default function AdminPanel() {
     // 🌐 One shared WebSocket for the whole Admin app (decisions + chain head)
     useEffect(() => {
         let ws;
-        try {
-            const apiKey = localStorage.getItem("WS_API_KEY") || localStorage.getItem("API_KEY");
-            const wsUrl = apiKey ? `${WS_URL}?api_key=${encodeURIComponent(apiKey)}` : WS_URL;
+        (async () => {
+            let wsUrl = WS_URL;
+            try {
+                const tr = await fetch(`${API}/stream/token`, { headers: _authHeaders() });
+                if (tr.ok) {
+                    const data = await tr.json();
+                    if (data?.token) wsUrl = `${WS_URL}?ws_token=${encodeURIComponent(data.token)}`;
+                }
+            } catch { /* dev fallback */ }
+            try {
             ws = new WebSocket(wsUrl);
             ws.onopen = () => {};
             ws.onclose = () => {};
@@ -90,9 +98,10 @@ export default function AdminPanel() {
                     console.warn("[WS parse]", e);
                 }
             };
-        } catch (e) {
-            console.warn("[WS] failed to connect:", e);
-        }
+            } catch (e) {
+                console.warn("[WS] failed to connect:", e);
+            }
+        })();
         return () => { try { ws && ws.close(); } catch { } };
     }, []);
 

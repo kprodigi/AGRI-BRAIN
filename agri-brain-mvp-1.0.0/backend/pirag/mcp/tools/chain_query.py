@@ -43,5 +43,5 @@ def query_recent_decisions(n: int = 10) -> List[Dict[str, Any]]:
     if records:
         return records
 
-    # No live blockchain data available — return empty with status indicator
-    return {"records": [], "source": "none", "note": "No live blockchain connection configured"}
+    # No live blockchain data available
+    return []

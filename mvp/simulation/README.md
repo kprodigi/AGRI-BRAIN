@@ -103,7 +103,7 @@ the global policy.
 
 ```bash
 cd mvp/simulation
-pip install numpy pandas matplotlib scipy
+pip install -e ../../agri-brain-mvp-1.0.0/backend
 python generate_results.py    # runs all scenarios, saves tables
 python generate_figures.py    # generates publication figures (Fig. 2-10)
 ```
@@ -154,14 +154,18 @@ piRAG consistently contributes more than MCP across all 5 scenarios. Zero rank i
 
 ## Seed & Reproducibility
 
-All runs use `seed=42` via `numpy.random.default_rng(42)`.
-Deterministic seeding ensures reproducibility of decision and metric traces across platforms. Wall-clock latency metrics are inherently runtime-dependent and may vary.
+Single-run scripts default to `seed=42`, while benchmark summaries are computed over
+multiple seeds (default: `42,1337,2024,7,99`).
+Set `DETERMINISTIC_MODE=true` for strict reproducibility checks and snapshot guards.
+Wall-clock latency metrics remain runtime-dependent and may vary by machine load.
 
 ## API Integration
 
 The simulation is also accessible via the backend API:
 
 ```
-POST /results/generate    -> runs simulation, returns summary JSON
+POST /results/generate    -> starts simulation job (background)
+GET  /results/status      -> poll job status
+GET  /results/summary     -> fetch latest completed summary
 GET  /results/figures/{filename}  -> serves generated figure files
 ```

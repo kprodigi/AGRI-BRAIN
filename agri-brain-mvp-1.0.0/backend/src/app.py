@@ -838,7 +838,18 @@ def list_decisions():
 # ---------------------------------------------------------------------------
 @API.post("/chain/config")
 def chain_config(cfg: ChainConfig):
-    state["chain"] = cfg.model_dump()
+    chain_cfg = cfg.model_dump()
+    state["chain"] = chain_cfg
+    # Keep governance module config in sync with local chain config endpoint.
+    try:
+        _gov.CHAIN.update({
+            "rpc": chain_cfg.get("rpc"),
+            "chain_id": chain_cfg.get("chain_id"),
+            "private_key": chain_cfg.get("private_key"),
+            "addresses": chain_cfg.get("addresses") or {},
+        })
+    except Exception as exc:
+        logger.debug("governance chain sync skipped: %s", exc)
     return {"ok": True, "chain": state["chain"]}
 
 # ---------------------------------------------------------------------------

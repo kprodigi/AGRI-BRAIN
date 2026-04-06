@@ -1,11 +1,21 @@
 # backend/src/routers/stream.py
 import asyncio, json
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Header, Request, WebSocket, WebSocketDisconnect
 from starlette.responses import Response
 from src.agents.bus import BUS
-from src.security import websocket_auth_ok
+from src.security import enforce_api_key, issue_ws_token, websocket_auth_ok
 
 router = APIRouter()
+
+
+@router.get("/stream/token")
+def stream_token(
+    request: Request,
+    x_api_key: str | None = Header(default=None, alias="x-api-key"),
+):
+    """Mint a short-lived websocket token so clients needn't send API keys in URL."""
+    enforce_api_key(request, x_api_key)
+    return {"token": issue_ws_token(ttl_seconds=120)}
 
 
 @router.websocket("/stream")

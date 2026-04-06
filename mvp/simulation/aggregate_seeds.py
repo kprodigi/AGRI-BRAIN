@@ -31,28 +31,46 @@ def bootstrap_ci(vals, n_boot=1000, alpha=0.05):
     return float(np.quantile(boots, alpha / 2)), float(np.quantile(boots, 1 - alpha / 2))
 
 
-def permutation_pvalue(a, b, n_perm=4000):
+def paired_permutation_pvalue(a, b, n_perm=4000):
     x, y = np.array(a, dtype=float), np.array(b, dtype=float)
-    observed = abs(float(np.mean(x) - np.mean(y)))
-    pooled = np.concatenate([x, y])
-    n_x = len(x)
+    if x.shape != y.shape or len(x) == 0:
+        return 1.0
+    d = x - y
+    observed = abs(float(np.mean(d)))
     rng = np.random.default_rng(123)
     ge = 0
     for _ in range(n_perm):
-        perm = rng.permutation(pooled)
-        diff = abs(float(np.mean(perm[:n_x]) - np.mean(perm[n_x:])))
+        signs = rng.choice([-1.0, 1.0], size=len(d))
+        diff = abs(float(np.mean(d * signs)))
         if diff >= observed:
             ge += 1
     return float((ge + 1) / (n_perm + 1))
 
 
-def cohens_d(a, b):
+def cohens_dz(a, b):
     x, y = np.array(a, dtype=float), np.array(b, dtype=float)
-    if len(x) < 2 or len(y) < 2:
+    if x.shape != y.shape or len(x) < 2:
         return 0.0
-    sx2, sy2 = np.var(x, ddof=1), np.var(y, ddof=1)
-    pooled = ((len(x) - 1) * sx2 + (len(y) - 1) * sy2) / max(len(x) + len(y) - 2, 1)
-    return float((np.mean(x) - np.mean(y)) / np.sqrt(pooled)) if pooled > 0 else 0.0
+    d = x - y
+    sd = np.std(d, ddof=1)
+    return float(np.mean(d) / sd) if sd > 0 else 0.0
+
+
+def benjamini_hochberg(p_values: dict[str, float]) -> dict[str, float]:
+    """Return BH-FDR adjusted p-values, preserving input keys."""
+    keys = list(p_values.keys())
+    m = len(keys)
+    if m == 0:
+        return {}
+    ordered = sorted(((k, float(p_values[k])) for k in keys), key=lambda kv: kv[1])
+    adjusted = {}
+    prev = 1.0
+    for rank_rev, (k, p) in enumerate(reversed(ordered), start=1):
+        i = m - rank_rev + 1
+        q = min(prev, (p * m) / max(i, 1))
+        adjusted[k] = float(min(max(q, 0.0), 1.0))
+        prev = q
+    return adjusted
 
 
 def main():
@@ -91,20 +109,30 @@ def main():
                     "n_seeds": len(vals),
                 }
 
-    # Build significance
+    # Build significance with paired tests and FDR correction.
     significance = {}
     for sc in SCENARIOS:
         significance[sc] = {}
         for baseline in ("mcp_only", "pirag_only", "no_context", "hybrid_rl", "static"):
             comp = {}
+            pvals = {}
             for met in METRICS:
                 a = [all_data[s][sc]["agribrain"][met] for s in all_data]
                 b = [all_data[s][sc][baseline][met] for s in all_data]
+                p = paired_permutation_pvalue(a, b)
+                d = cohens_dz(a, b)
+                key = f"{sc}:{baseline}:{met}"
+                pvals[key] = p
                 comp[met] = {
-                    "p_value": permutation_pvalue(a, b),
-                    "cohens_d": cohens_d(a, b),
+                    "p_value": p,
+                    "cohens_d": d,
+                    "cohens_dz": d,
                     "mean_diff": float(np.mean(a) - np.mean(b)),
                 }
+            p_adj = benjamini_hochberg(pvals)
+            for met in METRICS:
+                key = f"{sc}:{baseline}:{met}"
+                comp[met]["p_value_adj"] = float(p_adj.get(key, comp[met]["p_value"]))
             significance[sc][f"agribrain_vs_{baseline}"] = comp
 
     # Save
@@ -125,7 +153,7 @@ def main():
     for sc in SCENARIOS:
         for comp_name in ("agribrain_vs_no_context", "agribrain_vs_hybrid_rl"):
             rec = significance[sc][comp_name]["ari"]
-            print(f"  {sc} {comp_name}: p={rec['p_value']:.4f} d={rec['cohens_d']:+.3f}")
+            print(f"  {sc} {comp_name}: p={rec['p_value']:.4f} p_adj={rec['p_value_adj']:.4f} dz={rec['cohens_dz']:+.3f}")
 
 
 if __name__ == "__main__":

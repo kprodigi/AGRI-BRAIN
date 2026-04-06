@@ -3,6 +3,7 @@ import Ops from './tabs/Ops'
 import Quality from './tabs/Quality'
 import Decisions from './tabs/Decisions'
 import { getApiBase } from '../mvp/api.js'
+import { getApiKey } from "@/lib/utils";
 // Optional: uncomment next line to expose the Admin tools as a 4th tab
 // import AdminPanel from './mvp/AdminPanel.jsx'
 
@@ -15,7 +16,7 @@ export default function App() {
 
     // keep your original warm-up call
     useEffect(() => {
-        const key = localStorage.getItem("API_KEY");
+        const key = getApiKey();
         const headers = key ? { "x-api-key": key } : {};
         fetch(`${API}/case/load`, { method: 'POST', headers }).catch(() => { })
     }, [])

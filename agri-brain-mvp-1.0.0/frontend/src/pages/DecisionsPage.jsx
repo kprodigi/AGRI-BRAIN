@@ -26,6 +26,7 @@ const ACTION_COLORS = {
   standard_cold_chain: { bg: "bg-[#0072B2]/10", text: "text-[#0072B2]", color: "#0072B2", label: "Cold Chain" },
   redistribution: { bg: "bg-emerald-500/10", text: "text-emerald-600 dark:text-emerald-400", color: "#10B981", label: "Redistribution" },
   local_redistribution: { bg: "bg-emerald-500/10", text: "text-emerald-600 dark:text-emerald-400", color: "#10B981", label: "Redistribution" },
+  local_redistribute: { bg: "bg-emerald-500/10", text: "text-emerald-600 dark:text-emerald-400", color: "#10B981", label: "Redistribution" },
   recovery: { bg: "bg-[#D55E00]/10", text: "text-[#D55E00]", color: "#D55E00", label: "Recovery" },
   composting: { bg: "bg-[#D55E00]/10", text: "text-[#D55E00]", color: "#D55E00", label: "Composting" },
 };
@@ -208,10 +209,11 @@ export default function DecisionsPage() {
   const takeDecision = async () => {
     const selectedRole = role === "all" ? "farm" : role;
     try {
-      await authFetch(`${API}/decide`, {
+      const res = await authFetch(`${API}/decide`, {
         method: "POST",
         body: JSON.stringify({ agent_id: "demo:" + selectedRole, role: selectedRole }),
       });
+      if (!res.ok) throw new Error(res.status);
       toast.success("Decision taken successfully");
       load();
     } catch {

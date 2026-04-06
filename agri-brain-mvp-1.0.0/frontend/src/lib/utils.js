@@ -5,6 +5,18 @@ export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
+export function getApiKey() {
+  const sessionKey = sessionStorage.getItem("API_KEY");
+  if (sessionKey) return sessionKey;
+  const legacy = localStorage.getItem("API_KEY");
+  if (legacy) {
+    sessionStorage.setItem("API_KEY", legacy);
+    localStorage.removeItem("API_KEY");
+    return legacy;
+  }
+  return "";
+}
+
 // Number formatting helpers
 export const n = (v) => (Number.isFinite(+v) ? +v : null);
 export const fmt = (v, d = 2) => (Number.isFinite(+v) ? (+v).toFixed(d) : "\u2014");
@@ -21,14 +33,14 @@ export const short = (s) => (s && s.length > 12 ? `${s.slice(0, 8)}\u2026${s.sli
 // Shared API key helper — reads from localStorage once per call
 function _apiHeaders(extra = {}) {
   const h = { "Content-Type": "application/json", ...extra };
-  const key = localStorage.getItem("API_KEY");
+  const key = getApiKey();
   if (key) h["x-api-key"] = key;
   return h;
 }
 
 // Authenticated fetch wrapper for pages using direct fetch()
 export function authFetch(url, opts = {}) {
-  const key = localStorage.getItem("API_KEY");
+  const key = getApiKey();
   const headers = { ...(opts.headers || {}) };
   if (key) headers["x-api-key"] = key;
   if (opts.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
@@ -90,5 +102,10 @@ export async function mcpRaw(apiBase, method, params = {}) {
 export async function mcpCall(apiBase, toolName, args = {}) {
   const result = await mcpRaw(apiBase, "tools/call", { name: toolName, arguments: args });
   const text = result?.content?.[0]?.text;
-  return text ? JSON.parse(text) : result;
+  if (!text) return result;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return result;
+  }
 }

@@ -2,6 +2,8 @@
 // -------------------------------------------------------------
 // Smart, single API base with automatic 8111/8100 fallback
 // -------------------------------------------------------------
+import { getApiKey } from "@/lib/utils";
+
 let API = (window.API_BASE || localStorage.getItem('API_BASE') || 'http://127.0.0.1:8100').replace(/\/$/, '');
 
 export function getApiBase() {
@@ -35,7 +37,7 @@ function togglePort(base) {
 // -------------------------------------------------------------
 function _headers() {
     const h = { 'Content-Type': 'application/json' };
-    const key = localStorage.getItem('API_KEY');
+    const key = getApiKey();
     if (key) h['x-api-key'] = key;
     return h;
 }
@@ -106,7 +108,8 @@ export const Scenarios = {
                 { id: 'heatwave', label: 'Climate-Induced Heatwave' },
                 { id: 'overproduction', label: 'Overproduction / Glut' },
                 { id: 'cyber_outage', label: 'Cyber Threat & Node Outage' },
-                { id: 'adaptive_pricing', label: 'Adaptive Pricing & Cooperative Auctions' },
+                { id: 'adaptive_pricing', label: 'Adaptive Pricing & Demand Oscillation' },
+                { id: 'baseline', label: 'Baseline' },
             ],
             active: null,
         };
@@ -150,7 +153,7 @@ export const Decide = {
         const data = raw.memo ?? raw;
         return {
             agent: data.agent ?? payload.agent ?? 'farm',
-            action: data.action ?? data.route ?? 'standard_cold_chain',
+            action: data.action ?? data.route ?? 'cold_chain',
             slca_score: data.slca_score ?? data.slca ?? 0,
             carbon_kg: data.carbon_kg ?? data.carbon ?? 0,
             circular_economy_score: data.circular_economy_score ?? null,

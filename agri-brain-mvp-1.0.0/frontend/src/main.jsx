@@ -2,6 +2,7 @@ import React, { lazy, Suspense } from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
 import { getApiBase } from "./mvp/api.js";
+import { authDownload, getApiKey } from "./lib/utils.js";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { ThemeProvider } from "./hooks/useTheme.jsx";
 import { useWebSocket } from "./hooks/useWebSocket.jsx";
@@ -62,7 +63,7 @@ const router = createBrowserRouter([
 
   function _hdrs() {
     const h = { "Content-Type": "application/json" };
-    const key = localStorage.getItem("API_KEY");
+    const key = getApiKey();
     if (key) h["x-api-key"] = key;
     return h;
   }
@@ -109,11 +110,23 @@ const router = createBrowserRouter([
       .find((el) => /download\s+decision\s+memo\s*\(pdf\)/i.test((el.textContent || "").trim()));
     if (!btn || btn.dataset.memoBound === "1") return;
     if (btn.tagName === "A") {
-      btn.setAttribute("href", url);
-      btn.setAttribute("target", "_blank");
-      btn.setAttribute("rel", "noopener");
+      btn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        try {
+          await authDownload(url, "decision-report.pdf");
+        } catch (err) {
+          console.warn(err);
+        }
+      });
     } else {
-      btn.addEventListener("click", (e) => { e.preventDefault(); window.open(url, "_blank", "noopener"); });
+      btn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        try {
+          await authDownload(url, "decision-report.pdf");
+        } catch (err) {
+          console.warn(err);
+        }
+      });
     }
     btn.dataset.memoBound = "1";
   }

@@ -23,10 +23,13 @@ jobs:
           pip install pytest
       - name: Run backend tests
         run: |
-          python -m pytest agri-brain-mvp-1.0.0/backend/pirag/tests
+          python -m pytest agri-brain-mvp-1.0.0/backend/pirag/tests agri-brain-mvp-1.0.0/backend/tests
       - name: Validate simulation results
         run: |
           python mvp/simulation/validate_results.py
+      - name: Run stochastic simulation smoke test
+        run: |
+          python mvp/simulation/test_stochastic_quick.py
 
   contract-tests:
     runs-on: ubuntu-latest

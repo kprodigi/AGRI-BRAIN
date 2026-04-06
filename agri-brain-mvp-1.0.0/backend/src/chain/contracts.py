@@ -260,18 +260,40 @@ def _get_contract_readonly(chain_cfg: dict, name: str):
 
 def _send_tx(w3, acct, tx_fn, chain_cfg: dict) -> Optional[str]:
     """Build, sign, and send a transaction. Returns tx hash hex or None."""
+    max_fee, priority_fee = _fee_params(w3)
     tx = tx_fn.build_transaction({
         "from": acct.address,
         "nonce": w3.eth.get_transaction_count(acct.address),
         "gas": 300_000,
-        "maxFeePerGas": w3.to_wei("2", "gwei"),
-        "maxPriorityFeePerGas": w3.to_wei("1", "gwei"),
+        "maxFeePerGas": max_fee,
+        "maxPriorityFeePerGas": priority_fee,
         "chainId": int(chain_cfg.get("chain_id", 31337)),
     })
     signed = acct.sign_transaction(tx)
     txh = w3.eth.send_raw_transaction(signed.raw_transaction)
     rcpt = w3.eth.wait_for_transaction_receipt(txh)
-    return rcpt.transactionHash.hex()
+    if int(rcpt.get("status", 1)) != 1:
+        raise RuntimeError("On-chain transaction reverted")
+    tx_hash = rcpt.get("transactionHash")
+    return tx_hash.hex() if tx_hash is not None else None
+
+
+def _fee_params(w3) -> tuple[int, int]:
+    """Use dynamic EIP-1559 fees when available; fallback to conservative defaults."""
+    try:
+        latest = w3.eth.get_block("latest")
+        base_fee = int(latest.get("baseFeePerGas") or 0)
+    except Exception:
+        base_fee = 0
+    try:
+        priority = int(w3.eth.max_priority_fee)
+    except Exception:
+        priority = int(w3.to_wei("1", "gwei"))
+    if base_fee > 0:
+        max_fee = int(base_fee * 2 + priority)
+    else:
+        max_fee = int(w3.to_wei("2", "gwei"))
+    return max_fee, priority
 
 
 # ---------------------------------------------------------------------------
@@ -319,6 +341,24 @@ def dao_vote(proposal_id: int, support: bool, chain_cfg: dict) -> Optional[str]:
         return None
     w3, acct, contract = result
     return _send_tx(w3, acct, contract.functions.vote(proposal_id, support), chain_cfg)
+
+
+def dao_finalize(proposal_id: int, chain_cfg: dict) -> Optional[str]:
+    """Finalize voting outcome for a governance proposal."""
+    result = _get_contract(chain_cfg, "AgriDAO")
+    if result is None:
+        return None
+    w3, acct, contract = result
+    return _send_tx(w3, acct, contract.functions.finalize(proposal_id), chain_cfg)
+
+
+def dao_queue(proposal_id: int, chain_cfg: dict) -> Optional[str]:
+    """Queue a succeeded governance proposal for execution."""
+    result = _get_contract(chain_cfg, "AgriDAO")
+    if result is None:
+        return None
+    w3, acct, contract = result
+    return _send_tx(w3, acct, contract.functions.queue(proposal_id), chain_cfg)
 
 
 def dao_execute(proposal_id: int, chain_cfg: dict) -> Optional[str]:

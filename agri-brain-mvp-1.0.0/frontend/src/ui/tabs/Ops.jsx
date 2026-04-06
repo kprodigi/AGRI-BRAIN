@@ -8,6 +8,7 @@ import {
     useToast,
     Trend,
 } from "../components/UiPrimitives.jsx";
+import { getApiKey } from "@/lib/utils";
 import { Thermometer, Activity, Recycle, BarChart3, AlertTriangle } from "lucide-react";
 import {
     LineChart,
@@ -27,7 +28,7 @@ const API = getApiBase();
 
 // ---------------- helpers ----------------
 async function jget(path) {
-    const key = localStorage.getItem("API_KEY");
+    const key = getApiKey();
     const headers = key ? { "x-api-key": key } : {};
     const r = await fetch(`${API}${path}`, { headers });
     if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);

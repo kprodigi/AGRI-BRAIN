@@ -85,7 +85,6 @@ Results saved to `mvp/simulation/results/`.
 | POST | /rag/ask | Query piRAG knowledge base |
 | POST | /rag/ingest | Ingest documents into piRAG |
 | WS | /stream | Real-time decision stream |
-| WS | /stream | Real-time decision stream |
 
 ## Tech Stack
 

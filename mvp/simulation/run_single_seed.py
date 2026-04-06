@@ -19,7 +19,7 @@ seed = int(sys.argv[1])
 print(f"Running full simulation with seed={seed}...")
 data = run_all(seed=seed)
 
-out_dir = Path("results/benchmark_seeds")
+out_dir = Path(__file__).resolve().parent / "results" / "benchmark_seeds"
 out_dir.mkdir(parents=True, exist_ok=True)
 
 metrics = {}

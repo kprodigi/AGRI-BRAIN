@@ -11,8 +11,8 @@ except Exception:
 ABI = [
     {
         "inputs": [
-            {"internalType": "bytes32", "name": "root", "type": "bytes32"},
-            {"internalType": "string", "name": "policyURI", "type": "string"},
+            {"internalType": "bytes32", "name": "merkleRoot", "type": "bytes32"},
+            {"internalType": "string", "name": "decisionId", "type": "string"},
         ],
         "name": "anchor",
         "outputs": [],
@@ -22,11 +22,12 @@ ABI = [
     {
         "anonymous": False,
         "inputs": [
-            {"indexed": True, "internalType": "address", "name": "who", "type": "address"},
-            {"indexed": True, "internalType": "bytes32", "name": "root", "type": "bytes32"},
-            {"indexed": False, "internalType": "string", "name": "policyURI", "type": "string"},
+            {"indexed": True, "internalType": "bytes32", "name": "merkleRoot", "type": "bytes32"},
+            {"indexed": False, "internalType": "string", "name": "decisionId", "type": "string"},
+            {"indexed": True, "internalType": "address", "name": "submitter", "type": "address"},
+            {"indexed": False, "internalType": "uint256", "name": "timestamp", "type": "uint256"},
         ],
-        "name": "RootAnchored",
+        "name": "ProvenanceAnchored",
         "type": "event",
     },
 ]
@@ -59,7 +60,8 @@ def anchor_root(root_hex: str, policy_uri: str = "") -> Optional[str]:
     w3 = Web3(Web3.HTTPProvider(rpc))
     acct = w3.eth.account.from_key(privkey)
     contract = w3.eth.contract(address=Web3.to_checksum_address(addr), abi=ABI)
-    tx = contract.functions.anchor(bytes.fromhex(root_hex), policy_uri).build_transaction({
+    normalized_root = root_hex[2:] if root_hex.startswith("0x") else root_hex
+    tx = contract.functions.anchor(bytes.fromhex(normalized_root), policy_uri).build_transaction({
         "from": acct.address,
         "nonce": w3.eth.get_transaction_count(acct.address),
         "gas": 500000,

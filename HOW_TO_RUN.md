@@ -104,6 +104,19 @@ fastapi, uvicorn, pydantic, numpy, pandas, matplotlib, reportlab, orjson, reques
 | `STOCH_DELAY_PROB` | `0.05` | Telemetry lag probability per step (intermittent dropouts) |
 | `BENCHMARK_SEEDS` | `42,1337,2024,7,99` | Comma-separated seeds for multi-seed benchmark |
 
+Security/runtime flags:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `APP_ENV` | `dev` | Runtime mode (`dev`/`prod`) |
+| `REQUIRE_API_KEY` | `false` in dev | Require `x-api-key` on API routes |
+| `APP_API_KEY` | (empty) | API key value when auth is enabled |
+| `ALLOW_LOCAL_WITHOUT_API_KEY` | `true` in dev | Allow loopback bypass for local development |
+| `ENABLE_DEBUG_ROUTES` | `true` in dev | Enables `/debug/*` routes |
+| `WS_REQUIRE_API_KEY` | `false` in dev | Require websocket API key |
+| `WS_API_KEY` | falls back to `APP_API_KEY` | Websocket auth key |
+| `CORS_ORIGINS` | `*` in dev | Comma-separated allowed origins |
+
 ### 2c. Start the backend
 
 ```bash
@@ -397,7 +410,7 @@ Results are saved to `mvp/simulation/results/`:
 
 | File                   | Description                                       |
 |------------------------|---------------------------------------------------|
-| `table1_summary.csv`     | Per-scenario metrics (4 methods x 5 scenarios)              |
+| `table1_summary.csv`     | Per-scenario metrics (3 methods x 5 scenarios)              |
 | `table2_ablation.csv`    | Full ablation study (8 modes x 5 scenarios)                 |
 | `benchmark_summary.json` | Multi-seed benchmark means/std/CI                           |
 | `benchmark_significance.json` | Permutation-test p-values and effect sizes            |

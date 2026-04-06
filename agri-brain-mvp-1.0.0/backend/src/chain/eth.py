@@ -39,6 +39,25 @@ def _client(cfg: dict):
 def _contract(w3: Web3, addr: str):
     return w3.eth.contract(address=_checksum(addr), abi=ABI)
 
+
+def _fee_params(w3: Web3) -> tuple[int, int]:
+    """Use dynamic EIP-1559 fees when available; fallback to conservative defaults."""
+    try:
+        latest = w3.eth.get_block("latest")
+        base_fee = int(latest.get("baseFeePerGas") or 0)
+    except Exception:
+        base_fee = 0
+    try:
+        priority = int(w3.eth.max_priority_fee)
+    except Exception:
+        priority = int(w3.to_wei("1", "gwei"))
+    if base_fee > 0:
+        max_fee = int(base_fee * 2 + priority)
+    else:
+        max_fee = int(w3.to_wei("2", "gwei"))
+    return max_fee, priority
+
+
 def log_decision_onchain(memo: dict, chain_cfg: dict) -> Optional[str]:
     """Send tx to DecisionLogger if configured. Returns tx hash hex or None."""
     if not chain_cfg: return None
@@ -49,6 +68,7 @@ def log_decision_onchain(memo: dict, chain_cfg: dict) -> Optional[str]:
 
     w3, acct = _client(chain_cfg)
     c = _contract(w3, dl)
+    max_fee, priority_fee = _fee_params(w3)
     tx = c.functions.logDecision(
         int(memo.get("ts", 0)),
         str(memo.get("agent", "")),
@@ -61,14 +81,17 @@ def log_decision_onchain(memo: dict, chain_cfg: dict) -> Optional[str]:
         "from": acct.address,
         "nonce": w3.eth.get_transaction_count(acct.address),
         "gas": 300000,
-        "maxFeePerGas": w3.to_wei("2", "gwei"),
-        "maxPriorityFeePerGas": w3.to_wei("1", "gwei"),
+        "maxFeePerGas": max_fee,
+        "maxPriorityFeePerGas": priority_fee,
         "chainId": int(chain_cfg.get("chain_id", 31337)),
     })
     signed = acct.sign_transaction(tx)
     txh = w3.eth.send_raw_transaction(signed.raw_transaction)
     rcpt = w3.eth.wait_for_transaction_receipt(txh)
-    return rcpt.transactionHash.hex()
+    if int(rcpt.get("status", 1)) != 1:
+        raise RuntimeError("DecisionLogger transaction reverted")
+    tx_hash = rcpt.get("transactionHash")
+    return tx_hash.hex() if tx_hash is not None else None
 
 def fetch_recent_decisions(chain_cfg: dict, from_block: int = 0, to_block: str | int = "latest"):
     """Return decoded DecisionLogged events (list of dicts)."""

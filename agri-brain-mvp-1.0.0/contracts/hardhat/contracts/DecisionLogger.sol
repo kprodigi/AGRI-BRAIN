@@ -51,6 +51,7 @@ contract DecisionLogger {
         string calldata note
     ) external onlyAuthorized returns (bytes32 id) {
         id = keccak256(abi.encode(ts, agent, action, msg.sender));
+        require(memos[id].ts == 0, "duplicate decision id");
         memos[id] = Memo(
             ts,
             agent,

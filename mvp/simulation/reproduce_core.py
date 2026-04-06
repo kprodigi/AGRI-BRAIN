@@ -53,6 +53,20 @@ def _run(stage_name: str, cmd: list[str], timeout_s: int) -> None:
     print(f"[{stage_name}] PASS")
 
 
+def _benchmark_seed_list() -> list[int]:
+    raw = os.environ.get("BENCHMARK_SEEDS", "42,1337,2024,7,99").strip()
+    out: list[int] = []
+    for part in raw.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            out.append(int(part))
+        except ValueError:
+            continue
+    return out or [42, 1337, 2024, 7, 99]
+
+
 def main() -> None:
     mode_label = "DETERMINISTIC" if _DETERMINISTIC else "STOCHASTIC"
     print(f"Reproducibility pipeline — mode: {mode_label}")
@@ -67,13 +81,19 @@ def main() -> None:
         ("run_regression_guard", [sys.executable, str(SIM_DIR / "run_regression_guard.py")], _timeout_for("run_regression_guard", 300)),
         ("run_benchmark_suite", [sys.executable, str(SIM_DIR / "run_benchmark_suite.py")], _timeout_for("run_benchmark_suite", 180000)),
         ("run_stress_suite", [sys.executable, str(SIM_DIR / "run_stress_suite.py")], _timeout_for("run_stress_suite", 36000)),
-        ("aggregate_seeds", [sys.executable, str(SIM_DIR / "aggregate_seeds.py")], _timeout_for("aggregate_seeds", 600)),
         ("generate_figures", [sys.executable, str(SIM_DIR / "generate_figures.py")], _timeout_for("generate_figures", 1800)),
         ("export_paper_evidence", [sys.executable, str(SIM_DIR / "export_paper_evidence.py")], _timeout_for("export_paper_evidence", 600)),
         ("build_artifact_manifest", [sys.executable, str(SIM_DIR / "build_artifact_manifest.py")], _timeout_for("build_artifact_manifest", 120)),
     ]
     for name, cmd, timeout_s in stages:
         _run(name, cmd, timeout_s)
+    for seed in _benchmark_seed_list():
+        _run(
+            f"run_single_seed_{seed}",
+            [sys.executable, str(SIM_DIR / "run_single_seed.py"), str(seed)],
+            _timeout_for("run_single_seed", 36000),
+        )
+    _run("aggregate_seeds", [sys.executable, str(SIM_DIR / "aggregate_seeds.py")], _timeout_for("aggregate_seeds", 600))
     print(f"Core reproducibility pipeline complete ({mode_label} mode).")
 
 

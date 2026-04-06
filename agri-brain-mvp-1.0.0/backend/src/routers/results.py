@@ -39,11 +39,11 @@ _JOB = {"running": False, "started_at": None, "finished_at": None,
         "error": None, "summary": None}
 
 
-def _run_in_background():
+def _run_in_background(seed: int | None = None):
     """Worker: run simulation and save tables."""
     try:
         from generate_results import run_all, save_tables, get_summary_json
-        data = run_all()
+        data = run_all(seed=seed) if seed is not None else run_all()
         save_tables(data["table1"], data["table2"])
         with _JOB_LOCK:
             _JOB["summary"] = get_summary_json(data)
@@ -62,7 +62,7 @@ def _run_in_background():
 # POST /results/generate — non-blocking: kicks off background job
 # ---------------------------------------------------------------------------
 @router.post("/generate")
-def generate_results():
+def generate_results(seed: int | None = None):
     """Start full simulation (5 scenarios x 8 modes) in the background.
 
     Returns immediately with a job status. Poll GET /results/status for
@@ -91,10 +91,10 @@ def generate_results():
         _JOB["error"] = None
         _JOB["summary"] = None
 
-    t = threading.Thread(target=_run_in_background, daemon=True)
+    t = threading.Thread(target=_run_in_background, kwargs={"seed": seed}, daemon=True)
     t.start()
 
-    return {"ok": True, "status": "started"}
+    return {"ok": True, "status": "started", "seed": seed}
 
 
 @router.get("/status")

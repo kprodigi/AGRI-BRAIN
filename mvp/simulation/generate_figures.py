@@ -446,28 +446,31 @@ def fig4_cyber(data):
     _legend(ax)
     _apply_style(ax)
 
-    # --- (c) Blockchain audit scatter ---
+    # --- (c) Policy confidence scatter ---
     ax = axes[2]
-    rng = np.random.default_rng(42)
-    audit_times = hours[::4]
-    integrity_scores = 0.98 + rng.normal(0, 0.01, size=len(audit_times))
-    integrity_scores = np.clip(integrity_scores, 0.9, 1.0)
-    for i, t in enumerate(audit_times):
-        if 24 <= t <= 60:
-            integrity_scores[i] -= rng.uniform(0.05, 0.15)
-    integrity_scores = np.clip(integrity_scores, 0.7, 1.0)
+    probs = np.array(ab.get("prob_trace", []), dtype=float)
+    if probs.size and probs.ndim == 2 and probs.shape[1] > 1:
+        eps = 1e-12
+        entropy = -np.sum(probs * np.log(np.clip(probs, eps, 1.0)), axis=1)
+        max_entropy = np.log(probs.shape[1])
+        confidence = 1.0 - np.clip(entropy / max(max_entropy, eps), 0.0, 1.0)
+        audit_times = hours[: len(confidence)][::4]
+        confidence_scores = confidence[::4]
+    else:
+        audit_times = hours[::4]
+        confidence_scores = np.zeros_like(audit_times, dtype=float)
 
-    colors = ["#27ae60" if v > 0.92 else "#e74c3c" if v < 0.85 else "#f39c12"
-              for v in integrity_scores]
-    ax.scatter(audit_times, integrity_scores, c=colors, s=18, alpha=0.7,
+    colors = ["#27ae60" if v > 0.66 else "#e74c3c" if v < 0.33 else "#f39c12"
+              for v in confidence_scores]
+    ax.scatter(audit_times, confidence_scores, c=colors, s=18, alpha=0.7,
                edgecolors="none")
     ax.axvspan(24, 72, alpha=0.08, color="#8e44ad", zorder=0)
-    ax.axhline(0.92, color="#95a5a6", linestyle="--", linewidth=0.8,
-               label="Integrity threshold")
+    ax.axhline(0.66, color="#95a5a6", linestyle="--", linewidth=0.8,
+               label="High-confidence band")
     ax.set_xlabel("Hours")
-    ax.set_ylabel("Audit Integrity Score")
-    ax.set_title("(c) Blockchain Audit Trail (illustrative)")
-    ax.set_ylim(0.7, 1.02)
+    ax.set_ylabel("Decision Confidence\n(1 - normalized entropy)")
+    ax.set_title("(c) Policy Confidence Trace")
+    ax.set_ylim(-0.02, 1.02)
     _legend(ax, loc="lower left")
     _apply_style(ax)
 
@@ -607,6 +610,17 @@ def _load_benchmark_ci() -> dict | None:
     return json.loads(bench_file.read_text(encoding="utf-8"))
 
 
+def _benchmark_complete(bench: dict | None, scenarios: list[str], modes: list[str], metric: str) -> bool:
+    if not bench:
+        return False
+    for s in scenarios:
+        for m in modes:
+            rec = bench.get(s, {}).get(m, {}).get(metric, {})
+            if not rec or any(k not in rec for k in ("mean", "ci_low", "ci_high")):
+                return False
+    return True
+
+
 def fig6_cross(data):
     """2x2 grouped bars: ARI, RLE, waste, SLCA across scenarios for 3 methods.
     Adds error bars from benchmark_summary.json when available."""
@@ -629,18 +643,16 @@ def fig6_cross(data):
             vals = [data["results"][s][mode][metric] for s in scenarios_plot]
             # Try to add error bars from benchmark data
             yerr = None
-            if bench is not None:
+            if _benchmark_complete(bench, scenarios_plot, methods, metric):
                 ci_data = []
                 for s in scenarios_plot:
                     m_data = bench.get(s, {}).get(mode, {}).get(metric, {})
-                    if m_data and "ci_low" in m_data and "ci_high" in m_data:
-                        ci_data.append((m_data["mean"], m_data["ci_low"], m_data["ci_high"]))
-                if len(ci_data) == len(scenarios_plot):
-                    means = np.array([c[0] for c in ci_data])
-                    lows = np.array([c[1] for c in ci_data])
-                    highs = np.array([c[2] for c in ci_data])
-                    yerr = np.vstack([means - lows, highs - means])
-                    vals = means.tolist()
+                    ci_data.append((m_data["mean"], m_data["ci_low"], m_data["ci_high"]))
+                means = np.array([c[0] for c in ci_data])
+                lows = np.array([c[1] for c in ci_data])
+                highs = np.array([c[2] for c in ci_data])
+                yerr = np.vstack([means - lows, highs - means])
+                vals = means.tolist()
 
             ax.bar(x + i * width, vals, width, color=COLORS[mode],
                    label=MODE_LABELS[mode], alpha=0.85, edgecolor="white",
@@ -691,18 +703,16 @@ def fig7_ablation(data):
         for i, mode in enumerate(fig7_modes):
             vals = [data["results"][s][mode][metric] for s in stress_scenarios]
             yerr = None
-            if bench is not None:
+            if _benchmark_complete(bench, stress_scenarios, fig7_modes, metric):
                 ci_data = []
                 for s in stress_scenarios:
                     m_data = bench.get(s, {}).get(mode, {}).get(metric, {})
-                    if m_data and "ci_low" in m_data and "ci_high" in m_data:
-                        ci_data.append((m_data["mean"], m_data["ci_low"], m_data["ci_high"]))
-                if len(ci_data) == len(stress_scenarios):
-                    means = np.array([c[0] for c in ci_data])
-                    lows = np.array([c[1] for c in ci_data])
-                    highs = np.array([c[2] for c in ci_data])
-                    yerr = np.vstack([means - lows, highs - means])
-                    vals = means.tolist()
+                    ci_data.append((m_data["mean"], m_data["ci_low"], m_data["ci_high"]))
+                means = np.array([c[0] for c in ci_data])
+                lows = np.array([c[1] for c in ci_data])
+                highs = np.array([c[2] for c in ci_data])
+                yerr = np.vstack([means - lows, highs - means])
+                vals = means.tolist()
 
             ax.bar(x + i * width, vals, width, color=COLORS[mode],
                    label=MODE_LABELS[mode], alpha=0.85, edgecolor="white",
@@ -770,21 +780,16 @@ def fig8_green_ai(data):
     for i, mode in enumerate(methods_plot):
         vals = [data["results"][s][mode]["carbon"] for s in scenarios_plot]
         yerr = None
-        if bench is not None:
+        if _benchmark_complete(bench, scenarios_plot, methods_plot, "carbon"):
             ci_data = []
             for s in scenarios_plot:
                 m_data = bench.get(s, {}).get(mode, {}).get("carbon", {})
-                if not m_data:
-                    # carbon may not be in benchmark; try slca as proxy
-                    pass
-                if m_data and "ci_low" in m_data and "ci_high" in m_data:
-                    ci_data.append((m_data["mean"], m_data["ci_low"], m_data["ci_high"]))
-            if len(ci_data) == len(scenarios_plot):
-                means = np.array([c[0] for c in ci_data])
-                lows = np.array([c[1] for c in ci_data])
-                highs = np.array([c[2] for c in ci_data])
-                yerr = np.vstack([means - lows, highs - means])
-                vals = means.tolist()
+                ci_data.append((m_data["mean"], m_data["ci_low"], m_data["ci_high"]))
+            means = np.array([c[0] for c in ci_data])
+            lows = np.array([c[1] for c in ci_data])
+            highs = np.array([c[2] for c in ci_data])
+            yerr = np.vstack([means - lows, highs - means])
+            vals = means.tolist()
         ax.bar(x + i * width, vals, width, color=COLORS[mode],
                label=MODE_LABELS[mode], alpha=0.85, edgecolor="white",
                linewidth=0.5, yerr=yerr,
@@ -866,7 +871,6 @@ def fig9_mcp_pirag_robustness():
         ax.set_xticks(x + 1.5 * width)
         ax.set_xticklabels([SCENARIO_LABELS.get(s, s) for s in scenarios_plot],
                            rotation=20, ha="right")
-    ax.set_ylim(0.5, 0.8)
     ax.set_title("(b) Context Ablation ARI (95% CI)")
     ax.set_ylabel("ARI")
     _legend(ax)
