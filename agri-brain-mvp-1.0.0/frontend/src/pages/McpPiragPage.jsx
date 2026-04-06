@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer,
   CartesianGrid, Legend, RadarChart, Radar, PolarGrid, PolarAngleAxis,
-  PolarRadiusAxis, PieChart, Pie, Cell,
+  PolarRadiusAxis, PieChart, Pie, Cell, ErrorBar,
 } from "recharts";
 import {
   Brain, Wrench, BookOpen, Search, Zap, Shield, Hash, GitBranch,
@@ -46,7 +46,7 @@ const LOGIT_ENTRIES = [
 // Ablation data — loaded dynamically from table2_ablation.csv via API
 const ABLATION_DATA_FALLBACK = [];
 
-function parseAblationCSV(text) {
+function parseAblationCSV(text, metric = "ARI") {
   const lines = text.trim().split("\n");
   const headers = lines[0].split(",").map((h) => h.trim());
   const rows = lines.slice(1).map((line) => {
@@ -59,10 +59,13 @@ function parseAblationCSV(text) {
   const scenarios = [...new Set(rows.map((r) => r.Scenario))];
   return scenarios.map((sc) => {
     const scRows = rows.filter((r) => r.Scenario === sc);
-    const get = (v) => scRows.find((r) => r.Variant === v)?.ARI ?? 0;
+    const get = (v) => scRows.find((r) => r.Variant === v)?.[metric] ?? 0;
     return { scenario: scenarioNames[sc] || sc, no_context: get("no_context"), mcp_only: get("mcp_only"), pirag_only: get("pirag_only"), agribrain: get("agribrain") };
   });
 }
+
+// Store raw CSV text for re-parsing with different metrics
+let _rawAblationCSV = "";
 
 const KB_DOCUMENTS = [
   { id: "regulatory_fda_leafy_greens", category: "Regulatory", title: "FDA Guidelines for Leafy Greens Storage" },
@@ -112,9 +115,10 @@ const TOOL_PRESETS = {
 };
 
 // ===================== Tab 1: Overview =====================
-function OverviewTab({ tools, ablationData = [] }) {
+function OverviewTab({ tools, ablationData = [], benchSummary = null }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true });
+  const [ablationMetric, setAblationMetric] = useState("ARI");
 
   const data = ablationData.length ? ablationData : ABLATION_DATA_FALLBACK;
   const avgNoCtx = data.length ? data.reduce((s, d) => s + d.no_context, 0) / data.length : 0;
@@ -175,36 +179,77 @@ function OverviewTab({ tools, ablationData = [] }) {
         </div>
       </motion.div>
 
-      {/* Ablation chart */}
+      {/* Ablation chart with metric dropdown + error bars */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ delay: 0.2 }}>
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-base">Context Integration Impact (ARI)</CardTitle>
+                <CardTitle className="text-base">Context Integration Impact ({ablationMetric})</CardTitle>
                 <CardDescription>Ablation study: progressive context addition across 5 scenarios</CardDescription>
               </div>
-              <Badge className="bg-teal-500/10 text-teal-600 border-0">+{improvement}% avg ARI improvement</Badge>
+              <div className="flex items-center gap-2">
+                <Badge className="bg-teal-500/10 text-teal-600 border-0">+{improvement}% avg ARI</Badge>
+                <Select value={ablationMetric} onValueChange={(v) => {
+                  setAblationMetric(v);
+                }}>
+                  <SelectTrigger className="w-24 h-8"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {["ARI", "RLE", "Waste", "SLCA"].map((m) => (
+                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data} barGap={2}>
-                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                  <XAxis dataKey="scenario" tick={{ fontSize: 11 }} />
-                  <YAxis domain={[0.5, 0.8]} tick={{ fontSize: 11 }} />
-                  <ReTooltip contentStyle={{ fontSize: 12 }} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="no_context" name="No Context" fill="#4CAF50" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="mcp_only" name="MCP Only" fill={COLORS.mcp} radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="pirag_only" name="piRAG Only" fill={COLORS.pirag} radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="agribrain" name="AGRI-BRAIN" fill={COLORS.agri} radius={[2, 2, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            {(() => {
+              // Re-parse CSV data for the selected metric
+              const metricData = _rawAblationCSV ? parseAblationCSV(_rawAblationCSV, ablationMetric) : data;
+              const scenarioKeyMap = { "Heatwave": "heatwave", "Overproduction": "overproduction", "Cyber Outage": "cyber_outage", "Pricing": "adaptive_pricing", "Baseline": "baseline" };
+              const metricKey = ablationMetric.toLowerCase();
+              // Add CI error data from benchmark
+              const chartData = metricData.map((d) => {
+                const sc = scenarioKeyMap[d.scenario] || d.scenario;
+                const out = { ...d };
+                for (const mode of ["no_context", "mcp_only", "pirag_only", "agribrain"]) {
+                  const ci = benchSummary?.[sc]?.[mode]?.[metricKey];
+                  if (ci && ci.ci_low != null && ci.ci_high != null) {
+                    out[mode] = ci.mean;
+                    out[`${mode}_err`] = [ci.mean - ci.ci_low, ci.ci_high - ci.mean];
+                  }
+                }
+                return out;
+              });
+              return (
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} barGap={2}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                      <XAxis dataKey="scenario" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <ReTooltip contentStyle={{ fontSize: 12 }} />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      <Bar dataKey="no_context" name="No Context" fill="#4CAF50" radius={[2, 2, 0, 0]}>
+                        {benchSummary && <ErrorBar dataKey="no_context_err" width={3} strokeWidth={1} stroke="#555" />}
+                      </Bar>
+                      <Bar dataKey="mcp_only" name="MCP Only" fill={COLORS.mcp} radius={[2, 2, 0, 0]}>
+                        {benchSummary && <ErrorBar dataKey="mcp_only_err" width={3} strokeWidth={1} stroke="#555" />}
+                      </Bar>
+                      <Bar dataKey="pirag_only" name="piRAG Only" fill={COLORS.pirag} radius={[2, 2, 0, 0]}>
+                        {benchSummary && <ErrorBar dataKey="pirag_only_err" width={3} strokeWidth={1} stroke="#555" />}
+                      </Bar>
+                      <Bar dataKey="agribrain" name="AGRI-BRAIN" fill={COLORS.agri} radius={[2, 2, 0, 0]}>
+                        {benchSummary && <ErrorBar dataKey="agribrain_err" width={3} strokeWidth={1} stroke="#555" />}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              );
+            })()}
             <p className="text-xs text-muted-foreground mt-3 text-center">
-              piRAG consistently contributes more than MCP across all scenarios. Zero rank inversions observed.
+              Full AGRI-BRAIN (MCP + piRAG) consistently outperforms single-source ablations.
             </p>
           </CardContent>
         </Card>
@@ -946,6 +991,7 @@ export default function McpPiragPage() {
   const [decisions, setDecisions] = useState([]);
   const [tools, setTools] = useState([]);
   const [ablationData, setAblationData] = useState(ABLATION_DATA_FALLBACK);
+  const [benchSummary, setBenchSummary] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
@@ -959,8 +1005,16 @@ export default function McpPiragPage() {
       // Fetch live ablation data from CSV
       try {
         const resp = await fetch(`${API}/results/figures/table2_ablation.csv`);
-        if (resp.ok) setAblationData(parseAblationCSV(await resp.text()));
+        if (resp.ok) {
+          _rawAblationCSV = await resp.text();
+          setAblationData(parseAblationCSV(_rawAblationCSV));
+        }
       } catch (e) { console.warn("Could not load ablation CSV:", e); }
+      // Fetch benchmark CI data
+      try {
+        const resp = await fetch(`${API}/results/figures/benchmark_summary.json`);
+        if (resp.ok) setBenchSummary(await resp.json());
+      } catch (e) { console.warn("Could not load benchmark data:", e); }
       setLoading(false);
     };
     load();
@@ -1004,7 +1058,7 @@ export default function McpPiragPage() {
         </TabsList>
 
         <div className="mt-6">
-          <TabsContent value="overview"><OverviewTab tools={tools} ablationData={ablationData} /></TabsContent>
+          <TabsContent value="overview"><OverviewTab tools={tools} ablationData={ablationData} benchSummary={benchSummary} /></TabsContent>
           <TabsContent value="features"><ContextFeaturesTab latestExplainability={latestExplainability} /></TabsContent>
           <TabsContent value="knowledge"><KnowledgeBaseTab /></TabsContent>
           <TabsContent value="protocol"><ProtocolTab tools={tools} decisions={decisions} /></TabsContent>

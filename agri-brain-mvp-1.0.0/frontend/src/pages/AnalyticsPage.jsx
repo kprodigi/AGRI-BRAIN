@@ -304,16 +304,25 @@ export default function AnalyticsPage() {
     });
   }, [table1, compareA, compareB]);
 
-  // Carbon chart data
+  // Carbon chart data with CI error bars
   const carbonData = useMemo(() => {
     const scenarios = [...new Set(table1.map((r) => r.Scenario))];
     return scenarios.map((scenario) => {
       const rows = table1.filter((r) => r.Scenario === scenario);
       const obj = { scenario };
-      rows.forEach((r) => { obj[r.Method] = r.Carbon ?? r["Carbon (kg)"] ?? 0; });
+      rows.forEach((r) => {
+        const val = r.Carbon ?? r["Carbon (kg)"] ?? 0;
+        obj[r.Method] = val;
+        const rawKey = methodKeyMap[r.Method];
+        const ci = benchSummary?.[scenario]?.[rawKey]?.carbon;
+        if (ci && ci.ci_low != null && ci.ci_high != null) {
+          obj[r.Method] = ci.mean;
+          obj[`${r.Method}_err`] = [ci.mean - ci.ci_low, ci.ci_high - ci.mean];
+        }
+      });
       return obj;
     });
-  }, [table1]);
+  }, [table1, benchSummary]);
 
   const runSimulation = async () => {
     setSimRunning(true);
@@ -814,9 +823,15 @@ export default function AnalyticsPage() {
                     <YAxis tick={{ fontSize: 11 }} label={{ value: "kg CO₂", angle: -90, position: "insideLeft", fontSize: 11 }} />
                     <ReTooltip content={<ChartTooltip />} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Bar dataKey="Static" fill={COLORS.static} radius={[2, 2, 0, 0]} />
-                    <Bar dataKey="Hybrid RL" fill={COLORS.hybrid} radius={[2, 2, 0, 0]} />
-                    <Bar dataKey="AGRI-BRAIN" fill={COLORS.agri} radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="Static" fill={COLORS.static} radius={[2, 2, 0, 0]}>
+                      {benchSummary && <ErrorBar dataKey="Static_err" width={4} strokeWidth={1.5} stroke="#555" />}
+                    </Bar>
+                    <Bar dataKey="Hybrid RL" fill={COLORS.hybrid} radius={[2, 2, 0, 0]}>
+                      {benchSummary && <ErrorBar dataKey="Hybrid RL_err" width={4} strokeWidth={1.5} stroke="#555" />}
+                    </Bar>
+                    <Bar dataKey="AGRI-BRAIN" fill={COLORS.agri} radius={[2, 2, 0, 0]}>
+                      {benchSummary && <ErrorBar dataKey="AGRI-BRAIN_err" width={4} strokeWidth={1.5} stroke="#555" />}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>

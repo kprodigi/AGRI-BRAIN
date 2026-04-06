@@ -571,30 +571,25 @@ def fig5_pricing(data):
     slca_smooth = np.convolve(slca_vals, np.ones(window) / window, mode="same")
     # Show waste penalty on its own y-scale using twin axis
     reward_smooth = np.convolve(reward_vals, np.ones(window) / window, mode="same")
-    ax.plot(hours, slca_smooth, color="#27ae60", linewidth=1.5,
-            label="SLCA reward", alpha=0.9)
-    ax.plot(hours, reward_smooth, color="#2c3e50", linewidth=1.5,
-            label="Net reward", alpha=0.9)
+    l1, = ax.plot(hours, slca_smooth, color="#27ae60", linewidth=1.5,
+                  label="SLCA reward", alpha=0.9)
+    l2, = ax.plot(hours, reward_smooth, color="#2c3e50", linewidth=1.5,
+                  label="Net reward", alpha=0.9)
     ax.set_xlabel("Hours")
     ax.set_ylabel("SLCA / Net Reward")
     ax.set_ylim(0.0, 1.0)
-    _legend(ax, loc="upper left")
     _apply_style(ax)
     # Twin axis for waste penalty at appropriate scale
     ax2 = ax.twinx()
     waste_smooth = np.convolve(waste_vals, np.ones(window) / window, mode="same")
-    ax2.plot(hours, waste_smooth * 100, color="#e74c3c", linewidth=1.5,
-             linestyle="--", label="Waste rate (%)", alpha=0.9)
+    l3, = ax2.plot(hours, waste_smooth * 100, color="#e74c3c", linewidth=1.5,
+                   linestyle="--", label="Waste rate (%)", alpha=0.9)
     ax2.set_ylabel("Waste Rate (%)", color="#e74c3c")
     ax2.tick_params(axis="y", labelcolor="#e74c3c")
-    ax2.legend(loc="upper right", fontsize=10, framealpha=0.9)
     ax.set_title("(d) Reward Decomposition")
-    _legend(
-    ax,
-    loc="center",
-    bbox_to_anchor=(0.5, 0.5)
-    )
-    _apply_style(ax)
+    # Combined legend — one box, bottom right
+    ax.legend(handles=[l1, l2, l3], loc="lower right", fontsize=10,
+              framealpha=0.95, edgecolor="gray", fancybox=False)
 
     fig.tight_layout(rect=[0, 0, 1, 0.97])
     _save(fig, "fig5_pricing")
