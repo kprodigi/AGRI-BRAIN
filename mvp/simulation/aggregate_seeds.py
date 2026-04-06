@@ -18,7 +18,7 @@ SEEDS = [42, 1337, 2024, 7, 99]
 SCENARIOS = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing", "baseline"]
 MODES = ["agribrain", "mcp_only", "pirag_only", "no_context",
          "static", "hybrid_rl", "no_pinn", "no_slca"]
-METRICS = ("ari", "waste", "rle", "slca")
+METRICS = ("ari", "waste", "rle", "slca", "carbon", "equity")
 
 seed_dir = Path("results/benchmark_seeds")
 

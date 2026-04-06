@@ -371,6 +371,15 @@ export default function AnalyticsPage() {
     toast.success(`${filename} exported`);
   };
 
+  // Helper to format a value with CI range from benchmark data
+  const fmtCI = (scenario, method, metric) => {
+    const rawMethod = methodKeyMap[method] || variantKeyMap[method];
+    const metricKey = metric.toLowerCase();
+    const ci = benchSummary?.[scenario]?.[rawMethod]?.[metricKey];
+    if (!ci || ci.ci_low == null) return null;
+    return `[${ci.ci_low.toFixed(3)}, ${ci.ci_high.toFixed(3)}]`;
+  };
+
   const scenarioObj = SCENARIOS.find((s) => s.id === selectedScenario) || SCENARIOS[0];
 
   // Compute executive summary KPIs dynamically from loaded CSV data
@@ -454,9 +463,11 @@ export default function AnalyticsPage() {
                       </TableCell>
                       {["ARI", "RLE", "Waste", "SLCA", "Carbon", "Equity"].map((col) => {
                         const val = row[col] ?? row[`${col} (kg)`];
+                        const ci = fmtCI(row.Scenario, row.Method, col);
                         return (
                           <TableCell key={col} className="font-mono text-sm">
-                            {typeof val === "number" ? val.toFixed(3) : val ?? "\u2014"}
+                            <span>{typeof val === "number" ? val.toFixed(3) : val ?? "\u2014"}</span>
+                            {ci && <span className="block text-[10px] text-muted-foreground">{ci}</span>}
                           </TableCell>
                         );
                       })}
@@ -503,11 +514,15 @@ export default function AnalyticsPage() {
                           {row.Variant}
                         </Badge>
                       </TableCell>
-                      {["ARI", "RLE", "Waste", "SLCA"].map((col) => (
-                        <TableCell key={col} className="font-mono text-sm">
-                          {typeof row[col] === "number" ? row[col].toFixed(3) : row[col] ?? "\u2014"}
-                        </TableCell>
-                      ))}
+                      {["ARI", "RLE", "Waste", "SLCA"].map((col) => {
+                        const ci = fmtCI(row.Scenario, row.Variant, col);
+                        return (
+                          <TableCell key={col} className="font-mono text-sm">
+                            <span>{typeof row[col] === "number" ? row[col].toFixed(3) : row[col] ?? "\u2014"}</span>
+                            {ci && <span className="block text-[10px] text-muted-foreground">{ci}</span>}
+                          </TableCell>
+                        );
+                      })}
                     </TableRow>
                   );
                 })}
