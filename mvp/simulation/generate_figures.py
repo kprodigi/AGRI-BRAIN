@@ -860,8 +860,12 @@ def fig9_mcp_pirag_robustness():
                 ari = bench.get(s, {}).get(mode, {}).get("ari", {})
                 m = float(ari.get("mean", 0.0))
                 means.append(m)
-                lo_err.append(m - float(ari.get("ci_low", m)))
-                hi_err.append(float(ari.get("ci_high", m)) - m)
+                lo_raw = ari.get("ci_low", m)
+                hi_raw = ari.get("ci_high", m)
+                lo = float(m if lo_raw is None else lo_raw)
+                hi = float(m if hi_raw is None else hi_raw)
+                lo_err.append(max(0.0, m - lo))
+                hi_err.append(max(0.0, hi - m))
             if means:
                 yerr = np.vstack([lo_err, hi_err])
                 ax.bar(x + j * width, means, width, color=color, label=label,

@@ -204,6 +204,8 @@ def retrieve_role_context(
     Returns a dict with query, citations, guidance fields, scores, and
     guard/provenance metadata.
     """
+    # Fault-injection paths may pass sparse/None MCP payloads; normalize once.
+    mcp_results = mcp_results or {}
     context: Dict[str, Any] = {
         "query": "",
         "citations": [],
@@ -229,7 +231,10 @@ def retrieve_role_context(
     # Physics-informed query expansion (Task 11)
     try:
         from .physics_reranker import expand_query_with_physics
-        k_eff = mcp_results.get("spoilage_forecast", {}).get("k_effective", 0.0)
+        spoilage_forecast = mcp_results.get("spoilage_forecast") or {}
+        if not isinstance(spoilage_forecast, dict):
+            spoilage_forecast = {}
+        k_eff = spoilage_forecast.get("k_effective", 0.0)
         query = expand_query_with_physics(query, obs.rho, obs.temp, k_eff)
     except ImportError:
         pass

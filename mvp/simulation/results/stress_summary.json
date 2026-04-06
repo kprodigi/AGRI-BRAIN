@@ -1,108 +1,622 @@
 {
   "meta": {
     "scenarios": [
+      "heatwave",
+      "overproduction",
+      "cyber_outage",
+      "adaptive_pricing",
       "baseline"
     ],
-    "max_rows": 8
+    "max_rows": null
   },
   "results": {
-    "baseline": {
+    "heatwave": {
       "baseline": {
         "agribrain": {
-          "ari": 0.7345939064698267,
-          "waste": 0.02927552481646328,
-          "slca": 0.7524952422494926,
-          "rle": 0.0,
-          "constraint_violation_rate": 0.75,
-          "decision_latency_ms": 2051.0031874982815
+          "ari": 0.6113718103648387,
+          "waste": 0.021267704889444357,
+          "slca": 0.7542818096397004,
+          "rle": 1.0,
+          "carbon": 2118.8687207109597,
+          "equity": 0.8956885201050276,
+          "constraint_violation_rate": 0.5763888888888888,
+          "decision_latency_ms": 23.52539236123145
         },
         "hybrid_rl": {
-          "ari": 0.6635535366450628,
-          "waste": 0.0440613757621431,
-          "slca": 0.6910016664924687,
-          "rle": 0.0,
-          "constraint_violation_rate": 0.125,
-          "decision_latency_ms": 0.0991750002867775
+          "ari": 0.5454172779666719,
+          "waste": 0.04452845709046141,
+          "slca": 0.6935837269647008,
+          "rle": 0.9556962025316456,
+          "carbon": 2668.7128816988807,
+          "equity": 0.8699914874909498,
+          "constraint_violation_rate": 0.5381944444444444,
+          "decision_latency_ms": 0.10637256951263731
         },
         "mcp_only": {
-          "ari": 0.6875550283461875,
-          "waste": 0.03284829911749505,
-          "slca": 0.7068915136610374,
-          "rle": 0.0,
-          "constraint_violation_rate": 0.75,
-          "decision_latency_ms": 2045.1316749995385
+          "ari": 0.5993962968987776,
+          "waste": 0.02284619705155476,
+          "slca": 0.7418306765771601,
+          "rle": 0.9873417721518988,
+          "carbon": 2214.2468061716168,
+          "equity": 0.8910069535559132,
+          "constraint_violation_rate": 0.5763888888888888,
+          "decision_latency_ms": 24.663581597097718
         }
       },
       "sensor_noise": {
         "agribrain": {
-          "ari": 0.7347919812333432,
-          "waste": 0.0285436449442946,
-          "slca": 0.7523553479671284,
-          "rle": 0.0,
-          "constraint_violation_rate": 0.75,
-          "decision_latency_ms": 2049.5164125013616
+          "ari": 0.6116912665107322,
+          "waste": 0.020949906767311413,
+          "slca": 0.7551804044654603,
+          "rle": 1.0,
+          "carbon": 2109.5654879403583,
+          "equity": 0.8963031749508917,
+          "constraint_violation_rate": 0.6909722222222222,
+          "decision_latency_ms": 23.650557986052767
         },
         "hybrid_rl": {
-          "ari": 0.6641301388713494,
-          "waste": 0.044264681650915544,
-          "slca": 0.6914783126714528,
-          "rle": 0.0,
-          "constraint_violation_rate": 0.25,
-          "decision_latency_ms": 0.11249999897700036
+          "ari": 0.5435493770015544,
+          "waste": 0.045032921238471024,
+          "slca": 0.691802147775959,
+          "rle": 0.9556962025316456,
+          "carbon": 2685.528148112134,
+          "equity": 0.8686756750729064,
+          "constraint_violation_rate": 0.5520833333333334,
+          "decision_latency_ms": 0.10495277739311051
         }
       },
       "missing_data": {
         "agribrain": {
-          "ari": 0.7352723371402627,
-          "waste": 0.029131429070408586,
-          "slca": 0.7530902998706206,
-          "rle": 0.0,
-          "constraint_violation_rate": 0.75,
-          "decision_latency_ms": 2045.4067375021623
+          "ari": 0.6115775139461963,
+          "waste": 0.021281945305487982,
+          "slca": 0.7542889982625556,
+          "rle": 1.0,
+          "carbon": 2118.4279264480365,
+          "equity": 0.8958024940496393,
+          "constraint_violation_rate": 0.5763888888888888,
+          "decision_latency_ms": 25.38855277740974
         },
         "hybrid_rl": {
-          "ari": 0.6642912323036774,
-          "waste": 0.043962470040367616,
-          "slca": 0.6916710923086282,
-          "rle": 0.0,
-          "constraint_violation_rate": 0.125,
-          "decision_latency_ms": 0.13004999800614314
+          "ari": 0.5454550522157566,
+          "waste": 0.04452466510619472,
+          "slca": 0.6935896373089352,
+          "rle": 0.9556962025316456,
+          "carbon": 2668.312583445764,
+          "equity": 0.8701173626882839,
+          "constraint_violation_rate": 0.5381944444444444,
+          "decision_latency_ms": 0.10502500006421339
         }
       },
       "telemetry_delay": {
         "agribrain": {
-          "ari": 0.7070250487569314,
-          "waste": 0.031478457807372864,
-          "slca": 0.7261344060611044,
-          "rle": 0.0,
-          "constraint_violation_rate": 0.25,
-          "decision_latency_ms": 2054.0969499988933
+          "ari": 0.6093849805866006,
+          "waste": 0.021972019156426253,
+          "slca": 0.7496703288431923,
+          "rle": 1.0,
+          "carbon": 2154.3548605939854,
+          "equity": 0.8925105009087546,
+          "constraint_violation_rate": 0.5763888888888888,
+          "decision_latency_ms": 24.724008680499942
         },
         "hybrid_rl": {
-          "ari": 0.6832659785500919,
-          "waste": 0.037489681802265466,
-          "slca": 0.7075159993673988,
-          "rle": 0.0,
-          "constraint_violation_rate": 0.0,
-          "decision_latency_ms": 0.1185000028272043
+          "ari": 0.5455423007329201,
+          "waste": 0.04468014514889229,
+          "slca": 0.6931670974491415,
+          "rle": 0.9556962025316456,
+          "carbon": 2673.3228405384098,
+          "equity": 0.868798848639474,
+          "constraint_violation_rate": 0.5381944444444444,
+          "decision_latency_ms": 0.10219340285604833
         }
       },
       "mcp_fault_injection": {
         "agribrain": {
-          "ari": 0.6875885034673229,
-          "waste": 0.036929734956863663,
-          "slca": 0.7090472980321325,
-          "rle": 0.0,
-          "constraint_violation_rate": 0.5,
-          "decision_latency_ms": 2053.9491749987064
+          "ari": 0.6099594537664209,
+          "waste": 0.0216781231835914,
+          "slca": 0.7530847895870268,
+          "rle": 1.0,
+          "carbon": 2128.681723657798,
+          "equity": 0.8946669248097482,
+          "constraint_violation_rate": 0.5625,
+          "decision_latency_ms": 23.61764791678272
         },
         "mcp_only": {
-          "ari": 0.7625811935751865,
-          "waste": 0.02460217033109164,
-          "slca": 0.7793259394501132,
-          "rle": 0.0,
-          "constraint_violation_rate": 0.5,
-          "decision_latency_ms": 2051.787337501082
+          "ari": 0.5977579322975688,
+          "waste": 0.02333536923089136,
+          "slca": 0.7408256475010795,
+          "rle": 0.9936708860759493,
+          "carbon": 2229.7854974010734,
+          "equity": 0.891641903596664,
+          "constraint_violation_rate": 0.5625,
+          "decision_latency_ms": 24.47824027760564
+        }
+      }
+    },
+    "overproduction": {
+      "baseline": {
+        "agribrain": {
+          "ari": 0.6360080165552675,
+          "waste": 0.033976641314436534,
+          "slca": 0.7303530160494641,
+          "rle": 0.9852941176470589,
+          "carbon": 1985.1731647276,
+          "equity": 0.9041078002155322,
+          "constraint_violation_rate": 0.7430555555555556,
+          "decision_latency_ms": 23.340140277418364
+        },
+        "hybrid_rl": {
+          "ari": 0.5528882636017863,
+          "waste": 0.061516556240453255,
+          "slca": 0.6537960049958582,
+          "rle": 0.8676470588235294,
+          "carbon": 2683.817616645609,
+          "equity": 0.8710723864314334,
+          "constraint_violation_rate": 0.6875,
+          "decision_latency_ms": 0.10277500011094769
+        },
+        "mcp_only": {
+          "ari": 0.6211033235926718,
+          "waste": 0.035869557654099604,
+          "slca": 0.7153780260997769,
+          "rle": 0.9632352941176471,
+          "carbon": 2097.178414360184,
+          "equity": 0.9016497749952147,
+          "constraint_violation_rate": 0.7430555555555556,
+          "decision_latency_ms": 23.430545486310923
+        }
+      },
+      "sensor_noise": {
+        "agribrain": {
+          "ari": 0.6382169080046585,
+          "waste": 0.03347563720410946,
+          "slca": 0.7320029910001542,
+          "rle": 0.9852941176470589,
+          "carbon": 1971.226021381718,
+          "equity": 0.9049267266346139,
+          "constraint_violation_rate": 0.8229166666666666,
+          "decision_latency_ms": 25.26783124989783
+        },
+        "hybrid_rl": {
+          "ari": 0.5543430842858059,
+          "waste": 0.06139231703821942,
+          "slca": 0.6551869815250773,
+          "rle": 0.8602941176470589,
+          "carbon": 2677.1728537612257,
+          "equity": 0.8696289624323247,
+          "constraint_violation_rate": 0.7013888888888888,
+          "decision_latency_ms": 0.1026406247951349
+        }
+      },
+      "missing_data": {
+        "agribrain": {
+          "ari": 0.6364101629872513,
+          "waste": 0.03396606052333683,
+          "slca": 0.7304590646570472,
+          "rle": 0.9852941176470589,
+          "carbon": 1984.570428829744,
+          "equity": 0.9043553777501923,
+          "constraint_violation_rate": 0.7465277777777778,
+          "decision_latency_ms": 23.129099652427005
+        },
+        "hybrid_rl": {
+          "ari": 0.5529734744864245,
+          "waste": 0.061551002986630715,
+          "slca": 0.6539216551240903,
+          "rle": 0.8676470588235294,
+          "carbon": 2683.32924283663,
+          "equity": 0.8710131110934352,
+          "constraint_violation_rate": 0.6875,
+          "decision_latency_ms": 0.10477743035153253
+        }
+      },
+      "telemetry_delay": {
+        "agribrain": {
+          "ari": 0.634481113238972,
+          "waste": 0.03440582476793703,
+          "slca": 0.728067678908093,
+          "rle": 0.9850746268656716,
+          "carbon": 2003.8299984756077,
+          "equity": 0.9027265217659848,
+          "constraint_violation_rate": 0.7430555555555556,
+          "decision_latency_ms": 24.548052431176377
+        },
+        "hybrid_rl": {
+          "ari": 0.5531677243513694,
+          "waste": 0.06147954024318289,
+          "slca": 0.6538532172693282,
+          "rle": 0.8676470588235294,
+          "carbon": 2683.265020829402,
+          "equity": 0.8712213107922383,
+          "constraint_violation_rate": 0.6875,
+          "decision_latency_ms": 0.10532222242747796
+        }
+      },
+      "mcp_fault_injection": {
+        "agribrain": {
+          "ari": 0.634572746185183,
+          "waste": 0.03436795119629914,
+          "slca": 0.729146128710093,
+          "rle": 0.9852941176470589,
+          "carbon": 1994.7455647276001,
+          "equity": 0.903414802348733,
+          "constraint_violation_rate": 0.7291666666666666,
+          "decision_latency_ms": 24.338647569594386
+        },
+        "mcp_only": {
+          "ari": 0.6178550070326855,
+          "waste": 0.03705166824990816,
+          "slca": 0.7127626964320903,
+          "rle": 0.9779411764705882,
+          "carbon": 2136.375075521958,
+          "equity": 0.8998733040957448,
+          "constraint_violation_rate": 0.7291666666666666,
+          "decision_latency_ms": 26.40093263911088
+        }
+      }
+    },
+    "cyber_outage": {
+      "baseline": {
+        "agribrain": {
+          "ari": 0.6573874834236595,
+          "waste": 0.030968187463424154,
+          "slca": 0.7420950622843635,
+          "rle": 0.824,
+          "carbon": 2331.3665007484187,
+          "equity": 0.8659484675682679,
+          "constraint_violation_rate": 0.6979166666666666,
+          "decision_latency_ms": 24.14691111061984
+        },
+        "hybrid_rl": {
+          "ari": 0.5464807766850188,
+          "waste": 0.06450174230567088,
+          "slca": 0.6348928780585607,
+          "rle": 0.496,
+          "carbon": 3281.800127375493,
+          "equity": 0.8340409038502329,
+          "constraint_violation_rate": 0.6493055555555556,
+          "decision_latency_ms": 0.06012638828502127
+        },
+        "mcp_only": {
+          "ari": 0.6391082467932738,
+          "waste": 0.0346230920905212,
+          "slca": 0.7249150829183754,
+          "rle": 0.832,
+          "carbon": 2480.160234447024,
+          "equity": 0.8580151339373437,
+          "constraint_violation_rate": 0.6979166666666666,
+          "decision_latency_ms": 28.752845138670736
+        }
+      },
+      "sensor_noise": {
+        "agribrain": {
+          "ari": 0.6646952605409001,
+          "waste": 0.02937989299958636,
+          "slca": 0.748026303894931,
+          "rle": 0.8225806451612904,
+          "carbon": 2285.2396324014585,
+          "equity": 0.8688518899487188,
+          "constraint_violation_rate": 0.8645833333333334,
+          "decision_latency_ms": 30.660064583419928
+        },
+        "hybrid_rl": {
+          "ari": 0.5477648184926935,
+          "waste": 0.0635626918986072,
+          "slca": 0.6358587102681503,
+          "rle": 0.496,
+          "carbon": 3271.4373768981004,
+          "equity": 0.8344049447631329,
+          "constraint_violation_rate": 0.6458333333333334,
+          "decision_latency_ms": 0.04957777784713673
+        }
+      },
+      "missing_data": {
+        "agribrain": {
+          "ari": 0.65745020858598,
+          "waste": 0.03096707396895124,
+          "slca": 0.7421575386199135,
+          "rle": 0.824,
+          "carbon": 2331.1518974170194,
+          "equity": 0.8659353435883547,
+          "constraint_violation_rate": 0.6979166666666666,
+          "decision_latency_ms": 30.9079673609934
+        },
+        "hybrid_rl": {
+          "ari": 0.5465059671712605,
+          "waste": 0.06450357782231517,
+          "slca": 0.6349314132124886,
+          "rle": 0.496,
+          "carbon": 3281.0666543162874,
+          "equity": 0.834119207484592,
+          "constraint_violation_rate": 0.6493055555555556,
+          "decision_latency_ms": 0.05070312429072348
+        }
+      },
+      "telemetry_delay": {
+        "agribrain": {
+          "ari": 0.6585448994980213,
+          "waste": 0.031038583412956726,
+          "slca": 0.7421968000884119,
+          "rle": 0.819672131147541,
+          "carbon": 2335.3330049618885,
+          "equity": 0.8649242426603105,
+          "constraint_violation_rate": 0.6840277777777778,
+          "decision_latency_ms": 30.60227118066905
+        },
+        "hybrid_rl": {
+          "ari": 0.5478338503073816,
+          "waste": 0.06400110538094451,
+          "slca": 0.6360442851985408,
+          "rle": 0.496,
+          "carbon": 3273.0019844950366,
+          "equity": 0.8338506983710006,
+          "constraint_violation_rate": 0.6354166666666666,
+          "decision_latency_ms": 0.05001458324234894
+        }
+      },
+      "mcp_fault_injection": {
+        "agribrain": {
+          "ari": 0.6560170375435569,
+          "waste": 0.031234720128014377,
+          "slca": 0.7408881749449924,
+          "rle": 0.824,
+          "carbon": 2340.9389007484183,
+          "equity": 0.8653465840499983,
+          "constraint_violation_rate": 0.6840277777777778,
+          "decision_latency_ms": 29.966244444494805
+        },
+        "mcp_only": {
+          "ari": 0.6333350241228395,
+          "waste": 0.03620397476440325,
+          "slca": 0.7175522137691377,
+          "rle": 0.752,
+          "carbon": 2545.8340378452785,
+          "equity": 0.8540544347080242,
+          "constraint_violation_rate": 0.6840277777777778,
+          "decision_latency_ms": 29.7690059035934
+        }
+      }
+    },
+    "adaptive_pricing": {
+      "baseline": {
+        "agribrain": {
+          "ari": 0.7413313311374337,
+          "waste": 0.019381676029851365,
+          "slca": 0.8047124097916574,
+          "rle": 0.8831168831168831,
+          "carbon": 2008.9988555640693,
+          "equity": 0.8832595844673256,
+          "constraint_violation_rate": 0.59375,
+          "decision_latency_ms": 31.004808333566164
+        },
+        "hybrid_rl": {
+          "ari": 0.6366828252407143,
+          "waste": 0.041327245267246224,
+          "slca": 0.7065886905428364,
+          "rle": 0.7142857142857143,
+          "carbon": 2784.8411891128426,
+          "equity": 0.8433128590162611,
+          "constraint_violation_rate": 0.12152777777777778,
+          "decision_latency_ms": 0.09121701451577893
+        },
+        "mcp_only": {
+          "ari": 0.7299132022367562,
+          "waste": 0.020755478478081346,
+          "slca": 0.793972151685098,
+          "rle": 0.8961038961038961,
+          "carbon": 2093.17371195985,
+          "equity": 0.877536862481139,
+          "constraint_violation_rate": 0.59375,
+          "decision_latency_ms": 30.853131596965493
+        }
+      },
+      "sensor_noise": {
+        "agribrain": {
+          "ari": 0.7425640636844895,
+          "waste": 0.019205472672477096,
+          "slca": 0.8058296285484858,
+          "rle": 0.881578947368421,
+          "carbon": 1999.7256541381034,
+          "equity": 0.8844266109416037,
+          "constraint_violation_rate": 0.5798611111111112,
+          "decision_latency_ms": 29.884985763803545
+        },
+        "hybrid_rl": {
+          "ari": 0.6365423655707365,
+          "waste": 0.04138712058623,
+          "slca": 0.7065619216527402,
+          "rle": 0.7272727272727273,
+          "carbon": 2786.350763581146,
+          "equity": 0.842885093782276,
+          "constraint_violation_rate": 0.11458333333333333,
+          "decision_latency_ms": 0.08995000057944304
+        }
+      },
+      "missing_data": {
+        "agribrain": {
+          "ari": 0.7408025574828039,
+          "waste": 0.01944340770673431,
+          "slca": 0.8043253111184515,
+          "rle": 0.8831168831168831,
+          "carbon": 2010.4498738247817,
+          "equity": 0.8832506310056601,
+          "constraint_violation_rate": 0.5972222222222222,
+          "decision_latency_ms": 27.017355556229933
+        },
+        "hybrid_rl": {
+          "ari": 0.6375468923416756,
+          "waste": 0.04126000128188727,
+          "slca": 0.7074285960775621,
+          "rle": 0.7142857142857143,
+          "carbon": 2777.050842693174,
+          "equity": 0.8436745244860006,
+          "constraint_violation_rate": 0.13194444444444445,
+          "decision_latency_ms": 0.09041319445815235
+        }
+      },
+      "telemetry_delay": {
+        "agribrain": {
+          "ari": 0.7392520715324973,
+          "waste": 0.019588814119841882,
+          "slca": 0.8025072642948987,
+          "rle": 0.8831168831168831,
+          "carbon": 2027.2407656117257,
+          "equity": 0.8804772502193967,
+          "constraint_violation_rate": 0.6319444444444444,
+          "decision_latency_ms": 30.6139680557054
+        },
+        "hybrid_rl": {
+          "ari": 0.6370950103279296,
+          "waste": 0.04143462834932843,
+          "slca": 0.7069325892757593,
+          "rle": 0.7142857142857143,
+          "carbon": 2786.158126072671,
+          "equity": 0.8422808116912195,
+          "constraint_violation_rate": 0.12152777777777778,
+          "decision_latency_ms": 0.09009062493229673
+        }
+      },
+      "mcp_fault_injection": {
+        "agribrain": {
+          "ari": 0.7387328075785974,
+          "waste": 0.01988733060335719,
+          "slca": 0.8023092237551404,
+          "rle": 0.8831168831168831,
+          "carbon": 2028.1761155640697,
+          "equity": 0.8805695147487507,
+          "constraint_violation_rate": 0.5590277777777778,
+          "decision_latency_ms": 30.370363889283503
+        },
+        "mcp_only": {
+          "ari": 0.7210176658992551,
+          "waste": 0.022181732443538882,
+          "slca": 0.7853094079359639,
+          "rle": 0.9090909090909091,
+          "carbon": 2169.4073636880626,
+          "equity": 0.8742262328458448,
+          "constraint_violation_rate": 0.5590277777777778,
+          "decision_latency_ms": 31.36133715351106
+        }
+      }
+    },
+    "baseline": {
+      "baseline": {
+        "agribrain": {
+          "ari": 0.7466101297034159,
+          "waste": 0.02024985390953162,
+          "slca": 0.8046598190479146,
+          "rle": 0.88,
+          "carbon": 2065.8236400000055,
+          "equity": 0.8693590707022889,
+          "constraint_violation_rate": 0.13194444444444445,
+          "decision_latency_ms": 31.14524861227134
+        },
+        "hybrid_rl": {
+          "ari": 0.6578688580944854,
+          "waste": 0.03691815742115396,
+          "slca": 0.7208115904794672,
+          "rle": 0.74,
+          "carbon": 2705.4698400000057,
+          "equity": 0.8404440930335468,
+          "constraint_violation_rate": 0.034722222222222224,
+          "decision_latency_ms": 0.09164861062850428
+        },
+        "mcp_only": {
+          "ari": 0.7379580520130037,
+          "waste": 0.021090147940081478,
+          "slca": 0.7963159891774221,
+          "rle": 0.88,
+          "carbon": 2130.140280000005,
+          "equity": 0.86666927192794,
+          "constraint_violation_rate": 0.13194444444444445,
+          "decision_latency_ms": 30.116702083230646
+        }
+      },
+      "sensor_noise": {
+        "agribrain": {
+          "ari": 0.7555288885991346,
+          "waste": 0.018341336887833536,
+          "slca": 0.8127495690591627,
+          "rle": 0.88,
+          "carbon": 1999.8266913828934,
+          "equity": 0.8782662745151522,
+          "constraint_violation_rate": 0.4166666666666667,
+          "decision_latency_ms": 29.91342916660263
+        },
+        "hybrid_rl": {
+          "ari": 0.6559868044664824,
+          "waste": 0.037096072812148585,
+          "slca": 0.7188156299024733,
+          "rle": 0.74,
+          "carbon": 2719.9464141229623,
+          "equity": 0.8403608339099425,
+          "constraint_violation_rate": 0.041666666666666664,
+          "decision_latency_ms": 0.08982500003185123
+        }
+      },
+      "missing_data": {
+        "agribrain": {
+          "ari": 0.7466198571165256,
+          "waste": 0.020248953246593104,
+          "slca": 0.8046625860987733,
+          "rle": 0.88,
+          "carbon": 2065.7930400000055,
+          "equity": 0.8693692821619396,
+          "constraint_violation_rate": 0.13194444444444445,
+          "decision_latency_ms": 28.600720833310334
+        },
+        "hybrid_rl": {
+          "ari": 0.6578725785647785,
+          "waste": 0.03691323325732147,
+          "slca": 0.7208132404557909,
+          "rle": 0.74,
+          "carbon": 2705.4262800000065,
+          "equity": 0.8404561896109665,
+          "constraint_violation_rate": 0.034722222222222224,
+          "decision_latency_ms": 0.10892951356961728
+        }
+      },
+      "telemetry_delay": {
+        "agribrain": {
+          "ari": 0.744106751795598,
+          "waste": 0.020541867098040928,
+          "slca": 0.8022201061285175,
+          "rle": 0.88,
+          "carbon": 2084.185680000005,
+          "equity": 0.8671619346599158,
+          "constraint_violation_rate": 0.13194444444444445,
+          "decision_latency_ms": 18.249359374850528
+        },
+        "hybrid_rl": {
+          "ari": 0.6567065818744086,
+          "waste": 0.037165019338684546,
+          "slca": 0.7196505891344054,
+          "rle": 0.74,
+          "carbon": 2715.7297200000057,
+          "equity": 0.8398161705967249,
+          "constraint_violation_rate": 0.034722222222222224,
+          "decision_latency_ms": 0.10673750037110746
+        }
+      },
+      "mcp_fault_injection": {
+        "agribrain": {
+          "ari": 0.7452991897146796,
+          "waste": 0.020464402135491243,
+          "slca": 0.8034529317085435,
+          "rle": 0.88,
+          "carbon": 2075.3960400000055,
+          "equity": 0.8681675354355556,
+          "constraint_violation_rate": 0.11805555555555555,
+          "decision_latency_ms": 18.37650763814559
+        },
+        "mcp_only": {
+          "ari": 0.7265692819969324,
+          "waste": 0.022540521158857088,
+          "slca": 0.7847974272622421,
+          "rle": 0.88,
+          "carbon": 2222.5263600000044,
+          "equity": 0.8618358773040603,
+          "constraint_violation_rate": 0.11805555555555555,
+          "decision_latency_ms": 20.437362846930935
         }
       }
     }
