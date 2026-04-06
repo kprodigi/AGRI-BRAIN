@@ -105,5 +105,61 @@ REPRO_RUN_CONTEXT_BENCHMARK=true python mvp/simulation/reproduce_core.py
 - Evidence exports regenerated: PASS/FAIL in run logs
 - Manifest regenerated with commit + hashes: PASS/FAIL in run logs
 
+## 11) Baseline Fairness Protocol
+
+- All methods are evaluated on the same scenario definitions and time horizon.
+- Seed usage is paired across methods for each scenario in multi-seed benchmarking.
+- Metrics and aggregation logic are identical across methods; only policy/context mechanisms differ.
+- Publication claims use only canonical artifacts from `aggregate_seeds.py` outputs.
+
+## 12) Threats to Validity
+
+### Internal Validity
+
+- Risk: implementation bugs or pipeline drift can bias results.
+- Mitigation: deterministic regression guard, artifact-schema validation, and hash-manifested outputs with pinned commit.
+
+### Construct Validity
+
+- Risk: selected metrics may not capture all dimensions of operational utility.
+- Mitigation: multi-metric reporting (ARI, Waste, RLE, SLCA, Carbon, Equity), paired inference, and stress robustness evaluation.
+
+### External Validity
+
+- Risk: conclusions may overfit one commodity/domain trace family.
+- Mitigation: scenario diversity, stress perturbations, and explicit early/mid/late holdout window validation.
+
+### Conclusion Validity
+
+- Risk: false positives from multiple hypothesis testing or underpowered seed counts.
+- Mitigation: 20-seed policy, paired permutation tests, bootstrap CIs, and BH-FDR adjusted p-values.
+
+## 13) Reproducible Environment Pinning
+
+Reference execution environment used for publication gate runs:
+
+- OS: `Windows-11-10.0.26200-SP0`
+- Python: `3.13.5`
+- Node.js / npm: `v24.11.1` / `11.6.2`
+- Core Python packages:
+  - `numpy==2.1.3`
+  - `pandas==2.2.3`
+  - `matplotlib==3.10.0`
+  - `scipy==1.15.3`
+  - `fastapi==0.135.1`
+  - `pydantic==2.10.3`
+  - `uvicorn==0.42.0`
+  - `web3==7.14.1`
+
+To freeze exact versions for archival:
+
+```bash
+python -m pip freeze > requirements-lock.txt
+```
+
+## 14) Claims Traceability
+
+Use `docs/CLAIMS_TO_EVIDENCE.md` to map each manuscript claim to concrete generated artifacts.
+
 Use this appendix template as the canonical methods/repro reference for submission materials.
 

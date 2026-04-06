@@ -531,10 +531,18 @@ This runs, in order:
 - figure generation
 - paper evidence export
 - artifact manifest (SHA-256 hashes + exact git commit for reproducibility)
+- publication artifact schema validation (`validate_publication_artifacts.py`)
 
 For publication reporting policy, see:
 - `docs/METHODS_REPRO_APPENDIX.md`
 - `docs/STATISTICAL_METHODS.md`
+- `docs/CLAIMS_TO_EVIDENCE.md`
+
+Recommended environment lock (for archival reproducibility):
+
+```bash
+python -m pip freeze > requirements-lock.txt
+```
 
 ---
 

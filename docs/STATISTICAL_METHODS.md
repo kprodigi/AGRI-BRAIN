@@ -27,12 +27,25 @@ For each scenario, baseline, and metric:
 
 - Nominal alpha: `0.05`.
 - Claims should be based on adjusted p-values and practical effect size (`cohens_dz`) jointly, not p-values alone.
+- Primary decision rule for strong claims:
+  - statistical: `p_value_adj < 0.05`
+  - practical: `|cohens_dz| >= 0.20` (small-or-greater paired effect)
+  - directional consistency: sign of `mean_diff` matches claimed improvement direction
+- For metrics where lower is better (e.g., Waste, Carbon), a negative `mean_diff` supports AGRI-BRAIN superiority.
+- For metrics where higher is better (e.g., ARI, RLE, SLCA, Equity), a positive `mean_diff` supports AGRI-BRAIN superiority.
 
 ## Seed Policy
 
 - Publication benchmark default uses 20 fixed seeds:
   `42,1337,2024,7,99,101,202,303,404,505,606,707,808,909,1010,1111,1212,1313,1414,1515`
 - Seed list can be overridden via `BENCHMARK_SEEDS`, but publication artifacts should explicitly report the exact list used.
+
+## Baseline Fairness Protocol
+
+- All compared methods use the same scenario generator, episode horizon, and observation stream.
+- Per-seed comparisons are paired: all methods are evaluated under aligned seed conditions for each scenario.
+- Metrics and post-processing are identical across methods; only method logic differs.
+- Canonical publication statistics are taken from `aggregate_seeds.py` outputs, not mixed alternate benchmark sources.
 
 ## Deterministic vs Stochastic Use
 

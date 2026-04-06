@@ -92,6 +92,11 @@ def main() -> None:
     _run("generate_figures", [sys.executable, str(SIM_DIR / "generate_figures.py")], _timeout_for("generate_figures", 1800))
     _run("export_paper_evidence", [sys.executable, str(SIM_DIR / "export_paper_evidence.py")], _timeout_for("export_paper_evidence", 600))
     _run("build_artifact_manifest", [sys.executable, str(SIM_DIR / "build_artifact_manifest.py")], _timeout_for("build_artifact_manifest", 120))
+    _run(
+        "validate_publication_artifacts",
+        [sys.executable, str(SIM_DIR / "validate_publication_artifacts.py")],
+        _timeout_for("validate_publication_artifacts", 120),
+    )
 
     # Optional, non-canonical context-only benchmark export.
     if os.environ.get("REPRO_RUN_CONTEXT_BENCHMARK", "false").lower() == "true":
