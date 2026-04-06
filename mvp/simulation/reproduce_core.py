@@ -54,7 +54,7 @@ def _run(stage_name: str, cmd: list[str], timeout_s: int) -> None:
 
 
 def _benchmark_seed_list() -> list[int]:
-    raw = os.environ.get("BENCHMARK_SEEDS", "42,1337,2024,7,99").strip()
+    raw = os.environ.get("BENCHMARK_SEEDS", "42,1337,2024,7,99,101,202,303,404,505,606,707,808,909,1010,1111,1212,1313,1414,1515").strip()
     out: list[int] = []
     for part in raw.split(","):
         part = part.strip()

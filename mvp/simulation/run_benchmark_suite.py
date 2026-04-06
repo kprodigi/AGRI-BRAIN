@@ -87,7 +87,8 @@ def main() -> None:
     if seeds_env:
         seeds = [int(s.strip()) for s in seeds_env.split(",") if s.strip()]
     else:
-        seeds = [42, 1337, 2024, 7, 99]
+        seeds = [42, 1337, 2024, 7, 99, 101, 202, 303, 404, 505,
+                 606, 707, 808, 909, 1010, 1111, 1212, 1313, 1414, 1515]
     collected: Dict[str, Dict[str, Dict[str, List[float]]]] = {}
     use_tables = os.environ.get("BENCHMARK_USE_TABLES", "false").lower() == "true"
 
