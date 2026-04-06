@@ -60,6 +60,8 @@ def _run_pair(
             "waste": float(ep["waste"]),
             "slca": float(ep["slca"]),
             "rle": float(ep["rle"]),
+            "carbon": float(ep["carbon"]),
+            "equity": float(ep["equity"]),
             "constraint_violation_rate": float(ep.get("constraint_violation_rate", 0.0)),
             "decision_latency_ms": float(ep.get("mean_decision_latency_ms", 0.0)),
         }
@@ -72,6 +74,8 @@ def _degrade(nom: Dict[str, float], stressed: Dict[str, float]) -> Dict[str, flo
         "waste_delta": float(stressed["waste"] - nom["waste"]),
         "slca_delta": float(stressed["slca"] - nom["slca"]),
         "rle_delta": float(stressed["rle"] - nom["rle"]),
+        "carbon_delta": float(stressed["carbon"] - nom["carbon"]),
+        "equity_delta": float(stressed["equity"] - nom["equity"]),
         "constraint_violation_delta": float(stressed["constraint_violation_rate"] - nom["constraint_violation_rate"]),
         "latency_ms_delta": float(stressed["decision_latency_ms"] - nom["decision_latency_ms"]),
     }

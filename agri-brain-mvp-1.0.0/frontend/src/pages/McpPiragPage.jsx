@@ -195,7 +195,7 @@ function OverviewTab({ tools, ablationData = [], benchSummary = null }) {
                 }}>
                   <SelectTrigger className="w-24 h-8"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {["ARI", "RLE", "Waste", "SLCA"].map((m) => (
+                    {["ARI", "RLE", "Waste", "SLCA", "Carbon", "Equity"].map((m) => (
                       <SelectItem key={m} value={m}>{m}</SelectItem>
                     ))}
                   </SelectContent>

@@ -105,12 +105,16 @@ def main() -> None:
                 if row.empty:
                     continue
                 rec = collected[scenario].setdefault(
-                    mode, {"ari": [], "waste": [], "rle": [], "slca": []}
+                    mode, {"ari": [], "waste": [], "rle": [], "slca": [], "carbon": [], "equity": []}
                 )
                 rec["ari"].append(float(row.iloc[0]["ARI"]))
                 rec["waste"].append(float(row.iloc[0]["Waste"]))
                 rec["rle"].append(float(row.iloc[0]["RLE"]))
                 rec["slca"].append(float(row.iloc[0]["SLCA"]))
+                if "Carbon" in row.columns:
+                    rec["carbon"].append(float(row.iloc[0]["Carbon"]))
+                if "Equity" in row.columns:
+                    rec["equity"].append(float(row.iloc[0]["Equity"]))
     else:
         for seed in seeds:
             run = run_all(seed=seed)
@@ -119,12 +123,14 @@ def main() -> None:
                 for mode in ("agribrain", "mcp_only", "pirag_only", "no_context"):
                     ep = run["results"][scenario][mode]
                     rec = collected[scenario].setdefault(
-                        mode, {"ari": [], "waste": [], "rle": [], "slca": []}
+                        mode, {"ari": [], "waste": [], "rle": [], "slca": [], "carbon": [], "equity": []}
                     )
                     rec["ari"].append(float(ep["ari"]))
                     rec["waste"].append(float(ep["waste"]))
                     rec["rle"].append(float(ep["rle"]))
                     rec["slca"].append(float(ep["slca"]))
+                    rec["carbon"].append(float(ep["carbon"]))
+                    rec["equity"].append(float(ep["equity"]))
 
     # Check if we have enough samples for meaningful inference
     sample_counts = [len(v) for modes in collected.values() for m in modes.values() for v in m.values()]
@@ -165,7 +171,7 @@ def main() -> None:
                     continue
                 comp_key = f"agribrain_vs_{baseline}"
                 significance[scenario][comp_key] = {}
-                for metric in ("ari", "waste", "rle", "slca"):
+                for metric in ("ari", "waste", "rle", "slca", "carbon", "equity"):
                     a_vals = agri.get(metric, [])
                     b_vals = base.get(metric, [])
                     significance[scenario][comp_key][metric] = {

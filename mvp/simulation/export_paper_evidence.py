@@ -368,7 +368,7 @@ def export_latex_benchmark_table() -> None:
     sig = json.loads(sig_path.read_text(encoding="utf-8")) if sig_path.exists() else {}
 
     methods = ["agribrain", "mcp_only", "pirag_only", "no_context"]
-    metrics = ["ari", "waste", "slca"]
+    metrics = ["ari", "waste", "slca", "rle", "carbon", "equity"]
 
     # Print human-readable table
     print(f"\n  {'Scenario':<18s} {'Method':<14s} {'Metric':>6s} {'Mean':>8s} {'95% CI':>18s} {'Std':>8s}")

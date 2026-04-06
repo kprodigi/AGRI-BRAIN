@@ -16,15 +16,15 @@ const NODES = [
   { id: "processor", name: "SD Processing Facility", lat: 44.1, lng: -99.8, icon: "factory", color: "#0072B2", agent: "ProcessorAgent" },
   { id: "cooperative", name: "Great Plains Cooperative", lat: 44.3, lng: -100.0, icon: "warehouse", color: "#7570B3", agent: "CooperativeAgent" },
   { id: "distributor", name: "Regional Distribution Hub", lat: 43.7, lng: -99.3, icon: "truck", color: "#E67E22", agent: "DistributorAgent" },
-  { id: "recovery", name: "Eco Recovery Center", lat: 44.2, lng: -100.5, icon: "recycle", color: "#27AE60", agent: "RecoveryAgent" },
+  { id: "recovery", name: "Eco Recovery Center", lat: 44.2, lng: -100.5, icon: "recycle", color: "#8B5CF6", agent: "RecoveryAgent" },
 ];
 
 const ROUTES = [
   { from: "farm", to: "processor", type: "cold_chain", distance: "120 km", color: "#0072B2", dash: "10 6" },
   { from: "processor", to: "distributor", type: "cold_chain", distance: "110 km", color: "#0072B2", dash: "10 6" },
   { from: "processor", to: "cooperative", type: "redistribution", distance: "45 km", color: "#10B981", dash: "" },
-  { from: "distributor", to: "recovery", type: "recovery", distance: "80 km", color: "#27AE60", dash: "4 8" },
-  { from: "cooperative", to: "recovery", type: "recovery", distance: "50 km", color: "#27AE60", dash: "4 8" },
+  { from: "distributor", to: "recovery", type: "recovery", distance: "80 km", color: "#8B5CF6", dash: "4 8" },
+  { from: "cooperative", to: "recovery", type: "recovery", distance: "50 km", color: "#8B5CF6", dash: "4 8" },
 ];
 
 // Custom icon factory
