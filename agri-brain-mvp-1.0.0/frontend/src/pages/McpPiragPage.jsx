@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn, fmt, short, jget, mcpCall, mcpRaw, mcpLog } from "@/lib/utils";
+import { cn, fmt, short, jget, mcpCall, mcpRaw, mcpLog, authFetch } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -1000,19 +1000,20 @@ export default function McpPiragPage() {
         jget(API, "/decisions").catch(() => ({ decisions: [] })),
         mcpRaw(API, "tools/list").catch(() => ({ tools: [] })),
       ]);
-      setDecisions(decData.decisions || decData || []);
+      const decs = decData.decisions || decData;
+      setDecisions(Array.isArray(decs) ? decs : []);
       setTools(toolsData.tools || []);
-      // Fetch live ablation data from CSV
+      // Fetch live ablation data from CSV (with auth)
       try {
-        const resp = await fetch(`${API}/results/figures/table2_ablation.csv`);
+        const resp = await authFetch(`${API}/results/figures/table2_ablation.csv`);
         if (resp.ok) {
           _rawAblationCSV = await resp.text();
           setAblationData(parseAblationCSV(_rawAblationCSV));
         }
       } catch (e) { console.warn("Could not load ablation CSV:", e); }
-      // Fetch benchmark CI data
+      // Fetch benchmark CI data (with auth)
       try {
-        const resp = await fetch(`${API}/results/figures/benchmark_summary.json`);
+        const resp = await authFetch(`${API}/results/figures/benchmark_summary.json`);
         if (resp.ok) setBenchSummary(await resp.json());
       } catch (e) { console.warn("Could not load benchmark data:", e); }
       setLoading(false);

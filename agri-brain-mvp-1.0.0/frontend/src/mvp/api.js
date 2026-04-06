@@ -100,15 +100,15 @@ export const Scenarios = {
             const res = await fetch(`${API}/scenarios/list`, { headers: _headers() });
             if (res.ok) return await res.json(); // {scenarios:[{id,label,desc}], active}
         } catch { }
-        // Fallback so Admin still renders something
+        // Fallback — match the backend shape {scenarios: [...], active: ...}
         return {
-            options: [
-                { id: 'heatwave', name: 'Climate-Induced Heatwave' },
-                { id: 'overproduction', name: 'Overproduction / Glut' },
-                { id: 'cyber_outage', name: 'Cyber Threat & Node Outage' },
-                { id: 'adaptive_pricing', name: 'Adaptive Pricing & Cooperative Auctions' },
+            scenarios: [
+                { id: 'heatwave', label: 'Climate-Induced Heatwave' },
+                { id: 'overproduction', label: 'Overproduction / Glut' },
+                { id: 'cyber_outage', label: 'Cyber Threat & Node Outage' },
+                { id: 'adaptive_pricing', label: 'Adaptive Pricing & Cooperative Auctions' },
             ],
-            selected: null,
+            active: null,
         };
     },
 

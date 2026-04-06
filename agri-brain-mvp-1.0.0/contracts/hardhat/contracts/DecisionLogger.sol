@@ -6,6 +6,16 @@ pragma solidity ^0.8.28;
 ///         carbon footprint (GHG Protocol activity-based emissions, WRI/WBCSD, 2004)
 ///         for each routing decision, enabling provenance verification.
 contract DecisionLogger {
+    address public owner;
+    mapping(address => bool) public authorized;
+
+    constructor() { owner = msg.sender; authorized[msg.sender] = true; }
+    modifier onlyAuthorized() { require(authorized[msg.sender], "not authorized"); _; }
+    function setAuthorized(address who, bool allowed) external {
+        require(msg.sender == owner, "not owner");
+        authorized[who] = allowed;
+    }
+
     event DecisionLogged(
         bytes32 indexed id, // keccak of (ts, agent, action, msg.sender)
         uint256 ts,
@@ -39,7 +49,7 @@ contract DecisionLogger {
         uint256 slca_milli,
         uint256 carbon_milli,
         string calldata note
-    ) external returns (bytes32 id) {
+    ) external onlyAuthorized returns (bytes32 id) {
         id = keccak256(abi.encode(ts, agent, action, msg.sender));
         memos[id] = Memo(
             ts,

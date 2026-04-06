@@ -76,7 +76,15 @@ Results saved to `mvp/simulation/results/`.
 | GET | /governance/chain | Blockchain config |
 | GET | /audit/logs | Audit log |
 | POST | /results/generate | Run full simulation |
+| GET | /results/status | Poll simulation progress |
+| GET | /results/summary | Fetch completed results |
 | GET | /results/figures/{name} | Serve generated figures |
+| POST | /mcp/mcp | MCP JSON-RPC 2.0 endpoint |
+| GET | /mcp/resources | List MCP resources |
+| GET | /mcp/prompts | List MCP prompts |
+| POST | /rag/ask | Query piRAG knowledge base |
+| POST | /rag/ingest | Ingest documents into piRAG |
+| WS | /stream | Real-time decision stream |
 | WS | /stream | Real-time decision stream |
 
 ## Tech Stack

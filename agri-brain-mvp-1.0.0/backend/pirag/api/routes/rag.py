@@ -25,6 +25,8 @@ def ingest(
     x_api_key: str | None = Header(default=None, alias="x-api-key"),
 ):
     enforce_api_key(request, x_api_key)
+    if len(docs) > 200:
+        raise HTTPException(400, f"Too many documents ({len(docs)}); max 200 per request")
     _pipe.ingest([d.model_dump() for d in docs])
     return {"ok": True, "n": len(docs)}
 
@@ -49,5 +51,5 @@ def ask(
             "merkle_root": out.merkle_root,
             "chain_tx": out.chain_tx
         }
-    except Exception as e:
-        raise HTTPException(400, f"PiRAG error: {e}")
+    except Exception:
+        raise HTTPException(400, "PiRAG query failed")

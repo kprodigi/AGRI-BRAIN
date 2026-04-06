@@ -21,7 +21,7 @@ standalone simulation, and figure generation.
 ## 1. Clone and navigate
 
 ```bash
-git clone <repo-url> AGRI-BRAIN
+git clone https://github.com/kprodigi/AGRI-BRAIN.git AGRI-BRAIN
 cd AGRI-BRAIN
 ```
 

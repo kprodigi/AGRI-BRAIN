@@ -185,6 +185,7 @@ function PromptBrowser() {
         const key = localStorage.getItem("API_KEY");
         const headers = key ? { "x-api-key": key } : {};
         const res = await fetch(`${API}/mcp/prompts`, { headers });
+        if (!res.ok) throw new Error(res.statusText);
         const data = await res.json();
         setPrompts(data.prompts || []);
       } catch { /* ignore */ }

@@ -43,21 +43,5 @@ def query_recent_decisions(n: int = 10) -> List[Dict[str, Any]]:
     if records:
         return records
 
-    # Return mock records if no live data available
-    base_time = int(time.time())
-    actions = ["cold_chain", "local_redistribute", "recovery"]
-    mock = []
-    for i in range(min(n, 5)):
-        mock.append({
-            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(base_time - i * 900)),
-            "action": actions[i % 3],
-            "agent": f"agent_{i}",
-            "role": ["farm", "processor", "cooperative", "distributor", "recovery"][i % 5],
-            "slca_score": round(0.65 + i * 0.03, 3),
-            "carbon_kg": round(8.5 - i * 0.5, 2),
-            "waste": round(0.05 + i * 0.01, 3),
-            "tx_hash": f"0x{'ab' * 16}{i:04x}",
-            "mode": "agribrain",
-            "note": "mock record (no live blockchain connection)",
-        })
-    return mock
+    # No live blockchain data available — return empty with status indicator
+    return {"records": [], "source": "none", "note": "No live blockchain connection configured"}

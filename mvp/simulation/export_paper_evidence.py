@@ -361,7 +361,7 @@ def export_latex_benchmark_table() -> None:
     bench_path = RESULTS_DIR / "benchmark_summary.json"
     sig_path = RESULTS_DIR / "benchmark_significance.json"
     if not bench_path.exists():
-        print("  benchmark_summary.json not found — run run_benchmark_suite.py first.")
+        print("  benchmark_summary.json not found — run aggregate_seeds.py (or the full reproduce_core.py pipeline).")
         return
 
     bench = json.loads(bench_path.read_text(encoding="utf-8"))

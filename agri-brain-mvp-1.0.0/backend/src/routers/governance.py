@@ -74,10 +74,13 @@ def _try_autoload():
                     _AUTO_STATE["last_mtime"] = mt
                     CHAIN.setdefault("rpc", "http://127.0.0.1:8545")
                     CHAIN.setdefault("chain_id", 31337)
-                    print(f"[governance] auto-synced addresses from {p}")
+                    # Propagate to app state so decide.py sees the same config
+                    if _APP_STATE is not None:
+                        _APP_STATE["chain"] = dict(CHAIN)
+                    logger.info("auto-synced addresses from %s", p)
                     break
                 except Exception as e:
-                    print("[governance] auto-load failed:", e)
+                    logger.warning("auto-load failed: %s", e)
 
 
 # ---------------------------------------------------------------------------
@@ -137,9 +140,8 @@ def set_policy(payload: Dict[str, Any]):
     try:
         new_policy = Policy(**merged)
     except (TypeError, ValueError) as exc:
-        # If validation fails, return current policy
-        logger.debug("Policy validation failed: %s", exc)
-        return current_dict
+        from fastapi import HTTPException
+        raise HTTPException(400, f"Invalid policy parameters: {exc}")
 
     if _APP_STATE is not None:
         _APP_STATE["policy"] = new_policy
@@ -186,9 +188,13 @@ def set_chain(c: ChainModel):
         try:
             data["addresses"] = json.loads(data["addresses_json"])
         except (json.JSONDecodeError, ValueError):
-            pass
+            from fastapi import HTTPException
+            raise HTTPException(400, "Invalid addresses_json: must be valid JSON")
     for k in ("rpc", "chain_id", "private_key", "auto"):
         if k in data:
+            # Never overwrite private_key with empty string
+            if k == "private_key" and not data[k]:
+                continue
             CHAIN[k] = data[k]
     if "addresses" in data and isinstance(data["addresses"], dict):
         CHAIN["addresses"] = data["addresses"]

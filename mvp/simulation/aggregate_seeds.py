@@ -20,7 +20,8 @@ MODES = ["agribrain", "mcp_only", "pirag_only", "no_context",
          "static", "hybrid_rl", "no_pinn", "no_slca"]
 METRICS = ("ari", "waste", "rle", "slca", "carbon", "equity")
 
-seed_dir = Path("results/benchmark_seeds")
+_SCRIPT_DIR = Path(__file__).resolve().parent
+seed_dir = _SCRIPT_DIR / "results" / "benchmark_seeds"
 
 
 def bootstrap_ci(vals, n_boot=1000, alpha=0.05):
@@ -107,9 +108,10 @@ def main():
             significance[sc][f"agribrain_vs_{baseline}"] = comp
 
     # Save
-    Path("results").mkdir(exist_ok=True)
-    Path("results/benchmark_summary.json").write_text(json.dumps(summary, indent=2))
-    Path("results/benchmark_significance.json").write_text(json.dumps(significance, indent=2))
+    out_dir = _SCRIPT_DIR / "results"
+    out_dir.mkdir(exist_ok=True)
+    (out_dir / "benchmark_summary.json").write_text(json.dumps(summary, indent=2))
+    (out_dir / "benchmark_significance.json").write_text(json.dumps(significance, indent=2))
     print("Saved benchmark_summary.json")
     print("Saved benchmark_significance.json")
 

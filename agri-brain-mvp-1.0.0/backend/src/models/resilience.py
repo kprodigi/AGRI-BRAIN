@@ -165,9 +165,13 @@ def compute_rle(rho_values: List[float], actions: List[str],
 # ---------------------------------------------------------------------------
 
 def compute_equity(slca_values: List[float] | np.ndarray) -> float:
-    """Compute Gini-inspired equity from per-step SLCA scores.
+    """Compute uniformity-based equity from per-step SLCA scores.
 
     equity = 1 − σ(SLCA_values)
+
+    This is a standard-deviation-based uniformity measure (not a Gini
+    coefficient). Higher values indicate more consistent social performance
+    across time steps.
 
     Parameters
     ----------
@@ -175,6 +179,6 @@ def compute_equity(slca_values: List[float] | np.ndarray) -> float:
 
     Returns
     -------
-    Equity value.  Higher = more uniform social performance.
+    Equity value in [0, 1].  Higher = more uniform social performance.
     """
     return 1.0 - float(np.std(slca_values))

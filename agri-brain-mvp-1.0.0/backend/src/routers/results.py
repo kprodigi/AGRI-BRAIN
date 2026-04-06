@@ -10,6 +10,7 @@ GET  /results/figures/{filename} — serves a generated figure file
 from __future__ import annotations
 
 import json
+import os
 import sys
 import threading
 import time
@@ -23,7 +24,10 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 # Ensure the simulation module is importable
 # ---------------------------------------------------------------------------
-_SIM_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent / "mvp" / "simulation"
+# Locate simulation dir: env var override, or walk up to repo root / mvp / simulation
+_SIM_DIR = Path(os.environ.get("SIM_DIR", "")) if os.environ.get("SIM_DIR") else (
+    Path(__file__).resolve().parent.parent.parent.parent.parent / "mvp" / "simulation"
+)
 if str(_SIM_DIR) not in sys.path:
     sys.path.insert(0, str(_SIM_DIR))
 

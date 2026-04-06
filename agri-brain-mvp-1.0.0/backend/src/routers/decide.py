@@ -353,8 +353,8 @@ def _decide_standalone(req: DecideRequest) -> dict:
             "counterfactual": _expl.get("counterfactual", {}),
             "summary": _expl.get("summary", ""),
         }
-    except Exception as _e:
-        logger.debug("explainability enrichment skipped: %s", _e)
+    except (ImportError, KeyError, AttributeError, TypeError, ValueError) as _e:
+        logger.warning("explainability enrichment skipped: %s", _e)
         memo["explainability"] = None
 
     _persist_last(memo)

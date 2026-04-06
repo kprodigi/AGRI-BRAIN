@@ -4,7 +4,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any, Literal, Optional
+from typing import Dict, Any, Literal
 import uuid
 
 import inspect
@@ -12,7 +12,7 @@ import logging
 import time as _time
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -125,10 +125,10 @@ async def api_key_middleware(request: Request, call_next):
         from src.security import enforce_api_key
         try:
             enforce_api_key(request, request.headers.get("x-api-key"))
-        except Exception as exc:
+        except HTTPException as exc:
             from fastapi.responses import JSONResponse
-            return JSONResponse(status_code=getattr(exc, "status_code", 401),
-                                content={"detail": str(getattr(exc, "detail", "Unauthorized"))})
+            return JSONResponse(status_code=exc.status_code,
+                                content={"detail": exc.detail})
     return await call_next(request)
 
 @API.middleware("http")

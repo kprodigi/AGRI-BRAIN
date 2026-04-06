@@ -90,8 +90,9 @@ def apply_scenario(df: pd.DataFrame, sc: ScenarioCfg, intensity: float, rng: ran
         # stochastic: if shockG < 0.5, sometimes bump; if already high, maybe bump more
         shock = out["shockG"].to_numpy().copy()
         prob = min(1.0, (mult - 1.0) * 0.3 + 0.1)  # crude probability curve
-        mask = np.random.rand(len(shock)) < prob
-        shock[mask] = shock[mask] * (1.0 + (mult - 1.0)) + np.random.rand(mask.sum()) * 0.2
+        _rng = np.random.default_rng(rng.randint(0, 2**31))
+        mask = _rng.random(len(shock)) < prob
+        shock[mask] = shock[mask] * (1.0 + (mult - 1.0)) + _rng.random(mask.sum()) * 0.2
         out["shockG"] = shock
 
     # 3) cold chain burst failures: add tempC for a random contiguous window per probability
@@ -138,13 +139,11 @@ def policy_decision(row: pd.Series, p: Policy) -> Tuple[str, float, float, float
 
 
 def effective_shelf_left(shelf_left: float, action: str) -> float:
-    """Compute effective shelf life after transit using first-order kinetic decay.
+    """Compute effective shelf life after transit using a linear adjustment heuristic.
 
-    First-order kinetic decay model (Labuza, 1982):
-        Q(t) = Q0 * exp(-k * t)
-    Linearized approximation for short transit:
+    Linear approximation:
         shelf_eff = shelf_left - alpha * max(0, hours - nominal)
-    where alpha ~0.015 per hour represents quality loss rate,
+    where alpha = 0.015 per hour is a quality loss rate,
     and nominal = 18h is the break-even transit time.
     """
     hours = {"standard_cold_chain": 36, "reroute_to_near_dc": 24, "expedite_to_retail": 12}.get(action, 36)
@@ -245,7 +244,8 @@ def run_grid(
                     if exp > rer:
                         continue
                     for r in range(reps):
-                        seed = (hash((sc_name, intensity, rer, exp, r)) & 0xFFFFFFFF)
+                        import hashlib as _hl
+            seed = int(_hl.sha256(f"{sc_name}:{intensity}:{rer}:{exp}:{r}".encode()).hexdigest()[:8], 16)
                         rng = random.Random(seed)
 
                         # policy for this cell

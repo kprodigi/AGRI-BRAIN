@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn, fmt, short, jget as jgetUtil, jpost as jpostUtil } from "@/lib/utils";
+import { cn, fmt, short, jget as jgetUtil, jpost as jpostUtil, authDownload } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -277,8 +277,8 @@ function AuditTab() {
           <Input placeholder="Search audit logs..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8" />
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <a href={`${API}/report/pdf`} target="_blank" rel="noopener"><FileText className="w-4 h-4 mr-1" /> PDF Report</a>
+          <Button variant="outline" size="sm" onClick={() => authDownload(`${API}/report/pdf`, "decision-report.pdf")}>
+            <FileText className="w-4 h-4 mr-1" /> PDF Report
           </Button>
           <Button variant="outline" size="sm" onClick={load}><RefreshCw className="w-4 h-4 mr-1" /> Refresh</Button>
         </div>

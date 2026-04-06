@@ -11,7 +11,7 @@ describe("DecisionLogger", function () {
     await logger.waitForDeployment();
   });
 
-  it("should log a decision and emit DecisionLogged event", async function () {
+  it("should log a decision and emit DecisionLogged event with correct fields", async function () {
     const tx = await logger.logDecision(
       1000,          // ts
       "farm:agent1", // agent
@@ -21,9 +21,25 @@ describe("DecisionLogger", function () {
       1200,          // carbon_milli (1.200 kg * 1000)
       "test note"    // note
     );
+    // Decode and assert event fields (not just log existence)
     const receipt = await tx.wait();
-    const event = receipt.logs[0];
-    expect(event).to.not.be.undefined;
+    const iface = logger.interface;
+    const parsed = iface.parseLog({ topics: receipt.logs[0].topics, data: receipt.logs[0].data });
+    expect(parsed.name).to.equal("DecisionLogged");
+    expect(parsed.args.ts).to.equal(1000n);
+    expect(parsed.args.agent).to.equal("farm:agent1");
+    expect(parsed.args.role).to.equal("farm");
+    expect(parsed.args.action).to.equal("cold_chain");
+    expect(parsed.args.slca_milli).to.equal(850n);
+    expect(parsed.args.carbon_milli).to.equal(1200n);
+    expect(parsed.args.note).to.equal("test note");
+  });
+
+  it("should revert logDecision from unauthorized caller", async function () {
+    const [, outsider] = await ethers.getSigners();
+    await expect(
+      logger.connect(outsider).logDecision(1, "x", "y", "z", 0, 0, "")
+    ).to.be.revertedWith("not authorized");
   });
 
   it("should store memo in mapping and allow read-back", async function () {

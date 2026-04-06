@@ -68,7 +68,7 @@ const router = createBrowserRouter([
   }
 
   async function callAny() {
-    const roleSelect = document.querySelector("select");
+    const roleSelect = document.querySelector("[data-role-select]") || document.querySelector("select");
     const role = (roleSelect && roleSelect.value) || "farm";
     const payload = JSON.stringify({ agent_id: `global:${role}`, agent: `global:${role}`, role });
     const tries = [

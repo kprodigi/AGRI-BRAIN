@@ -35,6 +35,18 @@ export function authFetch(url, opts = {}) {
   return fetch(url, { ...opts, headers });
 }
 
+// Authenticated file download — fetches with API key, opens as blob URL
+export async function authDownload(url, filename = "download") {
+  const res = await authFetch(url);
+  if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+  const blob = await res.blob();
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 // API fetch helper
 export async function jget(apiBase, path) {
   const r = await fetch(`${apiBase}${path}`, { headers: _apiHeaders() });

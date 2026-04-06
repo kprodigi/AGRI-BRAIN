@@ -39,7 +39,7 @@ context injection, not stochastic noise.
 Stochastic perturbations apply to `tempC`, `RH`, `demand_units`, and
 `inventory_units`. Decision latency is recorded as observed wall-clock
 execution time (deterministic observation, not synthetically perturbed).
-`STOCH_DELAY_PROB` (default `0.02`) is a separate temporal-lag mechanism that
+`STOCH_DELAY_PROB` (default `0.05`) is a separate temporal-lag mechanism that
 acts on whole time series by carrying forward the previous sample.
 
 ## Models Used
@@ -49,7 +49,7 @@ All models are imported from the backend (`backend/src/models/`):
 - **Spoilage (PINN)**: First-order ODE decay `dC/dt = -k_eff(t,T,H) * C` with
   Arrhenius parameters `k_ref=0.0021 h^-1`, `Ea/R=8000 K`, `T_ref=277.15 K`, `beta=0.25`
   and Baranyi lag phase `lambda=12.0 h`
-- **Forecast**: Exponential smoothing with horizon tiling (Section 4.2.2)
+- **Forecast**: LSTM demand forecaster (default) or Holt-Winters fallback (controlled by `FORECAST_METHOD`)
 - **SLCA**: 4-component Social Life-Cycle Assessment
   (Carbon, Labour, Resilience, Price transparency)
 - **Policy**: Contextual softmax policy with theta matrix (3 actions x 6 features)

@@ -88,7 +88,7 @@ REINFORCE learning for sustainable food logistics.
 - **Protocol recording** of genuine MCP JSON-RPC interactions during simulation
 - **Circular economy scoring** for composting, animal feed, food bank pathways
 - **PINN-enhanced Arrhenius spoilage model** with Baranyi lag phase
-- **Softmax contextual policy** with 6-dimensional feature vector
+- **Softmax contextual policy** with 6-dimensional state feature vector
 - **On-chain governance** via Hardhat/Solidity smart contracts
 
 ## Frontend
@@ -265,7 +265,7 @@ AGRI-BRAIN/
         pyrag/                  # Hybrid BM25+dense retriever
         guards/                 # Unit and feasibility guards
         provenance/             # Merkle tree + on-chain anchoring
-        tests/                  # 56 tests covering all MCP/piRAG components
+        tests/                  # 59 tests covering all MCP/piRAG components
     frontend/
       src/
         pages/                  # Ops, Quality, Decisions, Map, Analytics, Admin

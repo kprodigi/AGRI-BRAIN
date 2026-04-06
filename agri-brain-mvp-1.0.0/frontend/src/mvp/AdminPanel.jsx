@@ -373,7 +373,7 @@ function AuditTab() {
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold">Audit</h2>
                 <div className="flex items-center gap-3">
-                    <a className="px-3 py-2 rounded-md bg-black text-white" href={`${API}/report/pdf`} target="_blank" rel="noopener">
+                    <a className="px-3 py-2 rounded-md bg-black text-white cursor-pointer" onClick={(e) => { e.preventDefault(); import("@/lib/utils").then(m => m.authDownload(`${API}/report/pdf`, "decision-report.pdf")); }}>
                         Download Decision Memo (PDF)
                     </a>
                     <button className="px-3 py-2 rounded-md bg-gray-200" onClick={load}>Refresh</button>
@@ -557,7 +557,7 @@ function QuickDecisionTab() {
                 >
                     Take decision
                 </button>
-                <a className="px-4 py-2 rounded bg-gray-200" href={`${API}/report/pdf`} target="_blank" rel="noopener">
+                <a className="px-4 py-2 rounded bg-gray-200 cursor-pointer" onClick={(e) => { e.preventDefault(); import("@/lib/utils").then(m => m.authDownload(`${API}/report/pdf`, "decision-report.pdf")); }}>
                     Open PDF
                 </a>
             </div>

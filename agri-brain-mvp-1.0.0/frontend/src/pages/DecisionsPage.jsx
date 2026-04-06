@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { cn, fmt, short, authFetch } from "@/lib/utils";
+import { cn, fmt, short, authFetch, authDownload } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -346,10 +346,8 @@ export default function DecisionsPage() {
           <Button size="sm" onClick={takeDecision} data-skip-global-take="1">
             <Leaf className="w-4 h-4 mr-1" /> Take Decision
           </Button>
-          <Button variant="outline" size="sm" asChild>
-            <a href={`${API}/report/pdf?role=${role === "all" ? "farm" : role}`} target="_blank" rel="noopener">
-              <FileText className="w-4 h-4 mr-1" /> PDF Report
-            </a>
+          <Button variant="outline" size="sm" onClick={() => authDownload(`${API}/report/pdf?role=${role === "all" ? "farm" : role}`, "decision-report.pdf")}>
+            <FileText className="w-4 h-4 mr-1" /> PDF Report
           </Button>
           <Button variant="outline" size="sm" onClick={exportCSV}>
             <Download className="w-4 h-4 mr-1" /> CSV Export
