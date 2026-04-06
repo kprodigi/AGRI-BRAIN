@@ -182,12 +182,10 @@ def main() -> None:
                     }
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    # Use distinct filenames so this context-ablation benchmark doesn't
-    # clobber the full 8-mode output from aggregate_seeds.py.
+    # Use distinct filenames so this context-ablation benchmark does not
+    # clobber canonical 8-mode output from aggregate_seeds.py.
     out = RESULTS_DIR / "benchmark_context_summary.json"
     sig_out = RESULTS_DIR / "benchmark_context_significance.json"
-    compat_out = RESULTS_DIR / "benchmark_summary.json"
-    compat_sig_out = RESULTS_DIR / "benchmark_significance.json"
     payload = {
         "_meta": {
             "source": "run_benchmark_suite.py",
@@ -200,13 +198,18 @@ def main() -> None:
     }
     out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     sig_out.write_text(json.dumps(significance, indent=2), encoding="utf-8")
-    # Compatibility exports for downstream scripts expecting flat benchmark files.
-    compat_out.write_text(json.dumps(summary, indent=2), encoding="utf-8")
-    compat_sig_out.write_text(json.dumps(significance, indent=2), encoding="utf-8")
     print(f"Saved benchmark summary: {out}")
     print(f"Saved benchmark significance: {sig_out}")
-    print(f"Saved benchmark summary (compat): {compat_out}")
-    print(f"Saved benchmark significance (compat): {compat_sig_out}")
+
+    # Optional compatibility export (disabled by default).
+    write_compat = os.environ.get("BENCHMARK_WRITE_COMPAT", "false").lower() == "true"
+    if write_compat:
+        compat_out = RESULTS_DIR / "benchmark_summary.json"
+        compat_sig_out = RESULTS_DIR / "benchmark_significance.json"
+        compat_out.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+        compat_sig_out.write_text(json.dumps(significance, indent=2), encoding="utf-8")
+        print(f"Saved benchmark summary (compat): {compat_out}")
+        print(f"Saved benchmark significance (compat): {compat_sig_out}")
 
 
 if __name__ == "__main__":

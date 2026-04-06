@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Aggregate multi-seed benchmark results into summary and significance files.
+"""Aggregate multi-seed benchmark results into canonical benchmark files.
 
 Reads results/benchmark_seeds/seed_*.json and produces:
   - results/benchmark_summary.json   (means, stds, 95% CIs)
-  - results/benchmark_significance.json  (p-values, Cohen's d)
+  - results/benchmark_significance.json  (paired p-values/effect sizes)
 
 Usage:
     python aggregate_seeds.py
 """
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -29,6 +30,21 @@ def bootstrap_ci(vals, n_boot=1000, alpha=0.05):
     arr = np.array(vals, dtype=float)
     rng = np.random.default_rng(42)
     boots = [float(np.mean(rng.choice(arr, len(arr), replace=True))) for _ in range(n_boot)]
+    return float(np.quantile(boots, alpha / 2)), float(np.quantile(boots, 1 - alpha / 2))
+
+
+def bootstrap_mean_diff_ci(a, b, n_boot=1000, alpha=0.05):
+    """Bootstrap CI for paired mean difference E[a-b]."""
+    x, y = np.array(a, dtype=float), np.array(b, dtype=float)
+    if x.shape != y.shape or len(x) == 0:
+        return 0.0, 0.0
+    idx = np.arange(len(x))
+    rng = np.random.default_rng(24)
+    boots = []
+    for _ in range(n_boot):
+        sample_idx = rng.choice(idx, size=len(idx), replace=True)
+        d = x[sample_idx] - y[sample_idx]
+        boots.append(float(np.mean(d)))
     return float(np.quantile(boots, alpha / 2)), float(np.quantile(boots, 1 - alpha / 2))
 
 
@@ -75,9 +91,26 @@ def benjamini_hochberg(p_values: dict[str, float]) -> dict[str, float]:
 
 
 def main():
+    seed_csv = os.environ.get(
+        "BENCHMARK_SEEDS",
+        "42,1337,2024,7,99,101,202,303,404,505,606,707,808,909,1010,1111,1212,1313,1414,1515",
+    ).strip()
+    seeds = []
+    for raw in seed_csv.split(","):
+        raw = raw.strip()
+        if not raw:
+            continue
+        try:
+            seeds.append(int(raw))
+        except ValueError:
+            continue
+    if not seeds:
+        seeds = SEEDS
+    print(f"Configured seed count: {len(seeds)}")
+
     # Load seed results
     all_data = {}
-    for seed in SEEDS:
+    for seed in seeds:
         f = seed_dir / f"seed_{seed}.json"
         if f.exists():
             all_data[seed] = json.loads(f.read_text())
@@ -124,11 +157,15 @@ def main():
                 d = cohens_dz(a, b)
                 key = f"{sc}:{baseline}:{met}"
                 pvals[key] = p
+                lo_diff, hi_diff = bootstrap_mean_diff_ci(a, b)
+                mean_diff = float(np.mean(a) - np.mean(b))
                 comp[met] = {
                     "p_value": p,
                     "cohens_d": d,
                     "cohens_dz": d,
-                    "mean_diff": float(np.mean(a) - np.mean(b)),
+                    "mean_diff": mean_diff,
+                    "mean_diff_ci_low": lo_diff,
+                    "mean_diff_ci_high": hi_diff,
                 }
             p_adj = benjamini_hochberg(pvals)
             for met in METRICS:

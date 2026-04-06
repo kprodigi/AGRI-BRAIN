@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 from pathlib import Path
 
 
@@ -34,7 +35,17 @@ def main() -> None:
                 "sha256": _sha256(p),
             }
         )
+    commit = "unknown"
+    try:
+        commit = (
+            subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=str(RESULTS_DIR.parent.parent.parent))
+            .decode("utf-8")
+            .strip()
+        )
+    except Exception:
+        pass
     payload = {
+        "git_commit": commit,
         "artifact_count": len(include),
         "artifacts": include,
     }

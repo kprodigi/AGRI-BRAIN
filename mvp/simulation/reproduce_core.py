@@ -64,26 +64,21 @@ def _benchmark_seed_list() -> list[int]:
             out.append(int(part))
         except ValueError:
             continue
-    return out or [42, 1337, 2024, 7, 99]
+    return out or [42, 1337, 2024, 7, 99, 101, 202, 303, 404, 505,
+                   606, 707, 808, 909, 1010, 1111, 1212, 1313, 1414, 1515]
 
 
 def main() -> None:
     mode_label = "DETERMINISTIC" if _DETERMINISTIC else "STOCHASTIC"
     print(f"Reproducibility pipeline — mode: {mode_label}")
 
-    # Timeouts sized for machines where each episode takes ~10-15 min.
-    # generate_results: 40 episodes × 15 min = 600 min ≈ 36000s
-    # benchmark_suite:  5 seeds × 36000s = 180000s (but uses BENCHMARK_USE_TABLES
-    #                   when pre-generated tables are available)
+    # Timeouts sized for long simulation episodes.
     stages = [
         ("generate_results", [sys.executable, str(SIM_DIR / "generate_results.py")], _timeout_for("generate_results", 36000)),
         ("validate_results", [sys.executable, str(SIM_DIR / "validate_results.py")], _timeout_for("validate_results", 300)),
         ("run_regression_guard", [sys.executable, str(SIM_DIR / "run_regression_guard.py")], _timeout_for("run_regression_guard", 300)),
-        ("run_benchmark_suite", [sys.executable, str(SIM_DIR / "run_benchmark_suite.py")], _timeout_for("run_benchmark_suite", 180000)),
         ("run_stress_suite", [sys.executable, str(SIM_DIR / "run_stress_suite.py")], _timeout_for("run_stress_suite", 36000)),
-        ("generate_figures", [sys.executable, str(SIM_DIR / "generate_figures.py")], _timeout_for("generate_figures", 1800)),
-        ("export_paper_evidence", [sys.executable, str(SIM_DIR / "export_paper_evidence.py")], _timeout_for("export_paper_evidence", 600)),
-        ("build_artifact_manifest", [sys.executable, str(SIM_DIR / "build_artifact_manifest.py")], _timeout_for("build_artifact_manifest", 120)),
+        ("run_external_validity", [sys.executable, str(SIM_DIR / "run_external_validity.py")], _timeout_for("run_external_validity", 18000)),
     ]
     for name, cmd, timeout_s in stages:
         _run(name, cmd, timeout_s)
@@ -94,6 +89,17 @@ def main() -> None:
             _timeout_for("run_single_seed", 36000),
         )
     _run("aggregate_seeds", [sys.executable, str(SIM_DIR / "aggregate_seeds.py")], _timeout_for("aggregate_seeds", 600))
+    _run("generate_figures", [sys.executable, str(SIM_DIR / "generate_figures.py")], _timeout_for("generate_figures", 1800))
+    _run("export_paper_evidence", [sys.executable, str(SIM_DIR / "export_paper_evidence.py")], _timeout_for("export_paper_evidence", 600))
+    _run("build_artifact_manifest", [sys.executable, str(SIM_DIR / "build_artifact_manifest.py")], _timeout_for("build_artifact_manifest", 120))
+
+    # Optional, non-canonical context-only benchmark export.
+    if os.environ.get("REPRO_RUN_CONTEXT_BENCHMARK", "false").lower() == "true":
+        _run(
+            "run_benchmark_suite",
+            [sys.executable, str(SIM_DIR / "run_benchmark_suite.py")],
+            _timeout_for("run_benchmark_suite", 180000),
+        )
     print(f"Core reproducibility pipeline complete ({mode_label} mode).")
 
 

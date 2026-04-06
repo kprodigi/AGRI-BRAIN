@@ -16,6 +16,18 @@ from stochastic import make_stochastic_layer
 
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 
+# Publication thresholds for stress robustness checks (absolute deltas).
+STRESS_THRESHOLDS = {
+    "ari_delta_min": -0.08,
+    "waste_delta_max": 0.03,
+    "slca_delta_min": -0.08,
+    "rle_delta_min": -0.10,
+    "carbon_delta_max": 200.0,
+    "equity_delta_min": -0.05,
+    "constraint_violation_delta_max": 0.12,
+    "latency_ms_delta_max": 80.0,
+}
+
 
 def _perturb_df(df: pd.DataFrame, stressor: str, rng: np.random.Generator) -> pd.DataFrame:
     out = df.copy()
@@ -81,6 +93,21 @@ def _degrade(nom: Dict[str, float], stressed: Dict[str, float]) -> Dict[str, flo
     }
 
 
+def _stress_pass(row: Dict[str, float]) -> bool:
+    return all(
+        [
+            row["ari_delta"] >= STRESS_THRESHOLDS["ari_delta_min"],
+            row["waste_delta"] <= STRESS_THRESHOLDS["waste_delta_max"],
+            row["slca_delta"] >= STRESS_THRESHOLDS["slca_delta_min"],
+            row["rle_delta"] >= STRESS_THRESHOLDS["rle_delta_min"],
+            row["carbon_delta"] <= STRESS_THRESHOLDS["carbon_delta_max"],
+            row["equity_delta"] >= STRESS_THRESHOLDS["equity_delta_min"],
+            row["constraint_violation_delta"] <= STRESS_THRESHOLDS["constraint_violation_delta_max"],
+            row["latency_ms_delta"] <= STRESS_THRESHOLDS["latency_ms_delta_max"],
+        ]
+    )
+
+
 def main() -> None:
     if not DATA_CSV.exists():
         raise FileNotFoundError(f"Data CSV not found: {DATA_CSV}")
@@ -144,13 +171,39 @@ def main() -> None:
         "meta": {
             "scenarios": scenarios,
             "max_rows": max_rows if max_rows > 0 else None,
+            "thresholds": STRESS_THRESHOLDS,
         },
         "results": summary,
     }
     (RESULTS_DIR / "stress_summary.json").write_text(json.dumps(out_payload, indent=2), encoding="utf-8")
-    pd.DataFrame(rows).to_csv(RESULTS_DIR / "stress_degradation.csv", index=False)
+    df = pd.DataFrame(rows)
+    df.to_csv(RESULTS_DIR / "stress_degradation.csv", index=False)
+    pass_rows = []
+    for _, r in df.iterrows():
+        rec = r.to_dict()
+        rec["Pass"] = _stress_pass(rec)
+        rec["Threshold_ARI"] = STRESS_THRESHOLDS["ari_delta_min"]
+        rec["Threshold_Waste"] = STRESS_THRESHOLDS["waste_delta_max"]
+        rec["Threshold_SLCA"] = STRESS_THRESHOLDS["slca_delta_min"]
+        rec["Threshold_RLE"] = STRESS_THRESHOLDS["rle_delta_min"]
+        rec["Threshold_Carbon"] = STRESS_THRESHOLDS["carbon_delta_max"]
+        rec["Threshold_Equity"] = STRESS_THRESHOLDS["equity_delta_min"]
+        rec["Threshold_CVR"] = STRESS_THRESHOLDS["constraint_violation_delta_max"]
+        rec["Threshold_LatencyMs"] = STRESS_THRESHOLDS["latency_ms_delta_max"]
+        # Keep absolute values for publication reporting.
+        base = summary[rec["Scenario"]]["baseline"][rec["Method"]]
+        stressed = summary[rec["Scenario"]][rec["Stressor"]][rec["Method"]]
+        rec["ARI_Base"] = base["ari"]
+        rec["ARI_Stressed"] = stressed["ari"]
+        rec["Waste_Base"] = base["waste"]
+        rec["Waste_Stressed"] = stressed["waste"]
+        rec["SLCA_Base"] = base["slca"]
+        rec["SLCA_Stressed"] = stressed["slca"]
+        pass_rows.append(rec)
+    pd.DataFrame(pass_rows).to_csv(RESULTS_DIR / "stress_passfail.csv", index=False)
     print(f"Saved {RESULTS_DIR / 'stress_summary.json'}")
     print(f"Saved {RESULTS_DIR / 'stress_degradation.csv'}")
+    print(f"Saved {RESULTS_DIR / 'stress_passfail.csv'}")
 
 
 if __name__ == "__main__":

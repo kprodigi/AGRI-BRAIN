@@ -890,6 +890,8 @@ def fig10_latency_quality_frontier(data):
     fig.suptitle("Operational Frontier: Quality vs Latency",
                  fontsize=14, fontweight="bold")
 
+    bench = _load_benchmark_ci() or {}
+
     # Split modes into two groups for clarity
     fast_modes = ["static", "hybrid_rl", "no_pinn", "no_slca", "no_context"]
     context_modes = ["agribrain", "mcp_only", "pirag_only"]
@@ -899,7 +901,17 @@ def fig10_latency_quality_frontier(data):
         for mode in modes:
             ari_vals = [data["results"][s][mode]["ari"] for s in SCENARIOS]
             lat_vals = [data["results"][s][mode].get("mean_decision_latency_ms", 0.0) for s in SCENARIOS]
-            pts.append((mode, float(np.mean(lat_vals)), float(np.mean(ari_vals))))
+            yerr = (0.0, 0.0)
+            ci_recs = [bench.get(s, {}).get(mode, {}).get("ari", {}) for s in SCENARIOS]
+            if ci_recs and all("mean" in r and "ci_low" in r and "ci_high" in r for r in ci_recs):
+                means = np.array([float(r["mean"]) for r in ci_recs], dtype=float)
+                lows = np.array([float(r["mean"] if r["ci_low"] is None else r["ci_low"]) for r in ci_recs], dtype=float)
+                highs = np.array([float(r["mean"] if r["ci_high"] is None else r["ci_high"]) for r in ci_recs], dtype=float)
+                mean_y = float(np.mean(means))
+                yerr = (max(0.0, mean_y - float(np.mean(lows))), max(0.0, float(np.mean(highs)) - mean_y))
+                pts.append((mode, float(np.mean(lat_vals)), mean_y, yerr))
+            else:
+                pts.append((mode, float(np.mean(lat_vals)), float(np.mean(ari_vals)), yerr))
         return pts
 
     fast_pts = _collect(fast_modes)
@@ -907,12 +919,15 @@ def fig10_latency_quality_frontier(data):
 
     # --- (a) Fast modes (sub-millisecond) ---
     ax = axes[0]
-    for mode, x, y in fast_pts:
+    for mode, x, y, yerr in fast_pts:
         ax.scatter(x, y, s=180, color=COLORS[mode], marker=MARKERS[mode],
                    edgecolor="black", linewidth=0.6, alpha=0.9, zorder=5)
+        if yerr[0] > 0 or yerr[1] > 0:
+            ax.errorbar([x], [y], yerr=np.array([[yerr[0]], [yerr[1]]]), fmt="none",
+                        ecolor=COLORS[mode], elinewidth=1.0, capsize=3, alpha=0.85, zorder=4)
     # Smart label placement: sort by ARI and stagger
     fast_sorted = sorted(fast_pts, key=lambda p: p[2])
-    for i, (mode, x, y) in enumerate(fast_sorted):
+    for i, (mode, x, y, _) in enumerate(fast_sorted):
         offset_x = 0.015
         offset_y = 0.008 if i % 2 == 0 else -0.012
         ax.annotate(MODE_LABELS[mode], (x, y), xytext=(x + offset_x, y + offset_y),
@@ -937,12 +952,15 @@ def fig10_latency_quality_frontier(data):
                 fontsize=10, fontstyle="italic", color="gray",
                 arrowprops=dict(arrowstyle="->", color="gray", lw=0.8))
 
-    for mode, x, y in ctx_pts:
+    for mode, x, y, yerr in ctx_pts:
         ax.scatter(x, y, s=220, color=COLORS[mode], marker=MARKERS[mode],
                    edgecolor="black", linewidth=0.8, alpha=0.9, zorder=5)
+        if yerr[0] > 0 or yerr[1] > 0:
+            ax.errorbar([x], [y], yerr=np.array([[yerr[0]], [yerr[1]]]), fmt="none",
+                        ecolor=COLORS[mode], elinewidth=1.2, capsize=3, alpha=0.9, zorder=4)
     # Labels with offsets to avoid overlap
     label_offsets = {"agribrain": (0.15, 0.008), "mcp_only": (0.15, -0.015), "pirag_only": (-1.5, 0.010)}
-    for mode, x, y in ctx_pts:
+    for mode, x, y, _ in ctx_pts:
         dx, dy = label_offsets.get(mode, (0.15, 0))
         ax.annotate(MODE_LABELS[mode], (x, y), xytext=(x + dx, y + dy),
                     fontsize=11, fontweight="bold",

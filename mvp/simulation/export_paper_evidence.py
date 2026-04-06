@@ -303,9 +303,13 @@ def export_robustness_and_benchmark() -> None:
                 continue
             agr = data[scenario].get("agribrain", {}).get("ari", {})
             if agr:
+                lo = agr.get("ci_low", agr.get("mean", 0.0))
+                hi = agr.get("ci_high", agr.get("mean", 0.0))
+                lo = agr.get("mean", 0.0) if lo is None else lo
+                hi = agr.get("mean", 0.0) if hi is None else hi
                 print(
                     f"    {scenario:<18s} ARI mean={agr.get('mean', 0):.3f} "
-                    f"CI=[{agr.get('ci_low', 0):.3f}, {agr.get('ci_high', 0):.3f}]"
+                    f"CI=[{float(lo):.3f}, {float(hi):.3f}]"
                 )
 
 
@@ -336,6 +340,16 @@ def export_stress_and_significance() -> None:
                     f"dLatencyMs={row['latency_ms_delta']:+.2f}"
                 )
 
+    stress_pf_path = RESULTS_DIR / "stress_passfail.csv"
+    if stress_pf_path.exists():
+        import pandas as pd
+
+        pf = pd.read_csv(stress_pf_path)
+        if not pf.empty:
+            total = len(pf)
+            passed = int((pf["Pass"] == True).sum())  # noqa: E712
+            print(f"\n  Stress pass/fail checks: {passed}/{total} PASS")
+
     sig_path = RESULTS_DIR / "benchmark_significance.json"
     if sig_path.exists():
         data = json.loads(sig_path.read_text(encoding="utf-8"))
@@ -348,7 +362,12 @@ def export_stress_and_significance() -> None:
                     continue
                 print(
                     f"    {scenario:<18s} {comp:<26s} "
-                    f"p={rec.get('p_value', 1.0):.4f} d={rec.get('cohens_d', 0.0):+.3f}"
+                    f"p={rec.get('p_value', 1.0):.4f} "
+                    f"q={rec.get('p_value_adj', rec.get('p_value', 1.0)):.4f} "
+                    f"dz={rec.get('cohens_dz', rec.get('cohens_d', 0.0)):+.3f} "
+                    f"dMean={rec.get('mean_diff', 0.0):+.4f} "
+                    f"CI=[{rec.get('mean_diff_ci_low', rec.get('mean_diff', 0.0)):+.4f},"
+                    f"{rec.get('mean_diff_ci_high', rec.get('mean_diff', 0.0)):+.4f}]"
                 )
 
 

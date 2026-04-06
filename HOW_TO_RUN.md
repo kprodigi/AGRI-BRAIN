@@ -524,11 +524,17 @@ This runs, in order:
 - results generation
 - validation checks
 - regression guard check (initialize once with `REGRESSION_GUARD_INIT=true`)
-- multi-seed benchmark with confidence intervals + significance tests
 - stress robustness suite (noise, missing data, telemetry delay, MCP faults)
+- external validity holdout check (early/mid/late windows)
+- per-seed benchmark runs (`run_single_seed.py`)
+- canonical multi-seed aggregation (`aggregate_seeds.py`) with CIs + paired stats
 - figure generation
 - paper evidence export
-- artifact manifest (SHA-256 hashes for reproducibility)
+- artifact manifest (SHA-256 hashes + exact git commit for reproducibility)
+
+For publication reporting policy, see:
+- `docs/METHODS_REPRO_APPENDIX.md`
+- `docs/STATISTICAL_METHODS.md`
 
 ---
 
