@@ -23,6 +23,13 @@ dist/
 .env
 .env.local
 
+# HPC run scripts and artifacts
+hpc_run.sh
+hpc_import.sh
+hpc_results.tar.gz
+agribrain-repro-*.out
+agribrain-repro-*.err
+
 # PiRAG vector store persistence
 *.vectorstore
 pirag_vectors/
