@@ -621,6 +621,19 @@ def _benchmark_complete(bench: dict | None, scenarios: list[str], modes: list[st
     return True
 
 
+# Bold error bar styling so tight 20-seed CIs remain visible at figure scale.
+_ERR_KW = {"linewidth": 1.8, "capthick": 1.8, "ecolor": "#222222", "alpha": 0.9}
+_ERR_CAPSIZE = 5
+
+_CI_NOTE = "Error bars: 95% bootstrap CI across 20 seeds"
+
+
+def _stamp_ci_note(fig) -> None:
+    """Add a small footer note documenting the CI basis on benchmark figures."""
+    fig.text(0.5, 0.01, _CI_NOTE, ha="center", va="bottom",
+             fontsize=8, color="#555555", style="italic")
+
+
 def fig6_cross(data):
     """2x2 grouped bars: ARI, RLE, waste, SLCA across scenarios for 3 methods.
     Adds error bars from benchmark_summary.json when available."""
@@ -657,8 +670,8 @@ def fig6_cross(data):
             ax.bar(x + i * width, vals, width, color=COLORS[mode],
                    label=MODE_LABELS[mode], alpha=0.85, edgecolor="white",
                    linewidth=0.5, yerr=yerr,
-                   capsize=3 if yerr is not None else 0,
-                   error_kw={"linewidth": 1.0, "capthick": 1.0})
+                   capsize=_ERR_CAPSIZE if yerr is not None else 0,
+                   error_kw=_ERR_KW)
 
         ax.set_xticks(x + width)
         ax.set_xticklabels([SCENARIO_LABELS[s] for s in scenarios_plot],
@@ -673,7 +686,8 @@ def fig6_cross(data):
                fontsize=12, framealpha=0.95, edgecolor="gray",
                fancybox=False, shadow=False,
                bbox_to_anchor=(0.5, 0.0))
-    fig.tight_layout(rect=[0, 0.05, 1, 0.97])
+    fig.tight_layout(rect=[0, 0.06, 1, 0.97])
+    _stamp_ci_note(fig)
     _save(fig, "fig6_cross")
 
 
@@ -717,8 +731,8 @@ def fig7_ablation(data):
             ax.bar(x + i * width, vals, width, color=COLORS[mode],
                    label=MODE_LABELS[mode], alpha=0.85, edgecolor="white",
                    linewidth=0.5, yerr=yerr,
-                   capsize=2 if yerr is not None else 0,
-                   error_kw={"linewidth": 0.8, "capthick": 0.8})
+                   capsize=_ERR_CAPSIZE if yerr is not None else 0,
+                   error_kw=_ERR_KW)
 
         ax.set_xticks(x + 3.5 * width)
         ax.set_xticklabels([SCENARIO_LABELS[s] for s in stress_scenarios],
@@ -733,7 +747,8 @@ def fig7_ablation(data):
                fontsize=12, framealpha=0.95, edgecolor="gray",
                fancybox=False, shadow=False,
                bbox_to_anchor=(0.5, 0.0))
-    fig.tight_layout(rect=[0, 0.06, 1, 0.96])
+    fig.tight_layout(rect=[0, 0.07, 1, 0.96])
+    _stamp_ci_note(fig)
     _save(fig, "fig7_ablation")
 
 
@@ -793,8 +808,8 @@ def fig8_green_ai(data):
         ax.bar(x + i * width, vals, width, color=COLORS[mode],
                label=MODE_LABELS[mode], alpha=0.85, edgecolor="white",
                linewidth=0.5, yerr=yerr,
-               capsize=3 if yerr is not None else 0,
-               error_kw={"linewidth": 1.0, "capthick": 1.0})
+               capsize=_ERR_CAPSIZE if yerr is not None else 0,
+               error_kw=_ERR_KW)
 
     ax.set_xticks(x + width)
     ax.set_xticklabels([SCENARIO_LABELS[s] for s in scenarios_plot],
@@ -804,7 +819,8 @@ def fig8_green_ai(data):
     _legend(ax)
     _apply_style(ax)
 
-    fig.tight_layout(rect=[0, 0, 1, 0.96])
+    fig.tight_layout(rect=[0, 0.05, 1, 0.96])
+    _stamp_ci_note(fig)
     _save(fig, "fig8_green_ai")
 
 
@@ -870,8 +886,8 @@ def fig9_mcp_pirag_robustness():
                 yerr = np.vstack([lo_err, hi_err])
                 ax.bar(x + j * width, means, width, color=color, label=label,
                        alpha=0.85, edgecolor="white", linewidth=0.5,
-                       yerr=yerr, capsize=3,
-                       error_kw={"linewidth": 1.0, "capthick": 1.0})
+                       yerr=yerr, capsize=_ERR_CAPSIZE,
+                       error_kw=_ERR_KW)
         ax.set_xticks(x + 1.5 * width)
         ax.set_xticklabels([SCENARIO_LABELS.get(s, s) for s in scenarios_plot],
                            rotation=20, ha="right")
@@ -880,7 +896,8 @@ def fig9_mcp_pirag_robustness():
     _legend(ax)
     _apply_style(ax)
 
-    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    fig.tight_layout(rect=[0, 0.05, 1, 0.95])
+    _stamp_ci_note(fig)
     _save(fig, "fig9_mcp_pirag_robustness")
 
 
