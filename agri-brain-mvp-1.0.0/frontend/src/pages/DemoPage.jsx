@@ -565,11 +565,11 @@ export default function DemoPage() {
 
       <Separator />
 
-      {/* Tabs: Pipeline + Agent Theater */}
+      {/* Tabs: System Walkthrough + Multi-Agent Run */}
       <Tabs defaultValue="pipeline">
         <TabsList className="w-full justify-start">
-          <TabsTrigger value="pipeline" className="flex items-center gap-1.5"><Network className="w-3.5 h-3.5" /> Pipeline Demo</TabsTrigger>
-          <TabsTrigger value="theater" className="flex items-center gap-1.5"><MessageCircle className="w-3.5 h-3.5" /> Agent Theater</TabsTrigger>
+          <TabsTrigger value="pipeline" className="flex items-center gap-1.5"><Network className="w-3.5 h-3.5" /> System Walkthrough</TabsTrigger>
+          <TabsTrigger value="theater" className="flex items-center gap-1.5"><MessageCircle className="w-3.5 h-3.5" /> Multi-Agent Run</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pipeline">
