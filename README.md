@@ -40,11 +40,11 @@ REINFORCE learning for sustainable food logistics.
 |:---:|:---:|
 | ![Protocol](docs/screenshots/mcp-pirag-protocol-light.png) | ![Causal](docs/screenshots/mcp-pirag-causal-light.png) |
 
-| System Demo | Live Pipeline Walkthrough |
+| System Walkthrough | Live Pipeline Walkthrough |
 |:---:|:---:|
 | ![Demo Page](docs/screenshots/demo-page-light.png) | ![Pipeline](docs/screenshots/demo-pipeline.gif) |
 
-| Agent Decision Theater | Heatwave Scenario |
+| Multi-Agent Run | Heatwave Scenario |
 |:---:|:---:|
 | ![Theater](docs/screenshots/theater-page-light.png) | ![Heatwave](docs/screenshots/agent-theater-heatwave.gif) |
 
