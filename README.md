@@ -12,17 +12,13 @@ REINFORCE learning for sustainable food logistics.
 |:---:|:---:|:---:|
 | ![Ops](docs/screenshots/ops-dashboard-light.png) | ![Quality](docs/screenshots/quality-tab-light.png) | ![Map](docs/screenshots/map-view-light.png) |
 
-| Decisions Timeline | Analytics & Validation | Admin Panel |
+| Decisions Timeline | Analytics | Admin Panel |
 |:---:|:---:|:---:|
-| ![Decisions](docs/screenshots/decisions-timeline-light.png) | ![Analytics](docs/screenshots/analytics-overview-light.png) | ![Admin](docs/screenshots/admin-policy-light.png) |
+| ![Decisions](docs/screenshots/decisions-timeline-light.png) | ![Analytics](docs/screenshots/analytics-light.png) | ![Admin](docs/screenshots/admin-policy-light.png) |
 
-| Analytics Tables | Analytics Figures | Admin Blockchain |
-|:---:|:---:|:---:|
-| ![Tables](docs/screenshots/analytics-tables-light.png) | ![Figures](docs/screenshots/analytics-figures-light.png) | ![Blockchain](docs/screenshots/admin-blockchain-light.png) |
-
-| Admin Scenarios |
-|:---:|
-| ![Scenarios](docs/screenshots/admin-scenarios-light.png) |
+| Admin Blockchain | Admin Scenarios |
+|:---:|:---:|
+| ![Blockchain](docs/screenshots/admin-blockchain-light.png) | ![Scenarios](docs/screenshots/admin-scenarios-light.png) |
 
 | Explainability Panel | MCP Tools | MCP Resources |
 |:---:|:---:|:---:|
@@ -40,13 +36,9 @@ REINFORCE learning for sustainable food logistics.
 |:---:|:---:|
 | ![Protocol](docs/screenshots/mcp-pirag-protocol-light.png) | ![Causal](docs/screenshots/mcp-pirag-causal-light.png) |
 
-| System Walkthrough | Live Pipeline Walkthrough |
+| System Walkthrough | Heatwave Scenario |
 |:---:|:---:|
-| ![Demo Page](docs/screenshots/demo-page-light.png) | ![Pipeline](docs/screenshots/demo-pipeline.gif) |
-
-| Multi-Agent Run | Heatwave Scenario |
-|:---:|:---:|
-| ![Theater](docs/screenshots/theater-page-light.png) | ![Heatwave](docs/screenshots/agent-theater-heatwave.gif) |
+| ![Pipeline](docs/screenshots/demo-pipeline.gif) | ![Heatwave](docs/screenshots/agent-theater-heatwave.gif) |
 
 > **Scenario GIFs**: See `docs/screenshots/agent-theater-*.gif` for animated walkthroughs of all 5 agents processing heatwave, overproduction, cyber outage, adaptive pricing, and baseline scenarios.
 
