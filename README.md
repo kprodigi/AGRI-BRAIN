@@ -6,7 +6,7 @@ multi-agent coordination, MCP-mediated tool interoperability, physics-informed
 RAG knowledge retrieval, and regime-aware contextual policy with online
 REINFORCE learning for sustainable food logistics.
 
-## Screenshots
+## Frontend Screenshots
 
 | Operations Dashboard | Quality Monitoring | Supply Chain Map |
 |:---:|:---:|:---:|
