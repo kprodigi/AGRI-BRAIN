@@ -10,7 +10,7 @@ authors:
     given-names: Monzure-Khoda
     affiliation: "Karen M. Swindler Department of Chemical and Biological Engineering, South Dakota School of Mines and Technology, Rapid City, SD 57701, USA"
 version: "1.1.0"
-date-released: "2025-06-01"
+date-released: "2025-04-11"
 license: MIT
 repository-code: "https://github.com/kprodigi/AGRI-BRAIN"
 # doi: "10.xxxx/xxxxx"  # Will update when preprint DOI is available

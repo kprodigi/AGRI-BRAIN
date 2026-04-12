@@ -6,6 +6,8 @@ multi-agent coordination, MCP-mediated tool interoperability, physics-informed
 RAG knowledge retrieval, and regime-aware contextual policy with online
 REINFORCE learning for sustainable food logistics.
 
+**Links:** [Paper](#) | [GitHub](https://github.com/kprodigi/AGRI-BRAIN) | [Documentation](./HOW_TO_RUN.md)
+
 ## Frontend Screenshots
 
 | Operations Dashboard | Quality Monitoring | Supply Chain Map |
@@ -106,7 +108,10 @@ Modern React dashboard built with shadcn/ui, featuring eight pages:
 
 ```bash
 cd AGRI-BRAIN
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate          # Linux / macOS
+# .venv\Scripts\activate           # Windows (cmd)
+# .venv\Scripts\Activate.ps1       # Windows (PowerShell)
 pip install -e agri-brain-mvp-1.0.0/backend
 python -m uvicorn src.app:API --port 8100 --app-dir agri-brain-mvp-1.0.0/backend
 ```
@@ -297,3 +302,56 @@ AGRI-BRAIN/
         stochastic_rank_check.py
       results/                  # Generated outputs (CSV, PNG, PDF)
 ```
+
+## System Requirements
+
+| Component | Minimum | Recommended | Tested |
+|-----------|---------|-------------|--------|
+| CPU cores | 4 | 8 | 8 (SLURM HPC) |
+| RAM | 16 GB | 32 GB | 32 GB |
+| Storage | 2 GB | 5 GB | 5 GB |
+| Python | 3.10 | 3.11+ | 3.11 |
+| Node.js | 18 | 22 | 22 |
+
+**Execution time estimates (8-core CPU):**
+
+| Task | Time |
+|------|------|
+| Quick smoke test (`DETERMINISTIC_MODE=true`, 1 seed) | ~5 min |
+| Single full run (5 scenarios x 8 modes) | ~15 min |
+| Full 20-seed benchmark pipeline | ~60 min |
+| Complete reproduction including stress tests | ~90 min |
+
+## Dataset
+
+The system uses IoT sensor telemetry from fresh spinach cold-chain storage, included at
+`agri-brain-mvp-1.0.0/backend/src/data_spinach.csv` (288 records, no preprocessing required).
+
+| Column | Description |
+|--------|-------------|
+| `timestamp` | ISO 8601 datetime (UTC) |
+| `tempC` | Refrigeration temperature (°C) |
+| `RH` | Relative humidity (%) |
+| `inventory_units` | Current inventory level |
+| `demand_rate` | Daily demand rate |
+
+## Citation
+
+If you use AGRI-BRAIN in your research, please cite:
+
+```bibtex
+@software{sarker2025agribrain,
+  title   = {{AGRI-BRAIN}: Autonomous Governance and Circular Reverse-Logistics
+             Intelligence in Agri-Food Supply Chains via Blockchain-Regulated
+             AI Agents},
+  author  = {Sarker, Nahid and Kazi, Monzure-Khoda},
+  year    = {2025},
+  url     = {https://github.com/kprodigi/AGRI-BRAIN},
+  version = {1.1.0},
+  license = {MIT}
+}
+```
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
