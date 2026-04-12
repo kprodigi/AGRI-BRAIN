@@ -110,7 +110,7 @@ fastapi, uvicorn, pydantic, numpy, pandas, matplotlib, reportlab, orjson, reques
 | `STOCH_ONSET_JITTER_H` | `4.0` | Source 6: scenario onset timing jitter ±hours (uniform) |
 | `STOCH_THETA_NOISE_STD` | `0.03` | Source 7: policy weight THETA noise sigma (per element) |
 | `STOCH_DELAY_PROB` | `0.05` | Telemetry lag probability per step (intermittent dropouts) |
-| `BENCHMARK_SEEDS` | `42,1337,2024,7,99` | Comma-separated seeds for multi-seed benchmark |
+| `BENCHMARK_SEEDS` | `42,1337,2024,7,99,101,202,303,404,505,606,707,808,909,1010,1111,1212,1313,1414,1515` | Comma-separated seeds for multi-seed benchmark (default: 20 seeds) |
 
 Security/runtime flags:
 

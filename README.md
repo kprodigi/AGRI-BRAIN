@@ -72,7 +72,7 @@ REINFORCE learning for sustainable food logistics.
   uncertainty (CV 15%), transport distance jitter (CV 15%), spoilage model error
   (k_ref CV 15%, Ea_R CV 10%), scenario onset timing jitter (±4h), and policy weight
   perturbation (sigma 0.03). Produces meaningful CIs, p-values, and effect sizes
-  across 5 benchmark seeds; set `DETERMINISTIC_MODE=true` for audit mode
+  across 20 benchmark seeds; set `DETERMINISTIC_MODE=true` for audit mode
 - **Robustness + significance toolkit** including stress tests (sensor noise, missing
   telemetry, delay, MCP fault injection) and permutation-test significance reporting
 - **Keyword extraction** from piRAG passages (thresholds, regulatory references,
