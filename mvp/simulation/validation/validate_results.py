@@ -16,12 +16,12 @@ import numpy as np
 import json
 
 # Import stochastic config (handles env var reading)
-_SIM_DIR = Path(__file__).resolve().parent
+_SIM_DIR = Path(__file__).resolve().parent.parent
 if str(_SIM_DIR) not in sys.path:
     sys.path.insert(0, str(_SIM_DIR))
 from stochastic import DETERMINISTIC_MODE
 
-_RESULTS_DIR = Path(__file__).resolve().parent / "results"
+_RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 t1 = pd.read_csv(_RESULTS_DIR / "table1_summary.csv")
 t2 = pd.read_csv(_RESULTS_DIR / "table2_ablation.csv")
 

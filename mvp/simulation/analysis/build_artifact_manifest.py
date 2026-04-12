@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 
 
-RESULTS_DIR = Path(__file__).resolve().parent / "results"
+RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 OUT = RESULTS_DIR / "artifact_manifest.json"
 
 

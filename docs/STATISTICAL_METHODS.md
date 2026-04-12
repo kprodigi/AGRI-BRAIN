@@ -45,7 +45,7 @@ For each scenario, baseline, and metric:
 - All compared methods use the same scenario generator, episode horizon, and observation stream.
 - Per-seed comparisons are paired: all methods are evaluated under aligned seed conditions for each scenario.
 - Metrics and post-processing are identical across methods; only method logic differs.
-- Canonical publication statistics are taken from `aggregate_seeds.py` outputs, not mixed alternate benchmark sources.
+- Canonical publication statistics are taken from `benchmarks/aggregate_seeds.py` outputs, not mixed alternate benchmark sources.
 
 ## Deterministic vs Stochastic Use
 

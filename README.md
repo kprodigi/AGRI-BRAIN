@@ -273,5 +273,27 @@ AGRI-BRAIN/
     simulation/
       generate_results.py       # Scenario x mode simulation runner
       generate_figures.py       # Publication figure generator
+      stochastic.py             # 7-source stochastic perturbation engine
+      reproduce_core.py         # One-command full reproduction pipeline
+      benchmarks/               # Multi-seed benchmark & stress suites
+        run_benchmark_suite.py
+        run_stress_suite.py
+        run_external_validity.py
+        run_single_seed.py
+        aggregate_seeds.py
+      validation/               # Result validation & regression guards
+        validate_results.py
+        run_regression_guard.py
+        validate_publication_artifacts.py
+        verify_context_integration.py
+      analysis/                 # Diagnostics & paper evidence export
+        ari_diagnostic.py
+        export_paper_evidence.py
+        build_artifact_manifest.py
+      tests/                    # Stochastic & benchmark test suites
+        test_stochastic_feasibility.py
+        test_stochastic_quick.py
+        stochastic_benchmark_check.py
+        stochastic_rank_check.py
       results/                  # Generated outputs (CSV, PNG, PDF)
 ```

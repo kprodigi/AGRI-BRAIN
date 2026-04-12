@@ -10,11 +10,17 @@ from typing import Dict, Iterable
 import numpy as np
 import pandas as pd
 
-from generate_results import DATA_CSV, SCENARIOS, Policy, apply_scenario, run_episode
-from stochastic import make_stochastic_layer
+try:
+    from ..generate_results import DATA_CSV, SCENARIOS, Policy, apply_scenario, run_episode
+    from ..stochastic import make_stochastic_layer
+except ImportError:
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from generate_results import DATA_CSV, SCENARIOS, Policy, apply_scenario, run_episode
+    from stochastic import make_stochastic_layer
 
 
-RESULTS_DIR = Path(__file__).resolve().parent / "results"
+RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 
 # Publication thresholds for stress robustness checks (absolute deltas).
 STRESS_THRESHOLDS = {

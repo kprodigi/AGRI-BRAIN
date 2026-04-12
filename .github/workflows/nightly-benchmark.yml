@@ -20,7 +20,7 @@ jobs:
           pip install -e agri-brain-mvp-1.0.0/backend
       - name: Run benchmark suite
         run: |
-          python mvp/simulation/run_benchmark_suite.py
+          python mvp/simulation/benchmarks/run_benchmark_suite.py
       - name: Upload benchmark artifact
         uses: actions/upload-artifact@v4
         with:

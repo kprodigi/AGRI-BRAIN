@@ -57,6 +57,14 @@ AGRI-BRAIN/
 │   └── contracts/              # Solidity smart contracts (Hardhat)
 ├── mvp/
 │   └── simulation/             # Standalone simulation & figure scripts
+│       ├── generate_results.py # Scenario x mode simulation runner
+│       ├── generate_figures.py # Publication figure generator
+│       ├── stochastic.py       # 7-source stochastic perturbation engine
+│       ├── reproduce_core.py   # One-command full reproduction pipeline
+│       ├── benchmarks/         # Multi-seed benchmark & stress suites
+│       ├── validation/         # Result validation & regression guards
+│       ├── analysis/           # Diagnostics & paper evidence export
+│       └── tests/              # Stochastic & benchmark test suites
 └── .gitignore
 ```
 
@@ -526,12 +534,12 @@ This runs, in order:
 - regression guard check (initialize once with `REGRESSION_GUARD_INIT=true`)
 - stress robustness suite (noise, missing data, telemetry delay, MCP faults)
 - external validity holdout check (early/mid/late windows)
-- per-seed benchmark runs (`run_single_seed.py`)
-- canonical multi-seed aggregation (`aggregate_seeds.py`) with CIs + paired stats
+- per-seed benchmark runs (`benchmarks/run_single_seed.py`)
+- canonical multi-seed aggregation (`benchmarks/aggregate_seeds.py`) with CIs + paired stats
 - figure generation
 - paper evidence export
 - artifact manifest (SHA-256 hashes + exact git commit for reproducibility)
-- publication artifact schema validation (`validate_publication_artifacts.py`)
+- publication artifact schema validation (`validation/validate_publication_artifacts.py`)
 
 For publication reporting policy, see:
 - `docs/METHODS_REPRO_APPENDIX.md`

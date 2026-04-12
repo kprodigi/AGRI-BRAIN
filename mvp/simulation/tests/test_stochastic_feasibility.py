@@ -21,11 +21,11 @@ from pathlib import Path
 # --- Force stochastic mode BEFORE any imports ---
 os.environ["DETERMINISTIC_MODE"] = "false"
 
-_BACKEND_SRC = Path(__file__).resolve().parent.parent.parent / "agri-brain-mvp-1.0.0" / "backend"
+_BACKEND_SRC = Path(__file__).resolve().parent.parent.parent.parent / "agri-brain-mvp-1.0.0" / "backend"
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 
-_SIM_DIR = Path(__file__).resolve().parent
+_SIM_DIR = Path(__file__).resolve().parent.parent
 if str(_SIM_DIR) not in sys.path:
     sys.path.insert(0, str(_SIM_DIR))
 

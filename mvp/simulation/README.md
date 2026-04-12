@@ -99,13 +99,49 @@ the global policy.
 | Carbon | `sum(km * carbon_per_km)` | Total CO2 emissions (kg) |
 | Equity | `1 - sigma(SLCA_values)` | SLCA uniformity index (Gini-inspired) |
 
+## Directory Layout
+
+```
+mvp/simulation/
+├── generate_results.py          # Scenario x mode simulation runner
+├── generate_figures.py          # Publication figure generator (Fig. 2-10)
+├── stochastic.py                # 7-source stochastic perturbation engine
+├── reproduce_core.py            # One-command full reproduction pipeline
+├── benchmarks/                  # Multi-seed benchmark & stress suites
+│   ├── run_benchmark_suite.py   # Full multi-seed benchmark runner
+│   ├── run_stress_suite.py      # Noise/missing-data/fault stress tests
+│   ├── run_external_validity.py # Early/mid/late holdout window check
+│   ├── run_single_seed.py       # Single-seed benchmark episode
+│   └── aggregate_seeds.py       # Canonical multi-seed aggregation + stats
+├── validation/                  # Result validation & regression guards
+│   ├── validate_results.py      # Deterministic result validation
+│   ├── run_regression_guard.py  # Regression drift guard
+│   ├── validate_publication_artifacts.py  # Publication artifact schema check
+│   └── verify_context_integration.py     # MCP/piRAG context integration check
+├── analysis/                    # Diagnostics & paper evidence export
+│   ├── ari_diagnostic.py        # ARI decomposition diagnostics
+│   ├── export_paper_evidence.py # Paper evidence trace export
+│   └── build_artifact_manifest.py # SHA-256 manifest + git commit pinning
+├── tests/                       # Stochastic & benchmark test suites
+│   ├── test_stochastic_feasibility.py  # Full stochastic feasibility tests
+│   ├── test_stochastic_quick.py        # Quick stochastic smoke tests
+│   ├── stochastic_benchmark_check.py   # Benchmark seed variance check
+│   └── stochastic_rank_check.py        # Method rank stability check
+└── results/                     # Generated outputs (CSV, PNG, PDF, JSON)
+```
+
 ## Reproducing Results
 
 ```bash
 cd mvp/simulation
 pip install -e ../../agri-brain-mvp-1.0.0/backend
+
+# Quick: core tables and figures only
 python generate_results.py    # runs all scenarios, saves tables
 python generate_figures.py    # generates publication figures (Fig. 2-10)
+
+# Full: one-command reproduction pipeline (recommended)
+python reproduce_core.py
 ```
 
 All outputs are saved to `mvp/simulation/results/`:

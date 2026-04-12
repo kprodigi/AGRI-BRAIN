@@ -11,16 +11,20 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-_BACKEND_SRC = Path(__file__).resolve().parent.parent.parent / "agri-brain-mvp-1.0.0" / "backend"
+_BACKEND_SRC = Path(__file__).resolve().parent.parent.parent.parent / "agri-brain-mvp-1.0.0" / "backend"
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
+
+_SIM_DIR = Path(__file__).resolve().parent.parent
+if str(_SIM_DIR) not in sys.path:
+    sys.path.insert(0, str(_SIM_DIR))
 
 import numpy as np
 import pandas as pd
 
 from generate_results import run_all, SCENARIOS, MODES, SEED
 
-RESULTS_DIR = Path(__file__).resolve().parent / "results"
+RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 EXPECTED_RANKING = ["agribrain", "no_pinn", "hybrid_rl", "no_slca", "static"]
 
 

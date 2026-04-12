@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 
-RESULTS_DIR = Path(__file__).resolve().parent / "results"
+RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 
 
 def _fail(msg: str) -> None:

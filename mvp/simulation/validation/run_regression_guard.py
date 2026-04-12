@@ -14,17 +14,17 @@ from typing import Dict
 
 import pandas as pd
 
-_SIM_DIR = Path(__file__).resolve().parent
+_SIM_DIR = Path(__file__).resolve().parent.parent
 if str(_SIM_DIR) not in sys.path:
     sys.path.insert(0, str(_SIM_DIR))
 from stochastic import DETERMINISTIC_MODE
 
 
-RESULTS_DIR = Path(__file__).resolve().parent / "results"
+RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 T1 = RESULTS_DIR / "table1_summary.csv"
 T2 = RESULTS_DIR / "table2_ablation.csv"
 # Keep snapshot outside generated results so it can be versioned.
-SNAPSHOT = Path(__file__).resolve().parent / "baseline_snapshot.json"
+SNAPSHOT = Path(__file__).resolve().parent.parent / "baseline_snapshot.json"
 
 
 def _digest_table(df: pd.DataFrame, keys: list[str], metrics: list[str]) -> Dict[str, Dict[str, float]]:

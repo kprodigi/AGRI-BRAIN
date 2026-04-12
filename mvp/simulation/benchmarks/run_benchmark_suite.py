@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 import pandas as pd
 
-_SIM_DIR = Path(__file__).resolve().parent
+_SIM_DIR = Path(__file__).resolve().parent.parent
 if str(_SIM_DIR) not in sys.path:
     sys.path.insert(0, str(_SIM_DIR))
 
@@ -25,7 +25,7 @@ from stochastic import DETERMINISTIC_MODE
 from generate_results import run_all, SCENARIOS
 
 
-RESULTS_DIR = Path(__file__).resolve().parent / "results"
+RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 
 
 def _bootstrap_ci(values: List[float], n_boot: int = 1000, alpha: float = 0.05) -> Tuple[float, float]:

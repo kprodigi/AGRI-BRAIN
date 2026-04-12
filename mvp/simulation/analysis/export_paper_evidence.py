@@ -22,7 +22,7 @@ from pathlib import Path
 
 import numpy as np
 
-RESULTS_DIR = Path(__file__).resolve().parent / "results"
+RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 SCENARIOS = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing", "baseline"]
 
 FEATURE_NAMES = [

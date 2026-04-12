@@ -34,6 +34,6 @@ python mvp/simulation/reproduce_core.py
 
 Then confirm:
 
-1. `validate_publication_artifacts.py` stage passes.
+1. `validation/validate_publication_artifacts.py` stage passes.
 2. `artifact_manifest.json` includes non-`unknown` `git_commit`.
 3. Claims cited in the manuscript reference only artifacts listed above.

@@ -22,7 +22,7 @@ MODES = ["agribrain", "mcp_only", "pirag_only", "no_context",
          "static", "hybrid_rl", "no_pinn", "no_slca"]
 METRICS = ("ari", "waste", "rle", "slca", "carbon", "equity")
 
-_SCRIPT_DIR = Path(__file__).resolve().parent
+_SCRIPT_DIR = Path(__file__).resolve().parent.parent
 seed_dir = _SCRIPT_DIR / "results" / "benchmark_seeds"
 
 

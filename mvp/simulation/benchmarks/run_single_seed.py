@@ -9,7 +9,13 @@ import json
 import sys
 from pathlib import Path
 
-from generate_results import run_all, SCENARIOS
+try:
+    from ..generate_results import run_all, SCENARIOS
+except ImportError:
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
+    from generate_results import run_all, SCENARIOS
 
 if len(sys.argv) < 2:
     print("Usage: python run_single_seed.py <seed>")
@@ -19,7 +25,7 @@ seed = int(sys.argv[1])
 print(f"Running full simulation with seed={seed}...")
 data = run_all(seed=seed)
 
-out_dir = Path(__file__).resolve().parent / "results" / "benchmark_seeds"
+out_dir = Path(__file__).resolve().parent.parent / "results" / "benchmark_seeds"
 out_dir.mkdir(parents=True, exist_ok=True)
 
 metrics = {}

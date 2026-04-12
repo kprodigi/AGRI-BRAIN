@@ -12,7 +12,13 @@ from statistics import mean, pstdev
 # constants pick up the correct value.
 os.environ["DETERMINISTIC_MODE"] = "false"
 
-from generate_results import SCENARIOS, run_all
+try:
+    from ..generate_results import SCENARIOS, run_all
+except ImportError:
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
+    from generate_results import SCENARIOS, run_all
 
 
 def main() -> None:
