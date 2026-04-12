@@ -147,7 +147,7 @@ export default function MapPage() {
             </div>
             <div className="flex items-center gap-4 border-l pl-4 ml-2">
               {ROUTES.map((route) => (
-                <div key={route.type} className="flex items-center gap-1.5">
+                <div key={`${route.from}-${route.to}`} className="flex items-center gap-1.5">
                   <div className="h-px w-4" style={{ borderTop: `2px ${route.dash ? "dashed" : "solid"} ${route.color}` }} />
                   <span className="text-xs capitalize">{route.type.replace(/_/g, " ")} ({route.distance})</span>
                 </div>
