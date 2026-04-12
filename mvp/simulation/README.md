@@ -191,7 +191,7 @@ piRAG consistently contributes more than MCP across all 5 scenarios. Zero rank i
 ## Seed & Reproducibility
 
 Single-run scripts default to `seed=42`, while benchmark summaries are computed over
-multiple seeds (default: `42,1337,2024,7,99`).
+20 fixed seeds by default (see `BENCHMARK_SEEDS` in `.env.example`).
 Set `DETERMINISTIC_MODE=true` for strict reproducibility checks and snapshot guards.
 Wall-clock latency metrics remain runtime-dependent and may vary by machine load.
 
