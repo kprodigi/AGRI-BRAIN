@@ -984,14 +984,12 @@ def fig10_latency_quality_frontier(data):
         if yerr[0] > 0 or yerr[1] > 0:
             ax.errorbar([x], [y], yerr=np.array([[yerr[0]], [yerr[1]]]), fmt="none",
                         ecolor=COLORS[mode], elinewidth=1.2, capsize=3, alpha=0.9, zorder=4)
-    # Labels spread around the cluster — use absolute xytext positions
-    # agribrain(4.24,0.678) → label above-left
-    # pirag_only(3.95,0.664) → label left
-    # mcp_only(4.02,0.660) → label below-right
+    # Labels spread vertically, all left of cluster, clear of dashed arrow
+    # Arrow path: (0.066,0.648) → (4.07,0.667), at x=3.0 arrow y≈0.662
     ctx_label_pos = {
-        "agribrain":  (2.8, 0.690),
-        "pirag_only": (2.2, 0.666),
-        "mcp_only":   (2.8, 0.648),
+        "agribrain":  (2.8, 0.692),
+        "pirag_only": (2.8, 0.676),
+        "mcp_only":   (2.8, 0.647),
     }
     for mode, x, y, _ in ctx_pts:
         tx, ty = ctx_label_pos.get(mode, (x + 0.3, y))
@@ -1007,9 +1005,12 @@ def fig10_latency_quality_frontier(data):
                 xytext=(ref[1], ref[2]),
                 arrowprops=dict(arrowstyle="->", color="#009688", lw=2.0,
                                 linestyle="--", alpha=0.4))
-    ax.text(1.5, 0.680, f"+{ctx_mean_lat - ref[1]:.1f} ms\n+{(ctx_mean_ari - ref[2]):.3f} ARI",
-            fontsize=8.5, ha="center", color="#009688", fontstyle="italic",
-            bbox=dict(boxstyle="round,pad=0.25", facecolor="white", alpha=0.9, edgecolor="#009688"))
+    mid_x = (ref[1] + ctx_mean_lat) / 2
+    mid_y = (ref[2] + ctx_mean_ari) / 2
+    ax.text(mid_x, mid_y, f"+{ctx_mean_lat - ref[1]:.1f} ms  |  +{(ctx_mean_ari - ref[2]):.3f} ARI",
+            fontsize=8, ha="center", va="center", color="#009688", fontstyle="italic",
+            bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.95, edgecolor="#009688"),
+            zorder=6)
     ax.set_xlabel("Mean decision latency (ms)")
     ax.set_ylabel("Mean ARI")
     ax.set_xlim(-0.3, 5.0)
