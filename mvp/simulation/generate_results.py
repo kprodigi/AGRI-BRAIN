@@ -112,13 +112,13 @@ SEED = 42
 
 SCENARIOS = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing", "baseline"]
 MODES = ["static", "hybrid_rl", "no_pinn", "no_slca",
-         "agribrain", "no_context", "mcp_only", "pirag_only"]
+         "agribrain", "no_context", "mcp_only", "pirag_only", "no_yield"]
 
 # Modes that enable MCP/piRAG context infrastructure
-_CONTEXT_ENABLED_MODES = {"agribrain", "mcp_only", "pirag_only"}
+_CONTEXT_ENABLED_MODES = {"agribrain", "mcp_only", "pirag_only", "no_yield"}
 
 # Modes that use agribrain logits for action selection
-_AGRIBRAIN_LOGIT_MODES = {"agribrain", "no_context", "mcp_only", "pirag_only"}
+_AGRIBRAIN_LOGIT_MODES = {"agribrain", "no_context", "mcp_only", "pirag_only", "no_yield"}
 
 # Modes where MCP compliance data feeds waste penalty
 _MCP_WASTE_MODES = {"agribrain", "mcp_only"}
@@ -307,11 +307,21 @@ def run_episode(
             except Exception:
                 pass
 
+        # Path B: expose pre-computed Holt-Winters outputs so the yield_query
+        # MCP tool can short-circuit; psi_5 (supply uncertainty) flows into
+        # the routing context without duplicating the forecast.
+        _point = sf["forecast"][0] if sf.get("forecast") else 1.0
+        _std = float(sf.get("std", 0.0))
+        _supply_uncertainty = round(min(max(_std / max(abs(_point), 1.0), 0.0), 1.0), 4)
+
         # Build env_state for the coordinator
         env_state = {
             "rho": rho, "inv": inv, "temp": temp, "rh": rh_val,
             "y_hat": y_hat, "tau": tau, "surplus_ratio": surplus_ratio,
             "supply_hat": supply_hat,
+            "supply_uncertainty": _supply_uncertainty,
+            "supply_std": _std,
+            "inv_history": hist_slice["inventory_units"].astype(float).tolist(),
             "policy_flags": {
                 "enable_mcp_qos_routing": bool(getattr(policy, "enable_mcp_qos_routing", False)),
                 "enable_mcp_reliability": bool(getattr(policy, "enable_mcp_reliability", False)),

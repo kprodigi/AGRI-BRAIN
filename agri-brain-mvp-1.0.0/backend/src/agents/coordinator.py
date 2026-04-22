@@ -29,13 +29,14 @@ from .roles import (
 from ..models.action_selection import select_action
 
 # Context modes that enable MCP/piRAG infrastructure
-_CONTEXT_MODES = {"agribrain", "mcp_only", "pirag_only"}
+_CONTEXT_MODES = {"agribrain", "mcp_only", "pirag_only", "no_yield"}
 
 # Map operating mode to context_mode parameter for feature masking
 _CONTEXT_MODE_MAP = {
     "agribrain": "full",
     "mcp_only": "mcp_only",
     "pirag_only": "pirag_only",
+    "no_yield": "no_yield",  # Path B ablation: suppress psi_5 only
 }
 
 

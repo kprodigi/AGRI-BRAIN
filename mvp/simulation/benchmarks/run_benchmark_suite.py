@@ -101,7 +101,7 @@ def main() -> None:
         print("  CIs and p-values will be degenerate (n=1). Use multi-seed runs for meaningful statistics.")
         for scenario in SCENARIOS:
             collected.setdefault(scenario, {})
-            for mode in ("agribrain", "mcp_only", "pirag_only", "no_context"):
+            for mode in ("agribrain", "mcp_only", "pirag_only", "no_context", "no_yield"):
                 row = t2[(t2["Scenario"] == scenario) & (t2["Variant"] == mode)]
                 if row.empty:
                     continue
@@ -121,7 +121,7 @@ def main() -> None:
             run = run_all(seed=seed)
             for scenario in SCENARIOS:
                 collected.setdefault(scenario, {})
-                for mode in ("agribrain", "mcp_only", "pirag_only", "no_context"):
+                for mode in ("agribrain", "mcp_only", "pirag_only", "no_context", "no_yield"):
                     ep = run["results"][scenario][mode]
                     rec = collected[scenario].setdefault(
                         mode, {"ari": [], "waste": [], "rle": [], "slca": [], "carbon": [], "equity": []}
@@ -166,7 +166,7 @@ def main() -> None:
         for scenario, modes in collected.items():
             significance[scenario] = {}
             agri = modes.get("agribrain", {})
-            for baseline in ("mcp_only", "pirag_only", "no_context"):
+            for baseline in ("mcp_only", "pirag_only", "no_context", "no_yield"):
                 base = modes.get(baseline, {})
                 if not agri or not base:
                     continue
@@ -189,7 +189,7 @@ def main() -> None:
     payload = {
         "_meta": {
             "source": "run_benchmark_suite.py",
-            "modes": ["agribrain", "mcp_only", "pirag_only", "no_context"],
+            "modes": ["agribrain", "mcp_only", "pirag_only", "no_context", "no_yield"],
             "mode_label": mode_label,
             "seeds": seeds,
             "use_tables": use_tables,

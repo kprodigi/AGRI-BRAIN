@@ -72,6 +72,25 @@ def _calculator_surplus_args(obs: Any, prior: Dict[str, Any], shared: Any) -> Di
     return {"expr": expr}
 
 
+def _yield_query_args(obs: Any, prior: Dict[str, Any], shared: Any) -> Dict[str, Any]:
+    """Path B: pull pre-computed uncertainty from obs.raw when the simulator
+    has already run Holt-Winters this step. Falls back to inv_history when
+    no cached value is present (e.g., FastAPI /decide path).
+    """
+    raw = getattr(obs, "raw", {}) or {}
+    cached_unc = raw.get("supply_uncertainty")
+    if cached_unc is not None:
+        return {
+            "cached_uncertainty": float(cached_unc),
+            "cached_forecast":    list(raw.get("supply_hat", [])) if isinstance(raw.get("supply_hat"), (list, tuple)) else [],
+            "cached_std":         float(raw.get("supply_std", 0.0)),
+        }
+    history = list(raw.get("inv_history", []))
+    if not history:
+        history = [float(getattr(obs, "inv", 0.0))]
+    return {"inventory_history": history, "horizon": 6}
+
+
 # ---------------------------------------------------------------------------
 # Trigger functions
 # ---------------------------------------------------------------------------
@@ -143,6 +162,7 @@ PROCESSOR_WORKFLOW: List[WorkflowStep] = [
     ("policy_oracle", _processor_policy_trigger, _policy_oracle_args),
     ("chain_query", _processor_chain_trigger, _chain_query_args),
     ("calculator", _processor_calculator_trigger, _calculator_surplus_args),
+    ("yield_query", _always, _yield_query_args),  # Path B
 ]
 
 COOPERATIVE_WORKFLOW: List[WorkflowStep] = [
@@ -150,14 +170,16 @@ COOPERATIVE_WORKFLOW: List[WorkflowStep] = [
     ("chain_query", _always, _chain_query_args),
     ("spoilage_forecast", _cooperative_spoilage_trigger, _spoilage_forecast_args),
     ("footprint_query", _always, _footprint_args),
+    ("yield_query", _always, _yield_query_args),  # Path B
 ]
 
 DISTRIBUTOR_WORKFLOW: List[WorkflowStep] = [
     ("check_compliance", _always, _compliance_args),
     ("slca_lookup", _distributor_slca_trigger, _slca_args),
     ("spoilage_forecast", _distributor_spoilage_trigger, _spoilage_forecast_args),
-    ("recovery_capacity_check", _distributor_recovery_trigger, lambda obs, p, s: {}),
+    ("recovery_capacity_check", _distributor_recovery_trigger, lambda obs, p, s: {}),  # KEEP - late-bound
     ("calculator", _distributor_calculator_trigger, _calculator_surplus_args),
+    ("yield_query", _always, _yield_query_args),  # Path B
 ]
 
 RECOVERY_WORKFLOW: List[WorkflowStep] = [

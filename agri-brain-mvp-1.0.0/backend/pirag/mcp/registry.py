@@ -299,5 +299,25 @@ def get_default_registry() -> ToolRegistry:
     except ImportError:
         pass
 
+    # Path B: Holt-Winters yield/supply forecast tool (feeds psi_5)
+    try:
+        from .tools.yield_query import query_yield
+        registry.register(ToolSpec(
+            name="yield_query",
+            description="Holt-Winters yield/supply forecast with normalised supply uncertainty (psi_5)",
+            capabilities=["supply", "forecast", "uncertainty"],
+            fn=query_yield,
+            schema={
+                "inventory_history":  {"type": "array",   "description": "Recent inventory_units observations for forecasting"},
+                "horizon":            {"type": "integer", "description": "Forecast horizon in 15-min steps (default: 6)"},
+                "cached_uncertainty": {"type": "number",  "description": "Pre-computed CV in [0,1] (short-circuits Holt-Winters when present)"},
+                "cached_forecast":    {"type": "array",   "description": "Pre-computed point forecast (paired with cached_uncertainty)"},
+                "cached_std":         {"type": "number",  "description": "Pre-computed std (paired with cached_uncertainty)"},
+            },
+            cacheable=False,
+        ))
+    except ImportError:
+        pass
+
     _DEFAULT_REGISTRY = registry
     return registry

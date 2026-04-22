@@ -32,7 +32,7 @@ metrics = {}
 for sc in SCENARIOS:
     metrics[sc] = {}
     for mode in ("agribrain", "mcp_only", "pirag_only", "no_context",
-                 "static", "hybrid_rl", "no_pinn", "no_slca"):
+                 "static", "hybrid_rl", "no_pinn", "no_slca", "no_yield"):
         ep = data["results"][sc][mode]
         metrics[sc][mode] = {
             "ari": float(ep["ari"]),
