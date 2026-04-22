@@ -83,12 +83,15 @@ PRICE_FACTOR: dict[str, float] = {
 
 VALID_MODES: list[str] = [
     "static", "hybrid_rl", "no_pinn", "no_slca",
-    "agribrain", "no_context", "mcp_only", "pirag_only",
+    "agribrain", "no_context", "mcp_only", "pirag_only", "no_yield",
 ]
 """Valid operating modes for the softmax policy.
 
 ``no_context`` uses the same logits as ``agribrain`` but with
 ``context_modifier`` forced to None for ablation studies.
+``no_yield`` also uses the same logits as ``agribrain``; the psi_5 supply
+uncertainty feature is suppressed upstream in
+``backend.pirag.context_to_logits`` via ``context_mode="no_yield"``.
 ``mcp_only`` and ``pirag_only`` use agribrain logits with partial
 context (MCP features only or piRAG features only).
 """
@@ -162,6 +165,11 @@ CYBER_REROUTE_PROB: dict[str, float] = {
     "no_context": 0.82,
     "mcp_only": 0.82,
     "pirag_only": 0.82,
+    # no_yield shares agribrain's edge infrastructure; only psi_5 (supply
+    # uncertainty) is suppressed. psi_5 does not enter cyber reroute logic,
+    # so the reroute success rate must equal agribrain's to keep the Path B
+    # ablation attributable to psi_5 alone.
+    "no_yield": 0.82,
 }
 """Mode-dependent probability of successful rerouting during cyber outage.
 
@@ -326,19 +334,21 @@ def select_action(
     phi = build_feature_vector(rho, inv, y_hat, temp)
     gamma = np.array([policy.gamma_coldchain, policy.gamma_local, policy.gamma_recovery])
 
-    # Cyber outage: processor offline from hour 24 (applies to all non-static modes)
+    # Cyber outage: processor offline from hour 24 (applies to all non-static modes).
+    # The policy distribution is the Bernoulli over (fail -> cold chain, succeed ->
+    # local redistribution); recovery is not a valid response during outage.
+    # Recovery mass is zero, the other two carry the reroute Bernoulli.
+    # The sampled action is still drawn via a single rng.random() call so the
+    # RNG consumption pattern (and therefore per-seed reproducibility) matches
+    # the original pre-fix behaviour for downstream metrics.
     if scenario == "cyber_outage" and hour >= 24.0:
         p_success = CYBER_REROUTE_PROB.get(mode, 0.50)
+        probs = np.array([1.0 - p_success, p_success, 0.0])
         if deterministic:
-            # Deterministic: use threshold comparison, no RNG
-            if p_success >= 0.5:
-                return 1, np.array([0.0, 1.0, 0.0])
-            else:
-                return 0, np.array([1.0, 0.0, 0.0])
+            return int(np.argmax(probs)), probs
         if rng.random() < p_success:
-            return 1, np.array([0.0, 1.0, 0.0])
-        else:
-            return 0, np.array([1.0, 0.0, 0.0])
+            return 1, probs
+        return 0, probs
 
     elif mode == "hybrid_rl":
         logits = THETA @ phi + gamma * tau
@@ -350,7 +360,9 @@ def select_action(
     elif mode == "no_slca":
         logits = THETA @ phi + gamma * tau + NO_SLCA_OFFSET
 
-    else:  # agribrain or no_context (same logits, context disabled externally)
+    else:  # agribrain, no_context, mcp_only, pirag_only, no_yield
+        # All four share the same base logits; what differs is the upstream
+        # context_modifier (full / masked subset / zeroed) applied below.
         logits = THETA @ phi + gamma * tau + SLCA_BONUS + SLCA_RHO_BONUS * rho
 
     if role_bias is not None:
