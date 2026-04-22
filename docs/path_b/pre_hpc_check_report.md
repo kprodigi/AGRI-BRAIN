@@ -42,7 +42,7 @@ All 12 checks PASS. No Section 1 BLOCKs.
 | 2.3 | SLURM script sanity | PASS | `--time=24:00:00`, `--mem=32G`, `--cpus-per-task=8`; Stage 4 loops `run_single_seed.py` across 20 seeds; all 9 MODES and 5 SCENARIOS are iterated inside `run_all()` / `run_single_seed.py:34-35` including `no_yield`. Caveat, Stage 3 (`run_benchmark_suite.py`) only records 5 of the 9 modes (line 124). The full 9-mode coverage comes from Stage 4 |
 | 2.4 | Output directory hygiene | WARN | Output dir is fixed (`mvp/simulation/results/` and `results/benchmark_seeds/`), not timestamped or hash-tagged. Previous baseline (`f4aead5`) would be overwritten. Recoverable via git, but a re-run clobbers the working tree until committed |
 | 2.5 | CSV schema check | WARN | Prompt's dry-run flags (`--seeds --scenarios --modes --output-dir`) are not supported by `run_single_seed.py` (it takes only a single positional seed). Existing `table1_summary.csv` and `table2_ablation.csv` schemas cover the aggregator's expectations (`Scenario`, `Variant`, `ARI`, `Waste`, `RLE`, `SLCA`, `Carbon`, `Equity`) |
-| 2.6 | Benchmark wall-time projection | **BLOCK** | Measured `agribrain`/`baseline`/seed=0 single-cell wall time: **795.89 s** (~13.3 min) on the local machine. Total cells across `hpc_run.sh` stages: Stage 1 = 45, Stage 3 = 900, Stage 4 = 900 → **1,845 cells**. Serial projection: `1845 * 795.89 / 3600` = **408 hours**. No multiprocessing, no GNU parallel, no job array in `hpc_run.sh`. Even at a 5× HPC-vs-laptop speedup the projection is ~82 h, still over the `--time=24:00:00` budget |
+| 2.6 | Benchmark wall-time projection | **BLOCK** (resolved, see Post-unblock status) | Measured `agribrain`/`baseline`/seed=0 single-cell wall time: **795.89 s** (~13.3 min) on the local machine. Total cells across `hpc_run.sh` stages: Stage 1 = 45, Stage 3 = 900, Stage 4 = 900 → **1,845 cells**. Serial projection: `1845 * 795.89 / 3600` = **408 hours**. No multiprocessing, no GNU parallel, no job array in `hpc_run.sh`. Even at a 5× HPC-vs-laptop speedup the projection is ~82 h, still over the `--time=24:00:00` budget |
 
 **Section 2 result: 1 BLOCK (2.6 wall-time), 3 WARN.**
 
@@ -115,4 +115,18 @@ Per-seed serial cost (5 scenarios × 9 modes = 45 cells): measured 795 s/cell on
 ### Final verdict
 
 **GO.**
+
+---
+
+## Post-unblock hardening, 2026-04-22
+
+Follow-up pass to tighten the pipeline for journal submission. One additional commit addresses five items that were surfaced after the unblock but before `sbatch`:
+
+- `aggregate_seeds.py` gained `no_yield` in both `MODES` and the paired-test baseline tuple. Paired comparisons now restrict to seeds that carry both mode entries, so legacy JSONs from before Path B (which lack `no_yield`) are skipped per-scenario rather than crashing the aggregator. `agribrain_vs_no_yield` now prints alongside the other headline comparisons.
+- `hpc_aggregate.sh` Stage 5 bridge replaced `ln -sf` with `cp -f`. Works on Lustre, NFS, and local tmpfs alike; JSONs are small enough that the copy cost is negligible.
+- `hpc_aggregate.sh` packaging step replaced literal globs with an explicit `archive_files=()` list guarded by `[ -f "$f" ]` and `shopt -s nullglob` for figures. A missing figure no longer fails the tar step with `set -e`.
+- `.gitignore` added `.vite/` (IDE artefact that persisted as untracked across the audit).
+- Section 2.6 row in this report annotated with `(resolved, see Post-unblock status)` so a reader scanning the table sees the unblock without reading the full file.
+
+Verdict unchanged: **GO.**
 

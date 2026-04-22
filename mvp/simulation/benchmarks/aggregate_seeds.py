@@ -18,7 +18,7 @@ import numpy as np
 SEEDS = [42, 1337, 2024, 7, 99, 101, 202, 303, 404, 505,
          606, 707, 808, 909, 1010, 1111, 1212, 1313, 1414, 1515]
 SCENARIOS = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing", "baseline"]
-MODES = ["agribrain", "mcp_only", "pirag_only", "no_context",
+MODES = ["agribrain", "mcp_only", "pirag_only", "no_context", "no_yield",
          "static", "hybrid_rl", "no_pinn", "no_slca"]
 METRICS = ("ari", "waste", "rle", "slca", "carbon", "equity")
 
@@ -144,15 +144,28 @@ def main():
                 }
 
     # Build significance with paired tests and FDR correction.
+    # Baselines include no_yield so Path B's primary ablation is captured.
     significance = {}
     for sc in SCENARIOS:
         significance[sc] = {}
-        for baseline in ("mcp_only", "pirag_only", "no_context", "hybrid_rl", "static"):
+        for baseline in ("mcp_only", "pirag_only", "no_context", "no_yield",
+                          "hybrid_rl", "static"):
+            # Paired tests require both modes to come from the same seed,
+            # so restrict to seeds that carry both entries. Legacy JSONs
+            # that predate a given mode (e.g. no_yield before Path B) are
+            # skipped rather than crashed on.
+            seeds_paired = sorted(
+                s for s in all_data
+                if "agribrain" in all_data[s].get(sc, {})
+                and baseline in all_data[s].get(sc, {})
+            )
+            if not seeds_paired:
+                continue
             comp = {}
             pvals = {}
             for met in METRICS:
-                a = [all_data[s][sc]["agribrain"][met] for s in all_data]
-                b = [all_data[s][sc][baseline][met] for s in all_data]
+                a = [all_data[s][sc]["agribrain"][met] for s in seeds_paired]
+                b = [all_data[s][sc][baseline][met] for s in seeds_paired]
                 p = paired_permutation_pvalue(a, b)
                 d = cohens_dz(a, b)
                 key = f"{sc}:{baseline}:{met}"
@@ -166,6 +179,7 @@ def main():
                     "mean_diff": mean_diff,
                     "mean_diff_ci_low": lo_diff,
                     "mean_diff_ci_high": hi_diff,
+                    "n_seeds": len(seeds_paired),
                 }
             p_adj = benjamini_hochberg(pvals)
             for met in METRICS:
@@ -189,8 +203,11 @@ def main():
 
     print()
     for sc in SCENARIOS:
-        for comp_name in ("agribrain_vs_no_context", "agribrain_vs_hybrid_rl"):
-            rec = significance[sc][comp_name]["ari"]
+        for comp_name in ("agribrain_vs_no_context", "agribrain_vs_no_yield",
+                           "agribrain_vs_hybrid_rl"):
+            rec = significance[sc].get(comp_name, {}).get("ari")
+            if rec is None:
+                continue
             print(f"  {sc} {comp_name}: p={rec['p_value']:.4f} p_adj={rec['p_value_adj']:.4f} dz={rec['cohens_dz']:+.3f}")
 
 

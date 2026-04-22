@@ -67,13 +67,17 @@ python mvp/simulation/benchmarks/run_benchmark_suite.py \
     --output-dir "$RESULTS_DIR"
 
 # Stage 5: canonical aggregator expects flat seed_<n>.json files under
-# mvp/simulation/results/benchmark_seeds/. Link the tagged files into the
-# flat location so aggregate_seeds.py can find them unchanged.
+# mvp/simulation/results/benchmark_seeds/. Copy (not symlink) the tagged
+# files into the flat location so aggregate_seeds.py can find them
+# unchanged. cp works on every HPC filesystem; symlinks can fail on
+# some Lustre / NFS tiers. JSONs are <50 KB each, the copy cost is
+# negligible vs the benefit of portability.
 echo ""
 echo "=== Stage 5: canonical aggregate_seeds ==="
+mkdir -p "$RESULTS_DIR/benchmark_seeds"
 for f in "$SEEDS_DIR"/seed_*.json; do
     [ -e "$f" ] || continue
-    ln -sf "$(realpath "$f")" "$RESULTS_DIR/benchmark_seeds/$(basename "$f")"
+    cp -f "$f" "$RESULTS_DIR/benchmark_seeds/$(basename "$f")"
 done
 python mvp/simulation/benchmarks/aggregate_seeds.py
 
@@ -103,10 +107,14 @@ echo "=== Stage 10: final validation ==="
 (cd mvp/simulation && python validation/validate_results.py)
 
 # Archive the results into a tag-specific tarball so re-runs do not clobber.
+# Build the file list explicitly so a missing optional output (e.g. one
+# figure that did not render) does not fail the whole archive step.
 echo ""
 echo "=== Packaging ==="
 ARCHIVE="hpc_results_${RUN_TAG}.tar.gz"
-tar czf "$ARCHIVE" \
+
+archive_files=()
+for f in \
     mvp/simulation/results/table1_summary.csv \
     mvp/simulation/results/table2_ablation.csv \
     mvp/simulation/results/benchmark_summary.json \
@@ -118,11 +126,25 @@ tar czf "$ARCHIVE" \
     mvp/simulation/results/stress_passfail.csv \
     mvp/simulation/results/feature_heatmap_data.json \
     mvp/simulation/results/artifact_manifest.json \
-    "mvp/simulation/results/fig"*.png \
-    "mvp/simulation/results/fig"*.pdf \
-    mvp/simulation/baseline_snapshot.json \
-    "$SEEDS_DIR"
+    mvp/simulation/baseline_snapshot.json
+do
+    [ -f "$f" ] && archive_files+=("$f")
+done
+
+shopt -s nullglob
+for f in mvp/simulation/results/fig*.png mvp/simulation/results/fig*.pdf; do
+    archive_files+=("$f")
+done
+shopt -u nullglob
+
+[ -d "$SEEDS_DIR" ] && archive_files+=("$SEEDS_DIR")
+
+if [ ${#archive_files[@]} -eq 0 ]; then
+    echo "WARNING: no files matched for archive, skipping tar"
+else
+    tar czf "$ARCHIVE" "${archive_files[@]}"
+    echo "[aggregate] archive: $ARCHIVE (${#archive_files[@]} items)"
+fi
 
 echo ""
 echo "[aggregate] complete at $(date)"
-echo "[aggregate] archive: $ARCHIVE"
