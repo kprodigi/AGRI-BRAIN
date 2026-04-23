@@ -826,18 +826,19 @@ def fig6_cross(data):
 # Figure 7: Ablation study (1x3 grouped bars)
 # ---------------------------------------------------------------------------
 def fig7_ablation(data):
-    """1x3 grouped bars: ARI, waste, RLE for all 9 variants.
-    Adds error bars from benchmark_summary.json when available. AgriBrain
-    is always the last bar in each group so the comparison reads left to
-    right from simplest baseline to full system."""
+    """1x3 grouped bars: ARI, waste, RLE for the architectural ablation.
+    Shows the eight publication modes (static, hybrid_rl, no_pinn, no_slca,
+    no_context, mcp_only, pirag_only, agribrain). The no_yield mode stays
+    in the simulator and the significance JSON but is not plotted here:
+    its ablation is about a single MCP feature, not an architectural
+    component, so it belongs with the context-channel comparisons in
+    fig9 panel (b)."""
     bench = _load_benchmark_ci()
 
-    # Reorder so AgriBrain is last, and no_yield (Path B ablation) sits
-    # immediately before it for direct visual comparison.
-    ordered = [m for m in MODES if m not in ("agribrain", "no_yield")] + ["no_yield", "agribrain"]
-    fig7_modes = ordered
+    # Reorder so AgriBrain is last.
+    fig7_modes = [m for m in MODES if m not in ("agribrain", "no_yield")] + ["agribrain"]
 
-    fig, axes = plt.subplots(1, 3, figsize=(24, 8.0))
+    fig, axes = plt.subplots(1, 3, figsize=(22, 7.5))
     fig.suptitle("Ablation Study")
 
     metrics = [("ari", "ARI", "(a)"), ("waste", "Waste Rate", "(b)"),
@@ -995,11 +996,12 @@ def fig9_mcp_pirag_robustness():
         ax.set_ylim(0, max(calls) * 1.30)
     _legend(ax, loc="upper left")
 
-    # (b) ARI confidence intervals — Path B-aware ablation methods
+    # (b) ARI confidence intervals across the four context-channel modes.
+    # The paper's H3 (component complementarity) is tested by comparing
+    # agribrain against each narrower channel configuration.
     ax = axes[1]
     ci_methods = [
         ("agribrain",  COLORS["agribrain"],  "AgriBrain"),
-        ("no_yield",   COLORS["no_yield"],   "No Yield"),
         ("pirag_only", COLORS["pirag_only"], "piRAG Only"),
         ("mcp_only",   COLORS["mcp_only"],   "MCP Only"),
         ("no_context", COLORS["no_context"], "No Context"),
@@ -1061,7 +1063,7 @@ def fig10_latency_quality_frontier(data):
     bench = _load_benchmark_ci() or {}
 
     fast_modes = ["static", "hybrid_rl", "no_pinn", "no_slca", "no_context"]
-    context_modes = ["agribrain", "mcp_only", "pirag_only", "no_yield"]
+    context_modes = ["agribrain", "mcp_only", "pirag_only"]
 
     def _collect(modes):
         pts = []
