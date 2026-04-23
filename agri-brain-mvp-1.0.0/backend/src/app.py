@@ -582,6 +582,9 @@ def decide(d: DecideIn):
         (demand_series.iloc[-1] - roll_mean.iloc[-1])
         / max(float(roll_std.iloc[-1]), 1e-12)
     )
+    # price_signal feeds phi_9: clip the Bollinger z-score to [-1, 1]
+    # so it lands in the same range build_feature_vector expects.
+    price_signal = float(np.clip(boll_z, -1.0, 1.0))
 
     # ---- role-specific profile ---------------------------------------------
     role_key = (d.role or "").strip().lower()
@@ -605,7 +608,7 @@ def decide(d: DecideIn):
         tau=tau, policy=p, rng=rng,
         role_bias=role_bias, deterministic=d.deterministic,
         supply_hat=supply_hat, supply_std=supply_std,
-        demand_std=demand_std,
+        demand_std=demand_std, price_signal=price_signal,
     )
 
     action = ACTIONS[action_idx]
@@ -762,7 +765,7 @@ def decide(d: DecideIn):
             tau=tau, policy=p, rng=np.random.default_rng(),
             role_bias=role_bias, deterministic=d.deterministic,
             supply_hat=supply_hat, supply_std=supply_std,
-            demand_std=demand_std,
+            demand_std=demand_std, price_signal=price_signal,
         )
         _cf_action = ACTIONS[int(np.argmax(_cf_probs))]
 

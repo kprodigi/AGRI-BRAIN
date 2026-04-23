@@ -75,14 +75,15 @@ class DecideRequest(BaseModel):
     temp_c: float | None = None
     volatility: float | None = None
 
-    # Optional forecast payload. When provided, these flow into phi_6..phi_8
-    # so this fallback endpoint produces the same state vector the simulator
-    # and primary /decide handler use. When omitted, phi_6..phi_8 default to
-    # zero (legacy behavior).
+    # Optional forecast payload. When provided, these flow into
+    # phi_6..phi_9 so this fallback endpoint produces the same state
+    # vector the simulator and primary /decide handler use. When
+    # omitted, phi_6..phi_9 default to zero (legacy behavior).
     y_hat: float | None = None
     supply_hat: float | None = None
     supply_std: float | None = None
     demand_std: float | None = None
+    price_signal: float | None = None
 
 
 # ---------- In-memory log ----------
@@ -183,6 +184,7 @@ def _decide_standalone(req: DecideRequest) -> dict:
         supply_hat=req.supply_hat,
         supply_std=req.supply_std,
         demand_std=req.demand_std,
+        price_signal=req.price_signal,
     )
     action = ACTIONS[action_idx]
 
@@ -320,6 +322,7 @@ def _decide_standalone(req: DecideRequest) -> dict:
             supply_hat=req.supply_hat,
             supply_std=req.supply_std,
             demand_std=req.demand_std,
+            price_signal=req.price_signal,
         )
         _cf_action = ACTIONS[int(np.argmax(_cf_probs))]
 

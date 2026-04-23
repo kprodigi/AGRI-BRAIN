@@ -112,6 +112,7 @@ class AgentCoordinator:
         self._step_supply_hat: Optional[float] = None
         self._step_supply_std: Optional[float] = None
         self._step_demand_std: Optional[float] = None
+        self._step_price_signal: Optional[float] = None
         self._step_rng_state: Optional[Dict[str, Any]] = None
         self._step_phi: Optional[np.ndarray] = None
         self._step_override: bool = False
@@ -222,6 +223,7 @@ class AgentCoordinator:
         self._step_supply_hat = None
         self._step_supply_std = None
         self._step_demand_std = None
+        self._step_price_signal = None
         self._step_rng_state = None
         self._step_phi = None
         self._step_override = False
@@ -330,18 +332,21 @@ class AgentCoordinator:
             slca_amp = self._context_learner.get_slca_amp()
 
         # Supply and demand forecast quantities flow into the state vector
-        # (phi_6..phi_8). They are carried on obs.raw; missing keys default
-        # to None, in which case build_feature_vector emits zeros on the
-        # corresponding channels.
+        # (phi_6..phi_8) and the price-volatility proxy feeds phi_9. They
+        # are carried on obs.raw; missing keys default to None, in which
+        # case build_feature_vector emits zeros on the corresponding
+        # channels.
         raw = getattr(obs, "raw", {}) or {}
         supply_hat = raw.get("supply_hat")
         if isinstance(supply_hat, (list, tuple)) and supply_hat:
             supply_hat = supply_hat[0]
         supply_std = raw.get("supply_std")
         demand_std = raw.get("demand_std")
+        price_signal = raw.get("price_signal")
         self._step_supply_hat = supply_hat
         self._step_supply_std = supply_std
         self._step_demand_std = demand_std
+        self._step_price_signal = price_signal
 
         # Snapshot the RNG state before the live call consumes from it.
         # The counterfactual in post_step() rebuilds a fresh generator from
@@ -350,13 +355,14 @@ class AgentCoordinator:
         # context_modifier (None in the CF, computed in the live call).
         self._step_rng_state = copy.deepcopy(rng.bit_generator.state)
 
-        # Cache phi (9D state feature vector) for the forecast-column
+        # Cache phi (10D state feature vector) for the forecast-column
         # learner update in post_step. Cheap to compute; keeps post_step
         # from having to thread the forecast kwargs a second time.
         from ..models.action_selection import build_feature_vector as _bfv
         self._step_phi = _bfv(
             obs.rho, obs.inv, obs.y_hat, obs.temp,
             supply_hat=supply_hat, supply_std=supply_std, demand_std=demand_std,
+            price_signal=price_signal,
         )
 
         theta_forecast_delta = (
@@ -381,6 +387,7 @@ class AgentCoordinator:
             supply_hat=supply_hat,
             supply_std=supply_std,
             demand_std=demand_std,
+            price_signal=price_signal,
             theta_forecast_delta=theta_forecast_delta,
         )
 
@@ -651,6 +658,7 @@ class AgentCoordinator:
                     supply_hat=self._step_supply_hat,
                     supply_std=self._step_supply_std,
                     demand_std=self._step_demand_std,
+                    price_signal=self._step_price_signal,
                     theta_forecast_delta=theta_fcast_delta_cf,
                 )
                 self._step_counterfactual_action = action_without

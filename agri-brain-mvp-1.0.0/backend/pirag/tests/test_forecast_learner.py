@@ -7,10 +7,12 @@ import pytest
 from pirag.context_learner import ForecastWeightsLearner
 
 
-def _phi(forecast=(0.2, 0.3, 0.1)):
-    """Build a 9-dim phi with forecast channels set to the given tuple."""
-    phi = np.zeros(9, dtype=np.float64)
+def _phi(forecast=(0.2, 0.3, 0.1), price_signal: float = 0.0):
+    """Build a 10-dim phi with forecast channels set to the given tuple
+    and the price channel at the given scalar."""
+    phi = np.zeros(10, dtype=np.float64)
     phi[6:9] = np.asarray(forecast, dtype=np.float64)
+    phi[9] = float(price_signal)
     return phi
 
 
@@ -22,7 +24,7 @@ def test_initial_delta_is_zero():
 def test_update_raises_on_wrong_phi_shape():
     learner = ForecastWeightsLearner()
     bad = np.zeros(5)
-    with pytest.raises(ValueError, match=r"phi must be shape \(9,\)"):
+    with pytest.raises(ValueError, match=r"phi must be shape \(10,\)"):
         learner.update(phi=bad, action=0, probs=np.array([0.33, 0.33, 0.34]), reward=0.5)
 
 

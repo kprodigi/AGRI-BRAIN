@@ -199,12 +199,12 @@ THERMAL_DELTA_MAX: float = 20.0
 #   - Recovery -0.30: demand uncertainty means product may still sell;
 #     recovery forgoes that upside.
 THETA: np.ndarray = np.array([
-    # fresh  inv_p  dem_pt  therm  spoil  inter  sup_pt  sup_unc  dem_unc
-    [  0.5,  -0.3,   0.4,   -0.5,  -2.0,  -1.0,  -0.40,   0.40,    0.30],   # ColdChain
-    [  0.0,   0.5,  -0.2,    0.5,   2.0,   1.5,   0.80,   0.05,   -0.20],   # LocalRedistribute
-    [ -0.5,  -0.3,  -0.2,    0.3,   1.5,  -0.3,   0.15,  -0.30,   -0.30],   # Recovery
+    # fresh  inv_p  dem_pt  therm  spoil  inter  sup_pt  sup_unc  dem_unc  price
+    [  0.5,  -0.3,   0.4,   -0.5,  -2.0,  -1.0,  -0.40,   0.40,    0.30,    0.30],   # ColdChain
+    [  0.0,   0.5,  -0.2,    0.5,   2.0,   1.5,   0.80,   0.05,   -0.20,   -0.30],   # LocalRedistribute
+    [ -0.5,  -0.3,  -0.2,    0.3,   1.5,  -0.3,   0.15,  -0.30,   -0.30,   -0.05],   # Recovery
 ])
-"""Policy weight matrix, shape (3, 9).
+"""Policy weight matrix, shape (3, 10).
 
 Calibrated so that the base policy (hybrid_rl) produces approximately
 45 % CC / 45 % LR / 10 % Rec at baseline conditions, shifting toward
@@ -218,6 +218,18 @@ the intended behaviour of the overproduction scenario. Under combined
 supply and demand uncertainty at CV = 0.8, cold chain gains +0.56,
 local redistribution loses 0.12, and recovery loses 0.48, consistent
 with the real-options literature cited in the module docstring.
+
+Column 9 is the ``price_signal`` channel, a demand-volatility proxy
+for market pressure (Bollinger z-score of demand, clipped to [-1, 1]).
+Weights +0.30 / -0.30 / -0.05 encode the first-order economic
+intuition: when prices rise (positive z, supply shortage) the cold
+chain is preferred to preserve high-value inventory; when prices
+drop (negative z, oversupply) local redistribution is preferred to
+clear volume. The recovery row is near zero because the recovery
+decision is driven by spoilage urgency rather than price. At
+``price_signal = 0`` (baseline demand volatility) the column
+contributes zero to every logit so the calibration of the other
+columns is preserved.
 """
 
 # ---------------------------------------------------------------------------
@@ -396,17 +408,20 @@ def build_feature_vector(
     supply_hat: float | None = None,
     supply_std: float | None = None,
     demand_std: float | None = None,
+    price_signal: float | None = None,
 ) -> np.ndarray:
-    """Construct the 9-dimensional state feature vector phi(s).
+    """Construct the 10-dimensional state feature vector phi(s).
 
     Features 0-5 are the original physics-and-operations state (freshness,
     inventory pressure, demand point forecast, thermal stress, spoilage
     urgency, interaction). Features 6-8 add the supply-demand forecast
-    channel with matching point and uncertainty quantities:
+    channel with matching point and uncertainty quantities. Feature 9 is
+    a demand-volatility-driven price signal:
 
         phi_6 supply_point       = clip(supply_hat / INV_BASELINE - 1, -0.5, +0.5)
         phi_7 supply_uncertainty = clip(supply_std / max(|supply_hat|, 1), 0, 1)
         phi_8 demand_uncertainty = clip(demand_std / max(|y_hat|, 1), 0, 1)
+        phi_9 price_signal       = clip(price_signal, -1, +1)
 
     Parameters
     ----------
@@ -420,16 +435,20 @@ def build_feature_vector(
         deviation. When omitted, phi_7 is zero.
     demand_std : optional. LSTM one-step-ahead residual standard
         deviation. When omitted, phi_8 is zero.
+    price_signal : optional. Demand-Bollinger z-score used as a
+        market-pressure proxy: positive values indicate demand above
+        trend (price pressure up, shortage), negative values indicate
+        demand below trend (price pressure down, oversupply). Clipped
+        to [-1, +1]. When omitted, phi_9 is zero.
 
-    The three optional kwargs default to None so legacy call sites that
-    only pass the first four arguments keep working. The simulator
-    (mvp/simulation/generate_results.py) always passes all seven; the
-    REST decide endpoints fall back to None until their requests are
-    extended to carry supply and demand forecast payloads.
+    The optional kwargs default to None so legacy call sites still
+    work. The simulator always passes the forecast and price payload;
+    the REST decide endpoints compute price_signal from the demand
+    history they already read for the Bollinger trigger.
 
     Returns
     -------
-    phi : np.ndarray of shape (9,)
+    phi : np.ndarray of shape (10,)
     """
     freshness = 1.0 - rho
     inv_pressure = min(inv / INV_CAPACITY, 1.0)
@@ -466,6 +485,14 @@ def build_feature_vector(
         du = float(demand_std) / max(yh, 1.0)
         demand_uncertainty = float(np.clip(du, 0.0, 1.0))
 
+    # Price signal: demand-volatility Bollinger z-score clipped to
+    # [-1, +1]. Proxy for market pressure; the adaptive_pricing scenario
+    # oscillates demand which drives this channel away from zero.
+    if price_signal is None:
+        price_signal_phi = 0.0
+    else:
+        price_signal_phi = float(np.clip(float(price_signal), -1.0, 1.0))
+
     return np.array([
         freshness,
         inv_pressure,
@@ -476,6 +503,7 @@ def build_feature_vector(
         supply_point,
         supply_uncertainty,
         demand_uncertainty,
+        price_signal_phi,
     ])
 
 
@@ -538,6 +566,7 @@ def select_action(
     supply_hat: float | None = None,
     supply_std: float | None = None,
     demand_std: float | None = None,
+    price_signal: float | None = None,
     theta_forecast_delta: np.ndarray | None = None,
 ) -> tuple[int, np.ndarray]:
     """Select routing action based on mode-specific softmax policy.
@@ -567,13 +596,16 @@ def select_action(
     supply_std : Holt-Winters in-sample residual std (units). Feeds
         ``phi_7`` (supply uncertainty CV).
     demand_std : LSTM in-sample residual std (units). Feeds ``phi_8``
-        (demand uncertainty CV). The three forecast kwargs default to
-        None so legacy callers still work; missing values yield zero
-        contribution on the corresponding phi channels.
+        (demand uncertainty CV). The forecast kwargs default to None so
+        legacy callers still work; missing values yield zero contribution
+        on the corresponding phi channels.
+    price_signal : optional demand-volatility Bollinger z-score used
+        as a market-pressure proxy. Feeds ``phi_9`` clipped to [-1, 1].
     theta_forecast_delta : optional (3, 3) learned correction added to
         THETA[:, 6:9] at inference. Provided by ForecastWeightsLearner.
         The hand-calibrated THETA stays fixed; only this delta moves
-        with training.
+        with training. The price column (THETA[:, 9]) stays hand-
+        calibrated and is not learned.
 
     Returns
     -------
@@ -591,6 +623,7 @@ def select_action(
         supply_hat=supply_hat,
         supply_std=supply_std,
         demand_std=demand_std,
+        price_signal=price_signal,
     )
     gamma = np.array([policy.gamma_coldchain, policy.gamma_local, policy.gamma_recovery])
 

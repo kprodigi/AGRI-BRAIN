@@ -306,8 +306,8 @@ class ForecastWeightsLearner:
         probs : (3,) softmax probability vector at decision time.
         reward : observed scalar reward.
         """
-        if phi.shape != (9,):
-            raise ValueError(f"phi must be shape (9,), got {phi.shape}")
+        if phi.shape != (10,):
+            raise ValueError(f"phi must be shape (10,), got {phi.shape}")
         if probs.shape != (3,):
             raise ValueError(f"probs must be shape (3,), got {probs.shape}")
 

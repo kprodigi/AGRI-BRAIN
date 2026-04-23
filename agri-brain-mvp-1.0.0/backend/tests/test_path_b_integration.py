@@ -157,19 +157,36 @@ class TestContextFiveFeatures:
 
 
 # ---------------------------------------------------------------------------
-# 3. State vector phi is 9-dim with the new supply + demand columns
+# 3. State vector phi is 10-dim (supply/demand forecast + price signal)
 # ---------------------------------------------------------------------------
 class TestStateNineFeatures:
-    """Phi has 9 dimensions; columns 6-8 carry supply/demand info."""
+    """Phi has 10 dimensions; columns 6-8 carry supply/demand info,
+    column 9 carries the price-pressure proxy."""
 
-    def test_build_feature_vector_returns_9d(self):
+    def test_build_feature_vector_returns_10d(self):
         from src.models.action_selection import build_feature_vector
         phi = build_feature_vector(rho=0.1, inv=12000, y_hat=20, temp=4.0)
-        assert phi.shape == (9,)
+        assert phi.shape == (10,)
 
-    def test_theta_is_3x9(self):
+    def test_theta_is_3x10(self):
         from src.models.action_selection import THETA
-        assert THETA.shape == (3, 9)
+        assert THETA.shape == (3, 10)
+
+    def test_price_signal_is_zero_by_default(self):
+        from src.models.action_selection import build_feature_vector
+        phi = build_feature_vector(rho=0.1, inv=12000, y_hat=20, temp=4.0)
+        assert phi[9] == 0.0
+
+    def test_price_signal_clipped_to_unit_interval(self):
+        from src.models.action_selection import build_feature_vector
+        phi_pos = build_feature_vector(
+            rho=0.1, inv=12000, y_hat=20, temp=4.0, price_signal=5.0,
+        )
+        phi_neg = build_feature_vector(
+            rho=0.1, inv=12000, y_hat=20, temp=4.0, price_signal=-5.0,
+        )
+        assert phi_pos[9] == 1.0
+        assert phi_neg[9] == -1.0
 
     def test_supply_point_centered_at_zero_for_baseline(self):
         """phi_6 must be 0 when supply equals baseline inventory."""

@@ -336,6 +336,22 @@ def run_episode(
         # Surplus ratio (computed before env_state for coordinator)
         surplus_ratio = max(0.0, inv / INV_BASELINE - 1.0)
 
+        # Price signal: Bollinger z-score of demand, clipped to [-1, 1].
+        # Positive = demand above rolling mean (shortage / price up);
+        # negative = demand below (oversupply / price down). This is the
+        # same statistic the REST /decide path already uses for the
+        # volatility trigger, exposed here as a continuous market-pressure
+        # proxy feeding phi_9.
+        _boll_window = int(getattr(policy, "boll_window", 16))
+        _demand_slice = hist_slice["demand_units"].astype(float)
+        if len(_demand_slice) > 0:
+            _rm = _demand_slice.rolling(_boll_window, min_periods=1).mean().iloc[-1]
+            _rs = _demand_slice.rolling(_boll_window, min_periods=1).std().fillna(0.0).iloc[-1]
+            _price_z = (float(_demand_slice.iloc[-1]) - float(_rm)) / max(float(_rs), 1e-6)
+            price_signal = float(np.clip(_price_z, -1.0, 1.0))
+        else:
+            price_signal = 0.0
+
         # RAG context (legacy path, coordinator now handles MCP/piRAG internally)
         rag_context = None
         if RAG_CONTEXT_ENABLED and not context_mode and _get_policy_context is not None:
@@ -361,6 +377,7 @@ def run_episode(
             "supply_hat": supply_hat,
             "supply_std": supply_std,
             "demand_std": demand_std,
+            "price_signal": price_signal,
             "supply_uncertainty": round(_supply_cv, 4),
             "inv_history": hist_slice["inventory_units"].astype(float).tolist(),
             "policy_flags": {
@@ -481,15 +498,16 @@ def run_episode(
                               hour=hours[idx], reward=reward)
 
         # PolicyLearner: record experience for optional online learning.
-        # Must pass the same 9-dim phi the policy actually saw, otherwise
-        # the learner's gradient is computed against the wrong feature
-        # vector.
+        # Must pass the same 10-dim phi the policy actually saw,
+        # otherwise the learner's gradient is computed against the wrong
+        # feature vector.
         if learner is not None:
             phi = build_feature_vector(
                 rho, inv, y_hat, temp,
                 supply_hat=supply_hat,
                 supply_std=supply_std,
                 demand_std=demand_std,
+                price_signal=price_signal,
             )
             learner.record(phi, action_idx, reward)
 
