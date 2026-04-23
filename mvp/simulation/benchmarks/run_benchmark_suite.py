@@ -37,11 +37,11 @@ DEFAULT_RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 DEFAULT_SEEDS_DIR = DEFAULT_RESULTS_DIR / "benchmark_seeds"
 
 MODES = (
-    "agribrain", "mcp_only", "pirag_only", "no_context", "no_yield",
+    "agribrain", "mcp_only", "pirag_only", "no_context",
     "static", "hybrid_rl", "no_pinn", "no_slca",
 )
 METRICS = ("ari", "waste", "rle", "slca", "carbon", "equity")
-BASELINE_COMPARISONS = ("mcp_only", "pirag_only", "no_context", "no_yield")
+BASELINE_COMPARISONS = ("mcp_only", "pirag_only", "no_context")
 
 
 def _bootstrap_ci(values: List[float], n_boot: int = 10_000, alpha: float = 0.05) -> Tuple[float, float]:

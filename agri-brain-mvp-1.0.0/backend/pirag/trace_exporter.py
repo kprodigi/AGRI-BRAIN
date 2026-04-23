@@ -89,7 +89,6 @@ class DecisionTrace:
 _FEATURE_NAMES = [
     "compliance_severity", "forecast_urgency",
     "retrieval_confidence", "regulatory_pressure", "recovery_saturation",
-    "supply_uncertainty",
 ]
 
 
@@ -339,7 +338,7 @@ class TraceExporter:
                 role_data[t.role] = {
                     "mcp_tools": set(),
                     "top_docs": [],
-                    "feature_means": np.zeros(6),
+                    "feature_means": np.zeros(5),
                     "logit_means": np.zeros(3),
                     "n": 0,
                     "guidance_types": [],
@@ -486,7 +485,7 @@ class TraceExporter:
             if key not in data:
                 data[key] = {}
             if t.role not in data[key]:
-                data[key][t.role] = {"sum": np.zeros(6), "n": 0}
+                data[key][t.role] = {"sum": np.zeros(5), "n": 0}
             data[key][t.role]["sum"] += np.array(t.context_features)
             data[key][t.role]["n"] += 1
 

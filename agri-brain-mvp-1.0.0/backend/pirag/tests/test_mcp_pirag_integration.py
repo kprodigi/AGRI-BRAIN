@@ -284,13 +284,12 @@ def test_context_feature_extraction():
     obs = _Obs(rho=0.40)
 
     psi = extract_context_features(mcp, rag, obs)
-    assert psi.shape == (6,)
+    assert psi.shape == (5,)
     assert psi[0] == 1.0, "Critical compliance should be 1.0"
     assert psi[1] == 0.7, f"High urgency should be 0.7, got {psi[1]}"
     assert abs(psi[2] - 0.6 / 0.8) < 1e-9, f"Confidence should be {0.6/0.8}, got {psi[2]}"
     assert psi[3] == 1.0, "Regulatory doc with score > 0.4 should be 1.0"
     assert abs(psi[4] - 0.75) < 1e-9, f"Recovery saturation should be 0.75, got {psi[4]}"
-    assert psi[5] == 0.0, "Supply uncertainty should default to 0 when yield_query absent"
 
 
 # ---- Test 16: THETA_CONTEXT sign consistency ----
@@ -523,7 +522,7 @@ def test_context_matrix_learner_sign_preservation():
     # Run many updates with varied rewards
     rng = np.random.default_rng(42)
     for _ in range(100):
-        psi = rng.random(6)
+        psi = rng.random(5)
         action = rng.integers(0, 3)
         probs = np.array([0.3, 0.5, 0.2])
         reward = rng.random()
@@ -625,7 +624,7 @@ def test_trace_exporter_captures():
         obs=obs, scenario="heatwave", action="local_redistribute",
         probs=np.array([0.05, 0.90, 0.05]),
         mcp_results=mcp, rag_context=rag,
-        context_features=np.array([1.0, 0.7, 0.81, 1.0, 0.0, 0.0]),
+        context_features=np.array([1.0, 0.7, 0.81, 1.0, 0.0]),
         logit_adjustment=np.array([-0.80, 0.50, 0.30]),
         explanation={"summary": "Farm agent rerouted due to compliance violation.", "evidence_hashes": ["abc123", "def456"]},
         role="farm",
@@ -639,7 +638,7 @@ def test_trace_exporter_captures():
     assert t.compliance_result is not None
     assert not t.compliance_result["compliant"]
     assert t.pirag_top_doc == "regulatory_fda_leafy_greens"
-    assert len(t.context_features) == 6
+    assert len(t.context_features) == 5
     assert t.explanation_summary != ""
 
     summary = exporter.summary()
@@ -693,7 +692,7 @@ def test_role_comparison_table():
             probs=np.array([0.1, 0.8, 0.1]),
             mcp_results={"_tools_invoked": ["check_compliance"], "check_compliance": {"compliant": True}},
             rag_context={"top_doc_id": f"doc_{role}", "top_citation_score": 0.5, "guards_passed": True},
-            context_features=np.array([0.0, 0.0, 0.62, 0.0, 0.0, 0.0]),
+            context_features=np.array([0.0, 0.0, 0.62, 0.0, 0.0]),
             logit_adjustment=np.array([-0.1, 0.2, -0.1]),
             explanation=None, role=role,
         )
@@ -721,7 +720,7 @@ def test_interoperability_trace_format():
             "spoilage_forecast": {"current_rho": 0.3, "forecast_rho": 0.35, "urgency": "high"},
         },
         rag_context={"top_doc_id": "doc1", "top_citation_score": 0.5, "guards_passed": True},
-        context_features=np.array([0.5, 0.7, 0.6, 0.0, 0.0, 0.0]),
+        context_features=np.array([0.5, 0.7, 0.6, 0.0, 0.0]),
         logit_adjustment=np.array([-0.5, 0.3, 0.2]),
         explanation=None, role="farm",
     )
@@ -790,7 +789,7 @@ def test_causal_explanation_structure():
         action="local_redistribute", role="distributor", hour=30.0, obs=obs,
         mcp_results=mcp, rag_context=rag,
         slca_score=0.78, carbon_kg=3.5, waste=0.02,
-        context_features=np.array([1.0, 0.7, 0.76, 1.0, 0.0, 0.0]),
+        context_features=np.array([1.0, 0.7, 0.76, 1.0, 0.0]),
         logit_adjustment=np.array([-1.63, 1.18, 0.45]),
         action_probs=np.array([0.03, 0.93, 0.04]),
         counterfactual_action="local_redistribute",

@@ -31,10 +31,10 @@ import numpy as np
 SEEDS = [42, 1337, 2024, 7, 99, 101, 202, 303, 404, 505,
          606, 707, 808, 909, 1010, 1111, 1212, 1313, 1414, 1515]
 SCENARIOS = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing", "baseline"]
-MODES = ["agribrain", "mcp_only", "pirag_only", "no_context", "no_yield",
+MODES = ["agribrain", "mcp_only", "pirag_only", "no_context",
          "static", "hybrid_rl", "no_pinn", "no_slca"]
 METRICS = ("ari", "waste", "rle", "slca", "carbon", "equity")
-BASELINES = ("mcp_only", "pirag_only", "no_context", "no_yield",
+BASELINES = ("mcp_only", "pirag_only", "no_context",
              "hybrid_rl", "static")
 
 _SCRIPT_DIR = Path(__file__).resolve().parent.parent
@@ -199,9 +199,9 @@ def main():
         significance[sc] = {}
         for baseline in BASELINES:
             # Paired tests require both modes to come from the same seed.
-            # Restrict to seeds that carry both entries; legacy JSONs that
-            # predate a given mode (e.g. no_yield before Path B) are skipped
-            # cleanly rather than crashed on.
+            # Restrict to seeds that carry both entries so legacy JSONs
+            # missing a specific mode are skipped cleanly rather than
+            # crashed on.
             seeds_paired = sorted(
                 s for s in all_data
                 if "agribrain" in all_data[s].get(sc, {})
@@ -320,8 +320,7 @@ def main():
     print()
     print("Secondary (per-scenario BH-FDR) selected comparisons, ARI:")
     for sc in SCENARIOS:
-        for comp_name in ("agribrain_vs_no_context", "agribrain_vs_no_yield",
-                           "agribrain_vs_hybrid_rl"):
+        for comp_name in ("agribrain_vs_no_context", "agribrain_vs_hybrid_rl"):
             rec = significance[sc].get(comp_name, {}).get("ari")
             if rec is None:
                 continue

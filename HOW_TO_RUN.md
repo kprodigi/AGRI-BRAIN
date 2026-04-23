@@ -190,7 +190,7 @@ Make sure the backend is running and data is loaded before using the dashboard.
 |-----|------|-------------|
 | `/` | Operations | KPI cards (records, temperature, anomalies, waste rate), real-time telemetry line charts with safe/warning/critical temperature zones, spoilage & yield area chart |
 | `/quality` | Quality | Circular spoilage risk gauge, shelf-life countdown timer, current sensor readings, IoT temperature/humidity charts, PINN vs ODE spoilage comparison |
-| `/decisions` | Decisions | Decision timeline with action badges, filters by role and action type, search, decision analytics sidebar with pie chart, CSV export, PDF report. Each decision card has an expandable Explainability Panel showing: causal BECAUSE/WITHOUT reasoning with highlighted keywords, 6-axis context feature radar chart (compliance, forecast, retrieval, regulatory, recovery saturation, supply uncertainty) with logit adjustment bars, categorized keyword tags (thresholds, regulations, required actions), and Merkle-rooted provenance chain with SHA-256 evidence hashes |
+| `/decisions` | Decisions | Decision timeline with action badges, filters by role and action type, search, decision analytics sidebar with pie chart, CSV export, PDF report. Each decision card has an expandable Explainability Panel showing: causal BECAUSE/WITHOUT reasoning with highlighted keywords, 5-axis context feature radar chart (compliance, forecast urgency, retrieval confidence, regulatory pressure, recovery saturation) with logit adjustment bars, categorized keyword tags (thresholds, regulations, required actions), and Merkle-rooted provenance chain with SHA-256 evidence hashes |
 | `/map` | Map | Leaflet map centered on South Dakota with 4 supply chain nodes (farm, processor, cooperative, recovery) and route overlays showing cold chain, redistribution, and recovery paths |
 | `/analytics` | Analytics | Executive summary with 5 hero metrics, Table 1 (cross-scenario) and Table 2 (ablation study), grouped bar charts, radar chart, method comparison, scenario deep-dive gallery with figures, carbon footprint analysis, full simulation runner |
 | `/mcp-pirag` | MCP/piRAG | MCP protocol overview, context feature visualization, knowledge base browser, protocol traces, causal reasoning panel |
@@ -199,7 +199,7 @@ Make sure the backend is running and data is loaded before using the dashboard.
 
 ### Features
 
-- **Explainability Panel**: Each decision card on the Decisions page has a "Show explanation" button that reveals causal reasoning (BECAUSE/WITHOUT), a 6-axis context feature radar chart (ψ_0..ψ_5, including Path B supply uncertainty), categorized keyword tags from piRAG retrieval, and a Merkle-rooted provenance chain.
+- **Explainability Panel**: Each decision card on the Decisions page has a "Show explanation" button that reveals causal reasoning (BECAUSE/WITHOUT), a 5-axis context feature radar chart (ψ_0..ψ_4, the institutional context vector), categorized keyword tags from piRAG retrieval, and a Merkle-rooted provenance chain.
 - **MCP Explorer**: The Admin panel's MCP tab provides an interactive tool browser, live resource monitor, prompt template expander, tool invocation console with presets, piRAG knowledge base search, and a JSON-RPC protocol interaction log.
 - **Dark mode**: Toggle via the sun/moon icon in the header. Persists in localStorage.
 - **WebSocket**: Real-time connection indicator ("Live" badge) in the header. Auto-reconnects.
@@ -293,7 +293,7 @@ curl http://127.0.0.1:8100/audit/memo.pdf -o memo.pdf
 ### Simulation results (via backend)
 
 ```bash
-# Start simulation in background (5 scenarios x 9 modes, typically 4-15 min)
+# Start simulation in background (5 scenarios x 8 modes, typically 4-15 min)
 curl -X POST http://127.0.0.1:8100/results/generate
 
 # Poll progress
@@ -399,12 +399,14 @@ done
 
 ## 6. Run standalone simulation and generate figures
 
-The standalone simulation runs all 5 scenarios x 9 modes (45 episodes)
-and produces publication-quality results. The ninth mode is the Path B
-ablation (`no_yield`) that suppresses the ψ_5 supply-uncertainty feature
-while keeping the rest of the context pipeline intact, so the
-agribrain-vs-no_yield delta isolates the contribution of the Holt-Winters
-yield forecaster to the routing policy.
+The standalone simulation runs all 5 scenarios x 8 modes (40 episodes)
+and produces publication-quality results. The state vector phi(s) is
+9-dimensional: six perception features (freshness, inventory pressure,
+demand point forecast, thermal stress, spoilage urgency, interaction)
+plus three forecast-channel features (supply point, supply uncertainty,
+demand uncertainty) that treat the supply and demand forecasters
+symmetrically. The context vector psi is 5-dimensional and carries the
+institutional / coordination signals from MCP and piRAG.
 
 ```bash
 cd AGRI-BRAIN/mvp/simulation
@@ -423,7 +425,7 @@ Results are saved to `mvp/simulation/results/`:
 | File                   | Description                                       |
 |------------------------|---------------------------------------------------|
 | `table1_summary.csv`     | Per-scenario metrics (3 methods x 5 scenarios)              |
-| `table2_ablation.csv`    | Full ablation study (9 modes x 5 scenarios, including no_yield) |
+| `table2_ablation.csv`    | Full ablation study (8 modes x 5 scenarios) |
 | `benchmark_summary.json` | Multi-seed benchmark means/std/CI                           |
 | `benchmark_significance.json` | Permutation-test p-values and effect sizes            |
 | `stress_summary.json`    | Stress-suite per-scenario robustness output                 |
@@ -436,7 +438,7 @@ Results are saved to `mvp/simulation/results/`:
 | `fig4_cyber.png/pdf`     | Cyber outage scenario comparison (1x3 panel)                |
 | `fig5_pricing.png/pdf`   | Adaptive pricing scenario comparison (2x2 panel)            |
 | `fig6_cross.png/pdf`     | Cross-scenario performance comparison (2x2 grouped bars)    |
-| `fig7_ablation.png/pdf`  | Ablation study (1x3 grouped bars, 9 modes)                  |
+| `fig7_ablation.png/pdf`  | Ablation study (1x3 grouped bars, 8 modes)                  |
 | `fig8_green_ai.png/pdf`  | Green AI and carbon footprint (1x2 panel)                   |
 | `fig9_mcp_pirag_robustness.png/pdf` | MCP/piRAG robustness and benchmark CIs         |
 | `fig10_latency_quality_frontier.png/pdf` | Quality-latency operational frontier       |
@@ -447,8 +449,8 @@ Each figure is also saved as PDF for LaTeX inclusion.
 
 ## 6b. Run the 20-seed benchmark on HPC (SLURM)
 
-The stochastic multi-seed benchmark (5 scenarios × 9 modes × 20 seeds =
-900 episodes, plus aggregation, stress suite, figures, and the paper
+The stochastic multi-seed benchmark (5 scenarios × 8 modes × 20 seeds =
+800 episodes, plus aggregation, stress suite, figures, and the paper
 evidence pipeline) is built for a SLURM cluster. Three scripts live at
 the repo root:
 
@@ -469,7 +471,7 @@ bash hpc_run.sh
 That script will:
 
 1. Create `.venv` if absent; `pip install -e agri-brain-mvp-1.0.0/backend`.
-2. Run the login-node Path B load assertion (fails fast if the resolver
+2. Run the login-node policy-shape load assertion (fails fast if the resolver
    pulled a broken package combination).
 3. Compute `RUN_TAG=$(git rev-parse --short HEAD)_$(date +%Y%m%d_%H%M)`.
 4. Submit `hpc_seed.sh`, then `hpc_aggregate.sh` with

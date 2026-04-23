@@ -57,7 +57,6 @@ const METHOD_DISPLAY = {
   no_context: "No Context",
   mcp_only: "MCP Only",
   pirag_only: "piRAG Only",
-  no_yield: "No Yield",
   // Also handle already-formatted names (no-op)
   "Static": "Static",
   "Hybrid RL": "Hybrid RL",
@@ -67,7 +66,6 @@ const METHOD_DISPLAY = {
   "No Context": "No Context",
   "MCP Only": "MCP Only",
   "piRAG Only": "piRAG Only",
-  "No Yield": "No Yield",
 };
 const displayMethod = (m) => METHOD_DISPLAY[m] || m;
 
@@ -229,8 +227,7 @@ export default function AnalyticsPage() {
   // Map display method names back to raw names for benchmark lookup
   const methodKeyMap = { "Static": "static", "Hybrid RL": "hybrid_rl", "AGRI-BRAIN": "agribrain" };
   const variantKeyMap = { "Static": "static", "Hybrid RL": "hybrid_rl", "No PINN": "no_pinn", "No SLCA": "no_slca",
-    "AGRI-BRAIN": "agribrain", "No Context": "no_context", "MCP Only": "mcp_only", "piRAG Only": "pirag_only",
-    "No Yield": "no_yield" };
+    "AGRI-BRAIN": "agribrain", "No Context": "no_context", "MCP Only": "mcp_only", "piRAG Only": "pirag_only" };
 
   // Grouped bar chart data with CI error bars from benchmark
   const barChartData = useMemo(() => {
@@ -332,7 +329,7 @@ export default function AnalyticsPage() {
     try {
       // Kick off background job
       await jpost(API, "/results/generate");
-      toast.info("Simulation started (5 scenarios x 9 modes). Polling for completion...");
+      toast.info("Simulation started (5 scenarios x 8 modes). Polling for completion...");
 
       // Poll /results/status until done
       let status = "running";
@@ -892,7 +889,7 @@ export default function AnalyticsPage() {
             <FlaskConical className="w-10 h-10 mx-auto mb-3 text-primary" />
             <h3 className="text-lg font-semibold mb-2">Run Full Simulation</h3>
             <p className="text-sm text-muted-foreground mb-4 max-w-lg mx-auto">
-              Runs all 5 scenarios x 9 modes (includes the Path B no_yield ablation), 288 timesteps each. Generates summary CSV tables with the latest model parameters.
+              Runs all 5 scenarios x 8 modes, 288 timesteps each. Generates summary CSV tables with the latest model parameters.
             </p>
             <Button size="lg" onClick={runSimulation} disabled={simRunning}>
               {simRunning ? (

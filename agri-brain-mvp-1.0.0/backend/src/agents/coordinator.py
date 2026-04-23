@@ -29,14 +29,13 @@ from .roles import (
 from ..models.action_selection import select_action
 
 # Context modes that enable MCP/piRAG infrastructure
-_CONTEXT_MODES = {"agribrain", "mcp_only", "pirag_only", "no_yield"}
+_CONTEXT_MODES = {"agribrain", "mcp_only", "pirag_only"}
 
 # Map operating mode to context_mode parameter for feature masking
 _CONTEXT_MODE_MAP = {
     "agribrain": "full",
     "mcp_only": "mcp_only",
     "pirag_only": "pirag_only",
-    "no_yield": "no_yield",  # Path B ablation: suppress psi_5 only
 }
 
 
@@ -288,6 +287,17 @@ class AgentCoordinator:
         if self._context_learner is not None and hasattr(self._context_learner, 'get_slca_amp'):
             slca_amp = self._context_learner.get_slca_amp()
 
+        # Supply and demand forecast quantities flow into the state vector
+        # (phi_6..phi_8). They are carried on obs.raw; missing keys default
+        # to None, in which case build_feature_vector emits zeros on the
+        # corresponding channels.
+        raw = getattr(obs, "raw", {}) or {}
+        supply_hat = raw.get("supply_hat")
+        if isinstance(supply_hat, (list, tuple)) and supply_hat:
+            supply_hat = supply_hat[0]
+        supply_std = raw.get("supply_std")
+        demand_std = raw.get("demand_std")
+
         action_idx, probs = select_action(
             mode=mode,
             rho=obs.rho,
@@ -303,6 +313,9 @@ class AgentCoordinator:
             rag_context=rag_context,
             context_modifier=context_modifier,
             slca_amp_coeff=slca_amp,
+            supply_hat=supply_hat,
+            supply_std=supply_std,
+            demand_std=demand_std,
         )
 
         # Store probs for learner update

@@ -19,7 +19,6 @@ const FEATURE_LABELS = [
   { key: "retrieval_confidence", label: "Retrieval", color: "#3b82f6" },
   { key: "regulatory_pressure", label: "Regulatory", color: "#a855f7" },
   { key: "recovery_saturation", label: "Recovery", color: "#22c55e" },
-  { key: "supply_uncertainty", label: "Supply", color: "#14b8a6" },
 ];
 
 // --- Section 1a: Causal Explanation ---

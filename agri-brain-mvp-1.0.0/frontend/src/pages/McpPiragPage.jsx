@@ -35,7 +35,6 @@ const FEATURE_LABELS = [
   { key: "retrieval_confidence", label: "Retrieval", color: "#3b82f6", desc: "piRAG document retrieval confidence score (normalized BM25+TF-IDF)" },
   { key: "regulatory_pressure", label: "Regulatory", color: "#a855f7", desc: "Binary regulatory pressure flag from piRAG keyword extraction" },
   { key: "recovery_saturation", label: "Recovery", color: "#22c55e", desc: "Capacity saturation of recovery/composting channels" },
-  { key: "supply_uncertainty", label: "Supply", color: "#14b8a6", desc: "Supply-side forecast uncertainty from the Holt-Winters yield_query MCP tool (Path B)" },
 ];
 
 const LOGIT_ENTRIES = [
@@ -66,7 +65,6 @@ function parseAblationCSV(text, metric = "ARI") {
       no_context: get("no_context"),
       mcp_only: get("mcp_only"),
       pirag_only: get("pirag_only"),
-      no_yield: get("no_yield"),
       agribrain: get("agribrain"),
     };
   });
@@ -111,7 +109,7 @@ const PIPELINE_STEPS = [
   { icon: Network, label: "Agent", sub: "5 roles", color: "text-gray-600 dark:text-gray-400", bg: "bg-gray-500/10" },
   { icon: Wrench, label: "MCP Tools", sub: "13 tools", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-500/10" },
   { icon: BookOpen, label: "piRAG", sub: "20 docs", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-500/10" },
-  { icon: Layers, label: "Context", sub: "6D vector", color: "text-teal-600 dark:text-teal-400", bg: "bg-teal-500/10" },
+  { icon: Layers, label: "Context", sub: "5D vector", color: "text-teal-600 dark:text-teal-400", bg: "bg-teal-500/10" },
   { icon: Brain, label: "Policy", sub: "Softmax", color: "text-purple-600 dark:text-purple-400", bg: "bg-purple-500/10" },
   { icon: CheckCircle2, label: "Decision", sub: "3 actions", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10" },
 ];
@@ -136,7 +134,7 @@ function OverviewTab({ tools, ablationData = [], benchSummary = null }) {
   const metrics = [
     { label: "MCP Tools", value: tools.length || 12, icon: Wrench, color: "text-orange-600", bg: "bg-orange-500/10" },
     { label: "KB Documents", value: 20, icon: BookOpen, color: "text-blue-600", bg: "bg-blue-500/10" },
-    { label: "Context Dims", value: "6D", icon: Layers, color: "text-teal-600", bg: "bg-teal-500/10" },
+    { label: "Context Dims", value: "5D", icon: Layers, color: "text-teal-600", bg: "bg-teal-500/10" },
     { label: "Operating Modes", value: 8, icon: Network, color: "text-purple-600", bg: "bg-purple-500/10" },
   ];
 
@@ -221,7 +219,7 @@ function OverviewTab({ tools, ablationData = [], benchSummary = null }) {
               const chartData = metricData.map((d) => {
                 const sc = scenarioKeyMap[d.scenario] || d.scenario;
                 const out = { ...d };
-                for (const mode of ["no_context", "mcp_only", "pirag_only", "no_yield", "agribrain"]) {
+                for (const mode of ["no_context", "mcp_only", "pirag_only", "agribrain"]) {
                   const ci = benchSummary?.[sc]?.[mode]?.[metricKey];
                   if (ci && ci.ci_low != null && ci.ci_high != null) {
                     out[mode] = ci.mean;
@@ -247,9 +245,6 @@ function OverviewTab({ tools, ablationData = [], benchSummary = null }) {
                       </Bar>
                       <Bar dataKey="pirag_only" name="piRAG Only" fill={COLORS.pirag} radius={[2, 2, 0, 0]}>
                         {benchSummary && <ErrorBar dataKey="pirag_only_err" width={3} strokeWidth={1} stroke="#555" />}
-                      </Bar>
-                      <Bar dataKey="no_yield" name="No Yield (Path B ablation)" fill="#14b8a6" radius={[2, 2, 0, 0]}>
-                        {benchSummary && <ErrorBar dataKey="no_yield_err" width={3} strokeWidth={1} stroke="#555" />}
                       </Bar>
                       <Bar dataKey="agribrain" name="AGRI-BRAIN" fill={COLORS.agri} radius={[2, 2, 0, 0]}>
                         {benchSummary && <ErrorBar dataKey="agribrain_err" width={3} strokeWidth={1} stroke="#555" />}

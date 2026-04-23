@@ -27,7 +27,6 @@ def update_context_cache(
     feature_names = [
         "compliance_severity", "forecast_urgency",
         "retrieval_confidence", "regulatory_pressure", "recovery_saturation",
-        "supply_uncertainty",
     ]
 
     if features is not None:
@@ -63,10 +62,10 @@ def update_context_cache(
 def read_context_features() -> Dict[str, Any]:
     """Read the most recently computed context feature vector.
 
-    Returns the 6D feature vector, the 3D logit modifier, feature names,
-    dominant feature, and modifier magnitude. The sixth entry is supply
-    uncertainty from the Path B yield_query integration; suppressed when
-    ``context_mode="no_yield"``.
+    Returns the 5D institutional context vector, the 3D logit modifier,
+    feature names, dominant feature, and modifier magnitude. Supply and
+    demand forecast signals are separate state features in ``phi(s)``
+    and are not part of this MCP tool's response.
     """
     return {
         "features": _cache.get("features", {}),

@@ -228,6 +228,39 @@ class LSTMDemandModel:
 
         return np.array(forecasts)
 
+    def in_sample_residual_std(self, series: np.ndarray, tail: int = 8) -> float:
+        """Estimate one-step-ahead prediction uncertainty as the standard
+        deviation of in-sample residuals over the most recent ``tail``
+        timesteps of the training window.
+
+        This is the classical residual-standard-deviation approach to
+        prediction-interval construction for a point-forecast model
+        (Hyndman & Athanasopoulos, 2018, *Forecasting: Principles and
+        Practice*, 2nd ed., Ch. 8.7, eq. 8.16). Under iid residuals,
+        ``sigma_hat = std(y - y_hat)`` is the maximum-likelihood estimate
+        of the Gaussian one-step-ahead prediction-error standard
+        deviation and yields symmetric prediction intervals
+        ``y_hat +/- z * sigma_hat``.
+
+        Returns the standard deviation in the original (unnormalised)
+        units of the input series.
+        """
+        if not hasattr(self, "_mean") or len(series) < 3:
+            return 0.0
+        xs = (series - self._mean) / self._std
+        preds, _, _ = self._forward_seq(xs)
+        preds = np.asarray(preds, dtype=float)
+        targets = xs[1:]
+        if len(preds) == 0:
+            return 0.0
+        residuals_norm = targets - preds
+        # Use only the recent tail so the uncertainty tracks current
+        # regime rather than the full training window's errors.
+        if len(residuals_norm) > tail:
+            residuals_norm = residuals_norm[-tail:]
+        residuals = residuals_norm * self._std  # de-normalise
+        return float(np.std(residuals, ddof=0))
+
 
 # ---------------------------------------------------------------------------
 # Public API (matches forecast.py interface)
@@ -259,16 +292,24 @@ def lstm_demand_forecast(
     Returns
     -------
     dict with keys:
-        ``forecast``   - list[float] of length *horizon* (point forecast)
-        ``ci_lower``   - list[float] lower bound of CI
-        ``ci_upper``   - list[float] upper bound of CI
-        ``std``        - float, historical rolling std used for CI
+        ``forecast``     - list[float] of length *horizon* (point forecast)
+        ``ci_lower``     - list[float] lower bound of CI
+        ``ci_upper``     - list[float] upper bound of CI
+        ``std``          - float, in-sample residual standard deviation
+                           (one-step-ahead prediction-uncertainty estimate,
+                           following Hyndman & Athanasopoulos 2018, Ch. 8.7).
+        ``series_std``   - float, historical rolling std of the training tail
+                           (kept for backward compatibility with code that
+                           used the previous series-std semantics).
     """
     d = df[series_col].astype(float).to_numpy()
 
     if len(d) == 0:
         zeros = [0.0] * horizon
-        return {"forecast": zeros, "ci_lower": zeros, "ci_upper": zeros, "std": 0.0}
+        return {
+            "forecast": zeros, "ci_lower": zeros, "ci_upper": zeros,
+            "std": 0.0, "series_std": 0.0,
+        }
 
     # Use the most recent observations
     tail = d[-min(lookback, len(d)):]
@@ -277,7 +318,10 @@ def lstm_demand_forecast(
         # Not enough data for LSTM; return simple repeat
         val = float(tail[-1]) if len(tail) > 0 else 0.0
         forecast = [max(0.0, val)] * horizon
-        return {"forecast": forecast, "ci_lower": forecast, "ci_upper": forecast, "std": 0.0}
+        return {
+            "forecast": forecast, "ci_lower": forecast, "ci_upper": forecast,
+            "std": 0.0, "series_std": 0.0,
+        }
 
     # Train LSTM and predict
     model = LSTMDemandModel(hidden_size=hidden_size, epochs=epochs, seed=seed)
@@ -285,14 +329,25 @@ def lstm_demand_forecast(
     forecast_arr = model.predict(tail, horizon)
     forecast = [round(float(v), 4) for v in forecast_arr]
 
-    # Confidence interval from rolling std (same approach as Holt-Winters)
-    std = float(np.std(tail)) if len(tail) >= 2 else 0.0
-    ci_lower = [round(max(0.0, f - ci_z * std), 4) for f in forecast]
-    ci_upper = [round(f + ci_z * std, 4) for f in forecast]
+    # Prediction uncertainty: residual standard deviation on the recent
+    # training tail. This is the proper one-step-ahead prediction-error
+    # sigma (Hyndman & Athanasopoulos 2018, eq. 8.16), not the raw
+    # dispersion of the observations.
+    residual_std = model.in_sample_residual_std(tail, tail=8)
+
+    # Historical rolling std retained under ``series_std`` for any caller
+    # that still wants the simple dispersion metric.
+    series_std = float(np.std(tail)) if len(tail) >= 2 else 0.0
+
+    # CI bounds use the residual std so they are proper Gaussian
+    # prediction intervals, not pseudo-intervals based on series variance.
+    ci_lower = [round(max(0.0, f - ci_z * residual_std), 4) for f in forecast]
+    ci_upper = [round(f + ci_z * residual_std, 4) for f in forecast]
 
     return {
         "forecast": forecast,
         "ci_lower": ci_lower,
         "ci_upper": ci_upper,
-        "std": round(std, 6),
+        "std": round(residual_std, 6),
+        "series_std": round(series_std, 6),
     }

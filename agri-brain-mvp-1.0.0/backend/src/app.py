@@ -520,7 +520,7 @@ class DecideIn(BaseModel):
     role: str
     step: int | None = None          # optional row index (None → last row)
     deterministic: bool = True       # argmax when True, sample when False
-    mode: Literal["static", "hybrid_rl", "no_pinn", "no_slca", "agribrain", "no_context", "mcp_only", "pirag_only", "no_yield"] = "agribrain"
+    mode: Literal["static", "hybrid_rl", "no_pinn", "no_slca", "agribrain", "no_context", "mcp_only", "pirag_only"] = "agribrain"
 
 
 @API.post("/decide")
@@ -762,7 +762,6 @@ def decide(d: DecideIn):
                 "retrieval_confidence": round(float(_psi[2]), 3),
                 "regulatory_pressure": round(float(_psi[3]), 3),
                 "recovery_saturation": round(float(_psi[4]), 3),
-                "supply_uncertainty": round(float(_psi[5]), 3),
             },
             "logit_adjustment": {
                 "cold_chain": round(float(_modifier[0]), 3),
@@ -789,11 +788,17 @@ def decide(d: DecideIn):
         logger.debug("explainability enrichment skipped: %s", _e)
         memo["explainability"] = None
 
-    # PolicyLearner: record experience for optional online learning
+    # PolicyLearner: record experience for optional online learning. The
+    # live /case_decide endpoint does not carry supply or demand forecast
+    # uncertainties yet; pass None so phi_6..phi_8 default to zero and
+    # the learner sees the same 9-dim state the policy saw.
     if PolicyLearner.is_enabled():
         _learner = state.setdefault("_policy_learner", PolicyLearner())
         from .models.action_selection import build_feature_vector
-        phi = build_feature_vector(rho, inv, y_hat, temp)
+        phi = build_feature_vector(
+            rho, inv, y_hat, temp,
+            supply_hat=None, supply_std=None, demand_std=None,
+        )
         _learner.record(phi, action_idx, reward_total)
 
     # append to in-memory log

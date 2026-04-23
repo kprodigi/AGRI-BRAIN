@@ -52,19 +52,20 @@ REINFORCE learning for sustainable food logistics.
   reranking that surfaces different documents under different physical conditions
 - **Causal explanation engine** producing BECAUSE/WITHOUT reasoning with inline [KB:]
   citations, counterfactual probability comparisons, and Merkle-rooted provenance chains
-- **9 operating modes** for systematic ablation: static, hybrid RL, no PINN, no SLCA,
-  no context, MCP only, piRAG only, **no yield** (Path B ablation suppressing the supply
-  uncertainty feature), and full AGRI-BRAIN
-- **LSTM demand forecaster** (numpy-only, 16 hidden units, truncated BPTT)
-  with Holt-Winters fallback controlled by `FORECAST_METHOD` env var
-- **Holt-Winters yield/supply forecaster** for inventory projection; the supply
-  uncertainty derived from its coefficient of variation enters the routing context
-  as ψ_5 via the `yield_query` MCP tool (Path B)
+- **8 operating modes** for systematic ablation: static, hybrid RL, no PINN, no SLCA,
+  no context, MCP only, piRAG only, and full AGRI-BRAIN
+- **LSTM demand forecaster** (numpy-only, 16 hidden units, truncated BPTT) with
+  in-sample residual-standard-deviation prediction uncertainty. Holt-Winters
+  demand fallback available via `FORECAST_METHOD` env var.
+- **Holt-Winters yield/supply forecaster** for inventory projection, with matching
+  residual-std uncertainty. Both forecasts feed symmetrically into the state vector
+  phi(s) at indices 6-8 (supply point, supply uncertainty, demand uncertainty).
 - **5-agent coordinator** (Farm, Processor, Cooperative, Distributor, Recovery)
   dispatching decisions at lifecycle-stage boundaries
-- **Context feature integration** via 6D feature vector (compliance severity, forecast
-  urgency, retrieval confidence, regulatory pressure, recovery saturation, supply
-  uncertainty) with learned Θ_context ∈ ℝ^(3×6) weight matrix and SLCA bonus amplification
+- **Context feature integration** via 5D institutional context vector
+  (compliance severity, forecast urgency, retrieval confidence, regulatory
+  pressure, recovery saturation) with learned Θ_context ∈ ℝ^(3×5) weight matrix
+  and SLCA bonus amplification
 - **MCP governance override** that mandates rerouting under simultaneous critical
   compliance violation and high spoilage forecast
 - **Online REINFORCE learning** of context weights with sign constraints preserving
@@ -84,7 +85,9 @@ REINFORCE learning for sustainable food logistics.
 - **Protocol recording** of genuine MCP JSON-RPC interactions during simulation
 - **Circular economy scoring** for composting, animal feed, food bank pathways
 - **PINN-enhanced Arrhenius spoilage model** with Baranyi lag phase
-- **Softmax contextual policy** with 6-dimensional state feature vector
+- **Softmax contextual policy** with 9-dimensional state feature vector
+  (perception + symmetric supply and demand forecast channels) and 5-dimensional
+  institutional context modifier
 - **On-chain governance** via Hardhat/Solidity smart contracts
 
 ## Frontend
@@ -141,7 +144,7 @@ curl http://localhost:8100/health                # {"ok":true}
 
 ```bash
 cd mvp/simulation
-python generate_results.py    # 5 scenarios x 9 modes (45 episodes)
+python generate_results.py    # 5 scenarios x 8 modes (40 episodes)
 python generate_figures.py    # publication figures (Fig. 2-10, PNG + PDF)
 ```
 
@@ -158,7 +161,7 @@ bash hpc_run.sh
 This orchestrator:
 
 1. Creates `.venv` if absent, installs the backend package, and runs a
-   Path B load assertion (fails fast if the resolver pulled a broken
+   Policy-shape load assertion (fails fast if the resolver pulled a broken
    combination).
 2. Computes `RUN_TAG=$(git rev-parse --short HEAD)_$(date +%Y%m%d_%H%M)`.
 3. Submits `hpc_seed.sh` as a 20-task array, one seed per task
@@ -292,7 +295,7 @@ AGRI-BRAIN/
             units.py            # Unit conversion
             simulator.py        # Forward simulation proxy
             policy_oracle.py    # Governance access check
-            yield_query.py      # Holt-Winters supply/yield forecast (Path B)
+            yield_query.py      # Holt-Winters supply/yield forecast
         pyrag/                  # Hybrid BM25+dense retriever
         guards/                 # Unit, feasibility, and retrieval-quality guards
         provenance/             # Merkle tree + on-chain anchoring
@@ -352,7 +355,7 @@ AGRI-BRAIN/
 | Task | Time |
 |------|------|
 | Quick smoke test (`DETERMINISTIC_MODE=true`, 1 seed) | ~5 min |
-| Single full run (5 scenarios x 9 modes) | ~15-20 min |
+| Single full run (5 scenarios x 8 modes) | ~15 min |
 | Full 20-seed benchmark pipeline | ~90 min (local) / 3-5 h (HPC array) |
 | Complete reproduction including stress tests | ~2 h (local) / 6-10 h (HPC end-to-end) |
 

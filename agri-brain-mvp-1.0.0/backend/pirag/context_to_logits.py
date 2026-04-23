@@ -1,24 +1,27 @@
 """Confidence-weighted, guard-gated, learnable context modifier.
 
 Converts MCP tool results and piRAG retrieval context into a logit modifier
-vector of shape (3,) - one element per routing action [cold_chain,
-local_redistribute, recovery].
+vector of shape (3,), one element per routing action
+``[cold_chain, local_redistribute, recovery]``.
 
 Three-layer context integration:
 
-1. **Context feature vector**: MCP tool outputs become structured features
-   psi(context) in R^6 with weight matrix THETA_CONTEXT in R^(3x6).
-2. **Guard-gated**: returns zeros when piRAG retrieval-quality guard fails
-   (routing-path gate; not the three-guard aggregate used by /ask).
-3. **Temporally modulated**: stronger during regime transitions
-   (low continuity), weaker during stable periods (high continuity).
+1. **Context feature vector**: MCP and piRAG outputs become structured
+   institutional / coordination features psi(context) in R^5 with weight
+   matrix THETA_CONTEXT in R^(3x5).
+2. **Guard-gated**: returns zeros when the piRAG retrieval-quality guard
+   fails (routing-path gate; not the three-guard aggregate used by /ask).
+3. **Temporally modulated**: stronger during regime transitions (low
+   continuity), weaker during stable periods (high continuity).
 
 Set ``CONTEXT_MODIFIER_SCALE = 0.0`` to disable for ablation studies.
 
-PATH B (yield integration):
-psi_5 (supply uncertainty from Holt-Winters yield_query MCP tool) was added
-in the Path B integration. The previous 5-feature version is recoverable
-by setting ``context_mode="no_yield"``.
+Supply and demand forecast information (point estimates and
+uncertainties) no longer enters the context vector. Both signals are
+now symmetric state features in ``phi(s)`` at indices 6-8; see
+``backend.src.models.action_selection.build_feature_vector``. The
+``yield_query`` MCP tool continues to produce the supply forecast, which
+is consumed through the state vector (not through psi).
 """
 from __future__ import annotations
 
@@ -44,16 +47,16 @@ URGENCY_MAP: Dict[str, float] = {
 }
 
 
-# Context weight matrix (3 actions x 6 context features)
+# Context weight matrix (3 actions x 5 context features)
 # Sign-justified alongside THETA in the paper.
 THETA_CONTEXT: np.ndarray = np.array([
-    # psi_0 compl  psi_1 fcst   psi_2 conf   psi_3 reg    psi_4 rec_sat psi_5 sup_unc
-    [ -0.80,       -0.60,       -0.15,       -0.30,       +0.25,        +0.20],   # ColdChain
-    [ +0.50,       +0.40,       +0.20,       +0.25,       +0.10,        +0.05],   # LocalRedistribute
-    [ +0.30,       +0.20,       -0.05,       +0.05,       -0.35,        -0.15],   # Recovery
+    # psi_0 compl  psi_1 fcst   psi_2 conf   psi_3 reg    psi_4 rec_sat
+    [ -0.80,       -0.60,       -0.15,       -0.30,       +0.25],   # ColdChain
+    [ +0.50,       +0.40,       +0.20,       +0.25,       +0.10],   # LocalRedistribute
+    [ +0.30,       +0.20,       -0.05,       +0.05,       -0.35],   # Recovery
 ], dtype=np.float64)
-"""Context weight matrix mapping 6 context features to 3 action logit
-adjustments.
+"""Context weight matrix mapping 5 institutional context features to 3
+action logit adjustments.
 
 Sign justifications:
 
@@ -67,20 +70,13 @@ Sign justifications:
                                   chain (-0.30).
 - Recovery saturation (psi_4):    heavy recent recovery disfavors further
                                   recovery (-0.35).
-- Supply uncertainty (psi_5):     high Holt-Winters forecast variance
-                                  preserves optionality via cold chain
-                                  (+0.20), mildly favors local release
-                                  (+0.05), discourages low-value
-                                  commitment to recovery (-0.15).
-                                  Smaller magnitudes than psi_0/psi_1 because
-                                  supply uncertainty is a tiebreaker, not
-                                  a primary driver.
 """
 
 
-# Feature masks for ablation modes (now 6-element)
-_MCP_FEATURE_MASK   = np.array([1.0, 1.0, 0.0, 0.0, 1.0, 1.0])  # psi_0, psi_1, psi_4, psi_5
-_PIRAG_FEATURE_MASK = np.array([0.0, 0.0, 1.0, 1.0, 0.0, 0.0])  # psi_2, psi_3
+# Feature masks for ablation modes (5-element; supply and demand
+# forecast signals now live in the state vector phi, not here).
+_MCP_FEATURE_MASK   = np.array([1.0, 1.0, 0.0, 0.0, 1.0])  # psi_0, psi_1, psi_4
+_PIRAG_FEATURE_MASK = np.array([0.0, 0.0, 1.0, 1.0, 0.0])  # psi_2, psi_3
 
 
 def extract_context_features(
@@ -88,9 +84,9 @@ def extract_context_features(
     rag_context: Dict[str, Any],
     obs: Any,
 ) -> np.ndarray:
-    """Extract a 6D context feature vector from MCP and piRAG outputs.
+    """Extract a 5D context feature vector from MCP and piRAG outputs.
 
-    Returns np.ndarray of shape (6,) with values in [0, 1].
+    Returns np.ndarray of shape (5,) with values in [0, 1].
 
     Features:
         psi_0: Compliance severity (0.0 compliant, 0.5 warning, 1.0 critical)
@@ -98,9 +94,8 @@ def extract_context_features(
         psi_2: Retrieval confidence (normalized top citation score)
         psi_3: Regulatory pressure (1.0 if top doc is regulatory with score > 0.4)
         psi_4: Recovery saturation (fraction of recent decisions that were recovery)
-        psi_5: Supply uncertainty (normalized CV from yield_query MCP tool)
     """
-    psi = np.zeros(6, dtype=np.float64)
+    psi = np.zeros(5, dtype=np.float64)
 
     if mcp_results is None:
         mcp_results = {}
@@ -132,10 +127,6 @@ def extract_context_features(
         recovery_frac = sum(1 for d in chain if d.get("action") == "recovery") / len(chain)
         psi[4] = recovery_frac
 
-    # psi_5: Supply uncertainty (Path B addition - Holt-Winters CV signal)
-    yield_result = mcp_results.get("yield_query") or {}
-    psi[5] = float(yield_result.get("uncertainty", 0.0))
-
     return psi
 
 
@@ -153,11 +144,9 @@ def compute_context_modifier(
     """Compute context logit adjustment via THETA_CONTEXT @ psi(context).
 
     ``context_mode`` accepts:
-        - "full"       : all 6 features active.
-        - "mcp_only"   : only MCP-derived features (psi_0, psi_1, psi_4, psi_5).
+        - "full"       : all 5 features active.
+        - "mcp_only"   : only MCP-derived features (psi_0, psi_1, psi_4).
         - "pirag_only" : only piRAG-derived features (psi_2, psi_3).
-        - "no_yield"   : suppress psi_5 only; recovers the pre-Path B
-                         5-feature behaviour for clean ablation.
 
     Returns
     -------
@@ -190,17 +179,11 @@ def compute_context_modifier(
         psi = psi * _MCP_FEATURE_MASK
     elif context_mode == "pirag_only":
         psi = psi * _PIRAG_FEATURE_MASK
-    elif context_mode == "no_yield":
-        # Path B ablation: suppress psi_5 to recover the pre-Path B
-        # 5-feature configuration; useful for clean attribution of
-        # yield_query impact.
-        no_yield_mask = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 0.0])
-        psi = psi * no_yield_mask
 
     theta = theta_override if theta_override is not None else THETA_CONTEXT
 
-    if theta_override is None and rule_weights is not None and len(rule_weights) >= 6:
-        feature_weights = np.array(rule_weights[:6], dtype=np.float64)
+    if theta_override is None and rule_weights is not None and len(rule_weights) >= 5:
+        feature_weights = np.array(rule_weights[:5], dtype=np.float64)
         psi = psi * feature_weights
 
     modifier = theta @ psi
@@ -224,12 +207,11 @@ def compute_context_modifier(
     return modifier
 
 
-# Feature names for backward compatibility with learner/evaluator (now 6 entries)
+# Feature names for the learner / evaluator (5 entries, matches psi shape).
 MODIFIER_RULES: List[Dict[str, Any]] = [
     {"name": "compliance_severity",  "feature_idx": 0},
     {"name": "forecast_urgency",     "feature_idx": 1},
     {"name": "retrieval_confidence", "feature_idx": 2},
     {"name": "regulatory_pressure",  "feature_idx": 3},
     {"name": "recovery_saturation",  "feature_idx": 4},
-    {"name": "supply_uncertainty",   "feature_idx": 5},   # Path B addition
 ]

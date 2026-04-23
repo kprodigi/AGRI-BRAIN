@@ -2,16 +2,21 @@
 """
 AGRI-BRAIN Results Generation
 ==============================
-Runs all 5 scenarios × 9 modes, computes per-run metrics, and saves
-CSV summary tables to mvp/simulation/results/.
+Runs all 5 scenarios x 8 modes (40 episodes), computes per-run metrics,
+and saves CSV summary tables to mvp/simulation/results/.
 
 Uses an AgentCoordinator to dispatch decisions to role-specific agents
-(farm, processor, cooperative, distributor, recovery) at each lifecycle stage.
+(farm, processor, cooperative, distributor, recovery) at each lifecycle
+stage.
 
 MCP/piRAG context injection is enabled for ``agribrain``, ``mcp_only``,
-``pirag_only``, and ``no_yield`` (the Path B ablation that suppresses
-psi_5 supply uncertainty). Disabled for all others, including ``no_context``
+and ``pirag_only``. Disabled for all others, including ``no_context``
 which uses the same logits as agribrain but without context modifier.
+
+Supply and demand forecast information (both point and residual-std
+uncertainty) is represented as state features in phi(s) at indices
+6-8, populated from ``yield_supply_forecast`` and ``lstm_demand_forecast``
+output and consumed by ``build_feature_vector``.
 
 Standalone usage:
     cd mvp/simulation
@@ -113,21 +118,16 @@ SEED = 42
 
 SCENARIOS = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing", "baseline"]
 MODES = ["static", "hybrid_rl", "no_pinn", "no_slca",
-         "agribrain", "no_context", "mcp_only", "pirag_only", "no_yield"]
+         "agribrain", "no_context", "mcp_only", "pirag_only"]
 
 # Modes that enable MCP/piRAG context infrastructure
-_CONTEXT_ENABLED_MODES = {"agribrain", "mcp_only", "pirag_only", "no_yield"}
+_CONTEXT_ENABLED_MODES = {"agribrain", "mcp_only", "pirag_only"}
 
 # Modes that use agribrain logits for action selection
-_AGRIBRAIN_LOGIT_MODES = {"agribrain", "no_context", "mcp_only", "pirag_only", "no_yield"}
+_AGRIBRAIN_LOGIT_MODES = {"agribrain", "no_context", "mcp_only", "pirag_only"}
 
 # Modes where MCP compliance data feeds waste penalty.
-# no_yield uses agribrain's full MCP stack with psi_5 (supply uncertainty)
-# suppressed; the check_compliance tool output is unaffected by the psi_5
-# mask, so no_yield must feed compliance into the waste penalty the same
-# way agribrain does. Otherwise the agribrain-vs-no_yield delta picks up
-# a waste-penalty gap that has nothing to do with psi_5.
-_MCP_WASTE_MODES = {"agribrain", "mcp_only", "no_yield"}
+_MCP_WASTE_MODES = {"agribrain", "mcp_only"}
 
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 DATA_CSV = Path(os.environ.get("DATA_CSV", "")) if os.environ.get("DATA_CSV") else _BACKEND_SRC / "src" / "data_spinach.csv"
@@ -191,12 +191,8 @@ def apply_scenario(df: pd.DataFrame, name: str, policy: Policy,
 # ---------------------------------------------------------------------------
 # Single episode runner (orchestration only — calls Layer 1 models)
 # ---------------------------------------------------------------------------
-_PINN_MODES = {"agribrain", "no_slca", "no_context", "mcp_only", "pirag_only", "no_yield"}
-"""Modes that use PINN-enhanced spoilage prediction.
-
-no_yield is included because it shares agribrain's infrastructure; only
-psi_5 (supply uncertainty) is suppressed at the context-to-logits layer,
-not the spoilage prediction layer."""
+_PINN_MODES = {"agribrain", "no_slca", "no_context", "mcp_only", "pirag_only"}
+"""Modes that use PINN-enhanced spoilage prediction."""
 
 
 def run_episode(
@@ -301,15 +297,24 @@ def run_episode(
         y_hat = stoch.perturb_demand(y_hat)
         observed_demand_trace.append(y_hat)
 
-        # Yield/supply forecast (Section 4 — short-term yield forecaster)
+        # Demand forecast residual std feeds phi_8 (demand_uncertainty).
+        # Both the LSTM and Holt-Winters demand forecasters now return
+        # ``std`` as the in-sample one-step-ahead residual standard
+        # deviation (Hyndman & Athanasopoulos 2018, Ch. 8.7).
+        demand_std = float(yf.get("std", 0.0) or 0.0)
+
+        # Yield/supply forecast: Holt-Winters on the inventory series.
+        # ``std`` is the matching residual-std prediction-uncertainty
+        # estimate used for phi_7 (supply_uncertainty).
         sf = yield_supply_forecast(hist_slice, horizon=1, series_col="inventory_units")
         supply_hat = float(sf["forecast"][0]) if sf["forecast"] else inv
+        supply_std = float(sf.get("std", 0.0) or 0.0)
         supply_hats.append(supply_hat)
 
         # Surplus ratio (computed before env_state for coordinator)
         surplus_ratio = max(0.0, inv / INV_BASELINE - 1.0)
 
-        # RAG context (legacy path — coordinator now handles MCP/piRAG internally)
+        # RAG context (legacy path, coordinator now handles MCP/piRAG internally)
         rag_context = None
         if RAG_CONTEXT_ENABLED and not context_mode and _get_policy_context is not None:
             try:
@@ -317,33 +322,24 @@ def run_episode(
             except Exception:
                 pass
 
-        # Path B: expose pre-computed Holt-Winters outputs so the yield_query
-        # MCP tool can short-circuit; psi_5 (supply uncertainty) flows into
-        # the routing context without duplicating the forecast. Forecast
-        # point and std come from the same yield_supply_forecast call, so
-        # they are consumed together; a missing pair (which should not
-        # happen given the forecaster's contract) zeroes the signal rather
-        # than fabricating a synthetic point of 1.0 with a stale std.
-        _forecast = sf.get("forecast") or []
-        _has_both = bool(_forecast) and ("std" in sf)
-        if _has_both:
-            _point = float(_forecast[0])
-            _std = float(sf["std"])
-            _supply_uncertainty = round(
-                min(max(_std / max(abs(_point), 1.0), 0.0), 1.0), 4
-            )
-        else:
-            _point = float(inv)
-            _std = 0.0
-            _supply_uncertainty = 0.0
-
-        # Build env_state for the coordinator
+        # Build env_state for the coordinator. Supply and demand point
+        # forecasts and residual-std uncertainties all flow through
+        # obs.raw into build_feature_vector as phi_6..phi_8. The older
+        # ``supply_uncertainty`` key that populated the previous psi_5
+        # context feature is no longer consumed (the supply-uncertainty
+        # signal lives in phi now, not psi) but is left in env_state for
+        # downstream tracing tools that already read it.
+        _supply_cv = (
+            float(min(max(supply_std / max(abs(supply_hat), 1.0), 0.0), 1.0))
+            if supply_hat else 0.0
+        )
         env_state = {
             "rho": rho, "inv": inv, "temp": temp, "rh": rh_val,
             "y_hat": y_hat, "tau": tau, "surplus_ratio": surplus_ratio,
             "supply_hat": supply_hat,
-            "supply_uncertainty": _supply_uncertainty,
-            "supply_std": _std,
+            "supply_std": supply_std,
+            "demand_std": demand_std,
+            "supply_uncertainty": round(_supply_cv, 4),
             "inv_history": hist_slice["inventory_units"].astype(float).tolist(),
             "policy_flags": {
                 "enable_mcp_qos_routing": bool(getattr(policy, "enable_mcp_qos_routing", False)),
@@ -442,9 +438,17 @@ def run_episode(
         coordinator.post_step(active_agent, action_idx, obs, outcome,
                               hour=hours[idx], reward=reward)
 
-        # PolicyLearner: record experience for optional online learning
+        # PolicyLearner: record experience for optional online learning.
+        # Must pass the same 9-dim phi the policy actually saw, otherwise
+        # the learner's gradient is computed against the wrong feature
+        # vector.
         if learner is not None:
-            phi = build_feature_vector(rho, inv, y_hat, temp)
+            phi = build_feature_vector(
+                rho, inv, y_hat, temp,
+                supply_hat=supply_hat,
+                supply_std=supply_std,
+                demand_std=demand_std,
+            )
             learner.record(phi, action_idx, reward)
 
         # Collect traces

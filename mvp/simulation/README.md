@@ -5,12 +5,14 @@ results for the AGRI-BRAIN system.
 
 ## Overview
 
-The simulation runs 5 **scenarios** x 9 **modes** (45 episodes) to evaluate
+The simulation runs 5 **scenarios** x 8 **modes** (40 episodes) to evaluate
 the AGRI-BRAIN adaptive supply-chain intelligence system against baselines and
-ablation variants, including MCP/piRAG context integration ablations. The ninth
-mode (`no_yield`) is the Path B ablation that suppresses the psi_5 supply
-uncertainty feature while keeping the rest of the context pipeline intact,
-isolating the contribution of the Holt-Winters yield forecaster.
+ablation variants, including MCP/piRAG context integration ablations. The
+state vector phi(s) has 9 dimensions: six perception features and three
+forecast-channel features (supply point, supply uncertainty, demand
+uncertainty) that treat the LSTM demand and Holt-Winters supply forecasts
+symmetrically. The context vector psi remains 5-dimensional and carries
+institutional / coordination signals only.
 
 ### Scenarios
 
@@ -31,13 +33,12 @@ isolating the contribution of the Holt-Winters yield forecaster.
 | `no_pinn` | Degraded spoilage estimate (no PINN integration) |
 | `no_slca` | Full PINN but uniform social scores (no SLCA optimisation) |
 | `no_context` | Full agribrain policy but MCP/piRAG context disabled |
-| `mcp_only` | MCP tool outputs only (compliance, forecast, supply uncertainty); piRAG features zeroed |
-| `pirag_only` | piRAG retrieval only (regulatory, confidence); MCP features zeroed |
-| `no_yield` | Full agribrain context except psi_5 supply uncertainty suppressed (Path B ablation) |
+| `mcp_only` | MCP tool outputs only (compliance, forecast urgency, recovery saturation); piRAG features zeroed |
+| `pirag_only` | piRAG retrieval only (regulatory pressure, retrieval confidence); MCP features zeroed |
 | `agribrain` | Full system: PINN + SLCA + MCP tools + piRAG retrieval + online learning |
 
-The five context-enabled modes (`no_context`, `mcp_only`, `pirag_only`,
-`no_yield`, `agribrain`) share the same RNG seed per scenario so that ARI
+The four context-enabled modes (`no_context`, `mcp_only`, `pirag_only`,
+`agribrain`) share the same RNG seed per scenario so that ARI
 differences reflect only context injection, not stochastic noise.
 
 Stochastic perturbations apply to `tempC`, `RH`, `demand_units`, and
@@ -65,7 +66,8 @@ Each agent step invokes role-specific MCP tools and piRAG knowledge retrieval:
 
 - **MCP tools** (JSON-RPC 2.0): 13 statically registered tools including compliance check, spoilage forecast, SLCA lookup, chain query, policy oracle, calculator, footprint query, convert_units, pirag_query, explain, context_features, simulate, and yield_query; the coordinator adds 5 runtime role-capability tools (18 at simulation time)
 - **piRAG pipeline**: 20-document knowledge base with BM25+TF-IDF hybrid retrieval (k=4), physics-informed reranking, scenario-discriminative query expansion
-- **Context features**: 6D feature vector psi = [compliance severity, forecast urgency, retrieval confidence, regulatory pressure, recovery saturation, supply uncertainty] with learned Theta_context weight matrix of shape (3, 6)
+- **State features**: 9D feature vector phi(s) = [freshness, inventory pressure, demand point forecast, thermal stress, spoilage urgency, interaction, supply point, supply uncertainty, demand uncertainty] with policy weight matrix Theta of shape (3, 9). Supply and demand forecast uncertainties are residual-std prediction-error estimates (Hyndman & Athanasopoulos 2018, Ch. 8.7).
+- **Context features**: 5D feature vector psi = [compliance severity, forecast urgency, retrieval confidence, regulatory pressure, recovery saturation] with learned Theta_context weight matrix of shape (3, 5)
 - **Governance override**: Deterministic redistribution when cumulative evidence strongly disfavors cold chain
 - **Online REINFORCE learning**: Sign-constrained gradient updates on Theta_context weights
 - **Causal explanation engine**: BECAUSE/WITHOUT reasoning with [KB:] citations and Merkle provenance
@@ -150,7 +152,7 @@ python reproduce_core.py
 
 All outputs are saved to `mvp/simulation/results/`:
 - `table1_summary.csv` -- Scenario x Method (static, hybrid_rl, agribrain)
-- `table2_ablation.csv` -- Scenario x Variant (all 9 modes, including the Path B `no_yield` ablation)
+- `table2_ablation.csv` -- Scenario x Variant (all 8 modes)
 - `benchmark_summary.json` -- Multi-seed means/std/CI
 - `benchmark_significance.json` -- Permutation-test p-values + effect sizes
 - `stress_summary.json` -- Stress-suite robustness outputs

@@ -1,6 +1,6 @@
 """End-to-end smoke tests: every declared mode runs against every scenario.
 
-Previous audits found silent bugs where modes newly added to ``MODES`` in
+Previous audits found silent bugs where new modes added to ``MODES`` in
 ``mvp/simulation/generate_results.py`` were missing from other mode-indexed
 structures elsewhere (``VALID_MODES`` in ``action_selection.py``,
 ``_PINN_MODES`` and ``_MCP_WASTE_MODES`` in ``generate_results.py``,
@@ -10,9 +10,9 @@ matrix.
 
 This module adds a cheap end-to-end matrix so future additions to MODES
 automatically surface the same class of gap in CI. The dataframe is
-truncated so the full 5 x 9 matrix finishes in a few seconds on a laptop.
-A second focused test verifies the post-fix invariant that cyber_outage
-reports the Bernoulli policy distribution rather than a sampled one-hot.
+truncated so the full 5 x 8 matrix finishes in a few seconds on a laptop.
+A second focused test verifies the invariant that cyber_outage reports
+the Bernoulli policy distribution rather than a sampled one-hot.
 """
 from __future__ import annotations
 
@@ -47,19 +47,19 @@ def short_df(sim_runtime):
 
 
 SCENARIOS = ("heatwave", "overproduction", "cyber_outage", "adaptive_pricing", "baseline")
-MODES = ("agribrain", "mcp_only", "pirag_only", "no_context", "no_yield",
+MODES = ("agribrain", "mcp_only", "pirag_only", "no_context",
          "static", "hybrid_rl", "no_pinn", "no_slca")
 
 
 # ---------------------------------------------------------------------------
 # Fast consistency tests. No episode run; these finish in milliseconds and
-# catch the class of silent bug where a new mode (e.g. ``no_yield``) was
-# added to ``MODES`` in the simulator but forgotten in one of the downstream
-# mode-indexed structures. They run in the default ``pytest`` invocation.
+# catch the class of silent bug where a new mode was added to ``MODES`` in
+# the simulator but forgotten in one of the downstream mode-indexed
+# structures. They run in the default ``pytest`` invocation.
 # ---------------------------------------------------------------------------
 
 def test_simulator_modes_match_canonical_list(sim_runtime):
-    """``generate_results.MODES`` must match the canonical 9-mode list
+    """``generate_results.MODES`` must match the canonical 8-mode list
     above; if it drifts, the slow matrix below would silently skip the
     new mode and downstream lookups would not be exercised."""
     gr, _ = sim_runtime
@@ -92,19 +92,24 @@ def test_cyber_reroute_prob_covers_every_non_static_mode(sim_runtime):
     )
 
 
-def test_path_b_mode_sets_include_no_yield(sim_runtime):
-    """Path B's ``no_yield`` mode must be wired into every mode set that
-    ``agribrain`` is wired into. Keeping this in sync is the explicit
-    contract that motivated the post-Path-B audit."""
+def test_core_context_modes_wired_together(sim_runtime):
+    """The four context-enabled modes share agribrain's infrastructure;
+    they must appear in every mode-indexed set that agribrain does."""
     gr, _ = sim_runtime
-    must_contain_no_yield = {
+    must_contain_agribrain = {
         "_CONTEXT_ENABLED_MODES": gr._CONTEXT_ENABLED_MODES,
         "_AGRIBRAIN_LOGIT_MODES": gr._AGRIBRAIN_LOGIT_MODES,
         "_PINN_MODES": gr._PINN_MODES,
         "_MCP_WASTE_MODES": gr._MCP_WASTE_MODES,
     }
-    for name, values in must_contain_no_yield.items():
-        assert "no_yield" in values, f"{name} missing no_yield"
+    for name, values in must_contain_agribrain.items():
+        assert "agribrain" in values, f"{name} missing agribrain"
+    # mcp_only / pirag_only / no_context share agribrain logits but
+    # their membership in the context-enabled set is stricter.
+    assert gr._AGRIBRAIN_LOGIT_MODES >= {
+        "agribrain", "no_context", "mcp_only", "pirag_only",
+    }
+    assert gr._CONTEXT_ENABLED_MODES == {"agribrain", "mcp_only", "pirag_only"}
 
 
 # ---------------------------------------------------------------------------
@@ -118,9 +123,9 @@ def test_path_b_mode_sets_include_no_yield(sim_runtime):
 def test_every_mode_runs_on_baseline(sim_runtime, short_df, mode):
     """Running each declared mode on the baseline scenario must not crash.
 
-    This is the minimal smoke test that would have caught the post-Path B
-    bugs where ``no_yield`` was missing from ``VALID_MODES`` or
-    ``_PINN_MODES``.
+    This is the minimal smoke test that catches silent bugs where a new
+    mode is missing from ``VALID_MODES``, ``_PINN_MODES``, or similar
+    mode-indexed sets.
     """
     gr, st = sim_runtime
     policy = gr.Policy()
@@ -163,15 +168,14 @@ def test_every_scenario_runs_under_agribrain(sim_runtime, short_df, scenario):
 
 
 @pytest.mark.slow
-def test_no_yield_under_cyber_outage_runs(sim_runtime, short_df):
-    """Explicit coverage for no_yield x cyber_outage, the pair that silently
-    failed prior to the VALID_MODES / CYBER_REROUTE_PROB fixes."""
+def test_agribrain_under_cyber_outage_runs(sim_runtime, short_df):
+    """Explicit coverage for agribrain x cyber_outage."""
     gr, st = sim_runtime
     policy = gr.Policy()
     scen_rng = np.random.default_rng(0)
     scen_stoch = st.make_stochastic_layer(np.random.default_rng(1))
     df = gr.apply_scenario(short_df, "cyber_outage", policy, scen_rng, stoch=scen_stoch)
-    ep = gr.run_episode(df, "no_yield", policy, np.random.default_rng(42),
+    ep = gr.run_episode(df, "agribrain", policy, np.random.default_rng(42),
                          "cyber_outage", stoch=scen_stoch)
     assert 0.0 <= float(ep["ari"]) <= 1.0
 
