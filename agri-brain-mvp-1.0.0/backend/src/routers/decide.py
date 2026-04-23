@@ -75,6 +75,15 @@ class DecideRequest(BaseModel):
     temp_c: float | None = None
     volatility: float | None = None
 
+    # Optional forecast payload. When provided, these flow into phi_6..phi_8
+    # so this fallback endpoint produces the same state vector the simulator
+    # and primary /decide handler use. When omitted, phi_6..phi_8 default to
+    # zero (legacy behavior).
+    y_hat: float | None = None
+    supply_hat: float | None = None
+    supply_std: float | None = None
+    demand_std: float | None = None
+
 
 # ---------- In-memory log ----------
 DECISIONS: list[dict] = []
@@ -161,7 +170,7 @@ def _decide_standalone(req: DecideRequest) -> dict:
         shelf = 1.0 - rho
         vol = "anomaly" if tau else "normal"
 
-    y_hat = 100.0
+    y_hat = float(req.y_hat) if req.y_hat is not None else 100.0
     _defaults = Policy()
     _policy = policy if policy else _defaults
 
@@ -171,6 +180,9 @@ def _decide_standalone(req: DecideRequest) -> dict:
         mode=req.mode, rho=rho, inv=inv, y_hat=y_hat, temp=temp,
         tau=tau, policy=_policy, rng=rng,
         deterministic=req.deterministic,
+        supply_hat=req.supply_hat,
+        supply_std=req.supply_std,
+        demand_std=req.demand_std,
     )
     action = ACTIONS[action_idx]
 
@@ -305,6 +317,9 @@ def _decide_standalone(req: DecideRequest) -> dict:
             mode=req.mode, rho=rho, inv=inv, y_hat=y_hat, temp=temp,
             tau=tau, policy=_policy, rng=np.random.default_rng(),
             deterministic=req.deterministic,
+            supply_hat=req.supply_hat,
+            supply_std=req.supply_std,
+            demand_std=req.demand_std,
         )
         _cf_action = ACTIONS[int(np.argmax(_cf_probs))]
 

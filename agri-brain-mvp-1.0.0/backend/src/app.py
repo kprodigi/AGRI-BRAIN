@@ -544,7 +544,15 @@ def decide(d: DecideIn):
     # Demand forecast (LSTM or Holt-Winters) and yield forecast
     demand_fc = _demand_forecast(df.iloc[: idx + 1], horizon=1)
     y_hat = float(demand_fc["forecast"][0]) if demand_fc["forecast"] else 100.0
+    demand_std = float(demand_fc.get("std", 0.0) or 0.0)
     supply_fc = yield_supply_forecast(df.iloc[: idx + 1], horizon=1)
+    _supply_forecast_list = supply_fc.get("forecast") if isinstance(supply_fc, dict) else None
+    supply_hat = (
+        float(_supply_forecast_list[0])
+        if _supply_forecast_list
+        else None
+    )
+    supply_std = float(supply_fc.get("std", 0.0) or 0.0) if isinstance(supply_fc, dict) else 0.0
 
     # Bollinger trigger  (tau = 1 if anomaly)
     tau = 1.0 if str(row.get("volatility", "normal")) == "anomaly" else 0.0
@@ -579,6 +587,8 @@ def decide(d: DecideIn):
         mode=d.mode, rho=rho, inv=inv, y_hat=y_hat, temp=temp,
         tau=tau, policy=p, rng=rng,
         role_bias=role_bias, deterministic=d.deterministic,
+        supply_hat=supply_hat, supply_std=supply_std,
+        demand_std=demand_std,
     )
 
     action = ACTIONS[action_idx]
@@ -734,6 +744,8 @@ def decide(d: DecideIn):
             mode=d.mode, rho=rho, inv=inv, y_hat=y_hat, temp=temp,
             tau=tau, policy=p, rng=np.random.default_rng(),
             role_bias=role_bias, deterministic=d.deterministic,
+            supply_hat=supply_hat, supply_std=supply_std,
+            demand_std=demand_std,
         )
         _cf_action = ACTIONS[int(np.argmax(_cf_probs))]
 
