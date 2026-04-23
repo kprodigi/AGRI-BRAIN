@@ -93,7 +93,7 @@ class AgentCoordinator:
         self._temporal_window = None
         self._pirag_pipeline = None
         self._context_learner = None
-        self._forecast_learner = None
+        self._theta_learner = None
         self._context_evaluator = None
         self._context_log: List[Dict[str, Any]] = []
         self._decision_history: List[Dict[str, Any]] = []
@@ -139,7 +139,7 @@ class AgentCoordinator:
             from pirag.mcp.context_sharing import SharedContextStore
             from pirag.mcp.agent_capabilities import register_all_agent_capabilities
             from pirag.temporal_context import TemporalContextWindow
-            from pirag.context_learner import ContextMatrixLearner, ForecastWeightsLearner
+            from pirag.context_learner import ContextMatrixLearner, PolicyDeltaLearner
             from pirag.context_eval import ContextEvaluator
             from pirag.context_to_logits import THETA_CONTEXT
 
@@ -170,15 +170,18 @@ class AgentCoordinator:
         except ImportError:
             self.context_enabled = False
 
-        # The forecast-column learner lives outside the context-enabled
-        # guard: it trains THETA[:, 6:9] for every non-static mode, not just
-        # the context-enabled ones. This matches its conceptual role as a
-        # base-policy learner rather than a context-pipeline learner.
+        # The policy-delta learner lives outside the context-enabled
+        # guard: it trains a (3, 10) correction on the full THETA for
+        # every non-static mode, not just the context-enabled ones.
+        # Anchored on the hand-calibrated THETA with a 25 percent per-
+        # entry magnitude cap and sign constraint so learning cannot
+        # drift the policy more than a quarter from its domain priors.
         try:
-            from pirag.context_learner import ForecastWeightsLearner as _FWL
-            self._forecast_learner = _FWL()
+            from pirag.context_learner import PolicyDeltaLearner as _PDL
+            from ..models.action_selection import THETA as _INITIAL_THETA
+            self._theta_learner = _PDL(initial_theta=_INITIAL_THETA)
         except ImportError:
-            self._forecast_learner = None
+            self._theta_learner = None
 
         try:
             from pirag.agent_pipeline import PiRAGPipeline
@@ -243,8 +246,8 @@ class AgentCoordinator:
             self._temporal_window.reset()
         if self._context_learner is not None:
             self._context_learner.reset()
-        if self._forecast_learner is not None:
-            self._forecast_learner.reset()
+        if self._theta_learner is not None:
+            self._theta_learner.reset()
         if self._context_evaluator is not None:
             self._context_evaluator.reset()
         if self._registry is not None:
@@ -365,9 +368,9 @@ class AgentCoordinator:
             price_signal=price_signal,
         )
 
-        theta_forecast_delta = (
-            self._forecast_learner.get_theta_delta()
-            if self._forecast_learner is not None else None
+        theta_delta = (
+            self._theta_learner.get_theta_delta()
+            if self._theta_learner is not None else None
         )
 
         action_idx, probs = select_action(
@@ -388,7 +391,7 @@ class AgentCoordinator:
             supply_std=supply_std,
             demand_std=demand_std,
             price_signal=price_signal,
-            theta_forecast_delta=theta_forecast_delta,
+            theta_delta=theta_delta,
         )
 
         # Store probs for learner update
@@ -643,9 +646,9 @@ class AgentCoordinator:
                 rng_cf = np.random.default_rng()
                 if self._step_rng_state is not None:
                     rng_cf.bit_generator.state = copy.deepcopy(self._step_rng_state)
-                theta_fcast_delta_cf = (
-                    self._forecast_learner.get_theta_delta()
-                    if self._forecast_learner is not None else None
+                theta_delta_cf = (
+                    self._theta_learner.get_theta_delta()
+                    if self._theta_learner is not None else None
                 )
                 action_without, probs_without = _sa(
                     mode="agribrain", rho=obs.rho, inv=obs.inv,
@@ -659,7 +662,7 @@ class AgentCoordinator:
                     supply_std=self._step_supply_std,
                     demand_std=self._step_demand_std,
                     price_signal=self._step_price_signal,
-                    theta_forecast_delta=theta_fcast_delta_cf,
+                    theta_delta=theta_delta_cf,
                 )
                 self._step_counterfactual_action = action_without
                 self._step_counterfactual_probs = probs_without
@@ -684,13 +687,14 @@ class AgentCoordinator:
                     slca_score=outcome.get("slca", 0.0),
                 )
 
-        # Update ForecastWeightsLearner via REINFORCE. Runs for every
-        # non-static mode because the forecast channels enter phi on every
-        # step regardless of whether the context pipeline is active.
-        if (self._forecast_learner is not None
+        # Update PolicyDeltaLearner via REINFORCE. Runs for every
+        # non-static mode so the (3, 10) delta is trained uniformly
+        # across ablations, which keeps the ablation structure coherent
+        # (every mode uses the same learner with the same anchor).
+        if (self._theta_learner is not None
                 and self._step_phi is not None
                 and self._step_probs is not None):
-            self._forecast_learner.update(
+            self._theta_learner.update(
                 phi=self._step_phi,
                 action=action,
                 probs=self._step_probs,
@@ -880,10 +884,10 @@ class AgentCoordinator:
             return self._context_learner.summary()
         return {}
 
-    def forecast_learner_summary(self) -> Dict[str, Any]:
-        """Forecast-column learner statistics."""
-        if self._forecast_learner is not None:
-            return self._forecast_learner.summary()
+    def theta_learner_summary(self) -> Dict[str, Any]:
+        """Policy-delta learner statistics."""
+        if self._theta_learner is not None:
+            return self._theta_learner.summary()
         return {}
 
     def save_learner_states(self) -> Dict[str, Any]:
@@ -897,24 +901,24 @@ class AgentCoordinator:
         state: Dict[str, Any] = {}
         if self._context_learner is not None:
             state["context_learner"] = self._context_learner.save_state()
-        if self._forecast_learner is not None:
-            state["forecast_learner"] = self._forecast_learner.save_state()
+        if self._theta_learner is not None:
+            state["theta_learner"] = self._theta_learner.save_state()
         return state
 
     def load_learner_states(self, state: Dict[str, Any]) -> None:
         """Restore learner state produced by :meth:`save_learner_states`.
 
         Missing keys are tolerated so partial checkpoints (e.g. only the
-        forecast learner) still work. Attempting to load into a coordinator
+        theta learner) still work. Attempting to load into a coordinator
         whose learner was never constructed (import-time failure) is a
         no-op for that slot.
         """
         ctx = state.get("context_learner")
         if ctx is not None and self._context_learner is not None:
             self._context_learner.load_state(ctx)
-        fcst = state.get("forecast_learner")
-        if fcst is not None and self._forecast_learner is not None:
-            self._forecast_learner.load_state(fcst)
+        theta = state.get("theta_learner")
+        if theta is not None and self._theta_learner is not None:
+            self._theta_learner.load_state(theta)
 
     def evaluator_summary(self) -> Dict[str, Any]:
         """Context quality evaluator statistics."""

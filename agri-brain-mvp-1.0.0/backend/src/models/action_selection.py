@@ -571,7 +571,7 @@ def select_action(
     supply_std: float | None = None,
     demand_std: float | None = None,
     price_signal: float | None = None,
-    theta_forecast_delta: np.ndarray | None = None,
+    theta_delta: np.ndarray | None = None,
 ) -> tuple[int, np.ndarray]:
     """Select routing action based on mode-specific softmax policy.
 
@@ -605,11 +605,12 @@ def select_action(
         on the corresponding phi channels.
     price_signal : optional demand-volatility Bollinger z-score used
         as a market-pressure proxy. Feeds ``phi_9`` clipped to [-1, 1].
-    theta_forecast_delta : optional (3, 3) learned correction added to
-        THETA[:, 6:9] at inference. Provided by ForecastWeightsLearner.
-        The hand-calibrated THETA stays fixed; only this delta moves
-        with training. The price column (THETA[:, 9]) stays hand-
-        calibrated and is not learned.
+    theta_delta : optional (3, 10) learned correction added to THETA
+        at inference. Provided by PolicyDeltaLearner. The hand-calibrated
+        THETA stays fixed; only this delta moves with training, and it
+        is bounded at 25 percent of each entry's initial magnitude so
+        the learned policy cannot drift more than a quarter away from
+        the domain priors.
 
     Returns
     -------
@@ -666,13 +667,14 @@ def select_action(
         # context_modifier (full / masked subset / zeroed) applied below.
         logits = THETA @ phi + gamma * tau + SLCA_BONUS + SLCA_RHO_BONUS * rho
 
-    # Learned forecast-column correction. ForecastWeightsLearner owns a
-    # (3, 3) delta trained via REINFORCE on phi[6:9]. It is zero-initialised
-    # and shrinks back toward zero under a Gaussian prior, so the default
-    # behaviour is bit-identical to the hand-calibrated policy until the
-    # learner observes enough reward signal.
-    if theta_forecast_delta is not None:
-        logits = logits + np.asarray(theta_forecast_delta) @ phi[6:9]
+    # Learned policy correction. PolicyDeltaLearner owns a (3, 10)
+    # delta trained via REINFORCE on the full phi with a 25 percent
+    # per-entry magnitude cap and sign constraint. Delta is
+    # zero-initialised and shrinks toward zero under a Gaussian prior,
+    # so the default behaviour is bit-identical to the hand-calibrated
+    # policy until the learner observes enough reward signal.
+    if theta_delta is not None:
+        logits = logits + np.asarray(theta_delta) @ phi
 
     if role_bias is not None:
         logits = logits + role_bias

@@ -5,11 +5,15 @@ Three learner classes:
 1. ``ContextMatrixLearner`` (primary): learns the full THETA_CONTEXT (3×5)
    weight matrix via REINFORCE policy gradient with sign constraints.
 
-2. ``ForecastWeightsLearner``: learns a (3, 3) additive correction
-   ΔΘ on the hand-calibrated forecast columns THETA[:, 6:9] via REINFORCE
-   with an empirical-Bayes Gaussian prior centred at zero. Forecast
-   channels without predictive value decay back to zero rather than
-   drifting; the hand-calibrated core (THETA[:, 0:6]) stays untouched.
+2. ``PolicyDeltaLearner``: learns a (3, 10) additive correction ΔΘ on
+   top of the hand-calibrated THETA matrix via REINFORCE with an
+   empirical-Bayes Gaussian prior centred at zero, a per-entry
+   magnitude cap at 25 percent of ``|THETA_initial|``, and an optional
+   sign constraint. Entries the hand-calibration set to zero are held
+   at zero; entries with strong priors can still move but only inside a
+   25-percent band around their initial value. Replaces the earlier
+   forecast-only learner by treating every THETA column as learnable
+   while anchoring the whole matrix on domain priors.
 
 3. ``ContextRuleLearner`` (legacy): per-feature scalar weights via
    exponential-weight bandit updates. Retained for backward compatibility.
@@ -18,21 +22,17 @@ The REINFORCE update for THETA_CONTEXT is:
 
     THETA_CONTEXT ← THETA_CONTEXT + η · (e_a − π) · ψ^T · (R − R̄)
 
-where e_a is the one-hot action vector, π is the softmax probability,
-ψ is the context feature vector, R is observed reward, and R̄ is the
-running baseline.
+The update for the policy delta is the same softmax-policy gradient
+over the full φ plus a shrinkage term and the magnitude/sign rails:
 
-The update for the forecast delta is the same softmax-policy gradient
-over φ[6:9] plus a shrinkage term so weights are pulled back to zero
-when there is no signal:
+    ΔΘ ← clip( (1 − η λ) · ΔΘ + η · (e_a − π) · φ^T · (R − R̄),
+               −cap · |Θ_initial|, +cap · |Θ_initial| )
 
-    ΔΘ ← (1 − η λ) · ΔΘ + η · (e_a − π) · φ[6:9]^T · (R − R̄)
-
-Sign constraints ensure that learned THETA_CONTEXT entries remain
-physically interpretable (e.g., compliance violations always disfavor
-cold chain). The forecast delta starts at zero and uses shrinkage
-rather than sign constraints because the channels are symmetric and we
-have no prior on the sign.
+Sign constraints keep learned weights physically interpretable (e.g.
+compliance violations always disfavor cold chain, freshness always
+favours cold chain). The 25 percent magnitude cap on its own already
+precludes sign flips for non-zero entries; the sign clamp is defence
+in depth for future cap-fraction changes.
 """
 from __future__ import annotations
 
@@ -229,65 +229,93 @@ class ContextMatrixLearner:
         self._history.clear()
 
 
-class ForecastWeightsLearner:
-    """Online REINFORCE learner for the forecast columns of THETA.
+class PolicyDeltaLearner:
+    """Online REINFORCE learner for the full policy matrix THETA (3, 10).
 
-    The base policy matrix THETA is shape (3, 9). Columns 0..5 encode
-    physics-and-operations features (freshness, inventory pressure,
-    demand signal, thermal stress, spoilage urgency, interaction) where
-    hand-calibrated priors are strong. Columns 6..8 encode the symmetric
-    supply-demand forecast channel (supply point, supply uncertainty,
-    demand uncertainty) where no strong prior exists. This learner
-    trains only the (3, 3) delta added to THETA[:, 6:9]; the
-    hand-calibrated core stays fixed.
+    Learns a (3, 10) additive correction delta on top of the
+    hand-calibrated THETA initial values. The hand-calibrated matrix
+    stays fixed; only the delta moves with training. Two safety rails
+    keep learning well-behaved so the ablation structure survives the
+    richer learner:
 
-    The update is standard REINFORCE on a softmax policy, applied only
-    to the forecast sub-block, with a zero-mean Gaussian prior
-    (equivalent to L2 weight decay) as an empirical-Bayes shrinkage
-    term. A forecast channel that carries no reward signal decays back
-    to zero with a half-life of roughly ``log(2) / (lr * prior_precision)``
-    update steps. A channel that does carry signal settles at a
-    non-trivial value determined by the data.
+    1. Per-entry magnitude cap: ``|delta[i, j]| <= cap_frac *
+       |initial_theta[i, j]|``. The default ``cap_frac = 0.25`` means
+       each entry can move at most 25 percent from its hand-calibrated
+       value. Entries with zero initial magnitude stay at zero (the
+       hand-calibration chose zero deliberately, learning respects that).
+    2. Sign constraint: entries whose effective sign would flip from the
+       initial sign get clamped back to zero. Preserves per-entry
+       interpretability (cold chain always rewards freshness, recovery
+       always punishes spoilage urgency). The 25 percent cap on its own
+       already precludes sign flips; the constraint is defence in depth
+       for future cap-fraction changes.
+
+    Delta is zero-initialised so step 0 is bit-identical to the
+    hand-calibrated policy. A zero-mean Gaussian prior on the delta
+    (equivalent to L2 weight decay) pulls entries with no reward signal
+    back toward zero with a half-life of ``log(2) / (lr * prior_precision)``
+    update steps. Entries that do carry signal settle at a non-trivial
+    value inside the magnitude cap.
 
     Parameters
     ----------
-    learning_rate : gradient step size. Small because phi[6:9] is
-        clipped to [-0.5, 0.5] and [0, 1] so the raw gradient magnitude
-        is already bounded; a modest step keeps updates stable.
+    initial_theta : (3, 10) hand-calibrated policy matrix. The learner
+        stores a copy and uses it as both the prior mean and the anchor
+        for the magnitude cap.
+    learning_rate : gradient step size. Small because phi entries are
+        clipped to known ranges so the raw gradient magnitude is already
+        bounded; a modest step keeps updates stable.
     prior_precision : lambda in the zero-mean Gaussian prior. Higher
         values pull the delta back to zero more aggressively.
     baseline_decay : exponential moving average decay for the reward
         baseline used for variance reduction.
     grad_clip : per-element gradient clipping bound.
-    delta_clip : maximum absolute value of any single entry of the
-        learned delta. Acts as a safety rail above and beyond the
-        shrinkage prior.
+    magnitude_cap_fraction : the fraction of ``|initial_theta|`` that
+        bounds each delta entry. Defaults to 0.25.
+    sign_constrained : when True (default), clamp entries whose
+        effective sign would flip from the initial sign.
     """
 
     def __init__(
         self,
+        initial_theta: np.ndarray,
         learning_rate: float = 0.003,
-        prior_precision: float = 0.05,
+        prior_precision: float = 0.10,
         baseline_decay: float = 0.95,
         grad_clip: float = 0.5,
-        delta_clip: float = 1.0,
+        magnitude_cap_fraction: float = 0.25,
+        sign_constrained: bool = True,
     ) -> None:
-        # ΔΘ starts at zero so the effective forecast columns at step 0
-        # are exactly the hand-calibrated THETA[:, 6:9].
-        self.theta_delta: np.ndarray = np.zeros((3, 3), dtype=np.float64)
+        if initial_theta.shape != (3, 10):
+            raise ValueError(
+                f"initial_theta must be shape (3, 10), got {initial_theta.shape}"
+            )
+        self.initial_theta: np.ndarray = initial_theta.astype(np.float64).copy()
+        # Delta starts at zero so the effective matrix at step 0 is exactly
+        # the hand-calibrated policy.
+        self.theta_delta: np.ndarray = np.zeros_like(self.initial_theta)
+
         self.lr = float(learning_rate)
         self.prior_precision = float(prior_precision)
         self.baseline_decay = float(baseline_decay)
         self.grad_clip = float(grad_clip)
-        self.delta_clip = float(delta_clip)
+        self.cap_fraction = float(magnitude_cap_fraction)
+        self.sign_constrained = bool(sign_constrained)
+
+        self._sign_mask = np.sign(self.initial_theta)
+        self._magnitude_bound = np.abs(self.initial_theta) * self.cap_fraction
 
         self.reward_baseline: float = 0.0
         self.n_updates: int = 0
         self._history: List[Dict[str, Any]] = []
 
     def get_theta_delta(self) -> np.ndarray:
-        """Current (3, 3) forecast-column correction added to THETA[:, 6:9]."""
+        """Current (3, 10) correction added to the hand-calibrated THETA."""
         return self.theta_delta.copy()
+
+    def get_effective_theta(self) -> np.ndarray:
+        """The hand-calibrated THETA plus the learned correction."""
+        return self.initial_theta + self.theta_delta
 
     def update(
         self,
@@ -296,12 +324,12 @@ class ForecastWeightsLearner:
         probs: np.ndarray,
         reward: float,
     ) -> None:
-        """REINFORCE gradient step with Gaussian-prior shrinkage.
+        """REINFORCE gradient step with shrinkage, magnitude cap, and
+        optional sign constraint.
 
         Parameters
         ----------
-        phi : (9,) full state feature vector from build_feature_vector.
-            Only phi[6:9] enters the gradient.
+        phi : (10,) full state feature vector from build_feature_vector.
         action : taken action index (0, 1, 2).
         probs : (3,) softmax probability vector at decision time.
         reward : observed scalar reward.
@@ -318,21 +346,33 @@ class ForecastWeightsLearner:
         )
         advantage = float(reward) - self.reward_baseline
 
-        phi_forecast = phi[6:9]  # (3,)
         e_a = np.zeros(3, dtype=np.float64)
         e_a[action] = 1.0
 
-        # Policy gradient on the forecast sub-block: (e_a - pi) ⊗ phi[6:9]
-        grad = np.outer(e_a - probs, phi_forecast) * advantage
+        # Policy gradient over the full (3, 10) matrix: (e_a - pi) ⊗ phi.
+        grad = np.outer(e_a - probs, phi) * advantage
         grad = np.clip(grad, -self.grad_clip, self.grad_clip)
 
-        # Shrinkage: equivalent to gradient step on the Gaussian log-prior.
-        # The closed-form combined update is (1 - lr*lambda) * delta + lr * grad.
+        # Shrinkage toward zero (Gaussian log-prior contribution).
         self.theta_delta *= (1.0 - self.lr * self.prior_precision)
         self.theta_delta += self.lr * grad
 
-        # Hard magnitude cap to rule out runaway updates on outlier rewards.
-        self.theta_delta = np.clip(self.theta_delta, -self.delta_clip, self.delta_clip)
+        # Per-entry magnitude cap. Entries with zero initial magnitude
+        # have zero bound, so they are held at zero (hand-calibration
+        # chose zero deliberately).
+        self.theta_delta = np.clip(
+            self.theta_delta, -self._magnitude_bound, self._magnitude_bound
+        )
+
+        # Sign constraint: zero out any entry whose effective value
+        # would flip sign from the initial. The 25 percent cap precludes
+        # this for non-zero entries in normal operation, so the
+        # constraint is defence in depth.
+        if self.sign_constrained:
+            effective = self.initial_theta + self.theta_delta
+            flipped = (effective * self._sign_mask) < 0.0
+            if np.any(flipped):
+                self.theta_delta[flipped] = 0.0
 
         self._history.append({
             "advantage": float(advantage),
@@ -344,9 +384,20 @@ class ForecastWeightsLearner:
         """Detailed statistics for paper reporting."""
         if self.n_updates == 0:
             max_entry = 0.0
+            max_fractional_entry = 0.0
             mean_adv = 0.0
         else:
             max_entry = float(np.abs(self.theta_delta).max())
+            # Fractional drift, per entry: |delta| / |initial|. Entries
+            # with zero initial are excluded from this stat (they cannot
+            # drift). A max close to cap_fraction means the learner is
+            # hitting the magnitude cap somewhere.
+            nonzero = np.abs(self.initial_theta) > 0
+            fractional = np.zeros_like(self.initial_theta)
+            fractional[nonzero] = (
+                np.abs(self.theta_delta[nonzero]) / np.abs(self.initial_theta[nonzero])
+            )
+            max_fractional_entry = float(fractional.max())
             mean_adv = (
                 float(np.mean([h["advantage"] for h in self._history]))
                 if self._history else 0.0
@@ -354,17 +405,21 @@ class ForecastWeightsLearner:
         return {
             "n_updates": self.n_updates,
             "final_theta_delta": self.theta_delta.tolist(),
+            "effective_theta": self.get_effective_theta().tolist(),
             "delta_frobenius_norm": float(np.linalg.norm(self.theta_delta)),
             "max_delta_entry": max_entry,
+            "max_fractional_drift": max_fractional_entry,
             "reward_baseline": float(self.reward_baseline),
             "mean_advantage": mean_adv,
             "learning_rate": self.lr,
             "prior_precision": self.prior_precision,
+            "magnitude_cap_fraction": self.cap_fraction,
+            "sign_constrained": self.sign_constrained,
         }
 
     def reset(self) -> None:
         """Reset learned delta, baseline, and history to their initial state."""
-        self.theta_delta = np.zeros_like(self.theta_delta)
+        self.theta_delta = np.zeros_like(self.initial_theta)
         self.reward_baseline = 0.0
         self.n_updates = 0
         self._history.clear()
@@ -379,21 +434,22 @@ class ForecastWeightsLearner:
             "n_updates": int(self.n_updates),
             "learning_rate": float(self.lr),
             "prior_precision": float(self.prior_precision),
+            "magnitude_cap_fraction": float(self.cap_fraction),
+            "sign_constrained": bool(self.sign_constrained),
         }
 
     def load_state(self, state: Dict[str, Any]) -> None:
         """Restore learnable state produced by :meth:`save_state`.
 
-        Hyperparameters in the saved state (``learning_rate``,
-        ``prior_precision``) are informational: the loaded learner keeps
-        whatever hyperparameters it was constructed with, so the trainer
-        can resume with different settings if desired. History is not
+        Hyperparameters in the saved state are informational: the loaded
+        learner keeps whatever settings it was constructed with, so the
+        trainer can resume with different configuration. History is not
         persisted.
         """
         theta_delta = np.asarray(state["theta_delta"], dtype=np.float64)
-        if theta_delta.shape != (3, 3):
+        if theta_delta.shape != (3, 10):
             raise ValueError(
-                f"state theta_delta shape {theta_delta.shape} must be (3, 3)"
+                f"state theta_delta shape {theta_delta.shape} must be (3, 10)"
             )
         self.theta_delta = theta_delta
         self.reward_baseline = float(state.get("reward_baseline", 0.0))

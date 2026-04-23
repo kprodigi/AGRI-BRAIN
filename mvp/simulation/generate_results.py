@@ -587,11 +587,11 @@ def run_episode(
         result["learner_summary"] = coordinator.learner_summary()
         result["evaluator_summary"] = coordinator.evaluator_summary()
 
-    # Forecast-column learner runs for every non-static mode, not just the
+    # Policy-delta learner runs for every non-static mode, not just the
     # context-enabled ones, so its summary lives outside the context block.
-    _forecast_summary = coordinator.forecast_learner_summary()
-    if _forecast_summary:
-        result["forecast_learner_summary"] = _forecast_summary
+    _theta_summary = coordinator.theta_learner_summary()
+    if _theta_summary:
+        result["theta_learner_summary"] = _theta_summary
 
         # Trace export for paper evidence
         if coordinator.trace_exporter is not None:
