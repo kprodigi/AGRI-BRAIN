@@ -120,8 +120,13 @@ _CONTEXT_ENABLED_MODES = {"agribrain", "mcp_only", "pirag_only", "no_yield"}
 # Modes that use agribrain logits for action selection
 _AGRIBRAIN_LOGIT_MODES = {"agribrain", "no_context", "mcp_only", "pirag_only", "no_yield"}
 
-# Modes where MCP compliance data feeds waste penalty
-_MCP_WASTE_MODES = {"agribrain", "mcp_only"}
+# Modes where MCP compliance data feeds waste penalty.
+# no_yield uses agribrain's full MCP stack with psi_5 (supply uncertainty)
+# suppressed; the check_compliance tool output is unaffected by the psi_5
+# mask, so no_yield must feed compliance into the waste penalty the same
+# way agribrain does. Otherwise the agribrain-vs-no_yield delta picks up
+# a waste-penalty gap that has nothing to do with psi_5.
+_MCP_WASTE_MODES = {"agribrain", "mcp_only", "no_yield"}
 
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 DATA_CSV = Path(os.environ.get("DATA_CSV", "")) if os.environ.get("DATA_CSV") else _BACKEND_SRC / "src" / "data_spinach.csv"
@@ -185,8 +190,12 @@ def apply_scenario(df: pd.DataFrame, name: str, policy: Policy,
 # ---------------------------------------------------------------------------
 # Single episode runner (orchestration only — calls Layer 1 models)
 # ---------------------------------------------------------------------------
-_PINN_MODES = {"agribrain", "no_slca", "no_context", "mcp_only", "pirag_only"}
-"""Modes that use PINN-enhanced spoilage prediction."""
+_PINN_MODES = {"agribrain", "no_slca", "no_context", "mcp_only", "pirag_only", "no_yield"}
+"""Modes that use PINN-enhanced spoilage prediction.
+
+no_yield is included because it shares agribrain's infrastructure; only
+psi_5 (supply uncertainty) is suppressed at the context-to-logits layer,
+not the spoilage prediction layer."""
 
 
 def run_episode(

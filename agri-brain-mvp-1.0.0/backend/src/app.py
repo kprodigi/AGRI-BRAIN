@@ -520,7 +520,7 @@ class DecideIn(BaseModel):
     role: str
     step: int | None = None          # optional row index (None → last row)
     deterministic: bool = True       # argmax when True, sample when False
-    mode: Literal["static", "hybrid_rl", "no_pinn", "no_slca", "agribrain", "no_context", "mcp_only", "pirag_only"] = "agribrain"
+    mode: Literal["static", "hybrid_rl", "no_pinn", "no_slca", "agribrain", "no_context", "mcp_only", "pirag_only", "no_yield"] = "agribrain"
 
 
 @API.post("/decide")
