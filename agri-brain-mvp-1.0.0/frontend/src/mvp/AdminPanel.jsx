@@ -109,8 +109,9 @@ export default function AdminPanel() {
         <div className="max-w-6xl mx-auto p-6 space-y-6">
             {!apiOk && (
                 <div className="p-3 rounded-md bg-red-100 text-red-700">
-                    API not reachable at <b>{API}</b>. Set it in your browser console with:
-                    <code className="ml-1">localStorage.setItem('API_BASE','http://127.0.0.1:8111')</code> then reload.
+                    API not reachable at <b>{API}</b>. The default backend port is <b>8100</b>.
+                    To override (for example, to point at a secondary instance on 8111), run in your browser console:
+                    <code className="ml-1">localStorage.setItem('API_BASE','http://127.0.0.1:8100')</code> then reload.
                 </div>
             )}
 

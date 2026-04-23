@@ -18,7 +18,18 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e agri-brain-mvp-1.0.0/backend
+      - name: Generate paper tables (single-seed fallback)
+        # The multi-seed aggregator refuses to run when no per-seed JSONs
+        # are present. On a clean checkout we produce the single-seed
+        # paper tables first so the aggregator has something to consume.
+        # BENCHMARK_USE_TABLES=true below makes the aggregator fall back
+        # to the tables produced by this step rather than requiring the
+        # full 20-seed directory (which only exists on the HPC run).
+        run: |
+          python mvp/simulation/generate_results.py
       - name: Run benchmark suite
+        env:
+          BENCHMARK_USE_TABLES: "true"
         run: |
           python mvp/simulation/benchmarks/run_benchmark_suite.py
       - name: Upload benchmark artifact

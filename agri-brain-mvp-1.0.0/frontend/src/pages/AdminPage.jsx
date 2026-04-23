@@ -623,8 +623,8 @@ export default function AdminPage() {
           <CardContent className="p-4 flex items-center gap-3 text-sm text-destructive">
             <AlertTriangle className="w-5 h-5 shrink-0" />
             <div>
-              API not reachable at <code className="font-mono">{API}</code>. Set it via{" "}
-              <code className="font-mono text-xs">localStorage.setItem('API_BASE','http://127.0.0.1:8111')</code> then reload.
+              API not reachable at <code className="font-mono">{API}</code>. The default backend port is 8100. To override (for example, to point at a secondary instance on 8111) run{" "}
+              <code className="font-mono text-xs">localStorage.setItem('API_BASE','http://127.0.0.1:8100')</code> then reload.
             </div>
           </CardContent>
         </Card>
