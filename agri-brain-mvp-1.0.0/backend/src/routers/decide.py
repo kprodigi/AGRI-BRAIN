@@ -331,6 +331,7 @@ def _decide_standalone(req: DecideRequest) -> dict:
                 "retrieval_confidence": round(float(_psi[2]), 3),
                 "regulatory_pressure": round(float(_psi[3]), 3),
                 "recovery_saturation": round(float(_psi[4]), 3),
+                "supply_uncertainty": round(float(_psi[5]), 3),
             },
             "logit_adjustment": {
                 "cold_chain": round(float(_modifier[0]), 3),

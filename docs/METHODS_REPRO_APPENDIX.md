@@ -45,13 +45,21 @@ REPRO_RUN_CONTEXT_BENCHMARK=true python mvp/simulation/reproduce_core.py
 ## 4) Statistical Methods
 
 - Unit of inference: paired per-seed comparisons between `agribrain` and each baseline.
+- Resampling budget matches `docs/STATISTICAL_METHODS.md`:
+  - Paired permutation test: 10,000 permutations
+  - Bootstrap CI: 10,000 resamples
 - Reported statistics per metric:
   - paired mean difference
-  - 95% bootstrap CI for paired mean difference
+  - 95 % bias-corrected accelerated bootstrap CI for paired mean difference
   - paired permutation p-value
-  - Benjamini-Hochberg adjusted p-value
+  - two multiplicity-adjusted p-values:
+    - `p_value_adj_holm`, Holm-Bonferroni across the five scenario-level primary H1
+      tests (`agribrain` vs `no_context` on ARI); canonical `p_value_adj` on those
+      primary records.
+    - `p_value_adj_bh`, Benjamini-Hochberg FDR within each scenario across all
+      `(baseline, metric)` pairs; canonical `p_value_adj` on non-primary records.
   - paired effect size (`cohens_dz`, with `cohens_d` alias for compatibility)
-- Multiple testing control: BH-FDR correction over scenario-baseline-metric families.
+  - `correction_method` naming the canonical adjustment used per record.
 - Deterministic mode use: reproducibility checks and exact pipeline gating.
 - Stochastic mode use: uncertainty estimation and inferential statistics.
 

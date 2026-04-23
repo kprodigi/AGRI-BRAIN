@@ -11,17 +11,35 @@ For each scenario, baseline, and metric:
 - Null hypothesis: paired seed-level mean difference between `agribrain` and baseline is zero.
 - Alternative hypothesis: paired seed-level mean difference is non-zero.
 
+The pre-registered primary hypothesis H1 is specifically `agribrain` vs `no_context`
+on ARI, tested once per scenario. The five resulting p-values form the primary
+family. All other `(baseline, metric)` comparisons are secondary.
+
 ## Tests and Effect Size
 
-- Paired permutation test for p-values (`paired_permutation_pvalue`).
-- Bootstrap confidence interval (95%) for paired mean difference.
+- Paired permutation test for p-values (`paired_permutation_pvalue`),
+  **10,000 permutations** per test.
+- Bias-corrected accelerated bootstrap 95 % confidence interval for the paired mean
+  difference, **10,000 resamples**.
 - Paired effect size `cohens_dz` computed on per-seed differences.
 - Mean difference reported as `E[agribrain - baseline]`.
 
 ## Multiple Testing Control
 
-- Benjamini-Hochberg FDR correction is applied to the family of p-values for each scenario-baseline set across metrics.
-- Report both raw `p_value` and adjusted `p_value_adj`.
+Two-level multiplicity control:
+
+1. **Primary H1 family** (5 tests, one per scenario, `agribrain` vs `no_context` on
+   ARI): **Holm-Bonferroni** step-down correction. Matches the paper's
+   pre-registered multiplicity control and controls the family-wise error rate.
+   The canonical `p_value_adj` on the five primary records uses this correction,
+   and the same value also appears as `p_value_adj_holm`.
+2. **Secondary family** (within each scenario: all baselines × all metrics, 6×6 = 36
+   tests): **Benjamini-Hochberg FDR** correction applied per scenario.
+   Reported as `p_value_adj_bh` on every record and as the canonical `p_value_adj`
+   on non-primary records.
+
+Every record additionally carries a `correction_method` field with the method
+name (`"holm_bonferroni_across_scenarios"` or `"bh_fdr_within_scenario"`).
 
 ## Alpha and Interpretation
 

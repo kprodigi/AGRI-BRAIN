@@ -44,23 +44,27 @@ REINFORCE learning for sustainable food logistics.
 
 ## Architecture Highlights
 
-- **MCP interoperability layer** with 12 registered tools, 13 resources, and 5 prompts
+- **MCP interoperability layer** with 13 statically registered tools and 5 additional
+  runtime role-capability tools (18 at simulation time), plus 13 resources and 5 prompts,
   accessible through JSON-RPC 2.0 protocol with InProcess, Stdio, and SSE transports
 - **Physics-informed RAG (piRAG)** with 20-document knowledge base, BM25+TF-IDF hybrid
   retrieval (k=4, 20% retrieval ratio), physics-aware query expansion, and Arrhenius-based
   reranking that surfaces different documents under different physical conditions
 - **Causal explanation engine** producing BECAUSE/WITHOUT reasoning with inline [KB:]
   citations, counterfactual probability comparisons, and Merkle-rooted provenance chains
-- **8 operating modes** for systematic ablation: static, hybrid RL, no PINN, no SLCA,
-  no context, MCP only, piRAG only, and full AGRI-BRAIN
+- **9 operating modes** for systematic ablation: static, hybrid RL, no PINN, no SLCA,
+  no context, MCP only, piRAG only, **no yield** (Path B ablation suppressing the supply
+  uncertainty feature), and full AGRI-BRAIN
 - **LSTM demand forecaster** (numpy-only, 16 hidden units, truncated BPTT)
   with Holt-Winters fallback controlled by `FORECAST_METHOD` env var
-- **Holt-Winters yield/supply forecaster** for inventory projection
+- **Holt-Winters yield/supply forecaster** for inventory projection; the supply
+  uncertainty derived from its coefficient of variation enters the routing context
+  as ψ_5 via the `yield_query` MCP tool (Path B)
 - **5-agent coordinator** (Farm, Processor, Cooperative, Distributor, Recovery)
   dispatching decisions at lifecycle-stage boundaries
-- **Context feature integration** via 5D feature vector (compliance severity, forecast
-  urgency, retrieval confidence, regulatory pressure, recovery saturation) with learned
-  THETA_CONTEXT weight matrix and SLCA bonus amplification
+- **Context feature integration** via 6D feature vector (compliance severity, forecast
+  urgency, retrieval confidence, regulatory pressure, recovery saturation, supply
+  uncertainty) with learned Θ_context ∈ ℝ^(3×6) weight matrix and SLCA bonus amplification
 - **MCP governance override** that mandates rerouting under simultaneous critical
   compliance violation and high spoilage forecast
 - **Online REINFORCE learning** of context weights with sign constraints preserving
@@ -91,12 +95,12 @@ Modern React dashboard built with shadcn/ui, featuring eight pages:
 |------|-------------|
 | **Operations** | KPI bento grid, real-time telemetry charts with temperature zones, spoilage & yield preview |
 | **Quality** | Circular spoilage risk gauge, shelf-life countdown, IoT sensor charts, PINN vs ODE comparison |
-| **Decisions** | Timeline view with role/action filters, decision cards with expandable MCP/piRAG explainability panels (causal BECAUSE/WITHOUT reasoning, 5-axis context feature radar chart, extracted keyword tags, Merkle-rooted provenance chains), analytics sidebar with pie chart, CSV/PDF export |
+| **Decisions** | Timeline view with role/action filters, decision cards with expandable MCP/piRAG explainability panels (causal BECAUSE/WITHOUT reasoning, 6-axis context feature radar chart, extracted keyword tags, Merkle-rooted provenance chains), analytics sidebar with pie chart, CSV/PDF export |
 | **Map** | Leaflet map of South Dakota supply chain nodes with route overlays and live KPI popups |
 | **Analytics** | Executive summary banner, interactive cross-scenario tables & charts, ablation study, radar profiles, scenario deep-dive gallery, carbon footprint analysis |
 | **MCP/piRAG** | MCP protocol overview, context feature visualization, knowledge base browser, protocol traces, causal reasoning panel |
 | **Demo** | Interactive system demo with live pipeline walkthrough and agent decision theater |
-| **Admin** | Seven tabs — Policy parameters, Blockchain status & config, Audit log, Scenario runner, Quick Decision, Runtime config, MCP Explorer (tool browser with 12 tools, live resource monitor, prompt template browser, live tool invocation with presets, piRAG knowledge base search, JSON-RPC protocol interaction log) |
+| **Admin** | Seven tabs — Policy parameters, Blockchain status & config, Audit log, Scenario runner, Quick Decision, Runtime config, MCP Explorer (tool browser with 13 statically registered tools, live resource monitor, prompt template browser, live tool invocation with presets, piRAG knowledge base search, JSON-RPC protocol interaction log) |
 
 **Tech stack:** React 18, React Router 7, shadcn/ui (Radix), Tailwind CSS, Recharts, React-Leaflet, Framer Motion, Sonner toasts, Vite 7
 
@@ -137,9 +141,40 @@ curl http://localhost:8100/health                # {"ok":true}
 
 ```bash
 cd mvp/simulation
-python generate_results.py    # 5 scenarios x 8 modes (40 episodes)
+python generate_results.py    # 5 scenarios x 9 modes (45 episodes)
 python generate_figures.py    # publication figures (Fig. 2-10, PNG + PDF)
 ```
+
+### HPC benchmark
+
+The 20-seed stochastic benchmark (5 × 9 × 20 = 900 episodes plus aggregation
+and figure generation) is submitted through three SLURM scripts at the repo
+root. From the HPC login node:
+
+```bash
+bash hpc_run.sh
+```
+
+This orchestrator:
+
+1. Creates `.venv` if absent, installs the backend package, and runs a
+   Path B load assertion (fails fast if the resolver pulled a broken
+   combination).
+2. Computes `RUN_TAG=$(git rev-parse --short HEAD)_$(date +%Y%m%d_%H%M)`.
+3. Submits `hpc_seed.sh` as a 20-task array, one seed per task
+   (`--time=06:00:00`, `--mem=8G`, `--cpus-per-task=4`).
+4. Submits `hpc_aggregate.sh` with `--dependency=afterok:<seed_job>`
+   (`--time=08:00:00`, `--mem=16G`). The aggregator runs Stages 1-10:
+   base table generation, validation, both context-ablation and canonical
+   multi-seed aggregators, stress suite, figures, paper-evidence export,
+   manifest, and final validation.
+5. Writes `hpc_results_<RUN_TAG>.tar.gz` on completion. Transfer with
+   `scp <hpc-host>:$PWD/hpc_results_<RUN_TAG>.tar.gz .` and untar into the
+   results tree.
+
+End-to-end wall time is typically 6-10 h with scheduler queueing. See
+`docs/path_b/final_pre_hpc_check_2026-04-22.md` for the 42-check pre-HPC
+verification report.
 
 ## Environment Variables
 
@@ -244,7 +279,7 @@ AGRI-BRAIN/
           resources.py          # MCP resource definitions (telemetry, context, quality)
           prompts.py            # Parameterized query templates with scenario terms
           server.py             # FastAPI REST wrapper for MCP protocol
-          tools/                # 12 MCP tool implementations
+          tools/                # 13 statically registered MCP tools
             compliance.py       # FDA temperature/humidity compliance check
             slca_lookup.py      # SLCA weight and score lookup
             chain_query.py      # Blockchain audit trail query
@@ -257,10 +292,11 @@ AGRI-BRAIN/
             units.py            # Unit conversion
             simulator.py        # Forward simulation proxy
             policy_oracle.py    # Governance access check
+            yield_query.py      # Holt-Winters supply/yield forecast (Path B)
         pyrag/                  # Hybrid BM25+dense retriever
-        guards/                 # Unit and feasibility guards
+        guards/                 # Unit, feasibility, and retrieval-quality guards
         provenance/             # Merkle tree + on-chain anchoring
-        tests/                  # 59 tests covering all MCP/piRAG components
+        tests/                  # Pytest suite covering all MCP/piRAG components
     frontend/
       src/
         pages/                  # Ops, Quality, Decisions, Map, Analytics, Admin
@@ -316,9 +352,9 @@ AGRI-BRAIN/
 | Task | Time |
 |------|------|
 | Quick smoke test (`DETERMINISTIC_MODE=true`, 1 seed) | ~5 min |
-| Single full run (5 scenarios x 8 modes) | ~15 min |
-| Full 20-seed benchmark pipeline | ~60 min |
-| Complete reproduction including stress tests | ~90 min |
+| Single full run (5 scenarios x 9 modes) | ~15-20 min |
+| Full 20-seed benchmark pipeline | ~90 min (local) / 3-5 h (HPC array) |
+| Complete reproduction including stress tests | ~2 h (local) / 6-10 h (HPC end-to-end) |
 
 ## Dataset
 

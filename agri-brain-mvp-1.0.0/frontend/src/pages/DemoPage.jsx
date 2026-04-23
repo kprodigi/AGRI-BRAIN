@@ -42,6 +42,7 @@ const FEATURE_LABELS = [
   { key: "retrieval_confidence",label: "Retrieval",  color: "#3b82f6" },
   { key: "regulatory_pressure", label: "Regulatory", color: "#a855f7" },
   { key: "recovery_saturation", label: "Recovery",   color: "#22c55e" },
+  { key: "supply_uncertainty",  label: "Supply",     color: "#14b8a6" },
 ];
 
 const SCENARIOS = [
@@ -61,7 +62,7 @@ const PHASES = [
   { icon: Network,     label: "Agent Dispatch",       color: "border-violet-500",  bg: "bg-violet-500/10",  desc: "AgentCoordinator selects role-specific agent based on hours since harvest" },
   { icon: Wrench,      label: "MCP Tool Workflow",    color: "border-orange-500",  bg: "bg-orange-500/10",  desc: "JSON-RPC 2.0 tool dispatch: compliance, forecast, SLCA, chain query, footprint" },
   { icon: BookOpen,    label: "piRAG Retrieval",      color: "border-blue-500",    bg: "bg-blue-500/10",    desc: "Physics-informed BM25+TF-IDF hybrid retrieval (k=4) with Arrhenius-based reranking" },
-  { icon: Layers,      label: "Context Features (ψ)", color: "border-teal-500",    bg: "bg-teal-500/10",    desc: "Extract 5D context vector from MCP + piRAG outputs → Θ_context × ψ → logit modifier" },
+  { icon: Layers,      label: "Context Features (ψ)", color: "border-teal-500",    bg: "bg-teal-500/10",    desc: "Extract 6D context vector from MCP + piRAG outputs (compliance, forecast, retrieval, regulatory, recovery saturation, supply uncertainty) → Θ_context × ψ → logit modifier" },
   { icon: Brain,       label: "Policy Network",       color: "border-purple-500",  bg: "bg-purple-500/10",  desc: "Softmax contextual policy: logits = Θ×φ + γ·τ + SLCA bonus + role bias + context modifier" },
   { icon: CheckCircle2,label: "Action Selection",     color: "border-emerald-500", bg: "bg-emerald-500/10", desc: "Softmax π(a|s) sampling from adjusted probability distribution over 3 routing actions" },
   { icon: Shield,      label: "SLCA & Impact",        color: "border-cyan-500",    bg: "bg-cyan-500/10",    desc: "4-pillar Social Life-Cycle Assessment (Carbon, Labor, Resilience, Transparency) + footprint" },

@@ -89,6 +89,7 @@ class DecisionTrace:
 _FEATURE_NAMES = [
     "compliance_severity", "forecast_urgency",
     "retrieval_confidence", "regulatory_pressure", "recovery_saturation",
+    "supply_uncertainty",
 ]
 
 

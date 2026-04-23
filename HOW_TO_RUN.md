@@ -190,16 +190,16 @@ Make sure the backend is running and data is loaded before using the dashboard.
 |-----|------|-------------|
 | `/` | Operations | KPI cards (records, temperature, anomalies, waste rate), real-time telemetry line charts with safe/warning/critical temperature zones, spoilage & yield area chart |
 | `/quality` | Quality | Circular spoilage risk gauge, shelf-life countdown timer, current sensor readings, IoT temperature/humidity charts, PINN vs ODE spoilage comparison |
-| `/decisions` | Decisions | Decision timeline with action badges, filters by role and action type, search, decision analytics sidebar with pie chart, CSV export, PDF report. Each decision card has an expandable Explainability Panel showing: causal BECAUSE/WITHOUT reasoning with highlighted keywords, 5-axis context feature radar chart with logit adjustment bars, categorized keyword tags (thresholds, regulations, required actions), and Merkle-rooted provenance chain with SHA-256 evidence hashes |
+| `/decisions` | Decisions | Decision timeline with action badges, filters by role and action type, search, decision analytics sidebar with pie chart, CSV export, PDF report. Each decision card has an expandable Explainability Panel showing: causal BECAUSE/WITHOUT reasoning with highlighted keywords, 6-axis context feature radar chart (compliance, forecast, retrieval, regulatory, recovery saturation, supply uncertainty) with logit adjustment bars, categorized keyword tags (thresholds, regulations, required actions), and Merkle-rooted provenance chain with SHA-256 evidence hashes |
 | `/map` | Map | Leaflet map centered on South Dakota with 4 supply chain nodes (farm, processor, cooperative, recovery) and route overlays showing cold chain, redistribution, and recovery paths |
 | `/analytics` | Analytics | Executive summary with 5 hero metrics, Table 1 (cross-scenario) and Table 2 (ablation study), grouped bar charts, radar chart, method comparison, scenario deep-dive gallery with figures, carbon footprint analysis, full simulation runner |
 | `/mcp-pirag` | MCP/piRAG | MCP protocol overview, context feature visualization, knowledge base browser, protocol traces, causal reasoning panel |
 | `/demo` | Demo | Interactive system demo with live pipeline walkthrough and agent decision theater |
-| `/admin` | Admin Panel | Seven tabs: Policy (routing/carbon/SLCA parameters), Blockchain (RPC status, config), Audit (searchable log table with expandable rows), Scenarios (5 scenario cards with intensity slider), Quick Decision (role selector + instant decision), Runtime config, MCP Explorer (tool browser with 12 grouped tools, live resource monitor with 5s auto-refresh, prompt template browser with parameter forms, live tool invocation with presets for compliance/piRAG/explain, piRAG knowledge base search with physics-informed retrieval, JSON-RPC protocol interaction log) |
+| `/admin` | Admin Panel | Seven tabs: Policy (routing/carbon/SLCA parameters), Blockchain (RPC status, config), Audit (searchable log table with expandable rows), Scenarios (5 scenario cards with intensity slider), Quick Decision (role selector + instant decision), Runtime config, MCP Explorer (tool browser with 13 statically registered tools, live resource monitor with 5s auto-refresh, prompt template browser with parameter forms, live tool invocation with presets for compliance/piRAG/explain, piRAG knowledge base search with physics-informed retrieval, JSON-RPC protocol interaction log) |
 
 ### Features
 
-- **Explainability Panel**: Each decision card on the Decisions page has a "Show explanation" button that reveals causal reasoning (BECAUSE/WITHOUT), a 5-axis context feature radar chart, categorized keyword tags from piRAG retrieval, and a Merkle-rooted provenance chain.
+- **Explainability Panel**: Each decision card on the Decisions page has a "Show explanation" button that reveals causal reasoning (BECAUSE/WITHOUT), a 6-axis context feature radar chart (ψ_0..ψ_5, including Path B supply uncertainty), categorized keyword tags from piRAG retrieval, and a Merkle-rooted provenance chain.
 - **MCP Explorer**: The Admin panel's MCP tab provides an interactive tool browser, live resource monitor, prompt template expander, tool invocation console with presets, piRAG knowledge base search, and a JSON-RPC protocol interaction log.
 - **Dark mode**: Toggle via the sun/moon icon in the header. Persists in localStorage.
 - **WebSocket**: Real-time connection indicator ("Live" badge) in the header. Auto-reconnects.
@@ -293,7 +293,7 @@ curl http://127.0.0.1:8100/audit/memo.pdf -o memo.pdf
 ### Simulation results (via backend)
 
 ```bash
-# Start simulation in background (5 scenarios x 8 modes, typically 3-10 min)
+# Start simulation in background (5 scenarios x 9 modes, typically 4-15 min)
 curl -X POST http://127.0.0.1:8100/results/generate
 
 # Poll progress
@@ -314,7 +314,7 @@ curl -X POST http://127.0.0.1:8100/mcp/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","clientInfo":{"name":"test-client","version":"1.0.0"}}}'
 
-# List available tools (12 tools including pirag_query, explain, context_features)
+# List available tools (13 static tools including pirag_query, explain, context_features, yield_query)
 curl -X POST http://127.0.0.1:8100/mcp/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
@@ -399,8 +399,12 @@ done
 
 ## 6. Run standalone simulation and generate figures
 
-The standalone simulation runs all 5 scenarios x 8 modes (40 episodes)
-and produces publication-quality results.
+The standalone simulation runs all 5 scenarios x 9 modes (45 episodes)
+and produces publication-quality results. The ninth mode is the Path B
+ablation (`no_yield`) that suppresses the ψ_5 supply-uncertainty feature
+while keeping the rest of the context pipeline intact, so the
+agribrain-vs-no_yield delta isolates the contribution of the Holt-Winters
+yield forecaster to the routing policy.
 
 ```bash
 cd AGRI-BRAIN/mvp/simulation
@@ -419,7 +423,7 @@ Results are saved to `mvp/simulation/results/`:
 | File                   | Description                                       |
 |------------------------|---------------------------------------------------|
 | `table1_summary.csv`     | Per-scenario metrics (3 methods x 5 scenarios)              |
-| `table2_ablation.csv`    | Full ablation study (8 modes x 5 scenarios)                 |
+| `table2_ablation.csv`    | Full ablation study (9 modes x 5 scenarios, including no_yield) |
 | `benchmark_summary.json` | Multi-seed benchmark means/std/CI                           |
 | `benchmark_significance.json` | Permutation-test p-values and effect sizes            |
 | `stress_summary.json`    | Stress-suite per-scenario robustness output                 |
@@ -432,12 +436,87 @@ Results are saved to `mvp/simulation/results/`:
 | `fig4_cyber.png/pdf`     | Cyber outage scenario comparison (1x3 panel)                |
 | `fig5_pricing.png/pdf`   | Adaptive pricing scenario comparison (2x2 panel)            |
 | `fig6_cross.png/pdf`     | Cross-scenario performance comparison (2x2 grouped bars)    |
-| `fig7_ablation.png/pdf`  | Ablation study (1x3 grouped bars, 8 modes)                  |
+| `fig7_ablation.png/pdf`  | Ablation study (1x3 grouped bars, 9 modes)                  |
 | `fig8_green_ai.png/pdf`  | Green AI and carbon footprint (1x2 panel)                   |
 | `fig9_mcp_pirag_robustness.png/pdf` | MCP/piRAG robustness and benchmark CIs         |
 | `fig10_latency_quality_frontier.png/pdf` | Quality-latency operational frontier       |
 
 Each figure is also saved as PDF for LaTeX inclusion.
+
+---
+
+## 6b. Run the 20-seed benchmark on HPC (SLURM)
+
+The stochastic multi-seed benchmark (5 scenarios × 9 modes × 20 seeds =
+900 episodes, plus aggregation, stress suite, figures, and the paper
+evidence pipeline) is built for a SLURM cluster. Three scripts live at
+the repo root:
+
+| Script | Role |
+|---|---|
+| `hpc_run.sh` | Orchestrator run on the login node. Sets up `.venv`, computes `RUN_TAG`, submits the seed array and the dependent aggregation job. |
+| `hpc_seed.sh` | SLURM array task (`--array=0-19`). One seed per task. Writes `mvp/simulation/results/benchmark_seeds/<RUN_TAG>/seed_<N>.json`. 6 h / 8 GB / 4 CPU per task. |
+| `hpc_aggregate.sh` | Single SLURM task chained via `--dependency=afterok`. Runs Stages 1-10 (base tables, validation, both aggregators, stress suite, figures, paper evidence, manifest). 8 h / 16 GB / 4 CPU. |
+
+### Submit
+
+From the HPC login node, in the repo root:
+
+```bash
+bash hpc_run.sh
+```
+
+That script will:
+
+1. Create `.venv` if absent; `pip install -e agri-brain-mvp-1.0.0/backend`.
+2. Run the login-node Path B load assertion (fails fast if the resolver
+   pulled a broken package combination).
+3. Compute `RUN_TAG=$(git rev-parse --short HEAD)_$(date +%Y%m%d_%H%M)`.
+4. Submit `hpc_seed.sh`, then `hpc_aggregate.sh` with
+   `--dependency=afterok:<seed_job>` so aggregation runs only if every
+   seed task succeeded.
+
+### Monitor
+
+```bash
+squeue -u $USER
+tail -f logs/seed_<job_id>_0.out
+tail -f logs/aggregate_<job_id>.out
+```
+
+### Output
+
+On success the aggregator writes `hpc_results_<RUN_TAG>.tar.gz` in the
+repo root, including the canonical summary/significance JSONs, Table 1
+and Table 2 CSVs, stress suite outputs, Figure 2-10 PNG+PDF, artifact
+manifest, and the per-seed JSON directory. Transfer back with:
+
+```bash
+scp <hpc-host>:$PWD/hpc_results_<RUN_TAG>.tar.gz .
+tar xzf hpc_results_<RUN_TAG>.tar.gz
+```
+
+### Wall time
+
+Each array task is ~2 h on a modern HPC node (5× laptop speedup assumed,
+45 cells per seed × ~159 s/cell). Array wall-clock is scheduler-limited
+but typically 2-4 h with all 20 tasks running concurrently. Aggregation
+runs ~3-4 h. End-to-end: 6-10 h from `bash hpc_run.sh` to the archive.
+
+### Pre-HPC verification
+
+Before submitting, run the pre-HPC check locally:
+
+```bash
+# default CI-speed tests
+cd agri-brain-mvp-1.0.0/backend && pytest -q
+
+# opt-in full mode x scenario matrix (slow; ~10 min)
+pytest -m slow
+```
+
+See `docs/path_b/final_pre_hpc_check_2026-04-22.md` for the 42-check
+report recorded at the last successful verification.
 
 ---
 
