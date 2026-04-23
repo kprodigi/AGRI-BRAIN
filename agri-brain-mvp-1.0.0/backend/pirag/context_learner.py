@@ -127,8 +127,12 @@ class ContextMatrixLearner:
             flipped = (self.theta * self.sign_mask) < 0
             self.theta[flipped] = 0.0
 
-        # Magnitude constraint: no entry exceeds 2x initial magnitude
-        max_mag = np.maximum(np.abs(self.initial_theta) * 2.0, 0.10)
+        # Magnitude constraint: cap each entry at its initial absolute value,
+        # matching paper Section 3.9 ("caps each entry at its initial absolute
+        # value, preventing runaway updates"). Entries with zero initial
+        # magnitude are held at zero so sign-constrained learning cannot
+        # conjure a direction from noise.
+        max_mag = np.abs(self.initial_theta)
         self.theta = np.clip(self.theta, -max_mag, max_mag)
 
         # Update SLCA amplification coefficient

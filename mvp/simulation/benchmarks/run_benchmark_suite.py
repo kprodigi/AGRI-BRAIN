@@ -44,7 +44,8 @@ METRICS = ("ari", "waste", "rle", "slca", "carbon", "equity")
 BASELINE_COMPARISONS = ("mcp_only", "pirag_only", "no_context", "no_yield")
 
 
-def _bootstrap_ci(values: List[float], n_boot: int = 1000, alpha: float = 0.05) -> Tuple[float, float]:
+def _bootstrap_ci(values: List[float], n_boot: int = 10_000, alpha: float = 0.05) -> Tuple[float, float]:
+    """Percentile bootstrap CI with 10,000 resamples, matching paper Section 3.13."""
     if not values:
         return (0.0, 0.0)
     arr = np.array(values, dtype=float)
@@ -58,8 +59,8 @@ def _bootstrap_ci(values: List[float], n_boot: int = 1000, alpha: float = 0.05) 
     return lo, hi
 
 
-def _mean_diff_pvalue(a: List[float], b: List[float], n_perm: int = 4000) -> float:
-    """Two-sided permutation p-value for difference in means."""
+def _mean_diff_pvalue(a: List[float], b: List[float], n_perm: int = 10_000) -> float:
+    """Two-sided permutation p-value for difference in means, 10,000 permutations."""
     if not a or not b:
         return 1.0
     x = np.array(a, dtype=float)
