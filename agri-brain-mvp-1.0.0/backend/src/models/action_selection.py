@@ -265,7 +265,7 @@ Without SLCA feedback, the system defaults toward cold chain the "safe"
 choice, since it cannot assess social value of alternatives.
 """
 
-GOVERNANCE_CC_PROB_CEILING: float = 0.05
+GOVERNANCE_CC_PROB_CEILING: float = 0.170329
 """Upper bound on pi(cold_chain) that triggers the governance override.
 
 When the softmax probability of cold-chain falls below this ceiling AND
@@ -274,26 +274,30 @@ pi(local_redistribute) exceeds pi(cold_chain) by
 redistribution. Stated in probability space rather than raw logits so
 the condition is auditable without reference to the rest of the
 distribution: regulators can verify the policy "overrides when
-confidence in cold-chain is below 5 percent."
+confidence in cold-chain is in the bottom five percent of the
+calibration distribution."
 
-Default derivation: the 5th percentile of pi(cold_chain) observed
-across benchmark-scenario rollouts at decision points where the policy
-eventually selected cold-chain. See
-:func:`calibrate_governance_thresholds` for the helper that recomputes
-this value from a rollout probability array so the calibration is
-scripted rather than hand-picked.
+Derivation: 5th percentile of pi(cold_chain) measured across 240
+decisions over the five benchmark scenarios (heatwave, overproduction,
+cyber_outage, adaptive_pricing, baseline) running full agribrain. See
+``agri-brain-mvp-1.0.0/backend/scripts/calibrate_governance.py`` for
+the calibration driver, and
+``mvp/simulation/results/governance_calibration.json`` for the report
+this value came from. Recompute by rerunning the script any time the
+state vector, theta weights, or scenario set changes materially.
 """
 
-GOVERNANCE_LOCAL_ADVANTAGE_MIN: float = 0.50
+GOVERNANCE_LOCAL_ADVANTAGE_MIN: float = 0.394268
 """Minimum pi(local_redistribute) - pi(cold_chain) gap that, together
 with the :data:`GOVERNANCE_CC_PROB_CEILING` condition, fires the
 governance override.
 
-Default derivation: the median of (pi(local) - pi(cold_chain))
-observed across rollouts where the context modifier pushed the policy
-away from cold-chain. A median is used rather than a lower quantile so
-the override requires unambiguous dominance of local-redistribute, not
-merely any preference over cold-chain.
+Derivation: median of (pi(local) - pi(cold_chain)) observed in the
+same 240-decision calibration run that fixed
+``GOVERNANCE_CC_PROB_CEILING``. Median (not lower quantile) so the
+override requires unambiguous dominance of local-redistribute, not any
+preference over cold-chain. See
+``agri-brain-mvp-1.0.0/backend/scripts/calibrate_governance.py``.
 """
 
 
