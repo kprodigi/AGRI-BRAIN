@@ -237,8 +237,14 @@ The PINN spoilage prediction enables proactive rerouting of at-risk produce.
 Moderate magnitude prevents overcompensation under stress.
 """
 
-NOPINN_SLCA_SCALE: float = 0.5
-"""Scaling factor for no_pinn mode's SLCA bonus (degraded spoilage prediction)."""
+# NOPINN_SLCA_SCALE was a 0.5x SLCA-bonus attenuation applied only in
+# no_pinn mode. It was removed so no_pinn measures PINN's effect in
+# isolation: the simulator routes rho through plain Arrhenius
+# (compute_spoilage) instead of compute_spoilage_pinn (gated by
+# _PINN_MODES in mvp/simulation/generate_results.py), and the SLCA
+# reward shape stays identical to agribrain. The previous combined
+# ablation conflated "no PINN spoilage correction" with "halved SLCA
+# reward signal" and was not a clean attribution of the PINN component.
 
 NO_SLCA_OFFSET: np.ndarray = np.array([0.6, -0.3, -0.4])
 """Logit offset for no_slca mode (conservative, CC-heavy routing).
@@ -533,8 +539,12 @@ def select_action(
         logits = THETA @ phi + gamma * tau
 
     elif mode == "no_pinn":
-        slca_total = (SLCA_BONUS + SLCA_RHO_BONUS * rho) * NOPINN_SLCA_SCALE
-        logits = THETA @ phi + gamma * tau + slca_total
+        # Same logit construction as agribrain. The PINN ablation lives
+        # entirely in spoilage-risk computation upstream: the simulator
+        # routes rho through compute_spoilage instead of
+        # compute_spoilage_pinn, so phi[0], phi[4], phi[5] differ but the
+        # reward-shaping terms here stay aligned with the full system.
+        logits = THETA @ phi + gamma * tau + SLCA_BONUS + SLCA_RHO_BONUS * rho
 
     elif mode == "no_slca":
         logits = THETA @ phi + gamma * tau + NO_SLCA_OFFSET
