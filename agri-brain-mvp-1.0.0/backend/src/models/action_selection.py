@@ -253,21 +253,91 @@ Without SLCA feedback, the system defaults toward cold chain the "safe"
 choice, since it cannot assess social value of alternatives.
 """
 
-GOVERNANCE_CC_LOGIT_CEILING: float = -2.0
-"""Upper bound on the cold-chain logit that triggers a governance override.
+GOVERNANCE_CC_PROB_CEILING: float = 0.05
+"""Upper bound on pi(cold_chain) that triggers the governance override.
 
-When cumulative evidence pushes logit[0] below this ceiling, the cold chain
-has become strongly unsafe relative to the local-redistribute option. The
-threshold is paired with GOVERNANCE_LOCAL_MARGIN.
+When the softmax probability of cold-chain falls below this ceiling AND
+pi(local_redistribute) exceeds pi(cold_chain) by
+``GOVERNANCE_LOCAL_ADVANTAGE_MIN``, the override mandates local
+redistribution. Stated in probability space rather than raw logits so
+the condition is auditable without reference to the rest of the
+distribution: regulators can verify the policy "overrides when
+confidence in cold-chain is below 5 percent."
+
+Default derivation: the 5th percentile of pi(cold_chain) observed
+across benchmark-scenario rollouts at decision points where the policy
+eventually selected cold-chain. See
+:func:`calibrate_governance_thresholds` for the helper that recomputes
+this value from a rollout probability array so the calibration is
+scripted rather than hand-picked.
 """
 
-GOVERNANCE_LOCAL_MARGIN: float = 3.0
-"""Minimum logit advantage of local-redistribute over cold-chain needed to
-fire the governance override.
+GOVERNANCE_LOCAL_ADVANTAGE_MIN: float = 0.50
+"""Minimum pi(local_redistribute) - pi(cold_chain) gap that, together
+with the :data:`GOVERNANCE_CC_PROB_CEILING` condition, fires the
+governance override.
 
-Paired with GOVERNANCE_CC_LOGIT_CEILING. Both conditions must hold so that
-the override fires only under unambiguous context pressure.
+Default derivation: the median of (pi(local) - pi(cold_chain))
+observed across rollouts where the context modifier pushed the policy
+away from cold-chain. A median is used rather than a lower quantile so
+the override requires unambiguous dominance of local-redistribute, not
+merely any preference over cold-chain.
 """
+
+
+def calibrate_governance_thresholds(
+    prob_rollouts: np.ndarray,
+    cc_quantile: float = 0.05,
+    local_quantile: float = 0.50,
+) -> dict[str, float]:
+    """Derive governance thresholds from a rollout probability distribution.
+
+    The project's paper-facing story is that governance override thresholds
+    have statistical provenance rather than being hand-picked numbers. This
+    helper implements the calibration step:
+
+    1. Run the simulator over benchmark scenarios with the override
+       disabled (or with the previous thresholds) and collect the full
+       sequence of policy probability vectors at every decision point.
+    2. Pass the stacked (N, 3) probability array to this function.
+    3. It returns the ceiling (``cc_prob_ceiling``) and advantage floor
+       (``local_advantage_min``) at the chosen quantiles.
+    4. Write the returned values into
+       :data:`GOVERNANCE_CC_PROB_CEILING` and
+       :data:`GOVERNANCE_LOCAL_ADVANTAGE_MIN` before the main benchmark
+       run.
+
+    Parameters
+    ----------
+    prob_rollouts : (N, 3) array of softmax probabilities observed at
+        decision points, columns ordered (cold_chain, local_redistribute,
+        recovery) to match :data:`ACTIONS`.
+    cc_quantile : lower-tail quantile of pi(cold_chain) to use as the
+        ceiling. Default 0.05 (5th percentile) means the override fires
+        when confidence in cold-chain is in the bottom 5 percent of
+        the calibration distribution.
+    local_quantile : quantile of (pi(local) - pi(cold_chain)) to use as
+        the advantage floor. Default 0.50 (median).
+
+    Returns
+    -------
+    dict with keys ``cc_prob_ceiling`` and ``local_advantage_min``.
+    """
+    rollouts = np.asarray(prob_rollouts, dtype=np.float64)
+    if rollouts.ndim != 2 or rollouts.shape[-1] != 3:
+        raise ValueError(
+            f"prob_rollouts must be shape (N, 3), got {rollouts.shape}"
+        )
+    if not (0.0 <= cc_quantile <= 1.0 and 0.0 <= local_quantile <= 1.0):
+        raise ValueError(
+            "quantile arguments must lie in [0, 1]"
+        )
+    cc_probs = rollouts[:, 0]
+    gap = rollouts[:, 1] - rollouts[:, 0]
+    return {
+        "cc_prob_ceiling": float(np.quantile(cc_probs, cc_quantile)),
+        "local_advantage_min": float(np.quantile(gap, local_quantile)),
+    }
 
 # ---------------------------------------------------------------------------
 # Cyber outage: rerouting success probabilities
@@ -577,13 +647,18 @@ def select_action(
         slca_boost = (SLCA_BONUS + SLCA_RHO_BONUS * rho) * (slca_amplification - 1.0)
         logits = logits + context_modifier + slca_boost
 
-        # Governance override: when cumulative evidence strongly disfavors
-        # cold chain (critical compliance + high forecast + regulatory),
-        # mandate rerouting to local redistribution.
-        if logits[0] < GOVERNANCE_CC_LOGIT_CEILING and logits[1] > logits[0] + GOVERNANCE_LOCAL_MARGIN:
-            return 1, np.array([0.0, 1.0, 0.0])
-
     probs = _softmax(logits)
+
+    # Governance override: fires only for context-enabled modes (those that
+    # build a context_modifier). Stated in probability space so the
+    # condition is auditable without reference to the raw logit scale: it
+    # fires when the policy's confidence in cold-chain is below the
+    # calibration-derived ceiling AND local-redistribute dominates
+    # cold-chain by the calibration-derived margin.
+    if context_modifier is not None:
+        if (probs[0] < GOVERNANCE_CC_PROB_CEILING
+                and probs[1] - probs[0] > GOVERNANCE_LOCAL_ADVANTAGE_MIN):
+            return 1, np.array([0.0, 1.0, 0.0])
 
     if deterministic:
         return int(np.argmax(probs)), probs
