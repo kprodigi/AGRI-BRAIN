@@ -193,6 +193,41 @@ class ContextMatrixLearner:
         self.n_updates = 0
         self._history.clear()
 
+    def save_state(self) -> Dict[str, Any]:
+        """Serialise the learnable state for checkpointing or cross-run
+        persistence. Returns a JSON-friendly dict that round-trips through
+        :meth:`load_state`.
+        """
+        return {
+            "theta": self.theta.tolist(),
+            "slca_amp_coeff": float(self.slca_amp_coeff),
+            "temporal_base": float(self.temporal_base),
+            "temporal_scale": float(self.temporal_scale),
+            "reward_baseline": float(self.reward_baseline),
+            "n_updates": int(self.n_updates),
+        }
+
+    def load_state(self, state: Dict[str, Any]) -> None:
+        """Restore learnable state produced by :meth:`save_state`.
+
+        History entries are not persisted (they are diagnostic, not
+        load-bearing) so the post-load summary reports only activity
+        since the restore point.
+        """
+        theta = np.asarray(state["theta"], dtype=np.float64)
+        if theta.shape != self.theta.shape:
+            raise ValueError(
+                f"state theta shape {theta.shape} does not match "
+                f"learner theta shape {self.theta.shape}"
+            )
+        self.theta = theta
+        self.slca_amp_coeff = float(state.get("slca_amp_coeff", self.slca_amp_coeff))
+        self.temporal_base = float(state.get("temporal_base", self.temporal_base))
+        self.temporal_scale = float(state.get("temporal_scale", self.temporal_scale))
+        self.reward_baseline = float(state.get("reward_baseline", 0.0))
+        self.n_updates = int(state.get("n_updates", 0))
+        self._history.clear()
+
 
 class ForecastWeightsLearner:
     """Online REINFORCE learner for the forecast columns of THETA.
@@ -332,6 +367,37 @@ class ForecastWeightsLearner:
         self.theta_delta = np.zeros_like(self.theta_delta)
         self.reward_baseline = 0.0
         self.n_updates = 0
+        self._history.clear()
+
+    def save_state(self) -> Dict[str, Any]:
+        """Serialise learnable state for checkpointing or cross-run
+        persistence. Round-trips through :meth:`load_state`.
+        """
+        return {
+            "theta_delta": self.theta_delta.tolist(),
+            "reward_baseline": float(self.reward_baseline),
+            "n_updates": int(self.n_updates),
+            "learning_rate": float(self.lr),
+            "prior_precision": float(self.prior_precision),
+        }
+
+    def load_state(self, state: Dict[str, Any]) -> None:
+        """Restore learnable state produced by :meth:`save_state`.
+
+        Hyperparameters in the saved state (``learning_rate``,
+        ``prior_precision``) are informational: the loaded learner keeps
+        whatever hyperparameters it was constructed with, so the trainer
+        can resume with different settings if desired. History is not
+        persisted.
+        """
+        theta_delta = np.asarray(state["theta_delta"], dtype=np.float64)
+        if theta_delta.shape != (3, 3):
+            raise ValueError(
+                f"state theta_delta shape {theta_delta.shape} must be (3, 3)"
+            )
+        self.theta_delta = theta_delta
+        self.reward_baseline = float(state.get("reward_baseline", 0.0))
+        self.n_updates = int(state.get("n_updates", 0))
         self._history.clear()
 
 

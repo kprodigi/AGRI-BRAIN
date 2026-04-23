@@ -878,6 +878,36 @@ class AgentCoordinator:
             return self._forecast_learner.summary()
         return {}
 
+    def save_learner_states(self) -> Dict[str, Any]:
+        """Serialise all learner states into one JSON-friendly dict.
+
+        Use this at the end of a long HPC episode (or crash-resume point)
+        to persist learned weights across runs. The returned dict can be
+        written with ``json.dump`` and later restored via
+        :meth:`load_learner_states`.
+        """
+        state: Dict[str, Any] = {}
+        if self._context_learner is not None:
+            state["context_learner"] = self._context_learner.save_state()
+        if self._forecast_learner is not None:
+            state["forecast_learner"] = self._forecast_learner.save_state()
+        return state
+
+    def load_learner_states(self, state: Dict[str, Any]) -> None:
+        """Restore learner state produced by :meth:`save_learner_states`.
+
+        Missing keys are tolerated so partial checkpoints (e.g. only the
+        forecast learner) still work. Attempting to load into a coordinator
+        whose learner was never constructed (import-time failure) is a
+        no-op for that slot.
+        """
+        ctx = state.get("context_learner")
+        if ctx is not None and self._context_learner is not None:
+            self._context_learner.load_state(ctx)
+        fcst = state.get("forecast_learner")
+        if fcst is not None and self._forecast_learner is not None:
+            self._forecast_learner.load_state(fcst)
+
     def evaluator_summary(self) -> Dict[str, Any]:
         """Context quality evaluator statistics."""
         if self._context_evaluator is not None:

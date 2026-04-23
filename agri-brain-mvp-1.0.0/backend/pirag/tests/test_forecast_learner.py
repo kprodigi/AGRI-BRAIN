@@ -113,3 +113,29 @@ def test_summary_fields_present_after_update():
                 "learning_rate", "prior_precision"):
         assert key in s
     assert s["n_updates"] == 1
+
+
+def test_save_load_round_trip_preserves_delta_and_baseline():
+    trained = ForecastWeightsLearner()
+    for _ in range(5):
+        trained.update(
+            phi=_phi(forecast=(0.3, 0.4, 0.5)),
+            action=1,
+            probs=np.array([0.2, 0.5, 0.3]),
+            reward=0.7,
+        )
+    snapshot = trained.save_state()
+
+    restored = ForecastWeightsLearner()
+    restored.load_state(snapshot)
+    np.testing.assert_array_equal(
+        restored.get_theta_delta(), trained.get_theta_delta()
+    )
+    assert restored.reward_baseline == pytest.approx(trained.reward_baseline)
+    assert restored.n_updates == trained.n_updates
+
+
+def test_load_state_rejects_wrong_delta_shape():
+    learner = ForecastWeightsLearner()
+    with pytest.raises(ValueError, match=r"theta_delta shape"):
+        learner.load_state({"theta_delta": np.zeros((2, 3)).tolist()})

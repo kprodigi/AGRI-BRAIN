@@ -207,7 +207,7 @@ _PINN_MODES = {"agribrain", "no_slca", "no_context", "mcp_only", "pirag_only"}
 def run_episode(
     df: pd.DataFrame, mode: str, policy: Policy,
     rng: np.random.Generator, scenario: str = "baseline",
-    stoch=None,
+    stoch=None, seed: int = 0,
 ) -> dict:
     if stoch is None:
         stoch = _STOCH_DISABLED
@@ -228,11 +228,7 @@ def run_episode(
     decision_ledger = DecisionLedger(episode_metadata={
         "mode": mode,
         "scenario": scenario,
-        # rng is constructed by the caller from a seed; the run_all wrapper
-        # passes the seed integer through env_state when available, otherwise
-        # this defaults to 0 and the per-episode root still uniquely
-        # identifies the trace via (mode, scenario, leaf hashes).
-        "seed": 0,
+        "seed": int(seed),
     })
 
     # --- Green AI footprint meter ---
@@ -668,7 +664,7 @@ def run_all(seed: int = SEED) -> dict:
             mode_rng = np.random.default_rng(mode_seeds[mode])
             # Stochastic layer gets an independent RNG stream (seed offset +1)
             stoch = make_stochastic_layer(np.random.default_rng(mode_seeds[mode] + 1))
-            episode = run_episode(df_scenario, mode, policy, mode_rng, scenario, stoch=stoch)
+            episode = run_episode(df_scenario, mode, policy, mode_rng, scenario, stoch=stoch, seed=mode_seeds[mode])
             results[scenario][mode] = episode
             print(f"  [{scenario:>20s}] [{mode:>12s}] ARI={episode['ari']:.3f}  "
                   f"waste={episode['waste']:.3f}  RLE={episode['rle']:.3f}  "
