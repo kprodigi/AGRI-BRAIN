@@ -44,9 +44,10 @@ from pirag.mcp.registry import get_default_registry
 from pirag.context_to_logits import THETA_CONTEXT
 names = {t['name'] for t in get_default_registry().list_tools()}
 assert 'yield_query' in names, 'BLOCK: yield_query missing'
+assert 'demand_query' in names, 'BLOCK: demand_query missing'
 from src.models.action_selection import THETA
 assert THETA_CONTEXT.shape == (3, 5), 'BLOCK: THETA_CONTEXT shape not (3,5)'
-assert THETA.shape == (3, 9), 'BLOCK: THETA shape not (3,9)'
+assert THETA.shape == (3, 10), 'BLOCK: THETA shape not (3,10)'
 print('Path B loaded')
 "
 

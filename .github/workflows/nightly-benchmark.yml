@@ -28,13 +28,26 @@ jobs:
         run: |
           python mvp/simulation/generate_results.py
       - name: Run benchmark suite
+        # BENCHMARK_USE_TABLES=true makes the aggregator fall back to the
+        # single-seed paper tables when no per-seed JSONs exist.
+        # BENCHMARK_WRITE_COMPAT=true also writes the legacy
+        # benchmark_summary.json path this workflow uploads (the primary
+        # outputs are benchmark_context_summary.json and
+        # benchmark_context_significance.json; the compat path is kept
+        # so older tooling that reads benchmark_summary.json keeps
+        # working and so the uploaded artifact always reflects the run
+        # that just happened).
         env:
           BENCHMARK_USE_TABLES: "true"
+          BENCHMARK_WRITE_COMPAT: "true"
         run: |
           python mvp/simulation/benchmarks/run_benchmark_suite.py
       - name: Upload benchmark artifact
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-summary
-          path: mvp/simulation/results/benchmark_summary.json
+          path: |
+            mvp/simulation/results/benchmark_summary.json
+            mvp/simulation/results/benchmark_context_summary.json
+            mvp/simulation/results/benchmark_context_significance.json
 
