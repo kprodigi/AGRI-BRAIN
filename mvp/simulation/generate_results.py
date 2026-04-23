@@ -2,15 +2,16 @@
 """
 AGRI-BRAIN Results Generation
 ==============================
-Runs all 5 scenarios × 8 modes, computes per-run metrics, and saves
+Runs all 5 scenarios × 9 modes, computes per-run metrics, and saves
 CSV summary tables to mvp/simulation/results/.
 
 Uses an AgentCoordinator to dispatch decisions to role-specific agents
 (farm, processor, cooperative, distributor, recovery) at each lifecycle stage.
 
 MCP/piRAG context injection is enabled for ``agribrain``, ``mcp_only``,
-and ``pirag_only`` modes.  Disabled for all others (including ``no_context``
-which uses the same logits as agribrain but without context modifier).
+``pirag_only``, and ``no_yield`` (the Path B ablation that suppresses
+psi_5 supply uncertainty). Disabled for all others, including ``no_context``
+which uses the same logits as agribrain but without context modifier.
 
 Standalone usage:
     cd mvp/simulation
@@ -318,10 +319,23 @@ def run_episode(
 
         # Path B: expose pre-computed Holt-Winters outputs so the yield_query
         # MCP tool can short-circuit; psi_5 (supply uncertainty) flows into
-        # the routing context without duplicating the forecast.
-        _point = sf["forecast"][0] if sf.get("forecast") else 1.0
-        _std = float(sf.get("std", 0.0))
-        _supply_uncertainty = round(min(max(_std / max(abs(_point), 1.0), 0.0), 1.0), 4)
+        # the routing context without duplicating the forecast. Forecast
+        # point and std come from the same yield_supply_forecast call, so
+        # they are consumed together; a missing pair (which should not
+        # happen given the forecaster's contract) zeroes the signal rather
+        # than fabricating a synthetic point of 1.0 with a stale std.
+        _forecast = sf.get("forecast") or []
+        _has_both = bool(_forecast) and ("std" in sf)
+        if _has_both:
+            _point = float(_forecast[0])
+            _std = float(sf["std"])
+            _supply_uncertainty = round(
+                min(max(_std / max(abs(_point), 1.0), 0.0), 1.0), 4
+            )
+        else:
+            _point = float(inv)
+            _std = 0.0
+            _supply_uncertainty = 0.0
 
         # Build env_state for the coordinator
         env_state = {

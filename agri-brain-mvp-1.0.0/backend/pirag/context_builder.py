@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
+from .guards.retrieval_guard import retrieval_quality_ok
 from .mcp.protocol import MCPMessage, MCPServer
 
 
@@ -293,12 +294,14 @@ def retrieve_role_context(
                 if not context["governance_guidance"]:
                     context["governance_guidance"] = passage
 
-        # Evaluate context quality based on retrieval relevance, not
-        # the answer-formatting unit guard (which false-positives on
-        # the template engine's "Based on N relevant sources" preamble).
-        context["guards_passed"] = (
-            len(response.citations) > 0
-            and context["top_citation_score"] > 0.15
+        # Evaluate context quality via the named retrieval-quality guard
+        # (third of the paper Section 3.7 guard triple, alongside the
+        # unit and feasibility guards). Using the answer-formatting unit
+        # guard here would false-positive on the template engine's
+        # "Based on N relevant sources" preamble, so the retrieval-level
+        # check is intentionally distinct.
+        context["guards_passed"] = retrieval_quality_ok(
+            response.citations, context["top_citation_score"]
         )
 
         # Retrieval quality diagnostics for research reporting.

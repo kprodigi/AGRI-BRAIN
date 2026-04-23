@@ -97,7 +97,10 @@ class ContextMatrixLearner:
 
         Parameters
         ----------
-        psi : (5,) context feature vector.
+        psi : (6,) context feature vector after Path B (psi_0..psi_5). The
+            sixth entry carries supply uncertainty from the yield_query MCP
+            tool; see ``backend.pirag.context_to_logits`` for the feature
+            definitions and the no_yield ablation mask.
         action : taken action index (0, 1, 2).
         probs : (3,) softmax probability vector at decision time.
         reward : observed reward.

@@ -32,3 +32,10 @@ dev = ["pytest"]
 filterwarnings = [
     "ignore::DeprecationWarning:websockets.legacy",
 ]
+# Slow tests (full mode x scenario matrix over the simulator) are skipped
+# by default and can be re-enabled with `pytest -m slow` or
+# `pytest --override-ini="addopts="`.
+addopts = "-m 'not slow'"
+markers = [
+    "slow: end-to-end simulator runs; minutes per test. Opt-in via -m slow.",
+]
