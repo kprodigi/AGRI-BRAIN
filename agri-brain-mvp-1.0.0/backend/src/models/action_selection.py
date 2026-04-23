@@ -572,6 +572,9 @@ def select_action(
     demand_std: float | None = None,
     price_signal: float | None = None,
     theta_delta: np.ndarray | None = None,
+    slca_bonus_delta: np.ndarray | None = None,
+    slca_rho_delta: np.ndarray | None = None,
+    no_slca_offset_delta: np.ndarray | None = None,
 ) -> tuple[int, np.ndarray]:
     """Select routing action based on mode-specific softmax policy.
 
@@ -648,7 +651,23 @@ def select_action(
             return 1, probs
         return 0, probs
 
-    elif mode == "hybrid_rl":
+    # Effective reward-shaping vectors. When RewardShapingLearner deltas
+    # are provided, they are zero-init shrinkage corrections inside the
+    # 25-percent per-entry cap and sign-preserved, so at step 0 the
+    # effective vectors are bit-identical to SLCA_BONUS / SLCA_RHO_BONUS
+    # / NO_SLCA_OFFSET. The deltas are applied unconditionally here and
+    # the mode branches below pick the relevant vectors.
+    _slca_bonus = SLCA_BONUS
+    _slca_rho_bonus = SLCA_RHO_BONUS
+    _no_slca_offset = NO_SLCA_OFFSET
+    if slca_bonus_delta is not None:
+        _slca_bonus = _slca_bonus + np.asarray(slca_bonus_delta)
+    if slca_rho_delta is not None:
+        _slca_rho_bonus = _slca_rho_bonus + np.asarray(slca_rho_delta)
+    if no_slca_offset_delta is not None:
+        _no_slca_offset = _no_slca_offset + np.asarray(no_slca_offset_delta)
+
+    if mode == "hybrid_rl":
         logits = THETA @ phi + gamma * tau
 
     elif mode == "no_pinn":
@@ -657,15 +676,15 @@ def select_action(
         # routes rho through compute_spoilage instead of
         # compute_spoilage_pinn, so phi[0], phi[4], phi[5] differ but the
         # reward-shaping terms here stay aligned with the full system.
-        logits = THETA @ phi + gamma * tau + SLCA_BONUS + SLCA_RHO_BONUS * rho
+        logits = THETA @ phi + gamma * tau + _slca_bonus + _slca_rho_bonus * rho
 
     elif mode == "no_slca":
-        logits = THETA @ phi + gamma * tau + NO_SLCA_OFFSET
+        logits = THETA @ phi + gamma * tau + _no_slca_offset
 
     else:  # agribrain, no_context, mcp_only, pirag_only
         # All four share the same base logits; what differs is the upstream
         # context_modifier (full / masked subset / zeroed) applied below.
-        logits = THETA @ phi + gamma * tau + SLCA_BONUS + SLCA_RHO_BONUS * rho
+        logits = THETA @ phi + gamma * tau + _slca_bonus + _slca_rho_bonus * rho
 
     # Learned policy correction. PolicyDeltaLearner owns a (3, 10)
     # delta trained via REINFORCE on the full phi with a 25 percent

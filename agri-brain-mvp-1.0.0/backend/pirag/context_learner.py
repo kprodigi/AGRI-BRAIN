@@ -457,6 +457,235 @@ class PolicyDeltaLearner:
         self._history.clear()
 
 
+class RewardShapingLearner:
+    """Online REINFORCE learner for the hand-calibrated reward-shaping
+    vectors ``SLCA_BONUS``, ``SLCA_RHO_BONUS``, and ``NO_SLCA_OFFSET``.
+
+    Same sign-constrained, shrinkage-anchored delta-with-cap pattern as
+    :class:`PolicyDeltaLearner`, but over three (3,) vectors instead of
+    a single (3, 10) matrix. Each vector has its own per-entry 25 percent
+    magnitude cap, its own sign mask derived from the initial values,
+    and an independent zero-mean Gaussian shrinkage prior. Deltas are
+    zero-initialised so step 0 is bit-identical to the hand-calibrated
+    reward-shaping.
+
+    The update is mode-conditional:
+
+    - ``SLCA_BONUS`` and ``SLCA_RHO_BONUS * rho`` enter the logits only
+      in ``agribrain``, ``no_pinn``, and the three context-enabled
+      modes (``no_context``, ``mcp_only``, ``pirag_only``). Those modes
+      accumulate gradient on the two SLCA vectors.
+    - ``NO_SLCA_OFFSET`` enters the logits only in ``no_slca``. That
+      mode accumulates gradient on the offset vector.
+    - ``hybrid_rl`` and ``static`` do not touch any reward-shaping
+      vector and skip this learner entirely (no-op update).
+
+    Shrinkage is applied to every delta on every update (so deltas for
+    inactive vectors still decay back toward zero over time), but the
+    gradient term is only added to the deltas whose vector contributed
+    to the logits in the current step.
+    """
+
+    _SLCA_BONUS_MODES = frozenset({
+        "agribrain", "no_pinn", "no_context", "mcp_only", "pirag_only",
+    })
+    _NO_SLCA_MODES = frozenset({"no_slca"})
+
+    def __init__(
+        self,
+        initial_slca_bonus: np.ndarray,
+        initial_slca_rho_bonus: np.ndarray,
+        initial_no_slca_offset: np.ndarray,
+        learning_rate: float = 0.003,
+        prior_precision: float = 0.10,
+        baseline_decay: float = 0.95,
+        grad_clip: float = 0.5,
+        magnitude_cap_fraction: float = 0.25,
+        sign_constrained: bool = True,
+    ) -> None:
+        for name, vec in (
+            ("initial_slca_bonus", initial_slca_bonus),
+            ("initial_slca_rho_bonus", initial_slca_rho_bonus),
+            ("initial_no_slca_offset", initial_no_slca_offset),
+        ):
+            if np.asarray(vec).shape != (3,):
+                raise ValueError(
+                    f"{name} must be shape (3,), got {np.asarray(vec).shape}"
+                )
+        self.initial_slca_bonus: np.ndarray = np.asarray(initial_slca_bonus, dtype=np.float64).copy()
+        self.initial_slca_rho: np.ndarray = np.asarray(initial_slca_rho_bonus, dtype=np.float64).copy()
+        self.initial_no_slca_offset: np.ndarray = np.asarray(initial_no_slca_offset, dtype=np.float64).copy()
+
+        self.slca_bonus_delta: np.ndarray = np.zeros(3, dtype=np.float64)
+        self.slca_rho_delta: np.ndarray = np.zeros(3, dtype=np.float64)
+        self.no_slca_offset_delta: np.ndarray = np.zeros(3, dtype=np.float64)
+
+        self.lr = float(learning_rate)
+        self.prior_precision = float(prior_precision)
+        self.baseline_decay = float(baseline_decay)
+        self.grad_clip = float(grad_clip)
+        self.cap_fraction = float(magnitude_cap_fraction)
+        self.sign_constrained = bool(sign_constrained)
+
+        self._sign_bonus = np.sign(self.initial_slca_bonus)
+        self._sign_rho = np.sign(self.initial_slca_rho)
+        self._sign_offset = np.sign(self.initial_no_slca_offset)
+        self._bound_bonus = np.abs(self.initial_slca_bonus) * self.cap_fraction
+        self._bound_rho = np.abs(self.initial_slca_rho) * self.cap_fraction
+        self._bound_offset = np.abs(self.initial_no_slca_offset) * self.cap_fraction
+
+        self.reward_baseline: float = 0.0
+        self.n_updates: int = 0
+        self._history: List[Dict[str, Any]] = []
+
+    def get_slca_bonus_delta(self) -> np.ndarray:
+        return self.slca_bonus_delta.copy()
+
+    def get_slca_rho_delta(self) -> np.ndarray:
+        return self.slca_rho_delta.copy()
+
+    def get_no_slca_offset_delta(self) -> np.ndarray:
+        return self.no_slca_offset_delta.copy()
+
+    def _apply_shrinkage_and_rails(
+        self,
+        delta: np.ndarray,
+        sign_mask: np.ndarray,
+        bound: np.ndarray,
+        initial: np.ndarray,
+        grad: np.ndarray | None,
+    ) -> np.ndarray:
+        """Shrinkage + optional gradient + magnitude cap + sign clamp."""
+        delta = delta * (1.0 - self.lr * self.prior_precision)
+        if grad is not None:
+            delta = delta + self.lr * np.clip(grad, -self.grad_clip, self.grad_clip)
+        delta = np.clip(delta, -bound, bound)
+        if self.sign_constrained:
+            effective = initial + delta
+            flipped = (effective * sign_mask) < 0.0
+            if np.any(flipped):
+                delta[flipped] = 0.0
+        return delta
+
+    def update(
+        self,
+        action: int,
+        probs: np.ndarray,
+        reward: float,
+        mode: str,
+        rho: float,
+    ) -> None:
+        """REINFORCE step with mode-conditional gradient routing.
+
+        Shrinkage is applied to every delta on every call so inactive
+        vectors drift back toward zero; gradients are applied only to
+        the vectors active in ``mode``.
+        """
+        if probs.shape != (3,):
+            raise ValueError(f"probs must be shape (3,), got {probs.shape}")
+
+        self.n_updates += 1
+        self.reward_baseline = (
+            self.baseline_decay * self.reward_baseline
+            + (1.0 - self.baseline_decay) * float(reward)
+        )
+        advantage = float(reward) - self.reward_baseline
+
+        e_a = np.zeros(3, dtype=np.float64)
+        e_a[action] = 1.0
+        policy_grad = (e_a - probs) * advantage
+
+        # Route gradients based on the current mode's logit construction.
+        if mode in self._SLCA_BONUS_MODES:
+            grad_bonus = policy_grad
+            grad_rho = policy_grad * float(rho)
+            grad_offset = None
+        elif mode in self._NO_SLCA_MODES:
+            grad_bonus = None
+            grad_rho = None
+            grad_offset = policy_grad
+        else:
+            # hybrid_rl, static, or any unknown mode: shrinkage only.
+            grad_bonus = None
+            grad_rho = None
+            grad_offset = None
+
+        self.slca_bonus_delta = self._apply_shrinkage_and_rails(
+            self.slca_bonus_delta, self._sign_bonus, self._bound_bonus,
+            self.initial_slca_bonus, grad_bonus,
+        )
+        self.slca_rho_delta = self._apply_shrinkage_and_rails(
+            self.slca_rho_delta, self._sign_rho, self._bound_rho,
+            self.initial_slca_rho, grad_rho,
+        )
+        self.no_slca_offset_delta = self._apply_shrinkage_and_rails(
+            self.no_slca_offset_delta, self._sign_offset, self._bound_offset,
+            self.initial_no_slca_offset, grad_offset,
+        )
+
+        self._history.append({
+            "mode": mode,
+            "advantage": float(advantage),
+            "bonus_norm": float(np.linalg.norm(self.slca_bonus_delta)),
+            "rho_norm": float(np.linalg.norm(self.slca_rho_delta)),
+            "offset_norm": float(np.linalg.norm(self.no_slca_offset_delta)),
+        })
+
+    def summary(self) -> Dict[str, Any]:
+        return {
+            "n_updates": self.n_updates,
+            "slca_bonus_delta": self.slca_bonus_delta.tolist(),
+            "slca_rho_delta": self.slca_rho_delta.tolist(),
+            "no_slca_offset_delta": self.no_slca_offset_delta.tolist(),
+            "effective_slca_bonus": (self.initial_slca_bonus + self.slca_bonus_delta).tolist(),
+            "effective_slca_rho_bonus": (self.initial_slca_rho + self.slca_rho_delta).tolist(),
+            "effective_no_slca_offset": (self.initial_no_slca_offset + self.no_slca_offset_delta).tolist(),
+            "max_delta_entry": float(max(
+                np.abs(self.slca_bonus_delta).max() if self.n_updates else 0.0,
+                np.abs(self.slca_rho_delta).max() if self.n_updates else 0.0,
+                np.abs(self.no_slca_offset_delta).max() if self.n_updates else 0.0,
+            )),
+            "reward_baseline": float(self.reward_baseline),
+            "magnitude_cap_fraction": self.cap_fraction,
+            "sign_constrained": self.sign_constrained,
+        }
+
+    def reset(self) -> None:
+        self.slca_bonus_delta = np.zeros(3, dtype=np.float64)
+        self.slca_rho_delta = np.zeros(3, dtype=np.float64)
+        self.no_slca_offset_delta = np.zeros(3, dtype=np.float64)
+        self.reward_baseline = 0.0
+        self.n_updates = 0
+        self._history.clear()
+
+    def save_state(self) -> Dict[str, Any]:
+        return {
+            "slca_bonus_delta": self.slca_bonus_delta.tolist(),
+            "slca_rho_delta": self.slca_rho_delta.tolist(),
+            "no_slca_offset_delta": self.no_slca_offset_delta.tolist(),
+            "reward_baseline": float(self.reward_baseline),
+            "n_updates": int(self.n_updates),
+            "magnitude_cap_fraction": float(self.cap_fraction),
+            "sign_constrained": bool(self.sign_constrained),
+        }
+
+    def load_state(self, state: Dict[str, Any]) -> None:
+        for key, attr in (
+            ("slca_bonus_delta", "slca_bonus_delta"),
+            ("slca_rho_delta", "slca_rho_delta"),
+            ("no_slca_offset_delta", "no_slca_offset_delta"),
+        ):
+            vec = np.asarray(state[key], dtype=np.float64)
+            if vec.shape != (3,):
+                raise ValueError(
+                    f"state {key} shape {vec.shape} must be (3,)"
+                )
+            setattr(self, attr, vec)
+        self.reward_baseline = float(state.get("reward_baseline", 0.0))
+        self.n_updates = int(state.get("n_updates", 0))
+        self._history.clear()
+
+
 class ContextRuleLearner:
     """Legacy per-feature scalar weight learner.
 

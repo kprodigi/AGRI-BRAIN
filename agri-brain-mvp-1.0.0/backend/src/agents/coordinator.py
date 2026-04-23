@@ -94,6 +94,7 @@ class AgentCoordinator:
         self._pirag_pipeline = None
         self._context_learner = None
         self._theta_learner = None
+        self._reward_shaping_learner = None
         self._context_evaluator = None
         self._context_log: List[Dict[str, Any]] = []
         self._decision_history: List[Dict[str, Any]] = []
@@ -183,6 +184,26 @@ class AgentCoordinator:
         except ImportError:
             self._theta_learner = None
 
+        # The reward-shaping learner applies the same delta-with-cap
+        # pattern to SLCA_BONUS, SLCA_RHO_BONUS, and NO_SLCA_OFFSET so
+        # the hand-calibrated reward-shaping constants are no longer the
+        # only hand-tuned piece in the policy path. Mode-conditional
+        # gradients route per the same rules select_action uses.
+        try:
+            from pirag.context_learner import RewardShapingLearner as _RSL
+            from ..models.action_selection import (
+                SLCA_BONUS as _INITIAL_SLCA_BONUS,
+                SLCA_RHO_BONUS as _INITIAL_SLCA_RHO_BONUS,
+                NO_SLCA_OFFSET as _INITIAL_NO_SLCA_OFFSET,
+            )
+            self._reward_shaping_learner = _RSL(
+                initial_slca_bonus=_INITIAL_SLCA_BONUS,
+                initial_slca_rho_bonus=_INITIAL_SLCA_RHO_BONUS,
+                initial_no_slca_offset=_INITIAL_NO_SLCA_OFFSET,
+            )
+        except ImportError:
+            self._reward_shaping_learner = None
+
         try:
             from pirag.agent_pipeline import PiRAGPipeline
             self._pirag_pipeline = PiRAGPipeline()
@@ -248,6 +269,8 @@ class AgentCoordinator:
             self._context_learner.reset()
         if self._theta_learner is not None:
             self._theta_learner.reset()
+        if self._reward_shaping_learner is not None:
+            self._reward_shaping_learner.reset()
         if self._context_evaluator is not None:
             self._context_evaluator.reset()
         if self._registry is not None:
@@ -372,6 +395,14 @@ class AgentCoordinator:
             self._theta_learner.get_theta_delta()
             if self._theta_learner is not None else None
         )
+        if self._reward_shaping_learner is not None:
+            _slca_bonus_delta = self._reward_shaping_learner.get_slca_bonus_delta()
+            _slca_rho_delta = self._reward_shaping_learner.get_slca_rho_delta()
+            _no_slca_offset_delta = self._reward_shaping_learner.get_no_slca_offset_delta()
+        else:
+            _slca_bonus_delta = None
+            _slca_rho_delta = None
+            _no_slca_offset_delta = None
 
         action_idx, probs = select_action(
             mode=mode,
@@ -392,6 +423,9 @@ class AgentCoordinator:
             demand_std=demand_std,
             price_signal=price_signal,
             theta_delta=theta_delta,
+            slca_bonus_delta=_slca_bonus_delta,
+            slca_rho_delta=_slca_rho_delta,
+            no_slca_offset_delta=_no_slca_offset_delta,
         )
 
         # Store probs for learner update
@@ -650,6 +684,14 @@ class AgentCoordinator:
                     self._theta_learner.get_theta_delta()
                     if self._theta_learner is not None else None
                 )
+                if self._reward_shaping_learner is not None:
+                    _slca_bonus_delta_cf = self._reward_shaping_learner.get_slca_bonus_delta()
+                    _slca_rho_delta_cf = self._reward_shaping_learner.get_slca_rho_delta()
+                    _no_slca_offset_delta_cf = self._reward_shaping_learner.get_no_slca_offset_delta()
+                else:
+                    _slca_bonus_delta_cf = None
+                    _slca_rho_delta_cf = None
+                    _no_slca_offset_delta_cf = None
                 action_without, probs_without = _sa(
                     mode="agribrain", rho=obs.rho, inv=obs.inv,
                     y_hat=obs.y_hat, temp=obs.temp, tau=obs.tau,
@@ -663,6 +705,9 @@ class AgentCoordinator:
                     demand_std=self._step_demand_std,
                     price_signal=self._step_price_signal,
                     theta_delta=theta_delta_cf,
+                    slca_bonus_delta=_slca_bonus_delta_cf,
+                    slca_rho_delta=_slca_rho_delta_cf,
+                    no_slca_offset_delta=_no_slca_offset_delta_cf,
                 )
                 self._step_counterfactual_action = action_without
                 self._step_counterfactual_probs = probs_without
@@ -699,6 +744,19 @@ class AgentCoordinator:
                 action=action,
                 probs=self._step_probs,
                 reward=reward,
+            )
+
+        # Update RewardShapingLearner via REINFORCE. Mode-conditional
+        # gradient routing internally; shrinkage applies on every call.
+        if (self._reward_shaping_learner is not None
+                and self._step_probs is not None
+                and self._step_mode):
+            self._reward_shaping_learner.update(
+                action=action,
+                probs=self._step_probs,
+                reward=reward,
+                mode=self._step_mode,
+                rho=float(getattr(obs, "rho", 0.0)),
             )
 
         # Generate structured explanation and capture trace
@@ -890,6 +948,12 @@ class AgentCoordinator:
             return self._theta_learner.summary()
         return {}
 
+    def reward_shaping_learner_summary(self) -> Dict[str, Any]:
+        """Reward-shaping learner statistics."""
+        if self._reward_shaping_learner is not None:
+            return self._reward_shaping_learner.summary()
+        return {}
+
     def save_learner_states(self) -> Dict[str, Any]:
         """Serialise all learner states into one JSON-friendly dict.
 
@@ -903,6 +967,8 @@ class AgentCoordinator:
             state["context_learner"] = self._context_learner.save_state()
         if self._theta_learner is not None:
             state["theta_learner"] = self._theta_learner.save_state()
+        if self._reward_shaping_learner is not None:
+            state["reward_shaping_learner"] = self._reward_shaping_learner.save_state()
         return state
 
     def load_learner_states(self, state: Dict[str, Any]) -> None:
@@ -919,6 +985,9 @@ class AgentCoordinator:
         theta = state.get("theta_learner")
         if theta is not None and self._theta_learner is not None:
             self._theta_learner.load_state(theta)
+        rsl = state.get("reward_shaping_learner")
+        if rsl is not None and self._reward_shaping_learner is not None:
+            self._reward_shaping_learner.load_state(rsl)
 
     def evaluator_summary(self) -> Dict[str, Any]:
         """Context quality evaluator statistics."""

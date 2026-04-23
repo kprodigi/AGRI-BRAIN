@@ -208,7 +208,21 @@ def run_episode(
     df: pd.DataFrame, mode: str, policy: Policy,
     rng: np.random.Generator, scenario: str = "baseline",
     stoch=None, seed: int = 0,
+    learner_state_cache: dict | None = None,
 ) -> dict:
+    """Run one (mode, scenario) episode.
+
+    Parameters
+    ----------
+    learner_state_cache : optional mode-keyed dict that persists learner
+        state across scenarios within a single ``run_all`` invocation.
+        When provided, the coordinator's learner state is restored from
+        ``learner_state_cache[mode]`` after ``reset()`` (if present) and
+        written back at the end of the episode. This lets the policy-
+        delta and context learners keep accumulating updates across the
+        five scenarios rather than starting from zero every time. Omit
+        the argument to keep the previous per-episode-reset semantics.
+    """
     if stoch is None:
         stoch = _STOCH_DISABLED
     n = len(df)
@@ -223,6 +237,16 @@ def run_episode(
     context_mode = mode in _CONTEXT_ENABLED_MODES
     coordinator = AgentCoordinator(context_enabled=context_mode)
     coordinator.reset()
+
+    # Cross-scenario learner state persistence. ``coordinator.reset()``
+    # wipes the learner state by design (each episode is a fresh
+    # rollout), but when the caller passes a cache we restore the state
+    # the learner was in at the end of the previous scenario so 48-step
+    # episodes can compound into a ~240-step trajectory per mode per
+    # seed. The save-at-end at the bottom of this function closes the
+    # loop.
+    if learner_state_cache is not None and mode in learner_state_cache:
+        coordinator.load_learner_states(learner_state_cache[mode])
 
     # --- Per-episode decision ledger (Merkle-anchored audit trail) ---
     decision_ledger = DecisionLedger(episode_metadata={
@@ -592,6 +616,9 @@ def run_episode(
     _theta_summary = coordinator.theta_learner_summary()
     if _theta_summary:
         result["theta_learner_summary"] = _theta_summary
+    _rsl_summary = coordinator.reward_shaping_learner_summary()
+    if _rsl_summary:
+        result["reward_shaping_learner_summary"] = _rsl_summary
 
         # Trace export for paper evidence
         if coordinator.trace_exporter is not None:
@@ -626,6 +653,13 @@ def run_episode(
             except Exception as _exc:
                 _log.debug("on-chain ledger submission skipped: %s", _exc)
 
+    # Persist the learner state for the next scenario in the cache.
+    # Same (mode, seed) lineage, different scenario: the next call to
+    # run_episode with this cache will restore this snapshot after its
+    # own coordinator.reset(), compounding the gradient updates.
+    if learner_state_cache is not None:
+        learner_state_cache[mode] = coordinator.save_learner_states()
+
     return result
 
 
@@ -659,6 +693,14 @@ def run_all(seed: int = SEED) -> dict:
     _seed_stoch = make_stochastic_layer(np.random.default_rng(seed + 7))
     _as_module.THETA = _seed_stoch.perturb_theta(_original_theta)
 
+    # Cross-scenario learner state cache, keyed by mode. Persists both the
+    # context-modifier and policy-delta learners across all scenarios
+    # inside this seed so the learners accumulate ~240 REINFORCE updates
+    # per (mode, seed) rather than resetting every 48 steps. The cache is
+    # populated at the end of each run_episode and restored at the start
+    # of the next one for the same mode.
+    learner_state_cache: dict[str, dict] = {}
+
     for scenario in SCENARIOS:
         results[scenario] = {}
         scenario_rng = np.random.default_rng(rng.integers(0, 2**31))
@@ -682,7 +724,11 @@ def run_all(seed: int = SEED) -> dict:
             mode_rng = np.random.default_rng(mode_seeds[mode])
             # Stochastic layer gets an independent RNG stream (seed offset +1)
             stoch = make_stochastic_layer(np.random.default_rng(mode_seeds[mode] + 1))
-            episode = run_episode(df_scenario, mode, policy, mode_rng, scenario, stoch=stoch, seed=mode_seeds[mode])
+            episode = run_episode(
+                df_scenario, mode, policy, mode_rng, scenario,
+                stoch=stoch, seed=mode_seeds[mode],
+                learner_state_cache=learner_state_cache,
+            )
             results[scenario][mode] = episode
             print(f"  [{scenario:>20s}] [{mode:>12s}] ARI={episode['ari']:.3f}  "
                   f"waste={episode['waste']:.3f}  RLE={episode['rle']:.3f}  "
