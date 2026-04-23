@@ -12,6 +12,7 @@ online REINFORCE learning, and context quality evaluation.
 """
 from __future__ import annotations
 
+import copy
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -107,6 +108,7 @@ class AgentCoordinator:
         self._step_supply_hat: Optional[float] = None
         self._step_supply_std: Optional[float] = None
         self._step_demand_std: Optional[float] = None
+        self._step_rng_state: Optional[Dict[str, Any]] = None
         self._step_override: bool = False
         self._step_counterfactual_action: int = 0
         self._step_counterfactual_probs: Optional[np.ndarray] = None
@@ -205,6 +207,7 @@ class AgentCoordinator:
         self._step_supply_hat = None
         self._step_supply_std = None
         self._step_demand_std = None
+        self._step_rng_state = None
         self._step_override = False
         self._step_counterfactual_action = 0
         self._step_counterfactual_probs = None
@@ -321,6 +324,13 @@ class AgentCoordinator:
         self._step_supply_hat = supply_hat
         self._step_supply_std = supply_std
         self._step_demand_std = demand_std
+
+        # Snapshot the RNG state before the live call consumes from it.
+        # The counterfactual in post_step() rebuilds a fresh generator from
+        # this state so the CF draws the same random variates the live
+        # call would have drawn; the only controlled difference is then
+        # context_modifier (None in the CF, computed in the live call).
+        self._step_rng_state = copy.deepcopy(rng.bit_generator.state)
 
         action_idx, probs = select_action(
             mode=mode,
@@ -582,10 +592,17 @@ class AgentCoordinator:
                 f"counterfactual invariant violated: context_modifier is "
                 f"set for non-context mode {self._step_mode!r}"
             )
-            # Compute counterfactual action and probs (without modifier)
+            # Compute counterfactual action and probs (without modifier).
+            # The CF rebuilds a generator from the snapshot taken in step()
+            # so it draws the same random variates the live call saw; the
+            # live call stays stochastic (deterministic omitted) so the
+            # CF matches its sampling mode. The only controlled difference
+            # is then context_modifier.
             try:
                 from ..models.action_selection import select_action as _sa
-                rng_cf = np.random.default_rng(42)
+                rng_cf = np.random.default_rng()
+                if self._step_rng_state is not None:
+                    rng_cf.bit_generator.state = copy.deepcopy(self._step_rng_state)
                 action_without, probs_without = _sa(
                     mode="agribrain", rho=obs.rho, inv=obs.inv,
                     y_hat=obs.y_hat, temp=obs.temp, tau=obs.tau,
@@ -593,7 +610,7 @@ class AgentCoordinator:
                     rng=rng_cf, scenario=self._step_scenario,
                     hour=hour,
                     role_bias=self._step_role_bias,
-                    deterministic=True, context_modifier=None,
+                    context_modifier=None,
                     supply_hat=self._step_supply_hat,
                     supply_std=self._step_supply_std,
                     demand_std=self._step_demand_std,
