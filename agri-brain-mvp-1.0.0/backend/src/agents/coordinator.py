@@ -92,6 +92,9 @@ class AgentCoordinator:
         self._step_policy: Any = None
         self._step_scenario: str = "baseline"
         self._step_role_bias: Optional[np.ndarray] = None
+        self._step_supply_hat: Optional[float] = None
+        self._step_supply_std: Optional[float] = None
+        self._step_demand_std: Optional[float] = None
         self._step_override: bool = False
         self._step_counterfactual_action: int = 0
         self._step_counterfactual_probs: Optional[np.ndarray] = None
@@ -186,6 +189,9 @@ class AgentCoordinator:
         self._step_policy = None
         self._step_scenario = "baseline"
         self._step_role_bias = None
+        self._step_supply_hat = None
+        self._step_supply_std = None
+        self._step_demand_std = None
         self._step_override = False
         self._step_counterfactual_action = 0
         self._step_counterfactual_probs = None
@@ -297,6 +303,9 @@ class AgentCoordinator:
             supply_hat = supply_hat[0]
         supply_std = raw.get("supply_std")
         demand_std = raw.get("demand_std")
+        self._step_supply_hat = supply_hat
+        self._step_supply_std = supply_std
+        self._step_demand_std = demand_std
 
         action_idx, probs = select_action(
             mode=mode,
@@ -560,6 +569,9 @@ class AgentCoordinator:
                     hour=hour,
                     role_bias=self._step_role_bias,
                     deterministic=True, context_modifier=None,
+                    supply_hat=self._step_supply_hat,
+                    supply_std=self._step_supply_std,
+                    demand_std=self._step_demand_std,
                 )
                 self._step_counterfactual_action = action_without
                 self._step_counterfactual_probs = probs_without
