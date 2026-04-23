@@ -25,6 +25,25 @@ ABI = [
         {"internalType":"uint256","name":"carbon_milli","type":"uint256"},
         {"internalType":"string","name":"note","type":"string"}
     ], "name":"logDecision", "outputs":[{"internalType":"bytes32","name":"id","type":"bytes32"}],
+     "stateMutability":"nonpayable","type":"function"},
+    {"anonymous": False, "inputs": [
+        {"indexed": True,  "internalType": "bytes32", "name": "root", "type": "bytes32"},
+        {"indexed": False, "internalType": "uint256","name": "ts", "type": "uint256"},
+        {"indexed": False, "internalType": "string", "name": "mode", "type": "string"},
+        {"indexed": False, "internalType": "string", "name": "scenario", "type": "string"},
+        {"indexed": False, "internalType": "uint256","name": "seed", "type": "uint256"},
+        {"indexed": False, "internalType": "uint256","name": "n_records", "type": "uint256"},
+        {"indexed": False, "internalType": "string", "name": "note", "type": "string"}
+    ], "name": "EpisodeLogged", "type": "event"},
+    {"inputs": [
+        {"internalType":"bytes32","name":"root","type":"bytes32"},
+        {"internalType":"uint256","name":"ts","type":"uint256"},
+        {"internalType":"string","name":"mode","type":"string"},
+        {"internalType":"string","name":"scenario","type":"string"},
+        {"internalType":"uint256","name":"seed","type":"uint256"},
+        {"internalType":"uint256","name":"n_records","type":"uint256"},
+        {"internalType":"string","name":"note","type":"string"}
+    ], "name":"logEpisode", "outputs":[],
      "stateMutability":"nonpayable","type":"function"}
 ]
 
@@ -92,6 +111,55 @@ def log_decision_onchain(memo: dict, chain_cfg: dict) -> Optional[str]:
         raise RuntimeError("DecisionLogger transaction reverted")
     tx_hash = rcpt.get("transactionHash")
     return tx_hash.hex() if tx_hash is not None else None
+
+def log_episode_onchain(root_hex: str, metadata: dict, chain_cfg: dict) -> Optional[str]:
+    """Anchor a per-episode Merkle root via DecisionLogger.logEpisode.
+
+    ``root_hex`` is the SHA-256 binary-Merkle root produced by
+    :class:`backend.src.chain.decision_ledger.DecisionLedger`. ``metadata``
+    must carry ``mode``, ``scenario``, ``seed``, and ``n_records``; the
+    optional ``note`` is a free-form string.
+    """
+    if not chain_cfg:
+        return None
+    addrs = chain_cfg.get("addresses") or {}
+    dl = addrs.get("DecisionLogger")
+    if not (chain_cfg.get("rpc") and dl and chain_cfg.get("private_key")):
+        return None
+
+    w3, acct = _client(chain_cfg)
+    c = _contract(w3, dl)
+    max_fee, priority_fee = _fee_params(w3)
+
+    root_clean = root_hex[2:] if root_hex.startswith("0x") else root_hex
+    root_bytes = bytes.fromhex(root_clean)
+    if len(root_bytes) != 32:
+        raise ValueError(f"merkle root must be 32 bytes, got {len(root_bytes)}")
+
+    tx = c.functions.logEpisode(
+        root_bytes,
+        int(metadata.get("ts", 0)),
+        str(metadata.get("mode", "")),
+        str(metadata.get("scenario", "")),
+        int(metadata.get("seed", 0)),
+        int(metadata.get("n_records", 0)),
+        str(metadata.get("note", "")),
+    ).build_transaction({
+        "from": acct.address,
+        "nonce": w3.eth.get_transaction_count(acct.address),
+        "gas": 200000,
+        "maxFeePerGas": max_fee,
+        "maxPriorityFeePerGas": priority_fee,
+        "chainId": int(chain_cfg.get("chain_id", 31337)),
+    })
+    signed = acct.sign_transaction(tx)
+    txh = w3.eth.send_raw_transaction(signed.raw_transaction)
+    rcpt = w3.eth.wait_for_transaction_receipt(txh)
+    if int(rcpt.get("status", 1)) != 1:
+        raise RuntimeError("DecisionLogger.logEpisode transaction reverted")
+    tx_hash = rcpt.get("transactionHash")
+    return tx_hash.hex() if tx_hash is not None else None
+
 
 def fetch_recent_decisions(chain_cfg: dict, from_block: int = 0, to_block: str | int = "latest"):
     """Return decoded DecisionLogged events (list of dicts)."""

@@ -87,6 +87,7 @@ from src.models.reverse_logistics import evaluate_recovery_options, compute_circ
 from src.models.policy_learner import PolicyLearner
 from src.models.action_selection import build_feature_vector
 from src.agents.coordinator import AgentCoordinator
+from src.chain.decision_ledger import DecisionLedger
 try:
     from .stochastic import _is_deterministic, make_stochastic_layer, _DISABLED as _STOCH_DISABLED
 except ImportError:
@@ -219,6 +220,17 @@ def run_episode(
     context_mode = mode in _CONTEXT_ENABLED_MODES
     coordinator = AgentCoordinator(context_enabled=context_mode)
     coordinator.reset()
+
+    # --- Per-episode decision ledger (Merkle-anchored audit trail) ---
+    decision_ledger = DecisionLedger(episode_metadata={
+        "mode": mode,
+        "scenario": scenario,
+        # rng is constructed by the caller from a seed; the run_all wrapper
+        # passes the seed integer through env_state when available, otherwise
+        # this defaults to 0 and the per-episode root still uniquely
+        # identifies the trace via (mode, scenario, leaf hashes).
+        "seed": 0,
+    })
 
     # --- Green AI footprint meter ---
     meter = FootprintMeter()
@@ -443,6 +455,26 @@ def run_episode(
         # Green AI footprint tracking (Section 4.12)
         fp = meter.compute_footprint(steps=1)
 
+        # Append the routing decision to the per-episode ledger before
+        # post_step runs the learner update so the leaf hash captures the
+        # decision exactly as the environment observed it.
+        decision_ledger.append({
+            "ts": int(hours[idx] * 3600),
+            "hour": float(hours[idx]),
+            "agent": str(active_agent.agent_id),
+            "role": str(active_agent.role),
+            "action": str(action),
+            "action_idx": int(action_idx),
+            "probs": [float(p) for p in probs],
+            "reward": float(reward),
+            "waste": float(waste),
+            "rho": float(rho),
+            "slca": float(slca_c),
+            "carbon_kg": float(carbon),
+            "mode": str(mode),
+            "scenario": str(scenario),
+        })
+
         # Post-step: update agent state and route messages
         obs = active_agent.observe(env_state, hours[idx])
         outcome = {"waste": waste, "rho": rho, "slca": slca_c, "carbon_kg": carbon}
@@ -546,6 +578,30 @@ def run_episode(
         # Protocol recorder for genuine MCP interactions
         if coordinator.protocol_recorder is not None:
             result["_protocol_recorder"] = coordinator.protocol_recorder
+
+    # Finalise the per-episode decision ledger: compute the Merkle root,
+    # write the JSONL artifact, and (optionally) anchor the root on-chain
+    # when CHAIN_SUBMIT=1 and chain_cfg is provided via environment.
+    ledger_dir = Path(os.environ.get(
+        "DECISION_LEDGER_DIR",
+        str(RESULTS_DIR / "decision_ledger"),
+    ))
+    ledger_path = ledger_dir / f"{mode}__{scenario}.jsonl"
+    decision_ledger.write_jsonl(ledger_path)
+    result["decision_ledger_path"] = str(ledger_path)
+    result["decision_ledger_root"] = decision_ledger.merkle_root()
+    result["decision_ledger_n"] = len(decision_ledger)
+    if os.environ.get("CHAIN_SUBMIT", "0") == "1":
+        chain_cfg_json = os.environ.get("CHAIN_CFG_JSON")
+        if chain_cfg_json:
+            try:
+                import json as _json
+                chain_cfg = _json.loads(chain_cfg_json)
+                tx = decision_ledger.submit_onchain(chain_cfg)
+                if tx:
+                    result["decision_ledger_tx"] = tx
+            except Exception:
+                pass
 
     return result
 

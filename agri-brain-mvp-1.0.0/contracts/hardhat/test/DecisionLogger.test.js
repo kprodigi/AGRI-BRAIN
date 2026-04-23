@@ -80,4 +80,36 @@ describe("DecisionLogger", function () {
       logger.logDecision(1234, "farm:dup", "farm", "cold_chain", 700, 500, "second")
     ).to.be.revertedWith("duplicate decision id");
   });
+
+  it("should anchor a per-episode Merkle root and emit EpisodeLogged", async function () {
+    const root = ethers.keccak256(ethers.toUtf8Bytes("episode-root"));
+    const tx = await logger.logEpisode(
+      root,
+      9000,                  // ts
+      "agribrain",          // mode
+      "heatwave",           // scenario
+      42,                   // seed
+      48,                   // n_records
+      "20-seed HPC run"     // note
+    );
+    const receipt = await tx.wait();
+    const iface = logger.interface;
+    const parsed = iface.parseLog({ topics: receipt.logs[0].topics, data: receipt.logs[0].data });
+    expect(parsed.name).to.equal("EpisodeLogged");
+    expect(parsed.args.root).to.equal(root);
+    expect(parsed.args.ts).to.equal(9000n);
+    expect(parsed.args.mode).to.equal("agribrain");
+    expect(parsed.args.scenario).to.equal("heatwave");
+    expect(parsed.args.seed).to.equal(42n);
+    expect(parsed.args.n_records).to.equal(48n);
+    expect(parsed.args.note).to.equal("20-seed HPC run");
+  });
+
+  it("should revert logEpisode from unauthorized caller", async function () {
+    const [, outsider] = await ethers.getSigners();
+    const root = ethers.keccak256(ethers.toUtf8Bytes("x"));
+    await expect(
+      logger.connect(outsider).logEpisode(root, 1, "m", "s", 0, 0, "")
+    ).to.be.revertedWith("not authorized");
+  });
 });

@@ -29,6 +29,23 @@ contract DecisionLogger {
         string note
     );
 
+    /// @notice Per-episode anchor. The simulator collects every decision
+    ///         within an episode into an off-chain ledger, computes a
+    ///         binary SHA-256 Merkle root, and writes the root here in
+    ///         a single transaction. Any individual decision can then
+    ///         be verified with a Merkle inclusion proof against the
+    ///         emitted root, giving full per-decision traceability at
+    ///         O(1) on-chain cost per episode.
+    event EpisodeLogged(
+        bytes32 indexed root,
+        uint256 ts,
+        string mode,
+        string scenario,
+        uint256 seed,
+        uint256 n_records,
+        string note
+    );
+
     struct Memo {
         uint256 ts;
         string agent;
@@ -71,5 +88,21 @@ contract DecisionLogger {
             carbon_milli,
             note
         );
+    }
+
+    /// @notice Anchor a Merkle root over all decisions in one episode.
+    /// @dev Emits ``EpisodeLogged``. Off-chain consumers can pair the root
+    ///      with the JSONL ledger artifact written by ``DecisionLedger``
+    ///      and verify any leaf via inclusion proof.
+    function logEpisode(
+        bytes32 root,
+        uint256 ts,
+        string calldata mode,
+        string calldata scenario,
+        uint256 seed,
+        uint256 n_records,
+        string calldata note
+    ) external onlyAuthorized {
+        emit EpisodeLogged(root, ts, mode, scenario, seed, n_records, note);
     }
 }
