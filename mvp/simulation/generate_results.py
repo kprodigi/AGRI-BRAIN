@@ -66,6 +66,11 @@ from src.models.footprint import FootprintMeter
 from src.models.forecast import yield_demand_forecast
 from src.models.lstm_demand import lstm_demand_forecast
 from src.models.yield_forecast import yield_supply_forecast
+# Supply and demand forecasts are routed through the MCP tools so simulator
+# and REST share a single forecasting code path; the underlying forecaster
+# modules above remain importable for tests that exercise them directly.
+from pirag.mcp.tools.yield_query import query_yield
+from pirag.mcp.tools.demand_query import query_demand
 from src.models.slca import slca_score
 from src.models.policy import Policy
 from src.models.waste import (
@@ -292,21 +297,27 @@ def run_episode(
 
         lookback = min(idx + 1, 48)
         hist_slice = df.iloc[max(0, idx + 1 - lookback):idx + 1]
-        yf = _demand_forecast(hist_slice, horizon=1)
+        # Demand forecast via the MCP demand_query tool. Residual std
+        # feeds phi_8 (demand_uncertainty) (Hyndman & Athanasopoulos
+        # 2018, Ch. 8.7). Both simulator and REST route through this
+        # tool so the paper numerics and live inference share one path.
+        yf = query_demand(
+            demand_history=hist_slice["demand_units"].astype(float).tolist(),
+            horizon=1,
+            method=FORECAST_METHOD,
+        )
         y_hat = float(yf["forecast"][0]) if yf["forecast"] else 100.0
         y_hat = stoch.perturb_demand(y_hat)
         observed_demand_trace.append(y_hat)
-
-        # Demand forecast residual std feeds phi_8 (demand_uncertainty).
-        # Both the LSTM and Holt-Winters demand forecasters now return
-        # ``std`` as the in-sample one-step-ahead residual standard
-        # deviation (Hyndman & Athanasopoulos 2018, Ch. 8.7).
         demand_std = float(yf.get("std", 0.0) or 0.0)
 
-        # Yield/supply forecast: Holt-Winters on the inventory series.
-        # ``std`` is the matching residual-std prediction-uncertainty
-        # estimate used for phi_7 (supply_uncertainty).
-        sf = yield_supply_forecast(hist_slice, horizon=1, series_col="inventory_units")
+        # Yield/supply forecast via the MCP yield_query tool. ``std`` is
+        # the matching residual-std prediction-uncertainty estimate used
+        # for phi_7 (supply_uncertainty).
+        sf = query_yield(
+            inventory_history=hist_slice["inventory_units"].astype(float).tolist(),
+            horizon=1,
+        )
         supply_hat = float(sf["forecast"][0]) if sf["forecast"] else inv
         supply_std = float(sf.get("std", 0.0) or 0.0)
         supply_hats.append(supply_hat)

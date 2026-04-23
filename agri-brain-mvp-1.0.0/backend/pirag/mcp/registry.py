@@ -299,7 +299,9 @@ def get_default_registry() -> ToolRegistry:
     except ImportError:
         pass
 
-    # Holt-Winters yield/supply forecast tool (informational; psi_5 was removed in 1bdc602)
+    # Holt-Winters yield/supply forecast tool. Canonical entry point for
+    # supply forecasting; the simulator and REST endpoint both route
+    # through this so production and benchmark paths share one code path.
     try:
         from .tools.yield_query import query_yield
         registry.register(ToolSpec(
@@ -309,8 +311,31 @@ def get_default_registry() -> ToolRegistry:
             fn=query_yield,
             schema={
                 "inventory_history":  {"type": "array",   "description": "Recent inventory_units observations for forecasting"},
-                "horizon":            {"type": "integer", "description": "Forecast horizon in 15-min steps (default: 6)"},
+                "horizon":            {"type": "integer", "description": "Forecast horizon in 15-min steps (default: 1)"},
                 "cached_uncertainty": {"type": "number",  "description": "Pre-computed CV in [0,1] (short-circuits Holt-Winters when present)"},
+                "cached_forecast":    {"type": "array",   "description": "Pre-computed point forecast (paired with cached_uncertainty)"},
+                "cached_std":         {"type": "number",  "description": "Pre-computed std (paired with cached_uncertainty)"},
+            },
+            cacheable=False,
+        ))
+    except ImportError:
+        pass
+
+    # Symmetric demand forecast tool. Mirrors yield_query so supply and
+    # demand share the same MCP contract and both can short-circuit from
+    # a simulator-cached payload on obs.raw.
+    try:
+        from .tools.demand_query import query_demand
+        registry.register(ToolSpec(
+            name="demand_query",
+            description="Demand forecast (LSTM or Holt-Winters) returning point forecast, residual std, and normalised CV uncertainty",
+            capabilities=["demand", "forecast", "uncertainty"],
+            fn=query_demand,
+            schema={
+                "demand_history":     {"type": "array",   "description": "Recent demand_units observations for forecasting"},
+                "horizon":            {"type": "integer", "description": "Forecast horizon in 15-min steps (default: 1)"},
+                "method":             {"type": "string",  "description": "Forecast method: 'lstm' (default) or 'holt_winters'"},
+                "cached_uncertainty": {"type": "number",  "description": "Pre-computed CV in [0,1] (short-circuits the forecaster when present)"},
                 "cached_forecast":    {"type": "array",   "description": "Pre-computed point forecast (paired with cached_uncertainty)"},
                 "cached_std":         {"type": "number",  "description": "Pre-computed std (paired with cached_uncertainty)"},
             },

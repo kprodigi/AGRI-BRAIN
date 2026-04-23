@@ -30,7 +30,7 @@ from src.models.yield_forecast import yield_supply_forecast
 
 def query_yield(
     inventory_history: Optional[List[float]] = None,
-    horizon: int = 6,
+    horizon: int = 1,
     cached_uncertainty: Optional[float] = None,
     cached_forecast: Optional[List[float]] = None,
     cached_std: Optional[float] = None,

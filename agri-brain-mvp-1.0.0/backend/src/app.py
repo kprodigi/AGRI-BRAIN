@@ -58,10 +58,21 @@ from .chain.eth import log_decision_onchain
 FORECAST_METHOD = SETTINGS.forecast_method
 
 def _demand_forecast(df, horizon=1, **kwargs):
-    """Dispatch to LSTM or Holt-Winters demand forecaster based on config."""
-    if FORECAST_METHOD == "holt_winters":
-        return yield_demand_forecast(df, horizon=horizon, **kwargs)
-    return lstm_demand_forecast(df, horizon=horizon, **kwargs)
+    """Demand forecast routed through the MCP demand_query tool.
+
+    Both simulator and REST share this single forecasting code path so
+    the paper benchmark and live inference stay aligned. Falls back to
+    the inline forecaster on import error so the endpoint keeps working
+    if the MCP layer is unavailable.
+    """
+    try:
+        from pirag.mcp.tools.demand_query import query_demand
+        series = df["demand_units"].astype(float).tolist()
+        return query_demand(demand_history=series, horizon=horizon, method=FORECAST_METHOD)
+    except Exception:
+        if FORECAST_METHOD == "holt_winters":
+            return yield_demand_forecast(df, horizon=horizon, **kwargs)
+        return lstm_demand_forecast(df, horizon=horizon, **kwargs)
 
 # Static/docs branding
 from fastapi.staticfiles import StaticFiles
@@ -541,11 +552,17 @@ def decide(d: DecideIn):
     inv = float(row.get("inventory_units", 100.0))
     temp = float(row["tempC"])
 
-    # Demand forecast (LSTM or Holt-Winters) and yield forecast
+    # Demand and supply forecasts both routed through the MCP tools so
+    # this endpoint shares the simulator's forecasting code path.
     demand_fc = _demand_forecast(df.iloc[: idx + 1], horizon=1)
     y_hat = float(demand_fc["forecast"][0]) if demand_fc["forecast"] else 100.0
     demand_std = float(demand_fc.get("std", 0.0) or 0.0)
-    supply_fc = yield_supply_forecast(df.iloc[: idx + 1], horizon=1)
+    try:
+        from pirag.mcp.tools.yield_query import query_yield
+        _inv_hist = df["inventory_units"].iloc[: idx + 1].astype(float).tolist()
+        supply_fc = query_yield(inventory_history=_inv_hist, horizon=1)
+    except Exception:
+        supply_fc = yield_supply_forecast(df.iloc[: idx + 1], horizon=1)
     _supply_forecast_list = supply_fc.get("forecast") if isinstance(supply_fc, dict) else None
     supply_hat = (
         float(_supply_forecast_list[0])
