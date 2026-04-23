@@ -4,7 +4,7 @@
 Ingests per-seed JSONs produced by run_single_seed.py (files named
 ``seed_<seed>.json`` under the seeds directory) and computes summary
 statistics, confidence intervals, paired p-values, and effect sizes for
-all nine simulation modes. This script never re-runs run_all() itself;
+all eight simulation modes. This script never re-runs run_all() itself;
 the HPC pipeline produces the seed JSONs in parallel via a SLURM job
 array, and this aggregator assembles them afterwards.
 

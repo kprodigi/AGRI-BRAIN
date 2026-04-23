@@ -130,7 +130,6 @@ COLORS = {
     "no_context": "#2E7D32",   # forest green
     "mcp_only":   "#F57C00",   # vivid amber
     "pirag_only": "#1565C0",   # deep blue
-    "no_yield":   "#8D6E63",   # warm brown (Path B ablation)
 }
 
 MARKERS = {
@@ -142,7 +141,6 @@ MARKERS = {
     "no_context": "P",
     "mcp_only":   "X",
     "pirag_only": "d",
-    "no_yield":   "*",   # 5-point star for Path B
 }
 
 LINESTYLES = {
@@ -154,7 +152,6 @@ LINESTYLES = {
     "no_context": (0, (5, 2)),                # long dash
     "mcp_only":   (0, (3, 1, 1, 1, 1, 1)),   # dash-dot-dot-dot
     "pirag_only": (0, (1, 1)),                # dotted tight
-    "no_yield":   (0, (6, 2, 1, 2)),          # dash-short-dash
 }
 
 MODE_LABELS = {
@@ -166,7 +163,6 @@ MODE_LABELS = {
     "no_context": "No Context",
     "mcp_only":   "MCP Only",
     "pirag_only": "piRAG Only",
-    "no_yield":   "No Yield",
 }
 
 SCENARIO_LABELS = {
@@ -828,15 +824,12 @@ def fig6_cross(data):
 def fig7_ablation(data):
     """1x3 grouped bars: ARI, waste, RLE for the architectural ablation.
     Shows the eight publication modes (static, hybrid_rl, no_pinn, no_slca,
-    no_context, mcp_only, pirag_only, agribrain). The no_yield mode stays
-    in the simulator and the significance JSON but is not plotted here:
-    its ablation is about a single MCP feature, not an architectural
-    component, so it belongs with the context-channel comparisons in
-    fig9 panel (b)."""
+    no_context, mcp_only, pirag_only, agribrain). AgriBrain is plotted
+    last so it sits as the rightmost bar in each group."""
     bench = _load_benchmark_ci()
 
     # Reorder so AgriBrain is last.
-    fig7_modes = [m for m in MODES if m not in ("agribrain", "no_yield")] + ["agribrain"]
+    fig7_modes = [m for m in MODES if m != "agribrain"] + ["agribrain"]
 
     fig, axes = plt.subplots(1, 3, figsize=(22, 7.5))
     fig.suptitle("Ablation Study")
