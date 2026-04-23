@@ -38,6 +38,17 @@ _CONTEXT_MODE_MAP = {
     "pirag_only": "pirag_only",
 }
 
+# Cooperative agent overlay window (simulation hours).
+# The cooperative agent observes, votes, and contributes to role_bias only
+# while hour is in this half-open interval. Chosen to match the midday
+# decision window used by the benchmark scenarios.
+COOPERATIVE_OVERLAY_START: float = 12.0
+COOPERATIVE_OVERLAY_END: float = 30.0
+
+
+def _cooperative_window_active(hour: float) -> bool:
+    return COOPERATIVE_OVERLAY_START <= hour < COOPERATIVE_OVERLAY_END
+
 
 class AgentCoordinator:
     """Orchestrates multi-agent decision-making across the supply chain.
@@ -90,6 +101,7 @@ class AgentCoordinator:
         self._step_probs: Optional[np.ndarray] = None
         self._step_rules_fired: List[int] = []
         self._step_policy: Any = None
+        self._step_mode: str = ""
         self._step_scenario: str = "baseline"
         self._step_role_bias: Optional[np.ndarray] = None
         self._step_supply_hat: Optional[float] = None
@@ -187,6 +199,7 @@ class AgentCoordinator:
         self._step_probs = None
         self._step_rules_fired = []
         self._step_policy = None
+        self._step_mode = ""
         self._step_scenario = "baseline"
         self._step_role_bias = None
         self._step_supply_hat = None
@@ -246,15 +259,16 @@ class AgentCoordinator:
         active = self.get_active_agent(hour)
         obs = active.observe(env_state, hour)
 
-        # Cooperative overlay: observe + generate messages during hours 12-30
+        # Cooperative overlay: observe + generate messages during the
+        # cooperative window.
         cooperative = self.agents.get("cooperative")
-        if cooperative is not None and cooperative is not active and 12.0 <= hour < 30.0:
+        if cooperative is not None and cooperative is not active and _cooperative_window_active(hour):
             cooperative.observe(env_state, hour)
 
         # Compute combined role bias: primary agent + cooperative overlay
         combined_bias = active.role_bias.copy()
         cooperative = self.agents.get("cooperative")
-        if cooperative is not None and cooperative is not active and 12.0 <= hour < 30.0:
+        if cooperative is not None and cooperative is not active and _cooperative_window_active(hour):
             combined_bias = combined_bias + cooperative.role_bias
 
         # Context injection for context-enabled modes
@@ -266,6 +280,7 @@ class AgentCoordinator:
         self._step_probs = None
         self._step_rules_fired = []
         self._step_policy = policy
+        self._step_mode = mode
         self._step_scenario = scenario
         self._step_role_bias = combined_bias
         self._step_override = False
@@ -319,7 +334,6 @@ class AgentCoordinator:
             scenario=scenario,
             hour=hour,
             role_bias=combined_bias,
-            rag_context=rag_context,
             context_modifier=context_modifier,
             slca_amp_coeff=slca_amp,
             supply_hat=supply_hat,
@@ -430,11 +444,11 @@ class AgentCoordinator:
                 context_mode=context_mode,
             )
 
-            # Cooperative overlay blending during hours 12-30
+            # Cooperative overlay blending during the cooperative window.
             cooperative = self.agents.get("cooperative")
             if (cooperative is not None
                     and cooperative is not active
-                    and 12.0 <= obs.hour < 30.0):
+                    and _cooperative_window_active(obs.hour)):
                 try:
                     coop_obs = cooperative.observe(obs.raw, obs.hour)
                     coop_mcp = dispatch_tools(
@@ -523,9 +537,10 @@ class AgentCoordinator:
 
         messages = agent.generate_messages(obs, action)
 
-        # Cooperative overlay: also update and generate messages during hours 12-30
+        # Cooperative overlay: also update and generate messages during the
+        # cooperative window.
         cooperative = self.agents.get("cooperative")
-        if cooperative is not None and cooperative is not agent and 12.0 <= hour < 30.0:
+        if cooperative is not None and cooperative is not agent and _cooperative_window_active(hour):
             cooperative.update(action, outcome)
             coop_obs = cooperative.observe(obs.raw, hour)
             messages.extend(cooperative.generate_messages(coop_obs, action))
@@ -557,6 +572,16 @@ class AgentCoordinator:
         if (self.context_enabled
                 and self._step_context_modifier is not None
                 and self._context_evaluator is not None):
+            # The counterfactual hardcodes mode="agribrain" because all
+            # four context-enabled modes (agribrain, no_context, mcp_only,
+            # pirag_only) share the same base-logit branch in
+            # select_action. This assertion guards against a future
+            # context-enabled mode that lands in a different branch,
+            # which would silently make the CF apples-to-oranges.
+            assert self._step_mode in _CONTEXT_MODES, (
+                f"counterfactual invariant violated: context_modifier is "
+                f"set for non-context mode {self._step_mode!r}"
+            )
             # Compute counterfactual action and probs (without modifier)
             try:
                 from ..models.action_selection import select_action as _sa

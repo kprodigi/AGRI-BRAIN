@@ -579,7 +579,6 @@ def decide(d: DecideIn):
         mode=d.mode, rho=rho, inv=inv, y_hat=y_hat, temp=temp,
         tau=tau, policy=p, rng=rng,
         role_bias=role_bias, deterministic=d.deterministic,
-        rag_context=rag_context,
     )
 
     action = ACTIONS[action_idx]

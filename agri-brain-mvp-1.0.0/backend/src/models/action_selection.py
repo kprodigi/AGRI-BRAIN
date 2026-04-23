@@ -243,8 +243,24 @@ NOPINN_SLCA_SCALE: float = 0.5
 NO_SLCA_OFFSET: np.ndarray = np.array([0.6, -0.3, -0.4])
 """Logit offset for no_slca mode (conservative, CC-heavy routing).
 
-Without SLCA feedback, the system defaults toward cold chain — the "safe"
-choice — since it cannot assess social value of alternatives.
+Without SLCA feedback, the system defaults toward cold chain the "safe"
+choice, since it cannot assess social value of alternatives.
+"""
+
+GOVERNANCE_CC_LOGIT_CEILING: float = -2.0
+"""Upper bound on the cold-chain logit that triggers a governance override.
+
+When cumulative evidence pushes logit[0] below this ceiling, the cold chain
+has become strongly unsafe relative to the local-redistribute option. The
+threshold is paired with GOVERNANCE_LOCAL_MARGIN.
+"""
+
+GOVERNANCE_LOCAL_MARGIN: float = 3.0
+"""Minimum logit advantage of local-redistribute over cold-chain needed to
+fire the governance override.
+
+Paired with GOVERNANCE_CC_LOGIT_CEILING. Both conditions must hold so that
+the override fires only under unambiguous context pressure.
 """
 
 # ---------------------------------------------------------------------------
@@ -441,7 +457,6 @@ def select_action(
     hour: float = 0.0,
     role_bias: np.ndarray | None = None,
     deterministic: bool = False,
-    rag_context: dict | None = None,
     context_modifier: np.ndarray | None = None,
     slca_amp_coeff: float | None = None,
     supply_hat: float | None = None,
@@ -466,7 +481,6 @@ def select_action(
     hour : hours since start (for cyber outage timing).
     role_bias : optional per-role logit bias vector (3,).
     deterministic : if True, use argmax instead of sampling.
-    rag_context : deprecated, retained for backward compatibility.
     context_modifier : optional logit modifier vector (3,) from the
         MCP/piRAG context pipeline.  Added to logits after all other
         mode-specific and role-specific terms, before softmax.
@@ -543,7 +557,7 @@ def select_action(
         # Governance override: when cumulative evidence strongly disfavors
         # cold chain (critical compliance + high forecast + regulatory),
         # mandate rerouting to local redistribution.
-        if logits[0] < -2.0 and logits[1] > logits[0] + 3.0:
+        if logits[0] < GOVERNANCE_CC_LOGIT_CEILING and logits[1] > logits[0] + GOVERNANCE_LOCAL_MARGIN:
             return 1, np.array([0.0, 1.0, 0.0])
 
     probs = _softmax(logits)
