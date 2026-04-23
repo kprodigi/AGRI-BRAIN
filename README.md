@@ -85,9 +85,9 @@ REINFORCE learning for sustainable food logistics.
 - **Protocol recording** of genuine MCP JSON-RPC interactions during simulation
 - **Circular economy scoring** for composting, animal feed, food bank pathways
 - **PINN-enhanced Arrhenius spoilage model** with Baranyi lag phase
-- **Softmax contextual policy** with 9-dimensional state feature vector
-  (perception + symmetric supply and demand forecast channels) and 5-dimensional
-  institutional context modifier
+- **Softmax contextual policy** with 10-dimensional state feature vector
+  (perception + symmetric supply and demand forecast channels + demand-volatility
+  price-pressure proxy) and 5-dimensional institutional context modifier
 - **On-chain governance** via Hardhat/Solidity smart contracts
 
 ## Frontend

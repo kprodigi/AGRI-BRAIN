@@ -401,12 +401,14 @@ done
 
 The standalone simulation runs all 5 scenarios x 8 modes (40 episodes)
 and produces publication-quality results. The state vector phi(s) is
-9-dimensional: six perception features (freshness, inventory pressure,
-demand point forecast, thermal stress, spoilage urgency, interaction)
-plus three forecast-channel features (supply point, supply uncertainty,
+10-dimensional: six perception features (freshness, inventory pressure,
+demand point forecast, thermal stress, spoilage urgency, interaction),
+three forecast-channel features (supply point, supply uncertainty,
 demand uncertainty) that treat the supply and demand forecasters
-symmetrically. The context vector psi is 5-dimensional and carries the
-institutional / coordination signals from MCP and piRAG.
+symmetrically, and a demand-volatility Bollinger z-score
+(``price_signal``) that proxies market pressure. The context vector
+psi is 5-dimensional and carries the institutional / coordination
+signals from MCP and piRAG.
 
 ```bash
 cd AGRI-BRAIN/mvp/simulation

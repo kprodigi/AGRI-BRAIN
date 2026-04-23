@@ -822,7 +822,7 @@ def decide(d: DecideIn):
     # PolicyLearner: record experience for optional online learning. The
     # live /case_decide endpoint does not carry supply or demand forecast
     # uncertainties yet; pass None so phi_6..phi_8 default to zero and
-    # the learner sees the same 9-dim state the policy saw.
+    # the learner sees the same 10-dim state the policy saw.
     if PolicyLearner.is_enabled():
         _learner = state.setdefault("_policy_learner", PolicyLearner())
         from .models.action_selection import build_feature_vector

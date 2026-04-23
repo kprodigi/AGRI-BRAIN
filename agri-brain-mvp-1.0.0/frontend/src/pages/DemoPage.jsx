@@ -301,7 +301,7 @@ T_ref  = 277.15 K (4°C)  β    = 0.25
         <div className="space-y-3">
           <IOCard label="Policy Computation" className="bg-purple-50 dark:bg-purple-950/20">
             <pre className="text-[10px] font-mono text-purple-700 dark:text-purple-300 whitespace-pre-wrap leading-relaxed">
-{`logits = Θ(3×9) × φ(9D) + γ·τ + SLCA_bonus + role_bias + Δz
+{`logits = Θ(3×10) × φ(10D) + γ·τ + SLCA_bonus + role_bias + Δz
 logits += context_modifier    ← from Θ_context × ψ
 π(a|s) = softmax(logits)`}</pre>
           </IOCard>

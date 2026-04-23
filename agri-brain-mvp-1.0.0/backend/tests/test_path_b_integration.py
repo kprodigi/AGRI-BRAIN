@@ -2,11 +2,13 @@
 
 After the Option-3 refactor:
 
-- The state vector phi(s) has shape (9,). Indices 6-8 carry supply
-  forecast information (point, uncertainty) and demand uncertainty.
+- The state vector phi(s) has shape (10,). Indices 6-8 carry supply
+  and demand forecast information (point + uncertainty); index 9
+  carries a demand-volatility Bollinger z-score used as a
+  price-pressure proxy.
 - The context vector psi has shape (5,) again (the pre-Path-B size).
   Supply and demand forecast information no longer lives in psi.
-- Theta has shape (3, 9); Theta_context has shape (3, 5).
+- Theta has shape (3, 10); Theta_context has shape (3, 5).
 - yield_query remains a useful MCP tool that supplies the Holt-Winters
   forecast and its residual-std uncertainty; its output is consumed by
   the state vector via build_feature_vector, not by the context

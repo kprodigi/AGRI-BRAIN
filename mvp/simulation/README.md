@@ -66,10 +66,10 @@ Each agent step invokes role-specific MCP tools and piRAG knowledge retrieval:
 
 - **MCP tools** (JSON-RPC 2.0): 13 statically registered tools including compliance check, spoilage forecast, SLCA lookup, chain query, policy oracle, calculator, footprint query, convert_units, pirag_query, explain, context_features, simulate, and yield_query; the coordinator adds 5 runtime role-capability tools (18 at simulation time)
 - **piRAG pipeline**: 20-document knowledge base with BM25+TF-IDF hybrid retrieval (k=4), physics-informed reranking, scenario-discriminative query expansion
-- **State features**: 9D feature vector phi(s) = [freshness, inventory pressure, demand point forecast, thermal stress, spoilage urgency, interaction, supply point, supply uncertainty, demand uncertainty] with policy weight matrix Theta of shape (3, 9). Supply and demand forecast uncertainties are residual-std prediction-error estimates (Hyndman & Athanasopoulos 2018, Ch. 8.7).
+- **State features**: 10D feature vector phi(s) = [freshness, inventory pressure, demand point forecast, thermal stress, spoilage urgency, interaction, supply point, supply uncertainty, demand uncertainty, price signal] with policy weight matrix Theta of shape (3, 10). Supply and demand forecast uncertainties are residual-std prediction-error estimates (Hyndman & Athanasopoulos 2018, Ch. 8.7); the price signal is a demand-volatility Bollinger z-score clipped to [-1, +1] that proxies market pressure.
 - **Context features**: 5D feature vector psi = [compliance severity, forecast urgency, retrieval confidence, regulatory pressure, recovery saturation] with learned Theta_context weight matrix of shape (3, 5)
-- **Governance override**: Deterministic redistribution when cumulative evidence strongly disfavors cold chain
-- **Online REINFORCE learning**: Sign-constrained gradient updates on Theta_context weights
+- **Governance override**: Deterministic redistribution when policy probability of cold-chain falls below the calibration-derived ceiling (5th percentile of pi(cold_chain) over benchmark rollouts) AND local-redistribute dominates cold-chain by the calibrated median gap
+- **Online REINFORCE learning**: Sign-constrained shrinkage-prior gradient updates on Theta_context, on a (3, 10) delta added to Theta (PolicyDeltaLearner), and on the reward-shaping vectors SLCA_BONUS, SLCA_RHO_BONUS, NO_SLCA_OFFSET (RewardShapingLearner). Each learnable delta is zero-initialised and capped at 25 percent of its hand-calibrated initial magnitude per entry so learning anchors on domain priors.
 - **Causal explanation engine**: BECAUSE/WITHOUT reasoning with [KB:] citations and Merkle provenance
 - **Protocol recording**: Every MCP JSON-RPC interaction is captured as genuine protocol traffic
 

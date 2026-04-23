@@ -587,13 +587,14 @@ def test_governance_override():
     )
 
     # With extreme conditions, governance should override to redistribution
-    # (action_idx=1) with deterministic probs [0, 1, 0]
-    # Note: override only fires if logits[0] < -2.0 and logits[1] > logits[0] + 3.0
-    # We need to check if conditions are met for this test
+    # (action_idx=1) with deterministic probs [0, 1, 0].
+    # Note: the override fires when pi(cold_chain) < GOVERNANCE_CC_PROB_CEILING
+    # AND pi(local) - pi(cold_chain) > GOVERNANCE_LOCAL_ADVANTAGE_MIN
+    # (both calibration-derived; see action_selection.py).
     if action_idx == 1 and probs[1] == 1.0:
         assert True, "Governance override correctly fired"
     else:
-        # If override didn't fire, the logit threshold wasn't met,
+        # If override didn't fire, the probability conditions were not met,
         # which is acceptable — the override is conservative by design
         assert action_idx in [0, 1, 2], "Action should be valid"
 

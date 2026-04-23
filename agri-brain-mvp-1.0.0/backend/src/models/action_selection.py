@@ -2,17 +2,17 @@
 Regime-aware contextual softmax policy for routing decisions.
 
 Implements the softmax action selection described in Section 4.6 of the
-AGRI-BRAIN paper.  Given a 9-dimensional feature vector phi(s) extracted
+AGRI-BRAIN paper.  Given a 10-dimensional feature vector phi(s) extracted
 from the current supply chain state, the policy computes action
 probabilities via:
 
     pi(a | s) = softmax(Theta phi(s) + gamma tau + bonus(mode, rho))
 
-Feature vector design (9 features)
------------------------------------
+Feature vector design (10 features)
+------------------------------------
 Perception features 0 through 5 are the original state vector. Features
-6 through 8 (added for architectural symmetry between supply and demand)
-extend the state vector with supply and demand forecast information:
+6 through 8 add the symmetric supply-demand forecast channel. Feature
+9 is a demand-volatility price-pressure proxy:
 
     phi_0 = freshness          = 1 - rho
     phi_1 = inv_pressure       = min(inv / INV_CAPACITY, 1)
@@ -23,6 +23,7 @@ extend the state vector with supply and demand forecast information:
     phi_6 = supply_point       = clip(y_hat_s / INV_BASELINE - 1, -0.5, +0.5)
     phi_7 = supply_uncertainty = clip(sigma_s / max(|y_hat_s|, 1), 0, 1)
     phi_8 = demand_uncertainty = clip(sigma_d / max(|y_hat_d|, 1), 0, 1)
+    phi_9 = price_signal       = clip(demand_bollinger_z, -1, +1)
 
 ``sigma_s`` and ``sigma_d`` are in-sample one-step-ahead residual standard
 deviations from the Holt-Winters supply forecaster and the LSTM demand
@@ -37,23 +38,34 @@ contribution and only deviation (surplus or shortage) drives the logit
 modifier. This avoids a baseline shift when supply is at its expected
 level.
 
-THETA matrix (3 actions x 9 features)
---------------------------------------
-Each entry is sign-justified. The original six columns are unchanged;
-the three new columns are documented in the THETA block below.
+``phi_9`` is a demand-volatility Bollinger z-score clipped to [-1, +1].
+Positive values indicate demand above its rolling trend (shortage,
+price pressure up); negative values indicate oversupply (price pressure
+down). Proxy for market pressure that lets the ``adaptive_pricing``
+scenario register a direct policy response rather than only an
+indirect effect via temperature and inventory stress.
 
-                 fresh  inv_p  dem_pt  therm  spoil  inter  sup_pt  sup_unc  dem_unc
-    ColdChain:    +      -     +       -      -      -      -       +        +
-    LocalRedist:  0      +     -       +      +      +      +       +~0      -
-    Recovery:     -      -     -       +      +      -      +       -        -
+THETA matrix (3 actions x 10 features)
+---------------------------------------
+Each entry is sign-justified. The original six columns are unchanged;
+the three forecast columns and the price column are documented in the
+THETA block below.
+
+                 fresh  inv_p  dem_pt  therm  spoil  inter  sup_pt  sup_unc  dem_unc  price
+    ColdChain:    +      -     +       -      -      -      -       +        +        +
+    LocalRedist:  0      +     -       +      +      +      +       +~0      -        -
+    Recovery:     -      -     -       +      +      -      +       -        -        ~0
 
 Mode-specific bonus terms
 -------------------------
-    - hybrid_rl:  Theta phi + gamma tau              (base RL, no SLCA/PINN)
-    - no_pinn:    + 0.5 * SLCA_bonus                 (SLCA at reduced strength)
-    - no_slca:    + NO_SLCA_OFFSET                   (conservative / CC-heavy)
-    - agribrain:  + SLCA_BONUS + SLCA_RHO_BONUS * rho  (full system)
-    - static:     always cold_chain                  (no optimisation)
+    - hybrid_rl:  Theta phi + gamma tau                  (base RL, no SLCA/PINN)
+    - no_pinn:    + SLCA_BONUS + SLCA_RHO_BONUS * rho    (same reward-shaping as
+                                                          agribrain; the PINN
+                                                          ablation lives upstream
+                                                          in the spoilage path)
+    - no_slca:    + NO_SLCA_OFFSET                       (conservative / CC-heavy)
+    - agribrain:  + SLCA_BONUS + SLCA_RHO_BONUS * rho    (full system)
+    - static:     always cold_chain                      (no optimisation)
 
 Cyber outage handling
 ---------------------
