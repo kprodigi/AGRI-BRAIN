@@ -55,18 +55,22 @@ from src.models.resilience import RLE_THRESHOLD
 # ---------------------------------------------------------------------------
 # Unified publication-quality style
 # ---------------------------------------------------------------------------
-# Body text is 11 pt (Word default for Arial body). Titles and axis labels
-# use bold at 12-16 pt so the hierarchy is obvious even at reduced sizes in
-# a two-column layout. Every figure in this module inherits these rcParams;
-# individual figures should not override them unless a specific layout
-# demands it, and any such override must be explicitly justified.
-BODY_FONT_SIZE = 11
-TICK_FONT_SIZE = 11
-AXIS_LABEL_SIZE = 12
-SUBPLOT_TITLE_SIZE = 13
-FIG_TITLE_SIZE = 16
-LEGEND_FONT_SIZE = 11
-ANNOT_FONT_SIZE = 10
+# Figures are authored larger than Word's body text (11 pt Arial) so that
+# once the PNG/PDF is dropped into a two-column manuscript and reduced to
+# column width, every label, tick, legend entry, and title remains
+# unambiguously readable. The hierarchy below keeps the typographic ratio
+# that makes titles stand out from axis labels stand out from tick labels,
+# and every text element is bold by default.
+#
+# If a figure is shrunk to column width and labels start overlapping, the
+# figsize is too small, not the font. Increase figsize, not decrease font.
+BODY_FONT_SIZE = 15        # paragraph-equivalent body text in figures
+TICK_FONT_SIZE = 15        # x/y tick numbers
+AXIS_LABEL_SIZE = 17       # x/y axis labels (bold)
+SUBPLOT_TITLE_SIZE = 19    # (a) Panel-title style (bold)
+FIG_TITLE_SIZE = 23        # fig.suptitle (bold)
+LEGEND_FONT_SIZE = 15      # legend entries (bold)
+ANNOT_FONT_SIZE = 14       # in-plot annotations like "Heatwave" bbox
 
 plt.rcParams.update({
     "font.family": "sans-serif",
@@ -298,15 +302,15 @@ def fig2_heatwave(data):
     ab = hw["agribrain"]
     hours = np.array(ab["hours"])
 
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig, axes = plt.subplots(2, 2, figsize=(18, 13))
     fig.suptitle("Heatwave Scenario Analysis")
 
     # --- (a) Temperature + Humidity with heatwave window ---
     ax = axes[0, 0]
-    ax.plot(hours, ab["temp_trace"], color="#C62828", linewidth=2.0,
+    ax.plot(hours, ab["temp_trace"], color="#C62828", linewidth=2.4,
             label="Temperature (\u00b0C)")
     ax2 = ax.twinx()
-    ax2.plot(hours, ab["rh_trace"], color="#1565C0", linewidth=1.8,
+    ax2.plot(hours, ab["rh_trace"], color="#1565C0", linewidth=2.2,
              alpha=0.85, label="RH (%)")
     ax.set_xlabel("Hours")
     ax.set_ylabel("Temperature (\u00b0C)")
@@ -320,10 +324,11 @@ def fig2_heatwave(data):
     for lbl in ax2.get_yticklabels():
         lbl.set_fontweight("bold")
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave")
-    # Combine the two legends into one to avoid corner collisions.
+    # Combine the two legends into one, anchor at the lower-left so it
+    # sits clear of the window label at the top of the shaded region.
     h1, l1 = ax.get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()
-    _legend(ax, handles=h1 + h2, labels=l1 + l2, loc="upper left")
+    _legend(ax, handles=h1 + h2, labels=l1 + l2, loc="lower right")
 
     # --- (b) Observed spoilage risk trajectory ---
     ax = axes[0, 1]
@@ -351,10 +356,12 @@ def fig2_heatwave(data):
     ax.set_xlabel("Hours")
     ax.set_ylabel("Action Probability")
     ax.set_title("(c) AgriBrain Action Probabilities")
-    ax.set_ylim(0, 1)
+    ax.set_ylim(0, 1.22)
     _apply_style(ax)
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave")
-    _legend(ax, loc="center right")
+    # Bottom-right keeps the legend off the shaded window at the top and
+    # avoids the orange Recovery band on the upper right of the stacked area.
+    _legend(ax, loc="lower right", ncol=3)
 
     # --- (d) Per-step reward (rolling average) ---
     ax = axes[1, 1]
@@ -384,7 +391,7 @@ def fig3_overproduction(data):
     ab = op["agribrain"]
     hours = np.array(ab["hours"])
 
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig, axes = plt.subplots(2, 2, figsize=(18, 13))
     fig.suptitle("Overproduction & Reverse Logistics")
 
     # --- (a) Inventory vs Demand (dual y-axis) ---
@@ -504,7 +511,7 @@ def fig4_cyber(data):
     ab = cy["agribrain"]
     hours = np.array(ab["hours"])
 
-    fig, axes = plt.subplots(1, 3, figsize=(16, 5.5))
+    fig, axes = plt.subplots(1, 3, figsize=(21, 7.0))
     fig.suptitle("Cyber Outage Scenario")
 
     # --- (a) ARI over time with outage shading ---
@@ -599,7 +606,7 @@ def fig5_pricing(data):
     ab = ap["agribrain"]
     hours = np.array(ab["hours"])
 
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig, axes = plt.subplots(2, 2, figsize=(18, 13))
     fig.suptitle("Adaptive Pricing & Demand Volatility")
 
     # --- (a) Demand + Bollinger triggers ---
@@ -764,7 +771,7 @@ def fig6_cross(data):
     Adds error bars from benchmark_summary.json when available."""
     bench = _load_benchmark_ci()
 
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig, axes = plt.subplots(2, 2, figsize=(18, 13))
     fig.suptitle("Cross-Scenario Performance Comparison")
 
     metrics = [("ari", "ARI", "(a)"), ("rle", "RLE", "(b)"),
@@ -830,7 +837,7 @@ def fig7_ablation(data):
     ordered = [m for m in MODES if m not in ("agribrain", "no_yield")] + ["no_yield", "agribrain"]
     fig7_modes = ordered
 
-    fig, axes = plt.subplots(1, 3, figsize=(19, 6.2))
+    fig, axes = plt.subplots(1, 3, figsize=(24, 8.0))
     fig.suptitle("Ablation Study")
 
     metrics = [("ari", "ARI", "(a)"), ("waste", "Waste Rate", "(b)"),
@@ -894,7 +901,7 @@ def fig8_green_ai(data):
     """1x2: cumulative CO2 heatwave, total carbon bar chart with CI error bars."""
     bench = _load_benchmark_ci()
 
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5.5))
+    fig, axes = plt.subplots(1, 2, figsize=(18, 7.0))
     fig.suptitle("Green AI & Carbon Footprint")
 
     hw = data["results"]["heatwave"]
@@ -956,7 +963,7 @@ def fig9_mcp_pirag_robustness():
     proto_files = [RESULTS_DIR / f"mcp_protocol_{s}.json" for s in SCENARIOS]
     bench_file = RESULTS_DIR / "benchmark_summary.json"
 
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5.5))
+    fig, axes = plt.subplots(1, 2, figsize=(18, 7.0))
     fig.suptitle("MCP + piRAG Robustness")
 
     # (a) Protocol error counts by scenario
@@ -1046,7 +1053,7 @@ def fig10_latency_quality_frontier(data):
     panel (b) shows the MCP/piRAG-enabled methods with the no-context
     reference point and an overhead annotation.
     """
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5.5),
+    fig, axes = plt.subplots(1, 2, figsize=(18, 7.0),
                              gridspec_kw={"width_ratios": [1, 1], "wspace": 0.32})
     fig.suptitle("Latency vs ARI Frontier", fontsize=FIG_TITLE_SIZE,
                  fontweight="bold", y=1.00)
