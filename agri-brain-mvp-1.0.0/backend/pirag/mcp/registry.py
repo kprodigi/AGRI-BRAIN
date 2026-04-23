@@ -299,12 +299,12 @@ def get_default_registry() -> ToolRegistry:
     except ImportError:
         pass
 
-    # Path B: Holt-Winters yield/supply forecast tool (feeds psi_5)
+    # Holt-Winters yield/supply forecast tool (informational; psi_5 was removed in 1bdc602)
     try:
         from .tools.yield_query import query_yield
         registry.register(ToolSpec(
             name="yield_query",
-            description="Holt-Winters yield/supply forecast with normalised supply uncertainty (psi_5)",
+            description="Holt-Winters yield/supply forecast returning point forecast, residual std, and normalised CV uncertainty",
             capabilities=["supply", "forecast", "uncertainty"],
             fn=query_yield,
             schema={
