@@ -1,12 +1,18 @@
-"""Online adaptation of context modifier weights.
+"""Online adaptation of policy and context weights.
 
-Two learner classes:
+Three learner classes:
 
 1. ``ContextMatrixLearner`` (primary): learns the full THETA_CONTEXT (3×5)
    weight matrix via REINFORCE policy gradient with sign constraints.
 
-2. ``ContextRuleLearner`` (legacy): per-feature scalar weights via
-   exponential-weight bandit updates.  Retained for backward compatibility.
+2. ``ForecastWeightsLearner``: learns a (3, 3) additive correction
+   ΔΘ on the hand-calibrated forecast columns THETA[:, 6:9] via REINFORCE
+   with an empirical-Bayes Gaussian prior centred at zero. Forecast
+   channels without predictive value decay back to zero rather than
+   drifting; the hand-calibrated core (THETA[:, 0:6]) stays untouched.
+
+3. ``ContextRuleLearner`` (legacy): per-feature scalar weights via
+   exponential-weight bandit updates. Retained for backward compatibility.
 
 The REINFORCE update for THETA_CONTEXT is:
 
@@ -16,8 +22,17 @@ where e_a is the one-hot action vector, π is the softmax probability,
 ψ is the context feature vector, R is observed reward, and R̄ is the
 running baseline.
 
-Sign constraints ensure that learned weights remain physically
-interpretable (e.g., compliance violations always disfavor cold chain).
+The update for the forecast delta is the same softmax-policy gradient
+over φ[6:9] plus a shrinkage term so weights are pulled back to zero
+when there is no signal:
+
+    ΔΘ ← (1 − η λ) · ΔΘ + η · (e_a − π) · φ[6:9]^T · (R − R̄)
+
+Sign constraints ensure that learned THETA_CONTEXT entries remain
+physically interpretable (e.g., compliance violations always disfavor
+cold chain). The forecast delta starts at zero and uses shrinkage
+rather than sign constraints because the channels are symmetric and we
+have no prior on the sign.
 """
 from __future__ import annotations
 
@@ -174,6 +189,147 @@ class ContextMatrixLearner:
         self.slca_amp_coeff = self.slca_amp_initial
         self.temporal_base = 1.3
         self.temporal_scale = 0.6
+        self.reward_baseline = 0.0
+        self.n_updates = 0
+        self._history.clear()
+
+
+class ForecastWeightsLearner:
+    """Online REINFORCE learner for the forecast columns of THETA.
+
+    The base policy matrix THETA is shape (3, 9). Columns 0..5 encode
+    physics-and-operations features (freshness, inventory pressure,
+    demand signal, thermal stress, spoilage urgency, interaction) where
+    hand-calibrated priors are strong. Columns 6..8 encode the symmetric
+    supply-demand forecast channel (supply point, supply uncertainty,
+    demand uncertainty) where no strong prior exists. This learner
+    trains only the (3, 3) delta added to THETA[:, 6:9]; the
+    hand-calibrated core stays fixed.
+
+    The update is standard REINFORCE on a softmax policy, applied only
+    to the forecast sub-block, with a zero-mean Gaussian prior
+    (equivalent to L2 weight decay) as an empirical-Bayes shrinkage
+    term. A forecast channel that carries no reward signal decays back
+    to zero with a half-life of roughly ``log(2) / (lr * prior_precision)``
+    update steps. A channel that does carry signal settles at a
+    non-trivial value determined by the data.
+
+    Parameters
+    ----------
+    learning_rate : gradient step size. Small because phi[6:9] is
+        clipped to [-0.5, 0.5] and [0, 1] so the raw gradient magnitude
+        is already bounded; a modest step keeps updates stable.
+    prior_precision : lambda in the zero-mean Gaussian prior. Higher
+        values pull the delta back to zero more aggressively.
+    baseline_decay : exponential moving average decay for the reward
+        baseline used for variance reduction.
+    grad_clip : per-element gradient clipping bound.
+    delta_clip : maximum absolute value of any single entry of the
+        learned delta. Acts as a safety rail above and beyond the
+        shrinkage prior.
+    """
+
+    def __init__(
+        self,
+        learning_rate: float = 0.003,
+        prior_precision: float = 0.05,
+        baseline_decay: float = 0.95,
+        grad_clip: float = 0.5,
+        delta_clip: float = 1.0,
+    ) -> None:
+        # ΔΘ starts at zero so the effective forecast columns at step 0
+        # are exactly the hand-calibrated THETA[:, 6:9].
+        self.theta_delta: np.ndarray = np.zeros((3, 3), dtype=np.float64)
+        self.lr = float(learning_rate)
+        self.prior_precision = float(prior_precision)
+        self.baseline_decay = float(baseline_decay)
+        self.grad_clip = float(grad_clip)
+        self.delta_clip = float(delta_clip)
+
+        self.reward_baseline: float = 0.0
+        self.n_updates: int = 0
+        self._history: List[Dict[str, Any]] = []
+
+    def get_theta_delta(self) -> np.ndarray:
+        """Current (3, 3) forecast-column correction added to THETA[:, 6:9]."""
+        return self.theta_delta.copy()
+
+    def update(
+        self,
+        phi: np.ndarray,
+        action: int,
+        probs: np.ndarray,
+        reward: float,
+    ) -> None:
+        """REINFORCE gradient step with Gaussian-prior shrinkage.
+
+        Parameters
+        ----------
+        phi : (9,) full state feature vector from build_feature_vector.
+            Only phi[6:9] enters the gradient.
+        action : taken action index (0, 1, 2).
+        probs : (3,) softmax probability vector at decision time.
+        reward : observed scalar reward.
+        """
+        if phi.shape != (9,):
+            raise ValueError(f"phi must be shape (9,), got {phi.shape}")
+        if probs.shape != (3,):
+            raise ValueError(f"probs must be shape (3,), got {probs.shape}")
+
+        self.n_updates += 1
+        self.reward_baseline = (
+            self.baseline_decay * self.reward_baseline
+            + (1.0 - self.baseline_decay) * float(reward)
+        )
+        advantage = float(reward) - self.reward_baseline
+
+        phi_forecast = phi[6:9]  # (3,)
+        e_a = np.zeros(3, dtype=np.float64)
+        e_a[action] = 1.0
+
+        # Policy gradient on the forecast sub-block: (e_a - pi) ⊗ phi[6:9]
+        grad = np.outer(e_a - probs, phi_forecast) * advantage
+        grad = np.clip(grad, -self.grad_clip, self.grad_clip)
+
+        # Shrinkage: equivalent to gradient step on the Gaussian log-prior.
+        # The closed-form combined update is (1 - lr*lambda) * delta + lr * grad.
+        self.theta_delta *= (1.0 - self.lr * self.prior_precision)
+        self.theta_delta += self.lr * grad
+
+        # Hard magnitude cap to rule out runaway updates on outlier rewards.
+        self.theta_delta = np.clip(self.theta_delta, -self.delta_clip, self.delta_clip)
+
+        self._history.append({
+            "advantage": float(advantage),
+            "grad_norm": float(np.linalg.norm(grad)),
+            "delta_norm": float(np.linalg.norm(self.theta_delta)),
+        })
+
+    def summary(self) -> Dict[str, Any]:
+        """Detailed statistics for paper reporting."""
+        if self.n_updates == 0:
+            max_entry = 0.0
+            mean_adv = 0.0
+        else:
+            max_entry = float(np.abs(self.theta_delta).max())
+            mean_adv = (
+                float(np.mean([h["advantage"] for h in self._history]))
+                if self._history else 0.0
+            )
+        return {
+            "n_updates": self.n_updates,
+            "final_theta_delta": self.theta_delta.tolist(),
+            "delta_frobenius_norm": float(np.linalg.norm(self.theta_delta)),
+            "max_delta_entry": max_entry,
+            "reward_baseline": float(self.reward_baseline),
+            "mean_advantage": mean_adv,
+            "learning_rate": self.lr,
+            "prior_precision": self.prior_precision,
+        }
+
+    def reset(self) -> None:
+        """Reset learned delta, baseline, and history to their initial state."""
+        self.theta_delta = np.zeros_like(self.theta_delta)
         self.reward_baseline = 0.0
         self.n_updates = 0
         self._history.clear()

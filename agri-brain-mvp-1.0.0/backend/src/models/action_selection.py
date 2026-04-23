@@ -468,6 +468,7 @@ def select_action(
     supply_hat: float | None = None,
     supply_std: float | None = None,
     demand_std: float | None = None,
+    theta_forecast_delta: np.ndarray | None = None,
 ) -> tuple[int, np.ndarray]:
     """Select routing action based on mode-specific softmax policy.
 
@@ -499,6 +500,10 @@ def select_action(
         (demand uncertainty CV). The three forecast kwargs default to
         None so legacy callers still work; missing values yield zero
         contribution on the corresponding phi channels.
+    theta_forecast_delta : optional (3, 3) learned correction added to
+        THETA[:, 6:9] at inference. Provided by ForecastWeightsLearner.
+        The hand-calibrated THETA stays fixed; only this delta moves
+        with training.
 
     Returns
     -------
@@ -553,6 +558,14 @@ def select_action(
         # All four share the same base logits; what differs is the upstream
         # context_modifier (full / masked subset / zeroed) applied below.
         logits = THETA @ phi + gamma * tau + SLCA_BONUS + SLCA_RHO_BONUS * rho
+
+    # Learned forecast-column correction. ForecastWeightsLearner owns a
+    # (3, 3) delta trained via REINFORCE on phi[6:9]. It is zero-initialised
+    # and shrinks back toward zero under a Gaussian prior, so the default
+    # behaviour is bit-identical to the hand-calibrated policy until the
+    # learner observes enough reward signal.
+    if theta_forecast_delta is not None:
+        logits = logits + np.asarray(theta_forecast_delta) @ phi[6:9]
 
     if role_bias is not None:
         logits = logits + role_bias

@@ -90,6 +90,7 @@ class AgentCoordinator:
         self._temporal_window = None
         self._pirag_pipeline = None
         self._context_learner = None
+        self._forecast_learner = None
         self._context_evaluator = None
         self._context_log: List[Dict[str, Any]] = []
         self._decision_history: List[Dict[str, Any]] = []
@@ -109,6 +110,7 @@ class AgentCoordinator:
         self._step_supply_std: Optional[float] = None
         self._step_demand_std: Optional[float] = None
         self._step_rng_state: Optional[Dict[str, Any]] = None
+        self._step_phi: Optional[np.ndarray] = None
         self._step_override: bool = False
         self._step_counterfactual_action: int = 0
         self._step_counterfactual_probs: Optional[np.ndarray] = None
@@ -133,7 +135,7 @@ class AgentCoordinator:
             from pirag.mcp.context_sharing import SharedContextStore
             from pirag.mcp.agent_capabilities import register_all_agent_capabilities
             from pirag.temporal_context import TemporalContextWindow
-            from pirag.context_learner import ContextMatrixLearner
+            from pirag.context_learner import ContextMatrixLearner, ForecastWeightsLearner
             from pirag.context_eval import ContextEvaluator
             from pirag.context_to_logits import THETA_CONTEXT
 
@@ -163,6 +165,16 @@ class AgentCoordinator:
 
         except ImportError:
             self.context_enabled = False
+
+        # The forecast-column learner lives outside the context-enabled
+        # guard: it trains THETA[:, 6:9] for every non-static mode, not just
+        # the context-enabled ones. This matches its conceptual role as a
+        # base-policy learner rather than a context-pipeline learner.
+        try:
+            from pirag.context_learner import ForecastWeightsLearner as _FWL
+            self._forecast_learner = _FWL()
+        except ImportError:
+            self._forecast_learner = None
 
         try:
             from pirag.agent_pipeline import PiRAGPipeline
@@ -208,6 +220,7 @@ class AgentCoordinator:
         self._step_supply_std = None
         self._step_demand_std = None
         self._step_rng_state = None
+        self._step_phi = None
         self._step_override = False
         self._step_counterfactual_action = 0
         self._step_counterfactual_probs = None
@@ -225,6 +238,8 @@ class AgentCoordinator:
             self._temporal_window.reset()
         if self._context_learner is not None:
             self._context_learner.reset()
+        if self._forecast_learner is not None:
+            self._forecast_learner.reset()
         if self._context_evaluator is not None:
             self._context_evaluator.reset()
         if self._registry is not None:
@@ -332,6 +347,20 @@ class AgentCoordinator:
         # context_modifier (None in the CF, computed in the live call).
         self._step_rng_state = copy.deepcopy(rng.bit_generator.state)
 
+        # Cache phi (9D state feature vector) for the forecast-column
+        # learner update in post_step. Cheap to compute; keeps post_step
+        # from having to thread the forecast kwargs a second time.
+        from ..models.action_selection import build_feature_vector as _bfv
+        self._step_phi = _bfv(
+            obs.rho, obs.inv, obs.y_hat, obs.temp,
+            supply_hat=supply_hat, supply_std=supply_std, demand_std=demand_std,
+        )
+
+        theta_forecast_delta = (
+            self._forecast_learner.get_theta_delta()
+            if self._forecast_learner is not None else None
+        )
+
         action_idx, probs = select_action(
             mode=mode,
             rho=obs.rho,
@@ -349,6 +378,7 @@ class AgentCoordinator:
             supply_hat=supply_hat,
             supply_std=supply_std,
             demand_std=demand_std,
+            theta_forecast_delta=theta_forecast_delta,
         )
 
         # Store probs for learner update
@@ -603,6 +633,10 @@ class AgentCoordinator:
                 rng_cf = np.random.default_rng()
                 if self._step_rng_state is not None:
                     rng_cf.bit_generator.state = copy.deepcopy(self._step_rng_state)
+                theta_fcast_delta_cf = (
+                    self._forecast_learner.get_theta_delta()
+                    if self._forecast_learner is not None else None
+                )
                 action_without, probs_without = _sa(
                     mode="agribrain", rho=obs.rho, inv=obs.inv,
                     y_hat=obs.y_hat, temp=obs.temp, tau=obs.tau,
@@ -614,6 +648,7 @@ class AgentCoordinator:
                     supply_hat=self._step_supply_hat,
                     supply_std=self._step_supply_std,
                     demand_std=self._step_demand_std,
+                    theta_forecast_delta=theta_fcast_delta_cf,
                 )
                 self._step_counterfactual_action = action_without
                 self._step_counterfactual_probs = probs_without
@@ -637,6 +672,19 @@ class AgentCoordinator:
                     reward=reward,
                     slca_score=outcome.get("slca", 0.0),
                 )
+
+        # Update ForecastWeightsLearner via REINFORCE. Runs for every
+        # non-static mode because the forecast channels enter phi on every
+        # step regardless of whether the context pipeline is active.
+        if (self._forecast_learner is not None
+                and self._step_phi is not None
+                and self._step_probs is not None):
+            self._forecast_learner.update(
+                phi=self._step_phi,
+                action=action,
+                probs=self._step_probs,
+                reward=reward,
+            )
 
         # Generate structured explanation and capture trace
         if self.context_enabled and self._step_mcp_results:
@@ -819,6 +867,12 @@ class AgentCoordinator:
         """Context learner statistics."""
         if self._context_learner is not None:
             return self._context_learner.summary()
+        return {}
+
+    def forecast_learner_summary(self) -> Dict[str, Any]:
+        """Forecast-column learner statistics."""
+        if self._forecast_learner is not None:
+            return self._forecast_learner.summary()
         return {}
 
     def evaluator_summary(self) -> Dict[str, Any]:
