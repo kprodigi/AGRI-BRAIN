@@ -109,6 +109,10 @@ Modern React dashboard built with shadcn/ui, featuring eight pages:
 
 ## Quick Start
 
+The commands below assume the repository is cloned as ``AGRI-BRAIN``
+(the default ``git clone`` directory). If you cloned into a different
+directory name, substitute that name wherever ``AGRI-BRAIN`` appears.
+
 ### Backend (port 8100)
 
 ```bash

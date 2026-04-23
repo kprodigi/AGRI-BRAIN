@@ -1,5 +1,12 @@
 # Final Pre-HPC Check
 
+> **HISTORICAL SNAPSHOT.** Captured against repo HEAD ``b30f924``.
+> State-vector dimensions, THETA shape, and mode counts quoted below
+> describe the model as it was at that commit. The current main branch
+> uses a 10-dimensional state, ``THETA`` of shape ``(3, 10)``, and a
+> probability-space governance override; refresh against current
+> ``action_selection.py`` before citing.
+
 Run by: Claude, 2026-04-22
 Repo HEAD: `b30f924` (on `main`, matches `origin/main`)
 

@@ -175,12 +175,12 @@ THERMAL_DELTA_MAX: float = 20.0
 """Maximum temperature deviation for normalisation (deg C)."""
 
 # ---------------------------------------------------------------------------
-# THETA matrix (3 actions x 9 features)
+# THETA matrix (3 actions x 10 features)
 # ---------------------------------------------------------------------------
-# Columns:                 fresh   inv_p   dem_pt  therm   spoil   inter   sup_pt  sup_unc dem_unc
-# ColdChain row sign:         +       -       +       -       -       -       -       +       +
-# LocalRedist row sign:       0       +       -       +       +       +       +       +~0     -
-# Recovery row sign:          -       -       -       +       +       -       +       -       -
+# Columns:                 fresh   inv_p   dem_pt  therm   spoil   inter   sup_pt  sup_unc dem_unc price
+# ColdChain row sign:         +       -       +       -       -       -       -       +       +       +
+# LocalRedist row sign:       0       +       -       +       +       +       +       +~0     -       -
+# Recovery row sign:          -       -       -       +       +       -       +       -       -       ~0
 #
 # Sign justifications for the three new columns (phi_6, phi_7, phi_8):
 #

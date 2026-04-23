@@ -25,6 +25,11 @@ git clone https://github.com/kprodigi/AGRI-BRAIN.git AGRI-BRAIN
 cd AGRI-BRAIN
 ```
 
+Throughout this guide ``AGRI-BRAIN`` is the repository root. If you
+cloned into a different directory name (for example ``AgriBrain`` on
+case-sensitive filesystems or ``agri-brain``), substitute that name
+wherever ``AGRI-BRAIN`` appears in the commands below.
+
 The repository layout:
 
 ```

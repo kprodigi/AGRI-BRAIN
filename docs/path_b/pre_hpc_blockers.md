@@ -1,5 +1,12 @@
 # Pre-HPC Blockers
 
+> **HISTORICAL SNAPSHOT.** This document describes blockers as of the
+> listed repo HEAD. It is kept for traceability only. Later work in
+> `hpc_run.sh`, `hpc_seed.sh`, and `hpc_aggregate.sh` introduced a
+> SLURM array + dependent aggregate stage, which resolved the
+> parallelism concerns recorded here. For the current pipeline see the
+> root ``HOW_TO_RUN.md`` Section 9 (HPC).
+
 Recorded: 2026-04-22
 Repo HEAD: `30e3298`
 

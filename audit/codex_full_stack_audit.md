@@ -1,5 +1,12 @@
 # AGRI-BRAIN Full-Stack Pre-HPC Audit
 
+> **HISTORICAL SNAPSHOT.** This audit was run against repo HEAD
+> ``1bdc602``. Many of the findings below were addressed in the fix
+> packs that followed; the Post-fix update section at the end of the
+> file records which items were closed. Do not treat this report as
+> current truth; for the current codebase status refresh against
+> ``HEAD`` (see root ``HOW_TO_RUN.md``).
+
 **Auditor:** repository audit (read-only; no product attribution)  
 **Date:** 2026-04-23  
 **Repository HEAD:** 1bdc60242a7b3b518de41ff0d41c71a992b666d8  

@@ -873,6 +873,25 @@ def list_decisions():
 # ---------------------------------------------------------------------------
 # Chain config (local)
 # ---------------------------------------------------------------------------
+def _redacted_chain_config(chain_cfg: dict) -> dict:
+    """Return a copy of the chain config with the signing key redacted.
+
+    ``private_key`` must never cross process or proxy boundaries through
+    a response body: even on localhost, logs, reverse proxies, or
+    developer screenshots can leak the key. The redacted copy reports
+    only whether a key is configured (``"set"`` / ``"unset"``) so
+    operators can still verify configuration without exposing the
+    secret itself.
+    """
+    if not isinstance(chain_cfg, dict):
+        return {}
+    redacted = {k: v for k, v in chain_cfg.items() if k != "private_key"}
+    redacted["private_key"] = (
+        "set" if chain_cfg.get("private_key") else "unset"
+    )
+    return redacted
+
+
 @API.post("/chain/config")
 def chain_config(cfg: ChainConfig):
     chain_cfg = cfg.model_dump()
@@ -887,7 +906,11 @@ def chain_config(cfg: ChainConfig):
         })
     except Exception as exc:
         logger.debug("governance chain sync skipped: %s", exc)
-    return {"ok": True, "chain": state["chain"]}
+    # Never echo the signing key back in the HTTP response: redact it to
+    # a presence flag instead. The key stays in the in-memory state dict
+    # so subsequent on-chain calls work, but no HTTP response body or
+    # proxy log ever carries it.
+    return {"ok": True, "chain": _redacted_chain_config(state["chain"])}
 
 # ---------------------------------------------------------------------------
 # Simple PDF
