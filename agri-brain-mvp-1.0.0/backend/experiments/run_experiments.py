@@ -2,7 +2,9 @@
 # Reproducible, large-scale experiment runner for AGRI-BRAIN MVP
 # Generates: big CSV + plots
 
-import argparse, json, math, os, random, sys
+import argparse
+import random
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -128,11 +130,17 @@ def policy_decision(row: pd.Series, p: Policy) -> Tuple[str, float, float, float
     vol = str(row.get("volatility", "ok"))
 
     if shelf < p.min_shelf_expedite:
-        action = "expedite_to_retail"; km = p.km_expedited; price = p.msrp * 0.92
+        action = "expedite_to_retail"
+        km = p.km_expedited
+        price = p.msrp * 0.92
     elif shelf < p.min_shelf_reroute or vol == "anomaly":
-        action = "reroute_to_near_dc"; km = p.km_farm_to_dc * 0.6; price = p.msrp * 0.95
+        action = "reroute_to_near_dc"
+        km = p.km_farm_to_dc * 0.6
+        price = p.msrp * 0.95
     else:
-        action = "standard_cold_chain"; km = p.km_farm_to_dc + p.km_dc_to_retail; price = p.msrp
+        action = "standard_cold_chain"
+        km = p.km_farm_to_dc + p.km_dc_to_retail
+        price = p.msrp
 
     carbon = km * p.carbon_per_km
     return action, km, carbon, price
@@ -158,17 +166,13 @@ def run_single(df_base: pd.DataFrame, policy: Policy, distance_mult: float, seed
     Baseline: always standard_cold_chain (no policy).
     Agri-Brain: row-wise policy decisions.
     """
-    rng = random.Random(seed)
     df = df_base.copy()
 
     # Compute spoilage/volatility using your backend logic
     df = compute_spoilage(df)
     df["volatility"] = volatility_flags(df)
 
-    # Baseline (always standard); km = p.km_farm_to_dc + p.km_dc_to_retail (with distance_mult)
     p = policy
-    km_std = (p.km_farm_to_dc + p.km_dc_to_retail) * distance_mult
-    carbon_std = km_std * p.carbon_per_km
 
     baseline_eff = [effective_shelf_left(float(s), "standard_cold_chain") for s in df["shelf_left"]]
     baseline_waste = float((np.array(baseline_eff) < 0).mean())
@@ -179,7 +183,10 @@ def run_single(df_base: pd.DataFrame, policy: Policy, distance_mult: float, seed
         action, km, c, price = policy_decision(row, p)
         km *= distance_mult
         c *= distance_mult
-        actions.append(action); kms.append(km); carbons.append(c); prices.append(price)
+        actions.append(action)
+        kms.append(km)
+        carbons.append(c)
+        prices.append(price)
         eff_shelf.append(effective_shelf_left(float(row["shelf_left"]), action))
 
     agri_waste = float((np.array(eff_shelf) < 0).mean())
@@ -245,7 +252,7 @@ def run_grid(
                         continue
                     for r in range(reps):
                         import hashlib as _hl
-            seed = int(_hl.sha256(f"{sc_name}:{intensity}:{rer}:{exp}:{r}".encode()).hexdigest()[:8], 16)
+                        seed = int(_hl.sha256(f"{sc_name}:{intensity}:{rer}:{exp}:{r}".encode()).hexdigest()[:8], 16)
                         rng = random.Random(seed)
 
                         # policy for this cell

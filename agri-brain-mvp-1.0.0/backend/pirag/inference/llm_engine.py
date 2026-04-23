@@ -18,7 +18,7 @@ import json
 import os
 import urllib.request
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 from src.settings import SETTINGS
 
 

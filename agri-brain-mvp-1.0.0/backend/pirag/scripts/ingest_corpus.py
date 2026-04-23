@@ -20,7 +20,8 @@ def load_texts(folder):
                 _log.debug("corpus file %s skipped: %s", p, _exc)
 def main():
     if len(sys.argv) < 2:
-        print("Provide folder of text files."); sys.exit(1)
+        print("Provide folder of text files.")
+        sys.exit(1)
     folder = sys.argv[1]
     batch = list(load_texts(folder))
     print(f"Ingesting {len(batch)} docs → {API}")

@@ -6,7 +6,9 @@ from fastapi import FastAPI
 from src.agents.bus import BUS
 
 # ---- Helpers for chain polling (JSON-RPC, no extra deps) ----
-import json, urllib.request, urllib.error
+import json
+import urllib.request
+import urllib.error
 
 def _rpc_numeric_hex(rpc_url: str, method: str, params=None) -> Optional[int]:
     if not rpc_url:

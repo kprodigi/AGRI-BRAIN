@@ -18,8 +18,6 @@ from __future__ import annotations
 import argparse
 import os
 import random
-import sys
-import time
 from typing import Any, Dict, List
 
 import requests
@@ -165,7 +163,7 @@ def main():
     if args.api:
         API = args.api.rstrip("/")
 
-    print(f"AGRI-BRAIN Agent Runner")
+    print("AGRI-BRAIN Agent Runner")
     print(f"  API:      {API}")
     print(f"  Episodes: {args.episodes}")
     print(f"  Seed:     {args.seed}")

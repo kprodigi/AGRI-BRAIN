@@ -170,7 +170,7 @@ def main():
     ari_worst = (1.0 - waste_arr.max()) * slca_arr.min() * quality_arr.min()
     ari_typical = (1.0 - waste_arr.mean()) * slca_arr.mean() * quality_arr.mean()
 
-    print(f"\nTheoretical ARI bounds (from observed component extremes):")
+    print("\nTheoretical ARI bounds (from observed component extremes):")
     print(f"  ARI_best  = (1 - {waste_arr.min():.4f}) * {slca_arr.max():.4f} * "
           f"{quality_arr.max():.4f} = {ari_best:.4f}")
     print(f"  ARI_worst = (1 - {waste_arr.max():.4f}) * {slca_arr.min():.4f} * "

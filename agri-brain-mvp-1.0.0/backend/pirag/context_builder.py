@@ -8,7 +8,7 @@ primitive; otherwise, direct template expansion is used.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from .guards.retrieval_guard import retrieval_quality_ok
 from .mcp.protocol import MCPMessage, MCPServer

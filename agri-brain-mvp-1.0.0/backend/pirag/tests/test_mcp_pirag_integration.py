@@ -10,7 +10,6 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import pytest
 
 _BACKEND = Path(__file__).resolve().parent.parent.parent
 if str(_BACKEND) not in sys.path:
@@ -356,7 +355,7 @@ def test_backward_compatibility():
 # ---- Test 19: SLCA amplification ----
 def test_slca_amplification():
     """Verify agribrain logits with context_modifier include SLCA boost."""
-    from src.models.action_selection import select_action, SLCA_BONUS, SLCA_RHO_BONUS
+    from src.models.action_selection import select_action
 
     rng1 = np.random.default_rng(42)
     rng2 = np.random.default_rng(42)
@@ -393,7 +392,9 @@ def test_context_learner_update():
     learner.update(rules_fired=[0, 2], reward_with_context=1.0, reward_without_context=0.5)
     after = learner.get_weights()
 
-    # Rule 0 and 2 should have increased (relative to others)
+    # Fired rules should increase from their starting weight; unfired should not.
+    assert after[0] > initial_weights[0], "Fired rule 0 weight should grow after positive delta"
+    assert after[2] > initial_weights[2], "Fired rule 2 weight should grow after positive delta"
     assert after[0] > after[3], "Fired rules should increase relative to unfired"
 
 
@@ -455,7 +456,7 @@ def test_full_pipeline_nonzero_modifier():
 
     modifier = compute_context_modifier(mcp_results, ctx, obs)
     assert not np.allclose(modifier, 0.0), f"Modifier should be non-zero, got {modifier}"
-    assert np.all(np.abs(modifier) <= 1.0), f"Modifier should be within ±1.0 bounds"
+    assert np.all(np.abs(modifier) <= 1.0), "Modifier should be within ±1.0 bounds"
     # With the new THETA_CONTEXT approach, modifier norm should be > 0.3
     assert np.linalg.norm(modifier) > 0.3, (
         f"Modifier norm should be > 0.3, got {np.linalg.norm(modifier):.4f}"

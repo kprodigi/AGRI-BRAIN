@@ -10,7 +10,6 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import pytest
 
 _BACKEND = Path(__file__).resolve().parent.parent.parent
 if str(_BACKEND) not in sys.path:

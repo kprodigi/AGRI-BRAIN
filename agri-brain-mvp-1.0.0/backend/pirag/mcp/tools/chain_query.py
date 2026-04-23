@@ -5,7 +5,6 @@ Returns mock records when no blockchain connection is available.
 """
 from __future__ import annotations
 
-import time
 from typing import Any, Dict, List
 
 

@@ -96,7 +96,8 @@ def _ensure_state_has_kpis() -> None:
         if _CASE_STATE.get("summary", {}).get("records"):
             return
         from src.routers import case as _case  # type: ignore
-        import os, time as _t
+        import os
+        import time as _t
         csv_path = _case._default_csv_path()                 # noqa: SLF001
         if os.path.exists(csv_path):
             rows = _case._load_csv(csv_path)                 # noqa: SLF001
@@ -186,7 +187,8 @@ def _render_pdf(kpis: Dict[str, Any], last: Dict[str, Any]) -> bytes:
         f"waste_rate_baseline: {kpis.get('waste_rate_baseline', 0)}",
         f"waste_rate_agri: {kpis.get('waste_rate_agri', 0)}",
     ]:
-        c.drawString(x, y, line); y -= 14
+        c.drawString(x, y, line)
+        y -= 14
 
     # Last Decision
     y -= 10
@@ -206,38 +208,46 @@ def _render_pdf(kpis: Dict[str, Any], last: Dict[str, Any]) -> bytes:
     if isinstance(sc, dict):
         y -= 6
         c.setFont("Helvetica-Bold", 10)
-        c.drawString(x, y, "SLCA Components"); y -= 14
+        c.drawString(x, y, "SLCA Components")
+        y -= 14
         c.setFont("Helvetica", 10)
         for k in ("carbon", "labor", "resilience", "transparency", "composite"):
-            c.drawString(x + 10, y, f"{k}: {sc.get(k, '')}"); y -= 14
+            c.drawString(x + 10, y, f"{k}: {sc.get(k, '')}")
+            y -= 14
 
     # Reward decomposition
     rd = last.get("reward_decomposition")
     if isinstance(rd, dict):
         y -= 6
         c.setFont("Helvetica-Bold", 10)
-        c.drawString(x, y, "Reward Decomposition"); y -= 14
+        c.drawString(x, y, "Reward Decomposition")
+        y -= 14
         c.setFont("Helvetica", 10)
         for k in ("slca", "energy_penalty", "water_penalty", "waste_penalty", "total"):
-            c.drawString(x + 10, y, f"{k}: {rd.get(k, '')}"); y -= 14
+            c.drawString(x + 10, y, f"{k}: {rd.get(k, '')}")
+            y -= 14
 
     # Action probabilities
     ap = last.get("action_probabilities")
     if isinstance(ap, dict):
         y -= 6
         c.setFont("Helvetica-Bold", 10)
-        c.drawString(x, y, "Action Probabilities"); y -= 14
+        c.drawString(x, y, "Action Probabilities")
+        y -= 14
         c.setFont("Helvetica", 10)
         for k, v in ap.items():
-            c.drawString(x + 10, y, f"{k}: {v}"); y -= 14
+            c.drawString(x + 10, y, f"{k}: {v}")
+            y -= 14
 
     # Footprint & regime
     fp = last.get("footprint")
     if isinstance(fp, dict):
-        c.drawString(x, y, f"footprint: energy_J={fp.get('energy_J','')} water_L={fp.get('water_L','')}"); y -= 14
+        c.drawString(x, y, f"footprint: energy_J={fp.get('energy_J','')} water_L={fp.get('water_L','')}")
+        y -= 14
     rg = last.get("regime")
     if isinstance(rg, dict):
-        c.drawString(x, y, f"regime: tau={rg.get('tau','')} bollinger_z={rg.get('bollinger_z','')}"); y -= 14
+        c.drawString(x, y, f"regime: tau={rg.get('tau','')} bollinger_z={rg.get('bollinger_z','')}")
+        y -= 14
 
     c.showPage()
     c.save()

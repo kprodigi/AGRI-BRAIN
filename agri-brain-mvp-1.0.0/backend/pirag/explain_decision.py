@@ -14,10 +14,10 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-_log = logging.getLogger(__name__)
-
-from .provenance.hasher import hash_text, hash_artifact
+from .provenance.hasher import hash_artifact
 from .context_to_logits import THETA_CONTEXT
+
+_log = logging.getLogger(__name__)
 
 
 _FEATURE_NAMES = [
@@ -313,8 +313,8 @@ def _build_cause_phrase(
         )
     elif feature_idx == 4:
         return (
-            f"recent decisions are heavily skewed toward recovery, "
-            f"requiring rebalancing toward forward supply chain routes"
+            "recent decisions are heavily skewed toward recovery, "
+            "requiring rebalancing toward forward supply chain routes"
         )
     return f"context feature {feature_idx} was active"
 

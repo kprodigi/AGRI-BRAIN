@@ -17,7 +17,6 @@ Standalone usage:
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -166,7 +165,7 @@ def _print_trace(t: dict, scenario: str) -> None:
     if s.get("governance_override"):
         print("[GOVERNANCE OVERRIDE: MCP compliance + forecast mandate rerouting]")
 
-    print(f"\nProvenance Chain:")
+    print("\nProvenance Chain:")
     print(f"  Evidence items: {prov.get('total_evidence_items', 0)}")
     for h in prov.get("evidence_hashes", [])[:3]:
         print(f"  SHA-256: {h[:16]}...")

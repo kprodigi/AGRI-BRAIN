@@ -24,16 +24,15 @@ import pandas as pd
 from src.models.spoilage import compute_spoilage, volatility_flags
 from src.models.policy import Policy
 from src.agents.coordinator import AgentCoordinator
-from src.models.action_selection import ACTIONS, ACTION_KM_KEYS, select_action, build_feature_vector
+from src.models.action_selection import ACTIONS, ACTION_KM_KEYS
 from src.models.action_selection import compute_thermal_stress, compute_slca_attenuation
 from src.models.carbon import compute_transport_carbon
 from src.models.slca import slca_score
 from src.models.waste import INV_BASELINE, compute_waste_rate, compute_save_factor
 from src.models.spoilage import arrhenius_k
-from src.models.resilience import compute_ari, compute_equity
+from src.models.resilience import compute_ari
 from src.models.reward import compute_reward
 from src.models.lstm_demand import lstm_demand_forecast
-from src.models.yield_forecast import yield_supply_forecast
 
 from src.routers.scenarios import _hours_from_start, register_app_state as _register_scenario_state
 

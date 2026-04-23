@@ -5,7 +5,7 @@ import base64
 import hmac
 import time
 
-from fastapi import Header, HTTPException, Request, WebSocket
+from fastapi import HTTPException, Request, WebSocket
 
 from .settings import SETTINGS
 

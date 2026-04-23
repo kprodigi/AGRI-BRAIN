@@ -201,7 +201,7 @@ def main():
         print("VERDICT: BROKEN")
         print("Perturbations have no effect. Check wiring.")
     else:
-        print(f"VERDICT: NEEDS TUNING")
+        print("VERDICT: NEEDS TUNING")
         print(f"{ordering_violations} ordering violations, {bound_violations} bound violations.")
 
     return ordering_violations == 0 and bound_violations == 0 and any_diff

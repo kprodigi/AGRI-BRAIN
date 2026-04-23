@@ -1,6 +1,6 @@
 
-import os, time, yaml
-from typing import Dict, Any
+import os
+import yaml
 _POLICY = None
 _POLICY_MTIME = 0.0
 def _load_policy():

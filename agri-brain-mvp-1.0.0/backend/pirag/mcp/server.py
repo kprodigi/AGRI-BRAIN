@@ -73,7 +73,6 @@ def _get_mcp_server():
                 """Return current telemetry (fallback to defaults if backend state unavailable)."""
                 try:
                     from src.routers.case import STATE as _case_state
-                    summary = _case_state.get("summary", {})
                     rows = _case_state.get("rows", [])
                     last_row = rows[-1] if rows else {}
                     return {

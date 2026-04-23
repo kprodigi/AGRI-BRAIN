@@ -115,7 +115,6 @@ from __future__ import annotations
 
 import numpy as np
 
-from .action_aliases import resolve_action
 
 
 # ---------------------------------------------------------------------------

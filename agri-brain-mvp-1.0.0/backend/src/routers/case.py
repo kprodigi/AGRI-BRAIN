@@ -1,7 +1,10 @@
 # backend/src/routers/case.py
 from fastapi import APIRouter
 from typing import Any, Dict, List, Optional
-import os, csv, statistics, time
+import os
+import csv
+import statistics
+import time
 from src.settings import SETTINGS
 
 router = APIRouter()
@@ -46,8 +49,7 @@ def _load_csv(path: str) -> List[Dict[str, Any]]:
     return rows
 
 def _compute_summary(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
-    temps = [r["tempC"] for r in rows if isinstance(r.get("tempC"), (int, float, float))]
-    shocks = [r["shockG"] for r in rows if isinstance(r.get("shockG"), (int, float, float))]
+    temps = [r["tempC"] for r in rows if isinstance(r.get("tempC"), (int, float))]
     records = len(rows)
     avg_temp = round(statistics.fmean(temps), 2) if temps else None
 

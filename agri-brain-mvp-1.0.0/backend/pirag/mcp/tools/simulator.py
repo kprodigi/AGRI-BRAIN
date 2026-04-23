@@ -1,5 +1,4 @@
 
-import os
 from typing import Dict, Any, Optional
 from src.settings import SETTINGS
 try:

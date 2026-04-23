@@ -79,7 +79,8 @@ def _fee_params(w3: Web3) -> tuple[int, int]:
 
 def log_decision_onchain(memo: dict, chain_cfg: dict) -> Optional[str]:
     """Send tx to DecisionLogger if configured. Returns tx hash hex or None."""
-    if not chain_cfg: return None
+    if not chain_cfg:
+        return None
     addrs = chain_cfg.get("addresses") or {}
     dl = addrs.get("DecisionLogger")
     if not (chain_cfg.get("rpc") and dl and chain_cfg.get("private_key")):

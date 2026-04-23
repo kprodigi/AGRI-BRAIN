@@ -2,7 +2,9 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Tuple, Optional
-import math, re, hashlib
+import math
+import re
+import hashlib
 from collections import Counter
 
 try:
@@ -10,7 +12,6 @@ try:
 except Exception:
     SentenceTransformer = None
 
-import numpy as np
 
 from ..ingestion.embedder import TFIDFEmbedder
 from ..ingestion.vector_store import VectorStore
@@ -135,7 +136,8 @@ class HybridRetriever:
         dense = self._dense_search(q, k)
 
         def norm(xs):
-            if not xs: return []
+            if not xs:
+                return []
             vals = [s for _, s in xs]
             mn, mx = min(vals), max(vals)
             rng = (mx - mn) or 1e-9

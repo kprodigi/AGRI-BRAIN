@@ -308,8 +308,13 @@ def _decide_standalone(req: DecideRequest) -> dict:
         class _Obs:
             pass
         _obs = _Obs()
-        _obs.rho = rho; _obs.temp = temp; _obs.rh = rh_val; _obs.inv = inv
-        _obs.tau = tau; _obs.hour = 0.0; _obs.surplus_ratio = surplus_ratio
+        _obs.rho = rho
+        _obs.temp = temp
+        _obs.rh = rh_val
+        _obs.inv = inv
+        _obs.tau = tau
+        _obs.hour = 0.0
+        _obs.surplus_ratio = surplus_ratio
         _obs.y_hat = y_hat
 
         _psi = extract_context_features(_mcp_res, _rc, _obs)

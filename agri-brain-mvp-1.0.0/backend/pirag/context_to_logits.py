@@ -30,9 +30,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
-_log = logging.getLogger(__name__)
-
 from .temporal_context import TemporalContextWindow
+
+_log = logging.getLogger(__name__)
 
 
 CONTEXT_MODIFIER_SCALE: float = 1.0

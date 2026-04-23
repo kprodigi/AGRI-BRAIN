@@ -14,9 +14,10 @@ import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
+from fastapi.responses import RedirectResponse, FileResponse, HTMLResponse
 from pydantic import BaseModel
-
-logger = logging.getLogger(__name__)
 
 # PiRAG / MCP routers
 from pirag.api.routes.rag import router as rag_router
@@ -54,8 +55,11 @@ from .models.reverse_logistics import evaluate_recovery_options, compute_circula
 from .models.policy_learner import PolicyLearner
 from .chain.eth import log_decision_onchain
 
+logger = logging.getLogger(__name__)
+
 # Forecast method selection (default: LSTM, fallback: Holt-Winters)
 FORECAST_METHOD = SETTINGS.forecast_method
+
 
 def _demand_forecast(df, horizon=1, **kwargs):
     """Demand forecast routed through the MCP demand_query tool.
@@ -73,11 +77,6 @@ def _demand_forecast(df, horizon=1, **kwargs):
         if FORECAST_METHOD == "holt_winters":
             return yield_demand_forecast(df, horizon=horizon, **kwargs)
         return lstm_demand_forecast(df, horizon=horizon, **kwargs)
-
-# Static/docs branding
-from fastapi.staticfiles import StaticFiles
-from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
-from fastapi.responses import RedirectResponse, FileResponse, HTMLResponse
 
 # ---------------------------------------------------------------------------
 # FastAPI app
@@ -749,8 +748,13 @@ def decide(d: DecideIn):
         class _Obs:
             pass
         _obs = _Obs()
-        _obs.rho = rho; _obs.temp = temp; _obs.rh = rh_val; _obs.inv = inv
-        _obs.tau = tau; _obs.hour = float(idx); _obs.surplus_ratio = surplus_ratio
+        _obs.rho = rho
+        _obs.temp = temp
+        _obs.rh = rh_val
+        _obs.inv = inv
+        _obs.tau = tau
+        _obs.hour = float(idx)
+        _obs.surplus_ratio = surplus_ratio
         _obs.y_hat = y_hat
 
         _mcp_res = rag_context.get("mcp_results", {})
@@ -935,7 +939,6 @@ def report_pdf(role: str = ""):
     from reportlab.lib.units import mm
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib import colors
-    from reportlab.lib.enums import TA_CENTER
 
     buf = BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4,

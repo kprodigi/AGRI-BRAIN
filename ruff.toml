@@ -1,0 +1,10 @@
+# Repo-wide Ruff config.
+#
+# Scripts under mvp/simulation and backend/experiments bootstrap their own
+# sys.path so they can run stand-alone (no editable install required).
+# Their real imports therefore must come after the sys.path manipulation,
+# which trips Ruff's E402 rule. We whitelist those paths instead of
+# sprinkling noqa across every import line.
+[lint.per-file-ignores]
+"agri-brain-mvp-1.0.0/backend/experiments/**/*.py" = ["E402"]
+"mvp/simulation/**/*.py" = ["E402"]

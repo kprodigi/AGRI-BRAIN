@@ -4,15 +4,16 @@ import os
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 
-_log = logging.getLogger(__name__)
 from .pyrag.hybrid_retriever import HybridRetriever, Document, sha256_hex
 from .ingestion.embedder import TFIDFEmbedder
 from .ingestion.vector_store import VectorStore
 from .guards.unit_guard import units_consistent
 from .guards.feasibility_guard import within_ranges, verify_with_sim
-from .provenance.hasher import hash_text
 from .provenance.merkle import merkle_root
 from .chain.client import anchor_root as anchor_onchain
+
+_log = logging.getLogger(__name__)
+
 
 @dataclass
 class Citation:

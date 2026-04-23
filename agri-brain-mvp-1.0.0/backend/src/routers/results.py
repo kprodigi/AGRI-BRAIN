@@ -9,7 +9,6 @@ GET  /results/figures/{filename} — serves a generated figure file
 """
 from __future__ import annotations
 
-import json
 import os
 import sys
 import threading

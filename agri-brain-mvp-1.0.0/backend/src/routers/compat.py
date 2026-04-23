@@ -23,10 +23,13 @@ def _coerce(payload: Dict[str, Any] | None) -> DecideRequest:
 
 async def _payload(req: Request) -> Dict[str, Any]:
     data: Dict[str, Any] = {}
-    if req.method in ("POST","PUT","PATCH"):
-        try: data = await req.json()
-        except (json.JSONDecodeError, ValueError): pass
-    for k,v in req.query_params.items(): data.setdefault(k, v)
+    if req.method in ("POST", "PUT", "PATCH"):
+        try:
+            data = await req.json()
+        except (json.JSONDecodeError, ValueError):
+            pass
+    for k, v in req.query_params.items():
+        data.setdefault(k, v)
     return data
 
 @router.api_route("/decision/take",      methods=["GET","POST"])

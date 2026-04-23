@@ -23,7 +23,6 @@ References
 """
 from __future__ import annotations
 
-import os
 from typing import Dict
 
 import numpy as np
@@ -165,7 +164,6 @@ class LSTMDemandModel:
                 dh = self.out.W.T.flatten() * error + dh_next
 
                 combined, f, i, o, g, c_prev, c_t, h_t = caches[t]
-                hs_ = self.hidden_size
 
                 # Backprop through LSTM cell
                 do_ = dh * _tanh(c_t)

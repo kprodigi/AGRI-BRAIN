@@ -5,7 +5,7 @@ the AGRI-BRAIN knowledge base through the standard MCP protocol.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 
 # Singleton pipeline (lazy init)

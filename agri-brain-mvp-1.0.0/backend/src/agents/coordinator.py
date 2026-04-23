@@ -18,8 +18,6 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-_log = logging.getLogger(__name__)
-
 from .base import Observation, SupplyChainAgent
 from .message import InterAgentMessage
 from .roles import (
@@ -31,6 +29,8 @@ from .roles import (
     stage_for_hour,
 )
 from ..models.action_selection import select_action
+
+_log = logging.getLogger(__name__)
 
 # Context modes that enable MCP/piRAG infrastructure
 _CONTEXT_MODES = {"agribrain", "mcp_only", "pirag_only"}
@@ -140,7 +140,7 @@ class AgentCoordinator:
             from pirag.mcp.context_sharing import SharedContextStore
             from pirag.mcp.agent_capabilities import register_all_agent_capabilities
             from pirag.temporal_context import TemporalContextWindow
-            from pirag.context_learner import ContextMatrixLearner, PolicyDeltaLearner
+            from pirag.context_learner import ContextMatrixLearner
             from pirag.context_eval import ContextEvaluator
             from pirag.context_to_logits import THETA_CONTEXT
 

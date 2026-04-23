@@ -11,12 +11,10 @@ and hour parameters.
 """
 from __future__ import annotations
 
-import inspect
 import logging
-from pathlib import Path
+from typing import Any, Dict
 
 _log = logging.getLogger(__name__)
-from typing import Any, Dict, Optional
 
 _PIPELINE = None
 
@@ -152,7 +150,7 @@ def get_policy_context(
     elif scenario == "overproduction":
         conditions.append("surplus inventory management")
 
-    query = f"cold chain management guidelines for spinach"
+    query = "cold chain management guidelines for spinach"
     if conditions:
         query += " with " + " and ".join(conditions)
     context["query"] = query

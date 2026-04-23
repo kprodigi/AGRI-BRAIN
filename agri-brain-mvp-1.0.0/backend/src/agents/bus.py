@@ -1,7 +1,8 @@
 # backend/src/agents/bus.py
 from typing import Set
 from fastapi import WebSocket
-import asyncio, json
+import asyncio
+import json
 
 class BroadcastBus:
     def __init__(self) -> None:

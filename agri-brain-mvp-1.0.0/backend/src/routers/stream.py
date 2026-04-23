@@ -1,7 +1,7 @@
 # backend/src/routers/stream.py
-import asyncio, json
+import asyncio
+import json
 from fastapi import APIRouter, Header, Request, WebSocket, WebSocketDisconnect
-from starlette.responses import Response
 from src.agents.bus import BUS
 from src.security import enforce_api_key, issue_ws_token, websocket_auth_ok
 

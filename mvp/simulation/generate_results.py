@@ -68,7 +68,6 @@ from src.models.spoilage import compute_spoilage, compute_spoilage_pinn, arrheni
 from src.models.footprint import FootprintMeter
 from src.models.forecast import yield_demand_forecast
 from src.models.lstm_demand import lstm_demand_forecast
-from src.models.yield_forecast import yield_supply_forecast
 # Supply and demand forecasts are routed through the MCP tools so simulator
 # and REST share a single forecasting code path; the underlying forecaster
 # modules above remain importable for tests that exercise them directly.
@@ -83,8 +82,7 @@ from src.models.carbon import compute_transport_carbon
 from src.models.resilience import compute_ari, RLETracker, compute_equity
 from src.models.reward import compute_reward
 from src.models.action_selection import (
-    ACTIONS, ACTION_KM_KEYS, select_action,
-    compute_thermal_stress, compute_slca_attenuation,
+    ACTIONS, ACTION_KM_KEYS, compute_thermal_stress, compute_slca_attenuation,
 )
 from src.models.reverse_logistics import evaluate_recovery_options, compute_circular_economy_score
 from src.models.policy_learner import PolicyLearner
@@ -493,7 +491,7 @@ def run_episode(
         cum_r += reward
 
         # Green AI footprint tracking (Section 4.12)
-        fp = meter.compute_footprint(steps=1)
+        meter.compute_footprint(steps=1)
 
         # Append the routing decision to the per-episode ledger before
         # post_step runs the learner update so the leaf hash captures the
@@ -767,7 +765,7 @@ def run_all(seed: int = SEED) -> dict:
 
                 role_table = exporter.export_role_comparison_table()
                 if role_table:
-                    print(f"    Role context comparison:")
+                    print("    Role context comparison:")
                     for row in role_table:
                         kw_str = ", ".join(row.get("top_keywords", [])[:3]) or "none"
                         print(f"      {row['role']:12s}: MCP={row['mcp_tools']}, "

@@ -7,12 +7,10 @@ Run after generate_results.py. ALL checks must pass before committing.
 Stochastic mode: uses relaxed bounds and ordering tolerance (0.01) to
 accommodate seeded perturbation noise. Deterministic mode: strict exact checks.
 """
-import os
 import sys
 from pathlib import Path
 
 import pandas as pd
-import numpy as np
 import json
 
 # Import stochastic config (handles env var reading)
@@ -276,7 +274,7 @@ if errors:
         print(f"  {e}")
     sys.exit(1)
 else:
-    print(f"ALL CHECKS PASSED")
+    print("ALL CHECKS PASSED")
     print(f"{'='*70}")
     print("\nFinal AGRI-BRAIN results:")
     for sc in ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing", "baseline"]:
