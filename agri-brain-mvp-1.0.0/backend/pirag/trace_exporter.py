@@ -12,7 +12,10 @@ Three export formats:
 from __future__ import annotations
 
 import json
+import logging
 from collections import Counter
+
+_log = logging.getLogger(__name__)
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -182,8 +185,8 @@ class TraceExporter:
             try:
                 from .provenance.merkle import merkle_root
                 merkle = merkle_root(ev_hashes)
-            except Exception:
-                pass
+            except Exception as _exc:
+                _log.debug("merkle root for trace skipped: %s", _exc)
 
         trace = DecisionTrace(
             hour=obs.hour,

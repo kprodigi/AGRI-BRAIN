@@ -13,9 +13,12 @@ online REINFORCE learning, and context quality evaluation.
 from __future__ import annotations
 
 import copy
+import logging
 from typing import Any, Dict, List, Optional
 
 import numpy as np
+
+_log = logging.getLogger(__name__)
 
 from .base import Observation, SupplyChainAgent
 from .message import InterAgentMessage
@@ -508,8 +511,8 @@ class AgentCoordinator:
                         context_mode=context_mode,
                     )
                     modifier = 0.7 * modifier + 0.3 * coop_modifier
-                except Exception:
-                    pass
+                except Exception as _exc:
+                    _log.debug("cooperative overlay blending skipped: %s", _exc)
 
             # Track which features are active (non-zero) for the learner
             psi = extract_context_features(mcp_results, rag_context, obs)

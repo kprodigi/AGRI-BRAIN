@@ -9,9 +9,12 @@ Generates human-readable explanations with:
 """
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, List, Optional
 
 import numpy as np
+
+_log = logging.getLogger(__name__)
 
 from .provenance.hasher import hash_text, hash_artifact
 from .context_to_logits import THETA_CONTEXT
@@ -103,8 +106,8 @@ def explain_decision(
         try:
             from .provenance.merkle import merkle_root as _mr
             merkle_root = _mr(all_hashes)
-        except Exception:
-            pass
+        except Exception as _exc:
+            _log.debug("merkle root for explanation skipped: %s", _exc)
 
     # --- Physical basis ---
     physical_basis = (

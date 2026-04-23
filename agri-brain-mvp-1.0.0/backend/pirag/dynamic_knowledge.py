@@ -7,9 +7,11 @@ retrievals. Called periodically during simulation (every 24 timesteps /
 """
 from __future__ import annotations
 
+import logging
+from collections import Counter
 from typing import Any, Dict, List
 
-from collections import Counter
+_log = logging.getLogger(__name__)
 
 
 def synthesize_decision_document(
@@ -113,7 +115,7 @@ def ingest_decision_history(
                 pipeline.ingest([doc])
                 docs_ingested += 1
                 seen_ids.add(doc["id"])
-            except Exception:
-                pass
+            except Exception as _exc:
+                _log.debug("dynamic knowledge ingest skipped for doc %s: %s", doc.get("id", "?"), _exc)
 
     return docs_ingested

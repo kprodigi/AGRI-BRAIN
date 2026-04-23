@@ -12,7 +12,10 @@ and hour parameters.
 from __future__ import annotations
 
 import inspect
+import logging
 from pathlib import Path
+
+_log = logging.getLogger(__name__)
 from typing import Any, Dict, Optional
 
 _PIPELINE = None
@@ -104,8 +107,8 @@ def get_policy_context(
             from .mcp.registry import get_default_registry
             registry = get_default_registry()
             mcp_results = dispatch_tools(role, obs, registry)
-        except Exception:
-            pass
+        except Exception as _exc:
+            _log.debug("MCP dispatch in context provider skipped for role %s: %s", role, _exc)
 
         result = retrieve_role_context(role, obs, scenario, mcp_results, pipeline)
 
@@ -171,7 +174,7 @@ def get_policy_context(
         if not context["regulatory_guidance"] and response.citations:
             context["regulatory_guidance"] = response.citations[0].passage[:200]
 
-    except Exception:
-        pass
+    except Exception as _exc:
+        _log.debug("context provider outer path skipped: %s", _exc)
 
     return context

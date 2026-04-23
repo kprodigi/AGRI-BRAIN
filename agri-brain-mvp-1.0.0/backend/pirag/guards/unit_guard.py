@@ -1,6 +1,9 @@
 
+import logging
 import re
 from typing import List, Tuple
+
+_log = logging.getLogger(__name__)
 
 try:
     import pint
@@ -20,8 +23,8 @@ def extract_number_units(text: str) -> List[Tuple[float, str]]:
             val = float(m.group(1))
             u = m.group(2)
             out.append((val, u))
-        except Exception:
-            pass
+        except Exception as _exc:
+            _log.debug("unit parse skipped for %r: %s", m.group(0), _exc)
     return out
 
 def units_consistent(answer: str) -> bool:

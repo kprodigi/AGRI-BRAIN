@@ -55,10 +55,13 @@ if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 
 import json
+import logging
 import os
 import time
 import numpy as np
 import pandas as pd
+
+_log = logging.getLogger(__name__)
 
 # Layer 1 imports — all scientific logic lives here
 from src.models.spoilage import compute_spoilage, compute_spoilage_pinn, arrhenius_k, volatility_flags
@@ -342,8 +345,8 @@ def run_episode(
         if RAG_CONTEXT_ENABLED and not context_mode and _get_policy_context is not None:
             try:
                 rag_context = _get_policy_context(scenario=scenario, spoilage_risk=rho, temperature=temp)
-            except Exception:
-                pass
+            except Exception as _exc:
+                _log.debug("RAG policy context skipped for scenario=%s: %s", scenario, _exc)
 
         # Build env_state for the coordinator. Supply and demand point
         # forecasts and residual-std uncertainties all flow through
@@ -606,8 +609,8 @@ def run_episode(
                 tx = decision_ledger.submit_onchain(chain_cfg)
                 if tx:
                     result["decision_ledger_tx"] = tx
-            except Exception:
-                pass
+            except Exception as _exc:
+                _log.debug("on-chain ledger submission skipped: %s", _exc)
 
     return result
 

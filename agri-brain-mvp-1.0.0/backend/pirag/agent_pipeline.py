@@ -1,7 +1,10 @@
 
-from typing import List, Dict, Any, Optional
-from dataclasses import dataclass
+import logging
 import os
+from dataclasses import dataclass
+from typing import List, Dict, Any, Optional
+
+_log = logging.getLogger(__name__)
 from .pyrag.hybrid_retriever import HybridRetriever, Document, sha256_hex
 from .ingestion.embedder import TFIDFEmbedder
 from .ingestion.vector_store import VectorStore
@@ -55,8 +58,8 @@ class PiRAGPipeline:
                     text = f.read_text(encoding="utf-8").strip()
                     if text:
                         docs.append({"id": f.stem, "text": text, "metadata": {"source": f.name}})
-                except Exception:
-                    pass
+                except Exception as _exc:
+                    _log.debug("corpus doc %s skipped: %s", f.name, _exc)
         if docs:
             self.ingest(docs)
 

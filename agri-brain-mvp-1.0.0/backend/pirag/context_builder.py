@@ -7,10 +7,13 @@ primitive; otherwise, direct template expansion is used.
 """
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, List, Optional
 
 from .guards.retrieval_guard import retrieval_quality_ok
 from .mcp.protocol import MCPMessage, MCPServer
+
+_log = logging.getLogger(__name__)
 
 
 ROLE_QUERY_TEMPLATES: Dict[str, Dict[str, Any]] = {
@@ -116,8 +119,8 @@ def build_role_query(
                         text = messages[0].get("content", {}).get("text", "")
                         if text:
                             return text
-            except Exception:
-                pass
+            except Exception as _exc:
+                _log.debug("MCP prompt fetch for role %s skipped: %s", role, _exc)
 
     # Fallback: direct template expansion
     template = ROLE_QUERY_TEMPLATES.get(role, {"base": "supply chain management", "conditions": []})
@@ -343,11 +346,12 @@ def retrieve_role_context(
                     "top_doc_changed": bool(cf_top and cf_top != context.get("top_doc_id", "")),
                     "n_citations": len(cf_resp.citations),
                 }
-            except Exception:
+            except Exception as _exc:
+                _log.debug("counterfactual retrieval skipped: %s", _exc)
                 context["counterfactual"] = {}
 
-    except Exception:
-        pass
+    except Exception as _exc:
+        _log.debug("retrieve_role_context fell through to fallback: %s", _exc)
 
     # Extract actionable keywords from guidance passages
     try:

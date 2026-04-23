@@ -1,5 +1,13 @@
 
-import os, sys, glob, requests
+import glob
+import logging
+import os
+import sys
+
+import requests
+
+_log = logging.getLogger(__name__)
+
 API = os.environ.get("PIRAG_API","http://127.0.0.1:8100/rag/ingest")
 def load_texts(folder):
     for p in glob.glob(os.path.join(folder, "**", "*.*"), recursive=True):
@@ -8,8 +16,8 @@ def load_texts(folder):
                 with open(p,"r",encoding="utf-8", errors="ignore") as f:
                     txt = f.read()
                 yield {"id": os.path.relpath(p, folder), "text": txt, "metadata": {"path": p}}
-            except Exception:
-                pass
+            except Exception as _exc:
+                _log.debug("corpus file %s skipped: %s", p, _exc)
 def main():
     if len(sys.argv) < 2:
         print("Provide folder of text files."); sys.exit(1)

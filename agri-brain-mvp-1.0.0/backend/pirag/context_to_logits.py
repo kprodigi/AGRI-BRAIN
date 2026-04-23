@@ -25,9 +25,12 @@ is consumed through the state vector (not through psi).
 """
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
+
+_log = logging.getLogger(__name__)
 
 from .temporal_context import TemporalContextWindow
 
@@ -196,8 +199,8 @@ def compute_context_modifier(
             )
             temporal_mod = t_base - t_scale * continuity
             modifier *= temporal_mod
-        except Exception:
-            pass
+        except Exception as _exc:
+            _log.debug("temporal continuity modulation skipped: %s", _exc)
 
     modifier *= CONTEXT_MODIFIER_SCALE
     if physics_gate_enabled:

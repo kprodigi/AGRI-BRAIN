@@ -595,8 +595,8 @@ def decide(d: DecideIn):
     try:
         from pirag.context_provider import get_policy_context
         rag_context = get_policy_context(scenario="baseline", spoilage_risk=rho, temperature=temp)
-    except Exception:
-        pass
+    except Exception as _exc:
+        logger.debug("RAG policy context skipped: %s", _exc)
 
     # ---- action selection via canonical select_action() -------------------
     rng = np.random.default_rng()

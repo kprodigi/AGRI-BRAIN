@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import subprocess
 from pathlib import Path
+
+_log = logging.getLogger(__name__)
 
 
 RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
@@ -42,8 +45,8 @@ def main() -> None:
             .decode("utf-8")
             .strip()
         )
-    except Exception:
-        pass
+    except Exception as _exc:
+        _log.debug("git rev-parse HEAD skipped in manifest build: %s", _exc)
     payload = {
         "git_commit": commit,
         "artifact_count": len(include),
