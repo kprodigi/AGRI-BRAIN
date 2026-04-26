@@ -45,8 +45,10 @@ REINFORCE learning for sustainable food logistics.
 ## Architecture Highlights
 
 - **MCP interoperability layer** with 13 statically registered tools and 5 additional
-  runtime role-capability tools (18 at simulation time), plus 13 resources and 5 prompts,
-  accessible through JSON-RPC 2.0 protocol with InProcess, Stdio, and SSE transports
+  runtime role-capability tools (18 at simulation time, as of the published artifact
+  manifest; the live count is `len(get_default_registry().list_tools())`), plus 13
+  resources and 5 prompts, accessible through JSON-RPC 2.0 protocol with InProcess,
+  Stdio, and SSE transports
 - **Physics-informed RAG (piRAG)** with 20-document knowledge base, BM25+TF-IDF hybrid
   retrieval (k=4, 20% retrieval ratio), physics-aware query expansion,
   and physics-aware reranking (temperature-proximity scoring, spoilage-

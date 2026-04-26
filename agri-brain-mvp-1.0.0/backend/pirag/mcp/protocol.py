@@ -1,13 +1,15 @@
 """MCP protocol layer: JSON-RPC 2.0, capability negotiation, three primitives.
 
 Implements the Model Context Protocol server following the JSON-RPC 2.0
-specification. Supports all three MCP primitives:
+specification. The advertised ``protocolVersion`` is ``2024-11-05``;
+the matching reference document is the MCP specification of that
+date. Supports all three MCP primitives:
 
 - **Tools**: callable functions with schema-based invocation
 - **Resources**: URI-addressable live state endpoints
 - **Prompts**: parameterized query templates
 
-Reference: https://modelcontextprotocol.io/specification/2025-11-25
+Reference: https://modelcontextprotocol.io/specification/2024-11-05
 """
 from __future__ import annotations
 

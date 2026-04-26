@@ -8,10 +8,11 @@ results for the AGRI-BRAIN system.
 The simulation runs 5 **scenarios** x 8 **modes** (40 episodes) to evaluate
 the AGRI-BRAIN adaptive supply-chain intelligence system against baselines and
 ablation variants, including MCP/piRAG context integration ablations. The
-state vector phi(s) has 9 dimensions: six perception features and three
+state vector phi(s) has 10 dimensions: six perception features, three
 forecast-channel features (supply point, supply uncertainty, demand
-uncertainty) that treat the LSTM demand and Holt-Winters supply forecasts
-symmetrically. The context vector psi remains 5-dimensional and carries
+uncertainty) that treat the LSTM demand and Holt's linear (level + trend)
+supply forecasts symmetrically, and one demand-volatility price-pressure
+proxy. The context vector psi remains 5-dimensional and carries
 institutional / coordination signals only.
 
 ### Scenarios
@@ -37,9 +38,14 @@ institutional / coordination signals only.
 | `pirag_only` | piRAG retrieval only (regulatory pressure, retrieval confidence); MCP features zeroed |
 | `agribrain` | Full system: PINN + SLCA + MCP tools + piRAG retrieval + online learning |
 
-The four context-enabled modes (`no_context`, `mcp_only`, `pirag_only`,
-`agribrain`) share the same RNG seed per scenario so that ARI
-differences reflect only context injection, not stochastic noise.
+All four agribrain-logit modes (`agribrain`, `no_context`, `mcp_only`,
+`pirag_only`) share the same per-scenario `ablation_seed` for the
+paired-design statistics. `no_context` is **not** context-enabled —
+its MCP/piRAG context layer is switched off and its logits run with a
+zeroed modifier — but it shares the seed so that ARI differences
+against `agribrain` reflect only the context injection rather than
+stochastic noise. The other agribrain-logit modes (`mcp_only`,
+`pirag_only`, `agribrain`) keep MCP/piRAG context on.
 
 Stochastic perturbations apply to `tempC`, `RH`, `demand_units`, and
 `inventory_units`. Decision latency is recorded as observed wall-clock
@@ -54,18 +60,34 @@ All models are imported from the backend (`backend/src/models/`):
 - **Spoilage (PINN)**: First-order ODE decay `dC/dt = -k_eff(t,T,H) * C` with
   Arrhenius parameters `k_ref=0.0021 h^-1`, `Ea/R=8000 K`, `T_ref=277.15 K`, `beta=0.25`
   and Baranyi lag phase `lambda=12.0 h`
-- **Forecast**: LSTM demand forecaster (default) or Holt-Winters fallback (controlled by `FORECAST_METHOD`)
+- **Forecast**: LSTM demand forecaster (default) or Holt's linear
+  (level + trend, no seasonal indices) demand fallback, controlled by
+  `FORECAST_METHOD`. Yield/supply forecasting always uses Holt's
+  linear via `query_yield` (`pirag.mcp.tools.yield_query`).
 - **SLCA**: 4-component Social Life-Cycle Assessment
   (Carbon, Labour, Resilience, Price transparency)
-- **Policy**: Contextual softmax policy with theta matrix (3 actions x 6 features)
-  and Bollinger volatility regime tilt
+- **Policy**: Contextual softmax policy with weight matrix
+  Theta of shape (3 actions x 10 features) and Bollinger volatility
+  regime tilt. The 5-dimensional institutional context vector psi has
+  its own learned weight matrix Theta_context of shape (3, 5) which
+  produces an additive logit modifier.
 
 ## MCP/piRAG Context Integration
 
 Each agent step invokes role-specific MCP tools and piRAG knowledge retrieval:
 
-- **MCP tools** (JSON-RPC 2.0): 13 statically registered tools including compliance check, spoilage forecast, SLCA lookup, chain query, policy oracle, calculator, footprint query, convert_units, pirag_query, explain, context_features, simulate, and yield_query; the coordinator adds 5 runtime role-capability tools (18 at simulation time)
-- **piRAG pipeline**: 20-document knowledge base with BM25+TF-IDF hybrid retrieval (k=4), physics-informed reranking, scenario-discriminative query expansion
+- **MCP tools** (JSON-RPC 2.0): 13 statically registered tools (as of the
+  published artifact manifest; the live registry length is
+  `len(get_default_registry().list_tools())`) — compliance check,
+  spoilage forecast, SLCA lookup, chain query, policy oracle, calculator,
+  footprint query, convert_units, pirag_query, explain,
+  context_features, simulate, and yield_query; the coordinator adds 5
+  runtime role-capability tools (18 at simulation time).
+- **piRAG pipeline**: 20-document knowledge base with BM25+TF-IDF hybrid
+  retrieval at `k=4` for the simulator/benchmark call sites in
+  `pirag/context_builder.py` (the underlying `PiRAGPipeline.ask` default
+  is `k=6`; the simulation/benchmark always passes `k=4`), physics-
+  informed reranking, scenario-discriminative query expansion.
 - **State features**: 10D feature vector phi(s) = [freshness, inventory pressure, demand point forecast, thermal stress, spoilage urgency, interaction, supply point, supply uncertainty, demand uncertainty, price signal] with policy weight matrix Theta of shape (3, 10). Supply and demand forecast uncertainties are residual-std prediction-error estimates (Hyndman & Athanasopoulos 2018, Ch. 8.7); the price signal is a demand-volatility Bollinger z-score clipped to [-1, +1] that proxies market pressure.
 - **Context features**: 5D feature vector psi = [compliance severity, forecast urgency, retrieval confidence, regulatory pressure, recovery saturation] with learned Theta_context weight matrix of shape (3, 5)
 - **Governance override**: Deterministic redistribution when policy probability of cold-chain falls below the calibration-derived ceiling (5th percentile of pi(cold_chain) over benchmark rollouts) AND local-redistribute dominates cold-chain by the calibrated median gap

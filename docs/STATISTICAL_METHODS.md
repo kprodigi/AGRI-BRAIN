@@ -106,12 +106,14 @@ deployment-variation lens (pooled).
 
 ## Seed Policy
 
-- Publication benchmark default uses 20 fixed seeds derived from
-  `np.random.SeedSequence(42).spawn(20)`. The legacy fixed list
-  (`42, 1337, 2024, ...`) is preserved as a sanity comparator behind
-  the env var `BENCHMARK_SEED_LIST=legacy`.
-- Seed list can be overridden via `BENCHMARK_SEEDS`, but publication
-  artefacts should report the exact list used.
+- Publication benchmark default uses the 20-seed fixed list
+  `42, 1337, 2024, 7, 99, 101, 202, 303, 404, 505, 606, 707, 808, 909,
+  1010, 1111, 1212, 1313, 1414, 1515` (see `mvp/simulation/reproduce_core.py`
+  and `.env.example`).
+- The list can be overridden via the `BENCHMARK_SEEDS` env var
+  (comma-separated integers). Publication artefacts should always
+  report the exact list used; the manifest `git_commit` plus the
+  resolved seed list together pin the run.
 
 ## Baseline Fairness Protocol
 

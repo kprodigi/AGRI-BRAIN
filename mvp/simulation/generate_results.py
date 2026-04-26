@@ -15,8 +15,9 @@ which uses the same logits as agribrain but without context modifier.
 
 Supply and demand forecast information (both point and residual-std
 uncertainty) is represented as state features in phi(s) at indices
-6-8, populated from ``yield_supply_forecast`` and ``lstm_demand_forecast``
-output and consumed by ``build_feature_vector``.
+6-8, populated from ``query_yield`` (Holt's linear level+trend
+yield/supply) and ``query_demand`` (LSTM by default, Holt's linear
+fallback) and consumed by ``build_feature_vector``.
 
 Standalone usage:
     cd mvp/simulation
@@ -29,9 +30,9 @@ This module is a **Layer 3 orchestrator**.  All scientific models, equations,
 and scoring functions live in the backend model files (Layer 1):
 
     src.models.spoilage           — Arrhenius decay, Baranyi lag phase
-    src.models.forecast           — Holt-Winters demand forecasting (fallback)
+    src.models.forecast           — Holt's linear (level + trend) demand forecasting (fallback)
     src.models.lstm_demand        — Numpy-only LSTM demand forecasting (default)
-    src.models.yield_forecast     — Holt-Winters yield/supply forecasting
+    src.models.yield_forecast     — Holt's linear (level + trend) yield/supply forecasting
     src.models.slca               — 4-component Social LCA scoring
     src.models.policy             — Policy configuration
     src.models.waste              — Operational waste model
@@ -99,7 +100,7 @@ try:
 except Exception:
     _get_policy_context = None
 
-# Forecast method selection (default: LSTM, fallback: Holt-Winters)
+# Forecast method selection (default: LSTM, fallback: Holt's linear level+trend)
 FORECAST_METHOD = os.environ.get("FORECAST_METHOD", "lstm")
 
 # Online learning toggle (default: disabled to preserve deterministic results)
@@ -112,7 +113,13 @@ RAG_CONTEXT_ENABLED = os.environ.get("RAG_CONTEXT_ENABLED", "true").lower() != "
 DETERMINISTIC_MODE = _is_deterministic()
 
 def _demand_forecast(df, horizon=1, **kwargs):
-    """Dispatch to LSTM or Holt-Winters demand forecaster based on config."""
+    """Dispatch to LSTM or Holt's linear demand forecaster based on config.
+
+    The ``holt_winters`` value of ``FORECAST_METHOD`` is retained as a
+    legacy alias and selects ``yield_demand_forecast`` (Holt's linear
+    level + trend, no seasonal indices); the actual implementation is
+    not Holt-Winters seasonal smoothing.
+    """
     if FORECAST_METHOD == "holt_winters":
         return yield_demand_forecast(df, horizon=horizon, **kwargs)
     return lstm_demand_forecast(df, horizon=horizon, **kwargs)
