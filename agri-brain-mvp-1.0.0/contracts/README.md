@@ -1,4 +1,4 @@
-# AGRI-BRAIN smart contracts (PROTOTYPE)
+# AGRI-BRAIN smart contracts
 
 This directory contains the Solidity smart contracts and Hardhat test
 suite for the AGRI-BRAIN audit-trail prototype.
