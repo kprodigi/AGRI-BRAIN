@@ -1,5 +1,11 @@
 """
-Holt-Winters double exponential smoothing forecaster with horizon tiling.
+Holt's linear (double exponential smoothing) forecaster with horizon tiling.
+
+This module implements only the level + trend recurrence; no seasonal
+indices are computed, so the algorithm is Holt's method (Holt, 1957),
+not the seasonal Holt-Winters extension. Earlier revisions of this
+docstring referred to the routine as "Holt-Winters"; that label was
+inaccurate and has been corrected.
 
 Implements the approach from Section 4.2.2 of the AGRI-BRAIN paper:
   1. Compute level (l_t) and trend (b_t) via Holt's linear method:
@@ -69,7 +75,7 @@ def yield_demand_forecast(
     # Use the most recent observations
     tail = d[-min(lookback, len(d)):]
 
-    # --- Holt-Winters double exponential smoothing (Holt, 1957; Winters, 1960) ---
+    # --- Holt's linear method: level + trend recurrence (Holt, 1957) ---
     # Level:  L(t) = alpha * D(t) + (1 - alpha) * (L(t-1) + T(t-1))
     # Trend:  T(t) = beta * (L(t) - L(t-1)) + (1 - beta) * T(t-1)
     # Initialise level and trend
@@ -86,7 +92,7 @@ def yield_demand_forecast(
         # Trend smoothing update
         trend = trend_beta * (level - prev_level) + (1.0 - trend_beta) * trend
 
-    # Holt-Winters forecast (Winters, 1960):
+    # Holt's linear h-step forecast (Holt, 1957):
     #   F(t+h) = L(t) + h * T(t)
     # Multi-step: l_t + h * b_t (with dampening for longer horizons)
     forecast = []

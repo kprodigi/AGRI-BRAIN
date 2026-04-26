@@ -57,7 +57,7 @@ from .chain.eth import log_decision_onchain
 
 logger = logging.getLogger(__name__)
 
-# Forecast method selection (default: LSTM, fallback: Holt-Winters)
+# Forecast method selection (default: LSTM, fallback: Holt's linear level+trend)
 FORECAST_METHOD = SETTINGS.forecast_method
 
 

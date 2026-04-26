@@ -107,7 +107,7 @@ const CAT_COLORS = {
 
 const PIPELINE_STEPS = [
   { icon: Network, label: "Agent", sub: "5 roles", color: "text-gray-600 dark:text-gray-400", bg: "bg-gray-500/10" },
-  { icon: Wrench, label: "MCP Tools", sub: "13 tools", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-500/10" },
+  { icon: Wrench, label: "MCP Tools", sub: "14 tools", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-500/10" },
   { icon: BookOpen, label: "piRAG", sub: "20 docs", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-500/10" },
   { icon: Layers, label: "Context", sub: "5D vector", color: "text-teal-600 dark:text-teal-400", bg: "bg-teal-500/10" },
   { icon: Brain, label: "Policy", sub: "Softmax", color: "text-purple-600 dark:text-purple-400", bg: "bg-purple-500/10" },

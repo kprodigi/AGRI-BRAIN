@@ -1,11 +1,13 @@
-"""Short-term yield/supply forecaster using Holt-Winters double exponential smoothing.
+"""Short-term yield/supply forecaster using Holt's linear (double exponential smoothing) method.
 
 Operates on the inventory_units series as a supply/yield proxy, providing a
 distinct supply-side forecast separate from the LSTM demand forecaster.
 
 This module implements the "Short-term yield forecaster" component shown in the
-AGRI-BRAIN architectural figure, using the freed Holt-Winters method (previously
-used for demand forecasting, now replaced by the LSTM demand model).
+AGRI-BRAIN architectural figure, using the freed Holt's-linear (level + trend)
+method previously used for demand forecasting (now replaced by the LSTM demand
+model). No seasonal indices are computed, so this is Holt's method (Holt,
+1957) rather than the seasonal Holt-Winters extension.
 
 References
 ----------
@@ -72,8 +74,10 @@ def yield_supply_forecast(
     # Use the most recent observations
     tail = d[-min(lookback, len(d)):]
 
-    # Holt-Winters double exponential smoothing, recording the one-step-
-    # ahead forecast at each timestep to reconstruct residuals afterwards.
+    # Holt's linear (level + trend) double exponential smoothing, recording
+    # the one-step-ahead forecast at each timestep to reconstruct residuals
+    # afterwards. No seasonal component is fit, so this is Holt 1957 rather
+    # than seasonal Holt-Winters.
     level = tail[0]
     if len(tail) > 1:
         trend = float(tail[1] - tail[0])

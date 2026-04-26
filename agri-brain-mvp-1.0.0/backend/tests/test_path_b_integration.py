@@ -9,8 +9,8 @@ After the Option-3 refactor:
 - The context vector psi has shape (5,) again (the pre-Path-B size).
   Supply and demand forecast information no longer lives in psi.
 - Theta has shape (3, 10); Theta_context has shape (3, 5).
-- yield_query remains a useful MCP tool that supplies the Holt-Winters
-  forecast and its residual-std uncertainty; its output is consumed by
+- yield_query remains a useful MCP tool that supplies the Holt's linear
+  (level + trend) forecast and its residual-std uncertainty; its output is consumed by
   the state vector via build_feature_vector, not by the context
   modifier.
 """

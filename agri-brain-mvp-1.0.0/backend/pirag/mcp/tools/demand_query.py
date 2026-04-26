@@ -1,7 +1,8 @@
 """MCP tool: demand_query.
 
 Symmetric counterpart to ``yield_query``. Wraps the demand forecaster
-(LSTM by default, Holt-Winters when requested) and exposes a normalised
+(LSTM by default, Holt's linear when requested via the legacy
+``holt_winters`` alias) and exposes a normalised
 demand-uncertainty signal plus the point forecast and residual standard
 deviation. Feeds the same slot in ``obs.raw`` that simulator uses to
 populate ``phi_8`` (demand uncertainty CV).

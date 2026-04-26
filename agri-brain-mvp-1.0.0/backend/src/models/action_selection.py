@@ -26,7 +26,7 @@ Perception features 0 through 5 are the original state vector. Features
     phi_9 = price_signal       = clip(demand_bollinger_z, -1, +1)
 
 ``sigma_s`` and ``sigma_d`` are in-sample one-step-ahead residual standard
-deviations from the Holt-Winters supply forecaster and the LSTM demand
+deviations from the Holt's linear supply forecaster and the LSTM demand
 forecaster respectively (Hyndman & Athanasopoulos 2018, Ch. 8.7). They
 capture forecast uncertainty in the same statistical sense for both
 series, so phi_7 and phi_8 are dimensionless coefficient-of-variation
@@ -565,9 +565,9 @@ def build_feature_vector(
     inv : current inventory level (units).
     y_hat : LSTM demand point forecast (units / step).
     temp : current temperature (deg C).
-    supply_hat : optional. Holt-Winters supply point forecast (units).
+    supply_hat : optional. Holt's linear supply point forecast (units).
         When omitted, phi_6 is zero (neutral).
-    supply_std : optional. Holt-Winters one-step-ahead residual standard
+    supply_std : optional. Holt's linear one-step-ahead residual standard
         deviation. When omitted, phi_7 is zero.
     demand_std : optional. LSTM one-step-ahead residual standard
         deviation. When omitted, phi_8 is zero.
@@ -601,7 +601,7 @@ def build_feature_vector(
         ratio = float(supply_hat) / float(INV_BASELINE) - 1.0
         supply_point = float(np.clip(ratio, -0.5, 0.5))
 
-    # Supply uncertainty: coefficient of variation of the Holt-Winters
+    # Supply uncertainty: coefficient of variation of the Holt's linear
     # one-step-ahead residuals, clipped to the unit interval.
     if supply_hat is None or supply_std is None:
         supply_uncertainty = 0.0
@@ -731,9 +731,9 @@ def select_action(
         MCP/piRAG context pipeline.  Added to logits after all other
         mode-specific and role-specific terms, before softmax.
         When ``None``, behavior is bit-identical to the original policy.
-    supply_hat : Holt-Winters supply point forecast (units). Feeds
+    supply_hat : Holt's linear supply point forecast (units). Feeds
         ``phi_6`` (centered supply point).
-    supply_std : Holt-Winters in-sample residual std (units). Feeds
+    supply_std : Holt's linear in-sample residual std (units). Feeds
         ``phi_7`` (supply uncertainty CV).
     demand_std : LSTM in-sample residual std (units). Feeds ``phi_8``
         (demand uncertainty CV). The forecast kwargs default to None so

@@ -44,11 +44,11 @@ REINFORCE learning for sustainable food logistics.
 
 ## Architecture Highlights
 
-- **MCP interoperability layer** with 13 statically registered tools and 5 additional
-  runtime role-capability tools (18 at simulation time, as of the published artifact
-  manifest; the live count is `len(get_default_registry().list_tools())`), plus 13
-  resources and 5 prompts, accessible through JSON-RPC 2.0 protocol with InProcess,
-  Stdio, and SSE transports
+- **MCP interoperability layer** with 14 statically registered tools and 5 additional
+  runtime role-capability tools (19 at simulation time; the live count is
+  `len(get_default_registry().list_tools())`), plus 13 resources and 5 prompts,
+  accessible through JSON-RPC 2.0 protocol with InProcess, Stdio, and SSE
+  transports
 - **Physics-informed RAG (piRAG)** with 20-document knowledge base, BM25+TF-IDF hybrid
   retrieval (k=4, 20% retrieval ratio), physics-aware query expansion,
   and physics-aware reranking (temperature-proximity scoring, spoilage-
@@ -139,7 +139,7 @@ Modern React dashboard built with shadcn/ui, featuring eight pages:
 | **Analytics** | Executive summary banner, interactive cross-scenario tables & charts, ablation study, radar profiles, scenario deep-dive gallery, carbon footprint analysis |
 | **MCP/piRAG** | MCP protocol overview, context feature visualization, knowledge base browser, protocol traces, causal reasoning panel |
 | **Demo** | Interactive system demo with live pipeline walkthrough and agent decision theater |
-| **Admin** | Seven tabs — Policy parameters, Blockchain status & config, Audit log, Scenario runner, Quick Decision, Runtime config, MCP Explorer (tool browser with 13 statically registered tools, live resource monitor, prompt template browser, live tool invocation with presets, piRAG knowledge base search, JSON-RPC protocol interaction log) |
+| **Admin** | Seven tabs — Policy parameters, Blockchain status & config, Audit log, Scenario runner, Quick Decision, Runtime config, MCP Explorer (tool browser with 14 statically registered tools, live resource monitor, prompt template browser, live tool invocation with presets, piRAG knowledge base search, JSON-RPC protocol interaction log) |
 
 **Tech stack:** React 18, React Router 7, shadcn/ui (Radix), Tailwind CSS, Recharts, React-Leaflet, Framer Motion, Sonner toasts, Vite 7
 
@@ -322,7 +322,7 @@ AGRI-BRAIN/
           resources.py          # MCP resource definitions (telemetry, context, quality)
           prompts.py            # Parameterized query templates with scenario terms
           server.py             # FastAPI REST wrapper for MCP protocol
-          tools/                # 13 statically registered MCP tools
+          tools/                # 14 statically registered MCP tools
             compliance.py       # FDA temperature/humidity compliance check
             slca_lookup.py      # SLCA weight and score lookup
             chain_query.py      # Blockchain audit trail query
@@ -336,6 +336,7 @@ AGRI-BRAIN/
             simulator.py        # Forward simulation proxy
             policy_oracle.py    # Governance access check
             yield_query.py      # Holt's linear supply/yield forecast
+            demand_query.py     # LSTM (or Holt's linear) demand forecast
         pyrag/                  # Hybrid BM25+dense retriever
         guards/                 # Unit, feasibility, and retrieval-quality guards
         provenance/             # Merkle tree + on-chain anchoring

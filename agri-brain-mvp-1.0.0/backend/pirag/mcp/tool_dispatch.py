@@ -74,7 +74,7 @@ def _calculator_surplus_args(obs: Any, prior: Dict[str, Any], shared: Any) -> Di
 
 def _yield_query_args(obs: Any, prior: Dict[str, Any], shared: Any) -> Dict[str, Any]:
     """Path B: pull pre-computed uncertainty from obs.raw when the simulator
-    has already run Holt-Winters this step. Falls back to inv_history when
+    has already run Holt's linear this step. Falls back to inv_history when
     no cached value is present (e.g., FastAPI /decide path).
     """
     raw = getattr(obs, "raw", {}) or {}

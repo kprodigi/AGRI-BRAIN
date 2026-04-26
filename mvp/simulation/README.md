@@ -76,13 +76,13 @@ All models are imported from the backend (`backend/src/models/`):
 
 Each agent step invokes role-specific MCP tools and piRAG knowledge retrieval:
 
-- **MCP tools** (JSON-RPC 2.0): 13 statically registered tools (as of the
-  published artifact manifest; the live registry length is
-  `len(get_default_registry().list_tools())`) — compliance check,
-  spoilage forecast, SLCA lookup, chain query, policy oracle, calculator,
-  footprint query, convert_units, pirag_query, explain,
-  context_features, simulate, and yield_query; the coordinator adds 5
-  runtime role-capability tools (18 at simulation time).
+- **MCP tools** (JSON-RPC 2.0): 14 statically registered tools (the
+  live registry length is `len(get_default_registry().list_tools())`)
+  — compliance check, spoilage forecast, SLCA lookup, chain query,
+  policy oracle, calculator, footprint query, convert_units,
+  pirag_query, explain, context_features, simulate, yield_query, and
+  demand_query; the coordinator adds 5 runtime role-capability tools
+  (19 at simulation time).
 - **piRAG pipeline**: 20-document knowledge base with BM25+TF-IDF hybrid
   retrieval at `k=4` for the simulator/benchmark call sites in
   `pirag/context_builder.py` (the underlying `PiRAGPipeline.ask` default

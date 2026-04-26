@@ -4,7 +4,7 @@ Wraps :func:`backend.src.models.yield_forecast.yield_supply_forecast` and
 exposes a normalised supply-uncertainty signal (`uncertainty`) used as the
 sixth context feature psi_5 in :mod:`backend.pirag.context_to_logits`.
 
-The uncertainty signal is the coefficient of variation of the Holt-Winters
+The uncertainty signal is the coefficient of variation of the Holt's linear
 forecast, clamped to the unit interval:
 
     uncertainty = clip( std / max(|forecast[0]|, 1.0), 0.0, 1.0 )
@@ -15,7 +15,7 @@ features.
 Path B note: when the simulator pre-computes the uncertainty (in
 ``mvp/simulation/generate_results.py``) and exposes it via
 ``obs.raw["supply_uncertainty"]``, this tool short-circuits and returns
-the cached value rather than re-running Holt-Winters. This avoids
+the cached value rather than re-running Holt's linear. This avoids
 duplicate computation per step per agent without changing the MCP-facing
 contract.
 """
@@ -35,11 +35,11 @@ def query_yield(
     cached_forecast: Optional[List[float]] = None,
     cached_std: Optional[float] = None,
 ) -> Dict[str, Any]:
-    """Return a Holt-Winters yield/supply forecast plus a normalised
+    """Return a Holt's linear yield/supply forecast plus a normalised
     supply-uncertainty signal in [0, 1].
 
     When ``cached_uncertainty`` is provided (typically by the simulator
-    that already ran Holt-Winters this step), the call short-circuits
+    that already ran Holt's linear this step), the call short-circuits
     and returns the cached values without re-running the forecast.
     """
     if cached_uncertainty is not None:
