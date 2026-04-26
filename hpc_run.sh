@@ -66,21 +66,25 @@ pip install --upgrade pip --quiet
 pip install -e agri-brain-mvp-1.0.0/backend --quiet
 pip install pytest --quiet
 
-# Fail fast if Path B is missing, before any SLURM time is consumed.
+# Pre-flight invariants check, before any SLURM time is consumed.
+# Verifies the MCP tool registry contains the canonical forecast tools
+# and that the policy / context matrices have the documented shapes.
+# Fails fast on any mismatch so 6+ hours of seed-array compute are
+# never spent on a broken codebase or a stale venv.
 echo ""
-echo "=== Path B load check ==="
+echo "=== Pre-flight invariants check ==="
 python -c "
 import sys
 sys.path.insert(0, 'agri-brain-mvp-1.0.0/backend')
 from pirag.mcp.registry import get_default_registry
 from pirag.context_to_logits import THETA_CONTEXT
 names = {t['name'] for t in get_default_registry().list_tools()}
-assert 'yield_query' in names, 'BLOCK: yield_query missing'
-assert 'demand_query' in names, 'BLOCK: demand_query missing'
+assert 'yield_query' in names, 'BLOCK: yield_query missing from MCP registry'
+assert 'demand_query' in names, 'BLOCK: demand_query missing from MCP registry'
 from src.models.action_selection import THETA
 assert THETA_CONTEXT.shape == (3, 5), 'BLOCK: THETA_CONTEXT shape not (3,5)'
 assert THETA.shape == (3, 10), 'BLOCK: THETA shape not (3,10)'
-print('Path B loaded')
+print('Pre-flight invariants OK')
 "
 
 # Compute a run tag that uniquely identifies this submission.

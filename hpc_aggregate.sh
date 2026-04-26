@@ -77,19 +77,19 @@ echo "[aggregate tag=${RUN_TAG}] starting at $(date)"
 echo "[aggregate] seeds dir: ${SEEDS_DIR}"
 echo "[aggregate] results dir: ${RESULTS_DIR}"
 
-# Path B sanity check, same assertion as the seed tasks.
+# Pre-flight invariants check, same assertion as the seed tasks.
 python -c "
 import sys
 sys.path.insert(0, 'agri-brain-mvp-1.0.0/backend')
 from pirag.mcp.registry import get_default_registry
 from pirag.context_to_logits import THETA_CONTEXT
 names = {t['name'] for t in get_default_registry().list_tools()}
-assert 'yield_query' in names, 'BLOCK: yield_query missing'
-assert 'demand_query' in names, 'BLOCK: demand_query missing'
+assert 'yield_query' in names, 'BLOCK: yield_query missing from MCP registry'
+assert 'demand_query' in names, 'BLOCK: demand_query missing from MCP registry'
 from src.models.action_selection import THETA
 assert THETA_CONTEXT.shape == (3, 5), 'BLOCK: THETA_CONTEXT shape not (3,5)'
 assert THETA.shape == (3, 10), 'BLOCK: THETA shape not (3,10)'
-print('Path B loaded')
+print('Pre-flight invariants OK')
 "
 
 # Stage 1: generate base tables at the default results location.

@@ -51,20 +51,20 @@ mkdir -p "$OUT_DIR"
 
 echo "[seed=${SEED} tag=${RUN_TAG}] starting at $(date), output -> ${OUT_DIR}/seed_${SEED}.json"
 
-# Fail fast if Path B is not loaded in this environment. Costs <1 s and
-# avoids 2-6 h of wasted compute producing numbers from an old code path.
+# Pre-flight invariants check. Costs <1 s and avoids 2-6 h of wasted
+# compute producing numbers from a stale code path.
 python -c "
 import sys
 sys.path.insert(0, 'agri-brain-mvp-1.0.0/backend')
 from pirag.mcp.registry import get_default_registry
 from pirag.context_to_logits import THETA_CONTEXT
 names = {t['name'] for t in get_default_registry().list_tools()}
-assert 'yield_query' in names, 'BLOCK: yield_query missing'
-assert 'demand_query' in names, 'BLOCK: demand_query missing'
+assert 'yield_query' in names, 'BLOCK: yield_query missing from MCP registry'
+assert 'demand_query' in names, 'BLOCK: demand_query missing from MCP registry'
 from src.models.action_selection import THETA
 assert THETA_CONTEXT.shape == (3, 5), 'BLOCK: THETA_CONTEXT shape not (3,5)'
 assert THETA.shape == (3, 10), 'BLOCK: THETA shape not (3,10)'
-print('Path B loaded')
+print('Pre-flight invariants OK')
 "
 
 python mvp/simulation/benchmarks/run_single_seed.py "$SEED" --output-dir "$OUT_DIR"
