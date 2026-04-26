@@ -637,7 +637,7 @@ This runs, in order:
 - validation checks
 - regression guard check (initialize once with `REGRESSION_GUARD_INIT=true`)
 - stress robustness suite (noise, missing data, telemetry delay, MCP faults)
-- external validity holdout check (early/mid/late windows)
+- within-trace temporal stability check (early/mid/late thirds of the same trace; not external validity in the methodological sense)
 - per-seed benchmark runs (`benchmarks/run_single_seed.py`)
 - canonical multi-seed aggregation (`benchmarks/aggregate_seeds.py`) with CIs + paired stats
 - figure generation

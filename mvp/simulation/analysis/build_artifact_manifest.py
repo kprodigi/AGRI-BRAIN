@@ -15,11 +15,25 @@ RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 OUT = RESULTS_DIR / "artifact_manifest.json"
 
 
+_TEXT_EXTS = {".json", ".csv", ".txt", ".md", ".yaml", ".yml"}
+
+
 def _sha256(path: Path) -> str:
+    """SHA-256 of *path*, with line-ending normalisation for text files.
+
+    Same canonicalisation as ``verify_manifest._sha256``: for text
+    artifacts (JSON/CSV/TXT/MD/YAML) we normalise CRLF to LF before
+    hashing so the recorded SHA is stable across Windows and Linux
+    working-tree checkouts. Binary files are hashed as-is.
+    """
     h = hashlib.sha256()
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
-            h.update(chunk)
+    if path.suffix.lower() in _TEXT_EXTS:
+        data = path.read_bytes().replace(b"\r\n", b"\n")
+        h.update(data)
+    else:
+        with path.open("rb") as f:
+            for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                h.update(chunk)
     return h.hexdigest()
 
 

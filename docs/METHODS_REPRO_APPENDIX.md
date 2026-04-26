@@ -114,14 +114,18 @@ REPRO_RUN_CONTEXT_BENCHMARK=true python mvp/simulation/reproduce_core.py
   - `stress_passfail.csv` (absolute values + deltas + threshold columns + pass/fail)
 - Pass/fail thresholds are declared in `benchmarks/run_stress_suite.py` and serialized into `stress_summary.json`.
 
-## 6) External Validity Check
+## 6) Within-Trace Temporal Stability
 
-- Holdout-style time-window validation is produced by `benchmarks/run_external_validity.py`.
-- Outputs:
+- Time-window stability check produced by `benchmarks/run_external_validity.py`.
+- Outputs (legacy filenames retained for manifest compatibility):
   - `external_validity_summary.json`
   - `external_validity_summary.csv`
   - `external_validity_deltas.csv`
-- This check verifies that method ranking and relative gains persist across early/mid/late windows.
+- This check verifies that method ranking and relative gains persist
+  across early, mid, and late thirds of the **same** 288-row sensor
+  trace. It is *not* external validity in the methodological sense
+  (no second dataset, second crop, or second region). Genuine
+  external validity is future work.
 
 ## 7) Figure Uncertainty Policy
 

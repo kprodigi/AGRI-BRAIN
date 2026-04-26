@@ -8,8 +8,15 @@ This module provides two entry points:
 
 - ``compute_spoilage_pinn``: adds a lightweight neural network residual
   correction (from ``pinn_net.SpoilagePINN``) on top of the ODE baseline.
-  The PINN is trained with a physics-informed loss that penalises ODE
-  violations, making the correction consistent with known kinetics.
+  The network is trained against an ODE-residual penalty whose gradient
+  really propagates to the layer weights (a 2026-04 fix; earlier
+  revisions computed the physics term for logging only and the
+  gradient never reached the parameters). Because the trapezoidal ODE
+  baseline already approximately satisfies the kinetics, the learned
+  correction is small in magnitude — bounded to ``[-0.08, +0.08]`` by
+  construction — and serves as a sub-trapezoidal refinement plus an
+  L2-anchored bound on consistency violations rather than as a
+  dominant predictive term.
 
 Arrhenius temperature dependence and Baranyi lag phase.
 

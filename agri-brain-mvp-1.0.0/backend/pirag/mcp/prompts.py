@@ -132,16 +132,16 @@ def register_prompts(server: MCPServer) -> None:
     _scenario_arg = {
         "name": "scenario",
         "description": "Current scenario (baseline, heatwave, cyber_outage, overproduction, adaptive_pricing)",
-        "required": "false",
+        "required": False,
     }
 
     server.register_prompt(MCPPrompt(
         name="regulatory_compliance_check",
         description="Generate a regulatory compliance query for FDA cold chain requirements",
         arguments=[
-            {"name": "product_type", "description": "Produce type (e.g. spinach)", "required": "false"},
-            {"name": "temperature", "description": "Current temperature in Celsius", "required": "false"},
-            {"name": "humidity", "description": "Current relative humidity in percent", "required": "false"},
+            {"name": "product_type", "description": "Produce type (e.g. spinach)", "required": False},
+            {"name": "temperature", "description": "Current temperature in Celsius", "required": False},
+            {"name": "humidity", "description": "Current relative humidity in percent", "required": False},
             _scenario_arg,
         ],
         template_fn=_regulatory_compliance_template,
@@ -151,9 +151,9 @@ def register_prompts(server: MCPServer) -> None:
         name="waste_hierarchy_assessment",
         description="Generate a waste hierarchy assessment query for food diversion pathways",
         arguments=[
-            {"name": "spoilage_risk", "description": "Current spoilage risk (0-1)", "required": "false"},
-            {"name": "product_type", "description": "Produce type", "required": "false"},
-            {"name": "hours_remaining", "description": "Remaining shelf life hours", "required": "false"},
+            {"name": "spoilage_risk", "description": "Current spoilage risk (0-1)", "required": False},
+            {"name": "product_type", "description": "Produce type", "required": False},
+            {"name": "hours_remaining", "description": "Remaining shelf life hours", "required": False},
             _scenario_arg,
         ],
         template_fn=_waste_hierarchy_template,
@@ -163,9 +163,9 @@ def register_prompts(server: MCPServer) -> None:
         name="emergency_rerouting",
         description="Generate an emergency rerouting SOP query",
         arguments=[
-            {"name": "scenario", "description": "Current scenario (heatwave, cyber_outage, etc.)", "required": "false"},
-            {"name": "current_action", "description": "Current routing action", "required": "false"},
-            {"name": "urgency", "description": "Urgency level (low, medium, high, critical)", "required": "false"},
+            {"name": "scenario", "description": "Current scenario (heatwave, cyber_outage, etc.)", "required": False},
+            {"name": "current_action", "description": "Current routing action", "required": False},
+            {"name": "urgency", "description": "Urgency level (low, medium, high, critical)", "required": False},
         ],
         template_fn=_emergency_rerouting_template,
     ))
@@ -174,9 +174,9 @@ def register_prompts(server: MCPServer) -> None:
         name="slca_routing_guidance",
         description="Generate an SLCA scoring methodology query for routing decisions",
         arguments=[
-            {"name": "action", "description": "Proposed routing action", "required": "false"},
-            {"name": "surplus_ratio", "description": "Current surplus ratio", "required": "false"},
-            {"name": "product_type", "description": "Produce type", "required": "false"},
+            {"name": "action", "description": "Proposed routing action", "required": False},
+            {"name": "surplus_ratio", "description": "Current surplus ratio", "required": False},
+            {"name": "product_type", "description": "Produce type", "required": False},
             _scenario_arg,
         ],
         template_fn=_slca_routing_template,
@@ -186,8 +186,8 @@ def register_prompts(server: MCPServer) -> None:
         name="governance_policy_lookup",
         description="Generate a cooperative governance policy query",
         arguments=[
-            {"name": "decision_type", "description": "Type of decision requiring governance", "required": "false"},
-            {"name": "agent_role", "description": "Role of the requesting agent", "required": "false"},
+            {"name": "decision_type", "description": "Type of decision requiring governance", "required": False},
+            {"name": "agent_role", "description": "Role of the requesting agent", "required": False},
             _scenario_arg,
         ],
         template_fn=_governance_policy_template,

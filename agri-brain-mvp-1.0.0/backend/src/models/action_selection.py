@@ -152,6 +152,14 @@ VALID_MODES: list[str] = [
     # so the policy operates on the perturbed prior throughout the episode.
     "agribrain_pert_10_static", "agribrain_pert_25_static",
     "agribrain_pert_50_static",
+    # 2026-04 sensitivity additions.
+    # agribrain_no_bonus zeroes SLCA_BONUS / SLCA_RHO_BONUS at decision
+    # time; agribrain_theta_pert_{10,25,50} perturbs the load-bearing
+    # THETA matrix per-(seed) at run_all() startup. All four use
+    # agribrain logits otherwise.
+    "agribrain_no_bonus",
+    "agribrain_theta_pert_10", "agribrain_theta_pert_25",
+    "agribrain_theta_pert_50",
 ]
 """Valid operating modes for the softmax policy.
 
@@ -483,6 +491,13 @@ CYBER_REROUTE_PROB: dict[str, float] = {
     "agribrain_pert_10_static":     0.74,
     "agribrain_pert_25_static":     0.74,
     "agribrain_pert_50_static":     0.74,
+    # 2026-04 sensitivity modes share agribrain's cyber-reroute prob;
+    # the SLCA bonus and THETA perturbations don't change edge-stack
+    # capability, only the policy weights / reward shaping.
+    "agribrain_no_bonus":           0.74,
+    "agribrain_theta_pert_10":      0.74,
+    "agribrain_theta_pert_25":      0.74,
+    "agribrain_theta_pert_50":      0.74,
 }
 """Mode-dependent probability of successful rerouting during cyber outage.
 
@@ -799,6 +814,14 @@ def select_action(
         _slca_rho_bonus = _slca_rho_bonus + np.asarray(slca_rho_delta)
     if no_slca_offset_delta is not None:
         _no_slca_offset = _no_slca_offset + np.asarray(no_slca_offset_delta)
+
+    # 2026-04 sensitivity ablation: agribrain_no_bonus zeroes the
+    # hand-calibrated SLCA logit-shaping vectors. Tests whether the
+    # ARI win is driven by the context layer or by the bonuses
+    # themselves.
+    if mode == "agribrain_no_bonus":
+        _slca_bonus = np.zeros_like(_slca_bonus)
+        _slca_rho_bonus = np.zeros_like(_slca_rho_bonus)
 
     if mode == "hybrid_rl":
         logits = THETA @ phi + gamma * tau

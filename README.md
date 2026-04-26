@@ -47,8 +47,12 @@ REINFORCE learning for sustainable food logistics.
 - **MCP interoperability layer** with 14 statically registered tools and 5 additional
   runtime role-capability tools (19 at simulation time; the live count is
   `len(get_default_registry().list_tools())`), plus 13 resources and 5 prompts,
-  accessible through JSON-RPC 2.0 protocol with InProcess, Stdio, and SSE
-  transports
+  accessible through JSON-RPC 2.0 with three transports: `InProcessTransport`
+  (canonical, JSON-roundtrips inside the process; used by the simulator and
+  the FastAPI `/mcp` endpoint), `StdioTransport` (newline-delimited JSON-RPC
+  over pipes; pair with the shipped `python -m pirag.mcp.serve` entry point),
+  and `HTTPTransport` (synchronous JSON-RPC over HTTP POST; previously
+  misnamed `SSETransport` and aliased for backward compatibility)
 - **Physics-informed RAG (piRAG)** with 20-document knowledge base, BM25+TF-IDF hybrid
   retrieval (k=4, 20% retrieval ratio), physics-aware query expansion,
   and physics-aware reranking (temperature-proximity scoring, spoilage-
@@ -107,10 +111,14 @@ REINFORCE learning for sustainable food logistics.
   correction.
 - **Keyword extraction** from piRAG passages (thresholds, regulatory references,
   required actions) for human-readable decision evidence.
-- **MCP JSON-RPC** dispatch with protocol recording. The simulator
-  runs MCP through a deterministic in-process JSON-RPC transport
-  (`InProcessTransport`) for full per-step reproducibility; the same
-  dispatcher exposes `StdioTransport` and `SSETransport` for
+- **MCP JSON-RPC** dispatch with in-process protocol recording.
+  Recorded entries are real `(MCPMessage, response)` pairs through the
+  in-process dispatcher, not wire bytes; when wire-side serialization
+  matters, `InProcessTransport` JSON-roundtrips on every send. The
+  simulator runs MCP through `InProcessTransport` for deterministic
+  per-step reproducibility; the same dispatcher exposes
+  `StdioTransport` (drive with `python -m pirag.mcp.serve`) and
+  `HTTPTransport` (formerly `SSETransport`, retained as alias) for
   external-client integration.
 - **Circular economy scoring** for composting, animal feed, food bank pathways.
 - **Arrhenius-Baranyi spoilage ODE with a physics-informed neural
@@ -120,11 +128,21 @@ REINFORCE learning for sustainable food logistics.
   (perception + symmetric supply and demand forecast channels +
   demand-volatility price-pressure proxy) and 5-dimensional
   institutional context modifier.
-- **Permissioned-EVM audit trail** via Hardhat/Solidity smart contracts
-  with role-gated agent registration, append-only provenance, persisted
-  episode roots, key-whitelisted policy store, and reentrancy-guarded
-  governance (`AgentRegistry`, `DecisionLogger`, `PolicyStore`,
-  `ProvenanceRegistry`, `SLCARewards`, `AgriDAO`).
+- **Off-chain Merkle audit ledger with optional on-chain anchoring**
+  via Hardhat/Solidity smart contracts. Each episode produces a
+  Merkle root over the routing decisions; anchoring on-chain is gated
+  by `CHAIN_SUBMIT=1`. The published runs do not deploy to a
+  permissioned EVM — the only configured network is `localhost` /
+  Hardhat (see [contracts/README.md](agri-brain-mvp-1.0.0/contracts/README.md)
+  for the production checklist). The contract suite (`AgentRegistry`,
+  `DecisionLogger`, `PolicyStore`, `ProvenanceRegistry`,
+  `SLCARewards`, `AgriDAO`) demonstrates role-gated agent
+  registration, append-only provenance, persisted episode roots,
+  key-whitelisted policy store, and reentrancy-guarded governance;
+  `SLCARewards` carries proper role-based access control as of the
+  2026-04 hardening, the other three Ownable contracts retain a
+  single-key prototype pattern with PROTOTYPE warnings in their
+  NatSpec.
 
 ## Frontend
 
@@ -316,7 +334,8 @@ AGRI-BRAIN/
           registry.py           # Tool registry with capability-based discovery
           tool_dispatch.py      # Role-specific tool workflow composition
           context_sharing.py    # Inter-agent shared context store
-          transport.py          # InProcess, Stdio, SSE transport layers
+          transport.py          # InProcessTransport, StdioTransport, HTTPTransport (SSETransport alias)
+          serve.py              # `python -m pirag.mcp.serve` stdio entry point
           protocol_recorder.py  # Genuine MCP interaction recording
           agent_capabilities.py # Per-agent capability declarations
           resources.py          # MCP resource definitions (telemetry, context, quality)

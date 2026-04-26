@@ -86,6 +86,8 @@ class ContextMatrixLearner:
         magnitude_cap_value: float = 0.5,
         magnitude_cap_abs_floor: float = 0.10,
         freeze: bool = False,
+        prior_precision: float = 0.05,
+        sign_mask_override: np.ndarray | None = None,
     ) -> None:
         self.theta = initial_theta.copy()
         self.initial_theta = initial_theta.copy()
@@ -96,13 +98,32 @@ class ContextMatrixLearner:
         self.magnitude_cap_mode = magnitude_cap_mode
         self.magnitude_cap_value = float(magnitude_cap_value)
         self.magnitude_cap_abs_floor = float(magnitude_cap_abs_floor)
+        # 2026-04: shrinkage prior precision matches PolicyDeltaLearner
+        # so the documented "sign-constrained shrinkage-prior" wording
+        # actually applies here. Effective shrinkage per step is
+        # (1 - lr * prior_precision); with lr=0.02 and prior_precision
+        # =0.05 this is a ~0.1% nudge toward initial_theta per update,
+        # plus the existing magnitude/sign rails.
+        self.prior_precision = float(prior_precision)
         # When freeze is True, update() is a no-op; the perturbed
         # initial_theta is held fixed across all training calls. Used
         # by the pert_*_static sensitivity ablation.
         self.freeze = bool(freeze)
 
-        # Sign mask: +1 for positive, -1 for negative, 0 for zero
-        self.sign_mask = np.sign(initial_theta)
+        # Sign mask: +1 for positive, -1 for negative, 0 for zero.
+        # 2026-04: zero-init entries (cold-start ablation, or
+        # entries the calibrator left at 0) used to silently lose the
+        # sign constraint because np.sign(0) == 0 and the constraint
+        # check `(theta * 0) < 0` is always False. The `sign_mask_override`
+        # kwarg lets cold-start callers specify the *intended* sign
+        # mask (e.g. the production THETA_CONTEXT signs) so the
+        # constraint applies consistently across abl ations. When
+        # `sign_mask_override` is None, fall back to the np.sign of
+        # initial_theta (legacy behaviour).
+        if sign_mask_override is not None:
+            self.sign_mask = np.asarray(sign_mask_override, dtype=float).copy()
+        else:
+            self.sign_mask = np.sign(initial_theta)
 
         # Running reward baseline for variance reduction
         self.reward_baseline = 0.0
@@ -171,10 +192,25 @@ class ContextMatrixLearner:
         # Clip gradient
         grad = np.clip(grad, -self.grad_clip, self.grad_clip)
 
+        # 2026-04 shrinkage prior: pull theta back toward initial_theta
+        # before the gradient step. With initial_theta acting as the
+        # prior mean and prior_precision controlling the strength, this
+        # is a Gaussian-prior MAP step matching the wording in the
+        # class docstring and consistent with PolicyDeltaLearner.
+        if self.prior_precision > 0.0:
+            self.theta = (
+                (1.0 - self.lr * self.prior_precision) * self.theta
+                + self.lr * self.prior_precision * self.initial_theta
+            )
+
         # Update THETA_CONTEXT
         self.theta += self.lr * grad
 
-        # Sign constraint: clamp entries that would flip sign
+        # Sign constraint: clamp entries that would flip sign. Uses
+        # `sign_mask` which may be either np.sign(initial_theta) or a
+        # caller-provided override (cold-start ablation paths). For
+        # entries where sign_mask == 0 (no domain-justified sign), no
+        # clamp is applied — that's the documented honest behaviour.
         if self.sign_constrained:
             flipped = (self.theta * self.sign_mask) < 0
             self.theta[flipped] = 0.0

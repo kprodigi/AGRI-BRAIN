@@ -11,9 +11,12 @@ For each scenario, baseline, and metric:
 - Null hypothesis: seed-level mean difference between `agribrain` and baseline is zero.
 - Alternative hypothesis: seed-level mean difference is non-zero.
 
-The pre-registered primary hypothesis H1 is specifically `agribrain` vs `no_context`
-on ARI, tested once per scenario. The five resulting p-values form the primary
-family. All other `(baseline, metric)` comparisons are secondary.
+The primary hypothesis H1 is `agribrain` vs `no_context` on ARI,
+tested once per scenario. The five resulting p-values form the
+primary family. All other `(baseline, metric)` comparisons are
+secondary. Until an external pre-registration record exists,
+manuscript text should describe these as "the analysis specified in
+`docs/STATISTICAL_METHODS.md@<commit>`" rather than "pre-registered".
 
 ## Paired vs unpaired comparisons
 
@@ -130,9 +133,19 @@ deployment-variation lens (pooled).
 ## Validator policy
 
 The post-aggregation validator (`validation/validate_results.py`) runs
-in **report mode by default** and exits 0 even when pre-registered
-range or ordering checks fire. It writes `validation_report.json` with
-the full list of flagged items so reviewers can inspect them. Set
-`STRICT_VALIDATION=1` to restore the old hard-gate behaviour. This
-decouples the build from the hypothesis-confirmation gates that
-earlier reviewers correctly identified as a confirmation-bias check.
+in **strict mode by default** as of 2026-04 and exits non-zero when
+the range / interval checks declared in the validator source fire. It
+writes `validation_report.json` with the full list of flagged items so
+reviewers can inspect them. Set `STRICT_VALIDATION=0` to restore the
+previous report-only behaviour for local debugging — this is not the
+canonical configuration.
+
+The previous default (report-mode) was an explicit response to an
+earlier reviewer's concern that range/ordering gates encoded the
+manuscript's preferred ordering and risked confirmation bias. To
+retain that protection, this version of the validator (i) ships
+*ranges* not orderings (each metric is checked against an absolute
+interval, not against a "agribrain > X" ordering), and (ii) gates
+the build only on those interval checks. Ordering claims in the
+manuscript are decided by the bootstrap CIs and adjusted p-values
+reported by `aggregate_seeds.py`, never by the validator.

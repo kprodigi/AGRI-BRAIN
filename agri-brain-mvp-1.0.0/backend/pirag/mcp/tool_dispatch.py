@@ -197,6 +197,23 @@ ROLE_WORKFLOWS: Dict[str, List[WorkflowStep]] = {
 }
 
 
+_dispatch_id_lock = __import__("threading").Lock()
+_dispatch_id_counter = 0
+
+
+def _next_dispatch_id() -> int:
+    """Monotonic id for dispatcher-issued tools/call messages.
+
+    Replaces the previous hardcoded ``id=0`` so recorded traces have a
+    real correlation key per request. Thread-safe in the unlikely
+    event two coordinator threads race.
+    """
+    global _dispatch_id_counter
+    with _dispatch_id_lock:
+        _dispatch_id_counter += 1
+        return _dispatch_id_counter
+
+
 def _invoke_via_protocol(
     server: Any,
     tool_name: str,
@@ -204,13 +221,15 @@ def _invoke_via_protocol(
 ) -> Any:
     """Invoke a tool through the MCP JSON-RPC protocol layer.
 
-    This ensures the ProtocolRecorder captures the interaction as a
-    genuine ``tools/call`` request/response pair.
+    Sends a real ``tools/call`` message through ``server.handle_message``
+    with a monotonic id. Recorded by ProtocolRecorder as an in-process
+    dispatch entry (see ``protocol_recorder.py`` docstring for the
+    distinction between dispatch traces and wire traffic).
     """
     from .protocol import MCPMessage
 
     msg = MCPMessage(
-        id=0,
+        id=_next_dispatch_id(),
         method="tools/call",
         params={"name": tool_name, "arguments": kwargs},
     )

@@ -36,9 +36,21 @@ def _load_policy():
         raise PolicyLoadError(f"failed to load policy.yaml ({path}): {exc}") from exc
 
 
-def check_access(user_id: str, tool_name: str) -> bool:
+def check_access(user_id: str, tool_name: str) -> dict:
+    """Return ``{"allowed": bool, "reason": str}``.
+
+    Returning a dict (rather than a bare bool) keeps the MCP tool
+    contract uniform across tools — every tool returns a dict that
+    the protocol layer JSON-encodes inside ``result.content[0].text``.
+    The previous bare-bool return was an inconsistency reviewers had
+    flagged.
+    """
     _load_policy()
     al = set(_POLICY.get("allowlist", []))
     if al and user_id not in al:
-        return False
-    return True
+        return {
+            "allowed": False,
+            "reason": f"user {user_id!r} not in allowlist",
+            "tool": tool_name,
+        }
+    return {"allowed": True, "reason": "ok", "tool": tool_name}

@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+// Reentrancy note: the AgriDAO contract below uses a hand-rolled
+// `_LocalReentrancyGuard` in this prototype to avoid an OpenZeppelin
+// dependency. The logic is functionally equivalent to the OZ
+// ReentrancyGuard, but a production deployment should import the
+// canonical OZ utility so auditors get the battle-tested version. See
+// agri-brain-mvp-1.0.0/contracts/README.md for the production checklist.
+// (Comment intentionally kept outside any NatSpec block; the Solidity
+// docstring parser treats @-prefixed tokens as NatSpec tags and chokes
+// on the OZ import path.)
+
 interface IAgentRegistry {
     struct Agent {
         bytes32 id;

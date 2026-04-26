@@ -11,6 +11,10 @@ pragma solidity ^0.8.28;
 ///           Based on GHG Protocol vehicle emission factors (WRI/WBCSD, 2004).
 ///         - keccak256("waste_eta"): Waste penalty coefficient * 1000.
 ///           Controls reward trade-off between SLCA and waste reduction.
+/// @dev    PROTOTYPE — single-key Ownable on `registerKey` and DAO
+///         authorization. Production deployments must replace with
+///         role-based access control (OZ AccessControl). See
+///         `agri-brain-mvp-1.0.0/contracts/README.md`.
 contract PolicyStore {
     address public immutable owner;
     address public authorizedDAO;

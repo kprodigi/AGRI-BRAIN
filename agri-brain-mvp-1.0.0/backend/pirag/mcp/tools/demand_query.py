@@ -2,15 +2,20 @@
 
 Symmetric counterpart to ``yield_query``. Wraps the demand forecaster
 (LSTM by default, Holt's linear when requested via the legacy
-``holt_winters`` alias) and exposes a normalised
-demand-uncertainty signal plus the point forecast and residual standard
-deviation. Feeds the same slot in ``obs.raw`` that simulator uses to
-populate ``phi_8`` (demand uncertainty CV).
+``holt_winters`` alias) and exposes a normalised demand-uncertainty
+signal plus the point forecast and residual standard deviation. Feeds
+the same slot in ``obs.raw`` that the simulator uses to populate
+``phi_8`` (demand uncertainty CV).
 
-When the simulator pre-computes the demand forecast this tool
-short-circuits and returns the cached values rather than re-running the
-forecaster. This keeps the MCP-facing contract while avoiding duplicate
-numeric work per step per agent.
+**Cached vs computed semantics (honest framing).** Same caveat as
+``yield_query``. When the simulator's hot path provides the cached
+forecast and uncertainty via ``obs.raw``, this tool short-circuits
+and returns ``"source": "cached"`` — MCP is then a contract layer,
+not the place where the LSTM/Holt's-linear computation ran. When the
+cache is absent, the tool runs the forecaster itself and returns
+``"source": "computed"``. The simulator's published runs are
+overwhelmingly cached; reviewers should read the ``source`` field
+in the recorded protocol traces to see which is which.
 """
 from __future__ import annotations
 

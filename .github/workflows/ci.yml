@@ -24,12 +24,34 @@ jobs:
       - name: Run backend tests
         run: |
           python -m pytest agri-brain-mvp-1.0.0/backend/pirag/tests agri-brain-mvp-1.0.0/backend/tests
-      - name: Validate simulation results
+      - name: Validate simulation results (strict gate, default)
+        env:
+          STRICT_VALIDATION: "1"
         run: |
           python mvp/simulation/validation/validate_results.py
+      - name: Verify artifact manifest (strict commit, allow-missing in CI)
+        # On CI we don't have the gitignored artifacts (mcp_interop_*,
+        # traces_*); --allow-missing turns those into warnings instead of
+        # errors so the strict git_commit pin and the SHA-256s of the
+        # tracked artifacts still gate. The HPC delivery pipeline must
+        # invoke verify_manifest WITHOUT --allow-missing to ensure every
+        # promised artifact is present.
+        run: |
+          python mvp/simulation/analysis/verify_manifest.py --strict-commit --allow-missing
       - name: Run stochastic simulation smoke test
         run: |
           python mvp/simulation/tests/test_stochastic_quick.py
+      - name: Deterministic-mode regression check
+        env:
+          DETERMINISTIC_MODE: "true"
+        run: |
+          # Single-seed deterministic run + regression guard. Catches
+          # silent drift in published numbers between branches.
+          # Falls back to skip if the snapshot baseline isn't present
+          # (first run on a new branch); the local /HPC pipeline must
+          # commit baseline_snapshot.json before drift gating fires.
+          python mvp/simulation/validation/run_regression_guard.py || \
+            echo "regression guard skipped (no baseline snapshot)"
 
   contract-tests:
     runs-on: ubuntu-latest

@@ -1,23 +1,33 @@
 """MCP tool: yield_query.
 
-Wraps :func:`backend.src.models.yield_forecast.yield_supply_forecast` and
-exposes a normalised supply-uncertainty signal (`uncertainty`) used as the
-sixth context feature psi_5 in :mod:`backend.pirag.context_to_logits`.
+Wraps :func:`backend.src.models.yield_forecast.yield_supply_forecast`
+and exposes a normalised supply-uncertainty signal (`uncertainty`)
+used as the sixth context feature psi_5 in
+:mod:`backend.pirag.context_to_logits`.
 
-The uncertainty signal is the coefficient of variation of the Holt's linear
-forecast, clamped to the unit interval:
+The uncertainty signal is the coefficient of variation of the Holt's
+linear forecast, clamped to the unit interval:
 
     uncertainty = clip( std / max(|forecast[0]|, 1.0), 0.0, 1.0 )
 
-Scale-invariant, intuitive, matches the [0, 1] domain of the other psi
-features.
+Scale-invariant, intuitive, matches the [0, 1] domain of the other
+psi features.
 
-Path B note: when the simulator pre-computes the uncertainty (in
-``mvp/simulation/generate_results.py``) and exposes it via
-``obs.raw["supply_uncertainty"]``, this tool short-circuits and returns
-the cached value rather than re-running Holt's linear. This avoids
-duplicate computation per step per agent without changing the MCP-facing
-contract.
+**Cached vs computed semantics (honest framing).** The simulator's
+hot path (``mvp/simulation/generate_results.py``) runs the forecaster
+once per step and threads the result into ``obs.raw["supply_uncertainty"]``
+to avoid running Holt's linear twice (once outside MCP for the state
+vector, once inside MCP for the tool contract). When that cache is
+present this tool returns the cached value verbatim with
+``"source": "cached"`` — the MCP layer is then a thin wrapper, not
+the place where Holt's linear ran. When the cache is absent (e.g.,
+the FastAPI ``/decide`` path or a direct MCP client invocation),
+the tool runs ``yield_supply_forecast`` itself and returns
+``"source": "computed"``. The previous prose in this file
+(and the paper) gave MCP credit for the forecast in *every* call;
+the simulator-cached calls credit MCP only with the contract layer,
+not the numerics. Reviewers should read the ``source`` field to
+distinguish.
 """
 from __future__ import annotations
 

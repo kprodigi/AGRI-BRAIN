@@ -47,19 +47,24 @@ def short_df(sim_runtime):
 
 
 SCENARIOS = ("heatwave", "overproduction", "cyber_outage", "adaptive_pricing", "baseline")
-# Eight canonical modes + seven paper-§4.7 ablation modes. cold_start and
-# the six pert_* / pert_*_static modes are paper-defense ablations (zero-init
-# learning and prior-perturbation sensitivity with and without REINFORCE,
-# respectively) but they run through the same coordinator and policy code
-# paths as agribrain, so they must satisfy the same VALID_MODES /
-# CYBER_REROUTE_PROB / context-enabled invariants the other agribrain-family
-# modes satisfy.
+# Eight canonical modes + paper §4.7 ablation modes. cold_start and the
+# pert_* / pert_*_static modes are paper-defense ablations (zero-init
+# learning and prior-perturbation sensitivity with and without
+# REINFORCE, respectively); the 2026-04 additions agribrain_no_bonus
+# and agribrain_theta_pert_{10,25,50} cover the SLCA-bonus ablation
+# and the THETA-itself sensitivity sweep. All of these run through the
+# same coordinator and policy code paths as agribrain, so they must
+# satisfy the same VALID_MODES / CYBER_REROUTE_PROB / context-enabled
+# invariants.
 MODES = ("agribrain", "mcp_only", "pirag_only", "no_context",
          "static", "hybrid_rl", "no_pinn", "no_slca",
          "agribrain_cold_start",
          "agribrain_pert_10", "agribrain_pert_25", "agribrain_pert_50",
          "agribrain_pert_10_static", "agribrain_pert_25_static",
-         "agribrain_pert_50_static")
+         "agribrain_pert_50_static",
+         "agribrain_no_bonus",
+         "agribrain_theta_pert_10", "agribrain_theta_pert_25",
+         "agribrain_theta_pert_50")
 
 
 # ---------------------------------------------------------------------------

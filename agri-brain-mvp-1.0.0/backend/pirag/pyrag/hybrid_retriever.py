@@ -131,32 +131,69 @@ class HybridRetriever:
         # Priority 3: no dense search available
         return []
 
+    # Reciprocal Rank Fusion constant. RRF score for a document at
+    # rank r in a list is 1/(RRF_K + r). The standard k=60 (Cormack
+    # et al. 2009, "Reciprocal Rank Fusion outperforms Condorcet and
+    # individual Rank Learning Methods") is robust across n=20..100
+    # corpora; tunable via the constructor if needed.
+    RRF_K = 60
+
     def search(self, q: str, k: int = 6) -> List[Dict[str, Any]]:
+        """Hybrid search via Reciprocal Rank Fusion (Cormack 2009).
+
+        Replaces the previous min-max-normalisation merge (which was
+        unstable on small corpora because the per-query min and max
+        are noisy with n=20 documents and the 0.6/0.4 weights had no
+        principled justification). RRF combines two ranked lists by
+        summing 1/(K + rank) across lists, which is parameter-light
+        (only K) and rank-invariant under monotone score
+        transformations of either list.
+
+        Each result carries its sparse rank, dense rank, and the
+        component RRF contributions so reviewers can see what each
+        retriever contributed.
+        """
         sparse = self.bm25.search(q, k)
         dense = self._dense_search(q, k)
 
-        def norm(xs):
-            if not xs:
-                return []
-            vals = [s for _, s in xs]
-            mn, mx = min(vals), max(vals)
-            rng = (mx - mn) or 1e-9
-            return [(d, (s - mn)/rng) for d, s in xs]
-
         merged: Dict[str, Dict[str, Any]] = {}
-        for d, s in norm(sparse):
-            merged[d.id] = {"doc": d, "sparse": s, "dense": 0.0}
-        for d, s in norm(dense):
-            if d.id in merged:
-                merged[d.id]["dense"] = s
-            else:
-                merged[d.id] = {"doc": d, "sparse": 0.0, "dense": s}
 
-        W_sparse, W_dense = (0.6, 0.4) if dense else (1.0, 0.0)
-        items = []
+        for rank, (d, s) in enumerate(sparse, start=1):
+            rrf = 1.0 / (self.RRF_K + rank)
+            merged.setdefault(d.id, {
+                "doc": d,
+                "sparse_rank": None, "sparse_score": 0.0, "sparse_rrf": 0.0,
+                "dense_rank": None, "dense_score": 0.0, "dense_rrf": 0.0,
+            })
+            merged[d.id]["sparse_rank"] = rank
+            merged[d.id]["sparse_score"] = s
+            merged[d.id]["sparse_rrf"] = rrf
+
+        for rank, (d, s) in enumerate(dense, start=1):
+            rrf = 1.0 / (self.RRF_K + rank)
+            merged.setdefault(d.id, {
+                "doc": d,
+                "sparse_rank": None, "sparse_score": 0.0, "sparse_rrf": 0.0,
+                "dense_rank": None, "dense_score": 0.0, "dense_rrf": 0.0,
+            })
+            merged[d.id]["dense_rank"] = rank
+            merged[d.id]["dense_score"] = s
+            merged[d.id]["dense_rrf"] = rrf
+
+        items: List[Dict[str, Any]] = []
         for rec in merged.values():
-            score = W_sparse*rec["sparse"] + W_dense*rec["dense"]
-            items.append({"id": rec["doc"].id, "score": score, "text": rec["doc"].text, "metadata": rec["doc"].metadata})
+            score = rec["sparse_rrf"] + rec["dense_rrf"]
+            items.append({
+                "id": rec["doc"].id,
+                "score": score,
+                "text": rec["doc"].text,
+                "metadata": rec["doc"].metadata,
+                "sparse_rank": rec["sparse_rank"],
+                "sparse_score": rec["sparse_score"],
+                "dense_rank": rec["dense_rank"],
+                "dense_score": rec["dense_score"],
+                "fusion": "rrf",
+            })
         items.sort(key=lambda x: x["score"], reverse=True)
         return items[:k]
 

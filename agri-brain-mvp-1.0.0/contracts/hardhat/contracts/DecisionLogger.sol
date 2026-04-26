@@ -5,6 +5,13 @@ pragma solidity ^0.8.28;
 /// @notice Records SLCA (UNEP/SETAC Social LCA, 2009) composite scores and
 ///         carbon footprint (GHG Protocol activity-based emissions, WRI/WBCSD, 2004)
 ///         for each routing decision, enabling provenance verification.
+/// @dev    PROTOTYPE — single-key Ownable. The deployer key has unilateral
+///         control over `setAuthorized`, which lets it grant/revoke
+///         decision-logging rights to arbitrary addresses. Production
+///         deployments must replace this with role-based access control
+///         (OZ AccessControl) and a permissioned EVM (Besu QBFT). See
+///         `agri-brain-mvp-1.0.0/contracts/README.md` for the production
+///         checklist.
 contract DecisionLogger {
     address public immutable owner;
     mapping(address => bool) public authorized;

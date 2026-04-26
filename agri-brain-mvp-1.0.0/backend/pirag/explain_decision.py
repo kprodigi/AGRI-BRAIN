@@ -1,11 +1,33 @@
-"""Causal explanation engine for routing decisions.
+"""Feature-attribution explanation engine for routing decisions.
 
 Generates human-readable explanations with:
-1. Causal chain: WHY this action was chosen (dominant context signal)
-2. Feature attribution: which context features drove the decision
-3. Counterfactual: what would have happened WITHOUT MCP/piRAG context
-4. Source citations: inline references to KB documents with keywords
-5. Provenance: evidence hashes and Merkle root for auditability
+
+1. **Dominant-feature attribution** — picks ``argmax(|THETA_CONTEXT[a] *
+   psi|)`` and reports the matching context feature as the rationale.
+   Earlier wording called this a "causal chain"; that label was
+   inaccurate because the system has no structural causal model and
+   no intervention semantics. The current explanation is a linear
+   feature-attribution readout, which is what the code actually
+   computes.
+2. **Ablation delta** — what the action probability would be if the
+   MCP/piRAG context modifier were zeroed (same RNG seed, same
+   environment). Earlier wording called this a "counterfactual"; in
+   the Pearlian sense it is not (no twin-network, no abduction). The
+   correct framing is a leave-one-out / ablation delta, which is
+   what the code computes.
+3. **Source citations** — inline ``[KB:]`` references to the
+   retrieved knowledge-base document IDs. The ``[KB:]`` tag is shared
+   across multi-field explanations because only the top-ranked doc
+   is currently surfaced; reviewers should not over-interpret a
+   single ``[KB:]`` per paragraph as a distinct citation per claim.
+4. **Provenance** — SHA-256 evidence hashes plus a Merkle root over
+   the explanation payload. Optional on-chain anchoring is governed
+   by ``CHAIN_REQUIRE_PRIVKEY`` and ``CHAIN_SUBMIT``; the default
+   path produces an off-chain root with no verifying reader.
+
+Output schema retains the legacy field name ``causal_chain`` for
+backward compatibility with the frontend/explainability panel; the
+new alias ``attribution_chain`` carries the same content.
 """
 from __future__ import annotations
 
@@ -187,19 +209,22 @@ def explain_decision(
     paragraphs = [p for p in [para1, para2, para3, para4, para5] if p]
     full_explanation = "\n\n".join(paragraphs)
 
-    # --- Causal chain structured data ---
-    causal_chain: Dict[str, Any] = {}
+    # --- Feature-attribution structured data (legacy field name kept) ---
+    attribution_chain: Dict[str, Any] = {}
     if contributions is not None:
         sorted_indices = sorted(range(5), key=lambda i: abs(contributions[i]), reverse=True)
-        causal_chain = {
-            "primary_cause": _FEATURE_NAMES[sorted_indices[0]],
+        attribution_chain = {
+            "primary_feature": _FEATURE_NAMES[sorted_indices[0]],
             "primary_contribution": float(contributions[sorted_indices[0]]),
-            "secondary_cause": _FEATURE_NAMES[sorted_indices[1]] if len(sorted_indices) > 1 else None,
+            "secondary_feature": _FEATURE_NAMES[sorted_indices[1]] if len(sorted_indices) > 1 else None,
             "all_contributions": dict(zip(_FEATURE_NAMES, contributions.tolist())),
+            # Legacy aliases for callers that still read ``primary_cause``.
+            "primary_cause": _FEATURE_NAMES[sorted_indices[0]],
+            "secondary_cause": _FEATURE_NAMES[sorted_indices[1]] if len(sorted_indices) > 1 else None,
         }
 
-    # --- Counterfactual structured data ---
-    counterfactual_data: Dict[str, Any] = {
+    # --- Ablation-delta structured data (formerly "counterfactual") ---
+    ablation_delta: Dict[str, Any] = {
         "action_without_context": counterfactual_action,
         "probs_without_context": counterfactual_probs.tolist() if counterfactual_probs is not None else None,
         "probs_with_context": action_probs.tolist() if action_probs is not None else None,
@@ -221,8 +246,11 @@ def explain_decision(
         "guards_passed": rag_context.get("guards_passed", True),
         "provenance_ready": bool(merkle_root),
         "merkle_root": merkle_root,
-        "causal_chain": causal_chain,
-        "counterfactual": counterfactual_data,
+        # New honest field names + legacy aliases for backward compat.
+        "attribution_chain": attribution_chain,
+        "ablation_delta": ablation_delta,
+        "causal_chain": attribution_chain,
+        "counterfactual": ablation_delta,
         "keywords": keywords or {},
         "governance_override": governance_override,
     }

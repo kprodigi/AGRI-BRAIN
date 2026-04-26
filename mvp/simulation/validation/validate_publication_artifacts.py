@@ -123,7 +123,8 @@ def _validate_manifest() -> None:
     print("[PASS] artifact_manifest.json commit + hashes")
 
 
-def _validate_external_validity() -> None:
+def _validate_temporal_stability() -> None:
+    """Within-trace temporal stability outputs (legacy filenames retained)."""
     for name in (
         "external_validity_summary.json",
         "external_validity_summary.csv",
@@ -132,7 +133,63 @@ def _validate_external_validity() -> None:
         path = RESULTS_DIR / name
         if not path.exists():
             _fail(f"Missing required file: {path}")
-    print("[PASS] external validity outputs")
+    print("[PASS] within-trace temporal stability outputs")
+
+
+def _validate_threshold_assertions() -> None:
+    """Per-claim threshold assertions per docs/CLAIMS_TO_EVIDENCE.md.
+
+    The previous schema check only verified field *presence*; a run
+    that produced all-null effects passed. This adds explicit numeric
+    thresholds for the headline claims so a clearly-broken run is
+    caught at the validator gate.
+
+    Thresholds are intentionally generous (sanity bounds, not the
+    hypothesis-confirmation gates that the inferential pipeline keeps in the
+    aggregator's CI/p-value path); the goal is to fail when the
+    numbers are nonsensical, not when they merely fail to confirm
+    the hypothesis.
+    """
+    sig = _load_json(RESULTS_DIR / "benchmark_significance.json")
+    summary = _load_json(RESULTS_DIR / "benchmark_summary.json")
+    if isinstance(summary, dict) and "summary" in summary and isinstance(summary["summary"], dict):
+        summary = summary["summary"]
+
+    failures = []
+    for sc in ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing", "baseline"]:
+        # Sanity bound on agribrain ARI mean.
+        try:
+            ari_mean = float(summary[sc]["agribrain"]["ari"]["mean"])
+        except (KeyError, TypeError, ValueError):
+            failures.append(f"{sc}/agribrain ari mean missing or non-numeric")
+            continue
+        if not (0.0 <= ari_mean <= 1.0):
+            failures.append(f"{sc}/agribrain ARI mean {ari_mean} out of [0,1]")
+        if ari_mean < 0.05:
+            failures.append(f"{sc}/agribrain ARI mean {ari_mean} suspiciously low (<0.05)")
+
+        # Required p_value field present and in [0,1] for the primary contrast.
+        try:
+            p = float(sig[sc][f"agribrain_vs_no_context"]["ari"]["p_value"])
+        except (KeyError, TypeError, ValueError):
+            failures.append(f"{sc}/agribrain_vs_no_context ari p_value missing or non-numeric")
+            continue
+        if not (0.0 <= p <= 1.0):
+            failures.append(f"{sc}/agribrain_vs_no_context ari p_value {p} out of [0,1]")
+
+        # Effect-size CI bracketed correctly (ci_low <= ci_high).
+        rec = sig[sc][f"agribrain_vs_no_context"]["ari"]
+        lo = rec.get("effect_size_ci_low")
+        hi = rec.get("effect_size_ci_high")
+        if lo is not None and hi is not None and float(lo) > float(hi):
+            failures.append(
+                f"{sc}/agribrain_vs_no_context ari effect-size CI inverted: "
+                f"low={lo} > high={hi}"
+            )
+
+    if failures:
+        _fail("threshold assertions failed:\n  - " + "\n  - ".join(failures[:20]))
+    print("[PASS] per-claim threshold assertions")
 
 
 def main() -> None:
@@ -141,7 +198,8 @@ def main() -> None:
     _validate_significance()
     _validate_stress_passfail()
     _validate_manifest()
-    _validate_external_validity()
+    _validate_temporal_stability()
+    _validate_threshold_assertions()
     print("[PASS] publication artifact validation complete")
 
 

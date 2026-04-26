@@ -136,36 +136,116 @@ class MCPServer:
     # -----------------------------------------------------------------
 
     def handle_message(self, msg: MCPMessage) -> MCPMessage:
-        """Route a JSON-RPC message to the appropriate handler."""
+        """Route a JSON-RPC message to the appropriate handler.
+
+        Spec compliance (JSON-RPC 2.0 + MCP 2024-11-05):
+
+        - ``jsonrpc`` field is validated to equal ``"2.0"``; anything
+          else returns INVALID_REQUEST.
+        - ``method`` is required.
+        - Notifications (``id`` is None or omitted) are dispatched but
+          generate no response. Per JSON-RPC 2.0 §4.1, servers MUST
+          NOT respond to notifications. Callers must check
+          ``response is None`` before reading.
+        - Batch dispatch is provided by :py:meth:`handle_batch` for
+          callers that need to send multiple requests in one envelope.
+        """
+        if msg.jsonrpc != "2.0":
+            return MCPMessage(
+                id=msg.id,
+                error={"code": _INVALID_REQUEST,
+                        "message": f"Invalid jsonrpc version: {msg.jsonrpc!r}"},
+            )
+
         if msg.method is None:
             return MCPMessage(
                 id=msg.id,
                 error={"code": _INVALID_REQUEST, "message": "Missing method"},
             )
 
+        is_notification = msg.id is None
+
         handler = self._method_handlers.get(msg.method)
         if handler is None:
+            if is_notification:
+                # Notifications get no response, even on error, per spec.
+                return None  # type: ignore[return-value]
             return MCPMessage(
                 id=msg.id,
-                error={"code": _METHOD_NOT_FOUND, "message": f"Unknown method: {msg.method}"},
+                error={"code": _METHOD_NOT_FOUND,
+                        "message": f"Unknown method: {msg.method}"},
             )
 
         try:
-            return handler(msg)
+            response = handler(msg)
         except Exception as exc:
+            if is_notification:
+                return None  # type: ignore[return-value]
             return MCPMessage(
                 id=msg.id,
                 error={"code": _INTERNAL_ERROR, "message": str(exc)},
             )
 
+        if is_notification:
+            return None  # type: ignore[return-value]
+        return response
+
+    def handle_batch(self, messages):
+        """Dispatch a batch of MCPMessage requests, per JSON-RPC 2.0 §6.
+
+        Returns the list of responses for non-notification requests,
+        in input order. Empty batches return INVALID_REQUEST per spec.
+        """
+        if not messages:
+            return [MCPMessage(
+                id=None,
+                error={"code": _INVALID_REQUEST, "message": "Empty batch"},
+            )]
+        out = []
+        for m in messages:
+            r = self.handle_message(m)
+            if r is not None:
+                out.append(r)
+        return out
+
     # -----------------------------------------------------------------
     # Handlers
     # -----------------------------------------------------------------
 
+    # Protocol versions this server can negotiate. The advertised
+    # canonical version is PROTOCOL_VERSION; we additionally accept the
+    # immediately previous draft for backward compatibility.
+    SUPPORTED_PROTOCOL_VERSIONS = ("2024-11-05",)
+
     def _handle_initialize(self, msg: MCPMessage) -> MCPMessage:
-        """Return protocol version, server info, and capabilities dict."""
+        """Return protocol version, server info, and capabilities dict.
+
+        Validates the client's requested ``protocolVersion`` against
+        ``SUPPORTED_PROTOCOL_VERSIONS``. If the client did not request a
+        version, we return ``PROTOCOL_VERSION`` and let the client
+        decide whether to proceed. If the client requested a version we
+        don't support, we return ``INVALID_PARAMS`` with the
+        intersection so the client can pick an acceptable one.
+        """
         params = msg.params or {}
         client_caps = params.get("capabilities", {})
+        client_version = params.get("protocolVersion")
+
+        if client_version is not None and client_version not in self.SUPPORTED_PROTOCOL_VERSIONS:
+            return MCPMessage(
+                id=msg.id,
+                error={
+                    "code": _INVALID_PARAMS,
+                    "message": (
+                        f"Unsupported protocolVersion {client_version!r}; "
+                        f"server supports {list(self.SUPPORTED_PROTOCOL_VERSIONS)}"
+                    ),
+                    "data": {
+                        "supportedVersions": list(self.SUPPORTED_PROTOCOL_VERSIONS),
+                    },
+                },
+            )
+
         capabilities: Dict[str, Any] = {}
         if self._registry.list_tools():
             capabilities["tools"] = {}
@@ -200,7 +280,15 @@ class MCPServer:
 
     def _handle_tools_list(self, msg: MCPMessage) -> MCPMessage:
         tools = []
-        for spec in self._registry._tools.values():
+        # Use the public list_tools() API rather than reaching into
+        # the private _tools dict, so a future registry refactor
+        # doesn't silently break the protocol.
+        for spec_dict in self._registry.list_tools():
+            # list_tools returns dicts; reconstruct the spec lookup
+            # so we keep the existing schema/QoS shaping logic.
+            spec = self._registry.get(spec_dict["name"])
+            if spec is None:
+                continue
             properties: Dict[str, Any] = {}
             for param_name, param_def in spec.schema.items():
                 if isinstance(param_def, dict):
@@ -251,12 +339,22 @@ class MCPServer:
 
         try:
             result = self._registry.invoke(name, **arguments)
-            return MCPMessage(
-                id=msg.id,
-                result={
-                    "content": [{"type": "text", "text": json.dumps(result, default=str)}],
-                },
+            # If the tool returned a structured error envelope (e.g.
+            # ``{"_status": "error", ...}`` from chain_query when the
+            # FastAPI state isn't populated under the simulator
+            # subprocess), surface it as ``isError`` so consumers and
+            # the ProtocolRecorder count it as an error rather than a
+            # successful payload.
+            is_error = (
+                isinstance(result, dict)
+                and (result.get("_status") == "error" or result.get("error"))
             )
+            response_result: Dict[str, Any] = {
+                "content": [{"type": "text", "text": json.dumps(result, default=str)}],
+            }
+            if is_error:
+                response_result["isError"] = True
+            return MCPMessage(id=msg.id, result=response_result)
         except Exception as exc:
             return MCPMessage(
                 id=msg.id,

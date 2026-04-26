@@ -89,9 +89,15 @@ def _try_autoload():
 # Models
 # ---------------------------------------------------------------------------
 class ChainModel(BaseModel):
+    """Chain configuration body for POST /chain.
+
+    The `private_key` field was removed in 2026-04. Production keys must
+    be supplied via the CHAIN_PRIVKEY env var, not the HTTP POST body —
+    POST bodies can be captured by misconfigured proxies, and this
+    endpoint is documented as plaintext (TLS termination is upstream).
+    """
     rpc: Optional[str] = None
     chain_id: Optional[int] = None
-    private_key: Optional[str] = None
     addresses: Optional[dict] = None
     addresses_json: Optional[str] = None
     auto: Optional[bool] = None
@@ -192,12 +198,13 @@ def set_chain(c: ChainModel):
         except (json.JSONDecodeError, ValueError):
             from fastapi import HTTPException
             raise HTTPException(400, "Invalid addresses_json: must be valid JSON")
-    for k in ("rpc", "chain_id", "private_key", "auto"):
+    for k in ("rpc", "chain_id", "auto"):
         if k in data:
-            # Never overwrite private_key with empty string
-            if k == "private_key" and not data[k]:
-                continue
             CHAIN[k] = data[k]
+    # private_key intentionally NOT accepted from the POST body. To
+    # configure the signing key, set CHAIN_PRIVKEY in the runtime env
+    # before starting the server. This change is part of the 2026-04
+    # security hardening; see docs/REVIEWER_2_FIXES.md.
     if "addresses" in data and isinstance(data["addresses"], dict):
         CHAIN["addresses"] = data["addresses"]
 

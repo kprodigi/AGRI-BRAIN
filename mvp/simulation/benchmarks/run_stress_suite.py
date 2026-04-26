@@ -248,6 +248,43 @@ def main() -> None:
                     agg[k + "_std"] = float(np.std(vals, ddof=1)) if n_seeds > 1 else 0.0
                 rows.append(agg)
 
+            # 2026-04 cross-mode comparison.
+            # The previous design graded each mode against its own
+            # nominal, which a method that totally collapses can pass if
+            # its nominal was low. Adding cross-mode "agribrain_stressed
+            # vs <other>_stressed" rows gives reviewers the rank-stability
+            # answer directly. Computed only when both arms ran for the
+            # current stressor, on the metrics shared across modes.
+            if "agribrain" in modes:
+                cross_metrics = ("ari", "waste", "rle", "slca")
+                for other in modes:
+                    if other == "agribrain":
+                        continue
+                    agg = {
+                        "Scenario": scenario,
+                        "Stressor": stressor,
+                        "Method": f"agribrain_minus_{other}_stressed",
+                        "n_seeds": n_seeds,
+                        "comparison_type": "cross_mode_under_stress",
+                    }
+                    for met in cross_metrics:
+                        vals = []
+                        for seed in seed_list:
+                            try:
+                                a = stressed_by_seed[seed]["agribrain"][met]
+                                b = stressed_by_seed[seed][other][met]
+                            except KeyError:
+                                continue
+                            vals.append(float(a) - float(b))
+                        if not vals:
+                            continue
+                        arr = np.asarray(vals, dtype=float)
+                        agg[f"{met}_diff"] = float(np.mean(arr))
+                        agg[f"{met}_diff_std"] = (
+                            float(np.std(arr, ddof=1)) if len(arr) > 1 else 0.0
+                        )
+                    rows.append(agg)
+
     out_payload = {
         "meta": {
             "scenarios": scenarios,

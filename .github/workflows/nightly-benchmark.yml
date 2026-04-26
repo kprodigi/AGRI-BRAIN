@@ -1,4 +1,12 @@
-name: nightly-benchmark
+name: nightly-smoke
+
+# Renamed from "nightly-benchmark" in 2026-04. The previous name
+# implied a full 20-seed multi-seed benchmark; in fact this workflow
+# runs a single-seed paper-table generation and pipes the result
+# through the aggregator under BENCHMARK_USE_TABLES=true. That is a
+# nightly smoke / regression check, not a benchmark. The full 20-seed
+# benchmark only runs on HPC (see `hpc_run.sh`); never schedule it
+# under GitHub Actions limits.
 
 on:
   schedule:
@@ -6,7 +14,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  benchmark:
+  smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:

@@ -144,7 +144,26 @@ MODES = ["static", "hybrid_rl", "no_pinn", "no_slca",
          "agribrain_cold_start",
          "agribrain_pert_10", "agribrain_pert_25", "agribrain_pert_50",
          "agribrain_pert_10_static", "agribrain_pert_25_static",
-         "agribrain_pert_50_static"]
+         "agribrain_pert_50_static",
+         # 2026-04 sensitivity additions.
+         #
+         # agribrain_no_bonus
+         #     Same as agribrain but with SLCA_BONUS = SLCA_RHO_BONUS = 0
+         #     and NO_SLCA_OFFSET unchanged (only used by no_slca). Tests
+         #     whether the headline ARI win is driven by the learned/MCP
+         #     context layer or by the hand-calibrated SLCA logit shaping.
+         #
+         # agribrain_theta_pert_{10,25,50}
+         #     agribrain with the load-bearing 30-entry THETA matrix
+         #     (action_selection.THETA) perturbed by Gaussian noise of
+         #     std = frac * |entry|, drawn once per seed and held fixed
+         #     across scenarios. Distinct from agribrain_pert_* which
+         #     perturbs the (3, 5) THETA_CONTEXT only; this one
+         #     surfaces sensitivity of the *primary* policy weights
+         #     that the previous sensitivity story left untested.
+         "agribrain_no_bonus",
+         "agribrain_theta_pert_10", "agribrain_theta_pert_25",
+         "agribrain_theta_pert_50"]
 
 # Modes that enable MCP/piRAG context infrastructure
 _CONTEXT_ENABLED_MODES = {
@@ -153,6 +172,9 @@ _CONTEXT_ENABLED_MODES = {
     "agribrain_pert_10", "agribrain_pert_25", "agribrain_pert_50",
     "agribrain_pert_10_static", "agribrain_pert_25_static",
     "agribrain_pert_50_static",
+    "agribrain_no_bonus",
+    "agribrain_theta_pert_10", "agribrain_theta_pert_25",
+    "agribrain_theta_pert_50",
 }
 
 # Modes that use agribrain logits for action selection
@@ -162,6 +184,9 @@ _AGRIBRAIN_LOGIT_MODES = {
     "agribrain_pert_10", "agribrain_pert_25", "agribrain_pert_50",
     "agribrain_pert_10_static", "agribrain_pert_25_static",
     "agribrain_pert_50_static",
+    "agribrain_no_bonus",
+    "agribrain_theta_pert_10", "agribrain_theta_pert_25",
+    "agribrain_theta_pert_50",
 }
 
 # Modes where MCP compliance data feeds waste penalty.
@@ -171,6 +196,18 @@ _MCP_WASTE_MODES = {
     "agribrain_pert_10", "agribrain_pert_25", "agribrain_pert_50",
     "agribrain_pert_10_static", "agribrain_pert_25_static",
     "agribrain_pert_50_static",
+    "agribrain_no_bonus",
+    "agribrain_theta_pert_10", "agribrain_theta_pert_25",
+    "agribrain_theta_pert_50",
+}
+
+# THETA-perturbation magnitudes (frac of |entry|) for the new
+# 2026-04 sensitivity sweep. THETA-perturbed seeds use n_iter=1 so the
+# sweep measures fixed-prior sensitivity rather than learning recovery.
+_THETA_SENSITIVITY_MODES: dict = {
+    "agribrain_theta_pert_10": 0.10,
+    "agribrain_theta_pert_25": 0.25,
+    "agribrain_theta_pert_50": 0.50,
 }
 
 # Modes that run multi-episode learning. Value = number of iterations the
@@ -529,7 +566,7 @@ def run_episode(
                 "enable_physics_consistency_gate": bool(getattr(policy, "enable_physics_consistency_gate", False)),
                 "enable_heterogeneous_profiles": bool(getattr(policy, "enable_heterogeneous_profiles", False)),
                 "enable_temporal_retrieval_weighting": bool(getattr(policy, "enable_temporal_retrieval_weighting", True)),
-                "enable_dynamic_knowledge_feedback": bool(getattr(policy, "enable_dynamic_knowledge_feedback", True)),
+                "enable_dynamic_knowledge_feedback": bool(getattr(policy, "enable_dynamic_knowledge_feedback", False)),
                 "enable_failure_injection": bool(getattr(policy, "enable_failure_injection", False)),
                 "enable_research_metrics": bool(getattr(policy, "enable_research_metrics", False)),
             },
@@ -538,13 +575,26 @@ def run_episode(
         # Action selection via AgentCoordinator
         # Pass the actual mode name so the coordinator can apply context_mode mapping
         step_t0 = time.perf_counter()
+        # Snapshot deterministic complexity counters so the per-step
+        # delta is recorded alongside wall-clock. These counters are
+        # the reproducibility-friendly latency proxy (per
+        # docs/STATISTICAL_METHODS.md: wall-clock latency is descriptive
+        # only across hardware-mixed seed runs).
+        _mcp_calls_before = 0
+        _pirag_queries_before = 0
+        _ctx_summary_pre = getattr(coordinator, "_step_mcp_results", None)
+        if _ctx_summary_pre is not None:
+            _mcp_calls_before = len(_ctx_summary_pre)
         action_idx, probs, active_agent = coordinator.step(
             env_state, hours[idx], effective_mode if mode not in _CONTEXT_ENABLED_MODES else mode,
             policy, rng, scenario, rag_context=rag_context,
             policy_temperature=episode_policy_temp,
         )
-        # Latency is recorded as observed wall-clock time (deterministic observation);
-        # no synthetic latency perturbation is applied.
+        # Latency is recorded as observed wall-clock time (descriptive
+        # only across hardware-mixed seeds; treat as a profiling hint).
+        # The deterministic complexity proxy is the count of MCP tool
+        # invocations and piRAG queries the step issued — those are
+        # bit-identical across machines for the same seed.
         decision_latency_ms.append((time.perf_counter() - step_t0) * 1000.0)
         action = ACTIONS[action_idx]
         active_agent_trace.append(active_agent.role)
@@ -733,9 +783,16 @@ def run_episode(
         "carbon": float(carbon_total), "equity": float(equity),
         "circular_economy": float(np.mean(circular_scores)),
         "mean_supply_forecast": float(np.mean(supply_hats)),
+        # Wall-clock latency is descriptive only (hardware-dependent;
+        # not used for inferential CIs per docs/STATISTICAL_METHODS.md).
+        # The reproducibility-friendly proxy is the deterministic
+        # complexity counter further down (`mcp_calls_per_episode`,
+        # `pirag_queries_per_episode`).
         "mean_decision_latency_ms": float(np.mean(latency_arr)),
+        "mean_decision_latency_ms_descriptive_only": True,
         "p95_decision_latency_ms": float(np.percentile(latency_arr, 95)),
         "latency_penalty_usd": latency_penalty_usd,
+        "latency_penalty_usd_descriptive_only": True,
         "constraint_violation_rate": float(constraint_violation_steps / max(n, 1)),
         "compliance_violation_rate": float(compliance_violation_steps / max(n, 1)),
         "temperature_violation_rate": float(temperature_violation_steps / max(n, 1)),
@@ -790,6 +847,18 @@ def run_episode(
         result["context_summary"] = coordinator.context_summary()
         result["learner_summary"] = coordinator.learner_summary()
         result["evaluator_summary"] = coordinator.evaluator_summary()
+        # Deterministic complexity proxy for latency (hardware-independent).
+        # Wall-clock decision_latency_ms varies 2-10x across machines;
+        # these counters are bit-identical given the same seed and so
+        # are the reproducibility-friendly latency surrogates.
+        ctx_sum = result["context_summary"]
+        result["mcp_calls_per_episode"] = int(ctx_sum.get("total_mcp_tool_calls", 0))
+        result["pirag_queries_per_episode"] = int(ctx_sum.get("total_context_steps", 0))
+    else:
+        # Non-context modes still report the counters as zero so the
+        # field exists in every row of the aggregated tables.
+        result["mcp_calls_per_episode"] = 0
+        result["pirag_queries_per_episode"] = 0
 
     # Policy-delta learner runs for every non-static mode, not just the
     # context-enabled ones, so its summary lives outside the context block.
@@ -805,7 +874,9 @@ def run_episode(
             result["trace_summary"] = coordinator.trace_exporter.summary()
             result["_trace_exporter"] = coordinator.trace_exporter
 
-        # Protocol recorder for genuine MCP interactions
+        # Protocol recorder for in-process MCP dispatcher traces (see
+        # pirag/mcp/protocol_recorder.py docstring for the distinction
+        # between dispatch traces and wire bytes).
         if coordinator.protocol_recorder is not None:
             result["_protocol_recorder"] = coordinator.protocol_recorder
 
@@ -824,14 +895,23 @@ def run_episode(
     if os.environ.get("CHAIN_SUBMIT", "0") == "1":
         chain_cfg_json = os.environ.get("CHAIN_CFG_JSON")
         if chain_cfg_json:
+            # Default to best-effort during simulation so a single chain
+            # failure does not abort a 20-seed HPC run, but emit a WARN
+            # log via decision_ledger.submit_onchain so operators can
+            # see how many submissions actually landed. Set
+            # CHAIN_BEST_EFFORT=false to make submission failures fatal.
+            os.environ.setdefault("CHAIN_BEST_EFFORT", "true")
             try:
                 import json as _json
                 chain_cfg = _json.loads(chain_cfg_json)
                 tx = decision_ledger.submit_onchain(chain_cfg)
                 if tx:
                     result["decision_ledger_tx"] = tx
+                else:
+                    result["decision_ledger_tx_status"] = "best_effort_skipped"
             except Exception as _exc:
-                _log.debug("on-chain ledger submission skipped: %s", _exc)
+                _log.warning("on-chain ledger submission skipped: %s", _exc)
+                result["decision_ledger_tx_status"] = f"error:{type(_exc).__name__}"
 
     # Persist the learner state for the next scenario in the cache.
     # Same (mode, seed) lineage, different scenario: the next call to
@@ -872,6 +952,23 @@ def run_all(seed: int = SEED) -> dict:
     # Create a stochastic layer just for the seed-level perturbation
     _seed_stoch = make_stochastic_layer(np.random.default_rng(seed + 7))
     _as_module.THETA = _seed_stoch.perturb_theta(_original_theta)
+
+    # 2026-04 sensitivity addition: per-mode THETA perturbations for the
+    # agribrain_theta_pert_{10,25,50} sweep. The sweep perturbs the
+    # load-bearing THETA matrix itself
+    # (not THETA_CONTEXT). Build the perturbed matrix once per seed
+    # so the sweep measures fixed-prior sensitivity rather than seed
+    # noise; all five scenarios for a given mode see the same THETA.
+    _theta_pert_rng = np.random.default_rng(seed + 31)
+    _theta_after_source7 = _as_module.THETA.copy()
+    _theta_pert_matrices: dict[str, np.ndarray] = {}
+    for _pert_mode, _frac in _THETA_SENSITIVITY_MODES.items():
+        _noise = _theta_pert_rng.normal(
+            loc=0.0,
+            scale=_frac * np.abs(_theta_after_source7),
+            size=_theta_after_source7.shape,
+        )
+        _theta_pert_matrices[_pert_mode] = (_theta_after_source7 + _noise).astype(float)
 
     # Cross-scenario learner state cache, keyed by mode. Persists both the
     # context-modifier and policy-delta learners across all scenarios
@@ -961,6 +1058,15 @@ def run_all(seed: int = SEED) -> dict:
             overrides = _build_overrides(mode)
             n_iter = _MULTI_EPISODE_MODES.get(mode, 1)
 
+            # 2026-04 THETA sensitivity sweep: swap THETA to the per-mode
+            # perturbed matrix for theta_pert modes only. Restore at the
+            # end of the mode block so other modes see the seed-level
+            # (Source-7) THETA. The swap is per-mode, NOT per-iteration.
+            _theta_swap_active = mode in _theta_pert_matrices
+            if _theta_swap_active:
+                _theta_saved = _as_module.THETA.copy()
+                _as_module.THETA = _theta_pert_matrices[mode].copy()
+
             episode = None
             for iter_idx in range(n_iter):
                 episode = run_episode(
@@ -996,6 +1102,13 @@ def run_all(seed: int = SEED) -> dict:
                         "sign_preserved": bool(lrn_summary.get("sign_preserved", True)),
                     })
             assert episode is not None
+
+            # Restore THETA for theta_pert modes before moving on so the
+            # next mode (or the seed-level cleanup at the bottom) sees
+            # the Source-7 THETA, not the per-mode perturbation.
+            if _theta_swap_active:
+                _as_module.THETA = _theta_saved
+
             results[scenario][mode] = episode
             tag = f" ({n_iter}x)" if n_iter > 1 else ""
             print(f"  [{scenario:>20s}] [{mode:>17s}]{tag} ARI={episode['ari']:.3f}  "

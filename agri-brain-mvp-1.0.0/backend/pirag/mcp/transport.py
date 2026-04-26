@@ -3,12 +3,23 @@
 Separates the protocol layer (JSON-RPC messages) from the transport
 mechanism (how messages are delivered). Three transport implementations:
 
-1. InProcessTransport: Direct function call (simulation, default)
-2. StdioTransport: JSON-RPC over stdin/stdout (local MCP client pattern)
-3. SSETransport: Server-Sent Events over HTTP (remote/production)
+1. ``InProcessTransport`` — Direct in-process dispatch with a real
+   JSON serialize / deserialize round-trip on the way in and out
+   (so a serialization bug surfaces in tests, not on first remote
+   deployment). This is the canonical transport used by both the
+   simulator and the FastAPI ``/mcp`` endpoint, via ``MCPClient``.
+2. ``StdioTransport`` — Newline-delimited JSON-RPC over stdin/stdout.
+   Honors the standard MCP local-client pattern (one server process
+   per agent, connected via pipes). Run a stdio server with
+   ``python -m pirag.mcp.serve``; pair it with ``StdioTransport`` on
+   the client side.
+3. ``HTTPTransport`` (formerly ``SSETransport``) — Synchronous JSON-RPC
+   over HTTP POST. The "SSE" name was inherited from a draft of the
+   MCP spec and was inaccurate: this transport never reads a
+   long-lived event stream, it does request/response. ``SSETransport``
+   is retained as a deprecated alias for backward compatibility.
 
-All transports implement the same interface, so switching from simulation
-to production requires only changing the transport, not the protocol logic.
+All three implement the same ``send(message)`` -> response interface.
 """
 from __future__ import annotations
 
@@ -103,11 +114,15 @@ class StdioTransport(MCPTransport):
         pass
 
 
-class SSETransport(MCPTransport):
-    """Server-Sent Events over HTTP (remote/production transport).
+class HTTPTransport(MCPTransport):
+    """Synchronous JSON-RPC over HTTP POST.
 
-    Posts JSON-RPC messages to an HTTP endpoint and reads responses.
-    Uses only stdlib to avoid external dependencies.
+    Posts JSON-RPC messages to an HTTP endpoint and reads the response
+    body. Uses only stdlib to avoid external dependencies. NOT
+    Server-Sent Events: there is no long-lived event stream; each
+    ``send`` is a single request/response. The previous name
+    ``SSETransport`` was misleading and is retained below as a
+    deprecated alias.
     """
 
     def __init__(self, endpoint_url: str, timeout: int = 30) -> None:
@@ -136,6 +151,10 @@ class SSETransport(MCPTransport):
 
     def close(self) -> None:
         pass
+
+
+# Backward-compat alias. Deprecated; use HTTPTransport.
+SSETransport = HTTPTransport
 
 
 class MCPClient:

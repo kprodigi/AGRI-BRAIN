@@ -138,7 +138,7 @@ mvp/simulation/
 ├── benchmarks/                  # Multi-seed benchmark & stress suites
 │   ├── run_benchmark_suite.py   # Full multi-seed benchmark runner
 │   ├── run_stress_suite.py      # Noise/missing-data/fault stress tests
-│   ├── run_external_validity.py # Early/mid/late holdout window check
+│   ├── run_external_validity.py # Within-trace temporal stability (early/mid/late thirds; filename retained for backward compat with the artifact manifest)
 │   ├── run_single_seed.py       # Single-seed benchmark episode
 │   └── aggregate_seeds.py       # Canonical multi-seed aggregation + stats
 ├── validation/                  # Result validation & regression guards

@@ -2,12 +2,17 @@
 pragma solidity ^0.8.28;
 
 /// @title ProvenanceRegistry - On-chain anchoring for explanation provenance
-/// @notice Stores Merkle root hashes linking AI-generated explanations to their
-///         source evidence. Each root is derived from SHA-256 hashes of cited
-///         evidence passages (see pirag/provenance/merkle.py).
-/// @dev Called optionally by the piRAG explanation module after generating
-///      a decision rationale. Provides an immutable, tamper-evident audit trail
-///      for explainability outputs.
+/// @notice Stores Merkle root hashes linking the explanation engine's
+///         feature-attribution outputs to their source evidence. Each
+///         root is derived from SHA-256 hashes of cited evidence
+///         passages (see pirag/provenance/merkle.py).
+/// @dev    Called optionally by the piRAG explanation module after
+///         generating a decision rationale. Provides an immutable,
+///         tamper-evident audit trail for explanation outputs.
+/// @dev    PROTOTYPE — single-key Ownable. Production deployments must
+///         replace with role-based access control (OZ AccessControl)
+///         and a permissioned EVM. See
+///         `agri-brain-mvp-1.0.0/contracts/README.md`.
 contract ProvenanceRegistry {
     address public immutable owner;
 

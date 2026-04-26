@@ -10,7 +10,8 @@ Reads ``results/benchmark_seeds/seed_*.json`` and writes
 
   1. Holm-Bonferroni across the five scenario-level primary H1 tests
      (agribrain vs no_context, metric = ARI, one test per scenario). This
-     matches the pre-registered multiplicity control declared in the paper.
+     matches the primary-family multiplicity control documented in
+     docs/STATISTICAL_METHODS.md.
      Reported as ``p_value_adj_holm`` on the five primary entries and as the
      canonical ``p_value_adj`` on the same entries.
   2. Benjamini-Hochberg FDR within each scenario across all (baseline, metric)
@@ -115,24 +116,38 @@ def _cell_seed(scope: str, cell_key: tuple) -> int:
 
 
 def bootstrap_ci(vals, n_boot=10_000, alpha=0.05, cell_key=("global",)):
-    """Percentile bootstrap CI with 10,000 resamples, matching paper Section 3.13.
+    """BCa bootstrap CI for the mean with 10,000 resamples.
 
-    cell_key seeds the resampler so adjacent cells have independent
-    Monte Carlo error (see _cell_seed).
+    Bias-corrected and accelerated (Efron, 1987). The plain percentile
+    method is biased on n=20 with non-normal residuals; BCa adjusts
+    for both bias and skew using the bootstrap distribution and a
+    jackknife acceleration estimate. cell_key seeds the resampler so
+    adjacent cells have independent Monte Carlo error.
     """
     arr = np.array(vals, dtype=float)
+    if len(arr) < 2:
+        return float(np.mean(arr)) if len(arr) else 0.0, float(np.mean(arr)) if len(arr) else 0.0
     rng = np.random.default_rng(_cell_seed("bootstrap_ci", cell_key))
-    boots = [float(np.mean(rng.choice(arr, len(arr), replace=True))) for _ in range(n_boot)]
-    return float(np.quantile(boots, alpha / 2)), float(np.quantile(boots, 1 - alpha / 2))
+    boots = np.array([
+        float(np.mean(rng.choice(arr, len(arr), replace=True)))
+        for _ in range(n_boot)
+    ])
+    theta_hat = float(np.mean(arr))
+
+    # Jackknife acceleration on the data
+    n = len(arr)
+    jacks = np.array([float(np.mean(np.delete(arr, i))) for i in range(n)])
+
+    return _bca_ci_from_boots(boots, theta_hat, jacks, alpha)
 
 
 def bootstrap_mean_diff_ci(a, b, n_boot=10_000, alpha=0.05, paired=True, cell_key=("global",)):
-    """Bootstrap CI for mean(a) - mean(b) with 10,000 resamples.
+    """BCa bootstrap CI for mean(a) - mean(b) with 10,000 resamples.
 
     paired=True resamples a single index applied to both arms (correct
     when a and b come from a matched-seed paired design). paired=False
     independently resamples each arm (correct when the two arms have
-    independent seeds).
+    independent seeds). BCa correction is applied (Efron 1987).
     """
     x, y = np.array(a, dtype=float), np.array(b, dtype=float)
     if len(x) == 0 or len(y) == 0:
@@ -144,6 +159,11 @@ def bootstrap_mean_diff_ci(a, b, n_boot=10_000, alpha=0.05, paired=True, cell_ke
         for _ in range(n_boot):
             sample_idx = rng.choice(idx, size=len(idx), replace=True)
             boots.append(float(np.mean(x[sample_idx] - y[sample_idx])))
+        theta_hat = float(np.mean(x - y))
+        jacks = np.array([
+            float(np.mean(np.delete(x, i) - np.delete(y, i)))
+            for i in range(len(x))
+        ])
     else:
         idx_a = np.arange(len(x))
         idx_b = np.arange(len(y))
@@ -151,7 +171,52 @@ def bootstrap_mean_diff_ci(a, b, n_boot=10_000, alpha=0.05, paired=True, cell_ke
             mean_a = float(np.mean(x[rng.choice(idx_a, size=len(idx_a), replace=True)]))
             mean_b = float(np.mean(y[rng.choice(idx_b, size=len(idx_b), replace=True)]))
             boots.append(mean_a - mean_b)
-    return float(np.quantile(boots, alpha / 2)), float(np.quantile(boots, 1 - alpha / 2))
+        theta_hat = float(np.mean(x) - np.mean(y))
+        jacks = np.empty(len(x) + len(y))
+        for i in range(len(x)):
+            jacks[i] = float(np.mean(np.delete(x, i)) - np.mean(y))
+        for j in range(len(y)):
+            jacks[len(x) + j] = float(np.mean(x) - np.mean(np.delete(y, j)))
+
+    return _bca_ci_from_boots(np.asarray(boots, dtype=float), theta_hat, jacks, alpha)
+
+
+def _bca_ci_from_boots(boots: np.ndarray, theta_hat: float,
+                        jacks: np.ndarray, alpha: float = 0.05):
+    """Compute BCa percentiles from a precomputed bootstrap distribution.
+
+    Falls back to the plain percentile method when the BCa correction
+    cannot be estimated (rare; happens when all bootstraps equal the
+    point estimate).
+    """
+    from math import erf, sqrt
+    if len(boots) < 2:
+        return float(theta_hat), float(theta_hat)
+    p0 = float(np.mean(boots < theta_hat))
+    if p0 <= 0.0 or p0 >= 1.0:
+        return (float(np.quantile(boots, alpha / 2)),
+                float(np.quantile(boots, 1 - alpha / 2)))
+    try:
+        from scipy.special import ndtri  # type: ignore
+        z0 = float(ndtri(p0))
+        z_lo = float(ndtri(alpha / 2))
+        z_hi = float(ndtri(1.0 - alpha / 2))
+    except Exception:
+        return (float(np.quantile(boots, alpha / 2)),
+                float(np.quantile(boots, 1 - alpha / 2)))
+
+    m = float(np.mean(jacks))
+    num = float(np.sum((m - jacks) ** 3))
+    den = 6.0 * (float(np.sum((m - jacks) ** 2)) ** 1.5) + 1e-12
+    a_acc = num / den
+
+    def _adj(z_q: float) -> float:
+        x = z0 + (z0 + z_q) / max(1.0 - a_acc * (z0 + z_q), 1e-12)
+        return 0.5 * (1.0 + erf(x / sqrt(2.0)))
+
+    p_lo = max(min(_adj(z_lo), 1.0 - 1e-9), 1e-9)
+    p_hi = max(min(_adj(z_hi), 1.0 - 1e-9), 1e-9)
+    return float(np.quantile(boots, p_lo)), float(np.quantile(boots, p_hi))
 
 
 def wilcoxon_signed_rank_pvalue(a, b, cell_key=("global",)):
@@ -291,32 +356,121 @@ def hedges_g(a, b, paired: bool = False):
     return float(j * d)
 
 
-def bootstrap_effect_size_ci(a, b, n_boot: int = 5_000, alpha: float = 0.05,
-                              paired: bool = True, cell_key=("global",)):
-    """95 % bootstrap CI on Cohen's d_z (paired) or pooled d (unpaired).
+def bootstrap_effect_size_ci(a, b, n_boot: int = 10_000, alpha: float = 0.05,
+                              paired: bool = True, cell_key=("global",),
+                              statistic: str = "pooled"):
+    """95 % BCa bootstrap CI on the requested Cohen's d statistic.
 
-    Readers asking for effect-size uncertainty (APA reporting
-    standards) get a CI on the effect size itself, not just the mean
-    difference.
+    ``statistic="pooled"`` returns a CI on cohens_d_pooled (canonical
+    per docs/STATISTICAL_METHODS.md, used for both paired and unpaired
+    contrasts). ``statistic="dz"`` returns a CI on cohens_dz (paired
+    designs only, reported alongside the canonical CI for
+    transparency).
+
+    BCa correction (Efron 1987) handles the bias and skew that the
+    plain percentile method misses on n=20 with non-normal residuals.
     """
     x, y = np.array(a, dtype=float), np.array(b, dtype=float)
     if len(x) < 2 or len(y) < 2:
         return 0.0, 0.0
-    rng = np.random.default_rng(_cell_seed("d_ci", cell_key))
+    rng = np.random.default_rng(_cell_seed(f"d_ci_{statistic}", cell_key))
+
+    def _stat(xa, xb):
+        if statistic == "dz":
+            return cohens_dz(xa, xb)
+        return cohens_d_pooled(xa, xb)
+
     boots = []
     if paired and x.shape == y.shape:
         idx = np.arange(len(x))
         for _ in range(n_boot):
             sel = rng.choice(idx, size=len(idx), replace=True)
-            boots.append(cohens_dz(x[sel], y[sel]))
+            boots.append(_stat(x[sel], y[sel]))
     else:
         idx_a = np.arange(len(x))
         idx_b = np.arange(len(y))
         for _ in range(n_boot):
             sa = rng.choice(idx_a, size=len(idx_a), replace=True)
             sb = rng.choice(idx_b, size=len(idx_b), replace=True)
-            boots.append(cohens_d_pooled(x[sa], y[sb]))
-    return float(np.quantile(boots, alpha / 2)), float(np.quantile(boots, 1 - alpha / 2))
+            boots.append(_stat(x[sa], y[sb]))
+
+    return _bca_quantiles(np.asarray(boots, dtype=float), _stat(x, y),
+                           paired_xy=(x, y) if (paired and x.shape == y.shape) else None,
+                           unpaired_xy=(x, y) if not (paired and x.shape == y.shape) else None,
+                           statistic_fn=_stat, alpha=alpha)
+
+
+def _bca_quantiles(boots: np.ndarray, theta_hat: float,
+                   paired_xy=None, unpaired_xy=None,
+                   statistic_fn=None, alpha: float = 0.05):
+    """Return BCa-corrected lower/upper percentiles for a bootstrap sample.
+
+    Falls back to the plain percentile method when the acceleration or
+    bias-correction terms cannot be estimated (rare; happens when all
+    bootstrap replicates equal theta_hat exactly).
+    """
+    from math import erf, sqrt
+    n_boot = len(boots)
+    if n_boot < 2:
+        return float(theta_hat), float(theta_hat)
+
+    # Bias correction z0
+    p0 = float(np.mean(boots < theta_hat))
+    if p0 <= 0.0 or p0 >= 1.0:
+        # All bootstrap values on one side of theta_hat -> percentile fallback
+        return (float(np.quantile(boots, alpha / 2)),
+                float(np.quantile(boots, 1 - alpha / 2)))
+
+    def _phi_inv(p: float) -> float:
+        # Beasley-Springer-Moro inverse normal CDF (good enough for n=20)
+        from scipy.special import ndtri  # type: ignore
+        return float(ndtri(p))
+
+    try:
+        z0 = _phi_inv(p0)
+    except Exception:
+        return (float(np.quantile(boots, alpha / 2)),
+                float(np.quantile(boots, 1 - alpha / 2)))
+
+    # Acceleration via jackknife on the original observations
+    a_acc = 0.0
+    if paired_xy is not None and statistic_fn is not None:
+        x, y = paired_xy
+        n = len(x)
+        jacks = np.empty(n)
+        for i in range(n):
+            mask = np.ones(n, dtype=bool); mask[i] = False
+            jacks[i] = statistic_fn(x[mask], y[mask])
+        m = jacks.mean()
+        num = np.sum((m - jacks) ** 3)
+        den = 6.0 * (np.sum((m - jacks) ** 2) ** 1.5) + 1e-12
+        a_acc = float(num / den)
+    elif unpaired_xy is not None and statistic_fn is not None:
+        x, y = unpaired_xy
+        nx, ny = len(x), len(y)
+        jacks = np.empty(nx + ny)
+        for i in range(nx):
+            mask = np.ones(nx, dtype=bool); mask[i] = False
+            jacks[i] = statistic_fn(x[mask], y)
+        for j in range(ny):
+            mask = np.ones(ny, dtype=bool); mask[j] = False
+            jacks[nx + j] = statistic_fn(x, y[mask])
+        m = jacks.mean()
+        num = np.sum((m - jacks) ** 3)
+        den = 6.0 * (np.sum((m - jacks) ** 2) ** 1.5) + 1e-12
+        a_acc = float(num / den)
+
+    z_lo = _phi_inv(alpha / 2)
+    z_hi = _phi_inv(1.0 - alpha / 2)
+
+    def _adj(z_q: float) -> float:
+        # standard normal CDF via erf
+        x = (z0 + (z0 + z_q) / max(1.0 - a_acc * (z0 + z_q), 1e-12))
+        return 0.5 * (1.0 + erf(x / sqrt(2.0)))
+
+    p_lo = max(min(_adj(z_lo), 1.0 - 1e-9), 1e-9)
+    p_hi = max(min(_adj(z_hi), 1.0 - 1e-9), 1e-9)
+    return float(np.quantile(boots, p_lo)), float(np.quantile(boots, p_hi))
 
 
 def benjamini_yekutieli(p_values: dict[str, float]) -> dict[str, float]:
@@ -480,11 +634,17 @@ def main():
             if not seeds_paired:
                 continue
             is_paired = baseline in _PAIRED_BASELINES
+            # Canonical effect size is cohens_d_pooled for ALL contrasts
+            # (paired and unpaired) per docs/STATISTICAL_METHODS.md.
+            # cohens_dz is reported alongside for paired contrasts with
+            # a noted design tax: paired arms share `ablation_seed` for
+            # Sources 1-5, so the within-pair denominator is dominated
+            # by Source 8 (per-(mode, seed) policy temperature draw,
+            # sigma=0.25) and d_z is therefore design-inflated.
             comp: dict = {"is_paired_design": is_paired,
                           "test_type": "wilcoxon_signed_rank" if is_paired
                                        else "mann_whitney_u",
-                          "effect_size_primary": "cohens_dz" if is_paired
-                                                 else "cohens_d_pooled"}
+                          "effect_size_primary": "cohens_d_pooled"}
             for met in METRICS:
                 a = [all_data[s][sc]["agribrain"][met] for s in seeds_paired]
                 b = [all_data[s][sc][baseline][met] for s in seeds_paired]
@@ -505,21 +665,54 @@ def main():
                     a, b, paired=is_paired, cell_key=cell_key
                 )
                 d_lo, d_hi = bootstrap_effect_size_ci(
-                    a, b, paired=is_paired, cell_key=cell_key
+                    a, b, paired=is_paired, cell_key=cell_key,
+                    statistic="pooled",
                 )
+                if is_paired:
+                    dz_lo, dz_hi = bootstrap_effect_size_ci(
+                        a, b, paired=True, cell_key=cell_key,
+                        statistic="dz",
+                    )
+                    # Within-pair SD makes the d_z design tax explicit:
+                    # arms share `ablation_seed` for Sources 1-5, so
+                    # within-pair SD is essentially Source 8 (per-(mode,
+                    # seed) policy temperature, sigma=0.25). A small
+                    # `within_pair_sd` plus a moderate `mean_diff` is
+                    # exactly what produces the design-inflated d_z.
+                    paired_diff = np.array(a, dtype=float) - np.array(b, dtype=float)
+                    within_pair_sd = float(np.std(paired_diff, ddof=1)) if len(paired_diff) >= 2 else 0.0
+                else:
+                    dz_lo, dz_hi = float("nan"), float("nan")
+                    within_pair_sd = float("nan")
                 mean_diff = float(np.mean(a) - np.mean(b))
                 comp[met] = {
                     "p_value": p_value,
                     "p_value_legacy_signflip": p_perm_legacy,
-                    # cohens_d retained as legacy alias = canonical
-                    # effect size for the comparison's design (d_z if
-                    # paired, d_pooled otherwise).
-                    "cohens_d": dz if is_paired else d_pooled,
+                    # cohens_d is now the legacy alias for the canonical
+                    # cohens_d_pooled (post-2026-04 canonical effect size).
+                    # Both paired and unpaired contrasts read this field
+                    # as the same effect-size statistic, so cross-baseline
+                    # tables are commensurable. cohens_dz remains
+                    # available for paired contrasts but is design-tax
+                    # inflated and is not the headline statistic.
+                    "cohens_d": d_pooled,
                     "cohens_dz": dz,
                     "cohens_d_pooled": d_pooled,
                     "hedges_g": hg,
                     "effect_size_ci_low": d_lo,
                     "effect_size_ci_high": d_hi,
+                    "effect_size_ci_method": "BCa",
+                    "cohens_dz_ci_low": dz_lo,
+                    "cohens_dz_ci_high": dz_hi,
+                    "within_pair_sd": within_pair_sd,
+                    "design_tax_note": (
+                        "d_z denominator is within-pair SD; for paired "
+                        "baselines the arms share ablation_seed for "
+                        "Sources 1-5, so within-pair SD is dominated "
+                        "by Source 8 (per-(mode, seed) policy "
+                        "temperature, sigma=0.25). Report cohens_d_pooled "
+                        "as the design-independent effect size."
+                    ) if is_paired else "unpaired (no design tax on d_z)",
                     "mean_diff": mean_diff,
                     "mean_diff_ci_low": lo_diff,
                     "mean_diff_ci_high": hi_diff,
@@ -531,7 +724,27 @@ def main():
             significance[sc][f"agribrain_vs_{baseline}"] = comp
 
     # Pass 2a: Holm-Bonferroni across the primary H1 family (5 scenarios).
+    # The primary family is fixed in docs/STATISTICAL_METHODS.md: one
+    # contrast (agribrain vs no_context) on one metric (ARI) per
+    # scenario, m=5. We also report Holm across an extended grid (3
+    # endpoints x 3 paired baselines x 5 scenarios = 45 tests) as an
+    # auxiliary so reviewers can judge headline robustness under a
+    # wider family. The auxiliary is not the canonical correction.
     primary_h1_holm = holm_bonferroni(primary_h1_pvals)
+
+    # Build extended Holm grid: ARI / RLE / SLCA on all paired baselines.
+    extended_pvals: dict[str, float] = {}
+    for sc in SCENARIOS:
+        for baseline in _PAIRED_BASELINES:
+            comp = significance.get(sc, {}).get(f"agribrain_vs_{baseline}")
+            if comp is None:
+                continue
+            for met in ("ari", "rle", "slca"):
+                rec = comp.get(met)
+                if rec is None:
+                    continue
+                extended_pvals[f"{sc}:{baseline}:{met}"] = float(rec["p_value"])
+    extended_holm = holm_bonferroni(extended_pvals) if extended_pvals else {}
 
     # Pass 2b: BH-FDR (PRDS-assuming) AND BY-FDR (arbitrary-dependence)
     # within each scenario across all (baseline, metric) pairs. Reporting
@@ -564,6 +777,35 @@ def main():
                 p_by = float(by_map.get(key, rec["p_value"]))
                 rec["p_value_adj_bh"] = p_bh
                 rec["p_value_adj_by"] = p_by
+                # Auxiliary extended-Holm field on every record where
+                # the contrast is part of the extended grid.
+                ext_key = f"{sc}:{baseline}:{met}"
+                if ext_key in extended_holm:
+                    rec["p_value_adj_holm_extended"] = float(extended_holm[ext_key])
+                # M3/M4 descriptive-only flags. RLE on static is
+                # structurally zero (static always picks cold_chain),
+                # so the RLE contrast against static is descriptive
+                # only — it measures the policy ceiling, not a
+                # comparable RLE. regulatory_violation_rate is
+                # structurally zero for non-MCP baselines (static,
+                # hybrid_rl, no_pinn, no_slca) because they don't
+                # invoke the compliance tool — same caveat. Reviewers
+                # should not interpret these as falsifiable contrasts.
+                if met == "rle" and baseline == "static":
+                    rec["descriptive_only"] = True
+                    rec["descriptive_only_reason"] = (
+                        "static RLE is structurally 0 (always cold_chain); "
+                        "the contrast measures policy ceiling, not RLE"
+                    )
+                if met == "regulatory_violation_rate" and baseline in (
+                    "static", "hybrid_rl", "no_pinn", "no_slca",
+                ):
+                    rec["descriptive_only"] = True
+                    rec["descriptive_only_reason"] = (
+                        f"regulatory_violation_rate is structurally 0 for "
+                        f"{baseline} (no MCP compliance tool invoked); the "
+                        f"contrast is non-falsifiable"
+                    )
                 if baseline == "no_context" and met == "ari":
                     p_holm = float(primary_h1_holm.get(sc, rec["p_value"]))
                     rec["p_value_adj_holm"] = p_holm

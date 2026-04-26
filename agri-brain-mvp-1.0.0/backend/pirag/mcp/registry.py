@@ -12,8 +12,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
+
+
+_log = logging.getLogger(__name__)
+_REGISTRATION_FAILURES: Dict[str, str] = {}
 
 
 @dataclass
@@ -74,7 +79,11 @@ class ToolRegistry:
 
         if spec.cacheable and spec.cache_key_params:
             key_data = {p: kwargs.get(p) for p in spec.cache_key_params}
-            cache_key = f"{tool_name}:{hashlib.md5(json.dumps(key_data, sort_keys=True, default=str).encode()).hexdigest()}"
+            # SHA-256 instead of MD5 — same cache-key role, but Bandit /
+            # security scanners flag MD5 by default and reviewers tend
+            # to ask. Cost difference is irrelevant at registry-cache
+            # frequency.
+            cache_key = f"{tool_name}:{hashlib.sha256(json.dumps(key_data, sort_keys=True, default=str).encode()).hexdigest()}"
             if cache_key in self._cache:
                 return self._cache[cache_key]
             result = spec.fn(**kwargs)
@@ -209,7 +218,11 @@ def get_default_registry() -> ToolRegistry:
         cacheable=False,
     ))
 
-    # New tools (Tasks 3-4) — registered if importable
+    # New tools (Tasks 3-4) — registered if importable. Failures are
+    # logged at WARN and recorded in _REGISTRATION_FAILURES so the
+    # operator can detect partial registration via the
+    # `mcp_registration_status()` helper or the `mcp.registry.status`
+    # MCP resource.
     try:
         from .tools.spoilage_forecast import forecast_spoilage
         registry.register(ToolSpec(
@@ -225,8 +238,9 @@ def get_default_registry() -> ToolRegistry:
             },
             cacheable=False,
         ))
-    except ImportError:
-        pass
+    except ImportError as exc:
+        _log.warning("MCP tool 'spoilage_forecast' not registered: %s", exc)
+        _REGISTRATION_FAILURES["spoilage_forecast"] = str(exc)
 
     try:
         from .tools.footprint_query import query_footprint
@@ -242,8 +256,9 @@ def get_default_registry() -> ToolRegistry:
             },
             cacheable=False,
         ))
-    except ImportError:
-        pass
+    except ImportError as exc:
+        _log.warning("MCP tool 'footprint_query' not registered: %s", exc)
+        _REGISTRATION_FAILURES["footprint_query"] = str(exc)
 
     # piRAG, explanation, and context feature tools
     try:
@@ -263,8 +278,9 @@ def get_default_registry() -> ToolRegistry:
             },
             cacheable=False,
         ))
-    except ImportError:
-        pass
+    except ImportError as exc:
+        _log.warning("MCP tool 'pirag_query' not registered: %s", exc)
+        _REGISTRATION_FAILURES["pirag_query"] = str(exc)
 
     try:
         from .tools.explain_tool import explain
@@ -283,8 +299,9 @@ def get_default_registry() -> ToolRegistry:
             },
             cacheable=False,
         ))
-    except ImportError:
-        pass
+    except ImportError as exc:
+        _log.warning("MCP tool 'explain' not registered: %s", exc)
+        _REGISTRATION_FAILURES["explain"] = str(exc)
 
     try:
         from .tools.context_features import read_context_features
@@ -296,8 +313,9 @@ def get_default_registry() -> ToolRegistry:
             schema={},
             cacheable=False,
         ))
-    except ImportError:
-        pass
+    except ImportError as exc:
+        _log.warning("MCP tool 'context_features' not registered: %s", exc)
+        _REGISTRATION_FAILURES["context_features"] = str(exc)
 
     # Holt's linear yield/supply forecast tool. Canonical entry point for
     # supply forecasting; the simulator and REST endpoint both route
@@ -318,8 +336,9 @@ def get_default_registry() -> ToolRegistry:
             },
             cacheable=False,
         ))
-    except ImportError:
-        pass
+    except ImportError as exc:
+        _log.warning("MCP tool 'yield_query' not registered: %s", exc)
+        _REGISTRATION_FAILURES["yield_query"] = str(exc)
 
     # Symmetric demand forecast tool. Mirrors yield_query so supply and
     # demand share the same MCP contract and both can short-circuit from
@@ -341,8 +360,26 @@ def get_default_registry() -> ToolRegistry:
             },
             cacheable=False,
         ))
-    except ImportError:
-        pass
+    except ImportError as exc:
+        _log.warning("MCP tool 'demand_query' not registered: %s", exc)
+        _REGISTRATION_FAILURES["demand_query"] = str(exc)
 
     _DEFAULT_REGISTRY = registry
     return registry
+
+
+def mcp_registration_status() -> Dict[str, Any]:
+    """Return the registration outcome of every optional MCP tool.
+
+    Provides a structured view of which optional tools registered and
+    which failed with their import error so reviewers can spot partial
+    registrations. Used by the MCP `mcp.registry.status` resource.
+    """
+    reg = get_default_registry()
+    registered = sorted(reg._tools.keys())
+    return {
+        "registered": registered,
+        "registered_count": len(registered),
+        "failed": dict(_REGISTRATION_FAILURES),
+        "failed_count": len(_REGISTRATION_FAILURES),
+    }

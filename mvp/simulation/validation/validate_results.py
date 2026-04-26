@@ -41,6 +41,20 @@ t2 = pd.read_csv(_T2)
 _TOL = 0.0 if DETERMINISTIC_MODE else 0.06
 
 errors = []
+warnings_ord = []  # ordering claims reported but never blocking
+
+
+def _ord(msg: str) -> None:
+    """Record an ordering claim; reported but never blocks the build.
+
+    Ordering claims (e.g. "agribrain ARI > hybrid_rl ARI") are
+    confirmation-bias-prone when used as build gates. They are
+    decided by the bootstrap CIs and adjusted p-values produced by
+    `aggregate_seeds.py`; the validator only enforces *intervals*
+    (range checks).
+    """
+    warnings_ord.append(msg)
+
 
 def get(scenario, method, metric):
     row = t1[(t1["Scenario"] == scenario) & (t1["Method"] == method)]
@@ -94,7 +108,7 @@ for sc in t1["Scenario"].unique():
     st = get(sc, "static", "ARI")
     if ab is not None and hr is not None and st is not None:
         if not (ab > hr - _TOL and hr > st - _TOL):
-            errors.append(f"ARI ordering: {sc}: AB={ab:.3f} > HR={hr:.3f} > ST={st:.3f} VIOLATED")
+            _ord(f"ARI ordering: {sc}: AB={ab:.3f} > HR={hr:.3f} > ST={st:.3f} VIOLATED")
 
 # ============================================================
 # CHECK 3: ARI scenario ordering for AGRI-BRAIN
@@ -102,16 +116,16 @@ for sc in t1["Scenario"].unique():
 ab_ari = {sc: get(sc, "agribrain", "ARI") for sc in t1["Scenario"].unique()}
 if all(v is not None for v in ab_ari.values()):
     if not (ab_ari["baseline"] >= ab_ari["adaptive_pricing"]):
-        errors.append(f"ARI scenario order: baseline ({ab_ari['baseline']:.3f}) < pricing ({ab_ari['adaptive_pricing']:.3f})")
+        _ord(f"ARI scenario order: baseline ({ab_ari['baseline']:.3f}) < pricing ({ab_ari['adaptive_pricing']:.3f})")
     if not (ab_ari["adaptive_pricing"] > ab_ari["cyber_outage"]):
-        errors.append(f"ARI scenario order: pricing ({ab_ari['adaptive_pricing']:.3f}) <= cyber ({ab_ari['cyber_outage']:.3f})")
+        _ord(f"ARI scenario order: pricing ({ab_ari['adaptive_pricing']:.3f}) <= cyber ({ab_ari['cyber_outage']:.3f})")
     if not (ab_ari["cyber_outage"] >= ab_ari["overproduction"]):
-        errors.append(f"ARI scenario order: cyber ({ab_ari['cyber_outage']:.3f}) < overprod ({ab_ari['overproduction']:.3f})")
+        _ord(f"ARI scenario order: cyber ({ab_ari['cyber_outage']:.3f}) < overprod ({ab_ari['overproduction']:.3f})")
     if not (ab_ari["overproduction"] > ab_ari["heatwave"]):
-        errors.append(f"ARI scenario order: overprod ({ab_ari['overproduction']:.3f}) <= heatwave ({ab_ari['heatwave']:.3f})")
-    # Cyber must be meaningfully below baseline
+        _ord(f"ARI scenario order: overprod ({ab_ari['overproduction']:.3f}) <= heatwave ({ab_ari['heatwave']:.3f})")
+    # Cyber must be meaningfully below baseline (ordering-style claim)
     if ab_ari["baseline"] - ab_ari["cyber_outage"] < 0.03:
-        errors.append(f"ARI: cyber ({ab_ari['cyber_outage']:.3f}) too close to baseline ({ab_ari['baseline']:.3f}), gap < 0.03")
+        _ord(f"ARI: cyber ({ab_ari['cyber_outage']:.3f}) too close to baseline ({ab_ari['baseline']:.3f}), gap < 0.03")
 
 # ============================================================
 # CHECK 4: RLE rules
@@ -125,10 +139,10 @@ for sc in t1["Scenario"].unique():
     ab_rle = get(sc, "agribrain", "RLE")
     if ab_rle is not None and ab_rle <= 0.0:
         errors.append(f"RLE: agribrain/{sc} = {ab_rle} (must be > 0)")
-    # AGRI-BRAIN >= Hybrid RL
+    # AGRI-BRAIN >= Hybrid RL (ordering)
     hr_rle = get(sc, "hybrid_rl", "RLE")
     if ab_rle is not None and hr_rle is not None and ab_rle < hr_rle - 0.01:
-        errors.append(f"RLE ordering: {sc}: AB={ab_rle:.3f} < HR={hr_rle:.3f}")
+        _ord(f"RLE ordering: {sc}: AB={ab_rle:.3f} < HR={hr_rle:.3f}")
 
 # RLE scenario ordering for AGRI-BRAIN: heatwave >= overproduction > cyber_outage.
 # Implementation note: 2025-04 realism recalibration.
@@ -145,7 +159,7 @@ ab_rle_cy = get("cyber_outage", "agribrain", "RLE")
 if all(v is not None for v in [ab_rle_hw, ab_rle_op, ab_rle_cy]):
     rle_tol = 0.02
     if not (ab_rle_hw >= ab_rle_op - rle_tol and ab_rle_op > ab_rle_cy + rle_tol):
-        errors.append(f"RLE scenario order: HW={ab_rle_hw:.3f} >= OP={ab_rle_op:.3f} > CY={ab_rle_cy:.3f} VIOLATED")
+        _ord(f"RLE scenario order: HW={ab_rle_hw:.3f} >= OP={ab_rle_op:.3f} > CY={ab_rle_cy:.3f} VIOLATED")
 # Also assert agribrain RLE no longer trivially hits 1.0 across the board:
 # a saturated 1.0000 is a tautology of the policy, not a measurement, and
 # was a reviewer red-flag in the previous run. Allow at most one scenario
@@ -153,6 +167,9 @@ if all(v is not None for v in [ab_rle_hw, ab_rle_op, ab_rle_cy]):
 ab_rle_all = [get(sc, "agribrain", "RLE") for sc in ["heatwave","overproduction","cyber_outage","adaptive_pricing","baseline"]]
 n_at_one = sum(1 for v in ab_rle_all if v is not None and v >= 0.999)
 if n_at_one >= 4:
+    # Range-style anti-saturation gate: >=4 scenarios at the ceiling means
+    # the metric is degenerate, not a "agribrain wins" claim. Keep as a
+    # hard error.
     errors.append(f"RLE saturation: {n_at_one}/5 scenarios hit RLE >= 0.999. Recalibrate the policy or noise; reviewers will flag this as tautological.")
 
 # ============================================================
@@ -182,14 +199,14 @@ for sc in t1["Scenario"].unique():
     st = get(sc, "static", "Waste")
     if ab is not None and hr is not None and st is not None:
         if not (st > hr - _TOL and hr > ab - _TOL):
-            errors.append(f"Waste ordering: {sc}: ST={st:.3f} > HR={hr:.3f} > AB={ab:.3f} VIOLATED")
+            _ord(f"Waste ordering: {sc}: ST={st:.3f} > HR={hr:.3f} > AB={ab:.3f} VIOLATED")
 
-# Cyber waste must be higher than baseline waste for AGRI-BRAIN
+# Cyber waste must be higher than baseline waste for AGRI-BRAIN (ordering)
 ab_w_cy = get("cyber_outage", "agribrain", "Waste")
 ab_w_bl = get("baseline", "agribrain", "Waste")
 if ab_w_cy is not None and ab_w_bl is not None:
     if not (ab_w_cy > ab_w_bl):
-        errors.append(f"Waste: cyber ({ab_w_cy:.3f}) must be > baseline ({ab_w_bl:.3f})")
+        _ord(f"Waste: cyber ({ab_w_cy:.3f}) must be > baseline ({ab_w_bl:.3f})")
 
 # ============================================================
 # CHECK 6: SLCA ordering
@@ -200,14 +217,14 @@ for sc in t1["Scenario"].unique():
     st = get(sc, "static", "SLCA")
     if ab is not None and hr is not None and st is not None:
         if not (ab > hr - _TOL and hr > st - _TOL):
-            errors.append(f"SLCA ordering: {sc}: AB={ab:.3f} > HR={hr:.3f} > ST={st:.3f} VIOLATED")
+            _ord(f"SLCA ordering: {sc}: AB={ab:.3f} > HR={hr:.3f} > ST={st:.3f} VIOLATED")
 
-# SLCA: cyber must be lower than baseline for AGRI-BRAIN
+# SLCA: cyber must be lower than baseline for AGRI-BRAIN (ordering)
 ab_s_cy = get("cyber_outage", "agribrain", "SLCA")
 ab_s_bl = get("baseline", "agribrain", "SLCA")
 if ab_s_cy is not None and ab_s_bl is not None:
     if not (ab_s_bl > ab_s_cy):
-        errors.append(f"SLCA: baseline ({ab_s_bl:.3f}) must be > cyber ({ab_s_cy:.3f})")
+        _ord(f"SLCA: baseline ({ab_s_bl:.3f}) must be > cyber ({ab_s_cy:.3f})")
 
 # ============================================================
 # CHECK 7: Carbon ordering
@@ -219,7 +236,7 @@ for sc in t1["Scenario"].unique():
     if ab is not None and hr is not None and st is not None:
         carbon_tol = 0.0 if DETERMINISTIC_MODE else 50.0
         if not (st > hr - carbon_tol and hr > ab - carbon_tol):
-            errors.append(f"Carbon ordering: {sc}: ST={st:.0f} > HR={hr:.0f} > AB={ab:.0f} VIOLATED")
+            _ord(f"Carbon ordering: {sc}: ST={st:.0f} > HR={hr:.0f} > AB={ab:.0f} VIOLATED")
 
 # ============================================================
 # CHECK 8: Equity constraints
@@ -227,21 +244,21 @@ for sc in t1["Scenario"].unique():
 for sc in t1["Scenario"].unique():
     st_eq = get(sc, "static", "Equity")
     # Equity = mean(SLCA) * (1 - std(SLCA)).
-    # Implementation note: 2025-04 realism recalibration. With softer SLCA action
-    # bases (cold_chain L/R/P raised from 0.50/0.40/0.45 to 0.60/0.55/0.55),
-    # static-policy SLCA composite shifts up roughly 0.05-0.08 per step, so
-    # static-policy Equity now sits at ~0.45-0.65 (was ~0.40-0.55). Active
-    # policies see less differentiation against static (LR composite drops
-    # to ~0.81 from ~0.88, recovery composite stays around ~0.72), so the
-    # active-policy band tightens to ~0.55-0.85. Widen further for stochastic.
-    eq_lo_static = 0.40 if DETERMINISTIC_MODE else 0.32
-    eq_hi_static = 0.70 if DETERMINISTIC_MODE else 0.74
+    # Static always picks cold_chain → SLCA is the same every step → std=0
+    # → equity = mean(SLCA). The bound therefore matches the static SLCA
+    # bound for cold_chain, which lies in roughly [0.40, 1.00] across the
+    # post-recalibration parameter space (deterministic and stochastic
+    # both). Earlier revisions of this validator used a tighter bound
+    # appropriate for an older SLCA-base set; that bound was dead by
+    # 2026-04 and is widened here to match the std=0 regime.
+    eq_lo_static = 0.30 if DETERMINISTIC_MODE else 0.25
+    eq_hi_static = 1.00
     if st_eq is not None and not (eq_lo_static <= st_eq <= eq_hi_static):
         errors.append(
             f"Equity: static/{sc} = {st_eq:.3f} out of range "
-            f"[{eq_lo_static}, {eq_hi_static}] for the new SLCA bases"
+            f"[{eq_lo_static}, {eq_hi_static}]"
         )
-    eq_range = (0.50, 0.88) if DETERMINISTIC_MODE else (0.40, 0.93)
+    eq_range = (0.40, 0.95) if DETERMINISTIC_MODE else (0.30, 0.97)
     for method in ["hybrid_rl", "agribrain"]:
         eq = get(sc, method, "Equity")
         if eq is not None and not (eq_range[0] <= eq <= eq_range[1]):
@@ -262,7 +279,7 @@ for sc in t2["Scenario"].unique():
             a, b = expected_ablation[i], expected_ablation[i+1]
             abl_tol = 0.005 if DETERMINISTIC_MODE else 0.02
             if vals[a] < vals[b] - abl_tol:
-                errors.append(f"Ablation ARI inversion: {sc}: {a}={vals[a]:.3f} < {b}={vals[b]:.3f}")
+                _ord(f"Ablation ARI inversion: {sc}: {a}={vals[a]:.3f} < {b}={vals[b]:.3f}")
 
 # ============================================================
 # CHECK 10: Global sanity bounds
@@ -318,7 +335,7 @@ if "ConstraintViolationRate" in t1.columns:
             # is "AgriBrain does not violate operational constraints more
             # often than the always-cold-chain baseline".
             if ab_cv > st_cv + 0.05:
-                errors.append(
+                _ord(
                     f"ConstraintViolationRate ordering: agribrain/{sc}={ab_cv:.3f} > "
                     f"static/{sc}={st_cv:.3f} + 0.05. Operational metric should be "
                     f"AB <= ST; if this fires, the asymmetric instrumentation regressed."
@@ -351,19 +368,22 @@ if bench_path.exists():
     except Exception as e:
         errors.append(f"Failed to parse benchmark_summary.json: {e}")
 
-# Implementation note: 2025-04 validator-mode change.
-# Previous behaviour was to exit non-zero whenever any pre-registered
-# range or ordering check fired, which a reviewer correctly flagged as
-# a confirmation-bias gate (the validator's pass criterion encoded the
-# paper's hypothesis ordering, so a real regression toward a cleaner
-# null result would fail the build). The validator now operates in
-# REPORT mode by default: it prints every flagged issue and writes a
-# machine-readable JSON report, but exits 0 unless STRICT_VALIDATION=1
-# is explicitly set. This decouples the build from the hypotheses.
+# Implementation note: 2026-04 validator-mode change.
+#
+# A 2025-04 revision had downgraded the validator to report-only by
+# default to address an earlier reviewer's confirmation-bias concern
+# (range *and* ordering claims were both gating the build, and the
+# orderings encoded the manuscript's preferred direction). The
+# 2026-04 fix is more surgical: ordering claims now go through
+# `_ord(...)` and are reported as warnings only, while range / interval
+# checks stay as hard errors and gate the build by default.
+#
+# To restore the previous report-only behaviour for local debugging,
+# export STRICT_VALIDATION=0. The canonical configuration is strict.
 import os as _os
 import json as _json
 
-_strict = _os.environ.get("STRICT_VALIDATION", "0") == "1"
+_strict = _os.environ.get("STRICT_VALIDATION", "1") == "1"
 _mode_label = "DETERMINISTIC" if DETERMINISTIC_MODE else "STOCHASTIC"
 print(f"\n{'='*70}")
 print(f"Validation mode: {_mode_label} (strict={_strict})")
@@ -375,6 +395,8 @@ report = {
     "strict": _strict,
     "n_errors": len(errors),
     "errors": list(errors),
+    "n_ordering_warnings": len(warnings_ord),
+    "ordering_warnings": list(warnings_ord),
 }
 try:
     _RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -382,17 +404,22 @@ try:
 except Exception:
     pass
 
+if warnings_ord:
+    print(f"\nORDERING WARNINGS (reported, never blocking): {len(warnings_ord)}")
+    for w in warnings_ord:
+        print(f"  WARN  {w}")
+
 if errors:
-    label = "VALIDATION FAILED" if _strict else "VALIDATION REPORTED ISSUES"
-    print(f"{label}: {len(errors)} issue(s)")
+    label = "VALIDATION FAILED" if _strict else "VALIDATION REPORTED RANGE ISSUES"
+    print(f"\n{label}: {len(errors)} range/interval issue(s)")
     print(f"{'='*70}")
     for e in errors:
         print(f"  {e}")
     if _strict:
         sys.exit(1)
-    print("\nNon-strict mode: continuing with exit 0. Set STRICT_VALIDATION=1 to enforce.")
+    print("\nNon-strict mode (STRICT_VALIDATION=0): continuing with exit 0.")
 else:
-    print("ALL CHECKS PASSED")
+    print("\nALL RANGE CHECKS PASSED")
     print(f"{'='*70}")
 
 print("\nFinal AGRI-BRAIN results:")

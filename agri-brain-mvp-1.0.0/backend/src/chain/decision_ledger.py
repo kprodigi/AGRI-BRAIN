@@ -90,12 +90,25 @@ class DecisionLedger:
     def submit_onchain(self, chain_cfg: Optional[Dict[str, Any]]) -> Optional[str]:
         """Submit the Merkle root on-chain via DecisionLogger.logEpisode.
 
-        Returns the transaction hash on success, ``None`` when the chain
-        is not configured or the submission failed. Errors are swallowed
-        so simulation loops never block on chain availability.
+        Returns the transaction hash on success, ``None`` only when the
+        chain is not configured (``chain_cfg`` is empty / falsy).
+
+        On configured-but-failing submissions (RPC unreachable, ABI
+        mismatch, transaction reverted, receipt status != 1) this
+        method now logs the error at WARN and re-raises by default,
+        so operators do not silently believe an anchoring happened
+        when it did not. Set ``CHAIN_BEST_EFFORT=true`` to restore the
+        previous "swallow everything and return None" behaviour for
+        long-running simulation loops where anchoring is best-effort.
         """
         if not chain_cfg:
             return None
+
+        import logging as _logging
+        import os as _os
+        _logger = _logging.getLogger(__name__)
+        best_effort = _os.environ.get("CHAIN_BEST_EFFORT", "false").lower() == "true"
+
         try:
             from .eth import log_episode_onchain
             return log_episode_onchain(
@@ -103,5 +116,16 @@ class DecisionLedger:
                 metadata={**self.metadata, "n_records": len(self._records)},
                 chain_cfg=chain_cfg,
             )
-        except Exception:
-            return None
+        except Exception as exc:
+            if best_effort:
+                _logger.warning(
+                    "DecisionLedger.submit_onchain failed (best-effort): %s",
+                    exc,
+                )
+                return None
+            _logger.error(
+                "DecisionLedger.submit_onchain failed: %s. Re-raising; "
+                "set CHAIN_BEST_EFFORT=true to swallow.",
+                exc,
+            )
+            raise
