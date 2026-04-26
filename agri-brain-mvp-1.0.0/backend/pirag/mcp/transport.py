@@ -52,7 +52,14 @@ class InProcessTransport(MCPTransport):
     def __init__(self, server: Any) -> None:
         self._server = server
 
-    def send(self, message: Dict[str, Any]) -> Dict[str, Any]:
+    def send(self, message: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Send a JSON-RPC message and return the response.
+
+        Honours the JSON-RPC 2.0 notification path: when the input
+        message has no ``id`` field, the server is invoked for its
+        side effect and ``None`` is returned. Callers that need a
+        response must include an ``id``.
+        """
         wire = json.dumps(message, default=str)
         parsed = json.loads(wire)
 
@@ -63,7 +70,11 @@ class InProcessTransport(MCPTransport):
             method=parsed.get("method"),
             params=parsed.get("params", {}),
         )
+        is_notification = "id" not in parsed
         response = self._server.handle_message(msg)
+
+        if is_notification or response is None:
+            return None
 
         resp_dict: Dict[str, Any] = {
             "jsonrpc": response.jsonrpc,

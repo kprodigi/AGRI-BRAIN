@@ -72,9 +72,25 @@ n_iter=4 and `agribrain` with n_iter=1.
 
 ## Status
 
-Open: a side-by-side delta table comparing the published HPC numbers
-under the fair budget with the equivalent unfair-budget run. The
-unfair-budget run requires HPC time the user has not yet allocated;
-this file is the placeholder for that table once it lands. The
-documented sensitivity analysis explicitly lists this as one of the items
-that must accompany the headline run.
+Open until the next HPC run. The fair-budget numbers are produced by
+the canonical pipeline (`mvp/simulation/reproduce_core.py`); the
+unfair-budget comparison is a manual `git checkout <pre-fix-commit>`
++ `BENCHMARK_SEEDS=42 python mvp/simulation/generate_results.py` step
+that the user runs once before the HPC submission. The placeholder
+below should be filled with both ARI columns side by side and the
+delta column. Until then, the manuscript should report only the
+fair-budget numbers and footnote that the previous unfair-budget
+ablation has been retired.
+
+| Scenario | ARI (fair, 4 iters all modes) | ARI (unfair pre-fix, 1 iter agribrain / 4 iter cold_start) | Δ |
+|---|---|---|---|
+| heatwave         | _to populate_ | _to populate_ | _to populate_ |
+| overproduction   | _to populate_ | _to populate_ | _to populate_ |
+| cyber_outage     | _to populate_ | _to populate_ | _to populate_ |
+| adaptive_pricing | _to populate_ | _to populate_ | _to populate_ |
+| baseline         | _to populate_ | _to populate_ | _to populate_ |
+
+The manuscript text describing §4.7 must explicitly state which
+budget produced the published numbers. The current commit pins the
+fair-budget configuration; that is the only configuration HPC will
+run.

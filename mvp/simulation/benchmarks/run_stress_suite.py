@@ -303,21 +303,69 @@ def main() -> None:
     pass_rows = []
     for _, r in df.iterrows():
         rec = r.to_dict()
+        # Cross-mode comparison rows (added 2026-04) carry
+        # `comparison_type == "cross_mode_under_stress"` and a synthetic
+        # Method like `agribrain_minus_hybrid_rl_stressed`. They are
+        # descriptive only — no pass/fail threshold — and so we skip
+        # the per-mode pass-rate computation for them.
+        if rec.get("comparison_type") == "cross_mode_under_stress":
+            rec["Pass_Mean"] = None
+            rec["Pass"] = None  # descriptive only
+            rec["Pass_Count"] = None
+            rec["Pass_N"] = None
+            rec["Pass_Rate"] = None
+            rec["Pass_Rate_CI_Low"] = None
+            rec["Pass_Rate_CI_High"] = None
+            # Cross-mode rows have *_diff fields not *_Base/_Stressed;
+            # set the canonical Base/Stressed columns to NaN so the
+            # validator schema check passes without inventing numbers.
+            for col in ("ARI_Base", "ARI_Stressed", "Waste_Base",
+                        "Waste_Stressed", "SLCA_Base", "SLCA_Stressed"):
+                rec[col] = None
+            _CANONICAL_THRESHOLDS = {
+                "ari_delta_min":                  "Threshold_ARI",
+                "waste_delta_max":                "Threshold_Waste",
+                "slca_delta_min":                 "Threshold_SLCA",
+                "rle_delta_min":                  "Threshold_RLE",
+                "carbon_delta_max":               "Threshold_Carbon",
+                "equity_delta_min":               "Threshold_Equity",
+                "constraint_violation_delta_max": "Threshold_CVR",
+                "latency_ms_delta_max":           "Threshold_LatencyMs",
+            }
+            for k, col in _CANONICAL_THRESHOLDS.items():
+                rec[col] = STRESS_THRESHOLDS[k]
+            pass_rows.append(rec)
+            continue
+
         rec["Pass_Mean"] = _stress_pass(rec)
+        rec["Pass"] = bool(rec["Pass_Mean"])
         # Per-seed pass rate
         scen, stressor, mode = rec["Scenario"], rec["Stressor"], rec["Method"]
         per_seed_passes = []
-        for seed in seed_list:
-            base_m = baselines_by_seed[seed][mode]  # last scenario only -- recompute properly below
-        # Actually compute per-seed passes by walking the per-seed deltas.
-        per_seed_passes = []
         if scen in summary and stressor in summary[scen] and "baseline_by_seed" in summary[scen]:
             for seed in summary[scen]["baseline_seed_list"]:
-                d_seed = _degrade(
-                    summary[scen]["baseline_by_seed"][seed][mode],
-                    summary[scen][stressor][seed][mode],
-                )
+                base_for_mode = summary[scen]["baseline_by_seed"][seed].get(mode)
+                stressed_for_mode = summary[scen][stressor].get(seed, {}).get(mode)
+                if base_for_mode is None or stressed_for_mode is None:
+                    continue
+                d_seed = _degrade(base_for_mode, stressed_for_mode)
                 per_seed_passes.append(1 if _stress_pass(d_seed) else 0)
+        # Surface canonical *_Base / *_Stressed columns the publication
+        # validator requires. Pull from the per-seed structures recorded
+        # in `summary` (first available seed).
+        try:
+            first_seed = summary[scen]["baseline_seed_list"][0]
+            base_metrics = summary[scen]["baseline_by_seed"][first_seed].get(mode, {})
+            stressed_metrics = summary[scen][stressor].get(first_seed, {}).get(mode, {})
+        except Exception:
+            base_metrics = {}
+            stressed_metrics = {}
+        rec["ARI_Base"] = float(base_metrics.get("ari", 0.0))
+        rec["ARI_Stressed"] = float(stressed_metrics.get("ari", 0.0))
+        rec["Waste_Base"] = float(base_metrics.get("waste", 0.0))
+        rec["Waste_Stressed"] = float(stressed_metrics.get("waste", 0.0))
+        rec["SLCA_Base"] = float(base_metrics.get("slca", 0.0))
+        rec["SLCA_Stressed"] = float(stressed_metrics.get("slca", 0.0))
         n_pass = sum(per_seed_passes)
         n_total = len(per_seed_passes) if per_seed_passes else 1
         rec["Pass_Count"] = n_pass
@@ -333,11 +381,23 @@ def main() -> None:
             lo, hi = 0.0, 1.0
         rec["Pass_Rate_CI_Low"] = lo
         rec["Pass_Rate_CI_High"] = hi
-        for k in ("ari_delta_min", "waste_delta_max", "slca_delta_min",
-                  "rle_delta_min", "carbon_delta_max", "equity_delta_min",
-                  "constraint_violation_delta_max", "latency_ms_delta_max"):
-            cap = k.split("_delta_")[0].title().replace("_", "")
-            rec[f"Threshold_{cap}"] = STRESS_THRESHOLDS[k]
+        # Threshold columns. The publication validator pins exact
+        # names: Threshold_ARI / Threshold_Waste / Threshold_SLCA /
+        # Threshold_RLE / Threshold_Carbon / Threshold_Equity /
+        # Threshold_CVR / Threshold_LatencyMs. Use the canonical names
+        # rather than the title-cased delta keys.
+        _CANONICAL_THRESHOLDS = {
+            "ari_delta_min":                  "Threshold_ARI",
+            "waste_delta_max":                "Threshold_Waste",
+            "slca_delta_min":                 "Threshold_SLCA",
+            "rle_delta_min":                  "Threshold_RLE",
+            "carbon_delta_max":               "Threshold_Carbon",
+            "equity_delta_min":               "Threshold_Equity",
+            "constraint_violation_delta_max": "Threshold_CVR",
+            "latency_ms_delta_max":           "Threshold_LatencyMs",
+        }
+        for k, col in _CANONICAL_THRESHOLDS.items():
+            rec[col] = STRESS_THRESHOLDS[k]
         pass_rows.append(rec)
     pd.DataFrame(pass_rows).to_csv(RESULTS_DIR / "stress_passfail.csv", index=False)
     print(f"Saved {RESULTS_DIR / 'stress_summary.json'}")

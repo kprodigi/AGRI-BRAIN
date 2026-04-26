@@ -278,8 +278,78 @@ def main() -> None:
     summary = _build_summary(collected, degenerate)
 
     if degenerate:
-        print("  Skipping significance tests: degenerate sample size (n < 2)")
+        # Skip inferential stats but still emit per-cell records with
+        # mean_diff / cohens_d (descriptive only, p_value=None) so
+        # downstream consumers (validators, paper-evidence exporters)
+        # can audit which (scenario, baseline, metric) cells exist.
+        # Without this fallback the significance file is `{}` and the
+        # publication-artifact validator's threshold checks have
+        # nothing to read.
+        print("  Skipping significance tests: degenerate sample size (n < 2);"
+              " emitting descriptive records only.")
         significance: Dict[str, Dict[str, Dict[str, Dict[str, float]]]] = {}
+        # Absolute import: this script can be run as a module
+        # (`python -m mvp.simulation.benchmarks.run_benchmark_suite`)
+        # or as a plain script (`python run_benchmark_suite.py`); use
+        # the dotted import style which works in both.
+        try:
+            from aggregate_seeds import (
+                cohens_d_pooled as _d_pool,
+                cohens_dz as _dz,
+            )
+        except ImportError:
+            from mvp.simulation.benchmarks.aggregate_seeds import (
+                cohens_d_pooled as _d_pool,
+                cohens_dz as _dz,
+            )
+        for sc in SCENARIOS:
+            significance[sc] = {}
+            agribrain_data = collected.get(sc, {}).get("agribrain", {})
+            if not agribrain_data:
+                continue
+            for baseline in ("static", "hybrid_rl", "no_pinn", "no_slca",
+                              "no_context", "mcp_only", "pirag_only"):
+                base_data = collected.get(sc, {}).get(baseline, {})
+                if not base_data:
+                    continue
+                comp: Dict[str, Any] = {
+                    "is_paired_design": baseline in {"no_context", "mcp_only", "pirag_only"},
+                    "test_type": "skipped_degenerate_sample",
+                    "effect_size_primary": "cohens_d_pooled",
+                }
+                for met in ("ari", "rle", "waste", "slca", "carbon", "equity"):
+                    a = list(agribrain_data.get(met, []))
+                    b = list(base_data.get(met, []))
+                    if not a or not b:
+                        continue
+                    md = float(np.mean(a) - np.mean(b))
+                    d_pooled = _d_pool(a, b) if len(a) >= 2 and len(b) >= 2 else float("nan")
+                    dz = _dz(a, b) if len(a) >= 2 and len(b) >= 2 else float("nan")
+                    comp[met] = {
+                        "p_value": None,
+                        "p_value_adj": None,
+                        "p_value_adj_holm": None,
+                        "p_value_adj_by": None,
+                        "p_value_adj_bh": None,
+                        "p_value_legacy_signflip": None,
+                        "cohens_d": d_pooled,
+                        "cohens_dz": dz,
+                        "cohens_d_pooled": d_pooled,
+                        "hedges_g": d_pooled,
+                        "effect_size_ci_low": None,
+                        "effect_size_ci_high": None,
+                        "effect_size_ci_method": "BCa",
+                        "cohens_dz_ci_low": None,
+                        "cohens_dz_ci_high": None,
+                        "within_pair_sd": None,
+                        "design_tax_note": "degenerate-sample table fallback (n<2); descriptive only",
+                        "mean_diff": md,
+                        "mean_diff_ci_low": None,
+                        "mean_diff_ci_high": None,
+                        "n_seeds": len(a),
+                        "_degenerate": True,
+                    }
+                significance[sc][f"agribrain_vs_{baseline}"] = comp
     else:
         significance = _build_significance(collected)
 

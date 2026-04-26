@@ -121,6 +121,7 @@ class AgentCoordinator:
         self._pirag_pipeline = None
         self._context_learner = None
         self._theta_learner = None
+        self._theta_learners: Dict[str, Any] = {}
         self._reward_shaping_learner = None
         self._context_evaluator = None
         self._context_log: List[Dict[str, Any]] = []
@@ -207,16 +208,34 @@ class AgentCoordinator:
         except ImportError:
             self.context_enabled = False
 
-        # The policy-delta learner lives outside the context-enabled
-        # guard: it trains a (3, 10) correction on the full THETA for
-        # every non-static mode, not just the context-enabled ones.
-        # Anchored on the hand-calibrated THETA with a 25 percent per-
-        # entry magnitude cap and sign constraint so learning cannot
-        # drift the policy more than a quarter from its domain priors.
+        # Per-role policy-delta learners. The 2026-04 audit pointed out
+        # that "online REINFORCE" with a SHARED learner across all five
+        # roles makes the multi-agent framing thin: every role's
+        # gradients update the same Theta_delta, so role-specific
+        # mandates ("preserve freshness", "waste valorization") cannot
+        # diverge in their learned corrections. The fix here gives each
+        # role its own PolicyDeltaLearner instance, keyed by role name.
+        # ``self._theta_learner`` retains the previous singleton API
+        # (used by tests, learner_summary export, and the context
+        # learner integration) and now points at the *active* role's
+        # learner each step. ``self._theta_learners`` is the dict of
+        # all five — production code that wants the active learner uses
+        # ``_theta_learner``; code that wants the full set uses
+        # ``_theta_learners``.
+        # IMPORTANT: declared OUTSIDE the try/except so attribute access
+        # in reset() / step() is always safe even when the import below
+        # fails (the legacy single-learner code path takes over).
+        self._theta_learners: Dict[str, Any] = {}
+        self._theta_learner = None
         try:
             from pirag.context_learner import PolicyDeltaLearner as _PDL
             from ..models.action_selection import THETA as _INITIAL_THETA
-            self._theta_learner = _PDL(initial_theta=_INITIAL_THETA)
+            for _role_name in ("farm", "processor", "cooperative",
+                                "distributor", "recovery"):
+                self._theta_learners[_role_name] = _PDL(initial_theta=_INITIAL_THETA)
+            # Default to the farm-stage learner; ``step`` will set this
+            # to the active role's instance per timestep.
+            self._theta_learner = self._theta_learners["farm"]
         except ImportError:
             self._theta_learner = None
 
@@ -264,12 +283,21 @@ class AgentCoordinator:
     # ------------------------------------------------------------------
 
     def reset(self) -> None:
-        """Reset all agents, context stores, and logs."""
+        """Reset all agents, context stores, logs, and per-episode counters."""
         for agent in self.agents.values():
             agent.reset()
         self._message_log.clear()
         self._context_log.clear()
         self._decision_history.clear()
+        # Reset the MCP dispatch-id counter so per-episode protocol
+        # traces use comparable id ranges (prevents the global counter
+        # from growing unboundedly across the simulator's mode/scenario
+        # loop).
+        try:
+            from pirag.mcp.tool_dispatch import reset_dispatch_id_counter
+            reset_dispatch_id_counter()
+        except Exception:
+            pass
         self._step_mcp_results = {}
         self._step_rag_context = {}
         self._step_context_modifier = None
@@ -303,7 +331,13 @@ class AgentCoordinator:
             self._temporal_window.reset()
         if self._context_learner is not None:
             self._context_learner.reset()
-        if self._theta_learner is not None:
+        # Reset every per-role theta learner (not just the active one)
+        # so a new episode starts every role from a clean delta.
+        for _learner in self._theta_learners.values():
+            _learner.reset()
+        if self._theta_learner is not None and not self._theta_learners:
+            # Legacy single-learner code path (only triggers if the
+            # per-role import failed and we fell back to None).
             self._theta_learner.reset()
         if self._reward_shaping_learner is not None:
             self._reward_shaping_learner.reset()
@@ -343,6 +377,13 @@ class AgentCoordinator:
         (action_idx, probs, active_agent)
         """
         active = self.get_active_agent(hour)
+
+        # Route ``_theta_learner`` to the active role's per-role learner
+        # so this step's `get_theta_delta()` and `update(...)` calls
+        # operate on the role-specific Theta_delta. Cooperative overlay
+        # is handled separately below.
+        if self._theta_learners and active.role in self._theta_learners:
+            self._theta_learner = self._theta_learners[active.role]
         obs = active.observe(env_state, hour)
 
         # Cooperative overlay: observe + generate messages during the
@@ -352,10 +393,29 @@ class AgentCoordinator:
             cooperative.observe(env_state, hour)
 
         # Compute combined role bias: primary agent + cooperative overlay
+        # + inter-agent message bias.
         combined_bias = active.role_bias.copy()
         cooperative = self.agents.get("cooperative")
         if cooperative is not None and cooperative is not active and _cooperative_window_active(hour):
             combined_bias = combined_bias + cooperative.role_bias
+
+        # 2026-04 fix: messages received in the active agent's inbox now
+        # actually shape the decision. The previous implementation
+        # appended messages to ``Observation.messages`` and then did
+        # nothing with them, making the documented protocol
+        # (SPOILAGE_ALERT / SURPLUS_ALERT / CAPACITY_UPDATE /
+        # REROUTE_REQUEST / ACK) non-falsifiable. ``message_bias_from_inbox``
+        # converts the flushed inbox into a bounded logit nudge in
+        # action space; the bias is added to ``combined_bias`` here so
+        # the same code path that consumes role_bias also consumes
+        # message-derived bias.
+        try:
+            from .message import message_bias_from_inbox as _mbias
+            inbox_bias = _mbias(getattr(obs, "messages", []) or [])
+            combined_bias = combined_bias + inbox_bias
+            self._step_message_bias = inbox_bias
+        except Exception:
+            self._step_message_bias = np.zeros(3)
 
         # Context injection for context-enabled modes
         context_modifier = None
@@ -569,8 +629,18 @@ class AgentCoordinator:
                 context_mode=context_mode,
             )
 
-            # Cooperative overlay blending during the cooperative window.
+            # Cooperative overlay during the 12-30h cooperative window.
+            # Two paths: (1) modifier blending (continuous nudge,
+            # `0.7*primary + 0.3*coop`); (2) cooperative *veto* — when
+            # the cooperative agent's own context analysis surfaces a
+            # critical compliance violation that the primary stage
+            # missed, the cooperative replaces the primary modifier
+            # entirely with a recovery-biased override. Veto is the
+            # genuine hierarchical signal the README's "cooperative
+            # governance" claim was promising but the previous
+            # implementation never delivered.
             cooperative = self.agents.get("cooperative")
+            self._step_cooperative_veto = False
             if (cooperative is not None
                     and cooperative is not active
                     and _cooperative_window_active(obs.hour)):
@@ -592,7 +662,41 @@ class AgentCoordinator:
                         temporal_params_override=temporal_params_override,
                         context_mode=context_mode,
                     )
-                    modifier = 0.7 * modifier + 0.3 * coop_modifier
+
+                    # Veto trigger: cooperative's compliance check
+                    # flags a critical violation AND the primary
+                    # agent's MCP results did not flag the same. This
+                    # is the case where the cooperative stage saw a
+                    # piece of governance state the primary missed.
+                    coop_compliance = (coop_mcp.get("check_compliance") or {})
+                    primary_compliance = (mcp_results.get("check_compliance") or {})
+                    coop_critical = bool(
+                        not coop_compliance.get("compliant", True)
+                        and any(
+                            v.get("severity") == "critical"
+                            for v in coop_compliance.get("violations", []) or []
+                        )
+                    )
+                    primary_missed = not (
+                        not primary_compliance.get("compliant", True)
+                        and any(
+                            v.get("severity") == "critical"
+                            for v in primary_compliance.get("violations", []) or []
+                        )
+                    )
+
+                    if coop_critical and primary_missed:
+                        # Hierarchical override: cooperative's modifier
+                        # replaces the primary's. Bias toward local
+                        # redistribution (action 1) so the next-step
+                        # decision honours the cooperative's safety
+                        # signal even when the active agent's local
+                        # MCP did not surface it.
+                        veto_bias = np.array([-0.20, +0.20, 0.0])
+                        modifier = coop_modifier + veto_bias
+                        self._step_cooperative_veto = True
+                    else:
+                        modifier = 0.7 * modifier + 0.3 * coop_modifier
                 except Exception as _exc:
                     _log.debug("cooperative overlay blending skipped: %s", _exc)
 
@@ -1013,6 +1117,16 @@ class AgentCoordinator:
         state: Dict[str, Any] = {}
         if self._context_learner is not None:
             state["context_learner"] = self._context_learner.save_state()
+        # Per-role theta learners. Save each role's state under a
+        # role-keyed dict so the snapshot survives the coordinator's
+        # rotation through the role schedule. The legacy "theta_learner"
+        # key is retained pointing at the active role's state for
+        # consumers that don't yet know about per-role learners.
+        if self._theta_learners:
+            state["theta_learners"] = {
+                role: lrn.save_state()
+                for role, lrn in self._theta_learners.items()
+            }
         if self._theta_learner is not None:
             state["theta_learner"] = self._theta_learner.save_state()
         if self._reward_shaping_learner is not None:
@@ -1030,6 +1144,15 @@ class AgentCoordinator:
         ctx = state.get("context_learner")
         if ctx is not None and self._context_learner is not None:
             self._context_learner.load_state(ctx)
+        # Per-role theta learners restored first; the legacy
+        # `theta_learner` key (active-role state only) is then applied
+        # for back-compat with snapshots produced by the previous
+        # singleton-learner code path.
+        per_role = state.get("theta_learners") or {}
+        if isinstance(per_role, dict):
+            for role, role_state in per_role.items():
+                if role in self._theta_learners and role_state is not None:
+                    self._theta_learners[role].load_state(role_state)
         theta = state.get("theta_learner")
         if theta is not None and self._theta_learner is not None:
             self._theta_learner.load_state(theta)

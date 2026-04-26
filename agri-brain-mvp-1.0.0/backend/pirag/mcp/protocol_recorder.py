@@ -51,7 +51,14 @@ class ProtocolRecorder:
         server.handle_message = self._recording_handler  # type: ignore[method-assign]
 
     def _recording_handler(self, msg: MCPMessage) -> MCPMessage:
-        """Intercept and record every MCP message."""
+        """Intercept and record every MCP message.
+
+        Safe under the JSON-RPC notification path: when the wrapped
+        ``handle_message`` returns ``None`` (per spec, notifications
+        receive no response), this method records the request side
+        only and returns ``None`` without dereferencing the missing
+        response.
+        """
         t0 = time.time()
         response = self._original_handler(msg)
         elapsed_ms = (time.time() - t0) * 1000.0
@@ -59,6 +66,28 @@ class ProtocolRecorder:
         with self._lock:
             if not self._enabled:
                 return response
+
+            # JSON-RPC 2.0 notification: server returned None. Record
+            # the request as a notification and return None so the
+            # transport / caller honours the spec.
+            if response is None:
+                self._next_local_id += 1
+                seq = self._next_local_id
+                self._records.append({
+                    "timestamp": time.time(),
+                    "_recorder_seq": seq,
+                    "_notification": True,
+                    "request": {
+                        "jsonrpc": msg.jsonrpc,
+                        "id": msg.id,
+                        "method": msg.method,
+                        "params": msg.params,
+                    },
+                    "response": None,
+                    "latency_ms": round(elapsed_ms, 3),
+                })
+                return None
+
             if len(self._records) >= self.max_records:
                 if self._dropped == 0:
                     _log.warning(
@@ -122,10 +151,17 @@ class ProtocolRecorder:
             methods: Dict[str, int] = {}
             jsonrpc_errors = 0
             tool_iserror = 0
+            notifications = 0
             for r in self._records:
                 m = r["request"]["method"]
                 methods[m] = methods.get(m, 0) + 1
                 resp = r["response"]
+                # Notifications carry response=None (per JSON-RPC 2.0
+                # §4.1, notifications get no response). Skip them when
+                # tallying error counters.
+                if resp is None:
+                    notifications += 1
+                    continue
                 if resp.get("error"):
                     jsonrpc_errors += 1
                 # 2024-11-05 spec: tool failures appear as
@@ -141,6 +177,7 @@ class ProtocolRecorder:
                 "methods": methods,
                 "jsonrpc_errors": jsonrpc_errors,
                 "tool_iserror_responses": tool_iserror,
+                "notifications": notifications,
                 "has_errors": jsonrpc_errors > 0 or tool_iserror > 0,
             }
 

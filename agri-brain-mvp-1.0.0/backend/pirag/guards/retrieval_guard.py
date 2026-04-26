@@ -29,8 +29,15 @@ from typing import Iterable
 
 
 # Minimum top citation score for retrieval to be considered usable.
-# RRF-scaled (see module docstring); previous min-max scale used 0.15.
-MIN_TOP_CITATION_SCORE: float = 0.012
+# RRF-scaled. With K=60 the maximum RRF score for a doc top-ranked by
+# both retrievers is 2/(K+1) = ~0.0328; for a doc top of ONE retriever
+# only it is 1/(K+1) = ~0.0164; rank-3 single-list is 1/(K+3) = ~0.0159.
+# The previous floor of 0.012 admitted essentially every non-empty
+# result. The new floor is 1.5/(K+1) ≈ 0.0246 — i.e. "either both
+# retrievers placed the doc in the top 3, or one retriever placed it
+# at rank 1 *plus* the other contributed any score". This gates idle
+# retrievals while keeping signal-bearing hits through.
+MIN_TOP_CITATION_SCORE: float = 1.5 / 61.0  # ≈ 0.0246
 
 
 def retrieval_quality_ok(

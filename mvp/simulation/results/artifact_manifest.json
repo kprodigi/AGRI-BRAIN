@@ -1,21 +1,46 @@
 {
-  "git_commit": "8b07c51ce1e46f80ace2e9b95c2ec03570627101",
-  "artifact_count": 19,
+  "git_commit": "0d1813ad37eaa6d92a35bab3015b3bcc883082a1",
+  "artifact_count": 25,
   "artifacts": [
     {
       "file": "artifact_manifest.json",
       "bytes": 3237,
-      "sha256": "5269588e767cb1139406315f03ca62902fd9dadf96605357ff56e2df41dd61f9"
+      "sha256": "ca7ec90bdef24f5c9f09dc55a110ec67c657dd36c65fc06185b507e8a3d16be8"
+    },
+    {
+      "file": "benchmark_context_significance.json",
+      "bytes": 119329,
+      "sha256": "bb6b78b605daa4ea5180841ccfeef50f3c115742d4395e55377b2bb2ee127f1f"
+    },
+    {
+      "file": "benchmark_context_summary.json",
+      "bytes": 46502,
+      "sha256": "49a86721f6cdf59cc10b0513611136356d0ec9b8d1cafd18b4bf147ec9cd2e4b"
     },
     {
       "file": "benchmark_significance.json",
-      "bytes": 7832,
-      "sha256": "84a43e20833ea2f98191f0e1d04be69a59a2a0f5a426d69ed2f9e429d60ba222"
+      "bytes": 119329,
+      "sha256": "bb6b78b605daa4ea5180841ccfeef50f3c115742d4395e55377b2bb2ee127f1f"
     },
     {
       "file": "benchmark_summary.json",
-      "bytes": 10555,
-      "sha256": "1f5f4d44c6222e7feecc7c4aeeb3af9b2773e12dc9abc80a2342f3411ff7d8d0"
+      "bytes": 41435,
+      "sha256": "855fcd184ad5d4656b8d0fb983634e9c96bc525d38582423f37338a8a070f315"
+    },
+    {
+      "file": "external_validity_deltas.csv",
+      "bytes": 7202,
+      "sha256": "532c2b2aeafdda0db22e1fa5f4149209a9b8b7a8538e926c95ecc8f9dc1267dc"
+    },
+    {
+      "file": "external_validity_summary.csv",
+      "bytes": 11630,
+      "sha256": "e37af7f68c880c5ea2780e7e7b89a59d4a33c9425187c59575d8f678710fb25f"
+    },
+    {
+      "file": "external_validity_summary.json",
+      "bytes": 22240,
+      "sha256": "06f9bc1b25969d4eea1fe0e40bcddf1d246da62c8606924e6dfaee0fafdb2848"
     },
     {
       "file": "feature_heatmap_data.json",
@@ -49,13 +74,18 @@
     },
     {
       "file": "stress_degradation.csv",
-      "bytes": 767,
-      "sha256": "d102c968bea086b4b050b33176f1663c3f93418fa4b4f5c7dab7af24a205c227"
+      "bytes": 16334,
+      "sha256": "acee96f45163616808cb4169e05167fcf3abe598658145d0fcc63685d14e7d80"
+    },
+    {
+      "file": "stress_passfail.csv",
+      "bytes": 27613,
+      "sha256": "b4c5144d7d10288b53e6221276d43502bcadfd70d26a665b71071d56806c30fb"
     },
     {
       "file": "stress_summary.json",
-      "bytes": 3348,
-      "sha256": "ffff7fa74a6b0416a348d47c683e1c401964202f55a7c9b892fc753e849d3d4f"
+      "bytes": 27983,
+      "sha256": "8f33fb22c5c53e42647992aae5425fdb635ac7fd109c9f2f31e32a102f602ad8"
     },
     {
       "file": "table1_summary.csv",

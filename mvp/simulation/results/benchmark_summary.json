@@ -1,531 +1,2011 @@
 {
   "heatwave": {
+    "static": {
+      "ari": {
+        "mean": 0.343,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.116,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.461,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
+    "hybrid_rl": {
+      "ari": {
+        "mean": 0.552,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.044,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.956,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.701,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
+    "no_pinn": {
+      "ari": {
+        "mean": 0.568,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.038,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.981,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.717,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
+    "no_slca": {
+      "ari": {
+        "mean": 0.513,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.057,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.842,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.661,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
     "agribrain": {
       "ari": {
         "mean": 0.614,
         "std": 0.0,
-        "ci_low": 0.614,
-        "ci_high": 0.614
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "waste": {
         "mean": 0.021,
         "std": 0.0,
-        "ci_low": 0.021,
-        "ci_high": 0.021
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "rle": {
         "mean": 0.994,
         "std": 0.0,
-        "ci_low": 0.994,
-        "ci_high": 0.994
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "slca": {
         "mean": 0.756,
         "std": 0.0,
-        "ci_low": 0.756,
-        "ci_high": 0.756
-      }
-    },
-    "mcp_only": {
-      "ari": {
-        "mean": 0.598,
-        "std": 0.0,
-        "ci_low": 0.598,
-        "ci_high": 0.598
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
-      "waste": {
-        "mean": 0.023,
+      "carbon": {
+        "mean": 0.0,
         "std": 0.0,
-        "ci_low": 0.023,
-        "ci_high": 0.023
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
-      "rle": {
-        "mean": 0.994,
+      "equity": {
+        "mean": 0.0,
         "std": 0.0,
-        "ci_low": 0.994,
-        "ci_high": 0.994
-      },
-      "slca": {
-        "mean": 0.741,
-        "std": 0.0,
-        "ci_low": 0.741,
-        "ci_high": 0.741
-      }
-    },
-    "pirag_only": {
-      "ari": {
-        "mean": 0.609,
-        "std": 0.0,
-        "ci_low": 0.609,
-        "ci_high": 0.609
-      },
-      "waste": {
-        "mean": 0.025,
-        "std": 0.0,
-        "ci_low": 0.025,
-        "ci_high": 0.025
-      },
-      "rle": {
-        "mean": 0.994,
-        "std": 0.0,
-        "ci_low": 0.994,
-        "ci_high": 0.994
-      },
-      "slca": {
-        "mean": 0.753,
-        "std": 0.0,
-        "ci_low": 0.753,
-        "ci_high": 0.753
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       }
     },
     "no_context": {
       "ari": {
         "mean": 0.591,
         "std": 0.0,
-        "ci_low": 0.591,
-        "ci_high": 0.591
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "waste": {
         "mean": 0.028,
         "std": 0.0,
-        "ci_low": 0.028,
-        "ci_high": 0.028
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "rle": {
         "mean": 0.994,
         "std": 0.0,
-        "ci_low": 0.994,
-        "ci_high": 0.994
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "slca": {
         "mean": 0.736,
         "std": 0.0,
-        "ci_low": 0.736,
-        "ci_high": 0.736
-      }
-    }
-  },
-  "overproduction": {
-    "agribrain": {
-      "ari": {
-        "mean": 0.628,
-        "std": 0.0,
-        "ci_low": 0.628,
-        "ci_high": 0.628
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
-      "waste": {
-        "mean": 0.042,
+      "carbon": {
+        "mean": 0.0,
         "std": 0.0,
-        "ci_low": 0.042,
-        "ci_high": 0.042
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
-      "rle": {
-        "mean": 0.985,
+      "equity": {
+        "mean": 0.0,
         "std": 0.0,
-        "ci_low": 0.985,
-        "ci_high": 0.985
-      },
-      "slca": {
-        "mean": 0.726,
-        "std": 0.0,
-        "ci_low": 0.726,
-        "ci_high": 0.726
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       }
     },
     "mcp_only": {
       "ari": {
-        "mean": 0.614,
+        "mean": 0.598,
         "std": 0.0,
-        "ci_low": 0.614,
-        "ci_high": 0.614
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "waste": {
-        "mean": 0.044,
+        "mean": 0.023,
         "std": 0.0,
-        "ci_low": 0.044,
-        "ci_high": 0.044
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "rle": {
-        "mean": 0.949,
+        "mean": 0.994,
         "std": 0.0,
-        "ci_low": 0.949,
-        "ci_high": 0.949
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "slca": {
-        "mean": 0.712,
+        "mean": 0.741,
         "std": 0.0,
-        "ci_low": 0.712,
-        "ci_high": 0.712
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       }
     },
     "pirag_only": {
       "ari": {
-        "mean": 0.617,
+        "mean": 0.609,
         "std": 0.0,
-        "ci_low": 0.617,
-        "ci_high": 0.617
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "waste": {
-        "mean": 0.048,
+        "mean": 0.025,
         "std": 0.0,
-        "ci_low": 0.048,
-        "ci_high": 0.048
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "rle": {
-        "mean": 0.971,
+        "mean": 0.994,
         "std": 0.0,
-        "ci_low": 0.971,
-        "ci_high": 0.971
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "slca": {
-        "mean": 0.717,
+        "mean": 0.753,
         "std": 0.0,
-        "ci_low": 0.717,
-        "ci_high": 0.717
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    }
+  },
+  "overproduction": {
+    "static": {
+      "ari": {
+        "mean": 0.344,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.149,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.444,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
+    "hybrid_rl": {
+      "ari": {
+        "mean": 0.548,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.072,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.838,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.654,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
+    "no_pinn": {
+      "ari": {
+        "mean": 0.573,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.063,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.86,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.677,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
+    "no_slca": {
+      "ari": {
+        "mean": 0.499,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.09,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.699,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.607,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
+    "agribrain": {
+      "ari": {
+        "mean": 0.628,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.042,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.985,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.726,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       }
     },
     "no_context": {
       "ari": {
         "mean": 0.596,
         "std": 0.0,
-        "ci_low": 0.596,
-        "ci_high": 0.596
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "waste": {
         "mean": 0.052,
         "std": 0.0,
-        "ci_low": 0.052,
-        "ci_high": 0.052
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "rle": {
         "mean": 0.926,
         "std": 0.0,
-        "ci_low": 0.926,
-        "ci_high": 0.926
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "slca": {
         "mean": 0.696,
         "std": 0.0,
-        "ci_low": 0.696,
-        "ci_high": 0.696
-      }
-    }
-  },
-  "cyber_outage": {
-    "agribrain": {
-      "ari": {
-        "mean": 0.648,
-        "std": 0.0,
-        "ci_low": 0.648,
-        "ci_high": 0.648
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
-      "waste": {
-        "mean": 0.033,
+      "carbon": {
+        "mean": 0.0,
         "std": 0.0,
-        "ci_low": 0.033,
-        "ci_high": 0.033
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
-      "rle": {
-        "mean": 0.808,
+      "equity": {
+        "mean": 0.0,
         "std": 0.0,
-        "ci_low": 0.808,
-        "ci_high": 0.808
-      },
-      "slca": {
-        "mean": 0.733,
-        "std": 0.0,
-        "ci_low": 0.733,
-        "ci_high": 0.733
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       }
     },
     "mcp_only": {
       "ari": {
-        "mean": 0.641,
+        "mean": 0.614,
         "std": 0.0,
-        "ci_low": 0.641,
-        "ci_high": 0.641
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "waste": {
-        "mean": 0.034,
+        "mean": 0.044,
         "std": 0.0,
-        "ci_low": 0.034,
-        "ci_high": 0.034
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "rle": {
-        "mean": 0.808,
+        "mean": 0.949,
         "std": 0.0,
-        "ci_low": 0.808,
-        "ci_high": 0.808
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "slca": {
-        "mean": 0.726,
+        "mean": 0.712,
         "std": 0.0,
-        "ci_low": 0.726,
-        "ci_high": 0.726
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       }
     },
     "pirag_only": {
       "ari": {
-        "mean": 0.646,
+        "mean": 0.617,
         "std": 0.0,
-        "ci_low": 0.646,
-        "ci_high": 0.646
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "waste": {
-        "mean": 0.035,
+        "mean": 0.048,
         "std": 0.0,
-        "ci_low": 0.035,
-        "ci_high": 0.035
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.971,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.717,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    }
+  },
+  "cyber_outage": {
+    "static": {
+      "ari": {
+        "mean": 0.383,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.12,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.475,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
+    "hybrid_rl": {
+      "ari": {
+        "mean": 0.553,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.065,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.472,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.642,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
+    "no_pinn": {
+      "ari": {
+        "mean": 0.596,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.052,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.656,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.685,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
+    "no_slca": {
+      "ari": {
+        "mean": 0.546,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.066,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.688,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.642,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
+    "agribrain": {
+      "ari": {
+        "mean": 0.648,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.033,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "rle": {
         "mean": 0.808,
         "std": 0.0,
-        "ci_low": 0.808,
-        "ci_high": 0.808
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "slca": {
-        "mean": 0.732,
+        "mean": 0.733,
         "std": 0.0,
-        "ci_low": 0.732,
-        "ci_high": 0.732
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       }
     },
     "no_context": {
       "ari": {
         "mean": 0.64,
         "std": 0.0,
-        "ci_low": 0.64,
-        "ci_high": 0.64
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "waste": {
         "mean": 0.036,
         "std": 0.0,
-        "ci_low": 0.036,
-        "ci_high": 0.036
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "rle": {
         "mean": 0.808,
         "std": 0.0,
-        "ci_low": 0.808,
-        "ci_high": 0.808
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "slca": {
         "mean": 0.726,
         "std": 0.0,
-        "ci_low": 0.726,
-        "ci_high": 0.726
-      }
-    }
-  },
-  "adaptive_pricing": {
-    "agribrain": {
-      "ari": {
-        "mean": 0.742,
-        "std": 0.0,
-        "ci_low": 0.742,
-        "ci_high": 0.742
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
-      "waste": {
-        "mean": 0.019,
+      "carbon": {
+        "mean": 0.0,
         "std": 0.0,
-        "ci_low": 0.019,
-        "ci_high": 0.019
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
-      "rle": {
-        "mean": 0.909,
+      "equity": {
+        "mean": 0.0,
         "std": 0.0,
-        "ci_low": 0.909,
-        "ci_high": 0.909
-      },
-      "slca": {
-        "mean": 0.805,
-        "std": 0.0,
-        "ci_low": 0.805,
-        "ci_high": 0.805
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       }
     },
     "mcp_only": {
       "ari": {
-        "mean": 0.731,
+        "mean": 0.641,
         "std": 0.0,
-        "ci_low": 0.731,
-        "ci_high": 0.731
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "waste": {
-        "mean": 0.021,
+        "mean": 0.034,
         "std": 0.0,
-        "ci_low": 0.021,
-        "ci_high": 0.021
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "rle": {
-        "mean": 0.883,
+        "mean": 0.808,
         "std": 0.0,
-        "ci_low": 0.883,
-        "ci_high": 0.883
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "slca": {
-        "mean": 0.795,
+        "mean": 0.726,
         "std": 0.0,
-        "ci_low": 0.795,
-        "ci_high": 0.795
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       }
     },
     "pirag_only": {
       "ari": {
-        "mean": 0.732,
+        "mean": 0.646,
         "std": 0.0,
-        "ci_low": 0.732,
-        "ci_high": 0.732
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "waste": {
-        "mean": 0.022,
+        "mean": 0.035,
         "std": 0.0,
-        "ci_low": 0.022,
-        "ci_high": 0.022
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.808,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.732,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    }
+  },
+  "adaptive_pricing": {
+    "static": {
+      "ari": {
+        "mean": 0.435,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.084,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.506,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
+    "hybrid_rl": {
+      "ari": {
+        "mean": 0.635,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.042,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.701,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.704,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
+    "no_pinn": {
+      "ari": {
+        "mean": 0.678,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.034,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.818,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.747,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
+    "no_slca": {
+      "ari": {
+        "mean": 0.567,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.054,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.39,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.636,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
+    "agribrain": {
+      "ari": {
+        "mean": 0.742,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.019,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "rle": {
         "mean": 0.909,
         "std": 0.0,
-        "ci_low": 0.909,
-        "ci_high": 0.909
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "slca": {
-        "mean": 0.797,
+        "mean": 0.805,
         "std": 0.0,
-        "ci_low": 0.797,
-        "ci_high": 0.797
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       }
     },
     "no_context": {
       "ari": {
         "mean": 0.709,
         "std": 0.0,
-        "ci_low": 0.709,
-        "ci_high": 0.709
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "waste": {
         "mean": 0.025,
         "std": 0.0,
-        "ci_low": 0.025,
-        "ci_high": 0.025
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "rle": {
         "mean": 0.883,
         "std": 0.0,
-        "ci_low": 0.883,
-        "ci_high": 0.883
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "slca": {
         "mean": 0.775,
         "std": 0.0,
-        "ci_low": 0.775,
-        "ci_high": 0.775
-      }
-    }
-  },
-  "baseline": {
-    "agribrain": {
-      "ari": {
-        "mean": 0.76,
-        "std": 0.0,
-        "ci_low": 0.76,
-        "ci_high": 0.76
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
-      "waste": {
-        "mean": 0.018,
+      "carbon": {
+        "mean": 0.0,
         "std": 0.0,
-        "ci_low": 0.018,
-        "ci_high": 0.018
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
-      "rle": {
-        "mean": 0.96,
+      "equity": {
+        "mean": 0.0,
         "std": 0.0,
-        "ci_low": 0.96,
-        "ci_high": 0.96
-      },
-      "slca": {
-        "mean": 0.818,
-        "std": 0.0,
-        "ci_low": 0.818,
-        "ci_high": 0.818
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       }
     },
     "mcp_only": {
       "ari": {
-        "mean": 0.737,
+        "mean": 0.731,
         "std": 0.0,
-        "ci_low": 0.737,
-        "ci_high": 0.737
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "waste": {
         "mean": 0.021,
         "std": 0.0,
-        "ci_low": 0.021,
-        "ci_high": 0.021
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "rle": {
-        "mean": 0.88,
+        "mean": 0.883,
         "std": 0.0,
-        "ci_low": 0.88,
-        "ci_high": 0.88
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "slca": {
         "mean": 0.795,
         "std": 0.0,
-        "ci_low": 0.795,
-        "ci_high": 0.795
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       }
     },
     "pirag_only": {
       "ari": {
-        "mean": 0.756,
+        "mean": 0.732,
         "std": 0.0,
-        "ci_low": 0.756,
-        "ci_high": 0.756
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "waste": {
-        "mean": 0.019,
+        "mean": 0.022,
         "std": 0.0,
-        "ci_low": 0.019,
-        "ci_high": 0.019
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.909,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.797,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    }
+  },
+  "baseline": {
+    "static": {
+      "ari": {
+        "mean": 0.452,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.075,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.517,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
+    "hybrid_rl": {
+      "ari": {
+        "mean": 0.661,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.037,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.64,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.724,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
+    "no_pinn": {
+      "ari": {
+        "mean": 0.706,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.03,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.82,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.767,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
+    "no_slca": {
+      "ari": {
+        "mean": 0.575,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.05,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.44,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.638,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
+    "agribrain": {
+      "ari": {
+        "mean": 0.76,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.018,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "rle": {
         "mean": 0.96,
         "std": 0.0,
-        "ci_low": 0.96,
-        "ci_high": 0.96
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "slca": {
-        "mean": 0.814,
+        "mean": 0.818,
         "std": 0.0,
-        "ci_low": 0.814,
-        "ci_high": 0.814
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       }
     },
     "no_context": {
       "ari": {
         "mean": 0.732,
         "std": 0.0,
-        "ci_low": 0.732,
-        "ci_high": 0.732
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "waste": {
         "mean": 0.022,
         "std": 0.0,
-        "ci_low": 0.022,
-        "ci_high": 0.022
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "rle": {
         "mean": 0.88,
         "std": 0.0,
-        "ci_low": 0.88,
-        "ci_high": 0.88
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       },
       "slca": {
         "mean": 0.79,
         "std": 0.0,
-        "ci_low": 0.79,
-        "ci_high": 0.79
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
+    "mcp_only": {
+      "ari": {
+        "mean": 0.737,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.021,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.88,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.795,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      }
+    },
+    "pirag_only": {
+      "ari": {
+        "mean": 0.756,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "waste": {
+        "mean": 0.019,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "rle": {
+        "mean": 0.96,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "slca": {
+        "mean": 0.814,
+        "std": 0.0,
+        "n": 1,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "carbon": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
+      },
+      "equity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 0,
+        "ci_low": null,
+        "ci_high": null,
+        "degenerate": true
       }
     }
   }

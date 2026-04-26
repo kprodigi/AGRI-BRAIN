@@ -11,9 +11,15 @@ authors:
     affiliation: "Karen M. Swindler Department of Chemical and Biological Engineering, South Dakota School of Mines and Technology, Rapid City, SD 57701, USA"
 version: "1.1.0"
 date-released: "2025-04-11"
+# Active maintenance through 2026-Q2 (see git log for the audit-fix
+# pass that landed in 2026-04). Cite the version + commit SHA from
+# `mvp/simulation/results/artifact_manifest.json` for paper-grade
+# reproducibility.
 license: MIT
 repository-code: "https://github.com/kprodigi/AGRI-BRAIN"
-# doi: "10.xxxx/xxxxx"  # Will update when preprint DOI is available
+# DOI will be added when the preprint is registered. Until then,
+# cite the repository plus the commit SHA pinned in the artifact
+# manifest.
 keywords:
   - multi-agent systems
   - agri-food supply chain

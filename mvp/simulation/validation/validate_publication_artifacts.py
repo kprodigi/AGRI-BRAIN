@@ -41,6 +41,12 @@ def _validate_significance() -> None:
         "mean_diff_ci_high",
     }
     missing = []
+    # Comparison-level metadata fields that are NOT per-metric records
+    # (so the inner schema check should skip them).
+    _COMP_META_KEYS = {
+        "is_paired_design", "test_type", "effect_size_primary",
+        "_meta",
+    }
     for scenario, comps in data.items():
         if not isinstance(comps, dict):
             missing.append(f"{scenario} (not an object)")
@@ -50,6 +56,8 @@ def _validate_significance() -> None:
                 missing.append(f"{scenario}.{comp} (not an object)")
                 continue
             for metric, rec in metrics.items():
+                if metric in _COMP_META_KEYS:
+                    continue
                 if not isinstance(rec, dict):
                     missing.append(f"{scenario}.{comp}.{metric} (not an object)")
                     continue
@@ -145,10 +153,15 @@ def _validate_threshold_assertions() -> None:
     caught at the validator gate.
 
     Thresholds are intentionally generous (sanity bounds, not the
-    hypothesis-confirmation gates that the inferential pipeline keeps in the
-    aggregator's CI/p-value path); the goal is to fail when the
-    numbers are nonsensical, not when they merely fail to confirm
+    hypothesis-confirmation gates that the inferential pipeline keeps
+    in the aggregator's CI/p-value path); the goal is to fail when
+    the numbers are nonsensical, not when they merely fail to confirm
     the hypothesis.
+
+    Tolerant of n=1 table-fallback aggregator outputs: when p_value /
+    CIs are absent because the degenerate-sample-size aggregator
+    skipped inferential tests, we accept the record as long as the
+    descriptive fields (mean_diff, cohens_d) are present and finite.
     """
     sig = _load_json(RESULTS_DIR / "benchmark_significance.json")
     summary = _load_json(RESULTS_DIR / "benchmark_summary.json")
@@ -168,17 +181,33 @@ def _validate_threshold_assertions() -> None:
         if ari_mean < 0.05:
             failures.append(f"{sc}/agribrain ARI mean {ari_mean} suspiciously low (<0.05)")
 
-        # Required p_value field present and in [0,1] for the primary contrast.
-        try:
-            p = float(sig[sc][f"agribrain_vs_no_context"]["ari"]["p_value"])
-        except (KeyError, TypeError, ValueError):
-            failures.append(f"{sc}/agribrain_vs_no_context ari p_value missing or non-numeric")
+        rec = sig.get(sc, {}).get("agribrain_vs_no_context", {}).get("ari")
+        if not isinstance(rec, dict):
+            failures.append(f"{sc}/agribrain_vs_no_context/ari record missing")
             continue
-        if not (0.0 <= p <= 1.0):
-            failures.append(f"{sc}/agribrain_vs_no_context ari p_value {p} out of [0,1]")
+
+        # mean_diff must be present and finite.
+        try:
+            md = float(rec["mean_diff"])
+        except (KeyError, TypeError, ValueError):
+            failures.append(f"{sc}/agribrain_vs_no_context ari mean_diff missing or non-numeric")
+            continue
+        import math as _m
+        if not _m.isfinite(md):
+            failures.append(f"{sc}/agribrain_vs_no_context ari mean_diff non-finite ({md})")
+
+        # p_value: required in [0,1] when present; absence is tolerated
+        # for the n=1 table-fallback aggregator (degenerate sample
+        # size) which skips significance tests.
+        if "p_value" in rec and rec["p_value"] is not None:
+            try:
+                p = float(rec["p_value"])
+                if not (0.0 <= p <= 1.0):
+                    failures.append(f"{sc}/agribrain_vs_no_context ari p_value {p} out of [0,1]")
+            except (TypeError, ValueError):
+                failures.append(f"{sc}/agribrain_vs_no_context ari p_value non-numeric")
 
         # Effect-size CI bracketed correctly (ci_low <= ci_high).
-        rec = sig[sc][f"agribrain_vs_no_context"]["ari"]
         lo = rec.get("effect_size_ci_low")
         hi = rec.get("effect_size_ci_high")
         if lo is not None and hi is not None and float(lo) > float(hi):

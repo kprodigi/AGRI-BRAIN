@@ -6,9 +6,9 @@ compatibility.
 """
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, List, Union
 
-from fastapi import APIRouter, HTTPException, Header, Request
+from fastapi import APIRouter, HTTPException, Header, Request, Response
 from pydantic import BaseModel, Field
 from src.security import enforce_api_key
 
@@ -100,37 +100,87 @@ def _get_mcp_server():
 # ---------------------------------------------------------------------------
 # New MCP-compliant endpoint (JSON-RPC 2.0)
 # ---------------------------------------------------------------------------
+def _msgmsg_to_dict(response) -> Dict[str, Any]:
+    out: Dict[str, Any] = {"jsonrpc": response.jsonrpc, "id": response.id}
+    if response.result is not None:
+        out["result"] = response.result
+    if response.error is not None:
+        out["error"] = response.error
+    return out
+
+
 @router.post("/mcp")
-def mcp_endpoint(
-    req: MCPRequest,
+async def mcp_endpoint(
     request: Request,
     x_api_key: str | None = Header(default=None, alias="x-api-key"),
-) -> Dict[str, Any]:
-    """JSON-RPC 2.0 MCP endpoint. Routes to MCPServer.handle_message()."""
+):
+    """JSON-RPC 2.0 MCP endpoint. Routes to ``MCPServer.handle_message``.
+
+    Honours the JSON-RPC 2.0 §6 batch contract: when the request body
+    is a JSON array, each member is dispatched independently and the
+    array of non-notification responses is returned (or HTTP 204 No
+    Content when every member is a notification, per spec). When the
+    body is a single object, behaviour is unchanged: single envelope,
+    or HTTP 204 for a notification.
+    """
     enforce_api_key(request, x_api_key)
     server = _get_mcp_server()
     if server is None:
         return {
             "jsonrpc": "2.0",
-            "id": req.id,
+            "id": None,
             "error": {"code": -32603, "message": "MCP server initialization failed"},
         }
 
     from .protocol import MCPMessage
-    msg = MCPMessage(
-        jsonrpc=req.jsonrpc,
-        id=req.id,
-        method=req.method,
-        params=req.params,
-    )
-    response = server.handle_message(msg)
 
-    result: Dict[str, Any] = {"jsonrpc": response.jsonrpc, "id": response.id}
-    if response.result is not None:
-        result["result"] = response.result
-    if response.error is not None:
-        result["error"] = response.error
-    return result
+    body: Union[Dict[str, Any], List[Dict[str, Any]]]
+    try:
+        body = await request.json()
+    except Exception:
+        return {
+            "jsonrpc": "2.0",
+            "id": None,
+            "error": {"code": -32700, "message": "Parse error"},
+        }
+
+    def _to_msg(item: Dict[str, Any]) -> MCPMessage:
+        return MCPMessage(
+            jsonrpc=str(item.get("jsonrpc", "2.0")),
+            id=item.get("id"),
+            method=item.get("method"),
+            params=item.get("params") or {},
+        )
+
+    # Batch path
+    if isinstance(body, list):
+        if not body:
+            return {
+                "jsonrpc": "2.0",
+                "id": None,
+                "error": {"code": -32600, "message": "Empty batch"},
+            }
+        batch_responses = server.handle_batch([_to_msg(it) for it in body if isinstance(it, dict)])
+        if batch_responses is None:
+            # Spec §6: every member was a notification.
+            return Response(status_code=204)
+        if not isinstance(batch_responses, list):
+            # Single envelope returned (e.g. INVALID_REQUEST on malformed batch).
+            return _msgmsg_to_dict(batch_responses)
+        return [_msgmsg_to_dict(r) for r in batch_responses]
+
+    # Single-object path
+    if not isinstance(body, dict):
+        return {
+            "jsonrpc": "2.0",
+            "id": None,
+            "error": {"code": -32600, "message": "Invalid request shape"},
+        }
+    is_notification = "id" not in body
+    response = server.handle_message(_to_msg(body))
+    if is_notification or response is None:
+        return Response(status_code=204)
+    return _msgmsg_to_dict(response)
 
 
 # ---------------------------------------------------------------------------

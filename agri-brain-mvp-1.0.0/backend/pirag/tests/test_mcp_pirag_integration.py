@@ -276,8 +276,16 @@ def test_context_feature_extraction():
             {"action": "cold_chain"}, {"action": "recovery"},
         ],
     }
+    # 2026-04: post-RRF calibration. The hybrid retriever's top RRF
+    # score is bounded by 2/(K+1) ~= 0.0328 for K=60; psi[2] is now
+    # normalised against that ceiling so realistic top scores around
+    # 0.025 produce confidence ~0.76. We construct two test points:
+    #   - a top RRF score (0.025) that should yield ~0.76 confidence
+    #     and trip the regulatory predicate (since it is above the
+    #     retrieval-guard floor).
+    #   - a saturating top RRF score (0.05) that should yield 1.0.
     rag = {
-        "top_citation_score": 0.6,
+        "top_citation_score": 0.025,
         "top_doc_id": "regulatory_fda_guideline_v2",
     }
     obs = _Obs(rho=0.40)
@@ -286,9 +294,18 @@ def test_context_feature_extraction():
     assert psi.shape == (5,)
     assert psi[0] == 1.0, "Critical compliance should be 1.0"
     assert psi[1] == 0.7, f"High urgency should be 0.7, got {psi[1]}"
-    assert abs(psi[2] - 0.6 / 0.8) < 1e-9, f"Confidence should be {0.6/0.8}, got {psi[2]}"
-    assert psi[3] == 1.0, "Regulatory doc with score > 0.4 should be 1.0"
+    # psi[2] is min(top_score / (2/(K+1)), 1.0). With K=60 and
+    # top_score=0.025 that's 0.025 / (2/61) ≈ 0.7625.
+    assert 0.7 <= psi[2] <= 0.8, f"Confidence should be ~0.76, got {psi[2]}"
+    assert psi[3] == 1.0, (
+        "Regulatory doc with score above retrieval-guard floor should be 1.0"
+    )
     assert abs(psi[4] - 0.75) < 1e-9, f"Recovery saturation should be 0.75, got {psi[4]}"
+
+    # Saturation: a top score above the RRF max should clamp to 1.0.
+    rag_sat = {**rag, "top_citation_score": 0.05}
+    psi_sat = extract_context_features(mcp, rag_sat, obs)
+    assert psi_sat[2] == 1.0, "psi[2] should clamp to 1.0 above RRF max"
 
 
 # ---- Test 16: THETA_CONTEXT sign consistency ----
@@ -312,19 +329,22 @@ def test_context_modifier_confidence_weighting():
     mcp = {"check_compliance": {"compliant": False, "violations": [{"severity": "critical"}]}}
     obs = _Obs(rho=0.50)
 
-    # High retrieval confidence
-    rag_high = {"guards_passed": True, "top_citation_score": 0.95, "top_doc_id": ""}
+    # 2026-04: post-RRF score scale. With K=60 the RRF max is
+    # 2/(K+1) ≈ 0.0328; psi[2] saturates above that. Pick test
+    # points within the realistic RRF score range so high vs low
+    # confidence actually map to different clamped psi[2] values.
+    rag_high = {"guards_passed": True, "top_citation_score": 0.030, "top_doc_id": ""}
     mod_high = compute_context_modifier(mcp, rag_high, obs)
 
-    # Low retrieval confidence
-    rag_low = {"guards_passed": True, "top_citation_score": 0.10, "top_doc_id": ""}
+    rag_low = {"guards_passed": True, "top_citation_score": 0.005, "top_doc_id": ""}
     mod_low = compute_context_modifier(mcp, rag_low, obs)
 
-    # Both should be non-zero (compliance violation is MCP-sourced, not retrieval-dependent)
+    # Both should be non-zero (compliance violation is MCP-sourced,
+    # not retrieval-dependent)
     assert np.linalg.norm(mod_high) > 0, "High confidence modifier should be non-zero"
     assert np.linalg.norm(mod_low) > 0, "Low confidence modifier should be non-zero"
-    # Higher confidence should produce different (generally larger) magnitude
-    # because ψ_2 contributes additional signal
+    # Higher confidence should produce different (generally larger)
+    # magnitude because psi_2 contributes additional signal
     assert not np.allclose(mod_high, mod_low), "Different confidence should produce different modifiers"
 
 

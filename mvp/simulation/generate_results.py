@@ -1004,10 +1004,20 @@ def run_all(seed: int = SEED) -> dict:
         flagged as "not no-learning".
         """
         if mode_name == "agribrain_cold_start":
+            # Cold-start initialises THETA_CONTEXT to zeros, but we still
+            # want the sign constraint to reject sign-flipped REINFORCE
+            # updates (otherwise the learner can drift to physically
+            # implausible signs that the production THETA_CONTEXT
+            # explicitly forbids). `np.sign(zeros)` is all-zero and
+            # disables the constraint, so we explicitly pass the
+            # production sign mask via `sign_mask_override` — same
+            # signs as the calibrated prior, zero magnitudes.
+            from pirag.context_to_logits import THETA_CONTEXT as _THETA_CTX
             return {
                 "initial_theta": np.zeros((3, 5), dtype=float),
                 "magnitude_cap_mode": "absolute",
                 "magnitude_cap_value": 1.0,
+                "sign_mask_override": np.sign(_THETA_CTX),
             }
         if mode_name in _SENSITIVITY_MODES:
             sigma = _SENSITIVITY_MODES[mode_name]

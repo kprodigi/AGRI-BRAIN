@@ -319,7 +319,7 @@ curl -X POST http://127.0.0.1:8100/mcp/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","clientInfo":{"name":"test-client","version":"1.0.0"}}}'
 
-# List available tools (13 static tools including pirag_query, explain, context_features, yield_query)
+# List available tools (14 statically registered tools including pirag_query, explain, context_features, yield_query, demand_query)
 curl -X POST http://127.0.0.1:8100/mcp/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
@@ -520,12 +520,22 @@ Before submitting, run the pre-HPC check locally:
 # default CI-speed tests
 cd agri-brain-mvp-1.0.0/backend && pytest -q
 
-# opt-in full mode x scenario matrix (slow; ~10 min)
-pytest -m slow
+# Opt-in full mode x scenario matrix (slow; ~10 min). The default
+# `addopts = "-m 'not slow'"` in pyproject.toml hides slow tests in
+# the standard `pytest` invocation; to run them you have to override
+# the addopts so the explicit `-m slow` selector wins.
+pytest --override-ini="addopts=" -m slow
 ```
 
-See `docs/path_b/final_pre_hpc_check_2026-04-22.md` for the 42-check
-report recorded at the last successful verification.
+The canonical pre-HPC verification lives in
+`mvp/simulation/validation/`. Run the validator and manifest verifier
+before submitting:
+
+```bash
+python mvp/simulation/validation/validate_results.py        # range checks (strict by default)
+python mvp/simulation/analysis/verify_manifest.py --strict-commit --allow-missing
+python mvp/simulation/validation/validate_publication_artifacts.py
+```
 
 ---
 
@@ -556,7 +566,7 @@ curl -X POST http://127.0.0.1:8100/governance/chain \
 
 ### Slither (optional, match CI locally)
 
-The GitHub Actions **contract-analysis** job runs [Slither](https://github.com/crytic/slither) on `agri-brain-mvp-1.0.0/contracts/hardhat` with `--exclude-informational --exclude-low` and `fail-on: medium` (version **0.11.5** in CI). To reproduce outside CI, install Slither in a Python environment (or use a container image that includes it), then from the Hardhat directory:
+The GitHub Actions **contract-analysis** job runs [Slither](https://github.com/crytic/slither) on `agri-brain-mvp-1.0.0/contracts/hardhat` with `--exclude-informational --exclude-low` and `fail-on: medium` (version **0.11.4** in CI; matches the `slither-version` pin in `.github/workflows/ci.yml`). To reproduce outside CI, install Slither in a Python environment (or use a container image that includes it), then from the Hardhat directory:
 
 ```bash
 cd agri-brain-mvp-1.0.0/contracts/hardhat

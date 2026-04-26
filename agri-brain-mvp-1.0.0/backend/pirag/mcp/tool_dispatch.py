@@ -124,7 +124,11 @@ def _processor_chain_trigger(obs: Any, prior: Dict[str, Any], shared: Any) -> bo
 
 
 def _processor_calculator_trigger(obs: Any, prior: Dict[str, Any], shared: Any) -> bool:
-    return obs.surplus_ratio > 0.5 and prior.get("policy_oracle") is not False
+    # policy_oracle now returns {"allowed": bool, "reason": str, "tool": str};
+    # absence (oracle not invoked yet) is permissive (default True), explicit
+    # `allowed: False` from the oracle blocks the calculator step.
+    oracle = prior.get("policy_oracle") or {}
+    return obs.surplus_ratio > 0.5 and bool(oracle.get("allowed", True))
 
 
 def _distributor_slca_trigger(obs: Any, prior: Dict[str, Any], shared: Any) -> bool:
@@ -214,6 +218,29 @@ def _next_dispatch_id() -> int:
         return _dispatch_id_counter
 
 
+def reset_dispatch_id_counter() -> None:
+    """Reset the monotonic dispatch-id counter to 0.
+
+    Called by ``AgentCoordinator.reset`` so per-episode protocol
+    traces use comparable id ranges (otherwise the counter grows
+    unboundedly across the simulator's 5-scenario × 20-mode loop and
+    reviewers comparing two scenario runs see disjoint id ranges).
+    """
+    global _dispatch_id_counter
+    with _dispatch_id_lock:
+        _dispatch_id_counter = 0
+
+
+class _ToolProtocolError(RuntimeError):
+    """Raised by ``_invoke_via_protocol`` when the protocol-routed tool
+    call returned a JSON-RPC error or a structured ``isError: True``
+    response. Caught by ``dispatch_tools`` so the failure populates
+    ``_tools_failed`` instead of being silently masked as a successful
+    payload (the previous behaviour after the 2026-04 audit fix that
+    introduced ``isError`` surfacing).
+    """
+
+
 def _invoke_via_protocol(
     server: Any,
     tool_name: str,
@@ -224,7 +251,9 @@ def _invoke_via_protocol(
     Sends a real ``tools/call`` message through ``server.handle_message``
     with a monotonic id. Recorded by ProtocolRecorder as an in-process
     dispatch entry (see ``protocol_recorder.py`` docstring for the
-    distinction between dispatch traces and wire traffic).
+    distinction between dispatch traces and wire traffic). Raises
+    ``_ToolProtocolError`` on JSON-RPC error or ``result.isError = True``
+    so the caller can record the failure rather than masking it.
     """
     from .protocol import MCPMessage
 
@@ -235,19 +264,30 @@ def _invoke_via_protocol(
     )
     resp = server.handle_message(msg)
 
+    if resp is None:
+        # Notification path — should not happen for tools/call, but
+        # defend the contract.
+        raise _ToolProtocolError(f"{tool_name}: no response (notification path)")
+
     if resp.error:
-        return None
+        raise _ToolProtocolError(f"{tool_name}: jsonrpc error {resp.error}")
 
     # Extract result from MCP response envelope
     result = resp.result
+    parsed: Any = result
     if isinstance(result, dict):
         content = result.get("content", [])
         if content and isinstance(content, list) and content[0].get("type") == "text":
             try:
-                return json.loads(content[0]["text"])
+                parsed = json.loads(content[0]["text"])
             except (json.JSONDecodeError, KeyError, TypeError):
-                return content[0].get("text")
-    return result
+                parsed = content[0].get("text")
+        # MCP 2024-11-05: tool failures arrive as result.isError = True
+        # with the error payload in content.text. Surface as failure so
+        # _tools_failed in dispatch_tools is honest.
+        if result.get("isError"):
+            raise _ToolProtocolError(f"{tool_name}: tool reported isError; payload={parsed!r}")
+    return parsed
 
 
 def dispatch_tools(
@@ -280,7 +320,8 @@ def dispatch_tools(
     failed: List[str] = []
     skipped: List[str] = []
 
-    for tool_name, trigger_fn, args_fn in workflow:
+    def _execute(tool_name: str, trigger_fn, args_fn) -> None:
+        """Run a single workflow step: trigger -> args -> invoke."""
         try:
             should_invoke = trigger_fn(obs, results, shared_context)
         except Exception:
@@ -288,12 +329,12 @@ def dispatch_tools(
 
         if not should_invoke:
             skipped.append(tool_name)
-            continue
+            return
 
         spec = registry.get(tool_name)
         if spec is None:
             skipped.append(tool_name)
-            continue
+            return
 
         try:
             kwargs = args_fn(obs, results, shared_context)
@@ -310,10 +351,100 @@ def dispatch_tools(
             failed.append(tool_name)
             results[tool_name] = None
 
+    # Pass 1 — static role workflow.
+    for step in workflow:
+        _execute(*step)
+
+    # Pass 2 — observe-then-decide loop (real ReAct closed loop).
+    # If the static workflow surfaced a critical compliance violation
+    # but the agent has not yet looked up forward spoilage risk, invoke
+    # spoilage_forecast as a follow-up. Then if the forecast says the
+    # produce will be at high risk in the next 6 hours, re-run
+    # compliance with a tightened temperature target so the next-step
+    # decision sees the escalated state. This is the only place in the
+    # dispatcher where one tool's *result* drives whether another tool
+    # runs and with what arguments — i.e. an actual "perceive ->
+    # think -> act -> observe" iteration.
+    react_iterations = 0
+    react_max_iter = int(cfg.get("react_max_iter", 2))
+    while react_iterations < react_max_iter:
+        react_iterations += 1
+        compliance = results.get("check_compliance") or {}
+        is_critical = (
+            isinstance(compliance, dict)
+            and not compliance.get("compliant", True)
+            and any(
+                v.get("severity") == "critical"
+                for v in compliance.get("violations", []) or []
+            )
+        )
+        if not is_critical:
+            break
+        # Followup A: ensure spoilage_forecast was run with the actual
+        # observed conditions; if not, run it now.
+        spec_sf = registry.get("spoilage_forecast")
+        if spec_sf is not None and "spoilage_forecast" not in invoked:
+            try:
+                sf = _invoke_with_reliability(
+                    registry=registry,
+                    mcp_server=mcp_server,
+                    tool_name="spoilage_forecast",
+                    kwargs={
+                        "current_rho": float(getattr(obs, "rho", 0.0)),
+                        "temperature": float(getattr(obs, "temp", 8.0)),
+                        "humidity": float(getattr(obs, "rh", 90.0)),
+                        "hours_ahead": 6,
+                    },
+                    cfg=cfg,
+                )
+                results["spoilage_forecast"] = sf
+                invoked.append("spoilage_forecast")
+            except Exception:
+                failed.append("spoilage_forecast")
+                results["spoilage_forecast"] = None
+        # Observe: did spoilage_forecast confirm the threat?
+        sf = results.get("spoilage_forecast") or {}
+        forecast_high = isinstance(sf, dict) and sf.get("urgency") in {"high", "critical"}
+        # Followup B: if both compliance is critical AND forecast is
+        # high, escalate by re-running compliance with the tightened
+        # FDA target threshold (4 C, the leafy-greens tighter floor).
+        # This produces a fresh `check_compliance` result tagged
+        # `_react_iteration` so downstream consumers can audit which
+        # call actually drove the decision.
+        if forecast_high and "check_compliance_react" not in results:
+            spec_cc = registry.get("check_compliance")
+            if spec_cc is not None:
+                try:
+                    cc2 = _invoke_with_reliability(
+                        registry=registry,
+                        mcp_server=mcp_server,
+                        tool_name="check_compliance",
+                        kwargs={
+                            "temperature": float(getattr(obs, "temp", 8.0)),
+                            "humidity": float(getattr(obs, "rh", 90.0)),
+                            "product_type": "spinach_tightened",
+                        },
+                        cfg=cfg,
+                    )
+                    if isinstance(cc2, dict):
+                        cc2["_react_iteration"] = react_iterations
+                    results["check_compliance_react"] = cc2
+                    invoked.append("check_compliance_react")
+                except Exception:
+                    failed.append("check_compliance_react")
+                    results["check_compliance_react"] = None
+            # Loop terminates here: we have the escalated compliance
+            # result; further iterations would not produce new
+            # information given the static argument schema.
+            break
+        # No new tool to call; exit the loop.
+        break
+
     results["_tools_invoked"] = invoked
     results["_tools_failed"] = failed
     results["_tools_skipped"] = skipped
     results["_dispatch_profile"] = cfg.get("qos_profile", "legacy")
+    results["_react_iterations"] = react_iterations
     return results
 
 

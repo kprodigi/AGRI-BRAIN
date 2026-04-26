@@ -39,7 +39,7 @@ ROLE_QUERY_TEMPLATES: Dict[str, Dict[str, Any]] = {
              "append": "surplus inventory requiring diversion or redistribution planning"},
             {"trigger": lambda obs, mcp: obs.surplus_ratio > 0.5,
              "append": "critical surplus exceeding processing capacity"},
-            {"trigger": lambda obs, mcp: mcp.get("policy_oracle") is False,
+            {"trigger": lambda obs, mcp: not (mcp.get("policy_oracle", {}) or {}).get("allowed", True),
              "append": "governance policy restricting current routing options"},
         ],
     },
@@ -248,16 +248,43 @@ def retrieve_role_context(
     try:
         response = pipeline.ask(query, k=4, anchor_on_chain=False)
 
-        # Physics-informed re-ranking (Task 11)
+        # Lexical + Arrhenius re-ranking. We import the canonical name so
+        # production exercises the renamed function rather than the
+        # deprecated `physics_rerank` alias.
         try:
-            from .physics_reranker import physics_rerank
+            from .physics_reranker import lexical_arrhenius_rerank
+
+            # Surface the Arrhenius rate to the reranker so the
+            # thermodynamic component actually fires (was previously
+            # always 0 because k_eff defaulted to 0).
+            try:
+                from .mcp.tools.spoilage_forecast import forecast_spoilage as _fs
+                _sf = _fs(obs.rho, obs.temp, obs.rh, hours_ahead=1)
+                _k_eff_for_rerank = float(_sf.get("k_effective", 0.0) or 0.0)
+            except Exception:
+                _k_eff_for_rerank = 0.0
+
             passages = [{"text": c.passage, "score": float(getattr(c, "score", 0.0)), "id": c.doc_id, "meta": c.meta} for c in response.citations]
-            reranked = physics_rerank(passages, obs.temp, obs.rho, obs.rh)
-            # Use reranked order for guidance extraction
+            reranked = lexical_arrhenius_rerank(
+                passages, obs.temp, obs.rho, obs.rh, k_eff=_k_eff_for_rerank,
+            )
+            # Use reranked order for guidance extraction.
             ranked_citations = reranked
             if reranked:
+                # 2026-04 honesty fix: aggregate the *Arrhenius
+                # consistency factor* alone — not the lexical bonus —
+                # so the gate at `context_to_logits.compute_context_modifier`
+                # operates on the only true thermodynamic signal in
+                # the rerank pipeline.
                 context["physics_consistency_score"] = float(
-                    sum(float(p.get("physics_bonus", 0.0)) for p in reranked) / len(reranked)
+                    sum(float(p.get("arrhenius_consistency", 1.0)) for p in reranked)
+                    / len(reranked)
+                )
+                # Keep the legacy mean-bonus aggregate available for
+                # back-compat consumers (was the meaning of this field
+                # before the audit), but with a renamed key.
+                context["lexical_bonus_mean"] = float(
+                    sum(float(p.get("lexical_bonus", 0.0)) for p in reranked) / len(reranked)
                 )
         except ImportError:
             ranked_citations = [{"text": c.passage,
@@ -275,15 +302,18 @@ def retrieve_role_context(
                 "sha256": cit.sha256,
             })
 
-        # Assign guidance based on document IDs and compute top score
+        # 2026-04 fix: honour the rerank order — top is rank 1, not the
+        # max-by-score-over-iteration which is sensitive to dict order
+        # on RRF ties.
+        if ranked_citations:
+            top_entry = ranked_citations[0]
+            context["top_citation_score"] = float(top_entry.get("score", 0.0))
+            context["top_doc_id"] = top_entry.get("id", "")
+
+        # Assign guidance based on document IDs.
         for entry in ranked_citations:
             doc_id = entry.get("id", "")
             passage = entry.get("text", "")[:300]
-            score = entry.get("score", 0.0)
-
-            if score > context["top_citation_score"]:
-                context["top_citation_score"] = score
-                context["top_doc_id"] = doc_id
 
             if "regulatory" in doc_id or "fda" in doc_id:
                 if not context["regulatory_guidance"]:
@@ -312,14 +342,20 @@ def retrieve_role_context(
         )
 
         # Retrieval quality diagnostics for research reporting.
+        # Faithfulness@k and evidence_coverage compare the answer-proxy
+        # text against the *full* retrieved passage, not the truncated
+        # 300-char preview that lands in ``context["citations"]``. The
+        # 2026-04 audit caught the truncation bug (it under-reported
+        # faithfulness when the matching span lived past char 300);
+        # the fix here uses ``response.citations`` directly.
         try:
             from .eval.metrics import (
                 faithfulness_at_k,
                 evidence_coverage,
             )
             metric_citations = [
-                {"excerpt": c.get("passage", ""), "id": c.get("doc_id", "")}
-                for c in context.get("citations", [])
+                {"excerpt": c.passage, "id": c.doc_id}
+                for c in response.citations
             ]
             answer_proxy = (
                 context.get("regulatory_guidance")

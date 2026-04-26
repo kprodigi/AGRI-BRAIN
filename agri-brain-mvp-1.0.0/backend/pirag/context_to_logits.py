@@ -135,12 +135,43 @@ def extract_context_features(
     urgency = forecast.get("urgency", "")
     psi[1] = URGENCY_MAP.get(urgency, 0.0)
 
+    # psi_2: Retrieval confidence rescaled for the 2026-04 RRF retriever.
+    # The hybrid retriever now returns Reciprocal Rank Fusion scores
+    # bounded by 1/(K+1) per list (~0.0164 for K=60). The previous
+    # divisor of 0.8 was calibrated for the deprecated min-max merge
+    # whose top score saturated around 1.0; with RRF that divisor would
+    # cap psi_2 at ~0.02, killing the feature. The new normalisation
+    # uses the maximum theoretical RRF score (both lists rank the doc
+    # at position 1 -> 2/(K+1)) as the [0,1] ceiling so a top hit on
+    # both retrievers yields psi_2 ≈ 1.0, matching the pre-RRF semantics.
     top_score = rag_context.get("top_citation_score", 0.0)
-    psi[2] = min(top_score / 0.8, 1.0)
+    try:
+        from .pyrag.hybrid_retriever import HybridRetriever as _HR
+        _rrf_k = float(_HR.RRF_K)
+    except Exception:
+        _rrf_k = 60.0
+    _rrf_top_max = 2.0 / (_rrf_k + 1.0)
+    psi[2] = float(min(top_score / max(_rrf_top_max, 1e-9), 1.0))
 
+    # psi_3: Regulatory pressure. Old code used `top_doc_score > 0.4`
+    # calibrated for [0,1] min-max scores. With RRF max ≈ 2/(K+1) ≈
+    # 0.0328, the 0.4 threshold was unreachable. The new threshold is
+    # the retrieval-guard floor itself: the doc must clear the guard
+    # (already enforced upstream when the modifier is computed) AND
+    # match a regulatory document-id pattern. Using the floor directly
+    # rather than a multiple keeps the gate consistent with the
+    # guard's calibration (RRF top scores live in a narrow band so a
+    # multiplicative buffer would push the threshold outside the
+    # achievable range).
     top_doc = rag_context.get("top_doc_id", "")
     top_doc_score = rag_context.get("top_citation_score", 0.0)
-    if top_doc_score > 0.4 and any(kw in top_doc.lower() for kw in ("regulatory", "fda", "emergency")):
+    try:
+        from .guards.retrieval_guard import MIN_TOP_CITATION_SCORE as _RG_MIN
+    except Exception:
+        _RG_MIN = 0.0246
+    if top_doc_score >= _RG_MIN and any(
+        kw in top_doc.lower() for kw in ("regulatory", "fda", "emergency")
+    ):
         psi[3] = 1.0
 
     chain = mcp_results.get("chain_query", {})

@@ -56,8 +56,43 @@ class ToolRegistry:
         self._cache: Dict[str, Any] = {}
 
     def register(self, spec: ToolSpec) -> None:
-        """Register a tool specification."""
+        """Register a tool specification.
+
+        Permissive by default (preserves the legacy overwrite
+        semantics that ``register_*_capabilities`` helpers rely on).
+        Duplicate registrations log at WARN with the previous and
+        replacement tool ids so reviewers can audit silent shadowing.
+        Callers that want strict deduplication can use :meth:`replace`
+        (explicit overwrite) or :meth:`register_strict` (raise on
+        duplicate).
+        """
+        existing = self._tools.get(spec.name)
+        if existing is not None and existing is not spec:
+            _log.warning(
+                "MCP registry: overwriting tool %r (previous fn=%s, new fn=%s)",
+                spec.name,
+                getattr(existing.fn, "__qualname__", existing.fn),
+                getattr(spec.fn, "__qualname__", spec.fn),
+            )
         self._tools[spec.name] = spec
+
+    def register_strict(self, spec: ToolSpec) -> None:
+        """Register a tool, raising ``ValueError`` on duplicates."""
+        existing = self._tools.get(spec.name)
+        if existing is not None and existing is not spec:
+            raise ValueError(
+                f"Tool {spec.name!r} already registered "
+                "(use register() / replace() to overwrite intentionally)"
+            )
+        self._tools[spec.name] = spec
+
+    def replace(self, spec: ToolSpec) -> None:
+        """Overwrite an existing registration without raising."""
+        self._tools[spec.name] = spec
+
+    def unregister(self, tool_name: str) -> bool:
+        """Remove a tool from the registry. Returns True if removed."""
+        return self._tools.pop(tool_name, None) is not None
 
     def discover(self, capabilities: List[str]) -> List[ToolSpec]:
         """Return tools matching ANY requested capability."""
@@ -136,6 +171,11 @@ def get_default_registry() -> ToolRegistry:
     from .tools.policy_oracle import check_access
     from .tools.calculator import calculate
     from .tools.units import convert
+    # `simulate` is registered conditionally below — it depends on
+    # SIM_API_BASE being set, which is empty under the simulator
+    # subprocess. Importing it eagerly is fine; gating the registration
+    # so the simulator-mode registry doesn't expose a tool that always
+    # returns _status: error is the honest move.
     from .tools.simulator import simulate
 
     registry.register(ToolSpec(
@@ -206,17 +246,38 @@ def get_default_registry() -> ToolRegistry:
         cacheable=True,
         cache_key_params=["value", "from_unit", "to_unit"],
     ))
-    registry.register(ToolSpec(
-        name="simulate",
-        description="Run a forward simulation via the simulation API",
-        capabilities=["simulation", "forecast"],
-        fn=simulate,
-        schema={
-            "endpoint": {"type": "string", "description": "Simulation API endpoint path"},
-            "payload": {"type": "object", "description": "JSON payload with simulation parameters"},
-        },
-        cacheable=False,
-    ))
+    # Conditional registration: `simulate` is only useful when the
+    # internal simulation API base is configured (SIM_API_BASE). Under
+    # the simulator subprocess the base is empty, so registering the
+    # tool there means every protocol-routed call returns
+    # `_status: error` — which then inflates the recorder's
+    # tool_iserror_responses count. The honest behaviour is to skip
+    # registration unless the base is set; FastAPI process-style runs
+    # will register it because they have SIM_API_BASE configured.
+    try:
+        from src.settings import SETTINGS as _SETTINGS
+        _sim_base = (getattr(_SETTINGS, "sim_api_base", "") or "").strip()
+    except Exception:
+        _sim_base = ""
+    if _sim_base:
+        registry.register(ToolSpec(
+            name="simulate",
+            description="Run a forward simulation via the simulation API",
+            capabilities=["simulation", "forecast"],
+            fn=simulate,
+            schema={
+                "endpoint": {"type": "string", "description": "Simulation API endpoint path"},
+                "payload": {"type": "object", "description": "JSON payload with simulation parameters"},
+            },
+            cacheable=False,
+        ))
+    else:
+        _log.info(
+            "MCP tool 'simulate' not registered: SIM_API_BASE is empty "
+            "(simulator subprocess); set SIM_API_BASE in the runtime env "
+            "to enable forward-simulation MCP calls."
+        )
+        _REGISTRATION_FAILURES["simulate"] = "SIM_API_BASE not configured"
 
     # New tools (Tasks 3-4) — registered if importable. Failures are
     # logged at WARN and recorded in _REGISTRATION_FAILURES so the
@@ -238,7 +299,7 @@ def get_default_registry() -> ToolRegistry:
             },
             cacheable=False,
         ))
-    except ImportError as exc:
+    except Exception as exc:  # 2026-04: catch ALL registration failures, not only ImportError
         _log.warning("MCP tool 'spoilage_forecast' not registered: %s", exc)
         _REGISTRATION_FAILURES["spoilage_forecast"] = str(exc)
 
@@ -256,7 +317,7 @@ def get_default_registry() -> ToolRegistry:
             },
             cacheable=False,
         ))
-    except ImportError as exc:
+    except Exception as exc:  # 2026-04: catch ALL registration failures, not only ImportError
         _log.warning("MCP tool 'footprint_query' not registered: %s", exc)
         _REGISTRATION_FAILURES["footprint_query"] = str(exc)
 
@@ -278,7 +339,7 @@ def get_default_registry() -> ToolRegistry:
             },
             cacheable=False,
         ))
-    except ImportError as exc:
+    except Exception as exc:  # 2026-04: catch ALL registration failures, not only ImportError
         _log.warning("MCP tool 'pirag_query' not registered: %s", exc)
         _REGISTRATION_FAILURES["pirag_query"] = str(exc)
 
@@ -299,7 +360,7 @@ def get_default_registry() -> ToolRegistry:
             },
             cacheable=False,
         ))
-    except ImportError as exc:
+    except Exception as exc:  # 2026-04: catch ALL registration failures, not only ImportError
         _log.warning("MCP tool 'explain' not registered: %s", exc)
         _REGISTRATION_FAILURES["explain"] = str(exc)
 
@@ -313,7 +374,7 @@ def get_default_registry() -> ToolRegistry:
             schema={},
             cacheable=False,
         ))
-    except ImportError as exc:
+    except Exception as exc:  # 2026-04: catch ALL registration failures, not only ImportError
         _log.warning("MCP tool 'context_features' not registered: %s", exc)
         _REGISTRATION_FAILURES["context_features"] = str(exc)
 
@@ -336,7 +397,7 @@ def get_default_registry() -> ToolRegistry:
             },
             cacheable=False,
         ))
-    except ImportError as exc:
+    except Exception as exc:  # 2026-04: catch ALL registration failures, not only ImportError
         _log.warning("MCP tool 'yield_query' not registered: %s", exc)
         _REGISTRATION_FAILURES["yield_query"] = str(exc)
 
@@ -360,7 +421,7 @@ def get_default_registry() -> ToolRegistry:
             },
             cacheable=False,
         ))
-    except ImportError as exc:
+    except Exception as exc:  # 2026-04: catch ALL registration failures, not only ImportError
         _log.warning("MCP tool 'demand_query' not registered: %s", exc)
         _REGISTRATION_FAILURES["demand_query"] = str(exc)
 

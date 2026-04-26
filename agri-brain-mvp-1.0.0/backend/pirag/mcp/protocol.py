@@ -193,19 +193,29 @@ class MCPServer:
     def handle_batch(self, messages):
         """Dispatch a batch of MCPMessage requests, per JSON-RPC 2.0 §6.
 
-        Returns the list of responses for non-notification requests,
-        in input order. Empty batches return INVALID_REQUEST per spec.
+        Returns:
+        - A single ``MCPMessage`` carrying INVALID_REQUEST when the
+          input batch itself is malformed (empty list).
+        - ``None`` when the input is non-empty but every member is a
+          notification — per spec the server MUST NOT return an empty
+          array; the transport must serialize nothing at all.
+        - A list of response messages otherwise, in input order, with
+          notifications skipped.
         """
         if not messages:
-            return [MCPMessage(
+            return MCPMessage(
                 id=None,
                 error={"code": _INVALID_REQUEST, "message": "Empty batch"},
-            )]
+            )
         out = []
         for m in messages:
             r = self.handle_message(m)
             if r is not None:
                 out.append(r)
+        if not out:
+            # Spec §6: empty Response array MUST NOT be returned;
+            # the transport should serialize nothing.
+            return None
         return out
 
     # -----------------------------------------------------------------
@@ -246,6 +256,13 @@ class MCPServer:
                 },
             )
 
+        # Negotiated version: when the client requests a version we do
+        # support, echo *that* version (not always PROTOCOL_VERSION).
+        # Once SUPPORTED_PROTOCOL_VERSIONS gains a second entry the
+        # negotiation will be honest; today the loop is a no-op for the
+        # single supported version but keeps the contract correct.
+        negotiated_version = client_version if client_version else self.PROTOCOL_VERSION
+
         capabilities: Dict[str, Any] = {}
         if self._registry.list_tools():
             capabilities["tools"] = {}
@@ -262,7 +279,7 @@ class MCPServer:
         return MCPMessage(
             id=msg.id,
             result={
-                "protocolVersion": self.PROTOCOL_VERSION,
+                "protocolVersion": negotiated_version,
                 "serverInfo": {
                     "name": self.server_name,
                     "version": self.SERVER_VERSION,

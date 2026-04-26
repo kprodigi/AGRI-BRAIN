@@ -36,11 +36,13 @@ REINFORCE learning for sustainable food logistics.
 |:---:|:---:|
 | ![Protocol](docs/screenshots/mcp-pirag-protocol-light.png) | ![Causal](docs/screenshots/mcp-pirag-causal-light.png) |
 
-| System Walkthrough | Heatwave Scenario |
-|:---:|:---:|
-| ![Pipeline](docs/screenshots/demo-pipeline.gif) | ![Heatwave](docs/screenshots/agent-theater-heatwave.gif) |
+| System Walkthrough | Heatwave | Overproduction |
+|:---:|:---:|:---:|
+| ![Pipeline](docs/screenshots/demo-pipeline.gif) | ![Heatwave](docs/screenshots/agent-theater-heatwave.gif) | ![Overproduction](docs/screenshots/agent-theater-overproduction.gif) |
 
-> **Scenario GIFs**: See `docs/screenshots/agent-theater-*.gif` for animated walkthroughs of all 5 agents processing heatwave, overproduction, cyber outage, adaptive pricing, and baseline scenarios.
+| Cyber Outage | Adaptive Pricing | Baseline |
+|:---:|:---:|:---:|
+| ![Cyber Outage](docs/screenshots/agent-theater-cyber_outage.gif) | ![Adaptive Pricing](docs/screenshots/agent-theater-adaptive_pricing.gif) | ![Baseline](docs/screenshots/agent-theater-baseline.gif) |
 
 ## Architecture Highlights
 
@@ -208,8 +210,10 @@ python generate_figures.py    # publication figures (Fig. 2-10, PNG + PDF)
 
 ### HPC benchmark
 
-The 20-seed stochastic benchmark (5 × 9 × 20 = 900 episodes plus aggregation
-and figure generation) is submitted through three SLURM scripts at the repo
+The 20-seed stochastic benchmark (5 scenarios × 8 canonical modes × 20 seeds
+= 800 episodes for the headline ablation, plus the 7 §4.7 sensitivity modes
+which add another 5 × 7 × 20 = 700 episodes when run, plus aggregation and
+figure generation) is submitted through three SLURM scripts at the repo
 root. From the HPC login node:
 
 ```bash
@@ -233,9 +237,11 @@ This orchestrator:
    `scp <hpc-host>:$PWD/hpc_results_<RUN_TAG>.tar.gz .` and untar into the
    results tree.
 
-End-to-end wall time is typically 6-10 h with scheduler queueing. See
-`docs/path_b/final_pre_hpc_check_2026-04-22.md` for the 42-check pre-HPC
-verification report.
+End-to-end wall time is typically 6-10 h with scheduler queueing. The
+canonical pre-HPC validation lives in `mvp/simulation/validation/` —
+run `python mvp/simulation/validation/validate_results.py` and
+`python mvp/simulation/analysis/verify_manifest.py --strict-commit
+--allow-missing` before submission.
 
 ## Environment Variables
 

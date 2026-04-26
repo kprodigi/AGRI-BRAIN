@@ -80,7 +80,15 @@ def expand_query_with_physics(
 # Physics re-ranking
 # ---------------------------------------------------------------------------
 
-_TEMP_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*(?:degrees?\s*(?:Celsius|C)|°C)", re.IGNORECASE)
+# Accept optional ASCII or unicode minus prefix so cold-storage SOPs
+# referencing -2 C / -18 C / -0.5 C / -2 degrees Celsius / -18°C are
+# parsed correctly. U+2212 (true minus) and U+2013 (en-dash) are both
+# legal in published regulatory text and must round-trip the same as
+# ASCII '-'.
+_TEMP_PATTERN = re.compile(
+    r"(-|−|–)?\s*(\d+(?:\.\d+)?)\s*(?:degrees?\s*(?:Celsius|C)|°C)",
+    re.IGNORECASE,
+)
 _SPOILAGE_KEYWORDS = {"spoilage", "decay", "degradation", "deterioration", "rot", "decomposition"}
 _FRESHNESS_KEYWORDS = {"fresh", "preservation", "storage", "maintain", "shelf life"}
 _URGENCY_KEYWORDS = {"emergency", "urgent", "critical", "immediate", "rapid", "time-critical"}
@@ -88,7 +96,11 @@ _URGENCY_KEYWORDS = {"emergency", "urgent", "critical", "immediate", "rapid", "t
 
 def _extract_temperatures(text: str) -> List[float]:
     """Extract temperature values mentioned in a passage."""
-    return [float(m.group(1)) for m in _TEMP_PATTERN.finditer(text)]
+    out: List[float] = []
+    for m in _TEMP_PATTERN.finditer(text):
+        sign = -1.0 if m.group(1) else 1.0
+        out.append(sign * float(m.group(2)))
+    return out
 
 
 def _keyword_density(text: str, keywords: set) -> float:
@@ -196,11 +208,21 @@ def lexical_arrhenius_rerank(
         lexical_bonus = min(max(lexical_bonus, 0.0), 0.30)
         consistency = min(max(consistency, 0.0), 1.0)
         arrhenius_consistency = min(max(arrhenius_consistency, 0.0), 1.0)
-        # Arrhenius-consistency multiplies the lexical bonus so a
-        # temperature-mismatched passage receives less of the keyword-
-        # driven boost.
+
+        # Arrhenius factor down-ranks the *whole* score, not only the
+        # bonus, so a passage with high BM25 but a temperature regime
+        # that contradicts the current k_eff is penalised in proportion
+        # to the mismatch. The factor is clamped to [0.5, 1.0] so the
+        # rerank cannot completely zero a strong base hit (which would
+        # be too aggressive given that BM25 already encodes lexical
+        # relevance the simulator's k_eff cannot fully evaluate).
+        # 2026-04 fix: previously the factor only multiplied the bonus,
+        # so the docstring's "down-rank" framing was misleading — a
+        # temperature-wrong but lexically-strong passage kept its full
+        # base score and merely lost the bonus.
+        arrhenius_score_factor = 0.5 + 0.5 * arrhenius_consistency
         bonus = lexical_bonus * arrhenius_consistency
-        adjusted_score = (base_score + bonus) * consistency
+        adjusted_score = (base_score + bonus) * consistency * arrhenius_score_factor
 
         scored.append({
             **passage,

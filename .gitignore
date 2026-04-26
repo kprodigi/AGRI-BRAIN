@@ -23,6 +23,27 @@ dist/
 # Environment and secrets
 .env
 .env.local
+.env.production
+.envrc
+
+# Cryptographic keys and credentials — broad patterns so a reviewer
+# cloning the repo and running an on-chain experiment cannot
+# accidentally `git add -A` a private keypair or token file.
+*.pem
+*.key
+*.keystore
+*.p12
+*.pfx
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+*.gpg
+*.kdbx
+secrets.json
+secrets.yaml
+credentials.json
+service-account*.json
 
 # HPC artifacts (the hpc_*.sh scripts are tracked)
 hpc_import.sh

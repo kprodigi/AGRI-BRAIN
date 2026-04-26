@@ -22,9 +22,9 @@ def extract_keywords(passage: str) -> List[str]:
 
     keywords: List[str] = []
 
-    # 1. Temperature thresholds
+    # 1. Temperature thresholds (accept optional minus prefix for cold storage)
     for m in re.finditer(
-        r'(\d+(?:\.\d+)?)\s*(?:degrees?\s*(?:Celsius|C|Fahrenheit|F)|°C|°F)',
+        r'(?:-|−|–)?\s*(\d+(?:\.\d+)?)\s*(?:degrees?\s*(?:Celsius|C|Fahrenheit|F)|°C|°F)',
         passage, re.IGNORECASE,
     ):
         phrase = _surrounding_phrase(passage, m.start(), m.end())
@@ -124,12 +124,15 @@ def extract_keywords_by_type(passage: str) -> Dict[str, List[str]]:
     if not passage:
         return result
 
-    # Thresholds
-    for m in re.findall(
-        r'(\d+(?:\.\d+)?)\s*(?:degrees?\s*(?:Celsius|C)|°C)',
+    # Thresholds. Accept optional ASCII / U+2212 / U+2013 minus prefix
+    # so frozen-storage SOPs (-2°C, -18°C, -0.5°C) are captured with
+    # correct sign, not as positive thresholds.
+    for sign_str, val_str in re.findall(
+        r'(-|−|–)?\s*(\d+(?:\.\d+)?)\s*(?:degrees?\s*(?:Celsius|C)|°C)',
         passage, re.IGNORECASE,
     ):
-        result["thresholds"].append(f"{m}°C")
+        prefix = "-" if sign_str else ""
+        result["thresholds"].append(f"{prefix}{val_str}°C")
 
     for val, unit in re.findall(
         r'(?:within\s+)?(\d+)\s+(hours?|minutes?|days?)',
