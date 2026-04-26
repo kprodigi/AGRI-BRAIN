@@ -1,19 +1,17 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn, n, fmt, last, jget } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
-import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import { motion, animate } from "framer-motion";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer,
   CartesianGrid, Legend, Area, AreaChart, ReferenceArea, ReferenceLine,
 } from "recharts";
 import {
   Thermometer, Activity, Recycle, BarChart3, AlertTriangle, TrendingUp,
-  TrendingDown, Leaf, Droplets, Wind, Zap, RefreshCw,
+  TrendingDown, RefreshCw,
 } from "lucide-react";
 
 const API = getApiBase();

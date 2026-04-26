@@ -1,3 +1,5 @@
+> ⚠️ **HISTORICAL SNAPSHOT — REVERTED**. This document describes the Path B prototype (6D ψ, 3×6 `THETA_CONTEXT`, `no_yield` mode, `yield_query` MCP tool) that was reverted on `main`. Do not apply tracked-change instructions to the manuscript. See `docs/path_b/README.md` and the live docs for the current system.
+
 # Path B — Manuscript Updates (tracked-changes copy)
 
 Drafted from `final_implementation_prompt` Section F. Apply each block with tracked changes (`author="Reviewer"`) to the latest manuscript docx. Every number below is a placeholder to be filled verbatim from the Phase 2 / Phase 3 CSVs after the benchmark completes; do not paste drafts into the manuscript until the CSVs land.

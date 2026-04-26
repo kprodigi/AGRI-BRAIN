@@ -1,3 +1,5 @@
+> ⚠️ **HISTORICAL SNAPSHOT — REVERTED**. This document describes the Path B prototype (6D ψ, 3×6 `THETA_CONTEXT`, `no_yield` mode, `yield_query` MCP tool) that was reverted on `main`. Do not apply tracked-change instructions to the manuscript. See `docs/path_b/README.md` and the live docs for the current system.
+
 # Pre-HPC Verification Report
 
 Run by: Claude (claude-opus-4-7) on 2026-04-22

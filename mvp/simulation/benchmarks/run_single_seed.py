@@ -11,12 +11,12 @@ import json
 from pathlib import Path
 
 try:
-    from ..generate_results import run_all, SCENARIOS
+    from ..generate_results import run_all, SCENARIOS, MODES
 except ImportError:
     import sys as _sys
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
-    from generate_results import run_all, SCENARIOS
+    from generate_results import run_all, SCENARIOS, MODES
 
 
 def main() -> None:
@@ -41,12 +41,18 @@ def main() -> None:
     print(f"Running full simulation with seed={seed}...")
     data = run_all(seed=seed)
 
+    # Drive the per-seed metric dump off the canonical MODES list in
+    # generate_results so cold_start and the three sensitivity-perturbation
+    # modes land in seed_<N>.json alongside the eight legacy modes. Keeping
+    # a second hardcoded list here would silently drop the new ablation
+    # data from every downstream aggregator stage.
     metrics = {}
     for sc in SCENARIOS:
         metrics[sc] = {}
-        for mode in ("agribrain", "mcp_only", "pirag_only", "no_context",
-                     "static", "hybrid_rl", "no_pinn", "no_slca"):
-            ep = data["results"][sc][mode]
+        for mode in MODES:
+            ep = data["results"][sc].get(mode)
+            if ep is None:
+                continue
             metrics[sc][mode] = {
                 "ari": float(ep["ari"]),
                 "waste": float(ep["waste"]),
@@ -55,6 +61,31 @@ def main() -> None:
                 "carbon": float(ep["carbon"]),
                 "equity": float(ep["equity"]),
             }
+            # Required for validate_results.py (checks DecisionLatencyMs and
+            # ConstraintViolationRate bounds) and for table1/table2 CSV
+            # rewrites that preserve the legacy column set.
+            metrics[sc][mode]["mean_decision_latency_ms"] = float(
+                ep.get("mean_decision_latency_ms", 0.0)
+            )
+            metrics[sc][mode]["constraint_violation_rate"] = float(
+                ep.get("constraint_violation_rate", 0.0)
+            )
+            metrics[sc][mode]["compliance_violation_rate"] = float(
+                ep.get("compliance_violation_rate", 0.0)
+            )
+            # Also capture the new §4.7 diagnostic metrics when present so
+            # the aggregator has the raw per-seed numbers for bootstrap CIs
+            # without re-running the simulator. Empty/None when the mode
+            # does not produce the metric (e.g. static has no honor rate).
+            for extra in (
+                "operational_violation_rate", "regulatory_violation_rate",
+                "context_active_steps", "context_active_fraction",
+                "context_honored_steps", "context_honor_rate",
+            ):
+                if extra in ep:
+                    metrics[sc][mode][extra] = ep[extra] if not isinstance(
+                        ep[extra], (list, tuple)
+                    ) else list(ep[extra])
 
     out_file = out_dir / f"seed_{seed}.json"
     out_file.write_text(json.dumps(metrics, indent=2))

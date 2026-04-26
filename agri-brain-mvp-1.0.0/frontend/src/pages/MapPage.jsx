@@ -1,12 +1,11 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useEffect, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { cn, fmt, jget, authFetch } from "@/lib/utils";
+import { fmt, jget, authFetch } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Leaf, Factory, Warehouse, Recycle, Truck, Thermometer } from "lucide-react";
 
 const API = getApiBase();
 

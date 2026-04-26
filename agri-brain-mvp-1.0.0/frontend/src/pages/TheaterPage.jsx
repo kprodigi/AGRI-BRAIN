@@ -3,15 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { cn, fmt, short, jpost, jget } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
-  Play, Loader2, MessageCircle, ArrowRight, CheckCircle2, AlertTriangle,
-  Wrench, BookOpen, Shield, Layers, Brain, Truck, Warehouse, Recycle,
+  Play, Loader2, CheckCircle2, AlertTriangle, BookOpen, Truck, Warehouse, Recycle,
   Send, ChevronDown, ChevronUp,
 } from "lucide-react";
 
@@ -60,7 +58,6 @@ function AgentBubble({ agent, memo, isTyping, scenarioTrigger, isFirst }) {
 
   const ex = memo?.explainability || {};
   const cf = ex.context_features || {};
-  const la = ex.logit_adjustment || {};
   const comp = ex.compliance || {};
   const ap = memo?.action_probabilities || {};
   const action = memo?.action || memo?.decision;

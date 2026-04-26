@@ -48,18 +48,34 @@ REINFORCE learning for sustainable food logistics.
   runtime role-capability tools (18 at simulation time), plus 13 resources and 5 prompts,
   accessible through JSON-RPC 2.0 protocol with InProcess, Stdio, and SSE transports
 - **Physics-informed RAG (piRAG)** with 20-document knowledge base, BM25+TF-IDF hybrid
-  retrieval (k=4, 20% retrieval ratio), physics-aware query expansion, and Arrhenius-based
-  reranking that surfaces different documents under different physical conditions
+  retrieval (k=4, 20% retrieval ratio), physics-aware query expansion,
+  and physics-aware reranking (temperature-proximity scoring, spoilage-
+  stage keyword density, urgency cues; the upstream Arrhenius decay
+  rate is supplied as input for query expansion rather than evaluated
+  inside the reranker). Earlier revisions of this README labelled the
+  reranker "Arrhenius-based" — the new wording reflects what the code
+  actually computes.
 - **Causal explanation engine** producing BECAUSE/WITHOUT reasoning with inline [KB:]
   citations, counterfactual probability comparisons, and Merkle-rooted provenance chains
-- **8 operating modes** for systematic ablation: static, hybrid RL, no PINN, no SLCA,
-  no context, MCP only, piRAG only, and full AGRI-BRAIN
-- **LSTM demand forecaster** (numpy-only, 16 hidden units, truncated BPTT) with
-  in-sample residual-standard-deviation prediction uncertainty. Holt-Winters
-  demand fallback available via `FORECAST_METHOD` env var.
-- **Holt-Winters yield/supply forecaster** for inventory projection, with matching
-  residual-std uncertainty. Both forecasts feed symmetrically into the state vector
-  phi(s) at indices 6-8 (supply point, supply uncertainty, demand uncertainty).
+- **8 canonical operating modes** plus 7 §4.7 sensitivity ablations
+  (15 total): static, hybrid RL, no PINN, no SLCA, no context, MCP
+  only, piRAG only, full AGRI-BRAIN, plus `agribrain_cold_start` and
+  `agribrain_pert_{10,25,50}` (with-learning) and
+  `agribrain_pert_{10,25,50}_static` (no-learning) for the prior-
+  sensitivity story. The 8-mode count refers to the canonical
+  publication ablation; the 15-mode set drives the §4.7 supplementary
+  analysis.
+- **LSTM demand forecaster** (numpy-only, 16 hidden units, truncated
+  BPTT) with in-sample residual-standard-deviation prediction
+  uncertainty. Holt's linear (double exponential smoothing) demand
+  fallback available via `FORECAST_METHOD` env var.
+- **Holt's linear yield/supply forecaster** (level + trend, no
+  seasonal component) for inventory projection, with matching
+  residual-std uncertainty. Earlier revisions of this README labelled
+  this "Holt-Winters", but the implementation is the level+trend form
+  of Holt 1957; no seasonal indices are computed. Both forecasts feed
+  symmetrically into the state vector phi(s) at indices 6-8 (supply
+  point, supply uncertainty, demand uncertainty).
 - **5-agent coordinator** (Farm, Processor, Cooperative, Distributor, Recovery)
   dispatching decisions at lifecycle-stage boundaries
 - **Context feature integration** via 5D institutional context vector
@@ -72,23 +88,41 @@ REINFORCE learning for sustainable food logistics.
   domain-justified directions while adapting magnitudes to scenario conditions
 - **Operational feasibility diagnostics** with decision latency and constraint violation
   rates reported per scenario/method for process-systems interpretation
-- **Dual-mode stochastic simulation** with 7 field-realistic uncertainty sources:
-  sensor noise (tempC ±1.5°C, RH ±5%), demand variability (CV 18%), inventory/yield
-  uncertainty (CV 15%), transport distance jitter (CV 15%), spoilage model error
-  (k_ref CV 15%, Ea_R CV 10%), scenario onset timing jitter (±4h), and policy weight
-  perturbation (sigma 0.03). Produces meaningful CIs, p-values, and effect sizes
-  across 20 benchmark seeds; set `DETERMINISTIC_MODE=true` for audit mode
-- **Robustness + significance toolkit** including stress tests (sensor noise, missing
-  telemetry, delay, MCP fault injection) and permutation-test significance reporting
+- **Dual-mode stochastic simulation** with 8 field-realistic uncertainty sources:
+  sensor noise (tempC ±2.5°C, RH ±7%), demand variability (CV 25%), inventory/yield
+  uncertainty (CV 22%), transport distance jitter (CV 22%), spoilage model error
+  (k_ref CV 20%, Ea_R CV 14%), scenario onset timing jitter (±6h), policy weight
+  perturbation (sigma 0.15), and per-(mode, seed) policy-temperature
+  heterogeneity (LogNormal sigma 0.25). Produces meaningful CIs,
+  p-values, and effect sizes across 20 benchmark seeds; set
+  `DETERMINISTIC_MODE=true` for audit mode.
+- **Robustness + significance toolkit** including multi-seed stress
+  tests (sensor noise, missing telemetry, delay, MCP fault injection,
+  compounded), pair-aware test selection (Wilcoxon signed-rank for
+  paired comparisons, Mann-Whitney U for unpaired), Holm-Bonferroni
+  primary-family correction, Benjamini-Yekutieli FDR for the secondary
+  family, bootstrap CI on every Cohen's d, and Hedges' g small-sample
+  correction.
 - **Keyword extraction** from piRAG passages (thresholds, regulatory references,
-  required actions) for human-readable decision evidence
-- **Protocol recording** of genuine MCP JSON-RPC interactions during simulation
-- **Circular economy scoring** for composting, animal feed, food bank pathways
-- **PINN-enhanced Arrhenius spoilage model** with Baranyi lag phase
+  required actions) for human-readable decision evidence.
+- **MCP JSON-RPC** dispatch with protocol recording. The simulator
+  runs MCP through a deterministic in-process JSON-RPC transport
+  (`InProcessTransport`) for full per-step reproducibility; the same
+  dispatcher exposes `StdioTransport` and `SSETransport` for
+  external-client integration.
+- **Circular economy scoring** for composting, animal feed, food bank pathways.
+- **Arrhenius-Baranyi spoilage ODE with a physics-informed neural
+  residual correction** trained under an ODE-residual penalty
+  (see `agri-brain-mvp-1.0.0/backend/src/models/pinn_net.py`).
 - **Softmax contextual policy** with 10-dimensional state feature vector
-  (perception + symmetric supply and demand forecast channels + demand-volatility
-  price-pressure proxy) and 5-dimensional institutional context modifier
-- **On-chain governance** via Hardhat/Solidity smart contracts
+  (perception + symmetric supply and demand forecast channels +
+  demand-volatility price-pressure proxy) and 5-dimensional
+  institutional context modifier.
+- **Permissioned-EVM audit trail** via Hardhat/Solidity smart contracts
+  with role-gated agent registration, append-only provenance, persisted
+  episode roots, key-whitelisted policy store, and reentrancy-guarded
+  governance (`AgentRegistry`, `DecisionLogger`, `PolicyStore`,
+  `ProvenanceRegistry`, `SLCARewards`, `AgriDAO`).
 
 ## Frontend
 
@@ -98,7 +132,7 @@ Modern React dashboard built with shadcn/ui, featuring eight pages:
 |------|-------------|
 | **Operations** | KPI bento grid, real-time telemetry charts with temperature zones, spoilage & yield preview |
 | **Quality** | Circular spoilage risk gauge, shelf-life countdown, IoT sensor charts, PINN vs ODE comparison |
-| **Decisions** | Timeline view with role/action filters, decision cards with expandable MCP/piRAG explainability panels (causal BECAUSE/WITHOUT reasoning, 6-axis context feature radar chart, extracted keyword tags, Merkle-rooted provenance chains), analytics sidebar with pie chart, CSV/PDF export |
+| **Decisions** | Timeline view with role/action filters, decision cards with expandable MCP/piRAG explainability panels (causal BECAUSE/WITHOUT reasoning, 5-axis context feature radar chart, extracted keyword tags, Merkle-rooted provenance chains), analytics sidebar with pie chart, CSV/PDF export |
 | **Map** | Leaflet map of South Dakota supply chain nodes with route overlays and live KPI popups |
 | **Analytics** | Executive summary banner, interactive cross-scenario tables & charts, ablation study, radar profiles, scenario deep-dive gallery, carbon footprint analysis |
 | **MCP/piRAG** | MCP protocol overview, context feature visualization, knowledge base browser, protocol traces, causal reasoning panel |
@@ -299,7 +333,7 @@ AGRI-BRAIN/
             units.py            # Unit conversion
             simulator.py        # Forward simulation proxy
             policy_oracle.py    # Governance access check
-            yield_query.py      # Holt-Winters supply/yield forecast
+            yield_query.py      # Holt's linear supply/yield forecast
         pyrag/                  # Hybrid BM25+dense retriever
         guards/                 # Unit, feasibility, and retrieval-quality guards
         provenance/             # Merkle tree + on-chain anchoring

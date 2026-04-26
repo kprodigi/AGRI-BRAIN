@@ -164,14 +164,15 @@ class TraceExporter:
             }
 
         # Chain query summary
-        chain = mcp_results.get("chain_query", [])
+        chain = mcp_results.get("chain_query", {})
+        chain_records = chain.get("records", []) if isinstance(chain, dict) else chain
         chain_summary = None
-        if isinstance(chain, list) and chain:
+        if isinstance(chain_records, list) and chain_records:
             actions_count: Dict[str, int] = {}
-            for d in chain:
+            for d in chain_records:
                 a = d.get("action", "unknown")
                 actions_count[a] = actions_count.get(a, 0) + 1
-            chain_summary = f"{len(chain)} recent decisions: " + ", ".join(
+            chain_summary = f"{len(chain_records)} recent decisions: " + ", ".join(
                 f"{a}={c}" for a, c in sorted(actions_count.items())
             )
 

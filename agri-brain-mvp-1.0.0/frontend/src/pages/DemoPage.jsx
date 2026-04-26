@@ -1,9 +1,8 @@
-import React, { useEffect, useState, useRef, useMemo } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { cn, fmt, short, jget, jpost } from "@/lib/utils";
@@ -13,14 +12,13 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Cell,
-  Tooltip as ReTooltip, CartesianGrid,
+  ResponsiveContainer,
 } from "recharts";
 import {
   Play, Thermometer, Zap, TrendingUp, Network, Wrench, BookOpen,
   Layers, Brain, CheckCircle2, Shield, FileText, GitBranch, Copy,
-  Loader2, ChevronDown, ChevronUp, ArrowDown, AlertTriangle,
-  Truck, Recycle, Warehouse, MessageCircle, Send,
+  Loader2, ChevronDown, ChevronUp, ArrowDown,
+  Truck, Recycle, Warehouse, MessageCircle,
 } from "lucide-react";
 
 const TheaterPage = React.lazy(() => import("./TheaterPage.jsx"));
@@ -122,7 +120,18 @@ function renderPhase(idx, m) {
           <Kv k="Spoilage Risk (ρ)" v={fmt(m.spoilage_risk, 4)} mono />
         </IOCard>
         <IOCard label="Supply State" className="bg-slate-50 dark:bg-slate-900/30">
-          <Kv k="Inventory" v={`${(m.note?.match(/inventory.*?(\d[\d,]*)/i)?.[1] || "14,279")} units`} mono />
+          {/* No fake fallback: render an em-dash when the inventory cannot
+              be parsed from the note, so reviewers cannot confuse a
+              missing value for a real one. */}
+          <Kv
+            k="Inventory"
+            v={
+              m.note?.match(/inventory.*?(\d[\d,]*)/i)?.[1]
+                ? `${m.note.match(/inventory.*?(\d[\d,]*)/i)[1]} units`
+                : "—"
+            }
+            mono
+          />
           <Kv k="Step" v={m.step} mono />
           <Kv k="Mode" v={m.mode} />
           <Kv k="Volatility" v={m.volatility || "normal"} />
@@ -436,7 +445,14 @@ logits += context_modifier    ← from Θ_context × ψ
           <div className="flex flex-wrap gap-2">
             {prov.guards_passed !== false && <Badge className="bg-emerald-500/10 text-emerald-600 border-0 text-[10px]">Guards Passed</Badge>}
             <Badge className="bg-blue-500/10 text-blue-600 border-0 text-[10px]">{hashes.length} evidence items</Badge>
-            {m.tx_hash && m.tx_hash !== "0x0" && <Badge className="bg-indigo-500/10 text-indigo-600 border-0 text-[10px]">On-chain anchored</Badge>}
+            {/* Strict anchored check: only badge when tx_hash is a real
+                0x-prefixed 32-byte string. null = not attempted, "0x0"
+                = legacy sentinel from older runs (treated as not anchored). */}
+            {m.tx_hash && m.tx_hash !== "0x0" && /^0x[0-9a-fA-F]{2,}$/.test(m.tx_hash) && (
+              <Badge className="bg-indigo-500/10 text-indigo-600 border-0 text-[10px]">
+                On-chain anchored
+              </Badge>
+            )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <IOCard label="Merkle Root" className="border-indigo-500/30">
@@ -448,7 +464,17 @@ logits += context_modifier    ← from Θ_context × ψ
               ) : <span className="text-xs text-muted-foreground">—</span>}
             </IOCard>
             <IOCard label="Blockchain Tx" className="border-indigo-500/30">
-              <Kv k="Hash" v={m.tx_hash && m.tx_hash !== "0x0" ? short(m.tx_hash) : "0x0 (local)"} mono />
+              <Kv
+                k="Hash"
+                v={
+                  m.tx_hash && m.tx_hash !== "0x0" && /^0x[0-9a-fA-F]{2,}$/.test(m.tx_hash)
+                    ? short(m.tx_hash)
+                    : (m.tx_hash === null || m.tx_hash === undefined
+                       ? "(no anchor)"
+                       : "0x0 (local sentinel)")
+                }
+                mono
+              />
               <Kv k="Timestamp" v={m.time?.split("T")[1]?.split(".")[0] || "—"} mono />
             </IOCard>
           </div>

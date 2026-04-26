@@ -48,13 +48,11 @@ describe("DecisionLogger", function () {
       920, 800, "redistribution test"
     );
     const receipt = await tx.wait();
-    // Compute expected id
-    const id = ethers.keccak256(
-      ethers.AbiCoder.defaultAbiCoder().encode(
-        ["uint256", "string", "string", "address"],
-        [2000, "processor:agent2", "local_redistribute", owner.address]
-      )
-    );
+    const parsed = logger.interface.parseLog({
+      topics: receipt.logs[0].topics,
+      data: receipt.logs[0].data,
+    });
+    const id = parsed.args.id;
     const memo = await logger.memos(id);
     expect(memo.ts).to.equal(2000n);
     expect(memo.agent).to.equal("processor:agent2");
@@ -74,11 +72,15 @@ describe("DecisionLogger", function () {
     expect(r2.status).to.equal(1);
   });
 
-  it("should reject duplicate decision IDs from identical payload", async function () {
-    await logger.logDecision(1234, "farm:dup", "farm", "cold_chain", 700, 500, "first");
-    await expect(
-      logger.logDecision(1234, "farm:dup", "farm", "cold_chain", 700, 500, "second")
-    ).to.be.revertedWith("duplicate decision id");
+  it("should produce distinct IDs for identical payloads via monotone counter", async function () {
+    const tx1 = await logger.logDecision(1234, "farm:dup", "farm", "cold_chain", 700, 500, "first");
+    const tx2 = await logger.logDecision(1234, "farm:dup", "farm", "cold_chain", 700, 500, "second");
+    const r1 = await tx1.wait();
+    const r2 = await tx2.wait();
+    const id1 = logger.interface.parseLog({ topics: r1.logs[0].topics, data: r1.logs[0].data }).args.id;
+    const id2 = logger.interface.parseLog({ topics: r2.logs[0].topics, data: r2.logs[0].data }).args.id;
+    expect(id1).to.not.equal(id2);
+    expect(await logger.decisionCounter()).to.equal(2n);
   });
 
   it("should anchor a per-episode Merkle root and emit EpisodeLogged", async function () {

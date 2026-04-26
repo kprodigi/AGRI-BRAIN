@@ -4,9 +4,15 @@
 Ingests per-seed JSONs produced by run_single_seed.py (files named
 ``seed_<seed>.json`` under the seeds directory) and computes summary
 statistics, confidence intervals, paired p-values, and effect sizes for
-all eight simulation modes. This script never re-runs run_all() itself;
-the HPC pipeline produces the seed JSONs in parallel via a SLURM job
-array, and this aggregator assembles them afterwards.
+every simulation mode the canonical MODES tuple exposes. This script
+never re-runs run_all() itself; the HPC pipeline produces the seed JSONs
+in parallel via a SLURM job array, and this aggregator assembles them
+afterwards.
+
+The MODES tuple is imported from ``generate_results`` so the aggregator
+automatically picks up any ablation mode added to the simulator (e.g.
+the paper-§4.7 cold-start and perturbation modes) without a second
+hardcoded list drifting out of sync.
 
 In stochastic mode (default), different seeds produce genuinely different
 results, yielding meaningful CIs, p-values, and effect sizes. In
@@ -30,22 +36,23 @@ if str(_SIM_DIR) not in sys.path:
     sys.path.insert(0, str(_SIM_DIR))
 
 from stochastic import DETERMINISTIC_MODE
-from generate_results import SCENARIOS
+from generate_results import SCENARIOS, MODES as _SIM_MODES
 
 
 DEFAULT_RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 DEFAULT_SEEDS_DIR = DEFAULT_RESULTS_DIR / "benchmark_seeds"
 
-MODES = (
-    "agribrain", "mcp_only", "pirag_only", "no_context",
-    "static", "hybrid_rl", "no_pinn", "no_slca",
-)
+# Canonical mode list comes from generate_results so the aggregator
+# automatically covers every mode the simulator exposes. Keeping a
+# second hardcoded tuple here was the bug that dropped cold_start and
+# the three pert_* sensitivity modes from every bootstrap CI.
+MODES = tuple(_SIM_MODES)
 METRICS = ("ari", "waste", "rle", "slca", "carbon", "equity")
 BASELINE_COMPARISONS = ("mcp_only", "pirag_only", "no_context")
 
 
 def _bootstrap_ci(values: List[float], n_boot: int = 10_000, alpha: float = 0.05) -> Tuple[float, float]:
-    """Percentile bootstrap CI with 10,000 resamples, matching paper Section 3.13."""
+    """Percentile bootstrap CI with 10,000 resamples, matching paper Section 3.14."""
     if not values:
         return (0.0, 0.0)
     arr = np.array(values, dtype=float)

@@ -9,7 +9,7 @@ pragma solidity ^0.8.28;
 ///      a decision rationale. Provides an immutable, tamper-evident audit trail
 ///      for explainability outputs.
 contract ProvenanceRegistry {
-    address public owner;
+    address public immutable owner;
 
     struct ProvenanceRecord {
         bytes32 merkleRoot;
@@ -38,19 +38,22 @@ contract ProvenanceRegistry {
     }
 
     /// @notice Anchor a Merkle root hash for a decision explanation.
+    /// @dev Append-only: re-anchoring an existing root reverts so the
+    ///      "immutable audit trail" claim holds. Earlier revisions
+    ///      silently overwrote the timestamp on duplicate roots, which
+    ///      is incompatible with an audit-trail guarantee.
     /// @param merkleRoot The root hash of the evidence Merkle tree.
     /// @param decisionId The decision identifier (e.g., blockchain tx hash).
     function anchor(bytes32 merkleRoot, string calldata decisionId) external onlyOwner {
-        bool isNewRoot = records[merkleRoot].timestamp == 0;
+        // slither-disable-next-line incorrect-equality
+        require(records[merkleRoot].timestamp == 0, "already anchored");
         records[merkleRoot] = ProvenanceRecord({
             merkleRoot: merkleRoot,
             timestamp: block.timestamp,
             decisionId: decisionId,
             submitter: msg.sender
         });
-        if (isNewRoot) {
-            rootHashes.push(merkleRoot);
-        }
+        rootHashes.push(merkleRoot);
         emit ProvenanceAnchored(merkleRoot, decisionId, msg.sender, block.timestamp);
     }
 

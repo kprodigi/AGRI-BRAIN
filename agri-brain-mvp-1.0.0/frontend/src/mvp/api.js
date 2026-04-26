@@ -158,7 +158,12 @@ export const Decide = {
             carbon_kg: data.carbon_kg ?? data.carbon ?? 0,
             circular_economy_score: data.circular_economy_score ?? null,
             reason: data.reason ?? data.note ?? '—',
-            tx_hash: data.tx_hash ?? data.tx ?? '0x0',
+            // null when the chain is not configured / the submission failed.
+            // Earlier revisions used '0x0' as a sentinel which the UI
+            // confused for a successful anchor; the badge now distinguishes
+            // null (no anchor attempted), '0x0' (legacy sentinel) and a
+            // real 0x-prefixed hash.
+            tx_hash: data.tx_hash ?? data.tx ?? null,
             ts: data.ts ?? Math.floor(Date.now() / 1000),
             ...data,
         };

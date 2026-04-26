@@ -382,10 +382,30 @@ def export_latex_benchmark_table() -> None:
         print("  benchmark_summary.json not found — run aggregate_seeds.py (or the full reproduce_core.py pipeline).")
         return
 
-    bench = json.loads(bench_path.read_text(encoding="utf-8"))
-    sig = json.loads(sig_path.read_text(encoding="utf-8")) if sig_path.exists() else {}
+    bench_payload = json.loads(bench_path.read_text(encoding="utf-8"))
+    # Unwrap the aggregator's {"_meta": ..., "summary": {...}} envelope.
+    # The previous code read the top-level dict and silently produced an
+    # empty LaTeX table because every bench.get(scenario) returned {}.
+    bench = (
+        bench_payload["summary"]
+        if isinstance(bench_payload, dict) and isinstance(bench_payload.get("summary"), dict)
+        else bench_payload
+    )
+    sig_payload = json.loads(sig_path.read_text(encoding="utf-8")) if sig_path.exists() else {}
+    sig = (
+        sig_payload.get("significance", sig_payload)
+        if isinstance(sig_payload, dict)
+        else {}
+    )
 
-    methods = ["agribrain", "mcp_only", "pirag_only", "no_context"]
+    # Core H3 comparison + paper §4.7 ablation modes (cold-start and the
+    # three perturbation sensitivities). Cold-start and pert rows are
+    # reported alongside the four core rows so the supplementary paper
+    # evidence table covers the full learner-defense story without
+    # re-running the aggregator.
+    methods = ["agribrain", "mcp_only", "pirag_only", "no_context",
+               "agribrain_cold_start",
+               "agribrain_pert_10", "agribrain_pert_25", "agribrain_pert_50"]
     metrics = ["ari", "waste", "slca", "rle", "carbon", "equity"]
 
     # Print human-readable table

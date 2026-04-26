@@ -251,7 +251,7 @@ def retrieve_role_context(
         # Physics-informed re-ranking (Task 11)
         try:
             from .physics_reranker import physics_rerank
-            passages = [{"text": c.passage, "score": 0.5, "id": c.doc_id, "meta": c.meta} for c in response.citations]
+            passages = [{"text": c.passage, "score": float(getattr(c, "score", 0.0)), "id": c.doc_id, "meta": c.meta} for c in response.citations]
             reranked = physics_rerank(passages, obs.temp, obs.rho, obs.rh)
             # Use reranked order for guidance extraction
             ranked_citations = reranked
@@ -260,7 +260,11 @@ def retrieve_role_context(
                     sum(float(p.get("physics_bonus", 0.0)) for p in reranked) / len(reranked)
                 )
         except ImportError:
-            ranked_citations = [{"text": c.passage, "score": 0.5, "id": c.doc_id, "meta": c.meta} for c in response.citations]
+            ranked_citations = [{"text": c.passage,
+                                 "score": float(getattr(c, "score", 0.0)),
+                                 "id": c.doc_id,
+                                 "meta": c.meta}
+                                for c in response.citations]
 
         context["evidence_hashes"] = response.evidence_hashes
 

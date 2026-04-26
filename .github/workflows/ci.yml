@@ -58,8 +58,29 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Install, test and build
-        run: |
-          npm install
-          npm test
-          npm run build
+      - name: Install
+        run: npm install
+      - name: Lint
+        run: npm run lint
+      - name: Test
+        run: npm test
+      - name: Build
+        run: npm run build
+
+  contract-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install hardhat deps
+        working-directory: agri-brain-mvp-1.0.0/contracts/hardhat
+        run: npm install
+      - name: Run Slither static analysis
+        uses: crytic/slither-action@v0.4.0
+        with:
+          target: agri-brain-mvp-1.0.0/contracts/hardhat
+          slither-args: --exclude-informational --exclude-low
+          fail-on: medium
+          slither-version: 0.11.4

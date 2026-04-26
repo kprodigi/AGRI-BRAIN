@@ -165,20 +165,37 @@ def compute_rle(rho_values: List[float], actions: List[str],
 # ---------------------------------------------------------------------------
 
 def compute_equity(slca_values: List[float] | np.ndarray) -> float:
-    """Compute uniformity-based equity from per-step SLCA scores.
+    """Quality-weighted temporal consistency of social performance.
 
-    equity = 1 − σ(SLCA_values)
+    Equity = mean(SLCA) * (1 - std(SLCA))
 
-    This is a standard-deviation-based uniformity measure (not a Gini
-    coefficient). Higher values indicate more consistent social performance
-    across time steps.
+    The original form ``1 - std(SLCA)`` was a pure uniformity measure and
+    therefore gave a high score to any policy that produced constant SLCA,
+    including a degenerate static policy whose SLCA is uniformly low. The
+    revised definition multiplies uniformity by mean SLCA so that a high
+    equity value requires *both* that per-step SLCA be temporally stable
+    *and* that the stable level be high. A static cold-chain policy with
+    mean SLCA ~0.5 therefore cannot score higher than an integrated
+    policy with mean SLCA ~0.85 regardless of how flat its trajectory
+    is. This mirrors the standard cooperative-economics practice of
+    pairing a consistency term with a quality term rather than reporting
+    them independently (Atkinson 1970; UNEP/SETAC SLCA guidelines 2020).
 
     Parameters
     ----------
-    slca_values : per-step attenuated SLCA composite scores.
+    slca_values : per-step attenuated SLCA composite scores, in [0, 1].
 
     Returns
     -------
-    Equity value in [0, 1].  Higher = more uniform social performance.
+    Equity value in [0, 1]. Higher = more uniform AND higher mean SLCA.
     """
-    return 1.0 - float(np.std(slca_values))
+    arr = np.asarray(slca_values, dtype=float)
+    if arr.size == 0:
+        return 0.0
+    mean_s = float(np.mean(arr))
+    std_s = float(np.std(arr))
+    # SLCA is bounded in [0, 1] so std cannot exceed 0.5 in practice;
+    # clip defensively so equity stays in [0, 1] for downstream consumers
+    # that assume a unit-interval metric.
+    uniformity = max(0.0, min(1.0, 1.0 - std_s))
+    return max(0.0, min(1.0, mean_s * uniformity))

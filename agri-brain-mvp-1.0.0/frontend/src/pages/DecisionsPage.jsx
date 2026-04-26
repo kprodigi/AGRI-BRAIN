@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import { cn, fmt, short, authFetch, authDownload } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,8 +13,8 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as ReTooltip,
 } from "recharts";
 import {
-  Leaf, Copy, Download, FileText, Clock, User, Shield, CheckCircle2,
-  Filter, Search, Truck, Recycle, Warehouse, ArrowRight, Sparkles,
+  Leaf, Copy, Download, FileText, Clock, User, CheckCircle2,
+  Filter, Search, Sparkles,
 } from "lucide-react";
 import ExplainabilityPanel from "@/components/explainability/ExplainabilityPanel";
 

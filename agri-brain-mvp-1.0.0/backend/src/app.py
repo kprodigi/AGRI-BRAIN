@@ -728,8 +728,14 @@ def decide(d: DecideIn):
         ),
     }
 
-    # best-effort on-chain log (never break the decision flow)
-    tx = "0x0"
+    # Best-effort on-chain log. tx_hash semantics:
+    #   None  : chain not configured / submission failed (default)
+    #   "0x0" : legacy sentinel from older deployments (treated as
+    #           "not anchored" by the frontend's verification logic)
+    #   "0x..": real on-chain transaction hash
+    # The frontend distinguishes all three so reviewers cannot mistake a
+    # missing anchor for a successful one.
+    tx = None
     try:
         txh = log_decision_onchain(memo, state.get("chain", {}))
         if txh:

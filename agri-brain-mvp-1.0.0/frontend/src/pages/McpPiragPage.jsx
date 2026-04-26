@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn, fmt, short, jget, mcpCall, mcpRaw, mcpLog, authFetch } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
-import { motion, useInView, AnimatePresence } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import { toast } from "sonner";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer,
@@ -22,7 +22,7 @@ import {
 import {
   Brain, Wrench, BookOpen, Search, Zap, Shield, Hash, GitBranch,
   Copy, Play, Loader2, ScrollText, ArrowRight, Layers, Network,
-  CheckCircle2, AlertTriangle, RefreshCw, Database, FileText,
+  CheckCircle2, AlertTriangle, Database,
 } from "lucide-react";
 
 const API = getApiBase();
@@ -453,12 +453,6 @@ function KnowledgeBaseTab() {
     { label: "Reranking", value: "Physics-Informed" },
     { label: "Documents", value: "20" },
   ];
-
-  const grouped = useMemo(() => {
-    const g = {};
-    KB_DOCUMENTS.forEach((d) => { (g[d.category] = g[d.category] || []).push(d); });
-    return g;
-  }, []);
 
   return (
     <div className="space-y-6">

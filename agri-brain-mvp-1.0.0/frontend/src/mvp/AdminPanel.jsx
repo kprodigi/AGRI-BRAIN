@@ -1,5 +1,5 @@
 // frontend/src/mvp/AdminPanel.jsx
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { getApiBase } from "./api.js";
 import { getApiKey } from "@/lib/utils";
 
@@ -226,11 +226,11 @@ function ChainTab({ active }) {
         return () => window.removeEventListener("chain:head", onHead);
     }, []);
 
-    // parse addresses JSON safely
-    const parsedAddresses = (() => {
+    // parse addresses JSON safely (stable across renders unless JSON text changes)
+    const parsedAddresses = useMemo(() => {
         try { return form.addresses_json ? JSON.parse(form.addresses_json) : {}; }
         catch { return {}; }
-    })();
+    }, [form.addresses_json]);
 
     // save config
     const set = (k) => (e) => setForm((s) => ({ ...s, [k]: e.target.value }));
@@ -306,7 +306,7 @@ function ChainTab({ active }) {
         refresh();
         const t = setInterval(refresh, 4000);
         return () => { stop = true; clearInterval(t); };
-    }, [active, autoSync, form.rpc, form.addresses_json]); // re-run when these change
+    }, [active, autoSync, form.rpc, parsedAddresses]);
 
     return (
         <div className="rounded-xl border p-5">
@@ -366,7 +366,7 @@ function AuditTab() {
     const [items, setItems] = useState([]);
     const [msg, setMsg] = useState("");
 
-    const load = async () => {
+    const load = useCallback(async () => {
         setMsg("");
         try {
             const r = await jget("/audit/logs");
@@ -375,8 +375,8 @@ function AuditTab() {
             setMsg("❌ Could not load logs.");
             console.warn(e);
         }
-    };
-    useEffect(() => { load(); }, []);
+    }, []);
+    useEffect(() => { void load(); }, [load]);
 
     return (
         <div className="rounded-xl border p-5">
@@ -402,6 +402,26 @@ function AuditTab() {
     );
 }
 
+const SCENARIO_LIST_FALLBACK = [
+    { id: "heatwave", name: "Climate-Induced Heatwave", desc: "72h heatwave; accelerated spoilage; reconfigure routes." },
+    { id: "overproduction", name: "Overproduction / Glut", desc: "Glut / overproduction; trigger redistribution and recovery." },
+    { id: "cyber_outage", name: "Cyber Threat & Node Outage", desc: "Processor offline; unauthorized tx blocked; reroute flows." },
+    { id: "adaptive_pricing", name: "Adaptive Pricing & Cooperative Auctions", desc: "Learned pricing; equity-aware redistribution when saturated." },
+];
+
+function normalizeScenariosList(raw) {
+    if (raw && Array.isArray(raw.scenarios)) {
+        return {
+            options: raw.scenarios.map(s => ({ id: s.id, name: s.label || s.name || s.id, desc: s.desc || "" })),
+            selected: raw.active?.name || null,
+        };
+    }
+    if (raw && Array.isArray(raw.options)) {
+        return { options: raw.options.map(s => ({ id: s.id, name: s.name || s.id, desc: s.desc || "" })), selected: raw.selected || null };
+    }
+    return { options: [], selected: null };
+}
+
 /* ---------------------- Scenarios (as you have it, with list + fallback) ---------------------- */
 function ScenariosTab() {
     const [loading, setLoading] = useState(true);
@@ -410,39 +430,19 @@ function ScenariosTab() {
     const [intensity, setIntensity] = useState(1.0);     // 0.5 .. 1.5
     const [msg, setMsg] = useState("");
 
-    const FALLBACK = [
-        { id: "heatwave", name: "Climate-Induced Heatwave", desc: "72h heatwave; accelerated spoilage; reconfigure routes." },
-        { id: "overproduction", name: "Overproduction / Glut", desc: "Glut / overproduction; trigger redistribution and recovery." },
-        { id: "cyber_outage", name: "Cyber Threat & Node Outage", desc: "Processor offline; unauthorized tx blocked; reroute flows." },
-        { id: "adaptive_pricing", name: "Adaptive Pricing & Cooperative Auctions", desc: "Learned pricing; equity-aware redistribution when saturated." },
-    ];
-
-    const normalize = (raw) => {
-        if (raw && Array.isArray(raw.scenarios)) {
-            return {
-                options: raw.scenarios.map(s => ({ id: s.id, name: s.label || s.name || s.id, desc: s.desc || "" })),
-                selected: raw.active?.name || null,
-            };
-        }
-        if (raw && Array.isArray(raw.options)) {
-            return { options: raw.options.map(s => ({ id: s.id, name: s.name || s.id, desc: s.desc || "" })), selected: raw.selected || null };
-        }
-        return { options: [], selected: null };
-    };
-
-    const loadList = async () => {
+    const loadList = useCallback(async () => {
         setMsg(""); setLoading(true);
         try {
             const raw = await jget("/scenarios/list");
-            const n = normalize(raw);
+            const n = normalizeScenariosList(raw);
             if (n.options.length) { setOptions(n.options); setSelected(n.selected); }
-            else { setOptions(FALLBACK); setSelected(null); }
+            else { setOptions(SCENARIO_LIST_FALLBACK); setSelected(null); }
         } catch {
-            setOptions(FALLBACK); setSelected(null);
+            setOptions(SCENARIO_LIST_FALLBACK); setSelected(null);
         } finally { setLoading(false); }
-    };
+    }, []);
 
-    useEffect(() => { loadList(); }, []);
+    useEffect(() => { void loadList(); }, [loadList]);
 
     const runScenario = async (id) => {
         setMsg("");

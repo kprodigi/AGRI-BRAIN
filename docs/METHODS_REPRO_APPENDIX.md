@@ -46,19 +46,39 @@ REPRO_RUN_CONTEXT_BENCHMARK=true python mvp/simulation/reproduce_core.py
 
 - Unit of inference: paired per-seed comparisons between `agribrain` and each baseline.
 - Resampling budget matches `docs/STATISTICAL_METHODS.md`:
-  - Paired permutation test: 10,000 permutations
-  - Bootstrap CI: 10,000 resamples
+  - Wilcoxon signed-rank p-value (paired comparisons; SciPy fallback to
+    sign-flip permutation if SciPy is unavailable, recorded in
+    `p_value_legacy_signflip` for reference).
+  - Mann-Whitney U p-value (unpaired comparisons against `static`,
+    `hybrid_rl`, `no_pinn`, `no_slca` whose mode_seeds are independent
+    of the agribrain ablation_seed).
+  - Percentile bootstrap with 10,000 resamples for mean / mean-diff CI.
+    Per-cell RNG seed `hash((scope, scenario, mode, metric))` so
+    adjacent cells have independent Monte Carlo error.
 - Reported statistics per metric:
-  - paired mean difference
-  - 95 % bias-corrected accelerated bootstrap CI for paired mean difference
-  - paired permutation p-value
+  - paired or unpaired mean difference (matches the design of the
+    comparison; `is_paired_design` flag in each record names the choice)
+  - 95 % percentile bootstrap CI for the mean difference
+  - 95 % percentile bootstrap CI for the effect size itself
+    (`effect_size_ci_low/high`)
+  - p-value from the test appropriate to the design (Wilcoxon for
+    paired, Mann-Whitney for unpaired); `test_type` field documents
+    which test was used per comparison
   - two multiplicity-adjusted p-values:
-    - `p_value_adj_holm`, Holm-Bonferroni across the five scenario-level primary H1
-      tests (`agribrain` vs `no_context` on ARI); canonical `p_value_adj` on those
-      primary records.
-    - `p_value_adj_bh`, Benjamini-Hochberg FDR within each scenario across all
-      `(baseline, metric)` pairs; canonical `p_value_adj` on non-primary records.
-  - paired effect size (`cohens_dz`, with `cohens_d` alias for compatibility)
+    - `p_value_adj_holm`, Holm-Bonferroni across the five scenario-level
+      primary H1 tests (`agribrain` vs `no_context` on ARI); canonical
+      `p_value_adj` on those primary records.
+    - `p_value_adj_by`, Benjamini-Yekutieli FDR (valid under arbitrary
+      dependence) within each scenario across all `(baseline, metric)`
+      pairs; canonical `p_value_adj` on non-primary records.
+    - `p_value_adj_bh`, Benjamini-Hochberg FDR (PRDS-assuming) reported
+      alongside BY for transparency, since within-scenario metric
+      correlations can have mixed signs.
+  - effect size suite: `cohens_dz` (paired only, NaN for unpaired
+    comparisons by design), `cohens_d_pooled` (unpaired Cohen's d),
+    `hedges_g` (small-sample-corrected, bias factor 1 - 3/(4*df-1)),
+    plus the `cohens_d` legacy alias which equals `cohens_dz` for
+    paired comparisons and `cohens_d_pooled` for unpaired ones.
   - `correction_method` naming the canonical adjustment used per record.
 - Deterministic mode use: reproducibility checks and exact pipeline gating.
 - Stochastic mode use: uncertainty estimation and inferential statistics.

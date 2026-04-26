@@ -2,12 +2,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn, n, fmt, last, jget, authFetch } from "@/lib/utils";
+import { cn, fmt, last, authFetch } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
 import { motion } from "framer-motion";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer,
-  CartesianGrid, Legend, AreaChart, Area, ReferenceArea, ReferenceLine,
+  CartesianGrid, Legend, AreaChart, Area, ReferenceArea,
 } from "recharts";
 import { Thermometer, Droplets, AlertTriangle, Clock, Shield } from "lucide-react";
 

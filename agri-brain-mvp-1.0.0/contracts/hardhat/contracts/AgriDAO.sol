@@ -21,7 +21,24 @@ interface IPolicyStore {
 ///         with voting periods and timelock execution. Only registered active
 ///         agents (verified via AgentRegistry) can propose or vote. Execution
 ///         triggers PolicyStore updates that propagate to the decision engine.
-contract AgriDAO {
+/// @dev Minimal reentrancy guard pulled inline so the contracts dir
+/// stays self-contained without an OpenZeppelin import. Equivalent to
+/// OZ's ReentrancyGuard but with no external dependency.
+abstract contract _LocalReentrancyGuard {
+    uint256 private constant _NOT_ENTERED = 1;
+    uint256 private constant _ENTERED = 2;
+    uint256 private _status = _NOT_ENTERED;
+    error ReentrantCall();
+
+    modifier nonReentrant() {
+        if (_status == _ENTERED) revert ReentrantCall();
+        _status = _ENTERED;
+        _;
+        _status = _NOT_ENTERED;
+    }
+}
+
+contract AgriDAO is _LocalReentrancyGuard {
 
     // -----------------------------------------------------------------
     // Enums
@@ -60,9 +77,9 @@ contract AgriDAO {
     // State variables
     // -----------------------------------------------------------------
 
-    address public owner;
-    address public policyStore;
-    address public agentRegistry;
+    address public immutable owner;
+    address public immutable policyStore;
+    address public immutable agentRegistry;
 
     uint256 public QUORUM_THRESHOLD = 3;
     uint256 public VOTING_PERIOD = 86400;    // 24 hours
@@ -92,6 +109,7 @@ contract AgriDAO {
     }
 
     modifier onlyRegisteredAgent() {
+        // slither-disable-next-line unused-return
         (, , , bool active) = IAgentRegistry(agentRegistry).agents(msg.sender);
         require(active, "not a registered active agent");
         _;
@@ -154,6 +172,7 @@ contract AgriDAO {
     function vote(uint256 id, bool support) external onlyRegisteredAgent {
         Proposal storage p = proposals[id];
         require(p.state == ProposalState.Active, "not active");
+        // slither-disable-next-line timestamp
         require(block.timestamp <= p.createdAt + VOTING_PERIOD, "voting ended");
         require(!hasVoted[id][msg.sender], "already voted");
 
@@ -171,6 +190,7 @@ contract AgriDAO {
     function finalize(uint256 id) external {
         Proposal storage p = proposals[id];
         require(p.state == ProposalState.Active, "not active");
+        // slither-disable-next-line timestamp
         require(block.timestamp > p.createdAt + VOTING_PERIOD, "voting not ended");
 
         if (p.totalVoters >= QUORUM_THRESHOLD && p.yesVotes > p.noVotes) {
@@ -189,11 +209,16 @@ contract AgriDAO {
         emit Queued(id);
     }
 
-    function execute(uint256 id) external {
+    // slither-disable-next-line reentrancy-no-eth,reentrancy-events
+    function execute(uint256 id) external nonReentrant {
         Proposal storage p = proposals[id];
         require(p.state == ProposalState.Queued, "not queued");
+        // slither-disable-next-line timestamp
         require(block.timestamp >= p.queuedAt + EXECUTION_DELAY, "timelock active");
 
+        // Checks-Effects-Interactions: write state BEFORE the external
+        // call so a reentrant PolicyStore cannot see a half-finalised
+        // proposal. nonReentrant adds a second line of defence.
         p.state = ProposalState.Executed;
         p.executed = true;
         IPolicyStore(policyStore).setPolicy(p.policyKey, p.policyValue);

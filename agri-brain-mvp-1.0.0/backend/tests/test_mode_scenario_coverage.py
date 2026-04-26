@@ -47,8 +47,19 @@ def short_df(sim_runtime):
 
 
 SCENARIOS = ("heatwave", "overproduction", "cyber_outage", "adaptive_pricing", "baseline")
+# Eight canonical modes + seven paper-§4.7 ablation modes. cold_start and
+# the six pert_* / pert_*_static modes are paper-defense ablations (zero-init
+# learning and prior-perturbation sensitivity with and without REINFORCE,
+# respectively) but they run through the same coordinator and policy code
+# paths as agribrain, so they must satisfy the same VALID_MODES /
+# CYBER_REROUTE_PROB / context-enabled invariants the other agribrain-family
+# modes satisfy.
 MODES = ("agribrain", "mcp_only", "pirag_only", "no_context",
-         "static", "hybrid_rl", "no_pinn", "no_slca")
+         "static", "hybrid_rl", "no_pinn", "no_slca",
+         "agribrain_cold_start",
+         "agribrain_pert_10", "agribrain_pert_25", "agribrain_pert_50",
+         "agribrain_pert_10_static", "agribrain_pert_25_static",
+         "agribrain_pert_50_static")
 
 
 # ---------------------------------------------------------------------------
@@ -105,11 +116,17 @@ def test_core_context_modes_wired_together(sim_runtime):
     for name, values in must_contain_agribrain.items():
         assert "agribrain" in values, f"{name} missing agribrain"
     # mcp_only / pirag_only / no_context share agribrain logits but
-    # their membership in the context-enabled set is stricter.
+    # their membership in the context-enabled set is stricter. The paper-
+    # §4.7 ablation modes (cold_start, pert_*) also join the context-
+    # enabled set because they exercise the same MCP + piRAG + learner
+    # pipeline, differing only in THETA_CONTEXT initialization.
     assert gr._AGRIBRAIN_LOGIT_MODES >= {
         "agribrain", "no_context", "mcp_only", "pirag_only",
     }
-    assert gr._CONTEXT_ENABLED_MODES == {"agribrain", "mcp_only", "pirag_only"}
+    assert gr._CONTEXT_ENABLED_MODES >= {"agribrain", "mcp_only", "pirag_only"}
+    # no_context is NOT in the context-enabled set (by design — it is the
+    # Theta=0 frozen counterfactual for §4.7).
+    assert "no_context" not in gr._CONTEXT_ENABLED_MODES
 
 
 # ---------------------------------------------------------------------------

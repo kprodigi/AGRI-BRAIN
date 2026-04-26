@@ -14,7 +14,7 @@ describe("AgriDAO", function () {
 
   async function registerAgent(signer, role) {
     const id = ethers.id(`agent:${role}:${signer.address}`);
-    await registry.connect(signer).register(id, role, "meta");
+    await registry.connect(owner).ownerRegister(signer.address, id, role, "meta");
     return id;
   }
 

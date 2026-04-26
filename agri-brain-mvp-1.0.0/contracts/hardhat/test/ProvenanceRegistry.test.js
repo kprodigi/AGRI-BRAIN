@@ -46,13 +46,15 @@ describe("ProvenanceRegistry", function () {
     ).to.be.revertedWith("not owner");
   });
 
-  it("overwrites record on duplicate root without duplicate history entry", async function () {
+  it("reverts on duplicate root to preserve append-only audit trail", async function () {
     const root = ethers.id("proof:dup");
     await registry.connect(owner).anchor(root, "decision-a");
-    await registry.connect(owner).anchor(root, "decision-b");
+    await expect(
+      registry.connect(owner).anchor(root, "decision-b")
+    ).to.be.revertedWith("already anchored");
 
     const rec = await registry.records(root);
-    expect(rec.decisionId).to.equal("decision-b");
+    expect(rec.decisionId).to.equal("decision-a");
     expect(await registry.totalRecords()).to.equal(1);
   });
 

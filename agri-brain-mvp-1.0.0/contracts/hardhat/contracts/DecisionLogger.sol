@@ -6,7 +6,7 @@ pragma solidity ^0.8.28;
 ///         carbon footprint (GHG Protocol activity-based emissions, WRI/WBCSD, 2004)
 ///         for each routing decision, enabling provenance verification.
 contract DecisionLogger {
-    address public owner;
+    address public immutable owner;
     mapping(address => bool) public authorized;
 
     constructor() { owner = msg.sender; authorized[msg.sender] = true; }
@@ -58,6 +58,30 @@ contract DecisionLogger {
 
     mapping(bytes32 => Memo) public memos;
 
+    /// Episode-anchor storage so a verifier can look up an episode root
+    /// without relying on archive-node event scans. The previous
+    /// implementation only emitted EpisodeLogged events, which a
+    /// reviewer correctly noted means light clients cannot prove the
+    /// root was anchored after a chain reorg or after archive pruning.
+    struct EpisodeAnchor {
+        uint256 ts;
+        string mode;
+        string scenario;
+        uint256 seed;
+        uint256 n_records;
+    }
+    mapping(bytes32 => EpisodeAnchor) public episodeRoots;
+    bytes32[] public episodeRootList;
+
+    function episodeRootCount() external view returns (uint256) {
+        return episodeRootList.length;
+    }
+
+    /// @dev Counter for collision-free decision IDs (the previous
+    /// keccak(ts,agent,action,sender) collided when the simulator's
+    /// timestep coarsened, silently dropping audit records).
+    uint256 public decisionCounter;
+
     function logDecision(
         uint256 ts,
         string calldata agent,
@@ -67,33 +91,23 @@ contract DecisionLogger {
         uint256 carbon_milli,
         string calldata note
     ) external onlyAuthorized returns (bytes32 id) {
-        id = keccak256(abi.encode(ts, agent, action, msg.sender));
+        // Collision-free monotone ID derived from a counter so two
+        // decisions with the same (ts, agent, action, sender) tuple but
+        // different role/note do not silently revert.
+        decisionCounter += 1;
+        id = keccak256(abi.encode(decisionCounter, msg.sender,
+                                   ts, agent, role, action));
+        // slither-disable-next-line incorrect-equality
         require(memos[id].ts == 0, "duplicate decision id");
-        memos[id] = Memo(
-            ts,
-            agent,
-            role,
-            action,
-            slca_milli,
-            carbon_milli,
-            note
-        );
-        emit DecisionLogged(
-            id,
-            ts,
-            agent,
-            role,
-            action,
-            slca_milli,
-            carbon_milli,
-            note
-        );
+        memos[id] = Memo(ts, agent, role, action, slca_milli, carbon_milli, note);
+        emit DecisionLogged(id, ts, agent, role, action,
+                            slca_milli, carbon_milli, note);
     }
 
     /// @notice Anchor a Merkle root over all decisions in one episode.
-    /// @dev Emits ``EpisodeLogged``. Off-chain consumers can pair the root
-    ///      with the JSONL ledger artifact written by ``DecisionLedger``
-    ///      and verify any leaf via inclusion proof.
+    /// @dev Persists the root in storage AND emits ``EpisodeLogged`` so
+    ///      light clients can verify anchoring without archive-node
+    ///      access.
     function logEpisode(
         bytes32 root,
         uint256 ts,
@@ -103,6 +117,16 @@ contract DecisionLogger {
         uint256 n_records,
         string calldata note
     ) external onlyAuthorized {
+        // slither-disable-next-line incorrect-equality
+        require(episodeRoots[root].ts == 0, "duplicate episode root");
+        episodeRoots[root] = EpisodeAnchor({
+            ts: ts,
+            mode: mode,
+            scenario: scenario,
+            seed: seed,
+            n_records: n_records
+        });
+        episodeRootList.push(root);
         emit EpisodeLogged(root, ts, mode, scenario, seed, n_records, note);
     }
 }

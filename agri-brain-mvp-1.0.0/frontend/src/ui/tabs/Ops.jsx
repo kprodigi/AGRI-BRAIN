@@ -66,7 +66,7 @@ export default function Ops() {
                 setTel(t || {});
                 setPred(p || {});
                 setLoading(false);
-            } catch (e) {
+            } catch {
                 if (ok) {
                     setErr("Could not load data from API.");
                     setLoading(false);

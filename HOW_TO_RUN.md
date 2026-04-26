@@ -447,7 +447,7 @@ Results are saved to `mvp/simulation/results/`:
 | `fig6_cross.png/pdf`     | Cross-scenario performance comparison (2x2 grouped bars)    |
 | `fig7_ablation.png/pdf`  | Ablation study (1x3 grouped bars, 8 modes)                  |
 | `fig8_green_ai.png/pdf`  | Green AI and carbon footprint (1x2 panel)                   |
-| `fig9_mcp_pirag_robustness.png/pdf` | MCP/piRAG robustness and benchmark CIs         |
+| `fig9_robustness.png/pdf` | Consolidated robustness (faults + context honour + protocol) |
 | `fig10_latency_quality_frontier.png/pdf` | Quality-latency operational frontier       |
 
 Each figure is also saved as PDF for LaTeX inclusion.
@@ -553,6 +553,22 @@ curl -X POST http://127.0.0.1:8100/governance/chain \
   -H "Content-Type: application/json" \
   -d '{"rpc":"http://127.0.0.1:8545","chain_id":31337}'
 ```
+
+### Slither (optional, match CI locally)
+
+The GitHub Actions **contract-analysis** job runs [Slither](https://github.com/crytic/slither) on `agri-brain-mvp-1.0.0/contracts/hardhat` with `--exclude-informational --exclude-low` and `fail-on: medium` (version **0.11.5** in CI). To reproduce outside CI, install Slither in a Python environment (or use a container image that includes it), then from the Hardhat directory:
+
+```bash
+cd agri-brain-mvp-1.0.0/contracts/hardhat
+npm install
+slither . --exclude-informational --exclude-low
+```
+
+If this reports nothing at medium+ severity, you align with the filtered CI gate. Informational and low findings are excluded on purpose; see `.github/workflows/ci.yml` for the exact flags.
+
+### `chain_query` tool and the MCP Reliability figure
+
+Figure 9(b) of the paper reports envelope vs tool error counts across a full benchmark run. One non-trivial source of tool errors is `chain_query`: this tool reads the live FastAPI app state (the running REST service's in-memory `state["log"]` list) to return the most recent on-chain routing decisions. Under the simulator-benchmark path (`mvp/simulation/generate_results.py`), the FastAPI app module is importable but *not running*, so `state["log"]` is never populated. The tool correctly surfaces this as a structured `_status: "error"` payload with `_error_kind: "state_unavailable"`, which the protocol-recorder counts as a tool-level error in fig9(b). This is by design: `chain_query` is intended for the live REST deployment path, where the FastAPI app populates the audit trail as decisions happen. In the benchmark it is correctly reporting that the live trail is not reachable from the simulator subprocess. The paper's fig9(b) caption should note this explicitly.
 
 ---
 

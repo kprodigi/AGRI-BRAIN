@@ -1,17 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { authDownload, getApiKey } from "@/lib/utils";
 
 export default function Decisions({ API }) {
   const [decisions, setDecisions] = useState([]);
   const [role, setRole] = useState("farm");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const key = getApiKey();
     const headers = key ? { "x-api-key": key } : {};
     const res = await fetch(`${API}/decisions`, { headers });
     const data = await res.json();
     setDecisions(data.decisions || []);
-  };
+  }, [API]);
 
   const act = async () => {
     const key = getApiKey();
@@ -26,10 +26,10 @@ export default function Decisions({ API }) {
   };
 
   useEffect(() => {
-    load();
-    const id = setInterval(load, 4000);
+    void load();
+    const id = setInterval(() => { void load(); }, 4000);
     return () => clearInterval(id);
-  }, [API]);
+  }, [load]);
 
   const filtered = decisions.filter((m) => m.role === role);
 

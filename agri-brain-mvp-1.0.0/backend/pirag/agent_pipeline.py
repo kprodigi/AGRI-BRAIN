@@ -21,6 +21,14 @@ class Citation:
     passage: str
     sha256: str
     meta: Dict[str, Any]
+    # Implementation note: 2025-04 retrieval-score propagation fix.
+    # Earlier versions discarded the BM25/dense hybrid score returned by
+    # HybridRetriever.search and downstream code substituted a hardcoded
+    # 0.5. That made `top_citation_score` constant and rendered psi_2
+    # (retrieval confidence) and psi_3 (regulatory pressure gating)
+    # uninformative. The score field below carries the real W_sparse *
+    # BM25 + W_dense * cosine score from the hybrid retriever.
+    score: float = 0.0
 
 @dataclass
 class PiRAGResponse:
@@ -80,7 +88,13 @@ class PiRAGPipeline:
         citations: List[Citation] = []
         for h in hits:
             sha = sha256_hex(h["text"])
-            citations.append(Citation(doc_id=h["id"], passage=h["text"], sha256=sha, meta=h["metadata"]))
+            citations.append(Citation(
+                doc_id=h["id"],
+                passage=h["text"],
+                sha256=sha,
+                meta=h["metadata"],
+                score=float(h.get("score", 0.0)),
+            ))
 
         if hits:
             answer = self._answer_inference(question, hits)

@@ -43,11 +43,11 @@ describe("PolicyStore", function () {
 
   it("emits previous value when overwriting a policy key", async function () {
     const key = ethers.id("Ea_R");
-    await store.connect(owner).setPolicy(key, 8000);
+    await store.connect(owner).setPolicy(key, 800000);
 
-    await expect(store.connect(owner).setPolicy(key, 8100))
+    await expect(store.connect(owner).setPolicy(key, 810000))
       .to.emit(store, "PolicyChanged")
-      .withArgs(key, 8000, 8100);
-    expect(await store.getPolicy(key)).to.equal(8100);
+      .withArgs(key, 800000, 810000);
+    expect(await store.getPolicy(key)).to.equal(810000);
   });
 });

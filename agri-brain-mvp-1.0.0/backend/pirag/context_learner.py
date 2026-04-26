@@ -54,22 +54,52 @@ class ContextMatrixLearner:
     baseline_decay : exponential moving average decay for reward baseline.
     grad_clip : per-element gradient clipping bound.
     sign_constrained : if True, entries cannot flip sign from initial.
+        With ``initial_theta`` set to zeros (cold-start ablation) this is
+        ignored because there is no domain-justified sign to preserve.
+    magnitude_cap_mode : one of
+        - ``"abs_initial"`` (legacy): ``|theta| <= |initial_theta|``.
+          Entries can only shrink; zero-init entries are locked at zero.
+        - ``"relative_delta"``: ``|theta - initial_theta| <= cap_value *
+          |initial_theta|`` with an absolute floor for zero-init entries
+          (``magnitude_cap_abs_floor``). This is the default for the
+          paper's "sign-constrained refinement" claim; cap_value=0.5 means
+          ±50% around the initial magnitude.
+        - ``"absolute"``: ``|theta| <= cap_value``. Used for cold-start
+          where there is no meaningful relative cap from a zero initial.
+    magnitude_cap_value : see ``magnitude_cap_mode``. Interpreted as
+        fraction-of-initial for ``relative_delta`` and as an absolute
+        bound for ``absolute``. Ignored for ``abs_initial``.
+    magnitude_cap_abs_floor : absolute floor applied to the per-entry
+        delta cap under ``relative_delta``, so zero-initial entries are
+        still allowed to move. 0.10 lets a zero-init entry grow toward
+        small but non-trivial refinements while staying bounded.
     """
 
     def __init__(
         self,
         initial_theta: np.ndarray,
-        learning_rate: float = 0.003,
+        learning_rate: float = 0.02,
         baseline_decay: float = 0.95,
         grad_clip: float = 0.5,
         sign_constrained: bool = True,
+        magnitude_cap_mode: str = "relative_delta",
+        magnitude_cap_value: float = 0.5,
+        magnitude_cap_abs_floor: float = 0.10,
+        freeze: bool = False,
     ) -> None:
         self.theta = initial_theta.copy()
         self.initial_theta = initial_theta.copy()
-        self.lr = learning_rate
+        self.lr = float(learning_rate)
         self.baseline_decay = baseline_decay
         self.grad_clip = grad_clip
         self.sign_constrained = sign_constrained
+        self.magnitude_cap_mode = magnitude_cap_mode
+        self.magnitude_cap_value = float(magnitude_cap_value)
+        self.magnitude_cap_abs_floor = float(magnitude_cap_abs_floor)
+        # When freeze is True, update() is a no-op; the perturbed
+        # initial_theta is held fixed across all training calls. Used
+        # by the pert_*_static sensitivity ablation.
+        self.freeze = bool(freeze)
 
         # Sign mask: +1 for positive, -1 for negative, 0 for zero
         self.sign_mask = np.sign(initial_theta)
@@ -120,6 +150,11 @@ class ContextMatrixLearner:
         reward : observed reward.
         slca_score : SLCA composite (for amplification learning).
         """
+        # Frozen learner: no-op update so the static sensitivity modes
+        # (agribrain_pert_10/25/50_static) hold their perturbed initial
+        # theta fixed across the entire run.
+        if self.freeze or self.lr == 0.0:
+            return
         self.n_updates += 1
         self.reward_baseline = (
             self.baseline_decay * self.reward_baseline
@@ -144,13 +179,35 @@ class ContextMatrixLearner:
             flipped = (self.theta * self.sign_mask) < 0
             self.theta[flipped] = 0.0
 
-        # Magnitude constraint: cap each entry at its initial absolute value,
-        # matching paper Section 3.9 ("caps each entry at its initial absolute
-        # value, preventing runaway updates"). Entries with zero initial
-        # magnitude are held at zero so sign-constrained learning cannot
-        # conjure a direction from noise.
-        max_mag = np.abs(self.initial_theta)
-        self.theta = np.clip(self.theta, -max_mag, max_mag)
+        # Magnitude constraint. See class docstring for the three modes.
+        # The default ("relative_delta", 0.5) bounds each entry to within
+        # ±50% of its initial magnitude, which is what paper Section 3.9
+        # now claims. "abs_initial" reproduces the legacy (shrink-only)
+        # behavior for backward compatibility. "absolute" is for cold-start
+        # ablation where initial is zero and a relative cap is degenerate.
+        if self.magnitude_cap_mode == "abs_initial":
+            max_mag = np.abs(self.initial_theta)
+            self.theta = np.clip(self.theta, -max_mag, max_mag)
+        elif self.magnitude_cap_mode == "relative_delta":
+            delta_cap = np.maximum(
+                self.magnitude_cap_value * np.abs(self.initial_theta),
+                self.magnitude_cap_abs_floor,
+            )
+            self.theta = np.clip(
+                self.theta,
+                self.initial_theta - delta_cap,
+                self.initial_theta + delta_cap,
+            )
+        elif self.magnitude_cap_mode == "absolute":
+            self.theta = np.clip(
+                self.theta,
+                -self.magnitude_cap_value,
+                self.magnitude_cap_value,
+            )
+        else:
+            raise ValueError(
+                f"unknown magnitude_cap_mode={self.magnitude_cap_mode!r}"
+            )
 
         # Update SLCA amplification coefficient
         slca_grad = advantage * abs(probs[1])

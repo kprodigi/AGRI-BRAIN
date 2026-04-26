@@ -6,7 +6,12 @@
 # One file per array task, isolated per run by the hash-tagged subdirectory.
 #SBATCH --job-name=agribrain-seed
 #SBATCH --array=0-19
-#SBATCH --time=06:00:00
+# 18h wall-time per seed task. Realistic runtime is 2-4h on a compute node,
+# so 18h is 4-9x headroom. SDSMT's compute partition allows up to 14 days,
+# so this is still well under the cluster cap. Higher limits bias the
+# scheduler toward longer queue waits on some sites; on SDSMT compute the
+# node count (41) makes that impact negligible.
+#SBATCH --time=18:00:00
 #SBATCH --mem=8G
 #SBATCH --cpus-per-task=4
 #SBATCH --output=logs/seed_%A_%a.out
@@ -27,6 +32,14 @@ if [ -z "${RUN_TAG:-}" ]; then
     echo "BLOCK: RUN_TAG not exported. Submit via hpc_run.sh."
     exit 1
 fi
+
+# Belt-and-suspenders: even if --export skipped DETERMINISTIC_MODE, force
+# stochastic. Aborts visibly if something upstream tried to set it true.
+if [ "${DETERMINISTIC_MODE:-false}" = "true" ]; then
+    echo "BLOCK: DETERMINISTIC_MODE=true reached the seed task. Stochastic seeds expected."
+    exit 1
+fi
+export DETERMINISTIC_MODE=false
 
 # Map array index to the canonical 20-seed list.
 SEEDS=(42 1337 2024 7 99 101 202 303 404 505 \

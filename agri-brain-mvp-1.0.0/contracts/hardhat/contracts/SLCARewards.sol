@@ -10,7 +10,7 @@ pragma solidity ^0.8.28;
 /// @dev In production, restrict reward/slash to an authorized governance
 ///      contract. Current prototype uses onlyOwner for simplicity.
 contract SLCARewards {
-    address public owner;
+    address public immutable owner;
     mapping(address => uint256) public balance;
 
     event Rewarded(address indexed to, uint256 amount);

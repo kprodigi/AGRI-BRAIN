@@ -33,13 +33,26 @@ from ..models.action_selection import select_action
 _log = logging.getLogger(__name__)
 
 # Context modes that enable MCP/piRAG infrastructure
-_CONTEXT_MODES = {"agribrain", "mcp_only", "pirag_only"}
+_CONTEXT_MODES = {
+    "agribrain", "mcp_only", "pirag_only",
+    # Paper §4.7 ablation modes: zero-init REINFORCE + three perturbation
+    # strengths of the hand-calibrated prior. They share agribrain's full
+    # context pipeline; only the THETA_CONTEXT initialization differs.
+    "agribrain_cold_start",
+    "agribrain_pert_10", "agribrain_pert_25", "agribrain_pert_50",
+}
 
-# Map operating mode to context_mode parameter for feature masking
+# Map operating mode to context_mode parameter for feature masking. Cold-
+# start and perturbation ablations use the full ψ (all five components);
+# mcp_only / pirag_only still mask to their respective subsets.
 _CONTEXT_MODE_MAP = {
     "agribrain": "full",
     "mcp_only": "mcp_only",
     "pirag_only": "pirag_only",
+    "agribrain_cold_start": "full",
+    "agribrain_pert_10": "full",
+    "agribrain_pert_25": "full",
+    "agribrain_pert_50": "full",
 }
 
 # Cooperative agent overlay window (simulation hours).
@@ -68,7 +81,18 @@ class AgentCoordinator:
         self,
         agents: Optional[List[SupplyChainAgent]] = None,
         context_enabled: bool = True,
+        context_learner_overrides: Optional[Dict[str, Any]] = None,
     ) -> None:
+        """
+        Parameters
+        ----------
+        context_learner_overrides : optional dict of keyword arguments passed
+            verbatim to :class:`ContextMatrixLearner`. Used by the cold-start
+            ablation and sensitivity ablation modes to override the default
+            ``learning_rate``, ``initial_theta``, ``magnitude_cap_mode`` etc.
+            When ``None`` the learner is instantiated with the default
+            hand-calibrated initial matrix and production hyperparameters.
+        """
         if agents is None:
             agent_list: List[SupplyChainAgent] = [
                 FarmAgent(),
@@ -85,6 +109,9 @@ class AgentCoordinator:
         }
         self._message_log: List[InterAgentMessage] = []
         self.context_enabled = context_enabled
+        self._context_learner_overrides: Dict[str, Any] = dict(
+            context_learner_overrides or {}
+        )
 
         # Context infrastructure (lazy init, guarded by try/except)
         self._registry = None
@@ -162,10 +189,19 @@ class AgentCoordinator:
 
             self._shared_context = SharedContextStore()
             self._temporal_window = TemporalContextWindow()
-            self._context_learner = ContextMatrixLearner(
-                initial_theta=THETA_CONTEXT,
-                learning_rate=0.003,
-            )
+            learner_kwargs: Dict[str, Any] = {
+                "initial_theta": THETA_CONTEXT,
+                "learning_rate": 0.02,
+                "magnitude_cap_mode": "relative_delta",
+                "magnitude_cap_value": 0.5,
+                "magnitude_cap_abs_floor": 0.10,
+            }
+            # Cold-start and sensitivity ablation modes override any of
+            # these (e.g. initial_theta=zeros, magnitude_cap_mode="absolute",
+            # perturbed initial_theta). Production agribrain runs without
+            # overrides, so its behavior is the refined-default above.
+            learner_kwargs.update(self._context_learner_overrides)
+            self._context_learner = ContextMatrixLearner(**learner_kwargs)
             self._context_evaluator = ContextEvaluator()
 
         except ImportError:
@@ -294,6 +330,7 @@ class AgentCoordinator:
         rng: np.random.Generator,
         scenario: str = "baseline",
         rag_context: Optional[Dict[str, Any]] = None,
+        policy_temperature: float = 1.0,
     ) -> tuple:
         """Run one decision step through the active agent.
 
@@ -426,6 +463,7 @@ class AgentCoordinator:
             slca_bonus_delta=_slca_bonus_delta,
             slca_rho_delta=_slca_rho_delta,
             no_slca_offset_delta=_no_slca_offset_delta,
+            policy_temperature=policy_temperature,
         )
 
         # Store probs for learner update

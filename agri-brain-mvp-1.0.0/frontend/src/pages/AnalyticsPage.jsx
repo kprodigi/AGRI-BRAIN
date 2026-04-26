@@ -3,9 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn, fmt, jget, jpost, authFetch } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
@@ -14,12 +11,11 @@ import { toast } from "sonner";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer,
   CartesianGrid, Legend, RadarChart, Radar, PolarGrid, PolarAngleAxis,
-  PolarRadiusAxis, LineChart, Line, ErrorBar,
+  PolarRadiusAxis, ErrorBar,
 } from "recharts";
 import {
-  TrendingUp, Award, Leaf, Zap, ArrowUpRight, ArrowDownRight,
-  Download, Copy, Play, Loader2, ChevronDown, BarChart3, FlaskConical,
-  Flame, Cloud, ShieldAlert, DollarSign, Layers, Search,
+  Award, Leaf, Download, Copy, Play, Loader2, FlaskConical,
+  Flame, ShieldAlert, DollarSign, Layers,
 } from "lucide-react";
 
 const API = getApiBase();
@@ -68,6 +64,12 @@ const METHOD_DISPLAY = {
   "piRAG Only": "piRAG Only",
 };
 const displayMethod = (m) => METHOD_DISPLAY[m] || m;
+
+const METHOD_KEY_MAP = { "Static": "static", "Hybrid RL": "hybrid_rl", "AGRI-BRAIN": "agribrain" };
+const VARIANT_KEY_MAP = {
+  "Static": "static", "Hybrid RL": "hybrid_rl", "No PINN": "no_pinn", "No SLCA": "no_slca",
+  "AGRI-BRAIN": "agribrain", "No Context": "no_context", "MCP Only": "mcp_only", "piRAG Only": "pirag_only",
+};
 
 // Animated counter for hero section
 function HeroCounter({ value, suffix = "", prefix = "", label, sublabel, delay = 0 }) {
@@ -183,7 +185,7 @@ const SCENARIOS = [
 export default function AnalyticsPage() {
   const [table1, setTable1] = useState([]);
   const [table2, setTable2] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [selectedScenario, setSelectedScenario] = useState("heatwave");
   const [selectedMetric, setSelectedMetric] = useState("ARI");
   const [ablationMetric, setAblationMetric] = useState("ARI");
@@ -191,7 +193,6 @@ export default function AnalyticsPage() {
   const [compareA, setCompareA] = useState("AGRI-BRAIN");
   const [compareB, setCompareB] = useState("Static");
   const [simRunning, setSimRunning] = useState(false);
-  const [showImprovement, setShowImprovement] = useState(false);
   const [lightboxImg, setLightboxImg] = useState(null);
   const [benchSummary, setBenchSummary] = useState(null);
   const [benchSignificance, setBenchSignificance] = useState(null);
@@ -224,11 +225,6 @@ export default function AnalyticsPage() {
     loadData();
   }, []);
 
-  // Map display method names back to raw names for benchmark lookup
-  const methodKeyMap = { "Static": "static", "Hybrid RL": "hybrid_rl", "AGRI-BRAIN": "agribrain" };
-  const variantKeyMap = { "Static": "static", "Hybrid RL": "hybrid_rl", "No PINN": "no_pinn", "No SLCA": "no_slca",
-    "AGRI-BRAIN": "agribrain", "No Context": "no_context", "MCP Only": "mcp_only", "piRAG Only": "pirag_only" };
-
   // Grouped bar chart data with CI error bars from benchmark
   const barChartData = useMemo(() => {
     const scenarios = [...new Set(table1.map((r) => r.Scenario))];
@@ -240,7 +236,7 @@ export default function AnalyticsPage() {
         const val = r[selectedMetric];
         obj[r.Method] = val;
         // Add CI error if benchmark data available
-        const rawKey = methodKeyMap[r.Method];
+        const rawKey = METHOD_KEY_MAP[r.Method];
         const ci = benchSummary?.[scenario]?.[rawKey]?.[metricKey];
         if (ci && ci.ci_low != null && ci.ci_high != null) {
           obj[r.Method] = ci.mean;
@@ -260,7 +256,7 @@ export default function AnalyticsPage() {
       const obj = { scenario };
       rows.forEach((r) => {
         obj[r.Variant] = r[ablationMetric];
-        const rawKey = variantKeyMap[r.Variant];
+        const rawKey = VARIANT_KEY_MAP[r.Variant];
         const ci = benchSummary?.[scenario]?.[rawKey]?.[metricKey];
         if (ci && ci.ci_low != null && ci.ci_high != null) {
           obj[r.Variant] = ci.mean;
@@ -275,7 +271,6 @@ export default function AnalyticsPage() {
   const radarData = useMemo(() => {
     const rows = table1.filter((r) => r.Scenario === radarScenario);
     if (!rows.length) return [];
-    const maxCarbon = Math.max(...table1.map((r) => r.Carbon || r["Carbon (kg)"] || 0), 1);
     const axes = ["ARI", "RLE", "Waste", "SLCA", "Carbon", "Equity"];
     return axes.map((axis) => {
       const obj = { axis };
@@ -313,7 +308,7 @@ export default function AnalyticsPage() {
       rows.forEach((r) => {
         const val = r.Carbon ?? r["Carbon (kg)"] ?? 0;
         obj[r.Method] = val;
-        const rawKey = methodKeyMap[r.Method];
+        const rawKey = METHOD_KEY_MAP[r.Method];
         const ci = benchSummary?.[scenario]?.[rawKey]?.carbon;
         if (ci && ci.ci_low != null && ci.ci_high != null) {
           obj[r.Method] = ci.mean;
@@ -373,7 +368,7 @@ export default function AnalyticsPage() {
 
   // Helper to format a value with CI range from benchmark data
   const fmtCI = (scenario, method, metric) => {
-    const rawMethod = methodKeyMap[method] || variantKeyMap[method];
+    const rawMethod = METHOD_KEY_MAP[method] || VARIANT_KEY_MAP[method];
     const metricKey = metric.toLowerCase();
     const ci = benchSummary?.[scenario]?.[rawMethod]?.[metricKey];
     if (!ci || ci.ci_low == null) return null;
@@ -420,7 +415,18 @@ export default function AnalyticsPage() {
               <HeroCounter value={+summaryKPIs.wastePct.toFixed(1)} suffix="%" label="Waste Reduction" sublabel={`${summaryKPIs.abWaste}% vs ${summaryKPIs.stWaste}% produce lost`} delay={200} />
               <HeroCounter value={+summaryKPIs.carbonPct.toFixed(1)} suffix="%" label="Carbon Reduction" sublabel={`${summaryKPIs.abCarbon} vs ${summaryKPIs.stCarbon} kg CO₂-eq`} delay={400} />
               <HeroCounter value={+summaryKPIs.rleMean.toFixed(1)} suffix="%" label="Rerouting Efficiency" sublabel="At-risk batches diverted" delay={600} />
-              <HeroCounter value={summaryKPIs.savings} prefix="$" label="Annual Savings" sublabel="50,000 kg/week @ $1.50/kg" delay={800} />
+              {/* Illustrative scenario: throughput and price are not measured;
+                  the dollar figure is derived from the user-facing waste delta
+                  multiplied by an editable cooperative-scale assumption. The
+                  badge below makes the assumption explicit so the projection
+                  is not mistaken for a measurement. */}
+              <HeroCounter
+                value={summaryKPIs.savings}
+                prefix="$"
+                label="Annual Savings (illustrative)"
+                sublabel="50,000 kg/wk × $1.50/kg — cooperative-scale projection, not a measurement"
+                delay={800}
+              />
             </div>
           </CardContent>
         </Card>

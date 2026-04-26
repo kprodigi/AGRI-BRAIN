@@ -1,5 +1,5 @@
 // ui/components/UiPrimitives.jsx
-import React, { createContext, useContext, useMemo, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import cx from "classnames";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import { CheckCircle2, AlertTriangle, Info, TrendingUp, Gauge } from "lucide-react";

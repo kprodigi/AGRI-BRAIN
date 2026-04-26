@@ -29,63 +29,59 @@ def explain(
     Dict with summary, full_explanation, causal_chain, keywords,
     evidence_hashes, merkle_root, provenance_ready.
     """
-    try:
-        from pirag.mcp.registry import get_default_registry
-        from pirag.mcp.tool_dispatch import dispatch_tools
-        from pirag.context_builder import retrieve_role_context
-        from pirag.context_to_logits import extract_context_features, compute_context_modifier
-        from pirag.explain_decision import explain_decision
-        from pirag.agent_pipeline import PiRAGPipeline
+    # Any failure here propagates so the MCP tools/call handler can mark
+    # result.isError=True. Returning a success-shaped dict with an "error"
+    # key (the previous behavior) made tool failures invisible to the
+    # protocol-recorder counter and the MCP Tool Reliability figure.
+    from pirag.mcp.registry import get_default_registry
+    from pirag.mcp.tool_dispatch import dispatch_tools
+    from pirag.context_builder import retrieve_role_context
+    from pirag.context_to_logits import extract_context_features, compute_context_modifier
+    from pirag.explain_decision import explain_decision
+    from pirag.agent_pipeline import PiRAGPipeline
 
-        # Build a minimal observation
-        class _Obs:
-            pass
-        obs = _Obs()
-        obs.rho = rho
-        obs.temp = temperature
-        obs.rh = humidity
-        obs.inv = inventory
-        obs.y_hat = 100.0
-        obs.tau = 0.0
-        obs.hour = hour
-        obs.surplus_ratio = max(0.0, inventory / 12000.0 - 1.0)
-        obs.raw = {"rho": rho, "temp": temperature, "rh": humidity, "inv": inventory}
+    # Build a minimal observation
+    class _Obs:
+        pass
+    obs = _Obs()
+    obs.rho = rho
+    obs.temp = temperature
+    obs.rh = humidity
+    obs.inv = inventory
+    obs.y_hat = 100.0
+    obs.tau = 0.0
+    obs.hour = hour
+    obs.surplus_ratio = max(0.0, inventory / 12000.0 - 1.0)
+    obs.raw = {"rho": rho, "temp": temperature, "rh": humidity, "inv": inventory}
 
-        registry = get_default_registry()
-        pipeline = PiRAGPipeline()
+    registry = get_default_registry()
+    pipeline = PiRAGPipeline()
 
-        # MCP dispatch
-        mcp_results = dispatch_tools(role, obs, registry)
+    # MCP dispatch
+    mcp_results = dispatch_tools(role, obs, registry)
 
-        # piRAG retrieval
-        rag_context = retrieve_role_context(role, obs, scenario, mcp_results, pipeline, None)
+    # piRAG retrieval
+    rag_context = retrieve_role_context(role, obs, scenario, mcp_results, pipeline, None)
 
-        # Context features
-        psi = extract_context_features(mcp_results, rag_context, obs)
-        modifier = compute_context_modifier(mcp_results, rag_context, obs)
+    # Context features
+    psi = extract_context_features(mcp_results, rag_context, obs)
+    modifier = compute_context_modifier(mcp_results, rag_context, obs)
 
-        # Generate explanation
-        result = explain_decision(
-            action=action, role=role, hour=hour, obs=obs,
-            mcp_results=mcp_results, rag_context=rag_context,
-            slca_score=0.0, carbon_kg=0.0, waste=0.0,
-            context_features=psi, logit_adjustment=modifier,
-            keywords=rag_context.get("keywords", {}),
-        )
+    # Generate explanation
+    result = explain_decision(
+        action=action, role=role, hour=hour, obs=obs,
+        mcp_results=mcp_results, rag_context=rag_context,
+        slca_score=0.0, carbon_kg=0.0, waste=0.0,
+        context_features=psi, logit_adjustment=modifier,
+        keywords=rag_context.get("keywords", {}),
+    )
 
-        return {
-            "summary": result.get("summary", ""),
-            "full_explanation": result.get("full_explanation", ""),
-            "causal_chain": result.get("causal_chain", {}),
-            "keywords": result.get("keywords", {}),
-            "evidence_hashes": result.get("evidence_hashes", [])[:5],
-            "merkle_root": result.get("merkle_root", ""),
-            "provenance_ready": result.get("provenance_ready", False),
-        }
-
-    except Exception as e:
-        return {
-            "summary": f"Explanation generation failed: {e}",
-            "full_explanation": "",
-            "error": str(e),
-        }
+    return {
+        "summary": result.get("summary", ""),
+        "full_explanation": result.get("full_explanation", ""),
+        "causal_chain": result.get("causal_chain", {}),
+        "keywords": result.get("keywords", {}),
+        "evidence_hashes": result.get("evidence_hashes", [])[:5],
+        "merkle_root": result.get("merkle_root", ""),
+        "provenance_ready": result.get("provenance_ready", False),
+    }

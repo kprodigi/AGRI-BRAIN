@@ -4,7 +4,11 @@
 # Stage 5 (canonical aggregate_seeds), Stage 6 (stress suite),
 # Stage 7 (figures), and the paper-evidence / manifest / validation stages.
 #SBATCH --job-name=agribrain-aggregate
-#SBATCH --time=08:00:00
+# 24h wall-time. Realistic runtime is 1-2h (stress suite is the longest
+# single stage at ~1h). 24h is a full day of headroom in case the stress
+# suite balloons or one of the generate_figures stages hangs on a slow
+# matplotlib backend. Well under the 14-day compute partition cap.
+#SBATCH --time=24:00:00
 #SBATCH --mem=16G
 #SBATCH --cpus-per-task=4
 #SBATCH --output=logs/aggregate_%j.out
@@ -24,6 +28,15 @@ if [ -z "${RUN_TAG:-}" ]; then
     echo "BLOCK: RUN_TAG not exported. Submit via hpc_run.sh."
     exit 1
 fi
+
+# Stage 1's generate_results.py also reads DETERMINISTIC_MODE; pin it so the
+# aggregator cannot regenerate base tables in deterministic mode while the
+# seed array ran stochastic.
+if [ "${DETERMINISTIC_MODE:-false}" = "true" ]; then
+    echo "BLOCK: DETERMINISTIC_MODE=true reached the aggregator. Stochastic run expected."
+    exit 1
+fi
+export DETERMINISTIC_MODE=false
 
 SEEDS_DIR="mvp/simulation/results/benchmark_seeds/${RUN_TAG}"
 RESULTS_DIR="mvp/simulation/results"

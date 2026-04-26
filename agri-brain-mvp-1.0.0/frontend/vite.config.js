@@ -1,4 +1,5 @@
 // frontend/vite.config.js
+/// <reference types="vitest" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import os from 'node:os'
@@ -11,6 +12,12 @@ const cacheRoot =
 export default defineConfig({
   plugins: [react()],
   cacheDir: cacheRoot,
+
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test/setup.js'],
+  },
 
   resolve: {
     alias: {

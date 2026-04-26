@@ -7,7 +7,12 @@
 #     -> hpc_aggregate.sh (single task, runs after all array tasks succeed)
 #
 # Usage:
-#   bash hpc_run.sh
+#   AGRIBRAIN_PARTITION=compute bash hpc_run.sh
+#
+# The partition name is required because SLURM installs without a system
+# default partition (e.g. SDSMT) would otherwise fail the sbatch submit
+# with "No partition specified or system default partition". Check the
+# cluster's available partitions with ``sinfo -s``.
 #
 # Outputs land under mvp/simulation/results/ at the default locations and
 # are also archived to hpc_results_<RUN_TAG>.tar.gz. The per-seed JSONs
@@ -17,11 +22,38 @@ set -euo pipefail
 echo "=== AgriBrain HPC orchestrator ==="
 echo "Started: $(date)"
 echo "Host: $(hostname)"
+echo "Commit: $(git rev-parse HEAD)"
 
 if ! command -v sbatch >/dev/null 2>&1; then
     echo "BLOCK: sbatch not available. This script expects a SLURM login node."
     exit 1
 fi
+
+# Partition selection. AGRIBRAIN_PARTITION wins, then the stock SLURM env
+# variable SBATCH_PARTITION, then abort loudly. Never silently pick a
+# default; some clusters do not have one and silent failure costs queue
+# time.
+PARTITION="${AGRIBRAIN_PARTITION:-${SBATCH_PARTITION:-}}"
+if [ -z "$PARTITION" ]; then
+    echo "BLOCK: no SLURM partition selected."
+    echo "       Set AGRIBRAIN_PARTITION (or SBATCH_PARTITION) before re-running, e.g.:"
+    echo "           AGRIBRAIN_PARTITION=compute bash hpc_run.sh"
+    echo "       Inspect the cluster's partitions with: sinfo -s"
+    exit 1
+fi
+echo "Partition: ${PARTITION}"
+
+# This orchestrator only ships stochastic benchmark numbers. Refuse to launch
+# if the env requests deterministic mode so the seed array cannot quietly
+# produce identical-per-seed results.
+if [ "${DETERMINISTIC_MODE:-false}" = "true" ]; then
+    echo "BLOCK: DETERMINISTIC_MODE=true is set in the environment."
+    echo "       This script is for stochastic seed runs. Unset it (or run a"
+    echo "       deterministic driver instead) and re-submit."
+    exit 1
+fi
+# Make the choice explicit and inheritable by every sbatch task.
+export DETERMINISTIC_MODE=false
 
 # One-time venv setup on the login node. The array and aggregate tasks
 # source the same venv, so they see the same package versions.
@@ -58,12 +90,19 @@ echo "RUN_TAG=${RUN_TAG}"
 
 mkdir -p logs
 
-# Submit the 20-task seed array.
-SEED_JOB=$(sbatch --parsable --export=ALL,RUN_TAG="$RUN_TAG" hpc_seed.sh)
+# Submit the 20-task seed array. DETERMINISTIC_MODE is pinned so a stale
+# value in the cluster env cannot turn the array into identical-per-seed runs.
+# --partition is passed explicitly so clusters without a system default
+# (e.g. SDSMT) do not reject the submit.
+SEED_JOB=$(sbatch --parsable \
+    --partition="$PARTITION" \
+    --export=ALL,RUN_TAG="$RUN_TAG",DETERMINISTIC_MODE=false hpc_seed.sh)
 echo "Submitted seed array as job ${SEED_JOB}"
 
 # Submit the aggregation job with a dependency on the array completing OK.
-AGG_JOB=$(sbatch --parsable --export=ALL,RUN_TAG="$RUN_TAG" \
+AGG_JOB=$(sbatch --parsable \
+    --partition="$PARTITION" \
+    --export=ALL,RUN_TAG="$RUN_TAG",DETERMINISTIC_MODE=false \
     --dependency=afterok:${SEED_JOB} hpc_aggregate.sh)
 echo "Submitted aggregation as job ${AGG_JOB} (depends on ${SEED_JOB})"
 

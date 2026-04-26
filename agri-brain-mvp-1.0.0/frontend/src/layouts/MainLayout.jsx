@@ -3,8 +3,6 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
   TooltipContent,
@@ -25,12 +23,9 @@ import {
   ChevronRight,
   Menu,
   X,
-  Wifi,
-  WifiOff,
   User,
   Brain,
   Play,
-  MessageCircle,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -44,7 +39,7 @@ const NAV_ITEMS = [
 ];
 
 export default function MainLayout({ children, wsConnected, notifications, unreadCount, onMarkAllRead }) {
-  const { theme, setTheme, isDark } = useTheme();
+  const { setTheme, isDark } = useTheme();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);

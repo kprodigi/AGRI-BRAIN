@@ -4,17 +4,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn, fmt, short, mcpRaw, mcpCall, mcpLog, getApiKey } from "@/lib/utils";
+import { cn, fmt, mcpRaw, mcpCall, mcpLog, getApiKey } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
 import { toast } from "sonner";
 import {
-  Wrench, Database, FileText, Play, ScrollText, Search, RefreshCw,
+  Wrench, Database, FileText, Play, ScrollText, Search,
   Loader2, ChevronDown, ChevronRight, BookOpen, Zap, Copy,
 } from "lucide-react";
 

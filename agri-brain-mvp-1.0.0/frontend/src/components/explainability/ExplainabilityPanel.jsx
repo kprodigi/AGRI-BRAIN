@@ -290,8 +290,14 @@ function ProvenanceChain({ explainability, memo }) {
     });
   }
 
-  // Blockchain anchor
-  if (memo.tx_hash && memo.tx_hash !== "0x0") {
+  // Blockchain anchor — only when tx_hash is a real on-chain hash.
+  // null = chain submission was not attempted; "0x0" = legacy sentinel
+  // from offline runs. Neither qualifies as an anchored decision.
+  if (
+    memo.tx_hash &&
+    memo.tx_hash !== "0x0" &&
+    /^0x[0-9a-fA-F]{2,}$/.test(memo.tx_hash)
+  ) {
     steps.push({
       icon: CheckCircle2,
       iconColor: "text-emerald-500",

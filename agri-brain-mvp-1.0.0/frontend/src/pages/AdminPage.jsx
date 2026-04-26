@@ -14,12 +14,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn, fmt, short, jget as jgetUtil, jpost as jpostUtil, authDownload } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
 import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Settings, Link2, Shield, Flame, Zap, Save, RefreshCw, Play, RotateCcw,
-  ChevronDown, AlertTriangle, CheckCircle2, XCircle, Loader2, HelpCircle,
-  FileText, Cloud, ShieldAlert, DollarSign, Layers, Search, Download,
-  Info, Plug, ServerCog,
+  AlertTriangle, CheckCircle2, XCircle, Loader2, HelpCircle,
+  FileText, ShieldAlert, DollarSign, Layers, Search, Download,
+  Plug, ServerCog,
 } from "lucide-react";
 import McpTab from "@/components/mcp/McpTab";
 

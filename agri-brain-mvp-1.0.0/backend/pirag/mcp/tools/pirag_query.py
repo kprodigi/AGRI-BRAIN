@@ -49,23 +49,33 @@ def pirag_query(
     """
     pipeline = _get_pipeline()
 
+    # Track which optional features were unavailable so the caller (and the
+    # Tool Reliability figure) can distinguish "fully served" from "served
+    # with degraded auxiliary capabilities". These are not errors — the
+    # core retrieval still works — but they used to be invisible.
+    degraded_features: List[str] = []
+
     expanded_query = query
     if physics_expansion:
         try:
             from pirag.physics_reranker import expand_query_with_physics
             expanded_query = expand_query_with_physics(query, rho, temperature)
         except ImportError:
-            pass
+            degraded_features.append("physics_expansion")
 
     # Retrieve
     response = pipeline.ask(expanded_query, k=k, anchor_on_chain=False)
 
     results: List[Dict[str, Any]] = []
     for citation in response.citations[:k]:
+        # Use the real BM25/dense hybrid score that the retriever
+        # actually computed (propagated through Citation.score). Earlier
+        # revisions hardcoded 0.5 here, which made psi_2 (retrieval
+        # confidence) and psi_3 (regulatory pressure) constant.
         entry: Dict[str, Any] = {
             "doc_id": citation.doc_id,
             "passage": citation.passage[:500],
-            "score": 0.5,
+            "score": float(getattr(citation, "score", 0.0)),
             "sha256": citation.sha256,
         }
         results.append(entry)
@@ -83,7 +93,7 @@ def pirag_query(
                 for r in reranked
             ]
         except ImportError:
-            pass
+            degraded_features.append("physics_reranking")
 
     # Extract keywords from each result
     try:
@@ -91,9 +101,9 @@ def pirag_query(
         for r in results:
             r["keywords"] = extract_keywords(r["passage"])
     except ImportError:
-        pass
+        degraded_features.append("keyword_extraction")
 
-    return {
+    payload: Dict[str, Any] = {
         "query": expanded_query,
         "original_query": query,
         "physics_expanded": physics_expansion and expanded_query != query,
@@ -101,3 +111,9 @@ def pirag_query(
         "n_results": len(results),
         "guards_passed": len(results) > 0,
     }
+    if degraded_features:
+        payload["_status"] = "degraded"
+        payload["_degraded_features"] = degraded_features
+    else:
+        payload["_status"] = "ok"
+    return payload
