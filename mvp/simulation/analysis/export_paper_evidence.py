@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -352,6 +353,21 @@ def export_stress_and_significance() -> None:
     sig_path = RESULTS_DIR / "benchmark_significance.json"
     if sig_path.exists():
         data = json.loads(sig_path.read_text(encoding="utf-8"))
+        # Tolerant of n=1 degenerate-sample fallback records: when an
+        # aggregator skips inferential tests, p_value / CIs come back
+        # as null. Format those as "n/a" rather than crashing the
+        # f-string. Also tolerate the post-2026-04 schema where
+        # cohens_d is the canonical pooled-d (the previous report
+        # printed cohens_dz with cohens_d as fallback; we now show
+        # both columns explicitly).
+        def _f(v: Any, fmt: str = "+.4f", default: str = "  n/a ") -> str:
+            if v is None:
+                return default
+            try:
+                return format(float(v), fmt)
+            except (TypeError, ValueError):
+                return default
+
         print("\n  Benchmark significance (ARI):")
         for scenario in SCENARIOS:
             sc = data.get(scenario, {})
@@ -359,14 +375,16 @@ def export_stress_and_significance() -> None:
                 rec = sc.get(comp, {}).get("ari")
                 if not rec:
                     continue
+                degen = " [degen]" if rec.get("_degenerate") else ""
                 print(
                     f"    {scenario:<18s} {comp:<26s} "
-                    f"p={rec.get('p_value', 1.0):.4f} "
-                    f"q={rec.get('p_value_adj', rec.get('p_value', 1.0)):.4f} "
-                    f"dz={rec.get('cohens_dz', rec.get('cohens_d', 0.0)):+.3f} "
-                    f"dMean={rec.get('mean_diff', 0.0):+.4f} "
-                    f"CI=[{rec.get('mean_diff_ci_low', rec.get('mean_diff', 0.0)):+.4f},"
-                    f"{rec.get('mean_diff_ci_high', rec.get('mean_diff', 0.0)):+.4f}]"
+                    f"p={_f(rec.get('p_value'), '.4f')} "
+                    f"q={_f(rec.get('p_value_adj') or rec.get('p_value'), '.4f')} "
+                    f"d={_f(rec.get('cohens_d'), '+.3f')} "
+                    f"dz={_f(rec.get('cohens_dz'), '+.3f')} "
+                    f"dMean={_f(rec.get('mean_diff'), '+.4f')} "
+                    f"CI=[{_f(rec.get('mean_diff_ci_low'), '+.4f')},"
+                    f"{_f(rec.get('mean_diff_ci_high'), '+.4f')}]{degen}"
                 )
 
 
@@ -420,9 +438,19 @@ def export_latex_benchmark_table() -> None:
                 d = m_data.get(metric, {})
                 if not d:
                     continue
-                ci_str = f"[{d.get('ci_low', 0):.4f}, {d.get('ci_high', 0):.4f}]"
+                # CI / mean / std may be null under the n=1
+                # degenerate-sample fallback. Format as "n/a" when
+                # absent rather than crashing.
+                def _num(key: str, fmt: str = ".4f") -> str:
+                    val = d.get(key)
+                    if isinstance(val, (int, float)):
+                        return format(float(val), fmt)
+                    return "n/a"
+                ci_str = f"[{_num('ci_low'):>8s}, {_num('ci_high'):>8s}]"
+                mean_str = _num("mean")
+                std_str = _num("std", ".6f")
                 print(f"  {scenario:<18s} {method:<14s} {metric:>6s} "
-                      f"{d.get('mean', 0):8.4f} {ci_str:>18s} {d.get('std', 0):8.6f}")
+                      f"{mean_str:>8s} {ci_str:>18s} {std_str:>8s}")
 
     # Print significance summary
     if sig:
@@ -434,10 +462,15 @@ def export_latex_benchmark_table() -> None:
                 ari = comp_data.get("ari", {})
                 if not ari:
                     continue
+                # Same null-tolerance as above for the n=1 fallback.
+                p_val = ari.get("p_value")
+                p_str = f"{p_val:8.4f}" if isinstance(p_val, (int, float)) else "  n/a  "
+                d_val = ari.get("cohens_d")
+                d_str = f"{d_val:+8.3f}" if isinstance(d_val, (int, float)) else "  n/a   "
+                md_val = ari.get("mean_diff", 0.0)
+                md_str = f"{md_val:+10.4f}" if isinstance(md_val, (int, float)) else "  n/a    "
                 print(f"  {scenario:<18s} {comp_key:<30s} "
-                      f"{ari.get('p_value', 1.0):8.4f} "
-                      f"{ari.get('cohens_d', 0.0):+8.3f} "
-                      f"{ari.get('mean_diff', 0.0):+10.4f}")
+                      f"{p_str} {d_str} {md_str}")
 
     # Save as JSON for downstream LaTeX generation
     out_path = RESULTS_DIR / "paper_benchmark_table.json"

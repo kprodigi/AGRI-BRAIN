@@ -63,7 +63,7 @@ if [ ! -d .venv ]; then
 fi
 source .venv/bin/activate
 pip install --upgrade pip --quiet
-pip install -e agri-brain-mvp-1.0.0/backend --quiet
+pip install -e agribrain/backend --quiet
 pip install pytest --quiet
 
 # Pre-flight invariants check, before any SLURM time is consumed.
@@ -75,7 +75,7 @@ echo ""
 echo "=== Pre-flight invariants check ==="
 python -c "
 import sys
-sys.path.insert(0, 'agri-brain-mvp-1.0.0/backend')
+sys.path.insert(0, 'agribrain/backend')
 from pirag.mcp.registry import get_default_registry
 from pirag.context_to_logits import THETA_CONTEXT
 names = {t['name'] for t in get_default_registry().list_tools()}

@@ -38,7 +38,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-_BACKEND_SRC = Path(__file__).resolve().parent.parent.parent / "agri-brain-mvp-1.0.0" / "backend"
+_BACKEND_SRC = Path(__file__).resolve().parent.parent.parent / "agribrain" / "backend"
 if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 

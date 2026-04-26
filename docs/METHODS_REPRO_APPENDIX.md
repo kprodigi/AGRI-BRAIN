@@ -47,7 +47,7 @@ REPRO_RUN_CONTEXT_BENCHMARK=true python mvp/simulation/reproduce_core.py
 ## 3a) Default Runtime (RAG + LLM)
 
 - **Answer engine.** `LLM_PROVIDER=template` is the default
-  (`agri-brain-mvp-1.0.0/backend/pirag/inference/llm_engine.py`); the
+  (`agribrain/backend/pirag/inference/llm_engine.py`); the
   template engine produces deterministic, grounded answers from the
   retrieved KB passages with no external network call. Switching to
   `LLM_PROVIDER=api` requires both `LLM_API_URL` and `LLM_MODEL`; the
@@ -55,7 +55,7 @@ REPRO_RUN_CONTEXT_BENCHMARK=true python mvp/simulation/reproduce_core.py
   not be described as "neural RAG" — only the retrieval pipeline is
   learned, the answer surface is templated.
 - **Retrieval.** Default is the lexical hybrid `BM25 + TF-IDF`
-  implemented in `agri-brain-mvp-1.0.0/backend/pirag/pyrag/` and
+  implemented in `agribrain/backend/pirag/pyrag/` and
   `pirag/ingestion/embedder.py` (numpy-only TF-IDF). A SentenceTransformer
   dense path is available by passing `dense_model_name=...` to
   `PiRAGPipeline`; the published runs do **not** instantiate it.

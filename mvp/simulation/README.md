@@ -162,7 +162,7 @@ mvp/simulation/
 
 ```bash
 cd mvp/simulation
-pip install -e ../../agri-brain-mvp-1.0.0/backend
+pip install -e ../../agribrain/backend
 
 # Quick: core tables and figures only
 python generate_results.py    # runs all scenarios, saves tables

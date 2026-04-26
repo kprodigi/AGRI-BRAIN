@@ -55,7 +55,7 @@ echo "[seed=${SEED} tag=${RUN_TAG}] starting at $(date), output -> ${OUT_DIR}/se
 # compute producing numbers from a stale code path.
 python -c "
 import sys
-sys.path.insert(0, 'agri-brain-mvp-1.0.0/backend')
+sys.path.insert(0, 'agribrain/backend')
 from pirag.mcp.registry import get_default_registry
 from pirag.context_to_logits import THETA_CONTEXT
 names = {t['name'] for t in get_default_registry().list_tools()}

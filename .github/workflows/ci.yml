@@ -6,7 +6,47 @@ on:
   pull_request:
 
 jobs:
+  # Cross-platform test suite. README documents Windows + macOS as
+  # supported development platforms; the matrix proves it on every
+  # push. Artifact-hash-sensitive steps (validate_results,
+  # verify_manifest) live in the dedicated `artifact-validation`
+  # job below — those rely on SHA-256s computed on the originating
+  # filesystem (LF line endings), so cross-OS execution would false-
+  # positive on the manifest hashes even though the simulator code
+  # itself is cross-platform.
   backend-tests:
+    name: backend-tests (${{ matrix.os }} / py${{ matrix.python-version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.11"]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e agribrain/backend
+          pip install pytest
+      - name: Run backend tests
+        run: |
+          python -m pytest agribrain/backend/pirag/tests agribrain/backend/tests
+      - name: Run stochastic simulation smoke test
+        run: |
+          python mvp/simulation/tests/test_stochastic_quick.py
+
+  # Ubuntu-only artifact validation: line-ending differences on Windows
+  # checkouts would shift tracked-artifact SHA-256s and false-positive
+  # the manifest verifier. The artifacts themselves were written and
+  # hashed on Linux/HPC, so Linux CI is the canonical verification host.
+  artifact-validation:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -19,11 +59,8 @@ jobs:
       - name: Install backend
         run: |
           python -m pip install --upgrade pip
-          pip install -e agri-brain-mvp-1.0.0/backend
+          pip install -e agribrain/backend
           pip install pytest
-      - name: Run backend tests
-        run: |
-          python -m pytest agri-brain-mvp-1.0.0/backend/pirag/tests agri-brain-mvp-1.0.0/backend/tests
       - name: Validate simulation results (strict gate, default)
         env:
           STRICT_VALIDATION: "1"
@@ -38,9 +75,6 @@ jobs:
         # promised artifact is present.
         run: |
           python mvp/simulation/analysis/verify_manifest.py --strict-commit --allow-missing
-      - name: Run stochastic simulation smoke test
-        run: |
-          python mvp/simulation/tests/test_stochastic_quick.py
       - name: Deterministic-mode regression check
         env:
           DETERMINISTIC_MODE: "true"
@@ -58,7 +92,7 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: agri-brain-mvp-1.0.0/contracts/hardhat
+        working-directory: agribrain/contracts/hardhat
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -74,7 +108,7 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: agri-brain-mvp-1.0.0/frontend
+        working-directory: agribrain/frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -97,12 +131,12 @@ jobs:
         with:
           node-version: "22"
       - name: Install hardhat deps
-        working-directory: agri-brain-mvp-1.0.0/contracts/hardhat
+        working-directory: agribrain/contracts/hardhat
         run: npm install
       - name: Run Slither static analysis
         uses: crytic/slither-action@v0.4.0
         with:
-          target: agri-brain-mvp-1.0.0/contracts/hardhat
+          target: agribrain/contracts/hardhat
           slither-args: --exclude-informational --exclude-low
           fail-on: medium
           slither-version: 0.11.4

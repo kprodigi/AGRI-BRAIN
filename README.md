@@ -125,7 +125,7 @@ REINFORCE learning for sustainable food logistics.
 - **Circular economy scoring** for composting, animal feed, food bank pathways.
 - **Arrhenius-Baranyi spoilage ODE with a physics-informed neural
   residual correction** trained under an ODE-residual penalty
-  (see `agri-brain-mvp-1.0.0/backend/src/models/pinn_net.py`).
+  (see `agribrain/backend/src/models/pinn_net.py`).
 - **Softmax contextual policy** with 10-dimensional state feature vector
   (perception + symmetric supply and demand forecast channels +
   demand-volatility price-pressure proxy) and 5-dimensional
@@ -135,7 +135,7 @@ REINFORCE learning for sustainable food logistics.
   Merkle root over the routing decisions; anchoring on-chain is gated
   by `CHAIN_SUBMIT=1`. The published runs do not deploy to a
   permissioned EVM — the only configured network is `localhost` /
-  Hardhat (see [contracts/README.md](agri-brain-mvp-1.0.0/contracts/README.md)
+  Hardhat (see [contracts/README.md](agribrain/contracts/README.md)
   for the production checklist). The contract suite (`AgentRegistry`,
   `DecisionLogger`, `PolicyStore`, `ProvenanceRegistry`,
   `SLCARewards`, `AgriDAO`) demonstrates role-gated agent
@@ -177,14 +177,14 @@ python -m venv .venv
 source .venv/bin/activate          # Linux / macOS
 # .venv\Scripts\activate           # Windows (cmd)
 # .venv\Scripts\Activate.ps1       # Windows (PowerShell)
-pip install -e agri-brain-mvp-1.0.0/backend
-python -m uvicorn src.app:API --port 8100 --app-dir agri-brain-mvp-1.0.0/backend
+pip install -e agribrain/backend
+python -m uvicorn src.app:API --port 8100 --app-dir agribrain/backend
 ```
 
 ### Frontend (port 5173)
 
 ```bash
-cd agri-brain-mvp-1.0.0/frontend
+cd agribrain/frontend
 npm install
 npm run dev
 ```
@@ -309,7 +309,7 @@ AGRI-BRAIN/
   README.md
   HOW_TO_RUN.md
   docs/screenshots/             # Frontend screenshots (light theme)
-  agri-brain-mvp-1.0.0/
+  agribrain/
     backend/
       src/
         app.py                  # FastAPI application
@@ -428,7 +428,7 @@ AGRI-BRAIN/
 ## Dataset
 
 The system uses IoT sensor telemetry from fresh spinach cold-chain storage, included at
-`agri-brain-mvp-1.0.0/backend/src/data_spinach.csv` (288 records, no preprocessing required).
+`agribrain/backend/src/data_spinach.csv` (288 records, no preprocessing required).
 
 | Column | Description |
 |--------|-------------|

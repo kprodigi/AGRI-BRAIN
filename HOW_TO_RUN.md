@@ -37,7 +37,7 @@ AGRI-BRAIN/
 ├── README.md
 ├── HOW_TO_RUN.md
 ├── docs/screenshots/           # Frontend screenshots
-├── agri-brain-mvp-1.0.0/
+├── agribrain/
 │   ├── backend/                # FastAPI backend (port 8100)
 │   │   ├── src/                # Application code
 │   │   │   ├── app.py          # Main FastAPI app
@@ -89,7 +89,7 @@ source .venv/bin/activate        # Linux / macOS
 ### 2b. Install backend dependencies
 
 ```bash
-pip install -e agri-brain-mvp-1.0.0/backend
+pip install -e agribrain/backend
 ```
 
 This installs all dependencies listed in `pyproject.toml`:
@@ -133,7 +133,7 @@ Security/runtime flags:
 ### 2c. Start the backend
 
 ```bash
-python -m uvicorn src.app:API --host 127.0.0.1 --port 8100 --app-dir agri-brain-mvp-1.0.0/backend
+python -m uvicorn src.app:API --host 127.0.0.1 --port 8100 --app-dir agribrain/backend
 ```
 
 You should see:
@@ -172,7 +172,7 @@ Browse the interactive API docs at: **http://127.0.0.1:8100/docs**
 Open a new terminal:
 
 ```bash
-cd AGRI-BRAIN/agri-brain-mvp-1.0.0/frontend
+cd AGRI-BRAIN/agribrain/frontend
 npm install
 npm run dev
 ```
@@ -477,7 +477,7 @@ bash hpc_run.sh
 
 That script will:
 
-1. Create `.venv` if absent; `pip install -e agri-brain-mvp-1.0.0/backend`.
+1. Create `.venv` if absent; `pip install -e agribrain/backend`.
 2. Run the login-node policy-shape load assertion (fails fast if the resolver
    pulled a broken package combination).
 3. Compute `RUN_TAG=$(git rev-parse --short HEAD)_$(date +%Y%m%d_%H%M)`.
@@ -518,7 +518,7 @@ Before submitting, run the pre-HPC check locally:
 
 ```bash
 # default CI-speed tests
-cd agri-brain-mvp-1.0.0/backend && pytest -q
+cd agribrain/backend && pytest -q
 
 # Opt-in full mode x scenario matrix (slow; ~10 min). The default
 # `addopts = "-m 'not slow'"` in pyproject.toml hides slow tests in
@@ -544,7 +544,7 @@ python mvp/simulation/validation/validate_publication_artifacts.py
 If you want to test blockchain integration with Hardhat:
 
 ```bash
-cd AGRI-BRAIN/agri-brain-mvp-1.0.0/contracts/hardhat
+cd AGRI-BRAIN/agribrain/contracts/hardhat
 
 # Install Hardhat dependencies
 npm install
@@ -566,10 +566,10 @@ curl -X POST http://127.0.0.1:8100/governance/chain \
 
 ### Slither (optional, match CI locally)
 
-The GitHub Actions **contract-analysis** job runs [Slither](https://github.com/crytic/slither) on `agri-brain-mvp-1.0.0/contracts/hardhat` with `--exclude-informational --exclude-low` and `fail-on: medium` (version **0.11.4** in CI; matches the `slither-version` pin in `.github/workflows/ci.yml`). To reproduce outside CI, install Slither in a Python environment (or use a container image that includes it), then from the Hardhat directory:
+The GitHub Actions **contract-analysis** job runs [Slither](https://github.com/crytic/slither) on `agribrain/contracts/hardhat` with `--exclude-informational --exclude-low` and `fail-on: medium` (version **0.11.4** in CI; matches the `slither-version` pin in `.github/workflows/ci.yml`). To reproduce outside CI, install Slither in a Python environment (or use a container image that includes it), then from the Hardhat directory:
 
 ```bash
-cd agri-brain-mvp-1.0.0/contracts/hardhat
+cd agribrain/contracts/hardhat
 npm install
 slither . --exclude-informational --exclude-low
 ```
@@ -590,10 +590,10 @@ Run everything end-to-end in order:
 # --- Terminal 1: Backend ---
 cd AGRI-BRAIN
 source .venv/bin/activate  # if using venv
-python -m uvicorn src.app:API --host 127.0.0.1 --port 8100 --app-dir agri-brain-mvp-1.0.0/backend
+python -m uvicorn src.app:API --host 127.0.0.1 --port 8100 --app-dir agribrain/backend
 
 # --- Terminal 2: Frontend ---
-cd AGRI-BRAIN/agri-brain-mvp-1.0.0/frontend
+cd AGRI-BRAIN/agribrain/frontend
 npm install && npm run dev
 
 # --- Terminal 3: Tests and simulation ---
@@ -672,8 +672,8 @@ python -m pip freeze > requirements-lock.txt
 
 | Issue | Fix |
 |-------|-----|
-| `ModuleNotFoundError: No module named 'src'` | Use `--app-dir agri-brain-mvp-1.0.0/backend` flag or run uvicorn from that directory |
-| `ModuleNotFoundError: No module named 'pirag'` | Run `pip install -e agri-brain-mvp-1.0.0/backend` |
+| `ModuleNotFoundError: No module named 'src'` | Use `--app-dir agribrain/backend` flag or run uvicorn from that directory |
+| `ModuleNotFoundError: No module named 'pirag'` | Run `pip install -e agribrain/backend` |
 | Port 8100 already in use | Kill the existing process: `lsof -ti:8100 \| xargs kill` |
 | Frontend CORS errors | Ensure backend is on port 8100 and frontend on port 5173 |
 | Charts show skeleton loaders | Ensure `/case/load` was called first |
