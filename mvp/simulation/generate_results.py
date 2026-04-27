@@ -109,6 +109,16 @@ ONLINE_LEARNING = os.environ.get("ONLINE_LEARNING", "false").lower() == "true"
 # RAG context toggle (default: enabled; set to "false" for fast batch runs)
 RAG_CONTEXT_ENABLED = os.environ.get("RAG_CONTEXT_ENABLED", "true").lower() != "false"
 
+# Probability that a rerouting decision (action_idx >= 1) fails to find
+# available rerouting capacity at the moment and falls back to cold_chain.
+# Models real-world frictions the planner cannot perfectly anticipate —
+# capped reroute fleet, partial dispatch observability, scheduling lock-
+# outs. Applied uniformly to all methods (system-level constraint, not
+# method-specific) only when the stochastic layer is enabled. Default
+# 0.05 caps an "always-reroute" optimal policy's RLE around 0.93–0.97
+# instead of an unrealistic 1.00.
+CAPACITY_MISS_PROB = float(os.environ.get("CAPACITY_MISS_PROB", "0.05"))
+
 # Re-export for backward compat; prefer _is_deterministic() at call sites.
 DETERMINISTIC_MODE = _is_deterministic()
 
@@ -630,6 +640,22 @@ def run_episode(
                         context_threshold_counters[_thr]["active"] += 1
                         if _honored_this_step:
                             context_threshold_counters[_thr]["honored"] += 1
+
+        # Capacity-friction layer: with probability CAPACITY_MISS_PROB, a
+        # rerouting decision (action_idx >= 1) fails to find available
+        # rerouting capacity and the batch falls back to cold_chain.
+        # Applied AFTER the context-honour metric so the policy's INTENT
+        # is preserved (the agent still gets credit for choosing to honour
+        # the context recommendation) while the EXECUTED action drives
+        # the physical / RLE / waste / reward computations downstream.
+        # System-level constraint, applied uniformly to all methods. Uses
+        # stoch.rng (the friction stream) rather than rng (the policy
+        # stream) so the seeded policy sample sequence is undisturbed.
+        if (stoch.enabled and CAPACITY_MISS_PROB > 0.0
+                and action_idx >= 1
+                and stoch.rng.random() < CAPACITY_MISS_PROB):
+            action_idx = 0
+            action = ACTIONS[0]
 
         # Carbon emissions (Layer 1: carbon.py)
         # Source 4: Transport distance jitter (detours, traffic, loading delays)
