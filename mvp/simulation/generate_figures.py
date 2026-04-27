@@ -1394,57 +1394,12 @@ def _fig9_load_alignment():
     return rows
 
 
-def _fig9_load_protocol():
-    """Return per-scenario MCP envelope/tool error counts."""
-    proto_files = [RESULTS_DIR / f"mcp_protocol_{s}.json" for s in SCENARIOS]
-    import json as _json_mod
-    rows = []
-    for s, p in zip(SCENARIOS, proto_files):
-        if not p.exists():
-            continue
-        log = _json_mod.loads(p.read_text(encoding="utf-8"))
-        n_env = 0
-        n_tool = 0
-        for r in log:
-            response = r.get("response", {}) or {}
-            if response.get("error"):
-                n_env += 1
-                continue
-            result = response.get("result")
-            if not isinstance(result, dict):
-                continue
-            if result.get("isError"):
-                n_tool += 1
-                continue
-            content = result.get("content")
-            if isinstance(content, list) and content:
-                first = content[0] if isinstance(content[0], dict) else {}
-                text = first.get("text", "")
-                if isinstance(text, str) and text:
-                    try:
-                        payload = _json_mod.loads(text)
-                    except (ValueError, TypeError):
-                        payload = None
-                    if isinstance(payload, dict):
-                        if payload.get("_status") == "error" or payload.get("error"):
-                            n_tool += 1
-                            continue
-        rows.append({
-            "scenario": s,
-            "label": SCENARIO_LABELS.get(s, s),
-            "calls": len(log),
-            "env_errs": n_env,
-            "tool_errs": n_tool,
-        })
-    return rows
-
-
 # ---------------------------------------------------------------------------
 # Figure 9: Consolidated robustness panel. Combines (a) the paper §4.11
-# fault-degradation story, (b) MCP + piRAG context honour, and (c) MCP
-# protocol reliability into a single 1x3 figure. Replaces the previous two
-# Figure 9s (fig9_fault_degradation + fig9_mcp_pirag_robustness) which
-# fought each other for the figure-9 slot.
+# fault-degradation story and (b) MCP + piRAG context honour into a single
+# 1x2 figure. The earlier MCP-protocol-reliability panel was dropped because
+# the recordings come from non-fault-injection runs and were uniformly 0/200
+# errors per scenario, so the panel carried no information.
 # ---------------------------------------------------------------------------
 _STRESSOR_DISPLAY = {
     "sensor_noise": "Sensor noise",
@@ -1458,36 +1413,24 @@ _STRESSOR_ORDER = ("sensor_noise", "missing_data", "telemetry_delay",
 
 
 def fig9_fault_degradation():
-    """Consolidated Figure 9: robustness, context honour, protocol reliability.
+    """Consolidated Figure 9: robustness and context honour.
 
-    The three panels each answer one reviewer-facing question:
+    The two panels each answer one reviewer-facing question:
 
       (a) Robustness: how much does AgriBrain's ARI degrade under each
-          fault category, across scenarios? Y-axis is auto-scaled tight
-          to the realistic delta range (typically 0-0.01) with the
-          H2 negligible-degradation band drawn at 0.05 for reference.
+          fault category, across scenarios? Y-axis is log-scaled so
+          both small (~1e-4) and large (~5e-2) bars stay legible in
+          the same panel; the H2 negligible-degradation band is drawn
+          at 0.05 for reference.
       (b) Context honour: what fraction of context-active decisions
           follow the dominant context recommendation? Reported as a
           single percentage per scenario with the n active steps
           annotated for transparency.
-      (c) Protocol reliability: error *rate* per error class
-          (envelope-level / tool-level), with the total call count
-          annotated above each scenario. Reporting rates rather than
-          raw counts makes the small but meaningful error fractions
-          visible at figure scale; raw counts (~10 errors out of ~200
-          calls) were dwarfed in the previous design.
-
-    The previous 1x3 design had the panel-(a) legend overlapping the
-    bars, panel-(b) percentages colliding with the title, and panel-(c)
-    errors invisible against the call totals. This rewrite anchors each
-    legend in a single-row strip below its panel title and tightens
-    the y-axes to the data so the bars carry the message.
     """
     stress_csv = RESULTS_DIR / "stress_degradation.csv"
     align_rows = _fig9_load_alignment()
-    proto_rows = _fig9_load_protocol()
 
-    fig, axes = plt.subplots(1, 3, figsize=(22, 7.5))
+    fig, axes = plt.subplots(1, 2, figsize=(15, 7.5))
 
     # Per-element font sizes match figs 6/7/8.
     _F9_TITLE = SUBPLOT_TITLE_SIZE + 4   # 23
@@ -1526,9 +1469,10 @@ def fig9_fault_degradation():
         if stressors and scenarios_present:
             n_scen = len(scenarios_present)
             x = np.arange(len(stressors))
-            # Wider bars for readability now that the legend isn't
-            # competing for the vertical space.
-            width = 0.85 / n_scen
+            # Narrower bar groups leave whitespace between stressor
+            # categories so the rotated x-tick labels don't crowd
+            # each other.
+            width = 0.7 / n_scen
             std_col = "ari_delta_std" if "ari_delta_std" in df.columns else None
             max_val = 0.0
             for j, sc in enumerate(scenarios_present):
@@ -1559,30 +1503,29 @@ def fig9_fault_degradation():
             ax.axhline(0.05, color="#E65100", linewidth=1.6, linestyle="--",
                        label="H2 band (|ΔARI|<0.05)", zorder=0)
 
-            # Auto-scale tight to the data with extra headroom so the
-            # upper-right legend has clear vertical space above every
-            # bar. Earlier the y-axis was pinned to 0-0.05 even when
-            # the largest bar was 0.005, which made the panel read as
-            # empty. The 2.4x multiplier accommodates the legend.
-            ax.set_ylim(0, max(max_val * 2.4, 0.014))
+            # Log y-axis so both small (≈1e-4) and large (≈5e-2) bars
+            # are visible in the same panel — linear 0-0.06 makes the
+            # missing-data and tool-fault bars effectively invisible.
+            # The 1.0 upper bound (vs 0.1) leaves a clear log decade
+            # of headroom above the H2 line for the legend.
+            ax.set_yscale("log")
+            ax.set_ylim(1e-5, 1.0)
 
             ax.set_xticks(x + width * (n_scen - 1) / 2)
             ax.set_xticklabels([_STRESSOR_DISPLAY.get(s, s) for s in stressors],
-                               rotation=10, ha="right")
+                               rotation=20, ha="right")
 
-            # Compact legend inside the upper-right of the axes. Six
-            # entries (5 scenarios + threshold) in two columns reads
-            # cleanly without overlapping the title above or the data
-            # below; the bars themselves do not extend high enough to
-            # collide with the legend frame because the y-axis is
-            # auto-scaled tight to the data.
+            # Upper-right legend sits in the headroom decade between
+            # the H2 line (0.05) and the axis top (1.0); this avoids
+            # the legend frame covering the small tool-fault bars at
+            # the bottom of the log axis.
             handles_a, labels_a = ax.get_legend_handles_labels()
             leg_a = ax.legend(handles_a, labels_a, loc="upper right",
-                              ncol=2,
-                              fontsize=_F9_LEG - 2, framealpha=0.95,
+                              ncol=3,
+                              fontsize=_F9_LEG - 3, framealpha=0.95,
                               edgecolor="#757575", fancybox=False, shadow=False,
-                              handlelength=1.2, handletextpad=0.4,
-                              columnspacing=0.9, borderpad=0.4)
+                              handlelength=1.1, handletextpad=0.4,
+                              columnspacing=0.8, borderpad=0.4)
             for txt in leg_a.get_texts():
                 txt.set_fontweight("bold")
             panel_a_filled = True
@@ -1591,8 +1534,7 @@ def fig9_fault_degradation():
         ax.text(0.5, 0.5, "stress_degradation.csv not available",
                 ha="center", va="center", transform=ax.transAxes,
                 fontsize=_F9_ANNOT, color="#616161")
-    _restyle(ax, "(a) ARI Degradation Under Faults",
-             "|ΔARI| (integrated vs unstressed)")
+    _restyle(ax, "(a) ARI Degradation Under Faults", "|ΔARI|")
 
     # =================================================================
     # Panel (b) — Context honour rate
@@ -1624,88 +1566,16 @@ def fig9_fault_degradation():
         ax.set_xticks(x)
         ax.set_xticklabels(labels, rotation=20, ha="right")
         ax.set_ylim(0, 110)
-        # 80 % reference line; tag placed in the upper-left corner so
-        # it does not collide with any per-bar label.
+        # 80 % reference line, drawn without an inline label.
         ax.axhline(80, color="#9E9E9E", linewidth=1.0, linestyle=":",
                    alpha=0.7, zorder=0)
-        ax.text(0.02, 0.84, "80% reference", transform=ax.transAxes,
-                ha="left", va="bottom",
-                fontsize=_F9_ANNOT - 2, color="#616161", fontweight="bold")
     else:
         ax.text(0.5, 0.5, "no context_alignment_*.json files",
                 ha="center", va="center", transform=ax.transAxes,
                 fontsize=_F9_ANNOT, color="#616161")
     _restyle(ax, "(b) Context Honour Rate", "Honour rate (% of active steps)")
 
-    # =================================================================
-    # Panel (c) — MCP protocol reliability
-    # =================================================================
-    # Switched from raw counts (where 200 total dwarfed ~10 errors and
-    # made errors invisible) to error rates as percentages. Total call
-    # counts are annotated above each scenario as text so the
-    # denominator stays auditable.
-    ax = axes[2]
-    if proto_rows:
-        labels = [r["label"] for r in proto_rows]
-        calls = [r["calls"] for r in proto_rows]
-        env_pct = [100.0 * r["env_errs"] / max(r["calls"], 1) for r in proto_rows]
-        tool_pct = [100.0 * r["tool_errs"] / max(r["calls"], 1) for r in proto_rows]
-        x = np.arange(len(labels))
-        bw = 0.36
-        ax.bar(x - bw / 2, env_pct, bw, color="#6A1B9A",
-               label="Envelope errors", edgecolor="white", linewidth=0.8,
-               alpha=0.95)
-        ax.bar(x + bw / 2, tool_pct, bw, color=WINDOW_COLOR,
-               label="Tool errors", edgecolor="white", linewidth=0.8,
-               alpha=0.95)
-        max_pct = max(max(env_pct, default=0), max(tool_pct, default=0))
-        # Headroom for the upper-right legend.
-        ymax = max(max_pct * 2.0, 10.0)
-        ax.set_ylim(0, ymax)
-        # Per-bar value labels (the bars themselves are short, so the
-        # numeric label above each bar makes the percentage readable
-        # without forcing the reader to estimate from the y-axis).
-        for xi in range(len(labels)):
-            if env_pct[xi] > 0:
-                ax.text(xi - bw / 2, env_pct[xi] + ymax * 0.015,
-                        f"{env_pct[xi]:.1f}%",
-                        ha="center", va="bottom", fontsize=_F9_ANNOT - 2,
-                        fontweight="bold", color="#6A1B9A")
-            if tool_pct[xi] > 0:
-                ax.text(xi + bw / 2, tool_pct[xi] + ymax * 0.015,
-                        f"{tool_pct[xi]:.1f}%",
-                        ha="center", va="bottom", fontsize=_F9_ANNOT - 2,
-                        fontweight="bold", color=WINDOW_COLOR)
-        # Single "n=… per scenario" footnote in the lower-left of the
-        # axes carries the call total without cluttering the bars.
-        unique_n = set(calls)
-        if len(unique_n) == 1:
-            n_note = f"n = {calls[0]} MCP calls per scenario"
-        else:
-            n_note = "n per scenario: " + ", ".join(
-                f"{lab.split()[0]}={c}" for lab, c in zip(labels, calls))
-        ax.text(0.02, 0.97, n_note, transform=ax.transAxes,
-                ha="left", va="top", fontsize=_F9_ANNOT - 2,
-                fontweight="bold", color="#424242",
-                bbox=dict(boxstyle="round,pad=0.20", facecolor="white",
-                          edgecolor="#BDBDBD", linewidth=0.7, alpha=0.92))
-        ax.set_xticks(x)
-        ax.set_xticklabels(labels, rotation=20, ha="right")
-        # Legend in upper-right inside the axes; matches panel (a)'s
-        # placement so the three panels read consistently.
-        leg_c = ax.legend(loc="upper right", ncol=1,
-                          fontsize=_F9_LEG - 1, framealpha=0.95,
-                          edgecolor="#757575", fancybox=False, shadow=False,
-                          handlelength=1.4, handletextpad=0.5, borderpad=0.45)
-        for txt in leg_c.get_texts():
-            txt.set_fontweight("bold")
-    else:
-        ax.text(0.5, 0.5, "no mcp_protocol_*.json files",
-                ha="center", va="center", transform=ax.transAxes,
-                fontsize=_F9_ANNOT, color="#616161")
-    _restyle(ax, "(c) MCP Protocol Reliability", "Error rate (% of total calls)")
-
-    fig.suptitle("Robustness, Context Honour, and Protocol Reliability",
+    fig.suptitle("Robustness and Context Honour",
                  y=0.995, fontsize=FIG_TITLE_SIZE + 3, fontweight="bold")
     fig.tight_layout(rect=[0, 0.02, 1, 0.96], w_pad=1.6)
     _save(fig, "fig9_robustness")
