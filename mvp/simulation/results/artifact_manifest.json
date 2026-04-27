@@ -1,11 +1,11 @@
 {
-  "git_commit": "b3569077e7aedfa9f4ed5476aac2c6fc77d1749c",
-  "artifact_count": 66,
+  "git_commit": "21a296683ecbb250f2e9c776754fce7673db3436",
+  "artifact_count": 93,
   "artifacts": [
     {
       "file": "artifact_manifest.json",
-      "bytes": 11445,
-      "sha256": "b1b0cd9934b211db740105f94db9f4608d415953fd9ae1fdca62325237e936ce"
+      "bytes": 7603,
+      "sha256": "33ba4505e8af20e14e6824e68600d8e354dae45a0fa9f76fb317d96131e79b50"
     },
     {
       "file": "benchmark_context_significance.json",
@@ -19,13 +19,13 @@
     },
     {
       "file": "benchmark_significance.json",
-      "bytes": 119329,
-      "sha256": "bb6b78b605daa4ea5180841ccfeef50f3c115742d4395e55377b2bb2ee127f1f"
+      "bytes": 51101,
+      "sha256": "20ca8488951aee4aacee1b4233ddb5543f76aa39e3288b28944d1dfc392e3b43"
     },
     {
       "file": "benchmark_summary.json",
-      "bytes": 41435,
-      "sha256": "855fcd184ad5d4656b8d0fb983634e9c96bc525d38582423f37338a8a070f315"
+      "bytes": 48083,
+      "sha256": "43c0e0606242b5fab762ded21ad236f9bd9a5641218d55699da93be3240b2826"
     },
     {
       "file": "context_alignment_cyber_outage.json",
@@ -36,6 +36,11 @@
       "file": "context_alignment_cyber_outage_agribrain_cold_start.json",
       "bytes": 1029,
       "sha256": "843af02b65c1cfe37be899770ff00e8dfba1dcab82647bfa24a448e3c2ba38eb"
+    },
+    {
+      "file": "context_alignment_cyber_outage_agribrain_no_bonus.json",
+      "bytes": 929,
+      "sha256": "d7204fe7bd86d500f38a3fe74b604ed487f9c989527055191f7a8a5fc52abbe4"
     },
     {
       "file": "context_alignment_cyber_outage_agribrain_pert_10.json",
@@ -49,8 +54,8 @@
     },
     {
       "file": "context_alignment_cyber_outage_agribrain_pert_25.json",
-      "bytes": 1026,
-      "sha256": "ff7c79d954569d1730a4e99d7b060d7b8b82a97d8a616c7474b1936df1c1fb07"
+      "bytes": 928,
+      "sha256": "6c1c0b9ffcc80473fb5345e43039745af979d1a356d09bb8d3864bda669c07af"
     },
     {
       "file": "context_alignment_cyber_outage_agribrain_pert_25_static.json",
@@ -61,6 +66,26 @@
       "file": "context_alignment_cyber_outage_agribrain_pert_50.json",
       "bytes": 928,
       "sha256": "b99f42016bef10f2ebc61a3f4d3fa3a7264e6bbe276534248be59f35b29a4bfd"
+    },
+    {
+      "file": "context_alignment_cyber_outage_agribrain_pert_50_static.json",
+      "bytes": 935,
+      "sha256": "4947c8b455e3293e32b07e36632d9a605d4bffbfe7ff080a267181e6d4df3583"
+    },
+    {
+      "file": "context_alignment_cyber_outage_agribrain_theta_pert_10.json",
+      "bytes": 934,
+      "sha256": "e3b86b1a785c156fddcceb5ec04193cbf37d61c273ffffa8c8016a7bd6faface"
+    },
+    {
+      "file": "context_alignment_cyber_outage_agribrain_theta_pert_25.json",
+      "bytes": 934,
+      "sha256": "0be15be5495f660c6c93a439eb92afb0e23ce152b12ddcd5dc21390497f32f74"
+    },
+    {
+      "file": "context_alignment_cyber_outage_agribrain_theta_pert_50.json",
+      "bytes": 934,
+      "sha256": "f1c1d3bee9199f3751d7a6c0982e3115eff02167eafc4eb2aa88133e4e407b2a"
     },
     {
       "file": "context_alignment_cyber_outage_mcp_only.json",
@@ -169,8 +194,8 @@
     },
     {
       "file": "context_alignment_overproduction_agribrain_pert_25.json",
-      "bytes": 1028,
-      "sha256": "a32f74feda0a1d691f2a1f51241835ea94e4359213b11cbd1fd03f2d10a4b01a"
+      "bytes": 930,
+      "sha256": "590e33235adb35bceb651bc0f09fad7ab0e7d0ab348b2efe05a231dff9b3a596"
     },
     {
       "file": "context_alignment_overproduction_agribrain_pert_25_static.json",
@@ -179,8 +204,8 @@
     },
     {
       "file": "context_alignment_overproduction_agribrain_pert_50.json",
-      "bytes": 1028,
-      "sha256": "cd57507343054a47ac0ba750390c28a000a17f407ee36601082046647a16c0b9"
+      "bytes": 930,
+      "sha256": "e06b5155abccad6b01310d8d2f85f10e808a6ec610b2f5ea6cdb85b5bcce736b"
     },
     {
       "file": "context_alignment_overproduction_agribrain_pert_50_static.json",
@@ -214,23 +239,123 @@
     },
     {
       "file": "external_validity_deltas.csv",
-      "bytes": 7202,
-      "sha256": "532c2b2aeafdda0db22e1fa5f4149209a9b8b7a8538e926c95ecc8f9dc1267dc"
+      "bytes": 7081,
+      "sha256": "8d06ca608e36ab27a8573156c1413ea15f400da872a3f4c22d85ed40a1534816"
     },
     {
       "file": "external_validity_summary.csv",
-      "bytes": 11630,
-      "sha256": "e37af7f68c880c5ea2780e7e7b89a59d4a33c9425187c59575d8f678710fb25f"
+      "bytes": 11540,
+      "sha256": "526bd9e3c73401ce57d345d8922a3689cdf77f4b0fc04b1138d488d634fe21ba"
     },
     {
       "file": "external_validity_summary.json",
-      "bytes": 22240,
-      "sha256": "06f9bc1b25969d4eea1fe0e40bcddf1d246da62c8606924e6dfaee0fafdb2848"
+      "bytes": 21480,
+      "sha256": "e5049e3918018445fe94c0a052ff7469536ed3d078f314ba6c209577cd448b01"
     },
     {
       "file": "feature_heatmap_data.json",
-      "bytes": 2299,
-      "sha256": "dba8f63c419c2ac28c4b9f01497f617e9d8cd1d958e891ceae6dd7cdb6e7005e"
+      "bytes": 2092,
+      "sha256": "a244e0a9ad60920e48a48b89328b8862cccb27d3ca3b70ba5d8c83a7e21ec6e5"
+    },
+    {
+      "file": "fig10_latency_quality_frontier.pdf",
+      "bytes": 35353,
+      "sha256": "eb022bfe722091518603760739c804a7121759914347bb82879ff72589183ca0"
+    },
+    {
+      "file": "fig10_latency_quality_frontier.png",
+      "bytes": 969286,
+      "sha256": "450a137c2c8fedf6bd812eff79eae7791a0cbd8fed120ccf24de27e53fa127d2"
+    },
+    {
+      "file": "fig2_heatwave.pdf",
+      "bytes": 67901,
+      "sha256": "31f2ab9d8129a39d0154f9b6c3102ed0fd78c2897ced205eefac6741764e693b"
+    },
+    {
+      "file": "fig2_heatwave.png",
+      "bytes": 3720016,
+      "sha256": "387f3b8b9373317a2e7382f663a985637425dcf3aa44c9f7d2df63f415f397be"
+    },
+    {
+      "file": "fig3_overproduction.pdf",
+      "bytes": 58068,
+      "sha256": "0f95ec6aaa69d3d836f2819a017053afb6137da8bcfa2fcde2f1736dd5976bc1"
+    },
+    {
+      "file": "fig3_overproduction.png",
+      "bytes": 3084077,
+      "sha256": "8da01d417993cb51e070e6a97bcfc0e0ac9c7bc2786004e40c479c8496ba54ff"
+    },
+    {
+      "file": "fig4_cyber.pdf",
+      "bytes": 45391,
+      "sha256": "d80a9fb2223bd65f0bc91c7f8253142c7567d3afd1652881e7681e52d0a6f929"
+    },
+    {
+      "file": "fig4_cyber.png",
+      "bytes": 1409373,
+      "sha256": "3ffac66d72c9b778d3b709ba821d3d8950ca35f50a56814932e8ef678c379e04"
+    },
+    {
+      "file": "fig5_pricing.pdf",
+      "bytes": 62005,
+      "sha256": "a60e553378b09c48b2508d631f3b2baea4f4d0345afac5253c260bf9ad6f1b6c"
+    },
+    {
+      "file": "fig5_pricing.png",
+      "bytes": 3159472,
+      "sha256": "3edd7046ecfd638e6edf7160d8c5e02275685500854cb5fb80dc0e0198556157"
+    },
+    {
+      "file": "fig6_cross.pdf",
+      "bytes": 39433,
+      "sha256": "0349ea8923ef726aef74daad226a72157db476a9a49ea690f9e2764ab3810e81"
+    },
+    {
+      "file": "fig6_cross.png",
+      "bytes": 1498168,
+      "sha256": "14f6a0f4d3fd0bf373b9bec670a08c014e96d706b449d63031f66748e173dabe"
+    },
+    {
+      "file": "fig7_ablation.pdf",
+      "bytes": 42457,
+      "sha256": "f5ba24648b5d68158f2407e38f797100c6251318b472b0efc10e06ff6c41b17e"
+    },
+    {
+      "file": "fig7_ablation.png",
+      "bytes": 1006893,
+      "sha256": "b230226f312ecc00e31ecdf24c0ad8dab8d6e166de62b616b7332202ab665288"
+    },
+    {
+      "file": "fig8_green_ai.pdf",
+      "bytes": 46781,
+      "sha256": "27e8eb04283df02f72e78fdfcc1de3de3c5e7f4d2c3153ffe32bf16bd9271d44"
+    },
+    {
+      "file": "fig8_green_ai.png",
+      "bytes": 1247589,
+      "sha256": "395f6064f8a98d6b148bd7647d91ff83f2f8df96b8be0b2799b7cd749920fce7"
+    },
+    {
+      "file": "fig9_mcp_pirag_robustness.pdf",
+      "bytes": 38082,
+      "sha256": "36b63ffe3524d8700b2e2bebd7d1725ca83bc760871c227159ff976bbcb78082"
+    },
+    {
+      "file": "fig9_mcp_pirag_robustness.png",
+      "bytes": 929298,
+      "sha256": "66de0f7b7a6a612221c2a8566fa409c88210bb520581efbeee220552764cadad"
+    },
+    {
+      "file": "fig9_robustness.pdf",
+      "bytes": 30270,
+      "sha256": "8101814455297d4d4bbc1271c1fc9e59a4ca65e9cd59547b380ac7ec3239f5e4"
+    },
+    {
+      "file": "fig9_robustness.png",
+      "bytes": 1632818,
+      "sha256": "3eb9d80d0ab9153fda71d250cfac85f06de412d8285a8f58562f6a4b034fcd93"
     },
     {
       "file": "mcp_interop_adaptive_pricing.json",
@@ -258,6 +383,16 @@
       "sha256": "7ca77439eddd8a09c09ac7f6656914f8c2fa9a8084dd2b9bae0127c76d2dc5bc"
     },
     {
+      "file": "mcp_protocol_adaptive_pricing.json",
+      "bytes": 165076,
+      "sha256": "51bb4b9e3b4e54aeaa602c90f98c753323ee32d5ca2f5ee5e7064355339ec863"
+    },
+    {
+      "file": "mcp_protocol_baseline.json",
+      "bytes": 149929,
+      "sha256": "fc64c0d1a1c8190d1a0acef67fe2e419b9fb0c12e599a601b4320fc003721ff5"
+    },
+    {
       "file": "mcp_protocol_cyber_outage.json",
       "bytes": 185548,
       "sha256": "e998440f7740dc83b26a1278725ca8d4376367c2b9e259ba0d872d961e2cf0c3"
@@ -279,28 +414,28 @@
     },
     {
       "file": "stress_degradation.csv",
-      "bytes": 16334,
-      "sha256": "acee96f45163616808cb4169e05167fcf3abe598658145d0fcc63685d14e7d80"
+      "bytes": 4438,
+      "sha256": "cffeed06d5e54180498af7d84e0fda818b45a8c3bbd32c41f83050c642645dac"
     },
     {
       "file": "stress_passfail.csv",
-      "bytes": 27613,
-      "sha256": "b4c5144d7d10288b53e6221276d43502bcadfd70d26a665b71071d56806c30fb"
+      "bytes": 11243,
+      "sha256": "9d8bb403303e74508c536656c1003e8a7ecedade377340effdff5f0835d878d1"
     },
     {
       "file": "stress_summary.json",
-      "bytes": 27983,
-      "sha256": "8f33fb22c5c53e42647992aae5425fdb635ac7fd109c9f2f31e32a102f602ad8"
+      "bytes": 21845,
+      "sha256": "7299aef3afa59a2cc79f513695aa1d08356c04b9ffd00892a814d1ce6015557c"
     },
     {
       "file": "table1_summary.csv",
-      "bytes": 927,
-      "sha256": "2045531d94dc10188d824c8be9a199f59e620ebf22e58180cef66a92c23168f7"
+      "bytes": 1239,
+      "sha256": "6199e829e17e7942ec311da22441b9dbbff2a5c6b6c8736fc89e58c51c8198eb"
     },
     {
       "file": "table2_ablation.csv",
-      "bytes": 1885,
-      "sha256": "ae373a35fefd5bfb1fd7814e7825a301ce281019faf961f2bdd30b2b977e9585"
+      "bytes": 2388,
+      "sha256": "866a6922af1de4393b1baa78a5e5161aa1671ba1a75ed92b5be91c06b1a1b28f"
     },
     {
       "file": "traces_adaptive_pricing.json",
@@ -329,8 +464,8 @@
     },
     {
       "file": "validation_report.json",
-      "bytes": 139,
-      "sha256": "17e8c2bbcdc969d14c0b1d5ccb2f5bfbd96b0b1ce202084b7ba5fa88290fef53"
+      "bytes": 1153,
+      "sha256": "bacd7178540d51ef55cbdf5fd0ef53feda1a20509ce29091cbc6600d1c8f86c4"
     }
   ]
 }

@@ -1,2011 +1,1771 @@
 {
   "heatwave": {
-    "static": {
-      "ari": {
-        "mean": 0.343,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.116,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.461,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
-    "hybrid_rl": {
-      "ari": {
-        "mean": 0.552,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.044,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.956,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.701,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
-    "no_pinn": {
-      "ari": {
-        "mean": 0.568,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.038,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.981,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.717,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
-    "no_slca": {
-      "ari": {
-        "mean": 0.513,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.057,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.842,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.661,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
     "agribrain": {
       "ari": {
-        "mean": 0.614,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.6176841767719969,
+        "std": 0.006732535108618679,
+        "ci_low": 0.6147888648880095,
+        "ci_high": 0.6206949282621517,
+        "n_seeds": 20
       },
       "waste": {
-        "mean": 0.021,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.020436813526171643,
+        "std": 0.0012293235585218562,
+        "ci_low": 0.01987101439718489,
+        "ci_high": 0.020991375586884423,
+        "n_seeds": 20
       },
       "rle": {
-        "mean": 0.994,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.9939789754098969,
+        "std": 0.007358556497983749,
+        "ci_low": 0.99019302467451,
+        "ci_high": 0.9968680817540584,
+        "n_seeds": 20
       },
       "slca": {
-        "mean": 0.756,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.7607713897272073,
+        "std": 0.00550730756612892,
+        "ci_low": 0.7584336124320614,
+        "ci_high": 0.7632656441132767,
+        "n_seeds": 20
       },
       "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 2063.12794131968,
+        "std": 40.834071959235516,
+        "ci_low": 2044.2425951647206,
+        "ci_high": 2079.38196417268,
+        "n_seeds": 20
       },
       "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
-    "no_context": {
-      "ari": {
-        "mean": 0.591,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.028,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.994,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.736,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.900933136617921,
+        "std": 0.004367016001749597,
+        "ci_low": 0.8990376118504575,
+        "ci_high": 0.902871180717965,
+        "n_seeds": 20
       }
     },
     "mcp_only": {
       "ari": {
-        "mean": 0.598,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.6052391062956436,
+        "std": 0.007934303020605845,
+        "ci_low": 0.6017165974573422,
+        "ci_high": 0.6089250321714579,
+        "n_seeds": 20
       },
       "waste": {
-        "mean": 0.023,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.02241401266767064,
+        "std": 0.0014778257365928573,
+        "ci_low": 0.02175528071936369,
+        "ci_high": 0.023066696040484475,
+        "n_seeds": 20
       },
       "rle": {
-        "mean": 0.994,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.9892396250246032,
+        "std": 0.008977607486998886,
+        "ci_low": 0.9848324060421276,
+        "ci_high": 0.993027829133311,
+        "n_seeds": 20
       },
       "slca": {
-        "mean": 0.741,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.7486154622099226,
+        "std": 0.0068293033759189515,
+        "ci_low": 0.7457540404897841,
+        "ci_high": 0.7517516613082557,
+        "n_seeds": 20
       },
       "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 2162.0334020600303,
+        "std": 55.11899882365458,
+        "ci_low": 2138.193008077799,
+        "ci_high": 2186.6836882566317,
+        "n_seeds": 20
       },
       "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.8933383423930369,
+        "std": 0.003940358841894727,
+        "ci_low": 0.8916606738320669,
+        "ci_high": 0.8951108186226757,
+        "n_seeds": 20
       }
     },
     "pirag_only": {
       "ari": {
-        "mean": 0.609,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.6087041557296873,
+        "std": 0.007529303349502721,
+        "ci_low": 0.6053439035873146,
+        "ci_high": 0.6120580109908517,
+        "n_seeds": 20
       },
       "waste": {
-        "mean": 0.025,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.024731490899000945,
+        "std": 0.0014563449125994353,
+        "ci_low": 0.024096898689318236,
+        "ci_high": 0.025382025483255848,
+        "n_seeds": 20
       },
       "rle": {
-        "mean": 0.994,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.9895760648516667,
+        "std": 0.008311770347664742,
+        "ci_low": 0.985765925428507,
+        "ci_high": 0.9930637576559863,
+        "n_seeds": 20
       },
       "slca": {
-        "mean": 0.753,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.753832285029265,
+        "std": 0.006213556172384274,
+        "ci_low": 0.7511725044064326,
+        "ci_high": 0.7565198123408508,
+        "n_seeds": 20
       },
       "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 2124.996031363223,
+        "std": 50.80307987688322,
+        "ci_low": 2103.476620222144,
+        "ci_high": 2146.595280793812,
+        "n_seeds": 20
       },
       "equity": {
+        "mean": 0.8940345040330169,
+        "std": 0.003638825527013588,
+        "ci_low": 0.8925201226184305,
+        "ci_high": 0.8957939952292577,
+        "n_seeds": 20
+      }
+    },
+    "no_context": {
+      "ari": {
+        "mean": 0.5933999625330245,
+        "std": 0.008075834517922655,
+        "ci_low": 0.5898733556407911,
+        "ci_high": 0.5971850945950751,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.027244877836452415,
+        "std": 0.0018074089930094378,
+        "ci_low": 0.026441713412439605,
+        "ci_high": 0.02805327928928822,
+        "n_seeds": 20
+      },
+      "rle": {
+        "mean": 0.9813377333308502,
+        "std": 0.009069571716598902,
+        "ci_low": 0.9769717633076749,
+        "ci_high": 0.9854736184651105,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.7385037621679535,
+        "std": 0.0068788523831728905,
+        "ci_low": 0.735588214199507,
+        "ci_high": 0.7416898334186639,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 2255.5310476781224,
+        "std": 59.53358428724913,
+        "ci_low": 2228.2765433667123,
+        "ci_high": 2281.8976927975705,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.8847871487111367,
+        "std": 0.003883159366416407,
+        "ci_low": 0.8830681926285158,
+        "ci_high": 0.8865779897979122,
+        "n_seeds": 20
+      }
+    },
+    "static": {
+      "ari": {
+        "mean": 0.343056284997206,
+        "std": 0.002964852553515186,
+        "ci_low": 0.3418424512764313,
+        "ci_high": 0.3444330800042775,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.11294024111306553,
+        "std": 0.006474150881380552,
+        "ci_low": 0.10978191484094224,
+        "ci_high": 0.11564011962886465,
+        "n_seeds": 20
+      },
+      "rle": {
         "mean": 0.0,
         "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.4601687291679094,
+        "std": 0.0007463906491613558,
+        "ci_low": 0.45984271203460747,
+        "ci_high": 0.4605024702642216,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 4876.3858589358115,
+        "std": 39.28543060369538,
+        "ci_low": 4858.100140410291,
+        "ci_high": 4892.883788041632,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.9444435675124762,
+        "std": 0.0010564249431524355,
+        "ci_low": 0.9439442090838446,
+        "ci_high": 0.9449349166382167,
+        "n_seeds": 20
+      }
+    },
+    "hybrid_rl": {
+      "ari": {
+        "mean": 0.5462793485197059,
+        "std": 0.0062946871227356725,
+        "ci_low": 0.5434464793745069,
+        "ci_high": 0.5489835297686085,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.04389233599494509,
+        "std": 0.004029021771456618,
+        "ci_low": 0.04198348125829624,
+        "ci_high": 0.04554117494287389,
+        "n_seeds": 20
+      },
+      "rle": {
+        "mean": 0.9300561330795813,
+        "std": 0.021514223299287722,
+        "ci_low": 0.9204460126673228,
+        "ci_high": 0.9401648647668484,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.695026481291115,
+        "std": 0.004680120412910911,
+        "ci_low": 0.6929679049778195,
+        "ci_high": 0.6969800159948929,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 2640.7986172096175,
+        "std": 46.688634198924,
+        "ci_low": 2621.052706124212,
+        "ci_high": 2660.7301265280125,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.8670525209066318,
+        "std": 0.003165705292590188,
+        "ci_low": 0.8658319791505037,
+        "ci_high": 0.868493665497101,
+        "n_seeds": 20
+      }
+    },
+    "no_pinn": {
+      "ari": {
+        "mean": 0.5731453574276955,
+        "std": 0.006380931205532659,
+        "ci_low": 0.5703469331268525,
+        "ci_high": 0.576093554145487,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.03643296083617624,
+        "std": 0.002384703508131605,
+        "ci_low": 0.03535491249265341,
+        "ci_high": 0.03746420319239121,
+        "n_seeds": 20
+      },
+      "rle": {
+        "mean": 0.9633153913839003,
+        "std": 0.015951161560356555,
+        "ci_low": 0.9564295699981358,
+        "ci_high": 0.9701820603283439,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.7208879737022625,
+        "std": 0.00566556681081615,
+        "ci_low": 0.7184190109160089,
+        "ci_high": 0.7232720408027009,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 2404.7239313269956,
+        "std": 49.98938531114,
+        "ci_low": 2383.680831409726,
+        "ci_high": 2427.6282057788453,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.8761957613876161,
+        "std": 0.0028688259819202298,
+        "ci_low": 0.8748958020846299,
+        "ci_high": 0.877454079735668,
+        "n_seeds": 20
+      }
+    },
+    "no_slca": {
+      "ari": {
+        "mean": 0.5073582669277774,
+        "std": 0.010585052285177867,
+        "ci_low": 0.503087087812567,
+        "ci_high": 0.5120914110141267,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.05663962902581436,
+        "std": 0.004070455092605096,
+        "ci_low": 0.0550172074617196,
+        "ci_high": 0.058468383150797144,
+        "n_seeds": 20
+      },
+      "rle": {
+        "mean": 0.8541232382030755,
+        "std": 0.028861379171092414,
+        "ci_low": 0.8421548271699364,
+        "ci_high": 0.8670049473854216,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.6566384179405842,
+        "std": 0.010412975970742927,
+        "ci_low": 0.6523967649079871,
+        "ci_high": 0.6612422745958909,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 2986.326017704584,
+        "std": 111.56544238926453,
+        "ci_low": 2936.3068904824536,
+        "ci_high": 3031.1710884509143,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.8556773601730349,
+        "std": 0.0042567397937156035,
+        "ci_low": 0.8538475051602298,
+        "ci_high": 0.8575661792987108,
+        "n_seeds": 20
       }
     }
   },
   "overproduction": {
-    "static": {
-      "ari": {
-        "mean": 0.344,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.149,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.444,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
-    "hybrid_rl": {
-      "ari": {
-        "mean": 0.548,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.072,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.838,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.654,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
-    "no_pinn": {
-      "ari": {
-        "mean": 0.573,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.063,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.86,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.677,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
-    "no_slca": {
-      "ari": {
-        "mean": 0.499,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.09,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.699,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.607,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
     "agribrain": {
       "ari": {
-        "mean": 0.628,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.636336739293384,
+        "std": 0.0036058047559605075,
+        "ci_low": 0.6347019057134083,
+        "ci_high": 0.6379176858902627,
+        "n_seeds": 20
       },
       "waste": {
-        "mean": 0.042,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.03338855451946507,
+        "std": 0.0016994048315423416,
+        "ci_low": 0.03262556156285616,
+        "ci_high": 0.03421351583760053,
+        "n_seeds": 20
       },
       "rle": {
-        "mean": 0.985,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.9790853482169334,
+        "std": 0.01262709781210663,
+        "ci_low": 0.9724552972147892,
+        "ci_high": 0.9841969366436264,
+        "n_seeds": 20
       },
       "slca": {
-        "mean": 0.726,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.7306479088732198,
+        "std": 0.003106531649347736,
+        "ci_low": 0.7292325629315777,
+        "ci_high": 0.7320456718798303,
+        "n_seeds": 20
       },
       "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 1983.8440474016093,
+        "std": 30.827307490400507,
+        "ci_low": 1970.7328464158936,
+        "ci_high": 1997.772095603566,
+        "n_seeds": 20
       },
       "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
-    "no_context": {
-      "ari": {
-        "mean": 0.596,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.052,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.926,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.696,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.9028995449700566,
+        "std": 0.0035243013742648544,
+        "ci_low": 0.90125174605935,
+        "ci_high": 0.9043042859985211,
+        "n_seeds": 20
       }
     },
     "mcp_only": {
       "ari": {
-        "mean": 0.614,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.6236776043263046,
+        "std": 0.004959072781635318,
+        "ci_low": 0.6213071696841203,
+        "ci_high": 0.6257491366252625,
+        "n_seeds": 20
       },
       "waste": {
-        "mean": 0.044,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.03566113475969548,
+        "std": 0.0020722240079145303,
+        "ci_low": 0.03475471515527133,
+        "ci_high": 0.0366474744934069,
+        "n_seeds": 20
       },
       "rle": {
-        "mean": 0.949,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.9612607796183669,
+        "std": 0.0198618088777995,
+        "ci_low": 0.9514607402474979,
+        "ci_high": 0.9700081275775865,
+        "n_seeds": 20
       },
       "slca": {
-        "mean": 0.712,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.7180187209603102,
+        "std": 0.004707051078104909,
+        "ci_low": 0.7157933618043335,
+        "ci_high": 0.7200231203175966,
+        "n_seeds": 20
       },
       "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 2090.3483362147836,
+        "std": 45.06668580372066,
+        "ci_low": 2072.1213679092452,
+        "ci_high": 2112.2564347639595,
+        "n_seeds": 20
       },
       "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.8950224314047024,
+        "std": 0.005790436427452521,
+        "ci_low": 0.8922649230610706,
+        "ci_high": 0.897416266183759,
+        "n_seeds": 20
       }
     },
     "pirag_only": {
       "ari": {
-        "mean": 0.617,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.6233979597757515,
+        "std": 0.005121634067516951,
+        "ci_low": 0.6210038152360259,
+        "ci_high": 0.6254457566998183,
+        "n_seeds": 20
       },
       "waste": {
-        "mean": 0.048,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.03875302722469035,
+        "std": 0.0021681363865761615,
+        "ci_low": 0.03784773375237842,
+        "ci_high": 0.0398035140469766,
+        "n_seeds": 20
       },
       "rle": {
-        "mean": 0.971,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.9644958500442338,
+        "std": 0.016318245052800585,
+        "ci_low": 0.957397021059968,
+        "ci_high": 0.9723623089983603,
+        "n_seeds": 20
       },
       "slca": {
-        "mean": 0.717,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.7197794238554007,
+        "std": 0.00472141414022573,
+        "ci_low": 0.7174734324110712,
+        "ci_high": 0.7217023768798514,
+        "n_seeds": 20
       },
       "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 2086.095070119425,
+        "std": 47.26884577027478,
+        "ci_low": 2067.288695161762,
+        "ci_high": 2108.850797266353,
+        "n_seeds": 20
       },
       "equity": {
+        "mean": 0.8898946317553266,
+        "std": 0.0056710184315777274,
+        "ci_low": 0.8872051378116947,
+        "ci_high": 0.8924003870693787,
+        "n_seeds": 20
+      }
+    },
+    "no_context": {
+      "ari": {
+        "mean": 0.6074544568968825,
+        "std": 0.0056456043286107534,
+        "ci_low": 0.604869814606687,
+        "ci_high": 0.6098576609241835,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.0415085540014659,
+        "std": 0.0024218045168491195,
+        "ci_low": 0.04043424959003019,
+        "ci_high": 0.04271832553302894,
+        "n_seeds": 20
+      },
+      "rle": {
+        "mean": 0.9461527305686783,
+        "std": 0.022938408632879492,
+        "ci_low": 0.9352065912837687,
+        "ci_high": 0.9561887612883704,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.7038785915173007,
+        "std": 0.005400891203136576,
+        "ci_low": 0.701358709438502,
+        "ci_high": 0.7060849760437041,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 2222.56344136789,
+        "std": 53.95268893920447,
+        "ci_low": 2199.51693014606,
+        "ci_high": 2247.4839493978943,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.8817876253708017,
+        "std": 0.005895415765566672,
+        "ci_low": 0.8791390491269364,
+        "ci_high": 0.8844456325173768,
+        "n_seeds": 20
+      }
+    },
+    "static": {
+      "ari": {
+        "mean": 0.35073382679433596,
+        "std": 0.0021906169729041017,
+        "ci_low": 0.349819712818731,
+        "ci_high": 0.35180166379444966,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.12644248609857298,
+        "std": 0.004032804217746712,
+        "ci_low": 0.12455264426190936,
+        "ci_high": 0.12815026999960252,
+        "n_seeds": 20
+      },
+      "rle": {
         "mean": 0.0,
         "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.4438190318037554,
+        "std": 0.000884474569900062,
+        "ci_low": 0.4434175917979809,
+        "ci_high": 0.444228759417791,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 4652.403014489972,
+        "std": 43.810877016594794,
+        "ci_low": 4631.567563794395,
+        "ci_high": 4672.648596506676,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.9511055496471761,
+        "std": 0.001104685146583756,
+        "ci_low": 0.9506232334732758,
+        "ci_high": 0.9515576801018902,
+        "n_seeds": 20
+      }
+    },
+    "hybrid_rl": {
+      "ari": {
+        "mean": 0.5550376329402802,
+        "std": 0.009011307351826056,
+        "ci_low": 0.5507517298990687,
+        "ci_high": 0.5589653111006205,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.06155932492289694,
+        "std": 0.003801297985230931,
+        "ci_low": 0.059722539068531935,
+        "ci_high": 0.06314866004759337,
+        "n_seeds": 20
+      },
+      "rle": {
+        "mean": 0.8463973288616742,
+        "std": 0.023977443664555405,
+        "ci_low": 0.8359619723960177,
+        "ci_high": 0.8568665226126507,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.6559674979239538,
+        "std": 0.00882474880432657,
+        "ci_low": 0.6518581828569887,
+        "ci_high": 0.6597623264102261,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 2660.2909620242176,
+        "std": 83.29849559135249,
+        "ci_low": 2622.9428865447617,
+        "ci_high": 2698.6676005753156,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.8638781690175298,
+        "std": 0.005240496716639705,
+        "ci_low": 0.8616397128344697,
+        "ci_high": 0.8663100029077879,
+        "n_seeds": 20
+      }
+    },
+    "no_pinn": {
+      "ari": {
+        "mean": 0.5812614479982514,
+        "std": 0.005206386648833925,
+        "ci_low": 0.5788305537315519,
+        "ci_high": 0.5837023750490289,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.05346398905600058,
+        "std": 0.0019638476213269316,
+        "ci_low": 0.05253251022912869,
+        "ci_high": 0.05433639653250221,
+        "n_seeds": 20
+      },
+      "rle": {
+        "mean": 0.8935566084121499,
+        "std": 0.02553855659696106,
+        "ci_low": 0.8816379284146012,
+        "ci_high": 0.9048095577305594,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.6816583317747142,
+        "std": 0.005405440822438335,
+        "ci_low": 0.6791330164020559,
+        "ci_high": 0.6842555150377129,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 2426.346211970159,
+        "std": 47.55162369547135,
+        "ci_low": 2404.1793183353,
+        "ci_high": 2445.658593956456,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.8715493850639817,
+        "std": 0.0042652456703193295,
+        "ci_low": 0.8697932369142818,
+        "ci_high": 0.8734131673974298,
+        "n_seeds": 20
+      }
+    },
+    "no_slca": {
+      "ari": {
+        "mean": 0.5056709522893719,
+        "std": 0.008007786680262472,
+        "ci_low": 0.502375027980484,
+        "ci_high": 0.5093160428182264,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.07459257198706239,
+        "std": 0.003427518672525851,
+        "ci_low": 0.07302659940249605,
+        "ci_high": 0.07609080028920455,
+        "n_seeds": 20
+      },
+      "rle": {
+        "mean": 0.7094007240843542,
+        "std": 0.03916973231268778,
+        "ci_low": 0.693602335777468,
+        "ci_high": 0.7277892935967892,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.6064811329002685,
+        "std": 0.008833902667798682,
+        "ci_low": 0.6028597473828021,
+        "ci_high": 0.6105634254579391,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 3114.9062157250746,
+        "std": 98.9053740171754,
+        "ci_low": 3070.9693627403467,
+        "ci_high": 3156.692674306727,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.8525775908931633,
+        "std": 0.003302617953733496,
+        "ci_low": 0.8510882644258952,
+        "ci_high": 0.8540072358550085,
+        "n_seeds": 20
       }
     }
   },
   "cyber_outage": {
-    "static": {
-      "ari": {
-        "mean": 0.383,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.12,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.475,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
-    "hybrid_rl": {
-      "ari": {
-        "mean": 0.553,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.065,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.472,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.642,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
-    "no_pinn": {
-      "ari": {
-        "mean": 0.596,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.052,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.656,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.685,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
-    "no_slca": {
-      "ari": {
-        "mean": 0.546,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.066,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.688,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.642,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
     "agribrain": {
       "ari": {
-        "mean": 0.648,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.6622976711367816,
+        "std": 0.008184625725277141,
+        "ci_low": 0.6587354998871245,
+        "ci_high": 0.6657996241998008,
+        "n_seeds": 20
       },
       "waste": {
-        "mean": 0.033,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.030338142475913037,
+        "std": 0.002543577835784462,
+        "ci_low": 0.02918790288188324,
+        "ci_high": 0.031467374016521193,
+        "n_seeds": 20
       },
       "rle": {
-        "mean": 0.808,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.8201623395719274,
+        "std": 0.031195068667363317,
+        "ci_low": 0.8058249337205978,
+        "ci_high": 0.8343307279906282,
+        "n_seeds": 20
       },
       "slca": {
-        "mean": 0.733,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.7464626774633754,
+        "std": 0.00818748183814275,
+        "ci_low": 0.7428564127573871,
+        "ci_high": 0.7498429125896102,
+        "n_seeds": 20
       },
       "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 2299.588370391777,
+        "std": 69.38834819919488,
+        "ci_low": 2271.382057969592,
+        "ci_high": 2330.5170325685845,
+        "n_seeds": 20
       },
       "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
-    "no_context": {
-      "ari": {
-        "mean": 0.64,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.036,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.808,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.726,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.865903901684573,
+        "std": 0.005937531996241152,
+        "ci_low": 0.8633612834305777,
+        "ci_high": 0.8685010777019064,
+        "n_seeds": 20
       }
     },
     "mcp_only": {
       "ari": {
-        "mean": 0.641,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.6518089699236079,
+        "std": 0.008859310956224553,
+        "ci_low": 0.6478140079624808,
+        "ci_high": 0.655219449372274,
+        "n_seeds": 20
       },
       "waste": {
-        "mean": 0.034,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.031706512587671,
+        "std": 0.002608758612890465,
+        "ci_low": 0.03049862840983173,
+        "ci_high": 0.03286525735602561,
+        "n_seeds": 20
       },
       "rle": {
-        "mean": 0.808,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.8201623395719274,
+        "std": 0.031195068667363317,
+        "ci_low": 0.8058249337205978,
+        "ci_high": 0.8343307279906282,
+        "n_seeds": 20
       },
       "slca": {
-        "mean": 0.726,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.7365047834256762,
+        "std": 0.008982877569342542,
+        "ci_low": 0.7322936455069936,
+        "ci_high": 0.7401292071461568,
+        "n_seeds": 20
       },
       "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 2374.373623551427,
+        "std": 72.7250552838365,
+        "ci_low": 2346.6963569235063,
+        "ci_high": 2408.6021580275024,
+        "n_seeds": 20
       },
       "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.862871047349317,
+        "std": 0.005131224565956619,
+        "ci_low": 0.8605568768542803,
+        "ci_high": 0.8649990483658456,
+        "n_seeds": 20
       }
     },
     "pirag_only": {
       "ari": {
-        "mean": 0.646,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.6560661150316236,
+        "std": 0.008167708941918103,
+        "ci_low": 0.6523959698413314,
+        "ci_high": 0.6595037716411131,
+        "n_seeds": 20
       },
       "waste": {
-        "mean": 0.035,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.032650881510590396,
+        "std": 0.002478614857361471,
+        "ci_low": 0.03154312093906518,
+        "ci_high": 0.03374616040583838,
+        "n_seeds": 20
       },
       "rle": {
-        "mean": 0.808,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.8201623395719274,
+        "std": 0.031195068667363317,
+        "ci_low": 0.8058249337205978,
+        "ci_high": 0.8343307279906282,
+        "n_seeds": 20
       },
       "slca": {
-        "mean": 0.732,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.7419363508970258,
+        "std": 0.008302131142253857,
+        "ci_low": 0.7379902848940044,
+        "ci_high": 0.745319643705862,
+        "n_seeds": 20
       },
       "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 2333.7142163543335,
+        "std": 69.73702688922178,
+        "ci_low": 2305.6060374394224,
+        "ci_high": 2366.8665969853228,
+        "n_seeds": 20
       },
       "equity": {
+        "mean": 0.86407218300292,
+        "std": 0.00548192052141936,
+        "ci_low": 0.8616448976001447,
+        "ci_high": 0.8664590652524409,
+        "n_seeds": 20
+      }
+    },
+    "no_context": {
+      "ari": {
+        "mean": 0.6437025469699653,
+        "std": 0.008617810927935333,
+        "ci_low": 0.6396727807697556,
+        "ci_high": 0.647436392927979,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.03421955449488995,
+        "std": 0.0025514543069697624,
+        "ci_low": 0.033017080694177046,
+        "ci_high": 0.03536902526341042,
+        "n_seeds": 20
+      },
+      "rle": {
+        "mean": 0.8201623395719274,
+        "std": 0.031195068667363317,
+        "ci_low": 0.8058249337205978,
+        "ci_high": 0.8343307279906282,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.7301467596460153,
+        "std": 0.0089821522427996,
+        "ci_low": 0.7257192577994542,
+        "ci_high": 0.7339266830714228,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 2422.871825605728,
+        "std": 74.63857650020825,
+        "ci_low": 2391.6330859920963,
+        "ci_high": 2457.878103032352,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.8606569267914967,
+        "std": 0.004819065223425163,
+        "ci_low": 0.8585629635225495,
+        "ci_high": 0.862647034171742,
+        "n_seeds": 20
+      }
+    },
+    "static": {
+      "ari": {
+        "mean": 0.38381605992928436,
+        "std": 0.003766406650229877,
+        "ci_low": 0.38225307703196665,
+        "ci_high": 0.3855806168900597,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.11365551730657827,
+        "std": 0.008018177375125654,
+        "ci_low": 0.10959479589982006,
+        "ci_high": 0.11675159950949801,
+        "n_seeds": 20
+      },
+      "rle": {
         "mean": 0.0,
         "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.47287218686203386,
+        "std": 0.0009352757567591931,
+        "ci_low": 0.4724399816991849,
+        "ci_high": 0.47330225282470856,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 4697.23835107314,
+        "std": 40.665648139083494,
+        "ci_low": 4679.200564173648,
+        "ci_high": 4715.786188650619,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.9616790271935078,
+        "std": 0.0010785599624769375,
+        "ci_low": 0.9612234858814208,
+        "ci_high": 0.9621762492052297,
+        "n_seeds": 20
+      }
+    },
+    "hybrid_rl": {
+      "ari": {
+        "mean": 0.5540218866042477,
+        "std": 0.008523477597352141,
+        "ci_low": 0.5504777613497355,
+        "ci_high": 0.5580035861169111,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.062034365209716905,
+        "std": 0.004476066948393338,
+        "ci_low": 0.060193385570588405,
+        "ci_high": 0.0639807493348569,
+        "n_seeds": 20
+      },
+      "rle": {
+        "mean": 0.5320092549446276,
+        "std": 0.0473592507857498,
+        "ci_low": 0.5103741584596332,
+        "ci_high": 0.5550758411483276,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.6429910143140435,
+        "std": 0.008391919765629408,
+        "ci_low": 0.6396255457856996,
+        "ci_high": 0.64685088317055,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 3197.9186833308586,
+        "std": 73.26414596344787,
+        "ci_low": 3165.119072304274,
+        "ci_high": 3228.8098617861815,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.833558937847919,
+        "std": 0.0031341059290086724,
+        "ci_low": 0.8322966881464284,
+        "ci_high": 0.8349960606656054,
+        "n_seeds": 20
+      }
+    },
+    "no_pinn": {
+      "ari": {
+        "mean": 0.586643825692947,
+        "std": 0.007732973072995591,
+        "ci_low": 0.5833628517151275,
+        "ci_high": 0.5899994351092487,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.052242878757756094,
+        "std": 0.003763654374089108,
+        "ci_low": 0.05063592853663651,
+        "ci_high": 0.05386341405860703,
+        "n_seeds": 20
+      },
+      "rle": {
+        "mean": 0.6536471794640268,
+        "std": 0.03270793735699096,
+        "ci_low": 0.6395383607924133,
+        "ci_high": 0.6677498797563711,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.6753342849020912,
+        "std": 0.00724142284203458,
+        "ci_low": 0.6722263892403852,
+        "ci_high": 0.6783309108412386,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 2913.764155386931,
+        "std": 78.1709366458347,
+        "ci_low": 2880.641537386871,
+        "ci_high": 2947.3692228897125,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.8368466451844851,
+        "std": 0.0028953044456183326,
+        "ci_low": 0.8355969439818918,
+        "ci_high": 0.8380462728928728,
+        "n_seeds": 20
+      }
+    },
+    "no_slca": {
+      "ari": {
+        "mean": 0.5421034956206059,
+        "std": 0.007453687485986863,
+        "ci_low": 0.5384802769951821,
+        "ci_high": 0.5451702580590163,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.06392073135984,
+        "std": 0.00516338036440693,
+        "ci_low": 0.0618726390544941,
+        "ci_high": 0.06627209259798449,
+        "n_seeds": 20
+      },
+      "rle": {
+        "mean": 0.6096482276287428,
+        "std": 0.04256328851313188,
+        "ci_low": 0.5907470931053856,
+        "ci_high": 0.6296568838072234,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.6349472248408927,
+        "std": 0.006512289235965163,
+        "ci_low": 0.631979873253144,
+        "ci_high": 0.6377011548045641,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 3218.6835703765555,
+        "std": 57.71364535771021,
+        "ci_low": 3193.882505103357,
+        "ci_high": 3245.883735840764,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.8417568999644018,
+        "std": 0.0024559621064738626,
+        "ci_low": 0.840730429345553,
+        "ci_high": 0.8428431476068178,
+        "n_seeds": 20
       }
     }
   },
   "adaptive_pricing": {
-    "static": {
-      "ari": {
-        "mean": 0.435,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.084,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.506,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
-    "hybrid_rl": {
-      "ari": {
-        "mean": 0.635,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.042,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.701,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.704,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
-    "no_pinn": {
-      "ari": {
-        "mean": 0.678,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.034,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.818,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.747,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
-    "no_slca": {
-      "ari": {
-        "mean": 0.567,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.054,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.39,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.636,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
     "agribrain": {
       "ari": {
-        "mean": 0.742,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.7371844699308,
+        "std": 0.009189308536235707,
+        "ci_low": 0.7330656143680152,
+        "ci_high": 0.741145315975556,
+        "n_seeds": 20
       },
       "waste": {
-        "mean": 0.019,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.01931918619047921,
+        "std": 0.0027416902874409866,
+        "ci_low": 0.0180784652442939,
+        "ci_high": 0.020492074642525185,
+        "n_seeds": 20
       },
       "rle": {
-        "mean": 0.909,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.8993617483612845,
+        "std": 0.039238515516975714,
+        "ci_low": 0.8812315254872387,
+        "ci_high": 0.914985121876298,
+        "n_seeds": 20
       },
       "slca": {
-        "mean": 0.805,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.8005561032488704,
+        "std": 0.008847639902859826,
+        "ci_low": 0.7966028659528405,
+        "ci_high": 0.8044483575832999,
+        "n_seeds": 20
       },
       "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 2031.9045894392245,
+        "std": 61.40599874169469,
+        "ci_low": 2004.855793256526,
+        "ci_high": 2058.088916730683,
+        "n_seeds": 20
       },
       "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
-    "no_context": {
-      "ari": {
-        "mean": 0.709,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.025,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.883,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.775,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.8856668139280478,
+        "std": 0.009286762680651789,
+        "ci_low": 0.881604353688325,
+        "ci_high": 0.8899244231958922,
+        "n_seeds": 20
       }
     },
     "mcp_only": {
       "ari": {
-        "mean": 0.731,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.7225326620768933,
+        "std": 0.010548463487944583,
+        "ci_low": 0.717529518908568,
+        "ci_high": 0.727072356216847,
+        "n_seeds": 20
       },
       "waste": {
-        "mean": 0.021,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.02141420205236027,
+        "std": 0.0031363030517104814,
+        "ci_low": 0.02001964051426383,
+        "ci_high": 0.02278794065697058,
+        "n_seeds": 20
       },
       "rle": {
-        "mean": 0.883,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.8842578105056035,
+        "std": 0.03575519461456477,
+        "ci_low": 0.8676297677527055,
+        "ci_high": 0.899149939860645,
+        "n_seeds": 20
       },
       "slca": {
-        "mean": 0.795,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.7863515449879128,
+        "std": 0.010040056568283546,
+        "ci_low": 0.7816636101705942,
+        "ci_high": 0.7907431348533316,
+        "n_seeds": 20
       },
       "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 2142.096955442181,
+        "std": 70.43447690507789,
+        "ci_low": 2111.363777016068,
+        "ci_high": 2174.309487824703,
+        "n_seeds": 20
       },
       "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.8740088351982,
+        "std": 0.007778349700305691,
+        "ci_low": 0.8705813647320716,
+        "ci_high": 0.877366524527668,
+        "n_seeds": 20
       }
     },
     "pirag_only": {
       "ari": {
-        "mean": 0.732,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.7225729207981594,
+        "std": 0.00972748385213822,
+        "ci_low": 0.7182726099240635,
+        "ci_high": 0.7266884608432488,
+        "n_seeds": 20
       },
       "waste": {
-        "mean": 0.022,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.022925117111622817,
+        "std": 0.0029530730587525272,
+        "ci_low": 0.021547630822279614,
+        "ci_high": 0.02415121023358323,
+        "n_seeds": 20
       },
       "rle": {
-        "mean": 0.909,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.8896827907435284,
+        "std": 0.03661520455285154,
+        "ci_low": 0.8730823622698083,
+        "ci_high": 0.9040709543533033,
+        "n_seeds": 20
       },
       "slca": {
-        "mean": 0.797,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.7875885176594271,
+        "std": 0.009519343510718608,
+        "ci_low": 0.7834268723859156,
+        "ci_high": 0.7916412475605737,
+        "n_seeds": 20
       },
       "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 2134.3780955970356,
+        "std": 69.17939325228801,
+        "ci_low": 2105.1535758783602,
+        "ci_high": 2165.236139570141,
+        "n_seeds": 20
       },
       "equity": {
+        "mean": 0.8730583174620596,
+        "std": 0.008133353698843533,
+        "ci_low": 0.8695984160889877,
+        "ci_high": 0.8767948763053559,
+        "n_seeds": 20
+      }
+    },
+    "no_context": {
+      "ari": {
+        "mean": 0.7047170116283207,
+        "std": 0.009842265305213697,
+        "ci_low": 0.700137402316972,
+        "ci_high": 0.7090134729361163,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.025338024261474846,
+        "std": 0.00304940411165961,
+        "ci_low": 0.023929171319225583,
+        "ci_high": 0.02667389579145091,
+        "n_seeds": 20
+      },
+      "rle": {
+        "mean": 0.8725590080106157,
+        "std": 0.03722609090729515,
+        "ci_low": 0.8554682897403785,
+        "ci_high": 0.8876356149077477,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.7701387313005718,
+        "std": 0.009887470664972968,
+        "ci_low": 0.7655806633354293,
+        "ci_high": 0.7745928894789224,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 2271.4310523261515,
+        "std": 67.39089430714174,
+        "ci_low": 2239.439171904457,
+        "ci_high": 2302.332949303301,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.8611954690844265,
+        "std": 0.006225610663172495,
+        "ci_low": 0.8584631457606965,
+        "ci_high": 0.8640257018195217,
+        "n_seeds": 20
+      }
+    },
+    "static": {
+      "ari": {
+        "mean": 0.4325961941383641,
+        "std": 0.0034602460851773844,
+        "ci_low": 0.43108334823093714,
+        "ci_high": 0.4342374864541722,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.08516652297006343,
+        "std": 0.0073293587184307795,
+        "ci_low": 0.08161739662023768,
+        "ci_high": 0.08826042939101424,
+        "n_seeds": 20
+      },
+      "rle": {
         "mean": 0.0,
         "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.5042950783214308,
+        "std": 0.0009344996416478497,
+        "ci_low": 0.5038824490533879,
+        "ci_high": 0.5046955698869794,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 4321.8216380942595,
+        "std": 42.84797418697966,
+        "ci_low": 4303.163836039342,
+        "ci_high": 4341.766965704671,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.9795805689784858,
+        "std": 0.0006575888880171564,
+        "ci_low": 0.979278631231168,
+        "ci_high": 0.9798616992832747,
+        "n_seeds": 20
+      }
+    },
+    "hybrid_rl": {
+      "ari": {
+        "mean": 0.6308971393551708,
+        "std": 0.012175279643704141,
+        "ci_low": 0.6257593577662348,
+        "ci_high": 0.6367641739200764,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.041730191543930206,
+        "std": 0.005110016524309506,
+        "ci_low": 0.03939669509694401,
+        "ci_high": 0.04377893813199401,
+        "n_seeds": 20
+      },
+      "rle": {
+        "mean": 0.7146285749559851,
+        "std": 0.05816456155736427,
+        "ci_low": 0.6899622057705097,
+        "ci_high": 0.7398277440080363,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.7006799637564385,
+        "std": 0.011888830799114916,
+        "ci_low": 0.695698902678314,
+        "ci_high": 0.7062847403190095,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 2812.6570193385674,
+        "std": 93.57712544889347,
+        "ci_low": 2766.7409239438,
+        "ci_high": 2853.453290930065,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.8386687483068304,
+        "std": 0.002278881759609878,
+        "ci_low": 0.8376761547971063,
+        "ci_high": 0.839633925689145,
+        "n_seeds": 20
+      }
+    },
+    "no_pinn": {
+      "ari": {
+        "mean": 0.6695403160237096,
+        "std": 0.009444128898876938,
+        "ci_low": 0.6654331071935112,
+        "ci_high": 0.673855908610988,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.03352194253600426,
+        "std": 0.0037850225746300947,
+        "ci_low": 0.03181995418438191,
+        "ci_high": 0.03506637039147723,
+        "n_seeds": 20
+      },
+      "rle": {
+        "mean": 0.8164111485469159,
+        "std": 0.05587180817734265,
+        "ci_low": 0.7930228720264723,
+        "ci_high": 0.8408097532686433,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.7376322540777337,
+        "std": 0.008457311083318033,
+        "ci_low": 0.7338986842919527,
+        "ci_high": 0.741379011790529,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 2527.533414155663,
+        "std": 64.34369819182463,
+        "ci_low": 2500.922073824654,
+        "ci_high": 2556.620686707577,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.8463745261270796,
+        "std": 0.0037294901551578135,
+        "ci_low": 0.8448305756998731,
+        "ci_high": 0.8480457787946345,
+        "n_seeds": 20
+      }
+    },
+    "no_slca": {
+      "ari": {
+        "mean": 0.5634759653315992,
+        "std": 0.013466324684759591,
+        "ci_low": 0.5577452720135718,
+        "ci_high": 0.5694425163549219,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.055387930242504727,
+        "std": 0.006706193067088626,
+        "ci_low": 0.05268331058870597,
+        "ci_high": 0.058444300103475115,
+        "n_seeds": 20
+      },
+      "rle": {
+        "mean": 0.5310293107617118,
+        "std": 0.08366435001090455,
+        "ci_low": 0.49536719807117074,
+        "ci_high": 0.5654317322567508,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.6345995872078454,
+        "std": 0.012929247006802603,
+        "ci_low": 0.6290185991596428,
+        "ci_high": 0.6404785990977702,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 3318.5078858972133,
+        "std": 117.71503695078952,
+        "ci_low": 3265.9773386215425,
+        "ci_high": 3370.3771489288083,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.8390749239435357,
+        "std": 0.003866208009739082,
+        "ci_low": 0.837474509015822,
+        "ci_high": 0.8407698580843541,
+        "n_seeds": 20
       }
     }
   },
   "baseline": {
-    "static": {
-      "ari": {
-        "mean": 0.452,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.075,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.517,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
-    "hybrid_rl": {
-      "ari": {
-        "mean": 0.661,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.037,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.64,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.724,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
-    "no_pinn": {
-      "ari": {
-        "mean": 0.706,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.03,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.82,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.767,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
-    "no_slca": {
-      "ari": {
-        "mean": 0.575,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.05,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.44,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.638,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
     "agribrain": {
       "ari": {
-        "mean": 0.76,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.7543612409277299,
+        "std": 0.006942001310335363,
+        "ci_low": 0.7510691800188671,
+        "ci_high": 0.7573083425098821,
+        "n_seeds": 20
       },
       "waste": {
-        "mean": 0.018,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.017853629677685723,
+        "std": 0.002197012179471702,
+        "ci_low": 0.016869887285788535,
+        "ci_high": 0.018956435409324637,
+        "n_seeds": 20
       },
       "rle": {
-        "mean": 0.96,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.9426068345609517,
+        "std": 0.028894413184065316,
+        "ci_low": 0.9308259545130936,
+        "ci_high": 0.9555583887498912,
+        "n_seeds": 20
       },
       "slca": {
-        "mean": 0.818,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.8115682658669812,
+        "std": 0.006791300506198736,
+        "ci_low": 0.8082932840787329,
+        "ci_high": 0.8146017206555985,
+        "n_seeds": 20
       },
       "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 1992.644741776896,
+        "std": 49.215097619802755,
+        "ci_low": 1971.640795942985,
+        "ci_high": 2015.430160158119,
+        "n_seeds": 20
       },
       "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      }
-    },
-    "no_context": {
-      "ari": {
-        "mean": 0.732,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "waste": {
-        "mean": 0.022,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "rle": {
-        "mean": 0.88,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "slca": {
-        "mean": 0.79,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
-      },
-      "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.8843734578718075,
+        "std": 0.0077411924158072515,
+        "ci_low": 0.8809861970623326,
+        "ci_high": 0.8879513898989274,
+        "n_seeds": 20
       }
     },
     "mcp_only": {
       "ari": {
-        "mean": 0.737,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.7320522746683875,
+        "std": 0.007189639615245429,
+        "ci_low": 0.7284378884044094,
+        "ci_high": 0.7349754266403118,
+        "n_seeds": 20
       },
       "waste": {
-        "mean": 0.021,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.020778715598124154,
+        "std": 0.0026429150198261156,
+        "ci_low": 0.01956458020831485,
+        "ci_high": 0.022090623395775052,
+        "n_seeds": 20
       },
       "rle": {
-        "mean": 0.88,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.8888071192618472,
+        "std": 0.045935592644097765,
+        "ci_low": 0.8697159166559543,
+        "ci_high": 0.9084462680312978,
+        "n_seeds": 20
       },
       "slca": {
-        "mean": 0.795,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.7895023712546065,
+        "std": 0.006785464158131395,
+        "ci_low": 0.7861598214866766,
+        "ci_high": 0.7922665787079148,
+        "n_seeds": 20
       },
       "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 2160.846991909445,
+        "std": 51.38446440007079,
+        "ci_low": 2139.8207765544425,
+        "ci_high": 2184.904445910559,
+        "n_seeds": 20
       },
       "equity": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.8666650495000351,
+        "std": 0.005562887127636888,
+        "ci_low": 0.8642965834357902,
+        "ci_high": 0.8692247843068149,
+        "n_seeds": 20
       }
     },
     "pirag_only": {
       "ari": {
-        "mean": 0.756,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.7426834977986939,
+        "std": 0.008428621370421054,
+        "ci_low": 0.738469013338282,
+        "ci_high": 0.7460462980878116,
+        "n_seeds": 20
       },
       "waste": {
-        "mean": 0.019,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.02048455485465157,
+        "std": 0.0026791762785226578,
+        "ci_low": 0.01927604914101685,
+        "ci_high": 0.021839177751003507,
+        "n_seeds": 20
       },
       "rle": {
-        "mean": 0.96,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.9426068345609517,
+        "std": 0.028894413184065316,
+        "ci_low": 0.9308259545130936,
+        "ci_high": 0.9555583887498912,
+        "n_seeds": 20
       },
       "slca": {
-        "mean": 0.814,
-        "std": 0.0,
-        "n": 1,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 0.8011407797898787,
+        "std": 0.007960116474439047,
+        "ci_low": 0.797170412739271,
+        "ci_high": 0.8042942905941843,
+        "n_seeds": 20
       },
       "carbon": {
-        "mean": 0.0,
-        "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "mean": 2072.4076964803567,
+        "std": 63.396297350821555,
+        "ci_low": 2046.4783646571818,
+        "ci_high": 2101.356253575749,
+        "n_seeds": 20
       },
       "equity": {
+        "mean": 0.8740733658380012,
+        "std": 0.007273063802936155,
+        "ci_low": 0.8708831271724078,
+        "ci_high": 0.8773254985739376,
+        "n_seeds": 20
+      }
+    },
+    "no_context": {
+      "ari": {
+        "mean": 0.7194277774657278,
+        "std": 0.008027408163817926,
+        "ci_low": 0.7154753330191881,
+        "ci_high": 0.722796712333037,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.023435775510845587,
+        "std": 0.0030449512569826294,
+        "ci_low": 0.02201088392122771,
+        "ci_high": 0.024872290379634156,
+        "n_seeds": 20
+      },
+      "rle": {
+        "mean": 0.8868725954523233,
+        "std": 0.0473371390698521,
+        "ci_low": 0.8671223657953785,
+        "ci_high": 0.9073985299553882,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.7780402143635058,
+        "std": 0.007427129321224132,
+        "ci_low": 0.7744592430482055,
+        "ci_high": 0.7810875053918227,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 2249.2737277917763,
+        "std": 59.087624921084135,
+        "ci_low": 2222.230910343883,
+        "ci_high": 2275.838620288631,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.8583927951530438,
+        "std": 0.0051976353398729015,
+        "ci_low": 0.8562506307045029,
+        "ci_high": 0.8607736227593077,
+        "n_seeds": 20
+      }
+    },
+    "static": {
+      "ari": {
+        "mean": 0.44705593815978945,
+        "std": 0.005065083519390432,
+        "ci_low": 0.4448828356744887,
+        "ci_high": 0.449119742027456,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.07753496539063712,
+        "std": 0.009200819654879074,
+        "ci_low": 0.07358211057896982,
+        "ci_high": 0.08135328317932136,
+        "n_seeds": 20
+      },
+      "rle": {
         "mean": 0.0,
         "std": 0.0,
-        "n": 0,
-        "ci_low": null,
-        "ci_high": null,
-        "degenerate": true
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.5125713252996185,
+        "std": 0.0009107872404566558,
+        "ci_low": 0.5121839140748701,
+        "ci_high": 0.5129570429266568,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 4231.502964609086,
+        "std": 34.24521913594633,
+        "ci_low": 4214.393754341752,
+        "ci_high": 4246.961667144172,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.9818577106189966,
+        "std": 0.0010500137495512694,
+        "ci_low": 0.9814056462587639,
+        "ci_high": 0.9823185776450831,
+        "n_seeds": 20
+      }
+    },
+    "hybrid_rl": {
+      "ari": {
+        "mean": 0.6454206516439279,
+        "std": 0.01030270982229874,
+        "ci_low": 0.6406807431381868,
+        "ci_high": 0.6498747819878347,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.03952988200524861,
+        "std": 0.004020672931083596,
+        "ci_low": 0.03771535493371535,
+        "ci_high": 0.041428546744169535,
+        "n_seeds": 20
+      },
+      "rle": {
+        "mean": 0.6896071863236248,
+        "std": 0.07575711361974177,
+        "ci_low": 0.6553472340952666,
+        "ci_high": 0.7246224754164959,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.7088556170580851,
+        "std": 0.010158128577149053,
+        "ci_low": 0.7043249512639695,
+        "ci_high": 0.7132611311038742,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 2781.195223660281,
+        "std": 76.84033790611149,
+        "ci_low": 2749.756370589371,
+        "ci_high": 2814.3945994732517,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.836220663990898,
+        "std": 0.0026763108188876477,
+        "ci_low": 0.835208979826752,
+        "ci_high": 0.8374287652597127,
+        "n_seeds": 20
+      }
+    },
+    "no_pinn": {
+      "ari": {
+        "mean": 0.6814994535258622,
+        "std": 0.007870541883137135,
+        "ci_low": 0.6780885827760444,
+        "ci_high": 0.6851954488718142,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.03213075802711369,
+        "std": 0.003294832778596318,
+        "ci_low": 0.030648434252128678,
+        "ci_high": 0.03358228425006447,
+        "n_seeds": 20
+      },
+      "rle": {
+        "mean": 0.8037343357315277,
+        "std": 0.0488557232010274,
+        "ci_low": 0.7800412509677858,
+        "ci_high": 0.8240714975580944,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.7432313731198875,
+        "std": 0.008038779261423159,
+        "ci_low": 0.73964179441838,
+        "ci_high": 0.7469602823927475,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 2517.615581961742,
+        "std": 61.66372257156776,
+        "ci_low": 2490.3453492681606,
+        "ci_high": 2543.9304890544395,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.8428142489632368,
+        "std": 0.0033724517172919696,
+        "ci_low": 0.8414059135690841,
+        "ci_high": 0.8444755647415152,
+        "n_seeds": 20
+      }
+    },
+    "no_slca": {
+      "ari": {
+        "mean": 0.5785936707545675,
+        "std": 0.008831679113638392,
+        "ci_low": 0.5747834537936337,
+        "ci_high": 0.5825781258335141,
+        "n_seeds": 20
+      },
+      "waste": {
+        "mean": 0.04803948050470087,
+        "std": 0.005076710384140278,
+        "ci_low": 0.04584828180661039,
+        "ci_high": 0.05027218963982068,
+        "n_seeds": 20
+      },
+      "rle": {
+        "mean": 0.5148123598812864,
+        "std": 0.08616639795977474,
+        "ci_low": 0.47400473884337596,
+        "ci_high": 0.5540715007168205,
+        "n_seeds": 20
+      },
+      "slca": {
+        "mean": 0.6412081362848231,
+        "std": 0.007926273681340312,
+        "ci_low": 0.6377379307639667,
+        "ci_high": 0.644860015456123,
+        "n_seeds": 20
+      },
+      "carbon": {
+        "mean": 3266.741321948261,
+        "std": 62.045942680593186,
+        "ci_low": 3240.100904368006,
+        "ci_high": 3292.8225757215355,
+        "n_seeds": 20
+      },
+      "equity": {
+        "mean": 0.8382296573674048,
+        "std": 0.0021459529667194176,
+        "ci_low": 0.8372652082790176,
+        "ci_high": 0.839107504211934,
+        "n_seeds": 20
       }
     }
   }
