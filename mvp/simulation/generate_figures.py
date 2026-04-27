@@ -563,48 +563,25 @@ def fig3_overproduction(data):
     _annotate_window(ax, 12, 60, WINDOW_COLOR, "Overproduction")
     _legend(ax, loc="upper right")
 
-    # --- (c) Graded RLE rolling with threshold onset annotation ---
-    # Uses the value-weighted, severity-aware graded RLE
-    # (resilience.compute_rle_graded \u2014 Recovery Value Index / Effective
-    # Recovery Rate family, EU Waste Framework Directive cascading-use
-    # hierarchy). Unlike the binary RLE this metric does not saturate at
-    # 1.0 for "always-reroute" policies \u2014 it rewards picking the *right*
-    # reroute (e.g. local_redistribute when \u03c1 is low, recovery when \u03c1 is
-    # severe) at the *right* time, weighted by severity \u03c1.
-    #
-    # Computed per step from the existing rho_trace + action_trace, then
-    # rolled with a 12 h window so the time-varying gap between methods
-    # is legible. NaN where the rolling denominator is zero (no at-risk
-    # batches yet) \u2014 the metric is honestly undefined there.
-    from src.models.resilience import (
-        _recovery_factor as _rle_recovery_factor,
-        optimal_recovery_factor as _rle_optimal_recovery_factor,
-        RLE_RECOVERY_FACTORS as _RLE_RECOVERY_FACTORS,
-    )
+    # --- (c) RLE rolling with threshold onset annotation ---
+    # RLE measures rerouting *of at-risk batches*, so it is undefined
+    # while no batch in the rolling window has crossed the spoilage
+    # threshold \u03c1 > RLE_THRESHOLD. We mask the undefined region with
+    # NaN so the curve only plots where the metric is meaningful.
     ax = axes[1, 0]
     for mode in ["static", "hybrid_rl", "agribrain"]:
         ep = op[mode]
         rho = np.array(ep["rho_trace"])
         actions = np.array(ep["action_trace"])
         at_risk = rho > RLE_THRESHOLD
-        # Per-step graded contributions: severity-weighted action value
-        # in the numerator, severity-weighted optimal value in the
-        # denominator. Vectorised via the action-name lookup so the loop
-        # only runs over the per-step action index, not a full Python
-        # loop over rho.
-        action_names = np.empty(len(rho), dtype=object)
-        for i in range(len(rho)):
-            action_names[i] = ACTIONS[int(actions[i])]
-        actual = np.zeros_like(rho)
-        optimal = np.zeros_like(rho)
-        for i in range(len(rho)):
-            if at_risk[i]:
-                actual[i] = rho[i] * _rle_recovery_factor(action_names[i], rho[i])
-                optimal[i] = rho[i] * _rle_optimal_recovery_factor(rho[i])
-        rle_num = np.convolve(actual, np.ones(window) / window, mode="same")
-        rle_den = np.convolve(optimal, np.ones(window) / window, mode="same")
-        rle_frac = np.full_like(rle_num, np.nan)
-        np.divide(rle_num, rle_den, out=rle_frac, where=rle_den > 0)
+        routed = at_risk & (actions >= 1)
+        rle_rolling = np.convolve(routed.astype(float),
+                                  np.ones(window) / window, mode="same")
+        rle_denom = np.convolve(at_risk.astype(float),
+                                np.ones(window) / window, mode="same")
+        # NaN where denominator is zero (no at-risk batches in window).
+        rle_frac = np.full_like(rle_rolling, np.nan)
+        np.divide(rle_rolling, rle_denom, out=rle_frac, where=rle_denom > 0)
         _mode_plot(ax, hours, rle_frac, mode)
 
     # Mark threshold onset with a vertical guide and put the explanatory
@@ -627,8 +604,8 @@ def fig3_overproduction(data):
         )
 
     ax.set_xlabel("Hours")
-    ax.set_ylabel("RLE (graded)")
-    ax.set_title("(c) Reverse Logistics Efficiency — graded")
+    ax.set_ylabel("RLE")
+    ax.set_title("(c) Reverse Logistics Efficiency")
     ax.set_ylim(-0.05, 1.15)
     _apply_style(ax)
     # Push "Overproduction" higher in the panel so it sits in the
