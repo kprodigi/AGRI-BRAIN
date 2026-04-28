@@ -52,6 +52,32 @@ async function main() {
     const provenance = await deploy('ProvenanceRegistry');
     addresses.ProvenanceRegistry = provenance.address;
 
+    // 7. Role grants for the permissioned EVM workflow.
+    // EXTRA_LOGGERS  -> grants LOGGER_ROLE on DecisionLogger so each
+    //                   listed agent / service account can write
+    //                   decision records.
+    // EXTRA_ANCHORERS -> grants ANCHORER_ROLE on ProvenanceRegistry so
+    //                   each listed explainer key can anchor Merkle
+    //                   roots.
+    const splitCsv = (s) => (s || '').split(',').map((x) => x.trim()).filter(Boolean);
+    const extraLoggers = splitCsv(process.env.EXTRA_LOGGERS);
+    const extraAnchorers = splitCsv(process.env.EXTRA_ANCHORERS);
+
+    if (extraLoggers.length > 0) {
+        const LOGGER_ROLE = await logger.contract.LOGGER_ROLE();
+        for (const addr of extraLoggers) {
+            await logger.contract.grantRole(LOGGER_ROLE, addr);
+            console.log('DecisionLogger.LOGGER_ROLE granted to', addr);
+        }
+    }
+    if (extraAnchorers.length > 0) {
+        const ANCHORER_ROLE = await provenance.contract.ANCHORER_ROLE();
+        for (const addr of extraAnchorers) {
+            await provenance.contract.grantRole(ANCHORER_ROLE, addr);
+            console.log('ProvenanceRegistry.ANCHORER_ROLE granted to', addr);
+        }
+    }
+
     // Write inside hardhat dir
     const here = path.resolve(__dirname, '..', `deployed-addresses.${hre.network.name}.json`);
     writeJSON(here, addresses);

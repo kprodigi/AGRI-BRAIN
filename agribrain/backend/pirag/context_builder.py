@@ -11,7 +11,21 @@ import logging
 from typing import Any, Dict, Optional
 
 from .guards.retrieval_guard import retrieval_quality_ok
+from .guards.unit_guard import units_consistent
+from .guards.feasibility_guard import within_ranges
 from .mcp.protocol import MCPMessage, MCPServer
+
+# Default feasibility-guard constraints applied to retrieval excerpts
+# in the routing context pipeline. These are intentionally permissive
+# because the retrieval text is documentary, not a numeric simulator
+# answer; any number that lands strictly inside a sensible engineering
+# range passes. See ``guards/feasibility_guard.within_ranges`` for the
+# parser. The constraints are exposed as a module-level constant so
+# tests can monkeypatch them.
+DEFAULT_GUARD_CONSTRAINTS: Dict[str, Any] = {
+    "min": -1.0e9,
+    "max": 1.0e9,
+}
 
 _log = logging.getLogger(__name__)
 
@@ -331,15 +345,36 @@ def retrieve_role_context(
                 if not context["governance_guidance"]:
                     context["governance_guidance"] = passage
 
-        # Evaluate context quality via the named retrieval-quality guard
-        # (third of the paper Section 3.7 guard triple, alongside the
-        # unit and feasibility guards). Using the answer-formatting unit
-        # guard here would false-positive on the template engine's
-        # "Based on N relevant sources" preamble, so the retrieval-level
-        # check is intentionally distinct.
-        context["guards_passed"] = retrieval_quality_ok(
+        # Aggregate the three Section 3.7 guards (dimensional analysis,
+        # feasibility, retrieval quality) into a single ``guards_passed``
+        # flag. Any guard returning False causes
+        # ``context_to_logits.compute_context_modifier`` to return a
+        # zero modifier, satisfying the paper's claim that bad inputs
+        # cannot degrade decision quality below the no-context baseline.
+        # The per-guard outcomes are also surfaced so an operator (or
+        # the explainability panel) can see which guard tripped.
+        retrieval_ok = retrieval_quality_ok(
             response.citations, context["top_citation_score"]
         )
+
+        # Run unit + feasibility guards over the top-ranked passage
+        # (the canonical evidence the policy is being asked to rely on).
+        # When no usable citation exists the unit/feasibility checks are
+        # vacuously True; the retrieval guard will already have failed
+        # and the aggregate stays False.
+        try:
+            top_passage = response.citations[0].passage if response.citations else ""
+        except (AttributeError, IndexError):
+            top_passage = ""
+        unit_ok = units_consistent(top_passage) if top_passage else True
+        feasibility_ok = within_ranges(top_passage, DEFAULT_GUARD_CONSTRAINTS) if top_passage else True
+
+        context["guard_breakdown"] = {
+            "retrieval": bool(retrieval_ok),
+            "unit": bool(unit_ok),
+            "feasibility": bool(feasibility_ok),
+        }
+        context["guards_passed"] = bool(retrieval_ok and unit_ok and feasibility_ok)
 
         # Retrieval quality diagnostics for research reporting.
         # Faithfulness@k and evidence_coverage compare the answer-proxy

@@ -376,8 +376,22 @@ function ProvenanceChain({ explainability, memo }) {
       <div className="flex items-center gap-2">
         <Hash className="w-4 h-4 text-teal-600" />
         <h4 className="text-sm font-semibold">Provenance Chain</h4>
-        {prov?.guards_passed !== false && (
-          <Badge className="bg-emerald-500/10 text-emerald-600 border-0 text-[10px]">Guards Passed</Badge>
+        {prov?.guards_passed !== false ? (
+          <Badge className="bg-emerald-500/10 text-emerald-600 border-0 text-[10px]">
+            Guards Passed
+          </Badge>
+        ) : (
+          <Badge className="bg-amber-500/10 text-amber-600 border-0 text-[10px]">
+            Guards Failed
+            {prov?.guard_breakdown && (
+              <span className="ml-1">
+                ({Object.entries(prov.guard_breakdown)
+                  .filter(([, v]) => v === false)
+                  .map(([k]) => k)
+                  .join(", ")})
+              </span>
+            )}
+          </Badge>
         )}
       </div>
       <div className="pl-6 relative">

@@ -69,10 +69,13 @@ def explain_decision(
     context_features: Optional[np.ndarray] = None,
     logit_adjustment: Optional[np.ndarray] = None,
     action_probs: Optional[np.ndarray] = None,
-    counterfactual_action: Optional[str] = None,
-    counterfactual_probs: Optional[np.ndarray] = None,
+    ablation_action: Optional[str] = None,
+    ablation_probs: Optional[np.ndarray] = None,
     governance_override: bool = False,
     keywords: Optional[Dict[str, Any]] = None,
+    *,
+    counterfactual_action: Optional[str] = None,
+    counterfactual_probs: Optional[np.ndarray] = None,
 ) -> Dict[str, Any]:
     """Generate a causal explanation for a routing decision.
 
@@ -90,16 +93,31 @@ def explain_decision(
     context_features : 5D context feature vector (psi).
     logit_adjustment : 3D logit modifier (THETA_CONTEXT @ psi).
     action_probs : probability vector WITH context.
-    counterfactual_action : action WITHOUT context.
-    counterfactual_probs : probability vector WITHOUT context.
+    ablation_action : action the same policy would have selected with
+        ``psi := 0`` (i.e. the MCP/piRAG context modifier zeroed). This
+        is an ablation, not a Pearl-style counterfactual; see
+        ``ablation_delta.kind`` in the returned dict for the explicit
+        framing. The deprecated alias ``counterfactual_action`` is
+        accepted for backward compat.
+    ablation_probs : probability vector under the same psi := 0
+        ablation. Deprecated alias: ``counterfactual_probs``.
     governance_override : whether governance override was triggered.
     keywords : extracted keywords per guidance type.
 
     Returns
     -------
-    Dict with summary, full_explanation, causal_chain, counterfactual,
-    keywords, evidence_hashes, provenance data.
+    Dict with summary, full_explanation, attribution_chain, ablation_delta,
+    keywords, evidence_hashes, provenance data. ``causal_chain`` and
+    ``counterfactual`` are kept as legacy aliases for the same content.
     """
+    # Back-compat: accept the legacy ``counterfactual_*`` kwargs but
+    # internally use the honest ``ablation_*`` names. If both are
+    # supplied the explicit ablation_* parameter wins; this matches
+    # how callers were migrated in 2026-04.
+    if ablation_action is None and counterfactual_action is not None:
+        ablation_action = counterfactual_action
+    if ablation_probs is None and counterfactual_probs is not None:
+        ablation_probs = counterfactual_probs
     action_label = _ACTION_LABELS.get(action, action)
     action_idx = _ACTION_INDEX.get(action, 1)
 
@@ -165,21 +183,25 @@ def explain_decision(
             f"{prob_str}."
         )
 
-    # --- Paragraph 3: Ablation comparison (formerly labelled
-    # "counterfactual"; the framing is honest now: same policy, same
-    # phi(s), same RNG seed, with psi := 0). ---
+    # --- Paragraph 3: Ablation comparison (psi := 0).
+    # Honest framing: same policy, same phi(s), same RNG seed, with the
+    # MCP/piRAG context modifier zeroed. Not a Pearl-style counterfactual.
+    # The "WITHOUT context" phrasing is retained so the frontend's
+    # BECAUSE/WITHOUT highlighter still triggers, but the leading clause
+    # makes the ablation framing explicit so a reader does not mistake
+    # the comparison for a Pearlian intervention.
     para3 = ""
-    if counterfactual_probs is not None and action_probs is not None:
-        delta_lr = (action_probs[1] - counterfactual_probs[1]) * 100
+    if ablation_probs is not None and action_probs is not None:
+        delta_lr = (action_probs[1] - ablation_probs[1]) * 100
         para3 = (
-            f"WITHOUT MCP/piRAG context, cold chain probability would have been "
-            f"{counterfactual_probs[0]*100:.1f}% and redistribution "
-            f"{counterfactual_probs[1]*100:.1f}%. "
+            f"Ablation (psi := 0): WITHOUT MCP/piRAG context, cold chain probability "
+            f"would have been {ablation_probs[0]*100:.1f}% and redistribution "
+            f"{ablation_probs[1]*100:.1f}% under the same policy, phi(s) and RNG seed. "
             f"Context injection shifted {abs(delta_lr):.1f} percentage points "
             f"{'toward' if delta_lr > 0 else 'away from'} redistribution"
         )
-        if counterfactual_action and counterfactual_action != action:
-            cf_label = _ACTION_LABELS.get(counterfactual_action, counterfactual_action)
+        if ablation_action and ablation_action != action:
+            cf_label = _ACTION_LABELS.get(ablation_action, ablation_action)
             para3 += f", changing the selected action from {cf_label} to {action_label}"
         para3 += "."
 
@@ -240,12 +262,12 @@ def explain_decision(
             "disabled). Same RNG seed, same phi(s). This is an ablation "
             "delta, not a Pearl-style counterfactual."
         ),
-        "action_without_context": counterfactual_action,
-        "probs_without_context": counterfactual_probs.tolist() if counterfactual_probs is not None else None,
+        "action_without_context": ablation_action,
+        "probs_without_context": ablation_probs.tolist() if ablation_probs is not None else None,
         "probs_with_context": action_probs.tolist() if action_probs is not None else None,
-        "action_changed": (counterfactual_action != action) if counterfactual_action else False,
-        "probability_shift": (action_probs - counterfactual_probs).tolist()
-            if action_probs is not None and counterfactual_probs is not None else None,
+        "action_changed": (ablation_action != action) if ablation_action else False,
+        "probability_shift": (action_probs - ablation_probs).tolist()
+            if action_probs is not None and ablation_probs is not None else None,
     }
 
     return {

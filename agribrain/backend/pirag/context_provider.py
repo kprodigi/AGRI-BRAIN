@@ -117,10 +117,12 @@ def get_policy_context(
         context["query"] = result.get("query", "")
         context["mcp_results"] = mcp_results
 
-        # Pass through additional fields
+        # Pass through additional fields, including the per-guard
+        # breakdown so the live /decide path surfaces the same
+        # diagnostics the simulator does.
         for key in ("waste_hierarchy_guidance", "governance_guidance",
                      "top_citation_score", "top_doc_id", "guards_passed",
-                     "evidence_hashes"):
+                     "guard_breakdown", "evidence_hashes"):
             if key in result:
                 context[key] = result[key]
 

@@ -142,4 +142,44 @@ describe("AgriDAO", function () {
     await dao.finalize(1);
     expect(await dao.getState(1)).to.equal(3); // Defeated
   });
+
+  it("holds proposals in Pending when VOTING_DELAY > 0 and promotes to Active via activate()", async function () {
+    await dao.connect(owner).setVotingDelay(60); // 1 minute delay
+
+    await dao.connect(agent1).propose("delayed proposal", ethers.id("delayed"), 99);
+    let p = await dao.getProposal(1);
+    expect(p.state).to.equal(0); // Pending
+    expect(p.votingStartsAt).to.be.greaterThan(p.createdAt);
+
+    // getEffectiveState should still report Pending until time elapses.
+    expect(await dao.getEffectiveState(1)).to.equal(0);
+
+    // Voting on a Pending proposal must revert.
+    await expect(dao.connect(agent1).vote(1, true)).to.be.revertedWith("not active");
+
+    // activate() before the delay elapses must revert.
+    await expect(dao.activate(1)).to.be.revertedWith("voting not started");
+
+    // After the delay, getEffectiveState reads Active and activate()
+    // promotes the on-chain state.
+    await time.increase(61);
+    expect(await dao.getEffectiveState(1)).to.equal(1); // Active
+    await expect(dao.activate(1)).to.emit(dao, "Finalized");
+    expect(await dao.getState(1)).to.equal(1); // Active
+
+    // From here the rest of the lifecycle works as before.
+    await dao.connect(agent1).vote(1, true);
+    await dao.connect(agent2).vote(1, true);
+    await dao.connect(agent3).vote(1, true);
+    await time.increase(24 * 60 * 60 + 1);
+    await dao.finalize(1);
+    expect(await dao.getState(1)).to.equal(2); // Succeeded
+  });
+
+  it("preserves the legacy 'Active immediately' lifecycle when VOTING_DELAY = 0", async function () {
+    expect(await dao.VOTING_DELAY()).to.equal(0);
+    await dao.connect(agent1).propose("immediate", ethers.id("imm"), 1);
+    expect(await dao.getState(1)).to.equal(1); // Active
+    await expect(dao.activate(1)).to.be.revertedWith("not pending");
+  });
 });

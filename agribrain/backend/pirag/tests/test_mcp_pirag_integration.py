@@ -264,6 +264,79 @@ def test_context_modifier_guard_gate():
     assert np.allclose(modifier, 0.0), "Guard gate should zero modifier when guards_passed=False"
 
 
+# ---- Test 14b: Three-guard aggregation in retrieve_role_context ----
+def test_retrieve_role_context_aggregates_three_guards(monkeypatch):
+    """retrieve_role_context must AND the three §3.7 guards (unit,
+    feasibility, retrieval) into a single ``guards_passed`` flag and
+    expose the per-guard outcomes via ``guard_breakdown``.
+    """
+    from pirag import context_builder
+    from pirag.context_builder import retrieve_role_context
+
+    # Stub the piRAG pipeline so the test does not depend on retrieval.
+    class _Citation:
+        def __init__(self, passage):
+            self.doc_id = "regulatory_fda_leafy_greens"
+            self.passage = passage
+            self.sha256 = "0" * 64
+            self.meta = {}
+            self.score = 0.5
+
+    class _Resp:
+        def __init__(self, passage):
+            self.citations = [_Citation(passage)] if passage else []
+            self.evidence_hashes = ["0" * 64] if passage else []
+            self.guards_passed = True
+            self.merkle_root = "0" * 64
+            self.chain_tx = None
+            self.answer = passage or ""
+
+    class _Pipe:
+        def __init__(self, passage):
+            self._passage = passage
+        def ask(self, *a, **kw):
+            return _Resp(self._passage)
+
+    obs = _Obs(temp=15.0, rho=0.4)
+
+    # Case A: clean passage with no parseable (number, unit) pairs ->
+    # unit guard passes vacuously, feasibility passes, retrieval passes.
+    ctx = retrieve_role_context(
+        "farm", obs, "baseline", mcp_results={},
+        pipeline=_Pipe("Maintain refrigeration within the cold-chain envelope for fresh spinach storage."),
+    )
+    assert ctx["guard_breakdown"] == {"retrieval": True, "unit": True, "feasibility": True}
+    assert ctx["guards_passed"] is True
+
+    # Case B: passage that trips the feasibility guard (number outside the
+    # default ±1e9 envelope) -> aggregate must flip False even though
+    # retrieval and unit guards individually pass.
+    ctx_bad = retrieve_role_context(
+        "farm", obs, "baseline", mcp_results={},
+        pipeline=_Pipe("Improbable reading of 9.99e15 detected."),
+    )
+    assert ctx_bad["guard_breakdown"]["feasibility"] is False
+    assert ctx_bad["guards_passed"] is False
+
+    # Case C: simulate an empty retriever (no citations) -> retrieval
+    # guard fails, unit/feasibility vacuously True; aggregate is False.
+    class _PipeEmpty:
+        def ask(self, *a, **kw):
+            class R:
+                citations = []
+                evidence_hashes = []
+                guards_passed = True
+                merkle_root = ""
+                chain_tx = None
+                answer = ""
+            return R()
+    ctx_empty = retrieve_role_context(
+        "farm", obs, "baseline", mcp_results={}, pipeline=_PipeEmpty(),
+    )
+    assert ctx_empty["guard_breakdown"]["retrieval"] is False
+    assert ctx_empty["guards_passed"] is False
+
+
 # ---- Test 15: Context feature extraction ----
 def test_context_feature_extraction():
     from pirag.context_to_logits import extract_context_features
@@ -821,12 +894,40 @@ def test_causal_explanation_structure():
 
     assert "BECAUSE" in result["full_explanation"], "Should contain BECAUSE"
     assert "WITHOUT" in result["full_explanation"], "Should contain WITHOUT"
-    assert "causal_chain" in result
-    assert result["causal_chain"]["primary_cause"] in [
+    assert "Ablation" in result["full_explanation"], "Should label the comparison as an ablation"
+    # New honest field names.
+    assert "attribution_chain" in result
+    assert result["attribution_chain"]["primary_cause"] in [
         "compliance severity", "regulatory pressure",
     ]
-    assert "counterfactual" in result
-    assert result["counterfactual"]["probs_without_context"] is not None
+    assert "ablation_delta" in result
+    assert result["ablation_delta"]["kind"] == "ablation_psi_zero"
+    assert result["ablation_delta"]["probs_without_context"] is not None
+    # Legacy aliases must still resolve for backward compat.
+    assert "causal_chain" in result and result["causal_chain"] is result["attribution_chain"]
+    assert "counterfactual" in result and result["counterfactual"] is result["ablation_delta"]
+
+
+def test_explain_decision_accepts_ablation_kwargs():
+    """Honest API: callers should be able to pass ablation_action /
+    ablation_probs by their honest names, not via the deprecated
+    counterfactual_* aliases."""
+    from pirag.explain_decision import explain_decision
+
+    obs = _Obs(rho=0.4, temp=14.0)
+    result = explain_decision(
+        action="local_redistribute", role="distributor", hour=30.0, obs=obs,
+        mcp_results={}, rag_context={"citations": [], "guards_passed": True},
+        slca_score=0.7, carbon_kg=2.0, waste=0.03,
+        context_features=np.array([1.0, 0.7, 0.0, 0.0, 0.0]),
+        logit_adjustment=np.array([-0.5, 0.4, 0.1]),
+        action_probs=np.array([0.05, 0.90, 0.05]),
+        ablation_action="cold_chain",
+        ablation_probs=np.array([0.55, 0.40, 0.05]),
+    )
+    assert result["ablation_delta"]["kind"] == "ablation_psi_zero"
+    assert result["ablation_delta"]["action_changed"] is True
+    assert result["ablation_delta"]["action_without_context"] == "cold_chain"
 
 
 # ---- Test 34: New MCP tools registered ----

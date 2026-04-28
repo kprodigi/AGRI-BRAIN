@@ -43,7 +43,24 @@ describe("ProvenanceRegistry", function () {
   it("reverts anchoring from non-owner", async function () {
     await expect(
       registry.connect(outsider).anchor(ethers.id("proof:decision:x"), "decision-x")
-    ).to.be.revertedWith("not owner");
+    ).to.be.revertedWith("missing role");
+  });
+
+  it("supports role-based delegation: ADMIN_ROLE can grant ANCHORER_ROLE", async function () {
+    const ANCHORER = await registry.ANCHORER_ROLE();
+    expect(await registry.hasRole(ANCHORER, outsider.address)).to.equal(false);
+
+    await registry.connect(owner).grantRole(ANCHORER, outsider.address);
+    expect(await registry.hasRole(ANCHORER, outsider.address)).to.equal(true);
+
+    await expect(
+      registry.connect(outsider).anchor(ethers.id("proof:decision:y"), "decision-y")
+    ).to.emit(registry, "ProvenanceAnchored");
+
+    await registry.connect(owner).revokeRole(ANCHORER, outsider.address);
+    await expect(
+      registry.connect(outsider).anchor(ethers.id("proof:decision:z"), "decision-z")
+    ).to.be.revertedWith("missing role");
   });
 
   it("reverts on duplicate root to preserve append-only audit trail", async function () {

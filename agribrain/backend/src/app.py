@@ -826,8 +826,8 @@ def decide(d: DecideIn):
             mcp_results=_mcp_res, rag_context=rag_context,
             slca_score=slca_composite, carbon_kg=carbon, waste=waste,
             context_features=_psi, logit_adjustment=_modifier,
-            action_probs=probs, counterfactual_action=_cf_action,
-            counterfactual_probs=_cf_probs, keywords=_kw,
+            action_probs=probs, ablation_action=_cf_action,
+            ablation_probs=_cf_probs, keywords=_kw,
         )
 
         memo["explainability"] = {
@@ -852,9 +852,13 @@ def decide(d: DecideIn):
             "provenance": {
                 "evidence_hashes": rag_context.get("evidence_hashes", [])[:5],
                 "guards_passed": rag_context.get("guards_passed", True),
+                "guard_breakdown": rag_context.get("guard_breakdown", {}),
                 "merkle_root": _expl.get("merkle_root", ""),
             },
             "causal_text": _expl.get("full_explanation", ""),
+            # New honest field names + legacy aliases for backward compat.
+            "attribution_chain": _expl.get("attribution_chain", {}),
+            "ablation_delta": _expl.get("ablation_delta", {}),
             "causal_chain": _expl.get("causal_chain", {}),
             "counterfactual": _expl.get("counterfactual", {}),
             "summary": _expl.get("summary", ""),

@@ -81,6 +81,14 @@ contract AgriDAO is _LocalReentrancyGuard {
         uint256 totalVoters;
         ProposalState state;
         uint256 queuedAt;
+        // Block.timestamp at which voting becomes possible. When
+        // ``VOTING_DELAY`` is zero (default for the simulator) this
+        // equals ``createdAt`` and the proposal is immediately Active,
+        // matching the legacy lifecycle. When the delay is positive the
+        // proposal is held in ``Pending`` until ``votingStartsAt`` is
+        // reached, at which point ``activate(id)`` (or any state-aware
+        // read via ``getEffectiveState``) promotes it to Active.
+        uint256 votingStartsAt;
     }
 
     // -----------------------------------------------------------------
@@ -94,6 +102,11 @@ contract AgriDAO is _LocalReentrancyGuard {
     uint256 public QUORUM_THRESHOLD = 3;
     uint256 public VOTING_PERIOD = 86400;    // 24 hours
     uint256 public EXECUTION_DELAY = 3600;   // 1 hour
+    /// @notice Optional delay between proposal creation and voting start.
+    ///         0 (default) preserves the legacy "Active immediately on
+    ///         propose" behaviour. Positive values hold the proposal in
+    ///         the Pending state until ``votingStartsAt`` is reached.
+    uint256 public VOTING_DELAY = 0;
 
     uint256 public nextId;
     mapping(uint256 => Proposal) public proposals;
@@ -151,6 +164,10 @@ contract AgriDAO is _LocalReentrancyGuard {
         EXECUTION_DELAY = _delay;
     }
 
+    function setVotingDelay(uint256 _delay) external onlyOwner {
+        VOTING_DELAY = _delay;
+    }
+
     // -----------------------------------------------------------------
     // Governance functions
     // -----------------------------------------------------------------
@@ -161,6 +178,12 @@ contract AgriDAO is _LocalReentrancyGuard {
         uint256 policyValue
     ) external onlyRegisteredAgent returns (uint256) {
         uint256 id = ++nextId;
+        // Honour the optional VOTING_DELAY: when zero the proposal is
+        // immediately Active (legacy behaviour preserved); otherwise it
+        // is held in Pending until ``votingStartsAt`` is reached.
+        ProposalState initialState = VOTING_DELAY == 0
+            ? ProposalState.Active
+            : ProposalState.Pending;
         proposals[id] = Proposal({
             id: id,
             proposer: msg.sender,
@@ -172,11 +195,26 @@ contract AgriDAO is _LocalReentrancyGuard {
             noVotes: 0,
             createdAt: block.timestamp,
             totalVoters: 0,
-            state: ProposalState.Active,
-            queuedAt: 0
+            state: initialState,
+            queuedAt: 0,
+            votingStartsAt: block.timestamp + VOTING_DELAY
         });
         emit Proposed(id, msg.sender, description, policyKey, policyValue);
         return id;
+    }
+
+    /// @notice Promote a Pending proposal to Active once its voting
+    ///         delay has elapsed. Anyone can call this to advance the
+    ///         lifecycle; the on-chain check enforces the timestamp.
+    /// @dev Reverts if the proposal is not Pending or if the delay has
+    ///      not yet elapsed.
+    function activate(uint256 id) external {
+        Proposal storage p = proposals[id];
+        require(p.state == ProposalState.Pending, "not pending");
+        // slither-disable-next-line timestamp
+        require(block.timestamp >= p.votingStartsAt, "voting not started");
+        p.state = ProposalState.Active;
+        emit Finalized(id, ProposalState.Active);
     }
 
     function vote(uint256 id, bool support) external onlyRegisteredAgent {
@@ -245,6 +283,18 @@ contract AgriDAO is _LocalReentrancyGuard {
 
     function getState(uint256 id) external view returns (ProposalState) {
         return proposals[id].state;
+    }
+
+    /// @notice State view that reflects the time-based Pending->Active
+    ///         transition without requiring a write call to ``activate``.
+    ///         Useful for off-chain indexers that want to render the
+    ///         current effective state of a proposal.
+    function getEffectiveState(uint256 id) external view returns (ProposalState) {
+        Proposal storage p = proposals[id];
+        if (p.state == ProposalState.Pending && block.timestamp >= p.votingStartsAt) {
+            return ProposalState.Active;
+        }
+        return p.state;
     }
 
     function getHasVoted(uint256 id, address voter) external view returns (bool) {

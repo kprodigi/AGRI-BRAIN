@@ -39,7 +39,7 @@ describe("DecisionLogger", function () {
     const [, outsider] = await ethers.getSigners();
     await expect(
       logger.connect(outsider).logDecision(1, "x", "y", "z", 0, 0, "")
-    ).to.be.revertedWith("not authorized");
+    ).to.be.revertedWith("missing role");
   });
 
   it("should store memo in mapping and allow read-back", async function () {
@@ -112,6 +112,29 @@ describe("DecisionLogger", function () {
     const root = ethers.keccak256(ethers.toUtf8Bytes("x"));
     await expect(
       logger.connect(outsider).logEpisode(root, 1, "m", "s", 0, 0, "")
-    ).to.be.revertedWith("not authorized");
+    ).to.be.revertedWith("missing role");
+  });
+
+  it("supports role-based delegation: ADMIN_ROLE can grant LOGGER_ROLE", async function () {
+    const [owner, delegate, intruder] = await ethers.getSigners();
+    const LOGGER = await logger.LOGGER_ROLE();
+    expect(await logger.hasRole(LOGGER, delegate.address)).to.equal(false);
+
+    await logger.connect(owner).grantRole(LOGGER, delegate.address);
+    expect(await logger.hasRole(LOGGER, delegate.address)).to.equal(true);
+
+    await expect(
+      logger.connect(delegate).logDecision(1, "farm", "farm", "cold_chain", 800, 5000, "ok")
+    ).to.emit(logger, "DecisionLogged");
+
+    // Non-admin cannot grant.
+    await expect(
+      logger.connect(intruder).grantRole(LOGGER, intruder.address)
+    ).to.be.revertedWith("missing role");
+
+    // setAuthorized shim still works for admin and updates role state.
+    await logger.connect(owner).setAuthorized(delegate.address, false);
+    expect(await logger.hasRole(LOGGER, delegate.address)).to.equal(false);
+    expect(await logger.authorized(delegate.address)).to.equal(false);
   });
 });

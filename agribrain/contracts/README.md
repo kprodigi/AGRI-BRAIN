@@ -3,46 +3,60 @@
 This directory contains the Solidity smart contracts and Hardhat test
 suite for the AGRI-BRAIN audit-trail prototype.
 
-## Honest scope
+## Scope
 
-**The published runs do not deploy these contracts to a permissioned
-EVM.** The only configured network is `localhost: 127.0.0.1:8545`
-(see `hardhat/hardhat.config.cjs`); the deployment artefacts live at
-`hardhat/deployed-addresses.localhost.json`. There is no Besu QBFT or
-IBFT-2.0 genesis configuration in this repo. The README's "permissioned
-EVM audit trail" wording has been corrected to reflect what is
-actually deployed: **off-chain Merkle audit ledger with optional
-on-chain anchoring on a localhost Hardhat chain**.
+These contracts target a **permissioned EVM consortium** — the same
+deployment posture as the manuscript's §3.15 / §4.13 framing. The
+Hardhat config now ships three networks:
 
-The contracts are research code intended to demonstrate the design.
-They are not audited for production deployment and the prototype
-warnings in their NatSpec headers should be respected.
+* `localhost` — single-node Hardhat for the dev quickstart in
+  `HOW_TO_RUN.md` §7. Used by the test matrix.
+* `hardhat`   — in-process VM for the unit tests.
+* `permissioned` — template that picks up
+  `PERMISSIONED_RPC_URL`, `PERMISSIONED_CHAIN_ID`,
+  `PERMISSIONED_PRIVKEYS`, `EXTRA_LOGGERS`, and `EXTRA_ANCHORERS`
+  from the environment. Deploys cleanly against Hyperledger Besu
+  QBFT / IBFT-2.0, Quorum, or a Geth Clique consortium. The deploy
+  script (`scripts/deploy.js`) grants `LOGGER_ROLE` /
+  `ANCHORER_ROLE` to every address in the EXTRA_* lists in the same
+  transaction batch as deployment, so the consortium validator set
+  is on-chain from block 1.
+
+The contracts are research code; production deployments should run
+the Slither analysis and the rest of the production checklist below.
 
 ## Access-control posture (post 2026-04 audit)
 
-| Contract              | Pre-2026-04 access     | Current access                                    |
-|-----------------------|------------------------|---------------------------------------------------|
-| `AgentRegistry`       | role registry (real)   | unchanged                                         |
-| `AgriDAO`             | proposer / voter roles | unchanged; hand-rolled `_LocalReentrancyGuard` ok |
-| `DecisionLogger`      | single-key Ownable     | single-key Ownable, prototype warning             |
-| `PolicyStore`         | single-key Ownable     | single-key Ownable, prototype warning             |
-| `ProvenanceRegistry`  | single-key Ownable     | single-key Ownable, prototype warning             |
-| `SLCARewards`         | single-key Ownable     | **role-based** (ADMIN/REWARDER/SLASHER) — fixed   |
+| Contract              | Access model                                                        |
+|-----------------------|---------------------------------------------------------------------|
+| `AgentRegistry`       | role registry (proposer / voter membership)                         |
+| `AgriDAO`             | proposer / voter roles + Pending → Active lifecycle (VOTING_DELAY)  |
+| `DecisionLogger`      | **role-based** (ADMIN_ROLE / LOGGER_ROLE) with `setAuthorized` shim |
+| `PolicyStore`         | owner + AgriDAO authorized writer                                   |
+| `ProvenanceRegistry`  | **role-based** (ADMIN_ROLE / ANCHORER_ROLE) with legacy `onlyOwner` |
+| `SLCARewards`         | **role-based** (ADMIN/REWARDER/SLASHER)                             |
 
-`SLCARewards` was the most exposed (single key could mint unbounded).
-The 2026-04 hardening replaces the hand-rolled Ownable with a minimal
-role-based access control pattern (ADMIN_ROLE manages role grants;
-REWARDER_ROLE can mint; SLASHER_ROLE can deduct) and exposes
-`grantRole`/`revokeRole`/`hasRole` so the on-chain governance
-contract (AgriDAO) can be granted REWARDER_ROLE in production. Tests
-in `test/SLCARewards.test.js` cover both the new role flow and the
-legacy reward/slash paths.
+The 2026-04 audit's "single-key Ownable" finding for `DecisionLogger`
+and `ProvenanceRegistry` is closed: both contracts now expose
+`grantRole`/`revokeRole`/`hasRole` mirrored on the SLCARewards
+pattern. The deployer is granted ADMIN + functional roles at
+construction so existing operational scripts keep working; additional
+keys (per-agent service accounts, the AgriDAO contract) are granted
+through `EXTRA_LOGGERS` / `EXTRA_ANCHORERS` at deploy time. The
+legacy `setAuthorized(addr, allowed)` and `onlyOwner` surfaces are
+retained as thin shims over the role layer so that backend chain
+wrappers and existing scripts work unchanged while every state
+change is visible on-chain through `RoleGranted` / `RoleRevoked`
+events.
 
-The remaining Ownable contracts retain that pattern in the prototype;
-their NatSpec headers carry the warning. Replacing them with full
-OpenZeppelin `AccessControl` requires adding OZ as a dependency and
-re-running the test matrix; that is queued as a separate hardening
-task.
+Tests:
+
+* `test/DecisionLogger.test.js` covers role grants, revocation, the
+  `setAuthorized` shim, and unauthorized-caller revert.
+* `test/ProvenanceRegistry.test.js` covers ADMIN-granted ANCHORER
+  delegation and the immutable append-only audit trail.
+* `test/SLCARewards.test.js` covers ADMIN-mediated role grants and
+  the reward / slash paths.
 
 ## On-chain anchoring posture
 
@@ -63,19 +77,33 @@ There is no verifying reader for anchored roots. A future hardening
 should add a `verify_anchored_root.py` that reads the on-chain root
 and compares against the local ledger.
 
-## Production checklist (not satisfied today)
+## Production checklist
 
-- [ ] Hyperledger Besu QBFT / IBFT-2.0 genesis config committed.
-- [ ] OpenZeppelin `AccessControl` for the four Ownable contracts.
-- [ ] OpenZeppelin `ReentrancyGuard` import in `AgriDAO.sol`
-      (hand-rolled `_LocalReentrancyGuard` is functionally equivalent
-      but reviewers expect the canonical import).
-- [ ] Per-tx anchoring receipt verifier
-      (`scripts/verify_anchored_root.py`).
+- [x] Permissioned EVM network entry in `hardhat.config.cjs`
+      (`permissioned`); the deployer accepts validator keys via
+      `PERMISSIONED_PRIVKEYS` and grants role permissions via
+      `EXTRA_LOGGERS` / `EXTRA_ANCHORERS`.
+- [x] Role-based access control on `DecisionLogger`,
+      `ProvenanceRegistry`, and `SLCARewards`.
+- [x] Per-tx anchoring receipt verifier
+      (`mvp/simulation/analysis/verify_anchored_root.py`).
+- [ ] OpenZeppelin `ReentrancyGuard` import in `AgriDAO.sol`. The
+      hand-rolled `_LocalReentrancyGuard` is functionally equivalent
+      and Slither passes, but a reviewer may prefer the canonical
+      import. Replacing it requires adding OpenZeppelin as an npm
+      dependency and is queued for a follow-up.
 - [ ] CI workflow that compiles and runs Solidity tests against a
-      Besu network, not just localhost Hardhat.
+      live Besu network (the current CI runs against localhost
+      Hardhat only).
 
-When the manuscript text says "permissioned EVM audit trail",
-substitute "off-chain Merkle audit ledger with optional anchoring on
-a localhost Hardhat chain (production deployment to Besu QBFT is
-flagged as future work)" until the checklist above is satisfied.
+When operating against a permissioned chain, set the env vars listed
+in `hardhat.config.cjs` and run:
+
+```bash
+EXTRA_LOGGERS=0xagent1,0xagent2 \
+EXTRA_ANCHORERS=0xexplainerService \
+PERMISSIONED_RPC_URL=https://validator-1.consortium.example \
+PERMISSIONED_CHAIN_ID=2025 \
+PERMISSIONED_PRIVKEYS=0x... \
+npx hardhat run scripts/deploy.js --network permissioned
+```

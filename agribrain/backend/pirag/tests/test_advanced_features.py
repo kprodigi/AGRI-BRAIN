@@ -45,6 +45,59 @@ def test_blockchain_feedback_ingestion():
     assert doc["metadata"]["n_decisions"] == 3
 
 
+def test_ingest_decision_history_falls_back_to_memory(monkeypatch):
+    """When the chain is not configured, ingest_decision_history must
+    fall back to the in-memory decision list and tag the synthesised
+    document with source_kind='memory'."""
+    from pirag import dynamic_knowledge
+
+    monkeypatch.setattr(dynamic_knowledge, "_read_decisions_from_chain", lambda n: None)
+
+    captured = []
+    class _Pipe:
+        def ingest(self, docs):
+            captured.extend(docs)
+
+    decisions = [
+        {"action": "cold_chain", "role": "farm", "slca": 0.7, "carbon_kg": 4.0, "waste": 0.02, "hour": float(i * 0.25)}
+        for i in range(24)
+    ]
+
+    n = dynamic_knowledge.ingest_decision_history(_Pipe(), decisions, "baseline", block_size=24)
+    assert n == 1
+    assert captured[0]["metadata"]["source_kind"] == "memory"
+    assert captured[0]["metadata"]["source"] == "decision_feedback"
+
+
+def test_ingest_decision_history_prefers_on_chain(monkeypatch):
+    """When _read_decisions_from_chain returns records, they take
+    precedence over the in-memory decisions and the synthesised doc is
+    tagged source_kind='on_chain'."""
+    from pirag import dynamic_knowledge
+
+    on_chain = [
+        {"action": "local_redistribute", "role": "farm", "slca": 0.85, "carbon_kg": 2.0, "waste": 0.01, "hour": float(i * 0.25)}
+        for i in range(24)
+    ]
+    monkeypatch.setattr(dynamic_knowledge, "_read_decisions_from_chain", lambda n: on_chain)
+
+    captured = []
+    class _Pipe:
+        def ingest(self, docs):
+            captured.extend(docs)
+
+    in_memory = [
+        {"action": "cold_chain", "role": "farm", "slca": 0.5, "carbon_kg": 9.0, "waste": 0.10, "hour": 0.0}
+    ]
+
+    n = dynamic_knowledge.ingest_decision_history(_Pipe(), in_memory, "baseline", block_size=24)
+    assert n == 1
+    assert captured[0]["metadata"]["source_kind"] == "on_chain"
+    # The synthesised text should reflect the on-chain records (mostly
+    # local_redistribute), not the single in-memory cold_chain entry.
+    assert "local_redistribute" in captured[0]["text"]
+
+
 # ---- Test 2: Agent capability invocation ----
 def test_agent_capability_invocation():
     from pirag.mcp.protocol import MCPServer
