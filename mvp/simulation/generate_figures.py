@@ -2014,7 +2014,12 @@ def fig10_latency_quality_frontier(data):
     bar_hi = max(y + e[1] for y, e in pts_with_err)
     ax.set_xlim(min(lat_all) - 0.3, max(lat_all) + 0.8)
     ax.set_ylim(bar_lo - 0.03, bar_hi + 0.03)
-    _legend(ax, loc="lower right", ncol=1)
+    # Legend anchored to the lower centre of the panel — the right-side
+    # marker cluster (AgriBrain / MCP Only / piRAG Only at lat ≈ 4 ms)
+    # sits where the previous "lower right" anchor placed the legend,
+    # and the lower-centre zone of the expanded y-axis is genuinely empty
+    # (no markers or arrow pass through it).
+    _legend(ax, loc="lower center", ncol=2)
     _apply_style(ax)
 
     # Lay out the panels, then explicitly raise the bottom subplot edge

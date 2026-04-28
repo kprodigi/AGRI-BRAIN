@@ -1,11 +1,11 @@
 {
-  "git_commit": "9e111bc00b8f0d5fc7847f735ac6c413d76d0010",
+  "git_commit": "2c1cd1bb221bf349c3be93e98b8c3f36b14c73bb",
   "artifact_count": 93,
   "artifacts": [
     {
       "file": "artifact_manifest.json",
       "bytes": 16602,
-      "sha256": "24dfd32594861fa5872026268e946584326d38f51e04be88c7cb62ae6e430239"
+      "sha256": "25205f445e832aea64ac5bf04af5a330d7df6bf1d33f6bb35314bbc963fcbf0b"
     },
     {
       "file": "benchmark_context_significance.json",
@@ -259,13 +259,13 @@
     },
     {
       "file": "fig10_latency_quality_frontier.pdf",
-      "bytes": 48190,
-      "sha256": "957cad3b41d03f17c220480dd915b83b75ca6977076d9b5a177c12df74ee885b"
+      "bytes": 48213,
+      "sha256": "3b37e0f148638882747e51c42741b36d2d515a1d2b67370d6769fc70697d0635"
     },
     {
       "file": "fig10_latency_quality_frontier.png",
-      "bytes": 1425414,
-      "sha256": "2669b6c5f5a45ebb72c636fc5b122f4d31eafd561cb3ba6209947f73c1c94ccc"
+      "bytes": 1421672,
+      "sha256": "84bb59e775493cbce58514fb02e3ef910a189a4146c98aa8c6d9793e396ae70e"
     },
     {
       "file": "fig2_heatwave.pdf",
