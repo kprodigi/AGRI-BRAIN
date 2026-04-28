@@ -227,31 +227,46 @@ state: Dict[str, Any] = {
 }
 
 # ---------------------------------------------------------------------------
-# Role-specific profiles — logit biases, km distances, SLCA weight priorities
+# Role-specific profiles for the live REST decision endpoint.
+#
+# logit_bias is sourced from agents.roles.ROLE_BIASES so the live
+# endpoint and the simulator share a single source of truth — the
+# 2026-04 audit caught a stale parallel set of biases here that no
+# longer matched the simulator's. The remaining keys (km_overrides,
+# slca_weights) are REST-side configuration: km_overrides drive the
+# carbon and SLCA computations against the cooperative's own route
+# distances (the simulator uses Policy.km_* defaults instead) and
+# slca_weights tilt the SLCA composite for stakeholders who opted out
+# of equal weighting in the dashboard. Both are intentionally
+# different from simulator defaults and kept here, not in roles.py,
+# because they are a property of the live operations cooperative,
+# not of the modelled agent personality.
 # ---------------------------------------------------------------------------
+from .agents.roles import ROLE_BIASES as _ROLE_BIASES
+
 ROLE_PROFILES: Dict[str, Dict[str, Any]] = {
     "farm": {
-        "logit_bias": np.array([-1.5, 2.5, 0.0]),
+        "logit_bias": _ROLE_BIASES["farm"].copy(),
         "km_overrides": {"km_coldchain": 80.0, "km_local": 25.0, "km_recovery": 40.0},
         "slca_weights": {"w_c": 0.25, "w_l": 0.30, "w_r": 0.25, "w_p": 0.20},
     },
     "processor": {
-        "logit_bias": np.array([3.0, -1.5, -0.5]),
+        "logit_bias": _ROLE_BIASES["processor"].copy(),
         "km_overrides": {"km_coldchain": 110.0, "km_local": 50.0, "km_recovery": 60.0},
         "slca_weights": {"w_c": 0.30, "w_l": 0.25, "w_r": 0.20, "w_p": 0.25},
     },
     "distributor": {
-        "logit_bias": np.array([3.5, -2.0, -1.0]),
+        "logit_bias": _ROLE_BIASES["distributor"].copy(),
         "km_overrides": {"km_coldchain": 180.0, "km_local": 65.0, "km_recovery": 100.0},
         "slca_weights": {"w_c": 0.35, "w_l": 0.15, "w_r": 0.30, "w_p": 0.20},
     },
     "recovery": {
-        "logit_bias": np.array([-1.5, -2.0, 4.0]),
+        "logit_bias": _ROLE_BIASES["recovery"].copy(),
         "km_overrides": {"km_coldchain": 130.0, "km_local": 40.0, "km_recovery": 50.0},
         "slca_weights": {"w_c": 0.25, "w_l": 0.15, "w_r": 0.25, "w_p": 0.35},
     },
     "cooperative": {
-        "logit_bias": np.array([0.0, 1.5, 0.8]),
+        "logit_bias": _ROLE_BIASES["cooperative"].copy(),
         "km_overrides": {"km_coldchain": 100.0, "km_local": 35.0, "km_recovery": 55.0},
         "slca_weights": {"w_c": 0.25, "w_l": 0.25, "w_r": 0.25, "w_p": 0.25},
     },

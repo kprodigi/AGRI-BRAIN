@@ -23,6 +23,36 @@ ROLE_MODEL_PROFILES = {
 }
 
 
+# Per-role logit bias vector applied to (cold_chain, local_redistribute,
+# recovery). These are the *single source of truth* for the simulator
+# (consumed by the SupplyChainAgent constructors below) and for the
+# live REST decision endpoint (consumed by app.py via ``role_bias_for``).
+# The biases are deliberately small relative to THETA·phi and the mode
+# bonuses in ``action_selection.py`` so they tilt — never override —
+# the global policy.
+ROLE_BIASES: Dict[str, np.ndarray] = {
+    "farm":         np.array([+0.12, -0.05, -0.07]),
+    "processor":    np.array([-0.06, +0.14, -0.08]),
+    "distributor":  np.array([-0.12, +0.28, -0.16]),
+    "cooperative":  np.array([-0.04, +0.10, -0.06]),
+    "recovery":     np.array([-0.12, -0.05, +0.17]),
+}
+
+
+def role_bias_for(role: str) -> np.ndarray:
+    """Return the canonical 3-vector logit bias for a role.
+
+    Falls back to a zero vector for unrecognised roles so callers that
+    receive an unexpected role from the REST surface still produce a
+    well-formed (un-biased) decision.
+    """
+    bias = ROLE_BIASES.get((role or "").strip().lower())
+    if bias is None:
+        return np.zeros(3, dtype=np.float64)
+    # Return a copy so callers cannot mutate the canonical entry.
+    return bias.copy()
+
+
 # ---------------------------------------------------------------------------
 # Stage boundaries (hours since harvest)
 # ---------------------------------------------------------------------------
@@ -60,7 +90,7 @@ class FarmAgent(SupplyChainAgent):
         super().__init__(
             agent_id="farm_agent",
             role="farm",
-            role_bias=np.array([+0.12, -0.05, -0.07]),
+            role_bias=ROLE_BIASES["farm"].copy(),
         )
         self.profile = ROLE_MODEL_PROFILES["farm"]
 
@@ -111,7 +141,7 @@ class ProcessorAgent(SupplyChainAgent):
         super().__init__(
             agent_id="processor_agent",
             role="processor",
-            role_bias=np.array([-0.06, +0.14, -0.08]),
+            role_bias=ROLE_BIASES["processor"].copy(),
         )
         self.profile = ROLE_MODEL_PROFILES["processor"]
 
@@ -162,7 +192,7 @@ class DistributorAgent(SupplyChainAgent):
         super().__init__(
             agent_id="distributor_agent",
             role="distributor",
-            role_bias=np.array([-0.12, +0.28, -0.16]),
+            role_bias=ROLE_BIASES["distributor"].copy(),
         )
         self.profile = ROLE_MODEL_PROFILES["distributor"]
 
@@ -217,7 +247,7 @@ class CooperativeAgent(SupplyChainAgent):
         super().__init__(
             agent_id="cooperative_agent",
             role="cooperative",
-            role_bias=np.array([-0.04, +0.10, -0.06]),
+            role_bias=ROLE_BIASES["cooperative"].copy(),
         )
         self.profile = ROLE_MODEL_PROFILES["cooperative"]
         self._coordination_broadcasts = 0
@@ -284,7 +314,7 @@ class RecoveryAgent(SupplyChainAgent):
         super().__init__(
             agent_id="recovery_agent",
             role="recovery",
-            role_bias=np.array([-0.12, -0.05, +0.17]),
+            role_bias=ROLE_BIASES["recovery"].copy(),
         )
         self.profile = ROLE_MODEL_PROFILES["recovery"]
         self._capacity_broadcasts = 0

@@ -23,7 +23,16 @@ from stochastic import DETERMINISTIC_MODE
 RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 T1 = RESULTS_DIR / "table1_summary.csv"
 T2 = RESULTS_DIR / "table2_ablation.csv"
-# Keep snapshot outside generated results so it can be versioned.
+# Snapshot lives outside generated results so it can be versioned.
+# The 2026-04 audit found the previous checked-in snapshot pre-dated
+# the stochastic recalibration, so it could not be trusted as a
+# regression baseline. The fix was to *not* ship a stale snapshot:
+# a fresh repo runs
+#   DETERMINISTIC_MODE=true REGRESSION_GUARD_INIT=true \
+#       python -m mvp.simulation.validation.run_regression_guard
+# once to capture the current deterministic outputs as the new
+# baseline, commits the resulting JSON, and from that point forward
+# the guard detects drift on any subsequent deterministic run.
 SNAPSHOT = Path(__file__).resolve().parent.parent / "baseline_snapshot.json"
 
 

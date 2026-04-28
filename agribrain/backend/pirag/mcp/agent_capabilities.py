@@ -3,6 +3,26 @@
 Other agents can discover and invoke these capabilities via the MCP
 registry, enabling agent-to-agent coordination through the protocol
 layer rather than direct method calls.
+
+Wiring (load-bearing — do not delete this file as "unused"):
+
+* ``AgentCoordinator._init_context_infrastructure`` (see
+  ``backend/src/agents/coordinator.py``) calls
+  ``register_all_agent_capabilities`` immediately after constructing
+  its private ``MCPServer``. Every simulator run and every live
+  ``/decide`` request that triggers context infrastructure registers
+  the five role-specific tools defined here onto the per-coordinator
+  MCP server.
+* ``test_agent_capability_invocation`` in
+  ``pirag/tests/test_advanced_features.py`` exercises
+  ``register_recovery_capabilities`` directly to assert tools land in
+  the registry.
+
+The "orphan tool" finding from the 2026-04 audit referred to these
+tools being absent from the *static* MCP registry returned by
+``get_default_registry``. They are deliberately runtime-registered
+because the tools close over the agent instances created at
+coordinator init; the static registry has no agent reference.
 """
 from __future__ import annotations
 
