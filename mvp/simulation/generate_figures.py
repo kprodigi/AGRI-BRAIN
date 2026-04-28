@@ -1359,9 +1359,9 @@ def fig7_ablation(data):
     for text in leg.get_texts():
         text.set_fontweight("bold")
     # Bumped suptitle size so it scales with the larger panel typography.
-    fig.suptitle("Ablation Study", y=0.995, fontsize=FIG_TITLE_SIZE + 3,
+    fig.suptitle("Ablation Study", y=0.97, fontsize=FIG_TITLE_SIZE + 3,
                  fontweight="bold")
-    fig.tight_layout(rect=[0, 0.08, 1, 0.96], w_pad=1.4)
+    fig.tight_layout(rect=[0, 0.08, 1, 0.94], w_pad=1.4)
     _save(fig, "fig7_ablation")
 
 

@@ -1,11 +1,11 @@
 {
-  "git_commit": "39cf19f6ceb9d4896e83e7d3a62c5dfe622cd5a4",
+  "git_commit": "b11c94cecd8683193561ab4696cc2ed3a873425c",
   "artifact_count": 93,
   "artifacts": [
     {
       "file": "artifact_manifest.json",
       "bytes": 16601,
-      "sha256": "f6ecfaa74e7af74d708390d5a72b9cc048c74bfbef3522ccd62bfbc341637b4d"
+      "sha256": "95d1ef79b890c86b9c9c3ba27ae30f4507a490547124713800c1661e06d2dd6c"
     },
     {
       "file": "benchmark_context_significance.json",
@@ -319,13 +319,13 @@
     },
     {
       "file": "fig7_ablation.pdf",
-      "bytes": 42457,
-      "sha256": "f5ba24648b5d68158f2407e38f797100c6251318b472b0efc10e06ff6c41b17e"
+      "bytes": 34216,
+      "sha256": "580121be6ebfe3d8b3da3198f96b3c26653b1a48489080f2b79c06d87ed55d4e"
     },
     {
       "file": "fig7_ablation.png",
-      "bytes": 1006893,
-      "sha256": "b230226f312ecc00e31ecdf24c0ad8dab8d6e166de62b616b7332202ab665288"
+      "bytes": 1522005,
+      "sha256": "6418d8e32f62bd7d32a2aad5c5426fb57cc491b88004c62ca6af0fdb35be114f"
     },
     {
       "file": "fig8_green_ai.pdf",
