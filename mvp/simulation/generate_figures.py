@@ -1862,25 +1862,40 @@ def fig10_latency_quality_frontier(data):
     context_modes = ["agribrain", "mcp_only", "pirag_only"]
 
     def _collect(modes):
+        """Collect (mode, mean_latency_ms, mean_ari, yerr) per mode.
+
+        Point positions use the canonical single-seed per-episode ARI from
+        ``data["results"]`` so the figure preserves the y-axis scale of
+        the published render (which was rendered from
+        ``run_all(seed=42)`` output, single-seed values).
+
+        Error bars use the standard error of the across-scenario mean:
+        sd(per_scenario_ari) / sqrt(n_scenarios). The within-scenario
+        bootstrap CIs reported in benchmark_summary.json are too tight
+        (~0.001-0.005 ARI on n=20 seeds) to render visibly in panel (a)'s
+        wide y-range, so we use cross-scenario variability instead — this
+        is the statistically appropriate uncertainty for the
+        *cross-scenario mean* the figure plots and is consistent with the
+        symmetric ±SE convention reported elsewhere in the manuscript.
+        """
         pts = []
         for mode in modes:
-            ari_vals = [data["results"][s][mode]["ari"] for s in SCENARIOS]
-            lat_vals = [data["results"][s][mode].get("mean_decision_latency_ms", 0.0)
-                        for s in SCENARIOS]
-            yerr = (0.0, 0.0)
-            ci_recs = [bench.get(s, {}).get(mode, {}).get("ari", {}) for s in SCENARIOS]
-            if ci_recs and all("mean" in r and "ci_low" in r and "ci_high" in r for r in ci_recs):
-                means = np.array([float(r["mean"]) for r in ci_recs], dtype=float)
-                lows = np.array([float(r["mean"] if r["ci_low"] is None else r["ci_low"])
-                                 for r in ci_recs], dtype=float)
-                highs = np.array([float(r["mean"] if r["ci_high"] is None else r["ci_high"])
-                                  for r in ci_recs], dtype=float)
-                mean_y = float(np.mean(means))
-                yerr = (max(0.0, mean_y - float(np.mean(lows))),
-                        max(0.0, float(np.mean(highs)) - mean_y))
-                pts.append((mode, float(np.mean(lat_vals)), mean_y, yerr))
-            else:
-                pts.append((mode, float(np.mean(lat_vals)), float(np.mean(ari_vals)), yerr))
+            scenario_aris = []
+            scenario_lats = []
+            for s in SCENARIOS:
+                rec = data["results"].get(s, {}).get(mode, {})
+                if "ari" not in rec:
+                    continue
+                scenario_aris.append(float(rec["ari"]))
+                scenario_lats.append(float(rec.get("mean_decision_latency_ms", 0.0)))
+            if not scenario_aris:
+                continue
+            ari_arr = np.array(scenario_aris, dtype=float)
+            mean_y = float(ari_arr.mean())
+            n = ari_arr.size
+            se_y = float(ari_arr.std(ddof=1) / np.sqrt(n)) if n > 1 else 0.0
+            yerr = (se_y, se_y)
+            pts.append((mode, float(np.mean(scenario_lats)), mean_y, yerr))
         return pts
 
     fast_pts = _collect(fast_modes)
@@ -1982,7 +1997,26 @@ def fig10_latency_quality_frontier(data):
     _legend(ax, loc="lower right", ncol=1)
     _apply_style(ax)
 
-    fig.tight_layout(rect=[0, 0, 1, 0.97], w_pad=1.6)
+    # Lay out the panels, then explicitly raise the bottom subplot edge
+    # so the italic descriptive-only footnote at y=0.025 has room to sit
+    # below the bold x-axis label without overlap. tight_layout's rect
+    # parameter is unreliable here because the MaxNLocator on panel (a)
+    # confuses its bbox calculation.
+    fig.tight_layout(w_pad=1.6)
+    fig.subplots_adjust(top=0.88, bottom=0.20)
+    # Footnote: be honest that mean_decision_latency_ms is a wall-clock
+    # measurement and therefore hardware-dependent (varies 2-10x across
+    # machines). The deterministic complexity proxies (mcp_calls_per_episode,
+    # pirag_queries_per_episode) are the reproducibility-friendly latency
+    # surrogates and are reported separately in the manuscript.
+    fig.text(
+        0.5, 0.04,
+        "Decision latency is a wall-clock profiling hint (hardware-dependent, "
+        "± SE across 5 scenarios); deterministic MCP/piRAG call counts are "
+        "the reproducibility-friendly latency proxy.",
+        ha="center", va="bottom",
+        fontsize=ANNOT_FONT_SIZE - 1, style="italic", color="#555555",
+    )
     _save(fig, "fig10_latency_quality_frontier")
 
 
