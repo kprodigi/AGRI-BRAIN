@@ -1,11 +1,11 @@
 {
-  "git_commit": "786b8de77749fd20c79ee0a280ba08b9e2d88ee7",
+  "git_commit": "99adf949cbee8291d1d9381092f41830a6bada73",
   "artifact_count": 93,
   "artifacts": [
     {
       "file": "artifact_manifest.json",
       "bytes": 16602,
-      "sha256": "5c65ffd21b546bb1d940761c01090c6de03fb1cf2ed4bc18887b0cd3b2d14bfe"
+      "sha256": "9e26597e52643a49050fac824fc8a19a275d62da37b74121fb4a91bfa3f506d0"
     },
     {
       "file": "benchmark_context_significance.json",
@@ -349,13 +349,13 @@
     },
     {
       "file": "fig9_robustness.pdf",
-      "bytes": 116270,
-      "sha256": "4574ddf943c4583505823d046e0b2cd1f8b58f16432c01ad46f28eec4c042be5"
+      "bytes": 112508,
+      "sha256": "b6fda9cb9d02712ed504ec9614b71f8dbd797c8498045791b6fcf6e1e60911a1"
     },
     {
       "file": "fig9_robustness.png",
-      "bytes": 3155388,
-      "sha256": "47fdae315f8db0e8b1a617dcbcd5c178ce4064b778b186a8712ac9fb8adf0bba"
+      "bytes": 3122674,
+      "sha256": "766b143de5abc77401fe46804477b6acebff01d4c5ea2db58d07bc5878860bf6"
     },
     {
       "file": "mcp_interop_adaptive_pricing.json",

@@ -1617,8 +1617,16 @@ def fig9_fault_degradation():
     n_seeds_global = _fig9_load_n_seeds()
     method_means = _fig9_load_method_means() or {}
 
+    # Width-ratio rebalancing for the upcoming 5-scenario panel (c).
+    # Panel (c) currently renders 3 bars (heatwave, overproduction,
+    # cyber_outage are the only context_alignment_*.json files present),
+    # but adaptive_pricing and baseline are scheduled to be added on
+    # the next HPC run. Bumping panel (c) from 1.05 to 1.40 leaves room
+    # for the extra two bars without re-flowing the figure later. The
+    # panel-(a)/(b) shrink is small (1.10→1.00, 1.45→1.35) and does not
+    # cramp either panel — both still carry the same content density.
     fig, axes = plt.subplots(1, 3, figsize=(22, 7.5),
-                             gridspec_kw={"width_ratios": [1.10, 1.45, 1.05]})
+                             gridspec_kw={"width_ratios": [1.00, 1.35, 1.40]})
 
     # Per-element font sizes — bumped above figs 6/7/8 so the cell
     # values and bar labels read clearly at paper scale.
@@ -1794,14 +1802,21 @@ def fig9_fault_degradation():
         ax.invert_yaxis()  # weakest baseline (largest gain) on top
 
         # Symlog so the +1..+15 % cluster has visual room and the +75 %
-        # static bar doesn't dominate.
+        # static bar doesn't dominate. Major ticks are sparse on purpose:
+        # the previous {0,1,2,5,10,20,50,100} set crowded the log region
+        # (10/20/50 labels overlapped at the bold 20pt tick fontsize),
+        # so we drop the linear-region 1 and 2 plus the 10 and 20 — the
+        # 5%-anchored "+1.6%" and "+2.2%" small bars stay readable
+        # because their numeric labels sit immediately to the right of
+        # each bar. Final ticks {0, 5, 50, 100} have visibly clean
+        # spacing across the symlog axis.
         ax.set_xscale("symlog", linthresh=2.0, linscale=1.0)
         ax.set_xlim(0, max(max_hi * 1.55, 110.0))
-        from matplotlib.ticker import FixedLocator, FuncFormatter
-        major_ticks = [0, 1, 2, 5, 10, 20, 50, 100]
+        from matplotlib.ticker import FixedLocator, FuncFormatter, NullLocator
+        major_ticks = [0, 5, 50, 100]
         ax.xaxis.set_major_locator(FixedLocator(major_ticks))
         ax.xaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{int(v)}%"))
-        ax.xaxis.set_minor_locator(FixedLocator([3, 4, 6, 7, 8, 9, 30, 40, 60, 70, 80, 90]))
+        ax.xaxis.set_minor_locator(NullLocator())
     else:
         ax.text(0.5, 0.5, "benchmark_significance.json not available",
                 ha="center", va="center", transform=ax.transAxes,
@@ -1839,8 +1854,11 @@ def fig9_fault_degradation():
              ylabel="Honour rate (% of active steps)")
 
     fig.suptitle("Performance Gain over Baselines and Context Honour",
-                 y=0.995, fontsize=FIG_TITLE_SIZE + 3, fontweight="bold")
-    fig.tight_layout(rect=[0, 0.02, 1, 0.94], w_pad=2.0)
+                 y=0.97, fontsize=FIG_TITLE_SIZE + 3, fontweight="bold")
+    # Tighter title-to-subplot gap (rect top 0.94 → 0.92) and tighter
+    # inter-panel gap (w_pad 2.0 → 1.0) so panel (c) has more room for
+    # the upcoming 5-scenario layout without losing space to padding.
+    fig.tight_layout(rect=[0, 0.02, 1, 0.92], w_pad=1.0)
     _save(fig, "fig9_robustness")
 
 
