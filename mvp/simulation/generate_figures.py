@@ -1299,20 +1299,23 @@ def fig7_ablation(data):
     stress_scenarios = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing"]
 
     n_modes = len(fig7_modes)
-    # Give each group enough horizontal room: total group width ~ 0.9, split
-    # across n_modes bars. Slight group gap by scaling x by 1.15.
-    width = 0.9 / n_modes
-    x_scale = 1.25
+    # Wider bars and tighter group gap. Total group width 0.98 (was 0.9)
+    # plus x_scale dropped from 1.25 to 1.10 means each group occupies
+    # ~89% of its allotted x-slot instead of ~72%, so the bars are
+    # visibly chunkier and the inter-group gap shrinks proportionally —
+    # which is what reviewers expect when each group already carries 8
+    # well-separated bars distinguished by colour.
+    width = 0.98 / n_modes
+    x_scale = 1.10
 
-    # Bumped per-element font sizes for fig7. The 8-mode legend on a
-    # 1x3 layout reads cluttered at the suite-default sizes; the
-    # bumps below match what reviewers expect for a high-density
-    # ablation panel without breaking the suite-wide typography
-    # hierarchy used by the other figures.
-    _F7_TITLE = SUBPLOT_TITLE_SIZE + 4   # 23
-    _F7_AXIS  = AXIS_LABEL_SIZE + 3      # 20
-    _F7_TICK  = TICK_FONT_SIZE + 3       # 18
-    _F7_LEG   = LEGEND_FONT_SIZE + 2     # 17
+    # Bumped per-element font sizes for fig7 — the previous +3-tick /
+    # +4-title bumps still read small against the 24-inch figure width
+    # at paper scale, so each tier moves up another 2 points to land
+    # the title at 25pt, axis at 22pt, ticks at 20pt, legend at 19pt.
+    _F7_TITLE = SUBPLOT_TITLE_SIZE + 6   # 25
+    _F7_AXIS  = AXIS_LABEL_SIZE + 5      # 22
+    _F7_TICK  = TICK_FONT_SIZE + 5       # 20
+    _F7_LEG   = LEGEND_FONT_SIZE + 4     # 19
 
     for ax, (metric, ylabel, panel) in zip(axes, metrics):
         x = np.arange(len(stress_scenarios)) * x_scale
