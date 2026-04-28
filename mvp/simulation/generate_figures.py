@@ -2002,8 +2002,18 @@ def fig10_latency_quality_frontier(data):
     ax.set_ylabel("Mean ARI")
     lat_all = [ref[1]] + [p[1] for p in ctx_pts] if ref is not None else [p[1] for p in ctx_pts]
     ari_all = [ref[2]] + [p[2] for p in ctx_pts] if ref is not None else [p[2] for p in ctx_pts]
+    # Y-axis range must accommodate the cross-scenario SE error bars,
+    # not just the points. Otherwise the bars dominate the panel
+    # (the SE captures real cross-scenario variability ~±0.025 ARI,
+    # which is larger than inter-method differences ~0.01-0.03 ARI).
+    # Compute the full extent (point ± bar) and pad symmetrically so
+    # bars occupy roughly a third of the panel height rather than
+    # spanning ~70% of a tight zoom.
+    pts_with_err = ([(ref[2], ref[3])] if ref is not None else []) + [(p[2], p[3]) for p in ctx_pts]
+    bar_lo = min(y - e[0] for y, e in pts_with_err)
+    bar_hi = max(y + e[1] for y, e in pts_with_err)
     ax.set_xlim(min(lat_all) - 0.3, max(lat_all) + 0.8)
-    ax.set_ylim(min(ari_all) - 0.015, max(ari_all) + 0.020)
+    ax.set_ylim(bar_lo - 0.03, bar_hi + 0.03)
     _legend(ax, loc="lower right", ncol=1)
     _apply_style(ax)
 
