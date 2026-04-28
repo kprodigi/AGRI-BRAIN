@@ -1,11 +1,11 @@
 {
-  "git_commit": "5281b8b2d9e37d726856ad7c501ea5643c1caa06",
+  "git_commit": "39cf19f6ceb9d4896e83e7d3a62c5dfe622cd5a4",
   "artifact_count": 93,
   "artifacts": [
     {
       "file": "artifact_manifest.json",
       "bytes": 16601,
-      "sha256": "6375548030202bdb1618f89d7922acc871533949f77e110e70e01a7649c5746b"
+      "sha256": "f6ecfaa74e7af74d708390d5a72b9cc048c74bfbef3522ccd62bfbc341637b4d"
     },
     {
       "file": "benchmark_context_significance.json",
@@ -309,13 +309,13 @@
     },
     {
       "file": "fig6_cross.pdf",
-      "bytes": 39433,
-      "sha256": "0349ea8923ef726aef74daad226a72157db476a9a49ea690f9e2764ab3810e81"
+      "bytes": 28582,
+      "sha256": "e09dac860a2be5e96a04d9ccdaf25aa38fc91be0bec6d5ea0beaa7d709d81528"
     },
     {
       "file": "fig6_cross.png",
-      "bytes": 1498168,
-      "sha256": "14f6a0f4d3fd0bf373b9bec670a08c014e96d706b449d63031f66748e173dabe"
+      "bytes": 2199905,
+      "sha256": "c334893da59f3f57a59a159da1708c77ebf802076cd24446fc38d3fadb53c0b5"
     },
     {
       "file": "fig7_ablation.pdf",

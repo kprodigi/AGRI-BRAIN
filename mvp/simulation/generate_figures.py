@@ -1260,9 +1260,9 @@ def fig6_cross(data):
                      bbox_to_anchor=(0.5, 0.0))
     for text in leg.get_texts():
         text.set_fontweight("bold")
-    fig.suptitle("Cross-Scenario Performance Comparison", y=0.995,
+    fig.suptitle("Cross-Scenario Performance Comparison", y=0.97,
                  fontsize=FIG_TITLE_SIZE + 3, fontweight="bold")
-    fig.tight_layout(rect=[0, 0.05, 1, 0.96], h_pad=1.6, w_pad=1.6)
+    fig.tight_layout(rect=[0, 0.05, 1, 0.94], h_pad=1.6, w_pad=1.6)
     _save(fig, "fig6_cross")
 
 
