@@ -818,7 +818,7 @@ def fig5_pricing(data):
     hours = np.array(ab["hours"])
 
     fig, axes = plt.subplots(2, 2, figsize=(18, 13))
-    fig.suptitle("Adaptive Pricing & Demand Volatility", y=0.995)
+    fig.suptitle("Adaptive Pricing & Demand Volatility", y=0.97)
 
     # --- (a) Demand + Bollinger triggers ---
     ax = axes[0, 0]
@@ -879,7 +879,7 @@ def fig5_pricing(data):
     ax.set_title("(b) Routing Distribution Over Time")
     ax.set_ylim(0, 1.15)
     _apply_style(ax)
-    _legend(ax, loc="upper right", ncol=3)
+    _legend(ax, loc="upper center", ncol=3)
 
     # --- (c) Equity index ---
     # Auto-scale across the three modes; the previous fixed y-range
@@ -947,7 +947,7 @@ def fig5_pricing(data):
         leg.get_frame().set_facecolor("white")
         leg.get_frame().set_alpha(1.0)
 
-    fig.tight_layout(rect=[0, 0, 1, 0.97], h_pad=1.6, w_pad=1.6)
+    fig.tight_layout(rect=[0, 0, 1, 0.94], h_pad=1.6, w_pad=1.6)
     _save(fig, "fig5_pricing")
 
 
