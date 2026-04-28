@@ -165,7 +165,9 @@ def explain_decision(
             f"{prob_str}."
         )
 
-    # --- Paragraph 3: Counterfactual ---
+    # --- Paragraph 3: Ablation comparison (formerly labelled
+    # "counterfactual"; the framing is honest now: same policy, same
+    # phi(s), same RNG seed, with psi := 0). ---
     para3 = ""
     if counterfactual_probs is not None and action_probs is not None:
         delta_lr = (action_probs[1] - counterfactual_probs[1]) * 100
@@ -224,7 +226,20 @@ def explain_decision(
         }
 
     # --- Ablation-delta structured data (formerly "counterfactual") ---
+    # Honestly labelled: this is what the same policy, with the same
+    # state vector phi(s) and the same RNG seed, would have selected if
+    # the MCP/piRAG context modifier (Delta_z = THETA_CONTEXT @ psi) had
+    # been zero. It is *not* a Pearl-style counterfactual: there is no
+    # twin-network and no abduction step. It is a leave-one-out ablation
+    # of the context layer.
     ablation_delta: Dict[str, Any] = {
+        "kind": "ablation_psi_zero",
+        "description": (
+            "Action and probabilities the same policy would have produced "
+            "with psi := 0 (i.e. with the MCP/piRAG context modifier "
+            "disabled). Same RNG seed, same phi(s). This is an ablation "
+            "delta, not a Pearl-style counterfactual."
+        ),
         "action_without_context": counterfactual_action,
         "probs_without_context": counterfactual_probs.tolist() if counterfactual_probs is not None else None,
         "probs_with_context": action_probs.tolist() if action_probs is not None else None,

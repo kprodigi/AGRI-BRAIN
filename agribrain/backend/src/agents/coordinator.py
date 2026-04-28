@@ -988,8 +988,11 @@ class AgentCoordinator:
             # explicitly via Policy.enable_dynamic_knowledge_feedback or
             # the DYNAMIC_KB_FEEDBACK env var for ablation studies.
             import os as _os_dyn
+            # Default-on so the §3.7 blockchain-to-piRAG feedback loop is
+            # active in standard runs. Older builds defaulted off; set
+            # DYNAMIC_KB_FEEDBACK=false explicitly to reproduce them.
             dyn_feedback_enabled = (
-                _os_dyn.environ.get("DYNAMIC_KB_FEEDBACK", "false").lower() == "true"
+                _os_dyn.environ.get("DYNAMIC_KB_FEEDBACK", "true").lower() == "true"
             )
             if self._step_policy is not None:
                 # Policy-level setting takes precedence when set.

@@ -24,9 +24,28 @@ const FEATURE_LABELS = [
 // --- Section 1a: Causal Explanation ---
 function CausalExplanation({ explainability }) {
   const text = explainability.causal_text || explainability.summary || "";
-  if (!text) return null;
-
   const primaryCause = explainability.causal_chain?.primary_cause;
+
+  if (!text) {
+    // Fail loud, not silent: a missing causal narrative is unusual and
+    // a reviewer should see that the field was empty rather than have
+    // the section vanish.
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Brain className="w-4 h-4 text-teal-600" />
+          <h4 className="text-sm font-semibold">Causal Explanation</h4>
+          <Badge variant="outline" className="text-[10px]">unavailable</Badge>
+        </div>
+        <div className="text-xs text-muted-foreground pl-6">
+          The backend did not emit a causal narrative for this decision (typical for
+          context-disabled modes such as <code>static</code>, <code>hybrid_rl</code>,
+          <code>no_pinn</code>, or <code>no_slca</code>). The other panel sections still
+          show whatever evidence is available.
+        </div>
+      </div>
+    );
+  }
 
   const renderText = (raw) => {
     const parts = raw.split(/(BECAUSE|WITHOUT|AND)/g);
@@ -72,7 +91,21 @@ function CausalExplanation({ explainability }) {
 function ContextRadar({ explainability }) {
   const cf = explainability.context_features;
   const la = explainability.logit_adjustment;
-  if (!cf) return null;
+  if (!cf) {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Brain className="w-4 h-4 text-blue-600" />
+          <h4 className="text-sm font-semibold">Context Features (ψ)</h4>
+          <Badge variant="outline" className="text-[10px]">unavailable</Badge>
+        </div>
+        <div className="text-xs text-muted-foreground pl-6">
+          No ψ vector was attached to this decision. This is expected for
+          context-disabled modes (no_context, hybrid_rl, static, no_pinn, no_slca).
+        </div>
+      </div>
+    );
+  }
 
   const radarData = FEATURE_LABELS.map((f) => ({
     axis: f.label,
@@ -290,20 +323,44 @@ function ProvenanceChain({ explainability, memo }) {
     });
   }
 
-  // Blockchain anchor — only when tx_hash is a real on-chain hash.
-  // null = chain submission was not attempted; "0x0" = legacy sentinel
-  // from offline runs. Neither qualifies as an anchored decision.
-  if (
-    memo.tx_hash &&
+  // Blockchain anchor: distinguish three states explicitly so the
+  // operator never confuses "not attempted" with "anchored".
+  //   * real 0x... hash  -> green "On-chain anchor"
+  //   * "0x0" or unset   -> amber "anchor pending — chain not configured"
+  //                         (with a hint pointing at HOW_TO_RUN.md §6)
+  //   * monitoring phase -> distinct "monitoring preview, no anchor by design"
+  const phaseStatus = memo.phase_status || "";
+  const txHashIsReal = memo.tx_hash &&
     memo.tx_hash !== "0x0" &&
-    /^0x[0-9a-fA-F]{2,}$/.test(memo.tx_hash)
-  ) {
+    /^0x[0-9a-fA-F]{2,}$/.test(memo.tx_hash);
+  if (txHashIsReal) {
     steps.push({
       icon: CheckCircle2,
       iconColor: "text-emerald-500",
       label: "On-chain anchor",
       detail: memo.tx_hash,
       isHash: true,
+    });
+  } else if (phaseStatus === "monitoring_preview") {
+    steps.push({
+      icon: AlertTriangle,
+      iconColor: "text-blue-500",
+      label: "Monitoring preview",
+      detail: "no on-chain anchor by design (deployment phase = monitoring)",
+    });
+  } else if (phaseStatus === "advisory_pending") {
+    steps.push({
+      icon: AlertTriangle,
+      iconColor: "text-amber-500",
+      label: "Advisory pending",
+      detail: "awaiting operator approval; will be anchored on approve",
+    });
+  } else {
+    steps.push({
+      icon: AlertTriangle,
+      iconColor: "text-amber-500",
+      label: "On-chain anchor not attempted",
+      detail: "chain not configured (set CHAIN_PRIVKEY + run npx hardhat node)",
     });
   }
 
@@ -364,7 +421,27 @@ function ProvenanceChain({ explainability, memo }) {
 
 // --- Main Panel ---
 export default function ExplainabilityPanel({ explainability, memo }) {
-  if (!explainability) return null;
+  // Render even when explainability is missing entirely so the operator
+  // sees an explicit "no enrichment" message instead of an empty card.
+  if (!explainability) {
+    return (
+      <Card className="bg-muted/30 border-primary/10">
+        <CardContent className="p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <Brain className="w-4 h-4 text-muted-foreground" />
+            <h4 className="text-sm font-semibold">Explainability</h4>
+            <Badge variant="outline" className="text-[10px]">no payload</Badge>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            The backend did not attach an explainability blob to this memo. This is
+            normal for legacy decisions written before the explainability path was
+            wired, and for context-disabled modes where the policy reads only φ(s)
+            and there is no ψ vector to explain.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="bg-muted/30 border-primary/10">
@@ -375,7 +452,7 @@ export default function ExplainabilityPanel({ explainability, memo }) {
         <Separator />
         <KeywordsPanel keywords={explainability.keywords} />
         {explainability.keywords && Object.keys(explainability.keywords).length > 0 && <Separator />}
-        <ProvenanceChain explainability={explainability} memo={memo} />
+        <ProvenanceChain explainability={explainability} memo={memo || {}} />
       </CardContent>
     </Card>
   );

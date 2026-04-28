@@ -539,21 +539,58 @@ python mvp/simulation/validation/validate_publication_artifacts.py
 
 ---
 
-## 7. On-chain features (optional)
+## 7. On-chain features (recommended)
 
-If you want to test blockchain integration with Hardhat:
+The §1 / §4.13 claim "blockchain verification of every routing decision"
+requires a running EVM. The localhost Hardhat node below is enough to
+satisfy that claim end-to-end on a single workstation. A fresh clone
+that follows §2 + §3 produces decisions that show **"On-chain anchor
+not attempted — chain not configured"** in the Explainability panel;
+following the steps in this section flips them to a real `0x…`
+transaction hash.
+
+### 7a. One-command quickstart
+
+From the repo root:
+
+```bash
+bash agribrain/contracts/hardhat/scripts/start_localhost_chain.sh
+```
+
+That script (see file for details) installs Hardhat dependencies,
+starts a node on `127.0.0.1:8545`, deploys all six contracts via
+`scripts/deploy.js`, writes the addresses to
+`agribrain/backend/runtime/chain/deployed-addresses.localhost.json`
+(the backend auto-loads them), and prints the `CHAIN_PRIVKEY` env var
+the backend needs.
+
+Then **export the private key the script printed** and start the
+backend:
+
+```bash
+export CHAIN_PRIVKEY=0xac0974…  # printed by the script
+python -m uvicorn src.app:API --host 127.0.0.1 --port 8100 --app-dir agribrain/backend
+```
+
+The next decision you trigger (via the Admin Quick Decision tab or
+`POST /decide`) anchors on chain. Confirm with:
+
+```bash
+curl -s http://127.0.0.1:8100/last-decision | jq .memo.tx_hash
+# -> "0x…"  (real hash; not "0x0" and not null)
+```
+
+### 7b. Manual setup (same effect, more visible)
 
 ```bash
 cd AGRI-BRAIN/agribrain/contracts/hardhat
+npm install                     # one-time
+npx hardhat node                # leave running
 
-# Install Hardhat dependencies
-npm install
-
-# Start a local Hardhat node
-npx hardhat node
-
-# In another terminal, deploy contracts
+# In a second terminal, from the repo root:
+cd AGRI-BRAIN/agribrain/contracts/hardhat
 npx hardhat run scripts/deploy.js --network localhost
+# -> writes deployed-addresses.localhost.json into backend/runtime/chain/
 ```
 
 Configure the chain in the Admin panel (Blockchain tab) or via:

@@ -712,6 +712,31 @@ def run_episode(
         # Green AI footprint tracking (Section 4.12)
         meter.compute_footprint(steps=1)
 
+        # Per-decision explainability record: surface the psi vector, the
+        # logit modifier, and the dominant context feature so that
+        # mvp/simulation/analysis/explainability_metrics.py can compute
+        # the §1/§4.10 causal-chain-coverage and sign-consistency
+        # percentages without rerunning the policy. Fields are optional:
+        # context-disabled modes (static, hybrid_rl, no_pinn, no_slca)
+        # leave them as None and the analysis script ignores those rows.
+        _psi_vec = getattr(coordinator, "_step_context_features", None)
+        _mod_vec = getattr(coordinator, "_step_context_modifier", None)
+        _gov_override = bool(getattr(coordinator, "_step_override", False))
+        psi_list = (
+            [float(v) for v in np.asarray(_psi_vec).flatten()]
+            if _psi_vec is not None else None
+        )
+        mod_list = (
+            [float(v) for v in np.asarray(_mod_vec).flatten()]
+            if _mod_vec is not None else None
+        )
+        dominant_psi_idx = (
+            int(np.argmax(np.abs(np.asarray(_psi_vec)))) if _psi_vec is not None else None
+        )
+        dominant_action_idx = (
+            int(np.argmax(np.asarray(_mod_vec))) if _mod_vec is not None else None
+        )
+
         # Append the routing decision to the per-episode ledger before
         # post_step runs the learner update so the leaf hash captures the
         # decision exactly as the environment observed it.
@@ -730,6 +755,11 @@ def run_episode(
             "carbon_kg": float(carbon),
             "mode": str(mode),
             "scenario": str(scenario),
+            "psi": psi_list,
+            "context_modifier": mod_list,
+            "dominant_psi_idx": dominant_psi_idx,
+            "dominant_action_idx": dominant_action_idx,
+            "governance_override": _gov_override,
         })
 
         # Post-step: update agent state and route messages

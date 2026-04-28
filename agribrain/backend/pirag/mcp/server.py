@@ -50,9 +50,17 @@ class MCPRequest(BaseModel):
 _MCP_SERVER = None
 
 
+_MCP_RECORDER = None
+
+
+def get_mcp_recorder():
+    """Return the live ProtocolRecorder attached to the FastAPI MCP server."""
+    return _MCP_RECORDER
+
+
 def _get_mcp_server():
     """Lazy-initialize the MCPServer with registry, resources, and prompts."""
-    global _MCP_SERVER
+    global _MCP_SERVER, _MCP_RECORDER
     if _MCP_SERVER is not None:
         return _MCP_SERVER
 
@@ -60,10 +68,17 @@ def _get_mcp_server():
         from .registry import get_default_registry
         from .protocol import MCPServer
         from .prompts import register_prompts
+        from .protocol_recorder import ProtocolRecorder
 
         registry = get_default_registry()
         server = MCPServer(registry=registry)
         register_prompts(server)
+
+        # Attach a process-wide ProtocolRecorder so the MCP/piRAG panel
+        # can render the live JSON-RPC 2.0 interaction stream that
+        # Section 4.13 promises. Bounded buffer (the recorder enforces
+        # max_records and drops the oldest when full).
+        _MCP_RECORDER = ProtocolRecorder(server, max_records=500)
 
         # Register live state resources
         try:
@@ -214,6 +229,50 @@ def list_prompts(
     from .protocol import MCPMessage
     resp = server.handle_message(MCPMessage(id=0, method="prompts/list"))
     return resp.result or {"prompts": []}
+
+
+# ---------------------------------------------------------------------------
+# Live JSON-RPC 2.0 protocol log (Section 4.13's MCP/piRAG monitoring panel)
+# ---------------------------------------------------------------------------
+@router.get("/protocol/log")
+def protocol_log(
+    request: Request,
+    limit: int = 100,
+    x_api_key: str | None = Header(default=None, alias="x-api-key"),
+):
+    """Return the most recent JSON-RPC 2.0 dispatcher records.
+
+    Each entry is a real ``{request, response, latency_ms}`` triple as
+    captured by ``protocol_recorder.ProtocolRecorder``. Returns an
+    empty list when the MCP server has not been initialised yet (so a
+    fresh backend that has not received any /mcp call still answers
+    cleanly instead of 500-ing).
+    """
+    enforce_api_key(request, x_api_key)
+    # Trigger lazy init so the recorder gets created on the first poll.
+    _get_mcp_server()
+    rec = get_mcp_recorder()
+    if rec is None:
+        return {"records": [], "summary": {}, "available": False}
+    records = rec.get_records()
+    if limit and limit > 0:
+        records = records[-int(limit):]
+    return {"records": records, "summary": rec.summary(), "available": True}
+
+
+@router.post("/protocol/reset")
+def protocol_reset(
+    request: Request,
+    x_api_key: str | None = Header(default=None, alias="x-api-key"),
+):
+    """Clear the recorder buffer."""
+    enforce_api_key(request, x_api_key)
+    _get_mcp_server()
+    rec = get_mcp_recorder()
+    if rec is None:
+        return {"ok": False, "reason": "recorder not initialised"}
+    rec.reset()
+    return {"ok": True}
 
 
 # ---------------------------------------------------------------------------

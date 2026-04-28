@@ -123,7 +123,16 @@ export default function QualityPage() {
     };
     f();
     const id = setInterval(f, 5000);
-    return () => { ok = false; clearInterval(id); };
+    // Push refresh on every new decision broadcast, so the PINN/ODE
+    // overlay reflects the most recent context window without waiting
+    // for the next poll.
+    const onDecision = () => { f(); };
+    document.addEventListener("decision:new", onDecision);
+    return () => {
+      ok = false;
+      clearInterval(id);
+      document.removeEventListener("decision:new", onDecision);
+    };
   }, []);
 
   const series = useMemo(() => {
@@ -145,17 +154,27 @@ export default function QualityPage() {
   const spoilageRisk = 1 - Math.max(0, Math.min(1, lastShelf));
   const shelfHours = lastShelf * 72; // approximate 72h max
 
-  // PINN data (if available)
+  // PINN vs ODE-only overlay (Section 4.13, Figure 13b).
+  // Both trajectories are computed by the backend's compute_spoilage and
+  // compute_spoilage_pinn (see GET /predictions: shelf_left_ode and
+  // shelf_left_pinn). When the backend cannot produce the PINN overlay
+  // (e.g. PINN dependency missing) the headline shelf_left is the
+  // ODE-only series and we render a single trace.
   const pinnSeries = useMemo(() => {
-    if (!pred?.shelf_left) return [];
-    // Simulate ODE baseline as a linear decay for comparison
-    const sl = pred.shelf_left;
-    return sl.map((v, i) => ({
-      i,
-      pinn: v,
-      ode: Math.max(0, 1 - (i / sl.length) * 1.1), // simplified ODE baseline
-    }));
+    const pinn = pred?.shelf_left_pinn || pred?.shelf_left;
+    const ode = pred?.shelf_left_ode || pred?.shelf_left;
+    if (!pinn || !ode) return [];
+    const n = Math.min(pinn.length, ode.length);
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      out.push({ i, pinn: pinn[i], ode: ode[i], delta: pinn[i] - ode[i] });
+    }
+    return out;
   }, [pred]);
+  const pinnOverlayActive = !!(
+    pred?.shelf_left_pinn && pred?.shelf_left_ode &&
+    pred.shelf_left_pinn.length === pred.shelf_left_ode.length
+  );
 
   if (loading) {
     return (
@@ -282,7 +301,9 @@ export default function QualityPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">PINN vs ODE Spoilage Trajectory</CardTitle>
-              <Badge variant="teal">Physics-Informed</Badge>
+              <Badge variant={pinnOverlayActive ? "teal" : "outline"}>
+                {pinnOverlayActive ? "Physics-Informed" : "ODE-only (PINN unavailable)"}
+              </Badge>
             </div>
           </CardHeader>
           <CardContent>
@@ -295,12 +316,14 @@ export default function QualityPage() {
                   <ReTooltip content={<ChartTooltip />} />
                   <Legend wrapperStyle={{ fontSize: 12, paddingTop: 16 }} />
                   <Line type="monotone" dataKey="pinn" name="PINN-corrected" stroke="#009688" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="ode" name="ODE baseline" stroke="#808080" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
+                  <Line type="monotone" dataKey="ode" name="ODE baseline (Arrhenius–Baranyi)" stroke="#808080" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
             <p className="text-xs text-muted-foreground mt-2 italic">
-              The PINN model applies physics-informed corrections to the base ODE model, providing more accurate spoilage predictions under varying conditions.
+              Both traces are computed by the backend (<code>compute_spoilage</code> for the
+              ODE-only baseline, <code>compute_spoilage_pinn</code> for the PINN-corrected
+              series). The neural residual is bounded to ±0.08 of the mechanistic baseline.
             </p>
           </CardContent>
         </Card>

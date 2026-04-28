@@ -27,6 +27,7 @@ import {
   Brain,
   Play,
 } from "lucide-react";
+import PhasePill from "@/components/phase/PhasePill";
 
 const NAV_ITEMS = [
   { key: "ops", label: "Operations", icon: LayoutDashboard, path: "/" },
@@ -163,6 +164,8 @@ export default function MainLayout({ children, wsConnected, notifications, unrea
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Deployment phase */}
+              <PhasePill />
               {/* WS status */}
               <Tooltip>
                 <TooltipTrigger asChild>

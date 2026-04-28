@@ -32,6 +32,7 @@ from src.routers import compat as _compat
 from src.routers import debug as _debug
 from src.routers import stream as _stream
 from src.routers import results as _results
+from src.routers import phase as _phase
 from src.agents.runtime import start_agent_runtime
 from src.settings import SETTINGS
 
@@ -170,6 +171,7 @@ API.include_router(_debug.router,                           tags=["debug"])
 API.include_router(_stream.router)  # no prefix => /stream (websocket)
 
 API.include_router(_results.router,    prefix="/results",    tags=["results"])
+API.include_router(_phase.router,      prefix="/phase",      tags=["phase"])
 
 API.include_router(rag_router, prefix="/rag", tags=["pirag"])
 API.include_router(mcp_router, prefix="/mcp", tags=["mcp"])
@@ -371,10 +373,52 @@ def predictions():
     df = state["df"]
     demand_fc = _demand_forecast(df, horizon=24)
     supply_fc = yield_supply_forecast(df, horizon=24)
+
+    # PINN vs ODE comparison (Section 4.13, Figure 13b).
+    # `df["shelf_left"]` is the ODE-only Arrhenius-Baranyi integral.
+    # The PINN-corrected trajectory is the same ODE plus a bounded
+    # neural residual (compute_spoilage_pinn). We surface both so the
+    # Quality panel can render the real overlay instead of synthesising
+    # an ODE baseline client-side.
+    p = state["policy"]
+    shelf_ode = df["shelf_left"].round(4).tolist()
+    risk_ode = df["spoilage_risk"].round(4).tolist() if "spoilage_risk" in df.columns else []
+
+    shelf_pinn: list[float] = []
+    risk_pinn: list[float] = []
+    pinn_available = False
+    try:
+        from .models.spoilage import compute_spoilage_pinn
+        df_pinn = compute_spoilage_pinn(
+            df,
+            k_ref=p.k_ref,
+            Ea_R=p.Ea_R,
+            T_ref_K=p.T_ref_K,
+            beta=p.beta_humidity,
+            lag_lambda=p.lag_lambda,
+            pinn_epochs=200,  # cheaper than the simulator's 1000
+        )
+        shelf_pinn = df_pinn["shelf_left"].round(4).tolist()
+        risk_pinn = df_pinn["spoilage_risk"].round(4).tolist()
+        pinn_available = True
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("PINN overlay skipped: %s", exc)
+        shelf_pinn = list(shelf_ode)
+        risk_pinn = list(risk_ode)
+
     return {
         "timestamp": df["timestamp"].astype(str).tolist(),
-        "shelf_left": df["shelf_left"].round(4).tolist(),
-        "spoilage_risk": df["spoilage_risk"].round(4).tolist() if "spoilage_risk" in df.columns else [],
+        # Headline series (PINN-corrected when available, ODE-only otherwise).
+        # `shelf_left` and `spoilage_risk` keep their pre-existing semantics
+        # for backward compatibility with the Decisions / Ops dashboards.
+        "shelf_left": shelf_pinn,
+        "spoilage_risk": risk_pinn,
+        # Explicit PINN vs ODE channels for the Quality panel overlay.
+        "shelf_left_pinn": shelf_pinn,
+        "spoilage_risk_pinn": risk_pinn,
+        "shelf_left_ode": shelf_ode,
+        "spoilage_risk_ode": risk_ode,
+        "pinn_available": pinn_available,
         "volatility": df["volatility"].tolist(),
         "demand_forecast": demand_fc,
         "yield_forecast": supply_fc,
@@ -728,22 +772,12 @@ def decide(d: DecideIn):
         ),
     }
 
-    # Best-effort on-chain log. tx_hash semantics:
-    #   None  : chain not configured / submission failed (default)
-    #   "0x0" : legacy sentinel from older deployments (treated as
-    #           "not anchored" by the frontend's verification logic)
-    #   "0x..": real on-chain transaction hash
-    # The frontend distinguishes all three so reviewers cannot mistake a
-    # missing anchor for a successful one.
-    tx = None
-    try:
-        txh = log_decision_onchain(memo, state.get("chain", {}))
-        if txh:
-            tx = txh
-    except (ConnectionError, TimeoutError, ValueError) as e:
-        logger.debug("on-chain log skipped: %s", e)
-    memo["tx"] = tx
-    memo["tx_hash"] = tx
+    # tx_hash is set by the phase finaliser (see _finalize_decision_side_effects
+    # at module bottom). Initialised here so the explainability enrichment
+    # block below can read a consistent value even when the decision is
+    # held in the advisory queue or running in monitoring-only mode.
+    memo["tx"] = None
+    memo["tx_hash"] = None
 
     # --- Explainability enrichment (best-effort) ---
     try:
@@ -842,6 +876,45 @@ def decide(d: DecideIn):
         )
         _learner.record(phi, action_idx, reward_total)
 
+    # Apply the deployment-phase semantics:
+    #   * autonomous  -> finalise immediately (chain log, broadcast, mirror)
+    #   * monitoring  -> compute and return; no side effects
+    #   * advisory    -> queue for operator approve / reject; on approve we
+    #                    re-run the same finaliser
+    memo = _phase.finalize_or_queue_decision(memo, finalize=_finalize_decision_side_effects)
+
+    return {"ok": True, "memo": memo}
+
+
+def _finalize_decision_side_effects(memo: Dict[str, Any]) -> Dict[str, Any]:
+    """Apply the side-effects of an *approved* decision.
+
+    Called immediately for ``autonomous`` mode and after operator
+    approval for ``advisory`` mode. Skipped entirely in ``monitoring``
+    mode (the recommendation is surfaced but the supply chain is not
+    mutated).
+
+    Side-effects:
+      * write the memo to the in-memory decision log
+      * mirror to ``case.STATE['last_decision']`` for /case/last_decision
+      * best-effort on-chain log via DecisionLogger (chain.eth)
+      * best-effort websocket broadcast on the ``decision`` channel
+    """
+    # tx_hash semantics:
+    #   None  : chain not configured / submission failed (default)
+    #   "0x0" : legacy sentinel from older deployments (treated as
+    #           "not anchored" by the frontend's verification logic)
+    #   "0x..": real on-chain transaction hash
+    tx = None
+    try:
+        txh = log_decision_onchain(memo, state.get("chain", {}))
+        if txh:
+            tx = txh
+    except (ConnectionError, TimeoutError, ValueError) as e:
+        logger.debug("on-chain log skipped: %s", e)
+    memo["tx"] = tx
+    memo["tx_hash"] = tx
+
     # append to in-memory log
     state.setdefault("log", []).append(memo)
 
@@ -860,7 +933,7 @@ def decide(d: DecideIn):
     except (ImportError, RuntimeError) as e:
         logger.debug("websocket broadcast skipped: %s", e)
 
-    return {"ok": True, "memo": memo}
+    return memo
 
 
 @API.get("/decision/take")

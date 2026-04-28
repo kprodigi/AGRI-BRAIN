@@ -18,6 +18,16 @@ def _csv(name: str, default: str) -> List[str]:
     return [x.strip() for x in raw.split(",") if x.strip()]
 
 
+VALID_DEPLOYMENT_PHASES = ("monitoring", "advisory", "autonomous")
+
+
+def _phase(name: str, default: str) -> str:
+    v = os.getenv(name, default).strip().lower()
+    if v not in VALID_DEPLOYMENT_PHASES:
+        return default
+    return v
+
+
 @dataclass(frozen=True)
 class RuntimeSettings:
     env: str
@@ -34,6 +44,8 @@ class RuntimeSettings:
     llm_provider: str
     data_csv: str
     sim_api_base: str
+    deployment_phase: str
+    dynamic_kb_feedback: bool
 
 
 def load_settings() -> RuntimeSettings:
@@ -54,6 +66,8 @@ def load_settings() -> RuntimeSettings:
         llm_provider=os.getenv("LLM_PROVIDER", "template"),
         data_csv=os.getenv("DATA_CSV", ""),
         sim_api_base=os.getenv("SIM_API_BASE", "http://127.0.0.1:8100"),
+        deployment_phase=_phase("DEPLOYMENT_PHASE", "autonomous"),
+        dynamic_kb_feedback=_bool("DYNAMIC_KB_FEEDBACK", True),
     )
 
 

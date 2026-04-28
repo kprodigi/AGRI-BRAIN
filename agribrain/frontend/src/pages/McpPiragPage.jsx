@@ -277,7 +277,7 @@ function ContextFeaturesTab({ latestExplainability }) {
 
   const cf = latestExplainability.context_features || {};
   const la = latestExplainability.logit_adjustment || {};
-  const ctf = latestExplainability.counterfactual;
+  const ctf = latestExplainability.ablation_delta || latestExplainability.counterfactual;
 
   const radarData = FEATURE_LABELS.map((f) => ({ axis: f.label, value: cf[f.key] ?? 0 }));
 
@@ -375,15 +375,23 @@ function ContextFeaturesTab({ latestExplainability }) {
         </div>
       </motion.div>
 
-      {/* Counterfactual */}
+      {/* Ablation comparison (formerly labelled "counterfactual"). Honest
+          framing: this is what the same policy, with the same phi(s) and
+          the same RNG seed, would emit if psi := 0. It is NOT a Pearl
+          counterfactual; the backend's explain_decision.ablation_delta
+          carries the full description. */}
       {ctf && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-600" /> Counterfactual Comparison
+                <AlertTriangle className="w-4 h-4 text-amber-600" /> Ablation comparison (psi := 0)
               </CardTitle>
-              <CardDescription>What would the policy have decided without MCP/piRAG context?</CardDescription>
+              <CardDescription>
+                What the same policy would emit if the MCP/piRAG context modifier were
+                disabled, holding phi(s) and the RNG seed fixed. This is an ablation
+                delta, not a Pearl-style counterfactual.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -431,6 +439,25 @@ function KnowledgeBaseTab() {
   const [role, setRole] = useState("farm");
   const [results, setResults] = useState(null);
   const [searching, setSearching] = useState(false);
+  const [liveKb, setLiveKb] = useState(null);
+
+  // Pull the live KB so synthesised entries (added by the
+  // dynamic-knowledge feedback loop every 24 timesteps) appear next to
+  // the static documents. Polled every 8s.
+  useEffect(() => {
+    let cancelled = false;
+    async function tick() {
+      try {
+        const res = await jget(API, "/rag/kb");
+        if (!cancelled) setLiveKb(res);
+      } catch {
+        if (!cancelled) setLiveKb(null);
+      }
+    }
+    tick();
+    const t = setInterval(tick, 8000);
+    return () => { cancelled = true; clearInterval(t); };
+  }, []);
 
   const search = async () => {
     if (!query.trim()) return;
@@ -447,11 +474,35 @@ function KnowledgeBaseTab() {
     setSearching(false);
   };
 
+  const liveDocs = liveKb?.documents || [];
+  const liveStaticCount = liveKb?.static_count ?? KB_DOCUMENTS.length;
+  const liveSynthCount = liveKb?.synthesised_count ?? 0;
+  const liveTotal = liveKb?.total ?? KB_DOCUMENTS.length;
+
+  // Map live entries by id so we can join the static catalogue's
+  // titles/categories with the live presence + synthesised entries.
+  const idToLive = new Map(liveDocs.map((d) => [d.id, d]));
+  const staticRows = KB_DOCUMENTS.map((doc) => ({
+    id: doc.id,
+    kind: idToLive.get(doc.id) ? "static" : "static-missing",
+    category: doc.category,
+    title: doc.title,
+  }));
+  const synthesisedRows = liveDocs
+    .filter((d) => d.kind === "synthesised")
+    .map((d) => ({
+      id: d.id,
+      kind: "synthesised",
+      category: d.metadata?.scenario ? `synth: ${d.metadata.scenario}` : "synthesised",
+      title: d.preview?.slice(0, 90) || "(decision-feedback document)",
+    }));
+  const allRows = [...staticRows, ...synthesisedRows];
+
   const stats = [
     { label: "Top-k", value: "4" },
     { label: "Retrieval", value: "BM25 + TF-IDF" },
     { label: "Reranking", value: "Physics-Informed" },
-    { label: "Documents", value: "20" },
+    { label: "Documents", value: `${liveTotal} (${liveStaticCount} static + ${liveSynthCount} synth)` },
   ];
 
   return (
@@ -477,7 +528,10 @@ function KnowledgeBaseTab() {
             <CardTitle className="text-base flex items-center gap-2">
               <Database className="w-4 h-4 text-blue-600" /> Knowledge Base Inventory
             </CardTitle>
-            <CardDescription>20 domain-specific documents across 6 categories</CardDescription>
+            <CardDescription>
+              {liveStaticCount} static documents + {liveSynthCount} runtime-synthesised entries from the
+              dynamic-knowledge feedback loop (Section 3.7).
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-64">
@@ -485,16 +539,22 @@ function KnowledgeBaseTab() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-xs">Document ID</TableHead>
+                    <TableHead className="text-xs">Source</TableHead>
                     <TableHead className="text-xs">Category</TableHead>
                     <TableHead className="text-xs">Title</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {KB_DOCUMENTS.map((doc) => (
+                  {allRows.map((doc) => (
                     <TableRow key={doc.id}>
                       <TableCell className="font-mono text-xs">{doc.id}</TableCell>
                       <TableCell>
-                        <Badge className={cn("text-[10px]", CAT_COLORS[doc.category] || "")}>{doc.category}</Badge>
+                        <Badge variant={doc.kind === "synthesised" ? "default" : doc.kind === "static-missing" ? "outline" : "secondary"} className="text-[10px]">
+                          {doc.kind === "synthesised" ? "synth" : doc.kind === "static-missing" ? "missing" : "static"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={cn("text-[10px]", CAT_COLORS[doc.category] || "bg-purple-100 text-purple-700")}>{doc.category}</Badge>
                       </TableCell>
                       <TableCell className="text-xs">{doc.title}</TableCell>
                     </TableRow>
@@ -592,11 +652,39 @@ function ProtocolTab({ tools, decisions }) {
   const [result, setResult] = useState(null);
   const [running, setRunning] = useState(false);
   const [log, setLog] = useState([...mcpLog]);
+  const [serverLog, setServerLog] = useState([]);
+  const [serverSummary, setServerSummary] = useState({});
+  const [serverAvailable, setServerAvailable] = useState(true);
   const intervalRef = useRef(null);
+  const serverIntervalRef = useRef(null);
 
   useEffect(() => {
     intervalRef.current = setInterval(() => setLog([...mcpLog]), 1000);
     return () => clearInterval(intervalRef.current);
+  }, []);
+
+  // Pull the server-side recorder buffer so the panel shows every
+  // JSON-RPC interaction that hits the /mcp endpoint, including those
+  // produced by the simulator and by other operator sessions.
+  useEffect(() => {
+    let cancelled = false;
+    async function tick() {
+      try {
+        const res = await jget(API, "/mcp/protocol/log?limit=120");
+        if (cancelled) return;
+        setServerLog(res?.records || []);
+        setServerSummary(res?.summary || {});
+        setServerAvailable(res?.available !== false);
+      } catch {
+        if (!cancelled) setServerAvailable(false);
+      }
+    }
+    tick();
+    serverIntervalRef.current = setInterval(tick, 3000);
+    return () => {
+      cancelled = true;
+      clearInterval(serverIntervalRef.current);
+    };
   }, []);
 
   const tool = tools.find((t) => t.name === selected);
@@ -728,37 +816,97 @@ function ProtocolTab({ tools, decisions }) {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <ScrollText className="w-4 h-4" /> Protocol Log
+                  <ScrollText className="w-4 h-4" /> Live JSON-RPC 2.0 protocol log
                 </CardTitle>
-                <Badge variant="outline" className="text-[10px]">{log.length} entries</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-[10px]">
+                    server: {serverAvailable ? (serverSummary?.total_interactions ?? 0) : "—"}
+                  </Badge>
+                  <Badge variant="outline" className="text-[10px]">browser: {log.length}</Badge>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-56">
-                {log.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">No MCP interactions yet. Use the tool invocation above.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {[...log].reverse().map((entry, i) => (
-                      <div key={i} className="flex items-start gap-2 text-xs p-2 rounded-md bg-muted/50">
-                        <Badge className={cn("text-[9px] shrink-0 border-0 mt-0.5", entry.status === "success" ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-600")}>
-                          {entry.status}
-                        </Badge>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono font-semibold">{entry.method}</span>
-                            <span className="text-muted-foreground">{entry.ts?.split("T")[1]?.split(".")[0]}</span>
+              {/* Server-side recorder (process-wide, includes simulator + other sessions) */}
+              <div className="mb-3">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                  Server recorder
+                </div>
+                <ScrollArea className="h-40 rounded border">
+                  {!serverAvailable ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">
+                      Backend recorder unreachable. Showing browser-side log only.
+                    </p>
+                  ) : serverLog.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">
+                      Recorder is empty. Issue an MCP call (above or from the simulator).
+                    </p>
+                  ) : (
+                    <div className="space-y-1 p-1">
+                      {[...serverLog].reverse().map((rec) => {
+                        const isErr = !!(rec.response?.error || rec.response?.result?.isError);
+                        const ts = rec.timestamp ? new Date(rec.timestamp * 1000).toISOString().split("T")[1]?.split(".")[0] : "";
+                        const m = rec.request?.method || "?";
+                        const p = JSON.stringify(rec.request?.params || {}).slice(0, 80);
+                        return (
+                          <div key={rec._recorder_seq} className="flex items-start gap-2 text-xs p-1.5 rounded bg-muted/40">
+                            <Badge className={cn("text-[9px] shrink-0 border-0 mt-0.5", isErr ? "bg-red-500/10 text-red-600" : "bg-emerald-500/10 text-emerald-600")}>
+                              {isErr ? "error" : "ok"}
+                            </Badge>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono font-semibold">{m}</span>
+                                <span className="text-muted-foreground">{ts}</span>
+                                <span className="text-[10px] text-muted-foreground">{rec.latency_ms?.toFixed(2)}ms</span>
+                              </div>
+                              <p className="font-mono text-muted-foreground truncate mt-0.5">{p}</p>
+                            </div>
+                            <button
+                              onClick={() => { navigator.clipboard.writeText(JSON.stringify(rec, null, 2)); toast.success("Copied"); }}
+                              className="text-muted-foreground hover:text-primary shrink-0"
+                              title="Copy raw record"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
                           </div>
-                          <p className="font-mono text-muted-foreground truncate mt-0.5">{entry.preview}</p>
+                        );
+                      })}
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
+
+              {/* Browser-side log (this session only) */}
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                  Browser session log
+                </div>
+                <ScrollArea className="h-32 rounded border">
+                  {log.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">No browser-initiated MCP calls yet.</p>
+                  ) : (
+                    <div className="space-y-1 p-1">
+                      {[...log].reverse().map((entry, i) => (
+                        <div key={i} className="flex items-start gap-2 text-xs p-1.5 rounded bg-muted/40">
+                          <Badge className={cn("text-[9px] shrink-0 border-0 mt-0.5", entry.status === "success" ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-600")}>
+                            {entry.status}
+                          </Badge>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-semibold">{entry.method}</span>
+                              <span className="text-muted-foreground">{entry.ts?.split("T")[1]?.split(".")[0]}</span>
+                            </div>
+                            <p className="font-mono text-muted-foreground truncate mt-0.5">{entry.preview}</p>
+                          </div>
+                          <button onClick={() => { navigator.clipboard.writeText(JSON.stringify(entry, null, 2)); toast.success("Copied"); }} className="text-muted-foreground hover:text-primary shrink-0">
+                            <Copy className="w-3 h-3" />
+                          </button>
                         </div>
-                        <button onClick={() => { navigator.clipboard.writeText(JSON.stringify(entry, null, 2)); toast.success("Copied"); }} className="text-muted-foreground hover:text-primary shrink-0">
-                          <Copy className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
             </CardContent>
           </Card>
         </motion.div>

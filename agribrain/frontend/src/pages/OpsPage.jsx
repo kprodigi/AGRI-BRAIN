@@ -147,7 +147,7 @@ export default function OpsPage() {
       }
     })();
 
-    const id = setInterval(async () => {
+    const refresh = async () => {
       try {
         const [k, t, p] = await Promise.all([
           jget(API, "/kpis").catch(() => null),
@@ -160,9 +160,22 @@ export default function OpsPage() {
           if (p) setPred(p);
         }
       } catch {}
-    }, 15000);
+    };
+    const id = setInterval(refresh, 15000);
 
-    return () => { ok = false; clearInterval(id); };
+    // WebSocket-driven refresh: when the backend broadcasts a new
+    // decision over /stream, useWebSocket dispatches a `decision:new`
+    // DOM event. Re-fetch immediately so the dashboard reflects the
+    // post-decision state instead of waiting up to 15 s for the next
+    // poll. The polling timer above stays as the safety net.
+    const onDecision = () => { refresh(); };
+    document.addEventListener("decision:new", onDecision);
+
+    return () => {
+      ok = false;
+      clearInterval(id);
+      document.removeEventListener("decision:new", onDecision);
+    };
   }, []);
 
   // Derived

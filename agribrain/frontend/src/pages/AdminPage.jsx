@@ -22,6 +22,7 @@ import {
   Plug, ServerCog,
 } from "lucide-react";
 import McpTab from "@/components/mcp/McpTab";
+import PhaseTab from "@/components/phase/PhaseTab";
 
 const API = getApiBase();
 
@@ -631,8 +632,9 @@ export default function AdminPage() {
       )}
 
       <Tabs defaultValue="policy">
-        <TabsList className="w-full justify-start">
+        <TabsList className="w-full justify-start flex-wrap">
           <TabsTrigger value="policy" className="flex items-center gap-1.5"><Settings className="w-4 h-4" /> Policy</TabsTrigger>
+          <TabsTrigger value="phase" className="flex items-center gap-1.5"><Layers className="w-4 h-4" /> Phase</TabsTrigger>
           <TabsTrigger value="blockchain" className="flex items-center gap-1.5"><Link2 className="w-4 h-4" /> Blockchain</TabsTrigger>
           <TabsTrigger value="audit" className="flex items-center gap-1.5"><Shield className="w-4 h-4" /> Audit</TabsTrigger>
           <TabsTrigger value="scenarios" className="flex items-center gap-1.5"><Flame className="w-4 h-4" /> Scenarios</TabsTrigger>
@@ -643,6 +645,7 @@ export default function AdminPage() {
 
         <div className="mt-6">
           <TabsContent value="policy"><PolicyTab /></TabsContent>
+          <TabsContent value="phase"><PhaseTab /></TabsContent>
           <TabsContent value="blockchain"><BlockchainTab /></TabsContent>
           <TabsContent value="audit"><AuditTab /></TabsContent>
           <TabsContent value="scenarios"><ScenariosTab /></TabsContent>

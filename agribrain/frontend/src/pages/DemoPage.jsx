@@ -63,7 +63,7 @@ const PHASES = [
   { icon: Brain,       label: "Policy Network",       color: "border-purple-500",  bg: "bg-purple-500/10",  desc: "Softmax contextual policy: logits = Θ×φ + γ·τ + SLCA bonus + role bias + context modifier" },
   { icon: CheckCircle2,label: "Action Selection",     color: "border-emerald-500", bg: "bg-emerald-500/10", desc: "Softmax π(a|s) sampling from adjusted probability distribution over 3 routing actions" },
   { icon: Shield,      label: "SLCA & Impact",        color: "border-cyan-500",    bg: "bg-cyan-500/10",    desc: "4-pillar Social Life-Cycle Assessment (Carbon, Labor, Resilience, Transparency) + footprint" },
-  { icon: FileText,    label: "Causal Explanation",   color: "border-teal-600",    bg: "bg-teal-600/10",    desc: "BECAUSE/WITHOUT counterfactual reasoning with [KB:] citations and keyword extraction" },
+  { icon: FileText,    label: "Causal Explanation",   color: "border-teal-600",    bg: "bg-teal-600/10",    desc: "BECAUSE narrative + WITHOUT context ablation (psi := 0) with [KB:] citations and keyword extraction" },
   { icon: GitBranch,   label: "Provenance & Chain",   color: "border-indigo-500",  bg: "bg-indigo-500/10",  desc: "SHA-256 evidence hashing → Merkle tree root → on-chain anchor via Hardhat/Solidity" },
 ];
 
@@ -106,7 +106,7 @@ function renderPhase(idx, m) {
   const comp = ex.compliance || {};
   const slca = m.slca_components || {};
   const ap = m.action_probabilities || {};
-  const ctf = ex.counterfactual || {};
+  const ctf = ex.ablation_delta || ex.counterfactual || {};
   const profile = AGENT_PROFILES[m.role] || AGENT_PROFILES.farm;
 
   switch (idx) {
