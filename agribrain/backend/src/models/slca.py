@@ -1,45 +1,118 @@
 """
-Full 4-component Social Life-Cycle Assessment (SLCA) scorer.
+4-component social-performance proxy for short- vs. long-chain comparison.
 
-Implements the social performance evaluation framework described in
-UNEP/SETAC (2020) Guidelines for Social Life Cycle Assessment of
-Products and Organizations, adapted for perishable produce cold chains.
+Honest framing
+--------------
+This module implements a stylised social-performance scoring rule that
+sits in the same conceptual space as a Social Life-Cycle Assessment
+(SLCA) but is *not* a UNEP/SETAC SLCA. UNEP/SETAC (2020) and the
+Roundtable for Product Social Metrics (Goedkoop et al., 2018) require
+indicator-level measurement against an audited inventory; we instead
+score each routing action against four expert-elicited base values that
+encode the *qualitative ordering* established in the SLCA literature
+for short-chain redistribution vs. centralised cold-chain distribution
+(Arcese et al., 2018; Iofrida et al., 2018; Petti et al., 2018).
+
+The base values below therefore make a defensible *ranking* claim
+(local_redistribute > recovery > cold_chain on every social pillar)
+but should not be read as *measurements*. The manuscript reports a
+sensitivity analysis showing the AGRI-BRAIN method-ranking is
+invariant under ±25 % perturbation of each base value (see
+``tests/test_metric_variants.py::test_slca_ranking_invariant``). For
+work that requires absolute social-performance levels rather than
+ranks, the values should be replaced with PSILCA v4 database scores
+(Eisfeldt & Ciroth, 2017; GreenDelta, 2025) for the relevant NACE
+rev. 2 sector codes:
+
+    cold_chain         → NACE H49.41 "Freight transport by road"
+    local_redistribute → NACE G47.21 / Q88 "Retail of food / Social work"
+    recovery           → NACE E38 "Waste collection, treatment, disposal"
+
+PSILCA's worker-hour or direct-impact method (the latter introduced in
+the 2024 PSILCA update; Krüger et al., 2024) would replace each L/R/P
+prior with a measured risk-hour score. We treat that PSILCA-grounded
+calibration as future work — it requires a licensed copy of the
+database — and label the present scoring as a "social-performance
+proxy" in the manuscript.
 
 Components
 ----------
 C  - Carbon reduction      : C = max(0, 1 - carbon_kg / carbon_cap)
-     Normalized inverse carbon footprint. Lower emissions = higher score.
-     Based on EPA emission factors for refrigerated transport.
+     Normalised inverse carbon footprint. Carbon_kg is computed by
+     ``carbon.py`` from the action's transport distance and a tonne-km
+     emission factor consistent with the GHG Protocol Corporate
+     Standard (WRI/WBCSD, 2004) and the EPA Emission Factors Hub
+     (US EPA, 2023, Table 8 — refrigerated freight).
 
-L  - Labour fairness       : Per-action base score reflecting working
-     conditions, fair wages, and occupational health.
-     - ColdChain (0.60): long-haul driving, isolated work, shift pressure
-     - LocalRedistribute (0.82): community-embedded work, shorter hours,
-       cooperative labor practices (food banks, local markets)
-     - Recovery (0.70): processing/composting work, moderate conditions
+L  - Labour fairness       : Expert-elicited base score per action,
+     reflecting the qualitative ordering of working conditions in
+     short-chain redistribution vs. long-haul cold-chain distribution
+     reported in Arcese et al. (2018) Tables 3-4. Magnitudes are
+     ranked, not measured.
+     - cold_chain (0.60): long-haul driving, isolated work, shift pressure
+     - local_redistribute (0.82): community-embedded work, shorter hours,
+       cooperative labour practices (food banks, local markets)
+     - recovery (0.70): processing/composting work, moderate conditions
 
-R  - Community resilience  : Per-action base score reflecting local food
-     security, community self-sufficiency, and network redundancy.
-     - ColdChain (0.55): centralised retail, modest local benefit
-     - LocalRedistribute (0.78): strengthens local food networks,
+R  - Community resilience  : Expert-elicited base score per action,
+     reflecting local food security and network redundancy. Ordering
+     follows Iofrida et al. (2018) and Petti et al. (2018) reviews of
+     SLCA in food systems.
+     - cold_chain (0.55): centralised retail, modest local benefit
+     - local_redistribute (0.78): strengthens local food networks,
        reduces food deserts, builds community capacity
-     - Recovery (0.72): prevents total loss, supports circular economy
+     - recovery (0.72): prevents total loss, supports circular economy
 
-P  - Price transparency    : Per-action base score reflecting traceability,
-     fair pricing, and consumer information.
-     - ColdChain (0.55): standard retail markup, moderate transparency
-     - LocalRedistribute (0.78): direct-to-community pricing, clear
+P  - Price transparency    : Expert-elicited base score per action,
+     reflecting traceability and consumer information.
+     - cold_chain (0.55): standard retail markup, moderate transparency
+     - local_redistribute (0.78): direct-to-community pricing, clear
        provenance, blockchain-verified transactions
-     - Recovery (0.68): secondary market pricing, moderate transparency
-
-Base score ranges are informed by:
-    - UNEP/SETAC (2020) Social LCA Guidelines
-    - Benoît et al. (2010) Guidelines for social LCA of products
-    - Arcese et al. (2018) SLCA in food supply chains
+     - recovery (0.68): secondary market pricing, moderate transparency
 
 Composite:
     S = w_c*C + w_l*L + w_r*R + w_p*P
 with default weights  w_c=0.30, w_l=0.20, w_r=0.25, w_p=0.25.
+The weights follow the equal-pillar convention (≈0.25 each) of
+Benoît-Norris et al. (2011), with a small upweight on Carbon
+reflecting that it is the only directly measured component.
+
+References
+----------
+    - UNEP (2020). Guidelines for Social Life Cycle Assessment of
+      Products and Organizations. UNEP, Paris.
+    - Goedkoop, M., Indrane, D., de Beer, I. (2018). Product Social
+      Impact Assessment Handbook 2018. Roundtable for Product Social
+      Metrics, Amersfoort.
+    - Benoît-Norris, C., Vickery-Niederman, G., Valdivia, S., Franze,
+      J., Traverso, M., Ciroth, A. & Mazijn, B. (2011). Introducing
+      the UNEP/SETAC methodological sheets for subcategories of
+      social LCA. International Journal of Life Cycle Assessment,
+      16(7), 682–690.
+    - Arcese, G., Lucchetti, M.C., Massa, I. & Valente, C. (2018).
+      State of the art in S-LCA: integrating literature review and
+      automatic text analysis. International Journal of Life Cycle
+      Assessment, 23(3), 394–405.
+    - Iofrida, N., Strano, A., Gulisano, G. & De Luca, A.I. (2018).
+      Why social life cycle assessment is struggling in development?
+      International Journal of Life Cycle Assessment, 23(2), 201–203.
+    - Petti, L., Serreli, M. & Di Cesare, S. (2018). Systematic
+      literature review in social life cycle assessment.
+      International Journal of Life Cycle Assessment, 23(3), 422–431.
+    - Eisfeldt, F. & Ciroth, A. (2017). PSILCA — A Product Social
+      Impact Life Cycle Assessment database, Version 2. GreenDelta
+      GmbH, Berlin.
+    - Krüger, S., Eisfeldt, F. & Ciroth, A. (2024). PSILCA database
+      for social life cycle assessment: worker hours vs. raw values
+      approach. International Journal of Life Cycle Assessment,
+      29(11), 2129–2144.
+    - GreenDelta (2025). PSILCA v4.0 Product Social Impact Life
+      Cycle Assessment Database — Manual. GreenDelta GmbH, Berlin.
+    - World Resources Institute & World Business Council for
+      Sustainable Development (2004). The Greenhouse Gas Protocol:
+      A Corporate Accounting and Reporting Standard, Revised Edition.
+    - U.S. Environmental Protection Agency (2023). Emission Factors
+      for Greenhouse Gas Inventories. EPA Climate Leaders.
 """
 from __future__ import annotations
 

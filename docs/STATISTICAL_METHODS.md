@@ -149,3 +149,42 @@ interval, not against a "agribrain > X" ordering), and (ii) gates
 the build only on those interval checks. Ordering claims in the
 manuscript are decided by the bootstrap CIs and adjusted p-values
 reported by `aggregate_seeds.py`, never by the validator.
+
+## References
+
+The statistical methods used here follow established practice. Full
+citations for each method named above:
+
+- Wilcoxon, F. (1945). Individual comparisons by ranking methods.
+  *Biometrics Bulletin*, 1(6), 80–83. — Wilcoxon signed-rank test.
+- Mann, H.B. & Whitney, D.R. (1947). On a test of whether one of two
+  random variables is stochastically larger than the other. *Annals of
+  Mathematical Statistics*, 18(1), 50–60. — Mann-Whitney U test.
+- Cohen, J. (1988). *Statistical Power Analysis for the Behavioral
+  Sciences* (2nd ed.). Lawrence Erlbaum Associates, Hillsdale, NJ.
+  ISBN 0-8058-0283-5. — Cohen's d_z (paired) and d_pooled (independent).
+- Hedges, L.V. (1981). Distribution theory for Glass's estimator of
+  effect size and related estimators. *Journal of Educational
+  Statistics*, 6(2), 107–128. — Hedges' g small-sample correction.
+- Holm, S. (1979). A simple sequentially rejective multiple test
+  procedure. *Scandinavian Journal of Statistics*, 6(2), 65–70. —
+  Holm-Bonferroni step-down correction (primary H1 family).
+- Benjamini, Y. & Hochberg, Y. (1995). Controlling the false discovery
+  rate: A practical and powerful approach to multiple testing. *Journal
+  of the Royal Statistical Society B*, 57(1), 289–300. — BH FDR
+  (reported alongside BY).
+- Benjamini, Y. & Yekutieli, D. (2001). The control of the false
+  discovery rate in multiple testing under dependency. *Annals of
+  Statistics*, 29(4), 1165–1188. — BY FDR (canonical secondary-family
+  correction; valid under arbitrary dependence).
+- Efron, B. & Tibshirani, R.J. (1993). *An Introduction to the
+  Bootstrap*. Monographs on Statistics and Applied Probability, 57.
+  Chapman & Hall, New York. ISBN 0-412-04231-2. — Percentile bootstrap
+  CI used for both mean differences and effect sizes.
+- Clopper, C.J. & Pearson, E.S. (1934). The use of confidence or
+  fiducial limits illustrated in the case of the binomial. *Biometrika*,
+  26(4), 404–413. — Exact binomial CI used for stress-suite pass rates.
+- Lakens, D. (2013). Calculating and reporting effect sizes to
+  facilitate cumulative science: a practical primer for t-tests and
+  ANOVAs. *Frontiers in Psychology*, 4, 863. — Effect-size reporting
+  conventions for paired designs.
