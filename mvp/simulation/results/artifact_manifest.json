@@ -1,11 +1,11 @@
 {
-  "git_commit": "e931dedc7117a8d137135435c461d681c2596280",
+  "git_commit": "5281b8b2d9e37d726856ad7c501ea5643c1caa06",
   "artifact_count": 93,
   "artifacts": [
     {
       "file": "artifact_manifest.json",
-      "bytes": 16599,
-      "sha256": "0bdde338bf8eb55554b02e6cd1372ebb829710dd8866a4cc0bd3a71076edf08b"
+      "bytes": 16601,
+      "sha256": "6375548030202bdb1618f89d7922acc871533949f77e110e70e01a7649c5746b"
     },
     {
       "file": "benchmark_context_significance.json",
@@ -289,13 +289,13 @@
     },
     {
       "file": "fig4_cyber.pdf",
-      "bytes": 45391,
-      "sha256": "d80a9fb2223bd65f0bc91c7f8253142c7567d3afd1652881e7681e52d0a6f929"
+      "bytes": 63596,
+      "sha256": "f8ecdbbe241784c9b6d0bdece848ac079b7dce7f69288648b689276a743c3b32"
     },
     {
       "file": "fig4_cyber.png",
-      "bytes": 1409373,
-      "sha256": "3ffac66d72c9b778d3b709ba821d3d8950ca35f50a56814932e8ef678c379e04"
+      "bytes": 2235939,
+      "sha256": "773dedbb8d812c038bab025c1630b2a8eea4b5c51049d99b81defb1f3e328764"
     },
     {
       "file": "fig5_pricing.pdf",

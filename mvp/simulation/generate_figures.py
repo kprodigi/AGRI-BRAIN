@@ -651,7 +651,7 @@ def fig4_cyber(data):
     hours = np.array(ab["hours"])
 
     fig, axes = plt.subplots(1, 3, figsize=(21, 7.0))
-    fig.suptitle("Cyber Outage Scenario", y=0.995)
+    fig.suptitle("Cyber Outage Scenario", y=0.97)
 
     # --- (a) ARI over time with outage shading ---
     # ARI = (1 - waste) * SLCA * (1 - rho). Spoilage risk rho rises
@@ -676,7 +676,7 @@ def fig4_cyber(data):
 
     # --- (b) Action distribution pre/during outage ---
     ax = axes[1]
-    action_names = ["Cold Chain", "Local Redist.", "Recovery"]
+    action_names = ["Cold Chain", "Local Redistribute", "Recovery"]
     pre_mask = np.array(hours) < 24
     during_mask = np.array(hours) >= 24
 
@@ -704,7 +704,7 @@ def fig4_cyber(data):
            error_kw={"linewidth": 1.2, "capthick": 1.2})
     ax.set_xticks(bar_x)
     ax.set_xticklabels(action_names)
-    ax.set_ylabel("Fraction")
+    ax.set_ylabel("Fraction of routing decisions")
     ax.set_ylim(0, max(max(pre_counts + pre_se * 2), max(during_counts + during_se * 2)) * 1.25 + 0.02)
     ax.set_title("(b) Action Distribution Shift")
     _apply_style(ax)
@@ -715,43 +715,87 @@ def fig4_cyber(data):
     # places on the action it actually selects. This is the standard
     # ML definition of "decision confidence" / "prediction confidence"
     # and matches what an operations reader expects: a confident policy
-    # commits a large fraction of its mass to one action. The earlier
-    # implementation used 1 - H(probs)/log(|active|) (normalised
-    # entropy), which is information-theoretic but penalises any policy
-    # that is genuinely split between two good options — exactly the
-    # case at baseline operating conditions where AgriBrain's softmax
-    # is roughly [0.44 cold_chain, 0.45 local_redistribute, 0.11
-    # recovery] because both CC and LR are reasonable choices. That
-    # split reads as "low confidence" under the entropy metric but is
-    # actually mature behaviour. max(probs) reflects commitment in the
-    # operational sense the figure title suggests.
+    # commits a large fraction of its mass to one action.
+    #
+    # Two regimes share this axis but mean semantically different things,
+    # so they are rendered with distinct markers and labelled accordingly:
+    #
+    #   - Pre-outage (h < 24): per-step max(probs) from the dynamic
+    #     softmax over (THETA·phi + role bias + context modifier).
+    #     Varies step-to-step as features evolve.
+    #
+    #   - During outage (h >= 24): the centralised processor is offline
+    #     and rerouting falls back to a fixed Bernoulli with success
+    #     probability CYBER_REROUTE_PROB[mode]; for AgriBrain this is
+    #     the edge-stack reroute rate (0.74), a *mode-dependent* design
+    #     parameter representing each method's autonomous-reroute
+    #     capability under processor outage. It is therefore constant
+    #     across steps by construction — the flat line is the figure's
+    #     point, not an artefact of policy stagnation.
     ax = axes[2]
     probs = np.array(ab.get("prob_trace", []), dtype=float)
 
     if probs.size and probs.ndim == 2 and probs.shape[1] > 1:
         confidence = probs.max(axis=1)
-        audit_times = hours[: len(confidence)][::3]
-        confidence_scores = confidence[::3]
+        audit_times_full = hours[: len(confidence)][::3]
+        confidence_scores_full = confidence[::3]
     else:
-        audit_times = hours[::3]
-        confidence_scores = np.zeros_like(audit_times, dtype=float)
+        audit_times_full = hours[::3]
+        confidence_scores_full = np.zeros_like(audit_times_full, dtype=float)
 
-    # Three-tier band: green = committed (>=0.66 mass on top action),
-    # amber = leaning (>=0.50), red = exploratory (<0.50). The high-
-    # confidence band sits at 0.50, the conventional decision-theory
-    # cutoff for "the policy commits to a single action": at this
-    # threshold the chosen action carries strictly more than half the
-    # probability mass, so a coin-flip between any two alternatives is
-    # below the band by construction.
-    BAND = 0.50
-    dot_colors = ["#2E7D32" if v >= 0.66 else "#F57C00" if v >= BAND else "#C62828"
-                  for v in confidence_scores]
-    ax.scatter(audit_times, confidence_scores, c=dot_colors, s=42, alpha=0.88,
-               edgecolors="white", linewidths=0.6, zorder=4)
-    ax.plot(audit_times, confidence_scores, color="#616161", linewidth=1.0,
-            alpha=0.45, zorder=3)
+    # Split into pre-outage (dynamic softmax) and during-outage
+    # (deterministic edge-stack rate) so the two regimes can be
+    # rendered with distinct markers — the during-outage value is not
+    # a per-step decision confidence and shouldn't be visually conflated.
+    pre_idx = audit_times_full < 24.0
+    during_idx = audit_times_full >= 24.0
+
+    # Three-tier band on dynamic confidence:
+    #   committed  (>= 0.80): policy mass concentrated on one action
+    #   leaning    (>= 0.66): top action holds 2x the mass of the
+    #                          uniform-over-3 distribution
+    #   exploratory (< 0.66): genuinely split across alternatives
+    # The horizontal threshold is raised to 0.66 (was 0.50) so the
+    # band marks the conventional "more than 2x uniform" cutoff for a
+    # 3-way choice — visually separating exploratory from committed
+    # policy states that 0.50 was too permissive to distinguish.
+    BAND = 0.66
+
+    def _tier_color(v: float) -> str:
+        if v >= 0.80:
+            return "#2E7D32"
+        if v >= BAND:
+            return "#F57C00"
+        return "#C62828"
+
+    # Pre-outage: per-step dynamic confidence as filled circles
+    pre_t = audit_times_full[pre_idx]
+    pre_v = confidence_scores_full[pre_idx]
+    ax.plot(pre_t, pre_v, color="#616161", linewidth=1.0, alpha=0.45, zorder=3)
+    ax.scatter(pre_t, pre_v, c=[_tier_color(v) for v in pre_v], s=42, alpha=0.88,
+               edgecolors="white", linewidths=0.6, zorder=4,
+               label="Dynamic policy (per-step)")
+
+    # During outage: deterministic edge-stack rate as open squares with a
+    # heavier connecting line, signalling a different (constant-by-design)
+    # quantity is being plotted on the same axis.
+    if during_idx.any():
+        during_t = audit_times_full[during_idx]
+        during_v = confidence_scores_full[during_idx]
+        ax.plot(during_t, during_v, color="#1A237E", linewidth=1.6, alpha=0.85, zorder=3)
+        ax.scatter(during_t, during_v, marker="s", facecolors="none",
+                   edgecolors="#1A237E", linewidths=1.4, s=46, zorder=4,
+                   label="Edge-stack reroute rate (mode-dependent)")
+        # Annotate the constant value once, near the right edge.
+        ax.annotate(
+            f"p_reroute = {during_v[-1]:.2f}",
+            xy=(during_t[-1], during_v[-1]),
+            xytext=(-6, 14), textcoords="offset points",
+            ha="right", va="bottom", fontsize=10, color="#1A237E",
+        )
+
     ax.axhline(BAND, color="#424242", linestyle="--", linewidth=1.2,
-               label="Confident-decision band (≥0.50)")
+               label=f"Committed-decision band (≥{BAND:.2f})")
     ax.set_xlabel("Hours")
     ax.set_ylabel("Decision Confidence")
     ax.set_title("(c) Policy Confidence Trace")
@@ -760,7 +804,7 @@ def fig4_cyber(data):
     _annotate_window(ax, 24, 72, WINDOW_COLOR, "Outage")
     _legend(ax, loc="lower left")
 
-    fig.tight_layout(rect=[0, 0, 1, 0.96], w_pad=1.6)
+    fig.tight_layout(rect=[0, 0, 1, 0.93], w_pad=1.6)
     _save(fig, "fig4_cyber")
 
 
