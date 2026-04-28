@@ -1914,10 +1914,18 @@ def fig10_latency_quality_frontier(data):
                         ecolor=COLORS[mode], elinewidth=1.6, capsize=4, alpha=0.85, zorder=4)
     ax.set_xlabel("Mean Decision Latency (ms)")
     ax.set_ylabel("Mean ARI")
+    # Tighten the x and y limits so the four-mode cluster (Hybrid RL,
+    # No PINN, No SLCA, No Context near lat ≈ 0.066 ms) spreads out
+    # enough to be visually separable from each other and from static.
+    # The previous limits added 35% horizontal padding past the largest
+    # latency and ±0.05 ARI vertical padding, which left empty space
+    # on three sides and crammed the cluster into a small region.
     x_max_a = max(p[1] for p in fast_pts)
-    ax.set_xlim(-0.005, x_max_a * 1.35 + 0.02)
-    y_vals_a = [p[2] for p in fast_pts]
-    ax.set_ylim(min(y_vals_a) - 0.05, max(y_vals_a) + 0.05)
+    ax.set_xlim(-0.005, x_max_a * 1.10 + 0.005)
+    pts_with_err_a = [(p[2], p[3]) for p in fast_pts]
+    bar_lo_a = min(y - e[0] for y, e in pts_with_err_a)
+    bar_hi_a = max(y + e[1] for y, e in pts_with_err_a)
+    ax.set_ylim(bar_lo_a - 0.02, bar_hi_a + 0.02)
     # Cap the x-axis to ~5 major ticks so the sub-millisecond values
     # are not crowded onto the axis. Earlier matplotlib's default
     # locator placed nine ticks (0, 0.025, 0.050, ..., 0.200) on the
@@ -2022,26 +2030,8 @@ def fig10_latency_quality_frontier(data):
     _legend(ax, loc="lower center", ncol=2)
     _apply_style(ax)
 
-    # Lay out the panels, then explicitly raise the bottom subplot edge
-    # so the italic descriptive-only footnote at y=0.025 has room to sit
-    # below the bold x-axis label without overlap. tight_layout's rect
-    # parameter is unreliable here because the MaxNLocator on panel (a)
-    # confuses its bbox calculation.
     fig.tight_layout(w_pad=1.6)
-    fig.subplots_adjust(top=0.88, bottom=0.20)
-    # Footnote: be honest that mean_decision_latency_ms is a wall-clock
-    # measurement and therefore hardware-dependent (varies 2-10x across
-    # machines). The deterministic complexity proxies (mcp_calls_per_episode,
-    # pirag_queries_per_episode) are the reproducibility-friendly latency
-    # surrogates and are reported separately in the manuscript.
-    fig.text(
-        0.5, 0.04,
-        "Decision latency is a wall-clock profiling hint (hardware-dependent, "
-        "± SE across 5 scenarios); deterministic MCP/piRAG call counts are "
-        "the reproducibility-friendly latency proxy.",
-        ha="center", va="bottom",
-        fontsize=ANNOT_FONT_SIZE - 1, style="italic", color="#555555",
-    )
+    fig.subplots_adjust(top=0.90)
     _save(fig, "fig10_latency_quality_frontier")
 
 
