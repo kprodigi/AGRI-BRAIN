@@ -174,6 +174,46 @@ POLICY_STORE_ABI = [
         "name": "PolicyChanged",
         "type": "event",
     },
+    # Matrix-shaped policy parameters (Theta, Theta_context). Values are
+    # milli-scaled int256 (multiply float entries by 1000 before sending).
+    # See PolicyStore.sol for the full schema.
+    {
+        "inputs": [
+            {"internalType": "bytes32", "name": "key", "type": "bytes32"},
+            {"internalType": "uint256", "name": "rows", "type": "uint256"},
+            {"internalType": "uint256", "name": "cols", "type": "uint256"},
+            {"internalType": "int256[]", "name": "valuesMilli", "type": "int256[]"},
+        ],
+        "name": "setPolicyMatrix",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
+    {
+        "inputs": [
+            {"internalType": "bytes32", "name": "key", "type": "bytes32"},
+        ],
+        "name": "getPolicyMatrix",
+        "outputs": [
+            {"internalType": "uint256", "name": "rows", "type": "uint256"},
+            {"internalType": "uint256", "name": "cols", "type": "uint256"},
+            {"internalType": "int256[]", "name": "valuesMilli", "type": "int256[]"},
+            {"internalType": "uint256", "name": "version", "type": "uint256"},
+        ],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "anonymous": False,
+        "inputs": [
+            {"indexed": True, "internalType": "bytes32", "name": "key", "type": "bytes32"},
+            {"indexed": True, "internalType": "uint256", "name": "version", "type": "uint256"},
+            {"indexed": False, "internalType": "uint256", "name": "rows", "type": "uint256"},
+            {"indexed": False, "internalType": "uint256", "name": "cols", "type": "uint256"},
+        ],
+        "name": "PolicyMatrixChanged",
+        "type": "event",
+    },
 ]
 
 AGENT_REGISTRY_ABI = [
@@ -400,6 +440,91 @@ def policy_store_get(key_name: str, chain_cfg: dict) -> Optional[int]:
     _, contract = result
     key = _policy_key(key_name)
     return contract.functions.getPolicy(key).call()
+
+
+# ---------------------------------------------------------------------------
+# PolicyStore — matrix-shaped parameters (Theta, Theta_context)
+# ---------------------------------------------------------------------------
+
+def _to_milli_int_list(matrix) -> list[int]:
+    """Flatten a 2-D float matrix row-major and milli-scale to int.
+
+    Accepts a numpy ndarray, a list-of-lists, or any iterable of
+    iterables. The on-chain contract stores int256 values scaled by
+    1000, so 0.50 -> 500, -0.80 -> -800, +1.234 -> 1234. Anything that
+    cannot be coerced to a Python int after scaling raises ValueError.
+    """
+    out: list[int] = []
+    for row in matrix:
+        for cell in row:
+            scaled = round(float(cell) * 1000.0)
+            out.append(int(scaled))
+    return out
+
+
+def policy_store_set_matrix(
+    key_name: str,
+    matrix,
+    chain_cfg: dict,
+) -> Optional[str]:
+    """Anchor a matrix-shaped policy parameter (Theta, Theta_context, ...) on-chain.
+
+    Parameters
+    ----------
+    key_name :
+        Logical name of the matrix; will be hashed via keccak256
+        ("THETA", "THETA_CONTEXT", ...).
+    matrix :
+        2-D iterable of floats. Row-major. Cell values must satisfy
+        the per-key max-abs bound declared in PolicyStore.sol.
+    chain_cfg :
+        Standard chain config dict (rpc, addresses, private_key).
+
+    Returns
+    -------
+    tx hash on success, None when the chain is not configured.
+    """
+    result = _get_contract(chain_cfg, "PolicyStore")
+    if result is None:
+        return None
+    w3, acct, contract = result
+    rows = len(matrix)
+    cols = len(matrix[0]) if rows else 0
+    if rows == 0 or cols == 0:
+        raise ValueError("policy_store_set_matrix: empty matrix")
+    flat = _to_milli_int_list(matrix)
+    if len(flat) != rows * cols:
+        raise ValueError(f"policy_store_set_matrix: ragged matrix {rows}x{cols} vs {len(flat)} cells")
+    key = _policy_key(key_name)
+    return _send_tx(
+        w3, acct,
+        contract.functions.setPolicyMatrix(key, rows, cols, flat),
+        chain_cfg,
+    )
+
+
+def policy_store_get_matrix(
+    key_name: str,
+    chain_cfg: dict,
+) -> Optional[dict]:
+    """Read a matrix-shaped policy parameter from chain.
+
+    Returns a dict ``{rows, cols, values, version}`` where ``values``
+    is a row-major list of floats (milli-scale already undone). Returns
+    None when the chain is not configured.
+    """
+    result = _get_contract_readonly(chain_cfg, "PolicyStore")
+    if result is None:
+        return None
+    _, contract = result
+    key = _policy_key(key_name)
+    rows, cols, vals_milli, version = contract.functions.getPolicyMatrix(key).call()
+    return {
+        "rows": int(rows),
+        "cols": int(cols),
+        "values": [float(v) / 1000.0 for v in vals_milli],
+        "version": int(version),
+    }
 
 
 # ---------------------------------------------------------------------------

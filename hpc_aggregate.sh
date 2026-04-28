@@ -134,6 +134,18 @@ echo ""
 echo "=== Stage 7: figures ==="
 (cd mvp/simulation && python generate_figures.py)
 
+# Stage 7.5: explainability assessment metrics (§4.10 100/100/100 numbers).
+# Walks every per-episode decision_ledger/*.jsonl, recomputes leaf hashes
+# and Merkle roots for the provenance integrity check, and recomputes
+# the dominant psi feature against THETA_CONTEXT for the sign-consistency
+# check. Output goes to results/explainability_metrics.json with a
+# one-screen aggregate the paper can cite without re-running anything.
+echo ""
+echo "=== Stage 7.5: explainability assessment metrics ==="
+python -m mvp.simulation.analysis.explainability_metrics \
+    --ledger "$RESULTS_DIR/decision_ledger" \
+    --output "$RESULTS_DIR/explainability_metrics.json"
+
 # Stage 8: paper evidence export.
 echo ""
 echo "=== Stage 8: paper evidence ==="
@@ -168,11 +180,17 @@ for f in \
     mvp/simulation/results/stress_degradation.csv \
     mvp/simulation/results/stress_passfail.csv \
     mvp/simulation/results/feature_heatmap_data.json \
-    mvp/simulation/results/artifact_manifest.json \
-    mvp/simulation/baseline_snapshot.json
+    mvp/simulation/results/explainability_metrics.json \
+    mvp/simulation/results/artifact_manifest.json
 do
     [ -f "$f" ] && archive_files+=("$f")
 done
+
+# decision_ledger is a directory of per-episode jsonl files; pull the
+# whole tree into the archive so reviewers can re-run
+# explainability_metrics + verify_anchored_root from the tarball alone.
+[ -d mvp/simulation/results/decision_ledger ] && \
+    archive_files+=("mvp/simulation/results/decision_ledger")
 
 shopt -s nullglob
 for f in mvp/simulation/results/fig*.png mvp/simulation/results/fig*.pdf; do

@@ -970,6 +970,28 @@ def run_episode(
                 _log.warning("on-chain ledger submission skipped: %s", _exc)
                 result["decision_ledger_tx_status"] = f"error:{type(_exc).__name__}"
 
+    # Per-episode ProvenanceRegistry anchor.
+    # decision_ledger.submit_onchain writes the per-episode Merkle root to
+    # the DecisionLogger contract (via logEpisode). The §1 / §3.15
+    # claim of "every routing decision verifiable on-chain" also wants
+    # the same root anchored on ProvenanceRegistry so an explanation
+    # consumer can verify the evidence chain without round-tripping
+    # through the decision logger event index. We anchor unconditionally
+    # whenever a chain is reachable via env config — same gating as the
+    # decision_ledger.submit_onchain path above, so a stock simulator
+    # run with no chain configured stays a no-op.
+    try:
+        from pirag.chain.client import anchor_root as _prov_anchor
+        episode_tag = f"episode_{mode}_{scenario}_{seed}"
+        prov_tx = _prov_anchor(decision_ledger.merkle_root(), policy_uri=episode_tag)
+        if prov_tx:
+            result["provenance_registry_tx"] = prov_tx
+        else:
+            result["provenance_registry_tx_status"] = "chain_not_configured"
+    except Exception as _exc:  # noqa: BLE001
+        _log.warning("provenance registry anchor skipped: %s", _exc)
+        result["provenance_registry_tx_status"] = f"error:{type(_exc).__name__}"
+
     # Persist the learner state for the next scenario in the cache.
     # Same (mode, seed) lineage, different scenario: the next call to
     # run_episode with this cache will restore this snapshot after its

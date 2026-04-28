@@ -226,6 +226,51 @@ state: Dict[str, Any] = {
     "chain": {"rpc": None, "addresses": {}, "chain_id": 31337, "private_key": None},
 }
 
+
+# ---------------------------------------------------------------------------
+# PINN overlay cache for the /predictions endpoint.
+# Keyed on (df_signature, policy_signature) so a stable telemetry +
+# policy combination only trains the PINN once per backend lifetime.
+# Cleared explicitly on case_load() because the dataframe shape and
+# content fully define df_signature anyway.
+# ---------------------------------------------------------------------------
+_PINN_OVERLAY_CACHE: Dict[Any, Any] = {}
+
+
+def _df_signature(df) -> str:
+    """Stable, cheap signature of the loaded telemetry dataframe.
+
+    Uses pandas's internal index hash plus the (rows, cols) shape and
+    the first/last timestamp + temperature so two distinct CSV loads
+    are guaranteed to produce different signatures even when row count
+    matches. Avoids hashing the full dataframe (slow on every poll).
+    """
+    try:
+        first_ts = str(df["timestamp"].iloc[0])
+        last_ts = str(df["timestamp"].iloc[-1])
+        first_t = float(df["tempC"].iloc[0])
+        last_t = float(df["tempC"].iloc[-1])
+        return f"{df.shape[0]}x{df.shape[1]}|{first_ts}|{last_ts}|{first_t:.4f}|{last_t:.4f}"
+    except Exception:  # noqa: BLE001
+        return f"{getattr(df, 'shape', '?')}|nosig"
+
+
+def _policy_signature(p) -> str:
+    """Signature of the policy parameters that feed the PINN/ODE model.
+
+    Only the kinetic parameters matter (k_ref, Ea_R, T_ref_K,
+    beta_humidity, lag_lambda) — changing carbon factors or SLCA
+    weights does not change the spoilage trajectory, so they are
+    excluded from the cache key.
+    """
+    try:
+        return (
+            f"k={p.k_ref:.6g}|Ea_R={p.Ea_R:.6g}|Tref={p.T_ref_K:.6g}|"
+            f"beta={p.beta_humidity:.6g}|lam={p.lag_lambda:.6g}"
+        )
+    except Exception:  # noqa: BLE001
+        return "policy:nosig"
+
 # ---------------------------------------------------------------------------
 # Role-specific profiles for the live REST decision endpoint.
 #
@@ -299,6 +344,9 @@ def case_load():
     df["volatility"] = volatility_flags(df, window=p.boll_window, k=p.boll_k)
     state["df"] = df
     state["df_original"] = df.copy()
+    # Drop the PINN overlay cache so the next /predictions call recomputes
+    # against the freshly loaded telemetry.
+    _PINN_OVERLAY_CACHE.clear()
     return {"ok": True, "records": len(df)}
 
 @API.get("/kpis")
@@ -399,27 +447,47 @@ def predictions():
     shelf_ode = df["shelf_left"].round(4).tolist()
     risk_ode = df["spoilage_risk"].round(4).tolist() if "spoilage_risk" in df.columns else []
 
-    shelf_pinn: list[float] = []
-    risk_pinn: list[float] = []
-    pinn_available = False
-    try:
-        from .models.spoilage import compute_spoilage_pinn
-        df_pinn = compute_spoilage_pinn(
-            df,
-            k_ref=p.k_ref,
-            Ea_R=p.Ea_R,
-            T_ref_K=p.T_ref_K,
-            beta=p.beta_humidity,
-            lag_lambda=p.lag_lambda,
-            pinn_epochs=200,  # cheaper than the simulator's 1000
-        )
-        shelf_pinn = df_pinn["shelf_left"].round(4).tolist()
-        risk_pinn = df_pinn["spoilage_risk"].round(4).tolist()
-        pinn_available = True
-    except Exception as exc:  # noqa: BLE001
-        logger.debug("PINN overlay skipped: %s", exc)
+    # PINN overlay cache. compute_spoilage_pinn trains a small NN from
+    # scratch on every call (~1-3 s for 200 epochs over 288 timesteps),
+    # so the QualityPage's 5-second poll would race the training and
+    # waste compute. The cache is keyed on (df_hash, policy_hash) so any
+    # change to the loaded telemetry (case_load) or the policy
+    # parameters that feed the kinetic model (k_ref, Ea_R, T_ref_K,
+    # beta_humidity, lag_lambda) busts the entry; pure UI re-polls hit
+    # the cache and return in microseconds.
+    df_key = _df_signature(df)
+    pol_key = _policy_signature(p)
+    cache_key = (df_key, pol_key)
+    cached = _PINN_OVERLAY_CACHE.get(cache_key)
+    if cached is not None:
+        shelf_pinn, risk_pinn, pinn_available = cached
+    else:
         shelf_pinn = list(shelf_ode)
         risk_pinn = list(risk_ode)
+        pinn_available = False
+        try:
+            from .models.spoilage import compute_spoilage_pinn
+            df_pinn = compute_spoilage_pinn(
+                df,
+                k_ref=p.k_ref,
+                Ea_R=p.Ea_R,
+                T_ref_K=p.T_ref_K,
+                beta=p.beta_humidity,
+                lag_lambda=p.lag_lambda,
+                pinn_epochs=200,  # cheaper than the simulator's 1000
+            )
+            shelf_pinn = df_pinn["shelf_left"].round(4).tolist()
+            risk_pinn = df_pinn["spoilage_risk"].round(4).tolist()
+            pinn_available = True
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("PINN overlay skipped: %s", exc)
+        _PINN_OVERLAY_CACHE[cache_key] = (shelf_pinn, risk_pinn, pinn_available)
+        # Keep the cache bounded — at most a handful of (df, policy)
+        # combinations per session in practice (case_load happens once,
+        # policy edits in the Admin panel are rare).
+        if len(_PINN_OVERLAY_CACHE) > 16:
+            # Evict the oldest entry to keep behaviour deterministic.
+            _PINN_OVERLAY_CACHE.pop(next(iter(_PINN_OVERLAY_CACHE)))
 
     return {
         "timestamp": df["timestamp"].astype(str).tolist(),

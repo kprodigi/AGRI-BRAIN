@@ -456,10 +456,21 @@ Each figure is also saved as PDF for LaTeX inclusion.
 
 ## 6b. Run the 20-seed benchmark on HPC (SLURM)
 
-The stochastic multi-seed benchmark (5 scenarios × 8 modes × 20 seeds =
-800 episodes, plus aggregation, stress suite, figures, and the paper
-evidence pipeline) is built for a SLURM cluster. Three scripts live at
-the repo root:
+**Posture:** the HPC pipeline runs the **stochastic** benchmark with
+**20 seeds** by default and only ever publishes stochastic numbers.
+`DETERMINISTIC_MODE=false` is enforced at three layers (orchestrator,
+seed array task, and aggregation task); a stale `true` in the cluster
+env aborts the submit. The deterministic regression-guard snapshot is a
+separate manual step (see "Regenerate the regression-guard snapshot"
+below) and is intentionally NOT part of the published-results path.
+
+The full benchmark is 5 scenarios × 19 modes × 20 seeds = 1,900 episodes
+(8 canonical paper modes + 11 §4.7 sensitivity ablations:
+`agribrain_cold_start`, `agribrain_pert_{10,25,50}`,
+`agribrain_pert_{10,25,50}_static`, `agribrain_no_bonus`,
+`agribrain_theta_pert_{10,25,50}`). Aggregation, stress suite, figures,
+explainability metrics, and the paper-evidence pipeline run in the
+single dependent aggregator job. Three scripts live at the repo root:
 
 | Script | Role |
 |---|---|
@@ -497,12 +508,32 @@ tail -f logs/aggregate_<job_id>.out
 
 On success the aggregator writes `hpc_results_<RUN_TAG>.tar.gz` in the
 repo root, including the canonical summary/significance JSONs, Table 1
-and Table 2 CSVs, stress suite outputs, Figure 2-10 PNG+PDF, artifact
-manifest, and the per-seed JSON directory. Transfer back with:
+and Table 2 CSVs, stress suite outputs, Figure 2-10 PNG+PDF, the
+explainability assessment metrics (`explainability_metrics.json`, the
+§4.10 100/100/100 numbers), the artifact manifest, and the full
+`decision_ledger/` directory. Transfer back with:
 
 ```bash
 scp <hpc-host>:$PWD/hpc_results_<RUN_TAG>.tar.gz .
 tar xzf hpc_results_<RUN_TAG>.tar.gz
+```
+
+### Regenerate the regression-guard snapshot (deterministic, manual, post-HPC)
+
+`mvp/simulation/baseline_snapshot.json` is a *deterministic* fixture
+that catches code-drift on later deterministic runs; it is not a
+stochastic publication artefact. The regression guard skips itself in
+stochastic mode (the default), so the snapshot only matters when a
+maintainer explicitly runs `DETERMINISTIC_MODE=true`. Regenerate after
+each HPC publication run so the deterministic baseline matches the
+shipped code, then commit the resulting JSON:
+
+```bash
+DETERMINISTIC_MODE=true REGRESSION_GUARD_INIT=true \
+    python -m mvp.simulation.validation.run_regression_guard
+
+git add mvp/simulation/baseline_snapshot.json
+git commit -m "regenerate baseline_snapshot.json after HPC run <RUN_TAG>"
 ```
 
 ### Wall time
