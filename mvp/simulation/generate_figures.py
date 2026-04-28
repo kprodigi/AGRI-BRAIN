@@ -1416,7 +1416,7 @@ def fig8_green_ai(data):
         cum_carbon = np.cumsum(ep["carbon_trace"])
         _mode_plot(ax, hours, cum_carbon, mode)
     ax.set_xlabel("Hours", fontsize=_F8_AXIS, fontweight="bold")
-    ax.set_ylabel(r"Cumulative $\mathrm{CO_2}$ (kg)",
+    ax.set_ylabel(r"Cumulative $\mathbf{CO_2}$ (kg)",
                   fontsize=_F8_AXIS, fontweight="bold")
     ax.set_title("(a) Cumulative Carbon \u2014 Heatwave",
                  fontsize=_F8_TITLE, fontweight="bold", pad=14)
@@ -1424,11 +1424,11 @@ def fig8_green_ai(data):
     # Heatwave annotation pushed to vertical middle so the new
     # top-anchored legend strip does not collide with it.
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave", ypos=0.55)
-    # Legend placed at the top of the panel in a single horizontal row,
-    # between the title and the data area, so it does not occlude the
-    # cumulative traces and reads consistently with panel (b).
-    _legend(ax, loc="upper center",
-            bbox_to_anchor=(0.5, 1.0), ncol=len(fig8a_modes),
+    # Legend anchored to the upper right of the panel \u2014 keeps the
+    # 4-entry row (Static, Hybrid RL, No PINN, AgriBrain) clear of
+    # the y-axis label and tick marks on the left side.
+    _legend(ax, loc="upper right",
+            bbox_to_anchor=(0.99, 0.99), ncol=len(fig8a_modes),
             fontsize=_F8_LEG, handlelength=1.6, columnspacing=1.2,
             handletextpad=0.5, borderpad=0.5)
     ax.tick_params(labelsize=_F8_TICK, length=6, width=1.4)
@@ -1460,7 +1460,7 @@ def fig8_green_ai(data):
 
     ax.set_xticks(x + width)
     _bar_xticklabels(ax, scenarios_plot)
-    ax.set_ylabel(r"Total $\mathrm{CO_2}$ (kg)",
+    ax.set_ylabel(r"Total $\mathbf{CO_2}$ (kg)",
                   fontsize=_F8_AXIS, fontweight="bold")
     ax.set_title("(b) Carbon Footprint by Scenario",
                  fontsize=_F8_TITLE, fontweight="bold", pad=14)
@@ -1473,14 +1473,14 @@ def fig8_green_ai(data):
     for lbl in list(ax.get_xticklabels()) + list(ax.get_yticklabels()):
         lbl.set_fontsize(_F8_TICK); lbl.set_fontweight("bold")
 
-    fig.suptitle("Green AI & Carbon Footprint", y=0.995,
+    fig.suptitle("Green AI & Carbon Footprint", y=0.97,
                  fontsize=FIG_TITLE_SIZE + 3, fontweight="bold")
     # Slightly more headroom inside each axes so the top-anchored
     # legend has space between it and the data.
     for a in axes:
         y_lo, y_hi = a.get_ylim()
         a.set_ylim(y_lo, y_hi + 0.15 * (y_hi - y_lo))
-    fig.tight_layout(rect=[0, 0, 1, 0.96], w_pad=1.6)
+    fig.tight_layout(rect=[0, 0, 1, 0.94], w_pad=1.6)
     _save(fig, "fig8_green_ai")
 
 
