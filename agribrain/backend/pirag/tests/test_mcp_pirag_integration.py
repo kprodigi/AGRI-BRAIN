@@ -274,20 +274,28 @@ def test_retrieve_role_context_aggregates_three_guards(monkeypatch):
     from pirag.context_builder import retrieve_role_context
 
     # Stub the piRAG pipeline so the test does not depend on retrieval.
+    # SHA-256 hashes are computed from the actual passage so the test
+    # exercises realistic provenance values instead of a placeholder
+    # constant.
+    import hashlib as _hashlib
+
+    def _sha(text: str) -> str:
+        return _hashlib.sha256(text.encode("utf-8")).hexdigest()
+
     class _Citation:
         def __init__(self, passage):
             self.doc_id = "regulatory_fda_leafy_greens"
             self.passage = passage
-            self.sha256 = "0" * 64
+            self.sha256 = _sha(passage)
             self.meta = {}
             self.score = 0.5
 
     class _Resp:
         def __init__(self, passage):
             self.citations = [_Citation(passage)] if passage else []
-            self.evidence_hashes = ["0" * 64] if passage else []
+            self.evidence_hashes = [_sha(passage)] if passage else []
             self.guards_passed = True
-            self.merkle_root = "0" * 64
+            self.merkle_root = _sha("merkle:" + passage) if passage else ""
             self.chain_tx = None
             self.answer = passage or ""
 

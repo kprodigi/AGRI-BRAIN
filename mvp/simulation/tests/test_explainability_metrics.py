@@ -31,12 +31,20 @@ def _make_episode(tmp_path: Path, mode: str, scenario: str, rows, *, corrupt_roo
         rec["_leaf"] = _leaf_for(rec)
         enriched.append(rec)
     if corrupt_leaf >= 0 and corrupt_leaf < len(enriched):
-        enriched[corrupt_leaf]["_leaf"] = "deadbeef" * 8
+        # Replace the recorded leaf hash with a different real SHA-256
+        # so the test exercises a *mismatch* between the recorded leaf
+        # and the canonical recomputation, not a placeholder constant.
+        enriched[corrupt_leaf]["_leaf"] = hashlib.sha256(
+            b"corruption-fixture:" + str(corrupt_leaf).encode()
+        ).hexdigest()
     leaves = [r["_leaf"] for r in enriched]
     actual_root = em._merkle_root(leaves)
+    # When corrupt_root is set, write a different (real) hash so the
+    # header root no longer matches the recomputed root.
+    bogus_root = hashlib.sha256(b"corruption-fixture:root").hexdigest()
     header = {
         "_header": True,
-        "merkle_root": actual_root if not corrupt_root else "00" * 32,
+        "merkle_root": actual_root if not corrupt_root else bogus_root,
         "metadata": {"mode": mode, "scenario": scenario, "seed": 0},
         "n_records": len(enriched),
     }

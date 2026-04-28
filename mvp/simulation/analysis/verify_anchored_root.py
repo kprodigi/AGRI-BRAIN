@@ -22,10 +22,12 @@ Usage::
     # Off-chain only (default; no chain config needed)
     python mvp/simulation/analysis/verify_anchored_root.py
 
-    # With on-chain anchoring proof for a single ledger
+    # With on-chain anchoring proof for a single ledger. Substitute
+    # your own transaction hash from the EpisodeLogged emit (read it
+    # from the deploy log or `cast tx` against your RPC).
     python mvp/simulation/analysis/verify_anchored_root.py \\
         --ledger mvp/simulation/results/decision_ledger/agribrain__heatwave.jsonl \\
-        --tx 0xdeadbeef... \\
+        --tx <0x... transaction hash from EpisodeLogged emit> \\
         --rpc http://127.0.0.1:8545
 
 Exit codes:
