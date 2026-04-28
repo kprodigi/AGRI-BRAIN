@@ -1943,6 +1943,16 @@ def fig10_latency_quality_frontier(data):
                                 alpha=0.55, zorder=4,
                                 label="No Context (reference)")
         handles_b.append(ref_handle)
+        # Cross-scenario SE error bar on the reference too, matching the
+        # convention used for the three context-aware modes below — the
+        # ref carries a yerr from _collect() but the original render
+        # never drew it, leaving the reference point looking spuriously
+        # precise next to its three context-aware peers.
+        if ref[3][0] > 0 or ref[3][1] > 0:
+            ax.errorbar([ref[1]], [ref[2]],
+                        yerr=np.array([[ref[3][0]], [ref[3][1]]]),
+                        fmt="none", ecolor=COLORS["no_context"],
+                        elinewidth=1.6, capsize=4, alpha=0.55, zorder=3)
 
     for mode, x, y, yerr in ctx_pts:
         h = ax.scatter(x, y, s=260, color=COLORS[mode], marker=MARKERS[mode],
