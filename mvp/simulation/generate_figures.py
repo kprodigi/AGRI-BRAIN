@@ -696,7 +696,7 @@ def fig4_cyber(data):
     hours = np.array(ab["hours"])
 
     fig, axes = plt.subplots(1, 3, figsize=(21, 7.0))
-    fig.suptitle("Cyber Outage Scenario", y=0.97)
+    fig.suptitle("Cyber Outage Scenario", y=0.995)
 
     # --- (a) ARI over time with outage shading ---
     # ARI = (1 - waste) * SLCA * (1 - rho). Spoilage risk rho rises
@@ -831,7 +831,7 @@ def fig4_cyber(data):
     _annotate_window(ax, 24, 72, WINDOW_COLOR, "Outage")
     _legend(ax, loc="center right")
 
-    fig.tight_layout(rect=[0, 0, 1, 0.93], w_pad=1.6)
+    fig.tight_layout(rect=[0, 0, 1, 0.985], h_pad=1.6, w_pad=1.6)
     _save(fig, "fig4_cyber")
 
 
@@ -845,7 +845,7 @@ def fig5_pricing(data):
     hours = np.array(ab["hours"])
 
     fig, axes = plt.subplots(2, 2, figsize=(18, 13))
-    fig.suptitle("Adaptive Pricing & Demand Volatility", y=0.97)
+    fig.suptitle("Adaptive Pricing & Demand Volatility", y=0.995)
 
     # --- (a) Demand + Bollinger triggers ---
     ax = axes[0, 0]
@@ -992,7 +992,7 @@ def fig5_pricing(data):
         leg.get_frame().set_facecolor("white")
         leg.get_frame().set_alpha(1.0)
 
-    fig.tight_layout(rect=[0, 0, 1, 0.94], h_pad=1.6, w_pad=1.6)
+    fig.tight_layout(rect=[0, 0, 1, 0.985], h_pad=1.6, w_pad=1.6)
     _save(fig, "fig5_pricing")
 
 
@@ -1315,9 +1315,9 @@ def fig6_cross(data):
                      bbox_to_anchor=(0.5, 0.0))
     for text in leg.get_texts():
         text.set_fontweight("bold")
-    fig.suptitle("Cross-Scenario Performance Comparison", y=0.97,
-                 fontsize=FIG_TITLE_SIZE + 3, fontweight="bold")
-    fig.tight_layout(rect=[0, 0.05, 1, 0.94], h_pad=1.6, w_pad=1.6)
+    fig.suptitle("Cross-Scenario Performance Comparison", y=0.995,
+                 fontsize=FIG_TITLE_SIZE, fontweight="bold")
+    fig.tight_layout(rect=[0, 0.05, 1, 0.985], h_pad=1.6, w_pad=1.6)
     _save(fig, "fig6_cross")
 
 
@@ -1426,9 +1426,9 @@ def fig7_ablation(data):
     for text in leg.get_texts():
         text.set_fontweight("bold")
     # Bumped suptitle size so it scales with the larger panel typography.
-    fig.suptitle("Ablation Study", y=0.97, fontsize=FIG_TITLE_SIZE + 3,
+    fig.suptitle("Ablation Study", y=0.995, fontsize=FIG_TITLE_SIZE,
                  fontweight="bold")
-    fig.tight_layout(rect=[0, 0.08, 1, 0.94], w_pad=1.4)
+    fig.tight_layout(rect=[0, 0.08, 1, 0.985], w_pad=1.4)
     _save(fig, "fig7_ablation")
 
 
@@ -1540,14 +1540,14 @@ def fig8_green_ai(data):
     for lbl in list(ax.get_xticklabels()) + list(ax.get_yticklabels()):
         lbl.set_fontsize(_F8_TICK); lbl.set_fontweight("bold")
 
-    fig.suptitle("Green AI & Carbon Footprint", y=0.97,
-                 fontsize=FIG_TITLE_SIZE + 3, fontweight="bold")
+    fig.suptitle("Green AI & Carbon Footprint", y=0.995,
+                 fontsize=FIG_TITLE_SIZE, fontweight="bold")
     # Slightly more headroom inside each axes so the top-anchored
     # legend has space between it and the data.
     for a in axes:
         y_lo, y_hi = a.get_ylim()
         a.set_ylim(y_lo, y_hi + 0.15 * (y_hi - y_lo))
-    fig.tight_layout(rect=[0, 0, 1, 0.94], w_pad=1.6)
+    fig.tight_layout(rect=[0, 0, 1, 0.985], w_pad=1.6)
     _save(fig, "fig8_green_ai")
 
 
@@ -1921,11 +1921,13 @@ def fig9_fault_degradation():
              ylabel="Honour rate (% of active steps)")
 
     fig.suptitle("Performance Gain over Baselines and Context Honour",
-                 y=0.97, fontsize=FIG_TITLE_SIZE + 3, fontweight="bold")
-    # Tighter title-to-subplot gap (rect top 0.94 → 0.92) and tighter
-    # inter-panel gap (w_pad 2.0 → 1.0) so panel (c) has more room for
-    # the upcoming 5-scenario layout without losing space to padding.
-    fig.tight_layout(rect=[0, 0.02, 1, 0.92], w_pad=1.0)
+                 y=0.995, fontsize=FIG_TITLE_SIZE, fontweight="bold")
+    # Title-to-subplot gap matches the canonical figure 3 pattern
+    # (rect top 0.985, suptitle y 0.995) so all paper figures share
+    # the same header spacing. w_pad kept at 1.0 so panel (c) has
+    # room for the upcoming 5-scenario layout without losing space
+    # to padding.
+    fig.tight_layout(rect=[0, 0.02, 1, 0.985], w_pad=1.0)
     _save(fig, "fig9_robustness")
 
 
@@ -2115,8 +2117,7 @@ def fig10_latency_quality_frontier(data):
     _legend(ax, loc="lower center", ncol=2)
     _apply_style(ax)
 
-    fig.tight_layout(w_pad=1.6)
-    fig.subplots_adjust(top=0.90)
+    fig.tight_layout(rect=[0, 0, 1, 0.985], w_pad=1.6)
     _save(fig, "fig10_latency_quality_frontier")
 
 
