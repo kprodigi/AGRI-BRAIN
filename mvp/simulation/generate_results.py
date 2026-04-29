@@ -705,8 +705,15 @@ def run_episode(
         # in a single pass; both are emitted in the result dict below.
         rle_tracker.update(rho, action)
 
-        # Reward (Layer 1: reward.py)
-        reward = compute_reward(slca_c, waste, eta=policy.eta)
+        # Reward (Layer 1: reward.py). Linear scalarisation of the three
+        # primary objectives with rho penalised directly so the per-step
+        # gradient signal matches the metric the paper grades the policy
+        # on (per-step ARI). See reward.py docstring for the convex-
+        # scalarisation justification.
+        reward = compute_reward(
+            slca_c, waste, rho,
+            eta=policy.eta, eta_rho=policy.eta_rho,
+        )
         cum_r += reward
 
         # Green AI footprint tracking (Section 4.12)

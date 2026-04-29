@@ -99,7 +99,10 @@ def _run_short_episode(df, mode, context_enabled, n_steps=48):
         waste = float(waste_raw * (1.0 - save))
 
         ari = compute_ari(waste, slca_c, rho)
-        reward = compute_reward(slca_c, waste, eta=policy.eta)
+        reward = compute_reward(
+            slca_c, waste, rho,
+            eta=policy.eta, eta_rho=policy.eta_rho,
+        )
 
         obs = active.observe(env_state, hours[idx])
         outcome = {"waste": waste, "rho": rho, "slca": slca_c, "carbon_kg": carbon}

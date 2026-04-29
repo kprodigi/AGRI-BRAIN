@@ -229,19 +229,25 @@ def _decide_standalone(req: DecideRequest) -> dict:
     save = compute_save_factor(action, req.mode, surplus_ratio)
     waste = float(waste_raw * (1.0 - save))
     eta = getattr(policy, "eta", _defaults.eta) if policy else _defaults.eta
+    eta_rho = getattr(policy, "eta_rho", _defaults.eta_rho) if policy else _defaults.eta_rho
     alpha_E = getattr(policy, "alpha_E", _defaults.alpha_E) if policy else _defaults.alpha_E
     beta_W = getattr(policy, "beta_W", _defaults.beta_W) if policy else _defaults.beta_W
     msrp = getattr(policy, "msrp", _defaults.msrp) if policy else _defaults.msrp
 
     price = msrp * PRICE_FACTOR.get(action, 1.0)
 
-    # Multi-objective reward via imported reward model
+    # Multi-objective reward via imported reward model. Spoilage risk
+    # rho is now penalised directly so the reward signal aligns with
+    # per-step ARI; see reward.py docstring for the linear-scalarisation
+    # justification.
     reward_decomp = compute_reward_extended(
         slca_composite=slca_composite,
         waste=waste,
+        rho=rho,
         energy_J=fp["energy_J"],
         water_L=fp["water_L"],
         eta=eta,
+        eta_rho=eta_rho,
         alpha_E=alpha_E,
         beta_W=beta_W,
     )

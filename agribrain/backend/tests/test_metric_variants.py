@@ -230,14 +230,60 @@ def test_mode_eff_ranking_invariant(perturbation):
 
 @pytest.mark.parametrize("eta", [0.10, 0.25, 0.50, 1.00, 2.00])
 def test_eta_sensitivity_ranking(eta):
-    """Across the swept eta range, a higher-SLCA / lower-waste policy
-    should still receive higher reward than a lower-SLCA / higher-waste
-    policy. This justifies treating eta = 0.50 as a robust default.
+    """Across the swept eta_w range, a higher-SLCA / lower-waste / lower-rho
+    policy should still receive higher reward than a lower-SLCA / higher-
+    waste / higher-rho policy. This justifies treating eta = 0.50 as a
+    robust default for the waste penalty.
     """
-    # Two stylised policies with the directional ordering AgriBrain claims
-    r_good = compute_reward(slca_composite=0.85, waste=0.04, eta=eta)
-    r_bad = compute_reward(slca_composite=0.55, waste=0.13, eta=eta)
+    # Two stylised policies with the directional ordering AgriBrain claims.
+    # Both variants pass the same rho (0.20) so this test isolates eta_w.
+    r_good = compute_reward(slca_composite=0.85, waste=0.04, rho=0.20,
+                            eta=eta, eta_rho=0.50)
+    r_bad = compute_reward(slca_composite=0.55, waste=0.13, rho=0.20,
+                           eta=eta, eta_rho=0.50)
     assert r_good > r_bad
+
+
+@pytest.mark.parametrize("eta_rho", [0.10, 0.25, 0.50, 1.00, 2.00])
+def test_eta_rho_sensitivity_ranking(eta_rho):
+    """Across the swept eta_rho range, a lower-spoilage policy (with the
+    other two objectives held equal-ish) should still receive higher
+    reward. This justifies treating eta_rho = 0.50 as a robust default
+    for the spoilage-risk penalty.
+    """
+    # Two stylised policies where the AgriBrain-like one is also lower
+    # on rho — i.e. the policy actively prevents spoilage. eta_w is held
+    # at 0.50 so this test isolates eta_rho's contribution to ranking.
+    r_good = compute_reward(slca_composite=0.85, waste=0.04, rho=0.10,
+                            eta=0.50, eta_rho=eta_rho)
+    r_bad = compute_reward(slca_composite=0.55, waste=0.13, rho=0.45,
+                           eta=0.50, eta_rho=eta_rho)
+    assert r_good > r_bad
+
+
+def test_compute_reward_backward_compat_default_rho_zero():
+    """Callers that have not yet been migrated to the rho-penalised form
+    should continue to produce the previous SLCA-minus-waste reward when
+    rho is omitted. This guards against accidentally breaking call sites
+    during the migration.
+    """
+    # Old form: SLCA - eta * waste
+    expected = 0.70 - 0.50 * 0.05
+    # New form with rho omitted (defaults to 0.0)
+    actual = compute_reward(slca_composite=0.70, waste=0.05, eta=0.50)
+    assert actual == pytest.approx(expected)
+
+
+def test_compute_reward_rho_penalises_directly():
+    """A non-zero rho should subtract eta_rho * rho from the previous
+    SLCA-minus-waste form. This is the substantive change in option (1)
+    of the reward-function refactor."""
+    base = compute_reward(slca_composite=0.70, waste=0.05,
+                          rho=0.0, eta=0.50, eta_rho=0.50)
+    with_rho = compute_reward(slca_composite=0.70, waste=0.05,
+                              rho=0.40, eta=0.50, eta_rho=0.50)
+    # Penalty contribution: 0.50 * 0.40 = 0.20
+    assert base - with_rho == pytest.approx(0.50 * 0.40)
 
 
 # ---------------------------------------------------------------------------

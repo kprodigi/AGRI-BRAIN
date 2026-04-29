@@ -67,6 +67,17 @@ class Policy(BaseModel):
         "Range: 0.3-1.0. Higher values make the policy more waste-averse.",
     )
 
+    # ---- spoilage-risk penalty ----
+    eta_rho: float = Field(
+        0.50,
+        description="Spoilage-risk penalty coefficient in the reward "
+        "function. Penalises high rho directly (rho enters the reward "
+        "as -eta_rho * rho), closing the previous gap where the reward "
+        "had no rho term while ARI = (1-waste)*SLCA*(1-rho) does. "
+        "Range: 0.3-1.0. Higher values make the policy more "
+        "spoilage-averse.",
+    )
+
     # ---- energy / water penalty coefficients ----
     alpha_E: float = Field(0.05, description="Energy penalty coefficient for Green AI tracking.")
     beta_W: float = Field(0.03, description="Water penalty coefficient for Green AI tracking.")
