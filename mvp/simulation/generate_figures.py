@@ -829,44 +829,62 @@ def fig5_pricing(data):
     _apply_style(ax)
     _legend(ax, loc="lower right")
 
-    # --- (d) Reward decomposition: SLCA vs waste penalty ---
+    # --- (d) Reward decomposition: SLCA, waste penalty, rho penalty ---
+    # Three stacked layers on a single axis make the additive decomposition
+    # R = SLCA − η_w·waste − η_ρ·ρ visually obvious. The vertical gap
+    # between consecutive lines is each penalty's contribution at time t,
+    # and the shaded bands quantify those magnitudes without a twin axis.
     ax = axes[1, 1]
     slca_vals = np.array(ab["slca_trace"])
     waste_vals = np.array(ab["waste_trace"])
+    rho_vals = np.array(ab["rho_trace"])
     reward_vals = np.array(ab["reward_trace"])
+    # Pull eta_w / eta_rho from the Policy defaults so the panel stays in
+    # sync with reward.py if either default is retuned in future.
+    from src.models.policy import Policy as _PolicyDefaults
+    _p = _PolicyDefaults()
+    eta_w = float(_p.eta)
+    eta_rho = float(_p.eta_rho)
+    after_waste_vals = slca_vals - eta_w * waste_vals
+
     window = 12
     slca_smooth = np.convolve(slca_vals, np.ones(window) / window, mode="same")
+    after_waste_smooth = np.convolve(after_waste_vals, np.ones(window) / window, mode="same")
     reward_smooth = np.convolve(reward_vals, np.ones(window) / window, mode="same")
-    l1, = ax.plot(hours, slca_smooth, color=COLORS["agribrain"], linewidth=2.2,
-                  label="SLCA reward", alpha=0.95)
-    l2, = ax.plot(hours, reward_smooth, color="#263238", linewidth=2.0,
-                  label="Net reward", alpha=0.95)
+
+    # Penalty bands: shade between consecutive layers so the eye sees
+    # each penalty's magnitude as an area. waste-penalty band sits
+    # between SLCA(t) and SLCA − η_w·waste; ρ-penalty band sits between
+    # that line and the net reward.
+    ax.fill_between(hours, after_waste_smooth, slca_smooth,
+                    color=WINDOW_COLOR, alpha=0.22,
+                    label=f"η_w·waste penalty (η_w={eta_w:.2f})")
+    ax.fill_between(hours, reward_smooth, after_waste_smooth,
+                    color="#6A1B9A", alpha=0.22,
+                    label=f"η_ρ·ρ penalty (η_ρ={eta_rho:.2f})")
+
+    # Three layer lines, top → bottom.
+    ax.plot(hours, slca_smooth, color=COLORS["agribrain"], linewidth=2.4,
+            label="SLCA(t)", alpha=0.95)
+    ax.plot(hours, after_waste_smooth, color="#FF8F00", linewidth=2.0,
+            label="SLCA − η_w·waste", alpha=0.95, linestyle="--")
+    ax.plot(hours, reward_smooth, color="#263238", linewidth=2.4,
+            label="Net reward", alpha=0.95)
+
     ax.set_xlabel("Hours")
-    ax.set_ylabel("SLCA / Net Reward")
-    ax.set_ylim(0.0, 1.0)
+    ax.set_ylabel("Reward components")
+    # Tight ylim covers the actual data range without empty headroom;
+    # the SLCA / after-waste / net-reward layers all live in
+    # [0.62, 0.82] for adaptive_pricing, so 0.35-0.85 zooms in enough
+    # for the penalty bands to read at paper scale while keeping a bit
+    # of bottom margin if early-step transients dip lower in some seeds.
+    ax.set_ylim(0.35, 0.85)
     ax.set_title("(d) Reward Decomposition")
     _apply_style(ax)
-    ax2 = ax.twinx()
-    waste_smooth = np.convolve(waste_vals, np.ones(window) / window, mode="same")
-    l3, = ax2.plot(hours, waste_smooth * 100, color=WINDOW_COLOR, linewidth=2.0,
-                   linestyle="--", label="Waste rate (%)", alpha=0.95)
-    ax2.set_ylabel("Waste Rate (%)", color=WINDOW_COLOR)
-    ax2.tick_params(axis="y", labelcolor=WINDOW_COLOR,
-                    labelsize=TICK_FONT_SIZE, length=5, width=1.3)
-    ax2.spines["top"].set_visible(False)
-    ax2.yaxis.label.set_size(AXIS_LABEL_SIZE)
-    ax2.yaxis.label.set_weight("bold")
-    for lbl in ax2.get_yticklabels():
-        lbl.set_fontweight("bold")
-    # Legend lives on the twin axis ax2 so the dashed waste-rate trace
-    # (which is drawn on ax2 and would otherwise be layered above any
-    # legend attached to ax) does not show through the legend frame.
-    # framealpha=1.0 makes the box fully opaque, matching the other
-    # panels; the explicit zorder ensures the legend sits above every
-    # data line on both axes.
-    leg = _legend(ax2, handles=[l1, l2, l3],
-                  labels=[l1.get_label(), l2.get_label(), l3.get_label()],
-                  loc="lower right", framealpha=1.0)
+    # Single-axis legend: five entries (3 layer lines + 2 penalty bands).
+    # framealpha=1.0 keeps the box opaque so it does not blend into the
+    # shaded penalty bands behind it.
+    leg = _legend(ax, loc="lower right", framealpha=1.0, ncol=2)
     if leg is not None:
         leg.set_zorder(20)
         leg.get_frame().set_facecolor("white")
