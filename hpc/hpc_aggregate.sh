@@ -19,13 +19,13 @@ set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
 
 if [ ! -f .venv/bin/activate ]; then
-    echo "BLOCK: .venv not found. Run hpc_run.sh first."
+    echo "BLOCK: .venv not found. Run hpc/hpc_run.sh first."
     exit 1
 fi
 source .venv/bin/activate
 
 if [ -z "${RUN_TAG:-}" ]; then
-    echo "BLOCK: RUN_TAG not exported. Submit via hpc_run.sh."
+    echo "BLOCK: RUN_TAG not exported. Submit via hpc/hpc_run.sh."
     exit 1
 fi
 
@@ -62,7 +62,7 @@ export DETERMINISTIC_MODE=false
 # Override on the rare run where you want a strict gate (i.e. you have
 # already widened the validator's ranges to match the new CVs and want
 # the build to refuse the archive on any deviation):
-#     STRICT_VALIDATION=1 sbatch hpc_aggregate.sh
+#     STRICT_VALIDATION=1 sbatch hpc/hpc_aggregate.sh
 export STRICT_VALIDATION="${STRICT_VALIDATION:-0}"
 
 SEEDS_DIR="mvp/simulation/results/benchmark_seeds/${RUN_TAG}"

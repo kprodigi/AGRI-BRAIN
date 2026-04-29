@@ -1,6 +1,6 @@
 #!/bin/bash
 # SLURM job-array task: run one seed of the AgriBrain benchmark.
-# Submitted by hpc_run.sh; expects RUN_TAG to be exported by sbatch.
+# Submitted by hpc/hpc_run.sh; expects RUN_TAG to be exported by sbatch.
 #
 # Output: mvp/simulation/results/benchmark_seeds/${RUN_TAG}/seed_${SEED}.json
 # One file per array task, isolated per run by the hash-tagged subdirectory.
@@ -21,15 +21,15 @@ set -euo pipefail
 
 cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
 
-# Activate the venv prepared by hpc_run.sh on the login node.
+# Activate the venv prepared by hpc/hpc_run.sh on the login node.
 if [ ! -f .venv/bin/activate ]; then
-    echo "BLOCK: .venv not found. Run hpc_run.sh (or set up .venv manually) first."
+    echo "BLOCK: .venv not found. Run hpc/hpc_run.sh (or set up .venv manually) first."
     exit 1
 fi
 source .venv/bin/activate
 
 if [ -z "${RUN_TAG:-}" ]; then
-    echo "BLOCK: RUN_TAG not exported. Submit via hpc_run.sh."
+    echo "BLOCK: RUN_TAG not exported. Submit via hpc/hpc_run.sh."
     exit 1
 fi
 

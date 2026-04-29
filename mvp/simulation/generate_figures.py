@@ -2228,7 +2228,7 @@ def generate_all_figures(data=None):
     fig8_green_ai(data)
     # Single consolidated Figure 9: fault-degradation + context honour +
     # MCP protocol reliability. Depends on the stress-suite CSV produced by
-    # hpc_aggregate.sh Stage 6 and the per-scenario alignment / protocol
+    # hpc/hpc_aggregate.sh Stage 6 and the per-scenario alignment / protocol
     # JSONs; emits a "no data" placeholder if any input is missing.
     fig9_fault_degradation()
     fig10_latency_quality_frontier(data)

@@ -470,20 +470,20 @@ The full benchmark is 5 scenarios × 19 modes × 20 seeds = 1,900 episodes
 `agribrain_pert_{10,25,50}_static`, `agribrain_no_bonus`,
 `agribrain_theta_pert_{10,25,50}`). Aggregation, stress suite, figures,
 explainability metrics, and the paper-evidence pipeline run in the
-single dependent aggregator job. Three scripts live at the repo root:
+single dependent aggregator job. Three scripts live in `hpc/`:
 
 | Script | Role |
 |---|---|
-| `hpc_run.sh` | Orchestrator run on the login node. Sets up `.venv`, computes `RUN_TAG`, submits the seed array and the dependent aggregation job. |
-| `hpc_seed.sh` | SLURM array task (`--array=0-19`). One seed per task. Writes `mvp/simulation/results/benchmark_seeds/<RUN_TAG>/seed_<N>.json`. 6 h / 8 GB / 4 CPU per task. |
-| `hpc_aggregate.sh` | Single SLURM task chained via `--dependency=afterok`. Runs Stages 1-10 (base tables, validation, both aggregators, stress suite, figures, paper evidence, manifest). 8 h / 16 GB / 4 CPU. |
+| `hpc/hpc_run.sh` | Orchestrator run on the login node. Sets up `.venv`, computes `RUN_TAG`, submits the seed array and the dependent aggregation job. |
+| `hpc/hpc_seed.sh` | SLURM array task (`--array=0-19`). One seed per task. Writes `mvp/simulation/results/benchmark_seeds/<RUN_TAG>/seed_<N>.json`. 6 h / 8 GB / 4 CPU per task. |
+| `hpc/hpc_aggregate.sh` | Single SLURM task chained via `--dependency=afterok`. Runs Stages 1-10 (base tables, validation, both aggregators, stress suite, figures, paper evidence, manifest). 8 h / 16 GB / 4 CPU. |
 
 ### Submit
 
 From the HPC login node, in the repo root:
 
 ```bash
-bash hpc_run.sh
+bash hpc/hpc_run.sh
 ```
 
 That script will:
@@ -492,7 +492,7 @@ That script will:
 2. Run the login-node policy-shape load assertion (fails fast if the resolver
    pulled a broken package combination).
 3. Compute `RUN_TAG=$(git rev-parse --short HEAD)_$(date +%Y%m%d_%H%M)`.
-4. Submit `hpc_seed.sh`, then `hpc_aggregate.sh` with
+4. Submit `hpc/hpc_seed.sh`, then `hpc/hpc_aggregate.sh` with
    `--dependency=afterok:<seed_job>` so aggregation runs only if every
    seed task succeeded.
 
@@ -541,7 +541,7 @@ git commit -m "regenerate baseline_snapshot.json after HPC run <RUN_TAG>"
 Each array task is ~2 h on a modern HPC node (5× laptop speedup assumed,
 45 cells per seed × ~159 s/cell). Array wall-clock is scheduler-limited
 but typically 2-4 h with all 20 tasks running concurrently. Aggregation
-runs ~3-4 h. End-to-end: 6-10 h from `bash hpc_run.sh` to the archive.
+runs ~3-4 h. End-to-end: 6-10 h from `bash hpc/hpc_run.sh` to the archive.
 
 ### Pre-HPC verification
 

@@ -5,7 +5,7 @@ name: nightly-smoke
 # runs a single-seed paper-table generation and pipes the result
 # through the aggregator under BENCHMARK_USE_TABLES=true. That is a
 # nightly smoke / regression check, not a benchmark. The full 20-seed
-# benchmark only runs on HPC (see `hpc_run.sh`); never schedule it
+# benchmark only runs on HPC (see `hpc/hpc_run.sh`); never schedule it
 # under GitHub Actions limits.
 
 on:

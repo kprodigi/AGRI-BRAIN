@@ -2,13 +2,17 @@
 # =========================================================================
 # Import HPC results and push to GitHub
 #
-# Usage:
+# Usage (run from repo root):
 #   1. Copy hpc_results.tar.gz to C:/AgriBrain/
-#   2. Run: bash hpc_import.sh
+#   2. Run: bash hpc/hpc_import.sh
 # =========================================================================
 set -euo pipefail
 
-cd "$(dirname "$0")"
+# Auto-locate the repo root regardless of where the script is invoked
+# from. Script lives at hpc/hpc_import.sh after the 2026-04 layout
+# cleanup, so we cd one level up from the script's own directory to
+# reach the repo root where mvp/simulation/results lives.
+cd "$(dirname "$0")/.."
 
 if [ ! -f "hpc_results.tar.gz" ]; then
     echo "ERROR: hpc_results.tar.gz not found in $(pwd)"

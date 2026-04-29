@@ -3,11 +3,11 @@
 # then submits the seed array and the dependent aggregation job.
 #
 # The benchmark runs as:
-#   hpc_seed.sh (20-task array, one seed per task, parallel)
-#     -> hpc_aggregate.sh (single task, runs after all array tasks succeed)
+#   hpc/hpc_seed.sh (20-task array, one seed per task, parallel)
+#     -> hpc/hpc_aggregate.sh (single task, runs after all array tasks succeed)
 #
-# Usage:
-#   AGRIBRAIN_PARTITION=compute bash hpc_run.sh
+# Usage (run from repo root):
+#   AGRIBRAIN_PARTITION=compute bash hpc/hpc_run.sh
 #
 # The partition name is required because SLURM installs without a system
 # default partition (e.g. SDSMT) would otherwise fail the sbatch submit
@@ -45,7 +45,7 @@ PARTITION="${AGRIBRAIN_PARTITION:-${SBATCH_PARTITION:-}}"
 if [ -z "$PARTITION" ]; then
     echo "BLOCK: no SLURM partition selected."
     echo "       Set AGRIBRAIN_PARTITION (or SBATCH_PARTITION) before re-running, e.g.:"
-    echo "           AGRIBRAIN_PARTITION=compute bash hpc_run.sh"
+    echo "           AGRIBRAIN_PARTITION=compute bash hpc/hpc_run.sh"
     echo "       Inspect the cluster's partitions with: sinfo -s"
     exit 1
 fi
@@ -108,14 +108,14 @@ mkdir -p logs
 # (e.g. SDSMT) do not reject the submit.
 SEED_JOB=$(sbatch --parsable \
     --partition="$PARTITION" \
-    --export=ALL,RUN_TAG="$RUN_TAG",DETERMINISTIC_MODE=false hpc_seed.sh)
+    --export=ALL,RUN_TAG="$RUN_TAG",DETERMINISTIC_MODE=false hpc/hpc_seed.sh)
 echo "Submitted seed array as job ${SEED_JOB}"
 
 # Submit the aggregation job with a dependency on the array completing OK.
 AGG_JOB=$(sbatch --parsable \
     --partition="$PARTITION" \
     --export=ALL,RUN_TAG="$RUN_TAG",DETERMINISTIC_MODE=false \
-    --dependency=afterok:${SEED_JOB} hpc_aggregate.sh)
+    --dependency=afterok:${SEED_JOB} hpc/hpc_aggregate.sh)
 echo "Submitted aggregation as job ${AGG_JOB} (depends on ${SEED_JOB})"
 
 echo ""

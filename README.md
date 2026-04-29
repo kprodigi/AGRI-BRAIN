@@ -213,11 +213,11 @@ python generate_figures.py    # publication figures (Fig. 2-10, PNG + PDF)
 The 20-seed stochastic benchmark (5 scenarios × 8 canonical modes × 20 seeds
 = 800 episodes for the headline ablation, plus the 7 §4.7 sensitivity modes
 which add another 5 × 7 × 20 = 700 episodes when run, plus aggregation and
-figure generation) is submitted through three SLURM scripts at the repo
-root. From the HPC login node:
+figure generation) is submitted through three SLURM scripts in the
+`hpc/` directory. From the HPC login node, in the repo root:
 
 ```bash
-bash hpc_run.sh
+bash hpc/hpc_run.sh
 ```
 
 This orchestrator:
@@ -226,9 +226,9 @@ This orchestrator:
    Policy-shape load assertion (fails fast if the resolver pulled a broken
    combination).
 2. Computes `RUN_TAG=$(git rev-parse --short HEAD)_$(date +%Y%m%d_%H%M)`.
-3. Submits `hpc_seed.sh` as a 20-task array, one seed per task
+3. Submits `hpc/hpc_seed.sh` as a 20-task array, one seed per task
    (`--time=06:00:00`, `--mem=8G`, `--cpus-per-task=4`).
-4. Submits `hpc_aggregate.sh` with `--dependency=afterok:<seed_job>`
+4. Submits `hpc/hpc_aggregate.sh` with `--dependency=afterok:<seed_job>`
    (`--time=08:00:00`, `--mem=16G`). The aggregator runs Stages 1-10:
    base table generation, validation, both context-ablation and canonical
    multi-seed aggregators, stress suite, figures, paper-evidence export,
