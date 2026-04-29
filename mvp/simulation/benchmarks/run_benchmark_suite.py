@@ -47,7 +47,11 @@ DEFAULT_SEEDS_DIR = DEFAULT_RESULTS_DIR / "benchmark_seeds"
 # second hardcoded tuple here was the bug that dropped cold_start and
 # the three pert_* sensitivity modes from every bootstrap CI.
 MODES = tuple(_SIM_MODES)
-METRICS = ("ari", "waste", "rle", "slca", "carbon", "equity")
+# RLE variants: "rle" is the headline match-quality form;
+# rle_binary / rle_weighted / rle_capacity_constrained captured for
+# robustness / migration consumers.
+METRICS = ("ari", "waste", "rle", "rle_binary", "rle_weighted",
+           "rle_capacity_constrained", "slca", "carbon", "equity")
 BASELINE_COMPARISONS = ("mcp_only", "pirag_only", "no_context")
 
 
@@ -216,6 +220,19 @@ def _load_from_table2(table2_path: Path) -> Dict[str, Dict[str, Dict[str, List[f
             rec["ari"].append(float(row.iloc[0]["ARI"]))
             rec["waste"].append(float(row.iloc[0]["Waste"]))
             rec["rle"].append(float(row.iloc[0]["RLE"]))
+            # New RLE variants are present in tables emitted from the
+            # 2026-04 onwards. Older table2 CSVs that pre-date the
+            # match-quality migration only have "RLE" — fall back to
+            # that for missing columns so historical data still loads.
+            for col, key in (
+                ("RLE_binary", "rle_binary"),
+                ("RLE_weighted", "rle_weighted"),
+                ("RLE_capacity_constrained", "rle_capacity_constrained"),
+            ):
+                if col in row.columns:
+                    rec[key].append(float(row.iloc[0][col]))
+                else:
+                    rec[key].append(float(row.iloc[0]["RLE"]))
             rec["slca"].append(float(row.iloc[0]["SLCA"]))
             if "Carbon" in row.columns:
                 rec["carbon"].append(float(row.iloc[0]["Carbon"]))

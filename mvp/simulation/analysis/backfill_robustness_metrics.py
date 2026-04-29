@@ -39,6 +39,8 @@ from src.models.resilience import (  # noqa: E402
     compute_equity,
     compute_equity_sen,
     compute_rle,
+    compute_rle_capacity_constrained,
+    compute_rle_realistic,
     compute_rle_weighted,
 )
 
@@ -75,11 +77,15 @@ def _backfill_one(path: Path) -> Dict[str, Any]:
     slca_vals = [float(s["slca"]) for s in steps]
     waste_vals = [float(s["waste"]) for s in steps]
 
-    # Primary metrics (reproduce the published values for sanity check)
+    # Primary metrics (reproduce the published values for sanity check).
+    # Headline RLE is now the severity-aware match-quality form
+    # (resilience.compute_rle_realistic); the legacy binary form is
+    # retained as rle_binary for backward compatibility.
     ari_per_step = [
         compute_ari(w, s, r) for w, s, r in zip(waste_vals, slca_vals, rho_vals)
     ]
     ari_mean = float(sum(ari_per_step) / max(len(ari_per_step), 1))
+    rle_realistic = compute_rle_realistic(rho_vals, actions)
     rle_binary = compute_rle(rho_vals, actions)
     eq_primary = compute_equity(slca_vals)
 
@@ -89,6 +95,15 @@ def _backfill_one(path: Path) -> Dict[str, Any]:
     ]
     ari_geom_mean = float(sum(ari_geom_per_step) / max(len(ari_geom_per_step), 1))
     rle_w = compute_rle_weighted(rho_vals, actions)
+    # Capacity-constrained variant uses realised actions when available
+    # in the ledger; legacy ledgers without realised_action fall back to
+    # chosen actions (no fallback applied), giving the same value as
+    # rle_realistic for those cases.
+    realised_actions = [
+        str(s.get("realized_action", s.get("action", "")))
+        for s in steps
+    ]
+    rle_cap = compute_rle_capacity_constrained(rho_vals, actions, realised_actions)
     eq_sen = compute_equity_sen(slca_vals)
 
     return {
@@ -98,12 +113,14 @@ def _backfill_one(path: Path) -> Dict[str, Any]:
         "n_steps": len(steps),
         "primary": {
             "ari": ari_mean,
-            "rle": rle_binary,
+            "rle": rle_realistic,
             "equity": eq_primary,
         },
         "robustness": {
             "ari_geom": ari_geom_mean,
+            "rle_binary": rle_binary,
             "rle_weighted": rle_w,
+            "rle_capacity_constrained": rle_cap,
             "equity_sen": eq_sen,
         },
     }

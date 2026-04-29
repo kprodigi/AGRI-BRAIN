@@ -80,7 +80,14 @@ def main() -> None:
                 rec = {
                     "ari": float(ep["ari"]),
                     "waste": float(ep["waste"]),
-                    "rle": float(ep["rle"]),
+                    # Headline RLE = realistic match-quality.
+                    "rle": float(ep.get("rle_realistic", ep["rle"])),
+                    "rle_binary": float(ep["rle"]),
+                    "rle_weighted": float(ep.get("rle_weighted", ep["rle"])),
+                    "rle_capacity_constrained": float(
+                        ep.get("rle_capacity_constrained",
+                               ep.get("rle_realistic", ep["rle"]))
+                    ),
                     "slca": float(ep["slca"]),
                     "carbon": float(ep["carbon"]),
                     "equity": float(ep["equity"]),

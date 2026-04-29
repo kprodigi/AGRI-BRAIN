@@ -1272,7 +1272,11 @@ def fig6_cross(data):
     _F6_TICK  = TICK_FONT_SIZE + 3       # 18
     _F6_LEG   = LEGEND_FONT_SIZE + 3     # 18
 
-    metrics = [("ari", "ARI", "(a)"), ("rle", "RLE", "(b)"),
+    # Headline RLE migrated from the saturating binary form to the
+    # severity-aware match-quality form (rle_realistic). Falls back
+    # to the legacy "rle" key when consumed against pre-migration
+    # JSON results.
+    metrics = [("ari", "ARI", "(a)"), ("rle_realistic", "RLE", "(b)"),
                ("waste", "Waste Rate", "(c)"), ("slca", "SLCA Score", "(d)")]
     methods = ["static", "hybrid_rl", "agribrain"]
     scenarios_plot = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing"]
@@ -1282,7 +1286,13 @@ def fig6_cross(data):
         width = 0.26
 
         for i, mode in enumerate(methods):
-            vals = [data["results"][s][mode][metric] for s in scenarios_plot]
+            # rle_realistic falls back to legacy "rle" for older JSONs.
+            def _val(s, mode_):
+                ep = data["results"][s][mode_]
+                if metric == "rle_realistic":
+                    return ep.get("rle_realistic", ep.get("rle", 0.0))
+                return ep[metric]
+            vals = [_val(s, mode) for s in scenarios_plot]
             yerr = _resolve_yerr(bench, scenarios_plot, mode, metric, vals)
             if yerr is not None:
                 # Replace point estimates with bootstrap means when the CI
@@ -1357,8 +1367,11 @@ def fig7_ablation(data):
     # fig7-specific font; placeholder kept here so layout calculations
     # leave headroom even if the suite-wide rcParams are inspected.
 
+    # Headline RLE migrated from saturating binary form to the
+    # severity-aware match-quality form. Falls back to "rle" for
+    # pre-migration JSON results in the read path below.
     metrics = [("ari", "ARI", "(a)"), ("waste", "Waste Rate", "(b)"),
-               ("rle", "RLE", "(c)")]
+               ("rle_realistic", "RLE", "(c)")]
     stress_scenarios = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing"]
 
     n_modes = len(fig7_modes)
@@ -1384,7 +1397,13 @@ def fig7_ablation(data):
         x = np.arange(len(stress_scenarios)) * x_scale
 
         for i, mode in enumerate(fig7_modes):
-            vals = [data["results"][s][mode][metric] for s in stress_scenarios]
+            # rle_realistic falls back to legacy "rle" for pre-migration JSONs.
+            def _val(s, mode_):
+                ep = data["results"][s][mode_]
+                if metric == "rle_realistic":
+                    return ep.get("rle_realistic", ep.get("rle", 0.0))
+                return ep[metric]
+            vals = [_val(s, mode) for s in stress_scenarios]
             yerr = _resolve_yerr(bench, stress_scenarios, mode, metric, vals)
             if yerr is not None:
                 vals = [bench.get(s, {}).get(mode, {}).get(metric, {}).get("mean", vals[k])
