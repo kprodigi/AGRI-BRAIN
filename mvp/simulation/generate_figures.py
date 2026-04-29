@@ -375,13 +375,13 @@ def fig2_heatwave(data):
     # --- (a) Temperature + Humidity with heatwave window ---
     ax = axes[0, 0]
     ax.plot(hours, ab["temp_trace"], color="#C62828", linewidth=2.4,
-            label="Temperature (\u00b0C)")
+            label="Temperature")
     # Safe-storage reference line (5 C, FDA leafy-greens guideline).
     ax.axhline(5.0, color="#C62828", linestyle=":", linewidth=1.4,
-               alpha=0.65, label="Safe storage (5 \u00b0C)")
+               alpha=0.65, label="Safe storage")
     ax2 = ax.twinx()
     ax2.plot(hours, ab["rh_trace"], color="#1565C0", linewidth=2.2,
-             alpha=0.85, label="RH (%)")
+             alpha=0.85, label="RH")
     ax.set_xlabel("Hours")
     ax.set_ylabel("Temperature (\u00b0C)")
     ax2.set_ylabel("Relative Humidity (%)")
@@ -420,9 +420,6 @@ def fig2_heatwave(data):
     # be read as "AgriBrain wins on rho"; the AgriBrain win is on the
     # composite ARI (panel d), not on raw rho.
     ax = axes[0, 1]
-    env_rho = np.array(ab["rho_trace"])
-    ax.plot(hours, env_rho, color="#9E9E9E", linewidth=1.4,
-            linestyle=":", alpha=0.75, label="Environmental \u03c1 (shared)")
     for mode in ["static", "hybrid_rl", "agribrain"]:
         ep = hw[mode]
         # Prefer the batch-FIFO trace (mechanistic, per-batch); fall
@@ -444,8 +441,8 @@ def fig2_heatwave(data):
                linewidth=1.6, alpha=0.85,
                label=f"At-risk threshold (\u03c1={RLE_THRESHOLD:.2f})")
     ax.set_xlabel("Hours")
-    ax.set_ylabel("Mean \u03c1 on Retail-Bound Batches")
-    ax.set_title("(b) Retail-Pool Spoilage Risk")
+    ax.set_ylabel("Spoilage Risk")
+    ax.set_title("(b) Spoilage Risk Trajectory")
     ax.set_ylim(0, 1.0)
     _apply_style(ax)
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave", ypos=0.55)
@@ -498,30 +495,18 @@ def fig2_heatwave(data):
     # --- (d) Per-step ARI (12 h rolling average) ---
     ax = axes[1, 1]
     window = 12
-    means = {}
     for mode in ["static", "hybrid_rl", "agribrain"]:
         ep = hw[mode]
         ari = np.array(ep["ari_trace"])
         rolling = np.convolve(ari, np.ones(window) / window, mode="same")
         _mode_plot(ax, hours, rolling, mode)
-        means[mode] = float(np.mean(ari))
     ax.set_xlabel("Hours")
-    ax.set_ylabel("ARI (12 h rolling)")
-    ax.set_title("(d) ARI per Step During Heatwave")
+    ax.set_ylabel("ARI")
+    ax.set_title("(d) ARI per step During Heatwave")
     ax.set_ylim(0, 1.0)
     _apply_style(ax)
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave")
     _legend(ax, loc="lower right")
-    ax.text(
-        0.02, 0.04,
-        f"Mean ARI: AgriBrain {means['agribrain']:.3f}  "
-        f"vs Hybrid RL {means['hybrid_rl']:.3f}  "
-        f"vs Static {means['static']:.3f}",
-        transform=ax.transAxes,
-        fontsize=ANNOT_FONT_SIZE - 1, fontweight="bold", color="#212121",
-        bbox=dict(boxstyle="round,pad=0.30", facecolor="white",
-                  alpha=0.92, edgecolor="#9E9E9E", linewidth=0.8),
-    )
 
     fig.tight_layout(rect=[0, 0, 1, 0.985], h_pad=1.6, w_pad=1.6)
     _save(fig, "fig2_heatwave")
