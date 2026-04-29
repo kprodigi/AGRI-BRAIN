@@ -339,48 +339,18 @@ def _annotate_window(ax, x0, x1, color, label, alpha=WINDOW_ALPHA,
 # Figure 2: Heatwave scenario deep-dive (2x2)
 # ---------------------------------------------------------------------------
 def fig2_heatwave(data):
-    """Heatwave deep-dive (2x2; panel c split into AgriBrain vs static).
-
-    (a) Temperature + RH with heatwave window and a 5 \u00b0C cold-chain
-        safe-storage limit on the temperature axis.
-    (b) Spoilage risk \u03c1(t) for all three methods (static / hybrid_rl /
-        agribrain) as 12 h rolling means, with the at-risk threshold.
-    (c) Action-probability mechanism: AgriBrain (top, dynamic pivots) vs
-        static (bottom, fixed allocation) so the *why-AgriBrain-wins*
-        story is visible in one block.
-    (d) Per-step ARI for all three methods (12 h rolling), with a
-        magnitude annotation tying back to benchmark_significance.json.
-    """
+    """2x2: temp+humidity, observed spoilage risk, action probs, per-step reward."""
     hw = data["results"]["heatwave"]
     ab = hw["agribrain"]
     hours = np.array(ab["hours"])
 
-    from matplotlib import gridspec
-
-    fig = plt.figure(figsize=(18, 13))
+    fig, axes = plt.subplots(2, 2, figsize=(18, 13))
     fig.suptitle("Heatwave Scenario Analysis", y=0.995)
-    outer = gridspec.GridSpec(2, 2, figure=fig, hspace=0.40, wspace=0.20)
 
-    ax_a = fig.add_subplot(outer[0, 0])
-    ax_b = fig.add_subplot(outer[0, 1])
-    # Panel (c) is split vertically: AgriBrain action-probability strip
-    # on top, static reference on the bottom. sharex links the time axis
-    # so they read as one block.
-    inner_c = outer[1, 0].subgridspec(2, 1, hspace=0.18)
-    ax_c_ag = fig.add_subplot(inner_c[0])
-    ax_c_st = fig.add_subplot(inner_c[1], sharex=ax_c_ag)
-    ax_d = fig.add_subplot(outer[1, 1])
-
-    # --- (a) Temperature + Humidity with safe-storage limit ---
-    ax = ax_a
+    # --- (a) Temperature + Humidity with heatwave window ---
+    ax = axes[0, 0]
     ax.plot(hours, ab["temp_trace"], color="#C62828", linewidth=2.4,
             label="Temperature (\u00b0C)")
-    # Cold-chain safe-storage limit at 5 \u00b0C (typical spinach
-    # refrigeration tolerance). Pairs with the at-risk \u03c1=0.1 line in
-    # panel (b) \u2014 together they show "here's when the cold chain broke,
-    # and here's how spoilage responded".
-    ax.axhline(5, color="#C62828", linestyle=":", linewidth=1.6,
-               alpha=0.7, label="Safe storage limit (5 \u00b0C)")
     ax2 = ax.twinx()
     ax2.plot(hours, ab["rh_trace"], color="#1565C0", linewidth=2.2,
              alpha=0.85, label="RH (%)")
@@ -410,100 +380,55 @@ def fig2_heatwave(data):
     _legend(ax, handles=h1 + h2, labels=l1 + l2,
             loc="lower right", framealpha=0.80)
 
-    # --- (b) Spoilage risk trajectory \u2014 three-method comparison ---
-    # Compare \u03c1(t) across static / hybrid_rl / agribrain so the figure
-    # answers "does AgriBrain keep spoilage lower under the same heat
-    # stress?" visually. Use 12 h rolling means; raw traces with three
-    # methods overlaid would be unreadable because of sensor noise.
-    ax = ax_b
-    window = 12
-    for mode in ["static", "hybrid_rl", "agribrain"]:
-        ep = hw[mode]
-        rho = np.array(ep["rho_trace"])
-        rho_smooth = np.convolve(rho, np.ones(window) / window, mode="same")
-        _mode_plot(ax, hours, rho_smooth, mode)
+    # --- (b) Observed spoilage risk trajectory ---
+    ax = axes[0, 1]
+    rho = np.array(ab["rho_trace"])
+    ax.plot(hours, rho, color=COLORS["agribrain"], linewidth=2.2,
+            label="Observed \u03c1(t)")
     ax.axhline(RLE_THRESHOLD, color=WINDOW_COLOR, linestyle="--", linewidth=1.6,
                alpha=0.85,
                label=f"At-risk threshold (\u03c1={RLE_THRESHOLD})")
     ax.set_xlabel("Hours")
-    ax.set_ylabel("Spoilage Risk \u03c1(t)  (12 h rolling)")
+    ax.set_ylabel("Spoilage Risk \u03c1(t)")
     ax.set_title("(b) Spoilage Risk Trajectory")
     _apply_style(ax)
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave", ypos=0.55)
     _legend(ax, loc="upper left", framealpha=0.80)
 
-    # --- (c) Action-probability mechanism: AgriBrain (top) vs static (bottom) ---
-    def _action_strip(ax_, ep, title):
-        probs = np.array(ep["prob_trace"])
-        ax_.fill_between(hours, 0, probs[:, 0],
-                         color="#1565C0", alpha=0.85, label="Cold Chain")
-        ax_.fill_between(hours, probs[:, 0], probs[:, 0] + probs[:, 1],
-                         color=COLORS["agribrain"], alpha=0.85,
-                         label="Local Redist.")
-        ax_.fill_between(hours, probs[:, 0] + probs[:, 1], 1.0,
-                         color="#F57C00", alpha=0.85, label="Recovery")
-        ax_.set_ylim(0, 1.0)
-        ax_.set_title(title, fontsize=AXIS_LABEL_SIZE - 1, fontweight="bold")
-        _apply_style(ax_)
-
-    _action_strip(ax_c_ag, hw["agribrain"],
-                  "(c) Action Probabilities — AgriBrain")
-    _action_strip(ax_c_st, hw["static"],
-                  "Static (fixed-policy reference)")
-    _annotate_window(ax_c_ag, 24, 48, WINDOW_COLOR, "Heatwave", ypos=0.50)
-    _annotate_window(ax_c_st, 24, 48, WINDOW_COLOR, "Heatwave", ypos=0.50)
-    ax_c_ag.set_ylabel("Action Probability")
-    ax_c_st.set_ylabel("Action Probability")
-    ax_c_st.set_xlabel("Hours")
-    plt.setp(ax_c_ag.get_xticklabels(), visible=False)
-    _legend(ax_c_st, loc="upper center", bbox_to_anchor=(0.5, -0.40),
+    # --- (c) Action probability stacked area (AGRI-BRAIN) ---
+    ax = axes[1, 0]
+    probs = np.array(ab["prob_trace"])
+    ax.fill_between(hours, 0, probs[:, 0],
+                    color="#1565C0", alpha=0.85, label="Cold Chain")
+    ax.fill_between(hours, probs[:, 0], probs[:, 0] + probs[:, 1],
+                    color=COLORS["agribrain"], alpha=0.85, label="Local Redist.")
+    ax.fill_between(hours, probs[:, 0] + probs[:, 1], 1.0,
+                    color="#F57C00", alpha=0.85, label="Recovery")
+    ax.set_xlabel("Hours")
+    ax.set_ylabel("Action Probability")
+    ax.set_title("(c) AgriBrain Action Probabilities")
+    ax.set_ylim(0, 1.0)
+    _apply_style(ax)
+    _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave", ypos=0.45)
+    _legend(ax, loc="upper center", bbox_to_anchor=(0.5, -0.18),
             ncol=3, frameon=True)
 
-    # --- (d) Per-step ARI — three-method comparison ---
-    # ARI = (1 - waste) * SLCA * (1 - rho) is the paper's headline
-    # metric. Plotting per-step ARI (12 h rolling) lets AgriBrain's
-    # compounding advantage show without the cumulative-reward
-    # integration trick, and aligns this panel with fig9.
-    ax = ax_d
-    final_ari = {}
+    # --- (d) Per-step reward (rolling average) ---
+    ax = axes[1, 1]
+    window = 12
     for mode in ["static", "hybrid_rl", "agribrain"]:
         ep = hw[mode]
-        ari = np.array(ep["ari_trace"])
-        ari_smooth = np.convolve(ari, np.ones(window) / window, mode="same")
-        _mode_plot(ax, hours, ari_smooth, mode)
-        final_ari[mode] = float(np.mean(ari))
+        reward = np.array(ep["reward_trace"])
+        rolling = np.convolve(reward, np.ones(window) / window, mode="same")
+        _mode_plot(ax, hours, rolling, mode)
     ax.set_xlabel("Hours")
-    ax.set_ylabel("ARI (12 h rolling)")
-    ax.set_title("(d) ARI per Step During Heatwave")
+    ax.set_ylabel("Reward per Step")
+    ax.set_title("(d) Reward Rate During Heatwave")
     _apply_style(ax)
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave")
-    _legend(ax, loc="lower right", framealpha=0.80)
+    _legend(ax, loc="lower right")
 
-    # Magnitude annotation: episode-mean ARI per method + paired
-    # difference effect size from benchmark_significance.json. Pulls
-    # the same number fig9 reports so the two figures stay consistent.
-    sig_path = RESULTS_DIR / "benchmark_significance.json"
-    sig_text = ""
-    if sig_path.exists():
-        try:
-            import json as _json_mod
-            sig = _json_mod.loads(sig_path.read_text(encoding="utf-8"))
-            ari_sig = sig.get("heatwave", {}).get(
-                "agribrain_vs_hybrid_rl", {}).get("ari", {})
-            if ari_sig:
-                d = float(ari_sig.get("cohens_d", 0))
-                sig_text = f"  (Cohen's d={d:.1f}, p<0.001)"
-        except (ValueError, OSError, TypeError):
-            sig_text = ""
-    annot = (f"Mean ARI: AgriBrain {final_ari.get('agribrain', 0):.3f}  "
-             f"vs hybrid_rl {final_ari.get('hybrid_rl', 0):.3f}{sig_text}")
-    ax.text(0.02, 0.04, annot, transform=ax.transAxes,
-            ha="left", va="bottom",
-            fontsize=ANNOT_FONT_SIZE, fontweight="bold", color="#212121",
-            bbox=dict(boxstyle="round,pad=0.30", facecolor="white",
-                      edgecolor="#9E9E9E", linewidth=0.8, alpha=0.92))
-
-    fig.tight_layout(rect=[0, 0.04, 1, 0.985], h_pad=2.0, w_pad=1.6)
+    fig.tight_layout(rect=[0, 0.02, 1, 0.985], h_pad=2.0, w_pad=1.6)
     _save(fig, "fig2_heatwave")
 
 
