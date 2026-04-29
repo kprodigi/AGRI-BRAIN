@@ -97,8 +97,17 @@ print('Pre-flight invariants OK')
 
 # Compute a run tag that uniquely identifies this submission.
 RUN_TAG="$(git rev-parse --short HEAD)_$(date +%Y%m%d_%H%M)"
+# Capture the full source-code SHA so build_artifact_manifest.py can
+# stamp it into artifact_manifest.json.git_commit. The aggregator job
+# may run on a slurm worker where 'git rev-parse' fails (PATH issue,
+# repo not visible from the worker, etc.); exporting AGRIBRAIN_GIT_COMMIT
+# from the login node where git definitely works avoids the silent
+# "unknown" fallback that broke the CI artifact-validation gate on the
+# previous HPC run.
+GIT_COMMIT="$(git rev-parse HEAD)"
 echo ""
 echo "RUN_TAG=${RUN_TAG}"
+echo "GIT_COMMIT=${GIT_COMMIT}"
 
 mkdir -p logs
 
@@ -108,13 +117,13 @@ mkdir -p logs
 # (e.g. SDSMT) do not reject the submit.
 SEED_JOB=$(sbatch --parsable \
     --partition="$PARTITION" \
-    --export=ALL,RUN_TAG="$RUN_TAG",DETERMINISTIC_MODE=false hpc/hpc_seed.sh)
+    --export=ALL,RUN_TAG="$RUN_TAG",DETERMINISTIC_MODE=false,AGRIBRAIN_GIT_COMMIT="$GIT_COMMIT" hpc/hpc_seed.sh)
 echo "Submitted seed array as job ${SEED_JOB}"
 
 # Submit the aggregation job with a dependency on the array completing OK.
 AGG_JOB=$(sbatch --parsable \
     --partition="$PARTITION" \
-    --export=ALL,RUN_TAG="$RUN_TAG",DETERMINISTIC_MODE=false \
+    --export=ALL,RUN_TAG="$RUN_TAG",DETERMINISTIC_MODE=false,AGRIBRAIN_GIT_COMMIT="$GIT_COMMIT" \
     --dependency=afterok:${SEED_JOB} hpc/hpc_aggregate.sh)
 echo "Submitted aggregation as job ${AGG_JOB} (depends on ${SEED_JOB})"
 
