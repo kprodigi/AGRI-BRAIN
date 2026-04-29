@@ -2008,14 +2008,14 @@ def fig10_latency_quality_frontier(data):
                         ecolor=COLORS[mode], elinewidth=1.6, capsize=4, alpha=0.85, zorder=4)
     ax.set_xlabel("Mean Decision Latency (ms)")
     ax.set_ylabel("Mean ARI")
-    # Tighten the x and y limits so the four-mode cluster (Hybrid RL,
-    # No PINN, No SLCA, No Context near lat ≈ 0.066 ms) spreads out
-    # enough to be visually separable from each other and from static.
-    # The previous limits added 35% horizontal padding past the largest
-    # latency and ±0.05 ARI vertical padding, which left empty space
-    # on three sides and crammed the cluster into a small region.
-    x_max_a = max(p[1] for p in fast_pts)
-    ax.set_xlim(-0.005, x_max_a * 1.10 + 0.005)
+    # X-axis zoomed to 0.08-0.20 ms so the cluster of fast lightweight
+    # methods (Hybrid RL, No PINN, No SLCA, No Context near
+    # lat ≈ 0.16-0.18 ms) and the Static reference (~0.09 ms) are
+    # separated visually. The previous adaptive limits added 10%
+    # right-padding past the largest latency, which compressed the
+    # five markers into the right half of the panel and left a wide
+    # blank zone on the left.
+    ax.set_xlim(0.08, 0.20)
     pts_with_err_a = [(p[2], p[3]) for p in fast_pts]
     bar_lo_a = min(y - e[0] for y, e in pts_with_err_a)
     bar_hi_a = max(y + e[1] for y, e in pts_with_err_a)
@@ -2056,13 +2056,26 @@ def fig10_latency_quality_frontier(data):
                         fmt="none", ecolor=COLORS["no_context"],
                         elinewidth=1.6, capsize=4, alpha=0.55, zorder=3)
 
+    # The three context-aware modes (AgriBrain / MCP Only / piRAG Only)
+    # carry near-identical mean latencies (~5.85 ms) because they share
+    # the agent-coordinator step and only differ in which context-channel
+    # subset is active. Plotting them at their literal x-coordinates
+    # produces three markers stacked vertically at the same x, which
+    # is the cluster visibility complaint. We apply a small horizontal
+    # jitter (±0.10 ms, sub-1.7% of the 5.85 ms baseline) so each
+    # marker is clearly distinguishable without misrepresenting the
+    # underlying overhead measurement — the latency overhead annotation
+    # below is computed from the unjittered AgriBrain latency.
+    _ctx_jitter = {"agribrain": -0.10, "mcp_only": 0.0, "pirag_only": +0.10}
     for mode, x, y, yerr in ctx_pts:
-        h = ax.scatter(x, y, s=260, color=COLORS[mode], marker=MARKERS[mode],
+        x_plot = x + _ctx_jitter.get(mode, 0.0)
+        h = ax.scatter(x_plot, y, s=260, color=COLORS[mode], marker=MARKERS[mode],
                        edgecolor="white", linewidth=1.4, alpha=0.95, zorder=5,
                        label=MODE_LABELS[mode])
         handles_b.append(h)
         if yerr[0] > 0 or yerr[1] > 0:
-            ax.errorbar([x], [y], yerr=np.array([[yerr[0]], [yerr[1]]]), fmt="none",
+            ax.errorbar([x_plot], [y], yerr=np.array([[yerr[0]], [yerr[1]]]),
+                        fmt="none",
                         ecolor=COLORS[mode], elinewidth=1.8, capsize=4,
                         alpha=0.9, zorder=4)
 
@@ -2114,7 +2127,14 @@ def fig10_latency_quality_frontier(data):
     pts_with_err = ([(ref[2], ref[3])] if ref is not None else []) + [(p[2], p[3]) for p in ctx_pts]
     bar_lo = min(y - e[0] for y, e in pts_with_err)
     bar_hi = max(y + e[1] for y, e in pts_with_err)
-    ax.set_xlim(min(lat_all) - 0.3, max(lat_all) + 0.8)
+    # X-axis tightened: previously padded the right edge by 0.8 ms past
+    # the cluster, which left the panel half-empty. The cluster now sits
+    # in the centre-right with the No Context reference clearly visible
+    # on the left and just enough headroom either side of the jittered
+    # context markers.
+    lat_min = min(lat_all)
+    lat_max = max(lat_all)
+    ax.set_xlim(lat_min - 0.3, lat_max + 0.4)
     ax.set_ylim(bar_lo - 0.03, bar_hi + 0.03)
     # Legend anchored to the lower centre of the panel — the right-side
     # marker cluster (AgriBrain / MCP Only / piRAG Only at lat ≈ 4 ms)
