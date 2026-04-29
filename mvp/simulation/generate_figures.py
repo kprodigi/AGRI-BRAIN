@@ -1720,10 +1720,13 @@ def fig9_fault_degradation():
     ax = axes[0]
     # Baseline order: weakest -> strongest, so cells fade from deep
     # green (huge gap vs static) to lighter green (small gap vs MCP-only).
+    # Display labels are publication-style (Title Case + spaced) so the
+    # axis reads cleanly in the paper rather than echoing the snake_case
+    # internal mode names.
     _BASELINES = [
-        ("agribrain_vs_static",     "vs static"),
-        ("agribrain_vs_hybrid_rl",  "vs hybrid_rl"),
-        ("agribrain_vs_no_context", "vs no_context"),
+        ("agribrain_vs_static",     "vs Static"),
+        ("agribrain_vs_hybrid_rl",  "vs Hybrid RL"),
+        ("agribrain_vs_no_context", "vs No Context"),
         ("agribrain_vs_pirag_only", "vs piRAG only"),
         ("agribrain_vs_mcp_only",   "vs MCP only"),
     ]
@@ -1807,9 +1810,9 @@ def fig9_fault_degradation():
     # legible.
     ax = axes[1]
     _BASELINES_BAR = [
-        ("agribrain_vs_static",     "static",     "vs static",       "#616161"),
-        ("agribrain_vs_hybrid_rl",  "hybrid_rl",  "vs hybrid_rl",    "#1565C0"),
-        ("agribrain_vs_no_context", "no_context", "vs no_context",   "#6A1B9A"),
+        ("agribrain_vs_static",     "static",     "vs Static",       "#616161"),
+        ("agribrain_vs_hybrid_rl",  "hybrid_rl",  "vs Hybrid RL",    "#1565C0"),
+        ("agribrain_vs_no_context", "no_context", "vs No Context",   "#6A1B9A"),
         ("agribrain_vs_pirag_only", "pirag_only", "vs piRAG only",   "#00838F"),
         ("agribrain_vs_mcp_only",   "mcp_only",   "vs MCP only",     "#E65100"),
     ]
@@ -1869,18 +1872,22 @@ def fig9_fault_degradation():
         ax.invert_yaxis()  # weakest baseline (largest gain) on top
 
         # Symlog so the +1..+15 % cluster has visual room and the +75 %
-        # static bar doesn't dominate. Major ticks are sparse on purpose:
-        # the previous {0,1,2,5,10,20,50,100} set crowded the log region
-        # (10/20/50 labels overlapped at the bold 20pt tick fontsize),
-        # so we drop the linear-region 1 and 2 plus the 10 and 20 — the
-        # 5%-anchored "+1.6%" and "+2.2%" small bars stay readable
-        # because their numeric labels sit immediately to the right of
-        # each bar. Final ticks {0, 5, 50, 100} have visibly clean
-        # spacing across the symlog axis.
-        ax.set_xscale("symlog", linthresh=2.0, linscale=1.0)
-        ax.set_xlim(0, max(max_hi * 1.55, 110.0))
+        # static bar doesn't dominate. Tick layout is the load-bearing
+        # readability piece: the previous {0,5,50,100} set put 50% and
+        # 100% visually adjacent in the compressed log region (the data
+        # tops out around +75% so the gap between log(50) and log(100)
+        # is ~0.30 dec, which collides at the bold 20pt tick fontsize).
+        # Switch linthresh from 2.0 to 5.0 so the linear region absorbs
+        # the small-bar cluster cleanly and the log region begins where
+        # the big bars actually live; tick set drops to {0, 5, 25, 75}
+        # which gives clearly separated labels across the whole axis
+        # without losing fidelity at either end. xlim caps at 80 since
+        # the headline +75% vs Static bar is the largest data point and
+        # padding to 110% wasted half the panel.
+        ax.set_xscale("symlog", linthresh=5.0, linscale=1.0)
+        ax.set_xlim(0, max(max_hi * 1.10, 80.0))
         from matplotlib.ticker import FixedLocator, FuncFormatter, NullLocator
-        major_ticks = [0, 5, 50, 100]
+        major_ticks = [0, 5, 25, 75]
         ax.xaxis.set_major_locator(FixedLocator(major_ticks))
         ax.xaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{int(v)}%"))
         ax.xaxis.set_minor_locator(NullLocator())
