@@ -1945,8 +1945,23 @@ def fig10_latency_quality_frontier(data):
     panel (b) shows the MCP/piRAG-enabled methods with the no-context
     reference point and an overhead annotation.
     """
-    fig, axes = plt.subplots(1, 2, figsize=(18, 7.0),
-                             gridspec_kw={"width_ratios": [1, 1], "wspace": 0.32})
+    # Panel (b) uses a broken x-axis (split between 0.5 ms and 5.0 ms)
+    # to suppress the empty zone between the No Context reference
+    # (~0.18 ms) and the context-aware cluster (~5.85 ms). The broken
+    # axis is implemented as two sub-axes inside the right gridspec
+    # cell with width_ratios=[1, 5] — the small left sub-axis carries
+    # the No Context reference while the larger right sub-axis carries
+    # the three jittered context-aware markers.
+    import matplotlib.gridspec as _gridspec
+    fig = plt.figure(figsize=(18, 7.0))
+    outer_gs = _gridspec.GridSpec(
+        1, 2, figure=fig, width_ratios=[1, 1], wspace=0.32,
+    )
+    ax_a = fig.add_subplot(outer_gs[0])
+    inner_gs = outer_gs[1].subgridspec(1, 2, width_ratios=[1, 5], wspace=0.06)
+    ax_b_left = fig.add_subplot(inner_gs[0])
+    ax_b_right = fig.add_subplot(inner_gs[1], sharey=ax_b_left)
+    axes = [ax_a]  # legacy compat for the panel (a) code path below
     fig.suptitle("Latency vs ARI Frontier", fontsize=FIG_TITLE_SIZE,
                  fontweight="bold", y=0.995)
 
@@ -2030,119 +2045,164 @@ def fig10_latency_quality_frontier(data):
     _apply_style(ax)
 
     # --- (b) Context-aware methods (MCP/piRAG overhead) ---
-    ax = axes[1]
-    ax.set_title("(b) Context-Aware Methods")
-
-    # No-context reference point (shared with panel a) plotted with lower
-    # opacity so context-enabled points read as the primary subject.
+    # Broken x-axis: ax_b_left covers 0.0-0.5 ms (the No Context
+    # reference point) and ax_b_right covers 5.0+ ms (the three
+    # context-aware modes). The empty 0.5-5.0 ms zone is suppressed
+    # via a // glyph at the break.
     ref = next((p for p in fast_pts if p[0] == "no_context"), None)
     handles_b = []
-    if ref is not None:
-        ref_handle = ax.scatter(ref[1], ref[2], s=180,
-                                color=COLORS["no_context"],
-                                marker=MARKERS["no_context"],
-                                edgecolor="white", linewidth=1.2,
-                                alpha=0.55, zorder=4,
-                                label="No Context (reference)")
-        handles_b.append(ref_handle)
-        # Cross-scenario SE error bar on the reference too, matching the
-        # convention used for the three context-aware modes below — the
-        # ref carries a yerr from _collect() but the original render
-        # never drew it, leaving the reference point looking spuriously
-        # precise next to its three context-aware peers.
-        if ref[3][0] > 0 or ref[3][1] > 0:
-            ax.errorbar([ref[1]], [ref[2]],
-                        yerr=np.array([[ref[3][0]], [ref[3][1]]]),
-                        fmt="none", ecolor=COLORS["no_context"],
-                        elinewidth=1.6, capsize=4, alpha=0.55, zorder=3)
 
-    # The three context-aware modes (AgriBrain / MCP Only / piRAG Only)
-    # carry near-identical mean latencies (~5.85 ms) because they share
-    # the agent-coordinator step and only differ in which context-channel
-    # subset is active. Plotting them at their literal x-coordinates
-    # produces three markers stacked vertically at the same x, which
-    # is the cluster visibility complaint. We apply a small horizontal
-    # jitter (±0.10 ms, sub-1.7% of the 5.85 ms baseline) so each
-    # marker is clearly distinguishable without misrepresenting the
-    # underlying overhead measurement — the latency overhead annotation
-    # below is computed from the unjittered AgriBrain latency.
+    # Plot the No Context reference on the LEFT sub-axis only.
+    if ref is not None:
+        ref_handle = ax_b_left.scatter(
+            ref[1], ref[2], s=180,
+            color=COLORS["no_context"], marker=MARKERS["no_context"],
+            edgecolor="white", linewidth=1.2, alpha=0.55, zorder=4,
+            label="No Context (reference)",
+        )
+        handles_b.append(ref_handle)
+        if ref[3][0] > 0 or ref[3][1] > 0:
+            ax_b_left.errorbar(
+                [ref[1]], [ref[2]],
+                yerr=np.array([[ref[3][0]], [ref[3][1]]]),
+                fmt="none", ecolor=COLORS["no_context"],
+                elinewidth=1.6, capsize=4, alpha=0.55, zorder=3,
+            )
+
+    # Plot the three context-aware modes on the RIGHT sub-axis with
+    # the small horizontal jitter that visually separates the cluster.
+    # Underlying data is unjittered; the overhead annotation below is
+    # computed from the true AgriBrain latency vs the No Context ref.
     _ctx_jitter = {"agribrain": -0.10, "mcp_only": 0.0, "pirag_only": +0.10}
     for mode, x, y, yerr in ctx_pts:
         x_plot = x + _ctx_jitter.get(mode, 0.0)
-        h = ax.scatter(x_plot, y, s=260, color=COLORS[mode], marker=MARKERS[mode],
-                       edgecolor="white", linewidth=1.4, alpha=0.95, zorder=5,
-                       label=MODE_LABELS[mode])
+        h = ax_b_right.scatter(
+            x_plot, y, s=260,
+            color=COLORS[mode], marker=MARKERS[mode],
+            edgecolor="white", linewidth=1.4, alpha=0.95, zorder=5,
+            label=MODE_LABELS[mode],
+        )
         handles_b.append(h)
         if yerr[0] > 0 or yerr[1] > 0:
-            ax.errorbar([x_plot], [y], yerr=np.array([[yerr[0]], [yerr[1]]]),
-                        fmt="none",
-                        ecolor=COLORS[mode], elinewidth=1.8, capsize=4,
-                        alpha=0.9, zorder=4)
+            ax_b_right.errorbar(
+                [x_plot], [y],
+                yerr=np.array([[yerr[0]], [yerr[1]]]),
+                fmt="none", ecolor=COLORS[mode],
+                elinewidth=1.8, capsize=4, alpha=0.9, zorder=4,
+            )
 
-    # Overhead arrow connects the No Context reference directly to
-    # AgriBrain, which is the comparison the paper makes ("No Context
-    # baseline -> full system"). Earlier the arrow ran to the centroid
-    # of all three context-aware modes, but that introduced a phantom
-    # endpoint that did not correspond to any single method and made
-    # the arrow's terminus visually ambiguous. Pointing at the
-    # AgriBrain marker matches the labelled +N ms / +M ARI deltas the
-    # badge reports.
+    # Hide the inner spines so the broken-axis read as a single panel.
+    ax_b_left.spines["right"].set_visible(False)
+    ax_b_right.spines["left"].set_visible(False)
+    ax_b_right.tick_params(left=False, labelleft=False)
+    ax_b_left.yaxis.tick_left()
+
+    # Diagonal // glyphs at the break.
+    _d = 0.018  # diagonal length in axes coordinates
+    _kw_left = dict(transform=ax_b_left.transAxes, color="#424242",
+                    lw=1.4, clip_on=False)
+    ax_b_left.plot((1 - _d, 1 + _d), (-_d, +_d), **_kw_left)
+    ax_b_left.plot((1 - _d, 1 + _d), (1 - _d, 1 + _d), **_kw_left)
+    _kw_right = dict(transform=ax_b_right.transAxes, color="#424242",
+                     lw=1.4, clip_on=False)
+    ax_b_right.plot((-_d / 5, +_d / 5), (-_d, +_d), **_kw_right)
+    ax_b_right.plot((-_d / 5, +_d / 5), (1 - _d, 1 + _d), **_kw_right)
+
+    # Overhead arrow spans the break — implemented via ConnectionPatch
+    # which carries a single arrow across two Axes objects in figure
+    # coordinates. The arrow starts at the No Context reference on
+    # the left sub-axis and lands on the AgriBrain marker on the
+    # right sub-axis.
     agri_pt = next((p for p in ctx_pts if p[0] == "agribrain"), None)
     if ref is not None and agri_pt is not None:
+        from matplotlib.patches import ConnectionPatch
         agri_lat, agri_ari = agri_pt[1], agri_pt[2]
-        ax.annotate("", xy=(agri_lat, agri_ari),
-                    xytext=(ref[1], ref[2]),
-                    arrowprops=dict(arrowstyle="->", color=COLORS["agribrain"],
-                                    lw=2.0, linestyle="--", alpha=0.75))
-        mid_lat = (ref[1] + agri_lat) / 2
-        mid_ari = (ref[2] + agri_ari) / 2
-        # Box extends to the *left* of the arrow midpoint so the badge
-        # sits in the empty area west of the context-aware cluster
-        # instead of overlapping the MCP-Only marker at the cluster's
-        # east end.
-        ax.annotate(
+        agri_lat_plot = agri_lat + _ctx_jitter.get("agribrain", 0.0)
+        con = ConnectionPatch(
+            xyA=(ref[1], ref[2]), coordsA=ax_b_left.transData,
+            xyB=(agri_lat_plot, agri_ari), coordsB=ax_b_right.transData,
+            arrowstyle="->", color=COLORS["agribrain"],
+            lw=2.0, linestyle="--", alpha=0.75, zorder=2,
+        )
+        fig.add_artist(con)
+        # Overhead annotation lives on the right sub-axis since the
+        # arrow's terminus and the cluster context both sit there.
+        ax_b_right.annotate(
             f"Context overhead\n+{agri_lat - ref[1]:.1f} ms  |  "
             f"{agri_ari - ref[2]:+.3f} ARI",
-            xy=(mid_lat, mid_ari),
+            xy=(agri_lat_plot, agri_ari),
             xytext=(-12, 14), textcoords="offset points",
             ha="right", va="bottom",
             fontsize=ANNOT_FONT_SIZE, fontweight="bold",
             color=COLORS["agribrain"],
             bbox=dict(boxstyle="round,pad=0.35", facecolor="white",
-                      alpha=0.95, edgecolor=COLORS["agribrain"], linewidth=1.2),
+                      alpha=0.95, edgecolor=COLORS["agribrain"],
+                      linewidth=1.2),
             zorder=6,
         )
 
-    ax.set_xlabel("Mean Decision Latency (ms)")
-    ax.set_ylabel("Mean ARI")
-    lat_all = [ref[1]] + [p[1] for p in ctx_pts] if ref is not None else [p[1] for p in ctx_pts]
-    ari_all = [ref[2]] + [p[2] for p in ctx_pts] if ref is not None else [p[2] for p in ctx_pts]
-    # Y-axis range must accommodate the cross-scenario SE error bars,
-    # not just the points. Otherwise the bars dominate the panel
-    # (the SE captures real cross-scenario variability ~±0.025 ARI,
-    # which is larger than inter-method differences ~0.01-0.03 ARI).
-    # Compute the full extent (point ± bar) and pad symmetrically so
-    # bars occupy roughly a third of the panel height rather than
-    # spanning ~70% of a tight zoom.
+    # Y-axis range must accommodate the cross-scenario SE error bars.
     pts_with_err = ([(ref[2], ref[3])] if ref is not None else []) + [(p[2], p[3]) for p in ctx_pts]
     bar_lo = min(y - e[0] for y, e in pts_with_err)
     bar_hi = max(y + e[1] for y, e in pts_with_err)
-    # X-axis tightened: previously padded the right edge by 0.8 ms past
-    # the cluster, which left the panel half-empty. The cluster now sits
-    # in the centre-right with the No Context reference clearly visible
-    # on the left and just enough headroom either side of the jittered
-    # context markers.
-    lat_min = min(lat_all)
-    lat_max = max(lat_all)
-    ax.set_xlim(lat_min - 0.3, lat_max + 0.4)
-    ax.set_ylim(bar_lo - 0.03, bar_hi + 0.03)
-    # Legend anchored to the lower centre of the panel — the right-side
-    # marker cluster (AgriBrain / MCP Only / piRAG Only at lat ≈ 4 ms)
-    # sits where the previous "lower right" anchor placed the legend,
-    # and the lower-centre zone of the expanded y-axis is genuinely empty
-    # (no markers or arrow pass through it).
-    _legend(ax, loc="lower center", ncol=2)
-    _apply_style(ax)
+    ax_b_left.set_ylim(bar_lo - 0.03, bar_hi + 0.03)
+
+    # X-axis split: left sub-axis 0.0-0.5 ms (covers No Context ~0.18 ms),
+    # right sub-axis 5.0-cluster_max + 0.4 ms (covers AgriBrain / MCP /
+    # piRAG Only at ~5.75-5.95 ms). Suppresses the 0.5-5.0 empty zone.
+    ax_b_left.set_xlim(0.0, 0.5)
+    ctx_lat_max = max(p[1] + _ctx_jitter.get(p[0], 0.0) for p in ctx_pts)
+    ax_b_right.set_xlim(5.0, ctx_lat_max + 0.4)
+
+    # Tick layout: left sub-axis gets {0.0, 0.5}, right sub-axis gets
+    # {5, 6} or similar based on the data range.
+    from matplotlib.ticker import FixedLocator as _FixedLocator
+    ax_b_left.xaxis.set_major_locator(_FixedLocator([0.0, 0.5]))
+    ax_b_right.xaxis.set_major_locator(_FixedLocator([5.0, 6.0]))
+
+    # Y-label only on the left sub-axis. X-label and title placed
+    # via fig-level helpers so they read as a single panel rather
+    # than as two adjacent sub-axes.
+    ax_b_left.set_ylabel("Mean ARI")
+
+    # Compute the geometric centre of the broken pair in figure
+    # coordinates — both labels and title use this so they appear
+    # centred over the (left + right) sub-axis pair rather than
+    # tied to one sub-axis.
+    bbox_left = ax_b_left.get_position()
+    bbox_right = ax_b_right.get_position()
+    pair_x_centre = (bbox_left.x0 + bbox_right.x1) / 2.0
+
+    # X-label centred under the broken pair.
+    fig.text(pair_x_centre, bbox_left.y0 - 0.07,
+             "Mean Decision Latency (ms)",
+             ha="center", va="top",
+             fontsize=AXIS_LABEL_SIZE, fontweight="bold")
+    # Panel (b) title centred over the broken pair.
+    fig.text(pair_x_centre, bbox_left.y1 + 0.025,
+             "(b) Context-Aware Methods",
+             ha="center", va="bottom",
+             fontsize=SUBPLOT_TITLE_SIZE, fontweight="bold")
+
+    # Legend on the right sub-axis (lower centre) — but the handle
+    # list must combine entries from both sub-axes (the No Context
+    # reference scatter lives on ax_b_left and would otherwise be
+    # missing from the legend).
+    leg_handles = []
+    leg_labels = []
+    for ax_ in (ax_b_left, ax_b_right):
+        for h, lbl in zip(*ax_.get_legend_handles_labels()):
+            if lbl not in leg_labels:
+                leg_handles.append(h)
+                leg_labels.append(lbl)
+    _legend(ax_b_right, handles=leg_handles, labels=leg_labels,
+            loc="lower center", ncol=2)
+    _apply_style(ax_b_left)
+    _apply_style(ax_b_right)
+    # Re-hide the spine after _apply_style restores defaults.
+    ax_b_left.spines["right"].set_visible(False)
+    ax_b_right.spines["left"].set_visible(False)
+    ax_b_right.tick_params(left=False, labelleft=False)
 
     fig.tight_layout(rect=[0, 0, 1, 0.985], w_pad=1.6)
     _save(fig, "fig10_latency_quality_frontier")
