@@ -83,10 +83,38 @@ from src.models.carbon import compute_transport_carbon
 from src.models.resilience import (
     compute_ari,
     compute_ari_geom,
+    compute_effective_rho,
     compute_equity,
     compute_equity_sen,
+    route_rho_factor,
     RLETracker,
 )
+from src.models.batch_inventory import BatchInventory
+
+
+def _compute_effective_rho_trace(
+    rho_trace: list[float],
+    prob_trace: list[list[float]],
+    temp_trace: list[float] | None = None,
+) -> list[float]:
+    """Episode-end helper: route-conditioned rho on retail-bound inventory.
+
+    See ``src.models.resilience.compute_effective_rho`` for the model.
+    Returns a list aligned to ``rho_trace`` for JSON serialisation.
+    Uses a 12 h turnover half-life and 0.25 h tick (15-min steps).
+    When ``temp_trace`` is supplied, the cold-chain factor is
+    evaluated under the temperature-conditional model.
+    """
+    if not rho_trace or not prob_trace:
+        return []
+    return compute_effective_rho(
+        np.asarray(rho_trace, dtype=np.float64),
+        np.asarray(prob_trace, dtype=np.float64),
+        turnover_halflife_hours=12.0,
+        dt_hours=0.25,
+        ambient_temp_c=(np.asarray(temp_trace, dtype=np.float64)
+                        if temp_trace else None),
+    ).tolist()
 from src.models.reward import compute_reward
 from src.models.action_selection import (
     ACTIONS, ACTION_KM_KEYS, compute_thermal_stress, compute_slca_attenuation,
@@ -451,6 +479,17 @@ def run_episode(
 
     prev_temp, prev_rh = float(df.iloc[0]["tempC"]), float(df.iloc[0]["RH"])
 
+    # --- Batch-level FIFO inventory ---
+    # Tracks per-batch rho accumulation under route-conditioned thermal
+    # exposure (see src/models/batch_inventory.py). Runs alongside the
+    # aggregate-state model; emits batch_effective_rho_trace alongside
+    # rho_trace so downstream consumers can compare the policy-responsive
+    # retail-pool quality to the exogenous environmental Arrhenius trace.
+    batch_inv = BatchInventory(rng=np.random.default_rng(int(seed) + 17))
+    batch_effective_rho_trace: list[float] = []
+    batch_retail_qty_trace: list[float] = []
+    prev_env_rho: float = 0.0
+
     for idx in range(n):
         row = df.iloc[idx]
         rho = float(row.get("spoilage_risk", 1.0 - row["shelf_left"]))
@@ -706,13 +745,18 @@ def run_episode(
         rle_tracker.update(rho, action)
 
         # Reward (Layer 1: reward.py). Linear scalarisation of the three
-        # primary objectives with rho penalised directly so the per-step
-        # gradient signal matches the metric the paper grades the policy
-        # on (per-step ARI). See reward.py docstring for the convex-
-        # scalarisation justification.
+        # primary objectives with rho route-conditioned and *temperature-
+        # conditional*: cold-chain pays 0.15 of env_rho at nominal
+        # ambient (T < 30) but climbs to 1.00 once T > 35 (cold chain
+        # overwhelmed). Local-redistribute pays a constant 0.45.
+        # Recovery pays zero. The policy gradient therefore directly
+        # rewards triage decisions that move at-risk produce off the
+        # cold chain *only when the cold chain is stressed* - matching
+        # the realistic physics in resilience.route_rho_factor.
         reward = compute_reward(
             slca_c, waste, rho,
             eta=policy.eta, eta_rho=policy.eta_rho,
+            route_factor=route_rho_factor(action, float(temp)),
         )
         cum_r += reward
 
@@ -788,6 +832,26 @@ def run_episode(
                 price_signal=price_signal,
             )
             learner.record(phi, action_idx, reward)
+
+        # --- Batch-level FIFO inventory step ---
+        # Routes the oldest DC batch to the chosen action, ages all
+        # batches at their status's thermal-exposure factor (cold
+        # chain factor is temperature-conditional via
+        # route_rho_factor: 0.15 nominal, 0.40 stressed at 30-35
+        # degC, 1.00 overwhelmed above 35 degC), sells off retail-pool
+        # inventory at the configured rate, and emits the
+        # quantity-weighted retail-pool effective rho.
+        d_env_rho = max(rho - prev_env_rho, 0.0)
+        batch_summary = batch_inv.step(
+            hour=float(hours[idx]),
+            d_env_rho=d_env_rho,
+            action_idx=int(action_idx),
+            ambient_temp_c=float(temp),
+            dt_hours=0.25,
+        )
+        batch_effective_rho_trace.append(batch_summary["effective_rho"])
+        batch_retail_qty_trace.append(batch_summary["retail_quantity"])
+        prev_env_rho = float(rho)
 
         # Collect traces
         ari_vals.append(ari)
@@ -890,6 +954,21 @@ def run_episode(
         },
         "ari_trace": ari_vals, "waste_trace": waste_vals,
         "rho_trace": rho_trace, "action_trace": action_trace,
+        # Aggregate-mix accounting view (kept for backward compatibility
+        # with consumers that pre-date the batch-FIFO model). Computed
+        # post-hoc from rho_trace + prob_trace via compute_effective_rho.
+        # The temp_trace is passed so the cold-chain factor is
+        # evaluated under the same temperature-conditional model the
+        # batch FIFO uses.
+        "effective_rho_trace": _compute_effective_rho_trace(
+            rho_trace, prob_trace, temp_trace=observed_temp_trace,
+        ),
+        # Batch-FIFO physical view: quantity-weighted mean rho on the
+        # retail-bound pool, computed mechanistically from per-batch
+        # rho accumulation under route-conditioned thermal exposure.
+        # Preferred over effective_rho_trace when present.
+        "batch_effective_rho_trace": batch_effective_rho_trace,
+        "batch_retail_quantity_trace": batch_retail_qty_trace,
         "prob_trace": prob_trace, "reward_trace": reward_trace,
         "cumulative_reward": cumulative_reward, "carbon_trace": carbon_trace,
         "slca_component_trace": slca_component_trace, "slca_trace": slca_vals,

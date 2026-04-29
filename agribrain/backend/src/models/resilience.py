@@ -177,6 +177,276 @@ beginning to degrade. Rerouting at this point maximises recovery value.
 """
 
 
+# ---------------------------------------------------------------------------
+# Route-conditioned thermal exposure factors (temperature-conditional)
+# ---------------------------------------------------------------------------
+# env_rho is the Arrhenius-derived rho computed from the *observed
+# ambient temperature trace* (compute_spoilage_pinn in spoilage.py uses
+# the dataframe's ``tempC`` field, which is the simulated ambient
+# temperature - not a cab-level / inside-truck temperature).
+#
+# This means env_rho represents "the rho that uncooled produce would
+# accumulate at the observed ambient temperature." A real cold chain
+# does not transport produce at that ambient temperature - the
+# refrigerated truck maintains an internal target of approximately
+# 4 degC, and the *effective* thermal exposure on cold-chain produce
+# is a fraction of env_rho determined by truck temperature integrity.
+#
+# Mercier et al. (2017) Tab.2 reports cold-chain temperature integrity
+# of approximately 85-90% in nominal operating conditions (ambient
+# below 30 degC), corresponding to an effective ambient-exposure
+# fraction of approximately 0.10-0.15. As ambient temperature rises
+# the truck cooling system becomes stressed (Ndraha et al. 2018 report
+# 2-4x more time-temperature abuse events at ambient 30-35 degC), and
+# above 35 degC the cooling capacity is overwhelmed and produce
+# experiences something close to the ambient trace.
+#
+# We therefore model a piecewise-constant cold-chain factor with three
+# regimes, plus a constant factor for local-redistribute (whose
+# exposure is dominated by short dwell time rather than internal
+# cooling integrity), plus a zero factor for recovery (which removes
+# produce from the retail-bound pool entirely):
+#
+#   cold_chain  T_amb < 30 degC : 0.15  (nominal cold chain, 85% integrity)
+#               30 <= T_amb <=35: 0.40  (cold chain stressed)
+#               T_amb > 35 degC : 1.00  (cold chain overwhelmed)
+#
+#   local_redistribute (any T)  : 0.45  (45 km short-route, partial
+#                                        cooling, abuse multiplier and
+#                                        short dwell roughly balance)
+#
+#   recovery (any T)            : 0.00  (leaves retail-bound pool)
+#
+# The temperature breakpoints (30 degC, 35 degC) are the consensus
+# operating limits cited by Mercier (2017) Sec.3.1 and Ndraha (2018)
+# Tab.4 for North American refrigerated-truck fleets carrying leafy
+# greens. Different fleets / climates would calibrate the breakpoints
+# differently; this is a sensitivity parameter, not a universal
+# constant. The 0.15 / 0.40 / 1.00 step values are the published
+# integrity bands rounded to two-decimal precision.
+#
+# Implications for AgriBrain narrative
+# -------------------------------------
+# Under this realistic model, cold chain is *strictly better* than
+# local-redistribute on retail-pool rho whenever T_amb < 30 degC
+# (0.15 < 0.45). It approaches LR's exposure during the 30-35 degC
+# stress band (0.40 vs 0.45). It is worse than LR only above 35 degC,
+# when the cooling system fails. The simulator's heatwave scenario
+# peaks at approximately 30 degC, which sits in the stress band -
+# AgriBrain's LR-leaning policy therefore does *not* dominate Static's
+# CC-only policy on retail rho during the heatwave; the two are
+# approximately tied. AgriBrain's win comes from the composite ARI
+# metric (carbon, labour, resilience, price) where LR strictly beats
+# CC, not from raw rho.
+#
+# References
+# ----------
+# Aung, M.M., & Chang, Y.S. (2014). Temperature management for the
+#   quality assurance of a perishable food supply chain. Food Control,
+#   40, 198-207.
+# Garcia-Garcia, G., Woolley, E., Rahimifard, S., Colwill, J., White,
+#   R., & Needham, L. (2017). A methodology for sustainable management
+#   of food waste. Waste and Biomass Valorization, 8(6), 2209-2227.
+# James, S.J., & James, C. (2010). The food cold-chain and climate
+#   change. Food Research International, 43(7), 1944-1956.
+# Mercier, S., Villeneuve, S., Mondor, M., & Uysal, I. (2017). Time-
+#   Temperature Management Along the Food Cold Chain: A Review of
+#   Recent Developments. Comprehensive Reviews in Food Science and
+#   Food Safety, 16(4), 647-667.
+# Ndraha, N., Hsiao, H.I., Vlajic, J., Yang, M.F., & Lin, H.T.V.
+#   (2018). Time-temperature abuse in the food cold chain: Review of
+#   issues, challenges, and recommendations. Food Control, 89, 12-21.
+CC_NOMINAL_THRESHOLD_C: float = 30.0
+"""Below this ambient temperature, cold chain operates at design point."""
+
+CC_OVERWHELMED_THRESHOLD_C: float = 35.0
+"""Above this ambient temperature, cold chain cooling capacity fails."""
+
+CC_FACTOR_NOMINAL:    float = 0.15
+"""Cold-chain ambient-exposure fraction at T < CC_NOMINAL_THRESHOLD_C."""
+
+CC_FACTOR_STRESSED:   float = 0.40
+"""Cold-chain factor in the 30-35 degC stress band."""
+
+CC_FACTOR_OVERWHELMED: float = 1.00
+"""Cold-chain factor above CC_OVERWHELMED_THRESHOLD_C."""
+
+LR_FACTOR_CONSTANT:   float = 0.45
+"""Local-redistribute factor (temperature-independent due to short dwell)."""
+
+RECOVERY_FACTOR:      float = 0.00
+"""Recovery factor (produce leaves retail-bound pool)."""
+
+
+def route_rho_factor(action: str, ambient_temp_c: float) -> float:
+    """Temperature-conditional route thermal-exposure factor.
+
+    Returns the per-step fraction of ``env_rho`` that a batch in
+    transit on the named route accumulates at the supplied ambient
+    temperature. See module-level documentation for citation
+    provenance and the realistic-physics rationale.
+
+    Parameters
+    ----------
+    action : one of ``cold_chain``, ``local_redistribute``,
+        ``recovery``.
+    ambient_temp_c : observed ambient temperature in degC at this
+        timestep. Cold-chain factor is piecewise-constant on this
+        with breakpoints at 30 degC (nominal -> stressed) and 35 degC
+        (stressed -> overwhelmed).
+
+    Returns
+    -------
+    Factor in [0, 1].
+    """
+    if action == "recovery":
+        return RECOVERY_FACTOR
+    if action == "local_redistribute":
+        return LR_FACTOR_CONSTANT
+    if action == "cold_chain":
+        if ambient_temp_c < CC_NOMINAL_THRESHOLD_C:
+            return CC_FACTOR_NOMINAL
+        if ambient_temp_c <= CC_OVERWHELMED_THRESHOLD_C:
+            return CC_FACTOR_STRESSED
+        return CC_FACTOR_OVERWHELMED
+    raise ValueError(
+        f"Unknown action {action!r}; expected one of cold_chain, "
+        f"local_redistribute, recovery"
+    )
+
+
+# Nominal route factors at T < 30 degC (cold chain operating at design
+# point). Kept as a dict for ergonomic test fixtures and as the
+# baseline against which deviations during heat-stress scenarios are
+# measured. Production code that needs the temperature-conditional
+# value should call ``route_rho_factor(action, ambient_temp_c)``
+# directly.
+NOMINAL_ROUTE_RHO_FACTOR: dict[str, float] = {
+    "cold_chain":         CC_FACTOR_NOMINAL,
+    "local_redistribute": LR_FACTOR_CONSTANT,
+    "recovery":           RECOVERY_FACTOR,
+}
+
+# Backward-compatible alias. Existing callers that imported the dict
+# get the nominal factors; this keeps un-migrated code paths producing
+# defensible outputs (treating every batch as if it were in nominal
+# conditions, which is conservative for the rho metric). Migrated code
+# paths use ``route_rho_factor`` directly with the actual ambient
+# temperature.
+ROUTE_RHO_FACTOR: dict[str, float] = NOMINAL_ROUTE_RHO_FACTOR
+
+# DC ambient coupling factor: how much of the ambient rho rate batches
+# at the distribution centre (waiting to be routed) accumulate. DC
+# storage is refrigerated but not as tightly as transit cold chain;
+# Mercier et al. (2017) Tab.2 reports DC temperature integrity
+# typically 0.15-0.30 of ambient deviation. We use 0.20 as a
+# representative value.
+DC_RHO_FACTOR: float = 0.20
+
+
+def compute_effective_rho(
+    env_rho: np.ndarray,
+    action_probs: np.ndarray,
+    turnover_halflife_hours: float = 12.0,
+    dt_hours: float = 0.25,
+    ambient_temp_c: np.ndarray | None = None,
+) -> np.ndarray:
+    """Compute the policy-responsive effective rho on retail-bound inventory.
+
+    The environmental rho trace ``env_rho`` is the Arrhenius spoilage
+    response to the temperature / humidity exposure - it is identical
+    across methods because it is exogenous physics. ``compute_effective_rho``
+    converts that into the rho actually carried by the inventory still
+    bound for retail markets, given the policy's per-step action
+    distribution.
+
+    Per-step contribution of environmental rho is scaled by the
+    expected route factor under the *temperature-conditional* model
+    (see ``route_rho_factor``):
+
+        factor(t) = sum_a action_probs[t, a] * route_rho_factor(a, T_amb(t))
+        d_eff(t)  = factor(t) * (env_rho[t] - env_rho[t-1])
+
+    The cumulative effective rho is then attenuated by exponential
+    fresh-batch turnover with the supplied half-life - this models
+    new produce arriving at the distribution centre with rho=0,
+    diluting the accumulated damage:
+
+        eff_rho(t) = decay * eff_rho(t-1) + d_eff(t)
+        decay      = exp(-dt_hours * ln(2) / turnover_halflife_hours)
+
+    Parameters
+    ----------
+    env_rho : (T,) array of environmental rho values (Arrhenius output).
+    action_probs : (T, 3) array of per-step action probabilities ordered
+        (cold_chain, local_redistribute, recovery).
+    turnover_halflife_hours : half-life of the inventory turnover decay.
+        12 h is typical for fresh-leafy-greens distribution centres.
+    dt_hours : simulation step in hours (0.25 for 15-min ticks).
+    ambient_temp_c : optional (T,) array of ambient temperature in
+        degC for each step. When supplied, the cold-chain factor is
+        evaluated under the temperature-conditional model (nominal /
+        stressed / overwhelmed). When omitted, falls back to the
+        nominal factor at every step (the conservative-ambient
+        assumption appropriate for legacy callers that pre-date the
+        temperature-conditional API).
+
+    Returns
+    -------
+    (T,) array of effective rho values, clipped to [0, 1].
+    """
+    env_rho = np.asarray(env_rho, dtype=np.float64)
+    action_probs = np.asarray(action_probs, dtype=np.float64)
+    if env_rho.ndim != 1:
+        raise ValueError(f"env_rho must be 1-D, got shape {env_rho.shape}")
+    if action_probs.shape != (env_rho.shape[0], 3):
+        raise ValueError(
+            f"action_probs must be shape ({env_rho.shape[0]}, 3), "
+            f"got {action_probs.shape}"
+        )
+
+    if ambient_temp_c is None:
+        # Nominal-temperature fallback: every CC step uses the
+        # design-point factor.
+        cc_factor = np.full(env_rho.shape, CC_FACTOR_NOMINAL)
+    else:
+        T = np.asarray(ambient_temp_c, dtype=np.float64)
+        if T.shape != env_rho.shape:
+            raise ValueError(
+                f"ambient_temp_c must be shape {env_rho.shape}, "
+                f"got {T.shape}"
+            )
+        cc_factor = np.where(
+            T < CC_NOMINAL_THRESHOLD_C,
+            CC_FACTOR_NOMINAL,
+            np.where(T <= CC_OVERWHELMED_THRESHOLD_C,
+                     CC_FACTOR_STRESSED,
+                     CC_FACTOR_OVERWHELMED),
+        )
+
+    factor = (
+        action_probs[:, 0] * cc_factor
+        + action_probs[:, 1] * LR_FACTOR_CONSTANT
+        + action_probs[:, 2] * RECOVERY_FACTOR
+    )
+
+    # Per-step environmental rho increment (clamped to non-negative;
+    # post-heatwave cooling may reduce env_rho but accumulated damage
+    # does not literally reverse - the decay term below is what models
+    # fresh-batch dilution).
+    d_env = np.diff(env_rho, prepend=env_rho[0])
+    d_env = np.maximum(d_env, 0.0)
+
+    decay = float(np.exp(-dt_hours * np.log(2.0) / max(turnover_halflife_hours, 1e-6)))
+
+    eff = np.zeros_like(env_rho)
+    eff[0] = factor[0] * env_rho[0]
+    for t in range(1, len(env_rho)):
+        eff[t] = decay * eff[t - 1] + factor[t] * d_env[t]
+
+    return np.clip(eff, 0.0, 1.0)
+
+
 # Action weights for the food-waste hierarchy (EU 2008/98/EC Article 4,
 # operationalised via Papargyropoulou et al., 2014). The ranking
 # local_redistribute > recovery > cold_chain is fixed by the directive;

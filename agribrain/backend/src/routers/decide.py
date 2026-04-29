@@ -34,6 +34,7 @@ from src.models.action_selection import (
     compute_slca_attenuation,
 )
 from src.models.carbon import compute_transport_carbon
+from src.models.resilience import route_rho_factor
 from src.models.reward import compute_reward_extended
 from src.models.spoilage import arrhenius_k
 from src.models.waste import INV_BASELINE, compute_waste_rate, compute_save_factor
@@ -237,9 +238,12 @@ def _decide_standalone(req: DecideRequest) -> dict:
     price = msrp * PRICE_FACTOR.get(action, 1.0)
 
     # Multi-objective reward via imported reward model. Spoilage risk
-    # rho is now penalised directly so the reward signal aligns with
-    # per-step ARI; see reward.py docstring for the linear-scalarisation
-    # justification.
+    # rho is route-conditioned and *temperature-conditional*: cold-
+    # chain pays 0.15 of env_rho at nominal ambient (T < 30 degC) but
+    # climbs to 1.00 once T > 35 degC (cold chain overwhelmed). Local
+    # redistribute pays a constant 0.45. Recovery pays zero. See
+    # reward.py and resilience.route_rho_factor for the physics
+    # provenance.
     reward_decomp = compute_reward_extended(
         slca_composite=slca_composite,
         waste=waste,
@@ -250,6 +254,7 @@ def _decide_standalone(req: DecideRequest) -> dict:
         eta_rho=eta_rho,
         alpha_E=alpha_E,
         beta_W=beta_W,
+        route_factor=route_rho_factor(action, float(temp)),
     )
 
     memo = {

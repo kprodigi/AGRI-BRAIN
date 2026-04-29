@@ -69,7 +69,7 @@ for _font_path in _ARIAL_FONT_FILES:
             pass
 
 from generate_results import run_all, SCENARIOS, RESULTS_DIR
-from src.models.resilience import RLE_THRESHOLD
+from src.models.resilience import RLE_THRESHOLD, compute_effective_rho
 
 # ---------------------------------------------------------------------------
 # Unified publication-quality style
@@ -339,7 +339,32 @@ def _annotate_window(ax, x0, x1, color, label, alpha=WINDOW_ALPHA,
 # Figure 2: Heatwave scenario deep-dive (2x2)
 # ---------------------------------------------------------------------------
 def fig2_heatwave(data):
-    """2x2: temp+humidity, observed spoilage risk, action probs, per-step reward."""
+    """2x2: env exposure, per-method retail rho, AgriBrain action mix, per-step ARI.
+
+    Panel (b) plots the quantity-weighted mean rho on retail-bound
+    batches under the *temperature-conditional* batch-FIFO model
+    (see resilience.route_rho_factor and batch_inventory.py). Each
+    batch accumulates rho at its status-specific factor, with the
+    cold-chain factor stepping from 0.15 (nominal) through 0.40
+    (stressed at 30-35 degC) to 1.00 (overwhelmed above 35 degC).
+    Under realistic physics, cold chain is *strictly better* than
+    local-redistribute on retail rho whenever the ambient is below
+    30 degC; the two are roughly tied during the 30-35 degC stress
+    band that the heatwave scenario operates in. AgriBrain therefore
+    does *not* clearly win on raw retail rho - its win comes from
+    the composite ARI (panel d), where the LR-leaning policy gains
+    on carbon, labour, resilience, and price-transparency at modest
+    rho cost.
+
+    Panel (c) shows AgriBrain's action-probability stacked area with
+    three regime guides: at-risk threshold crossing (rho >= 0.10),
+    Recovery knee crossing (rho >= 0.50), and post-heatwave fresh-batch
+    cold-chain recovery.
+
+    Panel (d) plots per-step ARI (12 h rolling) - the composite metric
+    the paper sells. ARI is bounded [0, 1] so the cross-method gap is
+    directly interpretable.
+    """
     hw = data["results"]["heatwave"]
     ab = hw["agribrain"]
     hours = np.array(ab["hours"])
@@ -351,6 +376,9 @@ def fig2_heatwave(data):
     ax = axes[0, 0]
     ax.plot(hours, ab["temp_trace"], color="#C62828", linewidth=2.4,
             label="Temperature (\u00b0C)")
+    # Safe-storage reference line (5 C, FDA leafy-greens guideline).
+    ax.axhline(5.0, color="#C62828", linestyle=":", linewidth=1.4,
+               alpha=0.65, label="Safe storage (5 \u00b0C)")
     ax2 = ax.twinx()
     ax2.plot(hours, ab["rh_trace"], color="#1565C0", linewidth=2.2,
              alpha=0.85, label="RH (%)")
@@ -365,37 +393,65 @@ def fig2_heatwave(data):
     ax2.yaxis.label.set_weight("bold")
     for lbl in ax2.get_yticklabels():
         lbl.set_fontweight("bold")
-    # Pin the RH axis to 40-100 so the band sits in the upper half
-    # rather than auto-zooming to 75-100 and exaggerating the noise.
     ax2.set_ylim(40, 100)
-    # Heatwave annotation in the vertical middle of the panel so it is
-    # clear of both the upper data envelope (T/RH peaks) and the
-    # lower-right legend box.
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave", ypos=0.55)
     h1, l1 = ax.get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()
-    # Lower framealpha so this legend reads as transparent as the one
-    # in panel (d), where the sparse background already makes the
-    # default 0.95 look airy.
     _legend(ax, handles=h1 + h2, labels=l1 + l2,
             loc="lower right", framealpha=0.80)
 
-    # --- (b) Observed spoilage risk trajectory ---
+    # --- (b) Effective spoilage risk per method (batch-FIFO) ---
+    # The environmental rho trace (Arrhenius-from-temperature) is
+    # exogenous physics, identical across methods, and shown as a thin
+    # grey reference. Each method's plotted trace is the
+    # quantity-weighted mean rho on the retail-bound batch pool,
+    # computed mechanistically from the per-batch FIFO inventory model
+    # (BatchInventory in src/models/batch_inventory.py).
+    #
+    # Cold-chain factor is *temperature-conditional* (Mercier 2017,
+    # Ndraha 2018):
+    #   T < 30 degC: 0.15 (nominal cold-chain integrity)
+    #   30-35 degC : 0.40 (cold chain stressed)
+    #   T > 35 degC: 1.00 (cold chain overwhelmed)
+    # Local-redistribute holds 0.45 across all temperatures; Recovery
+    # is 0.00 (leaves retail pool). Under realistic physics, Static
+    # (CC-only) wins on retail rho at nominal ambient and ties
+    # AgriBrain in the stress band. The figure should therefore *not*
+    # be read as "AgriBrain wins on rho"; the AgriBrain win is on the
+    # composite ARI (panel d), not on raw rho.
     ax = axes[0, 1]
-    rho = np.array(ab["rho_trace"])
-    ax.plot(hours, rho, color=COLORS["agribrain"], linewidth=2.2,
-            label="Observed \u03c1(t)")
-    ax.axhline(RLE_THRESHOLD, color=WINDOW_COLOR, linestyle="--", linewidth=1.6,
-               alpha=0.85,
-               label=f"At-risk threshold (\u03c1={RLE_THRESHOLD})")
+    env_rho = np.array(ab["rho_trace"])
+    ax.plot(hours, env_rho, color="#9E9E9E", linewidth=1.4,
+            linestyle=":", alpha=0.75, label="Environmental \u03c1 (shared)")
+    for mode in ["static", "hybrid_rl", "agribrain"]:
+        ep = hw[mode]
+        # Prefer the batch-FIFO trace (mechanistic, per-batch); fall
+        # back to the aggregate-mix accounting view, then to a
+        # post-hoc compute for legacy result files.
+        if "batch_effective_rho_trace" in ep and ep["batch_effective_rho_trace"]:
+            eff = np.array(ep["batch_effective_rho_trace"])
+        elif "effective_rho_trace" in ep and ep["effective_rho_trace"]:
+            eff = np.array(ep["effective_rho_trace"])
+        else:
+            eff = compute_effective_rho(
+                np.array(ep["rho_trace"]),
+                np.array(ep["prob_trace"]),
+                turnover_halflife_hours=12.0,
+                dt_hours=0.25,
+            )
+        _mode_plot(ax, hours, eff, mode)
+    ax.axhline(RLE_THRESHOLD, color=WINDOW_COLOR, linestyle="--",
+               linewidth=1.6, alpha=0.85,
+               label=f"At-risk threshold (\u03c1={RLE_THRESHOLD:.2f})")
     ax.set_xlabel("Hours")
-    ax.set_ylabel("Spoilage Risk \u03c1(t)")
-    ax.set_title("(b) Spoilage Risk Trajectory")
+    ax.set_ylabel("Mean \u03c1 on Retail-Bound Batches")
+    ax.set_title("(b) Retail-Pool Spoilage Risk")
+    ax.set_ylim(0, 1.0)
     _apply_style(ax)
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave", ypos=0.55)
     _legend(ax, loc="upper left", framealpha=0.80)
 
-    # --- (c) Action probability stacked area (AGRI-BRAIN) ---
+    # --- (c) AgriBrain action-probability stacked area + regime guides ---
     ax = axes[1, 0]
     probs = np.array(ab["prob_trace"])
     ax.fill_between(hours, 0, probs[:, 0],
@@ -404,6 +460,32 @@ def fig2_heatwave(data):
                     color=COLORS["agribrain"], alpha=0.85, label="Local Redist.")
     ax.fill_between(hours, probs[:, 0] + probs[:, 1], 1.0,
                     color="#F57C00", alpha=0.85, label="Recovery")
+
+    # Regime guides: vertical lines at the rho thresholds where the
+    # policy logic transitions. Use the AgriBrain rho trace to find the
+    # crossing hours.
+    ab_rho = np.array(ab["rho_trace"])
+    def _first_cross(threshold):
+        idx = np.argmax(ab_rho > threshold)
+        if idx == 0 and ab_rho[0] <= threshold:
+            return None
+        return float(hours[idx])
+
+    h_atrisk = _first_cross(RLE_THRESHOLD)
+    h_knee = _first_cross(0.50)
+    if h_atrisk is not None:
+        ax.axvline(h_atrisk, color="#424242", linestyle="--", linewidth=1.1,
+                   alpha=0.65)
+        ax.text(h_atrisk + 0.4, 0.05, f"\u03c1>0.10\n@h{h_atrisk:.0f}",
+                fontsize=ANNOT_FONT_SIZE - 1, color="#212121",
+                fontweight="bold", va="bottom")
+    if h_knee is not None:
+        ax.axvline(h_knee, color="#424242", linestyle="--", linewidth=1.1,
+                   alpha=0.65)
+        ax.text(h_knee + 0.4, 0.05, f"\u03c1>0.50\n@h{h_knee:.0f}",
+                fontsize=ANNOT_FONT_SIZE - 1, color="#212121",
+                fontweight="bold", va="bottom")
+
     ax.set_xlabel("Hours")
     ax.set_ylabel("Action Probability")
     ax.set_title("(c) AgriBrain Action Probabilities")
@@ -413,22 +495,35 @@ def fig2_heatwave(data):
     _legend(ax, loc="upper center", bbox_to_anchor=(0.5, -0.18),
             ncol=3, frameon=True)
 
-    # --- (d) Per-step reward (rolling average) ---
+    # --- (d) Per-step ARI (12 h rolling average) ---
     ax = axes[1, 1]
     window = 12
+    means = {}
     for mode in ["static", "hybrid_rl", "agribrain"]:
         ep = hw[mode]
-        reward = np.array(ep["reward_trace"])
-        rolling = np.convolve(reward, np.ones(window) / window, mode="same")
+        ari = np.array(ep["ari_trace"])
+        rolling = np.convolve(ari, np.ones(window) / window, mode="same")
         _mode_plot(ax, hours, rolling, mode)
+        means[mode] = float(np.mean(ari))
     ax.set_xlabel("Hours")
-    ax.set_ylabel("Reward per Step")
-    ax.set_title("(d) Reward Rate During Heatwave")
+    ax.set_ylabel("ARI (12 h rolling)")
+    ax.set_title("(d) ARI per Step During Heatwave")
+    ax.set_ylim(0, 1.0)
     _apply_style(ax)
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave")
     _legend(ax, loc="lower right")
+    ax.text(
+        0.02, 0.04,
+        f"Mean ARI: AgriBrain {means['agribrain']:.3f}  "
+        f"vs Hybrid RL {means['hybrid_rl']:.3f}  "
+        f"vs Static {means['static']:.3f}",
+        transform=ax.transAxes,
+        fontsize=ANNOT_FONT_SIZE - 1, fontweight="bold", color="#212121",
+        bbox=dict(boxstyle="round,pad=0.30", facecolor="white",
+                  alpha=0.92, edgecolor="#9E9E9E", linewidth=0.8),
+    )
 
-    fig.tight_layout(rect=[0, 0.02, 1, 0.985], h_pad=2.0, w_pad=1.6)
+    fig.tight_layout(rect=[0, 0, 1, 0.985], h_pad=1.6, w_pad=1.6)
     _save(fig, "fig2_heatwave")
 
 

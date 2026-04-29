@@ -30,7 +30,7 @@ from src.models.carbon import compute_transport_carbon
 from src.models.slca import slca_score
 from src.models.waste import INV_BASELINE, compute_waste_rate, compute_save_factor
 from src.models.spoilage import arrhenius_k
-from src.models.resilience import compute_ari
+from src.models.resilience import compute_ari, route_rho_factor
 from src.models.reward import compute_reward
 from src.models.lstm_demand import lstm_demand_forecast
 
@@ -102,6 +102,7 @@ def _run_short_episode(df, mode, context_enabled, n_steps=48):
         reward = compute_reward(
             slca_c, waste, rho,
             eta=policy.eta, eta_rho=policy.eta_rho,
+            route_factor=route_rho_factor(action, float(temp)),
         )
 
         obs = active.observe(env_state, hours[idx])
