@@ -159,7 +159,9 @@ def test_step_routes_oldest_batch_fifo():
 
 def test_step_recovery_removes_batch_from_retail_pool():
     inv = BatchInventory(initial_n_batches=3, initial_dc_quantity=3000.0,
-                         fresh_arrival_rate_per_hour=0.0)
+                         fresh_arrival_rate_per_hour=0.0,
+                         lr_capacity_units_per_hour=1e9,
+                         recovery_capacity_units_per_hour=1e9)
     # Route one batch to recovery, then advance time past transit window.
     inv.step(hour=0.25, d_env_rho=0.01, action_idx=2, dt_hours=0.25)
     # Step enough times for the recovery transit to complete.
@@ -185,12 +187,21 @@ def _run_constant_action_episode(
     d_env_rho: float = 0.005,
     ambient_temp_c: float = 4.0,
 ) -> np.ndarray:
-    """Run a single-action episode and return the retail-pool rho trace."""
+    """Run a single-action episode and return the retail-pool rho trace.
+
+    Capacity is set to effectively-infinite for these tests so the
+    thermal-physics behaviour is isolated from the capacity-fallback
+    logic added in the capacity-constrained extension. Capacity-
+    binding behaviour is exercised separately in
+    test_capacity_constrained_rle.py.
+    """
     inv = BatchInventory(
         initial_n_batches=8,
         initial_dc_quantity=12000.0,
         fresh_arrival_rate_per_hour=0.5,
         fresh_batch_quantity=1500.0,
+        lr_capacity_units_per_hour=1e9,
+        recovery_capacity_units_per_hour=1e9,
     )
     trace = []
     for k in range(n_steps):
@@ -295,11 +306,14 @@ def test_cc_factor_step_function_observable_in_retail_trace():
 
 def test_retail_pool_clears_at_sale_rate():
     """With no fresh routing-in and a positive sale rate, the retail
-    pool should monotonically drain."""
+    pool should monotonically drain. Capacity is set high so the
+    initial 3 LR routings succeed without saturation."""
     inv = BatchInventory(
         initial_n_batches=3, initial_dc_quantity=3000.0,
         fresh_arrival_rate_per_hour=0.0,
         sale_rate_per_hour=0.10,
+        lr_capacity_units_per_hour=1e9,
+        recovery_capacity_units_per_hour=1e9,
     )
     # First, route all 3 DC batches to LR so they end up in retail.
     for k in range(3):

@@ -59,7 +59,10 @@ from typing import Optional
 import numpy as np
 
 from .resilience import (
+    CAPACITY_WINDOW_HOURS,
     DC_RHO_FACTOR,
+    LR_CAPACITY_UNITS_PER_HOUR,
+    RECOVERY_CAPACITY_UNITS_PER_HOUR,
     route_rho_factor,
 )
 
@@ -96,7 +99,8 @@ class Batch:
 
 @dataclass
 class BatchInventory:
-    """FIFO batch-level inventory with route-conditioned rho tracking.
+    """FIFO batch-level inventory with route-conditioned rho tracking
+    and tier capacity constraints.
 
     Parameters
     ----------
@@ -111,6 +115,16 @@ class BatchInventory:
     fresh_batch_quantity : quantity of each fresh batch (units).
     sale_rate_per_hour : retail-pool clearing rate.
     dc_rho_factor : per-step env_rho coupling for DC-stored batches.
+    lr_capacity_units_per_hour : Local-redistribute intake capacity
+        (units / hour) over the rolling capacity window. When the LR
+        admissions in the trailing ``capacity_window_hours`` exceed
+        this rate, additional LR-routing requests are downgraded to
+        Recovery (next tier in the EU 2008/98/EC waste hierarchy).
+    recovery_capacity_units_per_hour : Recovery intake capacity
+        (units / hour) over the same window. When Recovery is also
+        full, the batch stays in DC and continues to age until either
+        capacity opens or the batch's spoilage drives a re-route.
+    capacity_window_hours : Rolling window for capacity tracking.
     """
     initial_dc_quantity: float = 12000.0
     initial_n_batches: int = 8
@@ -118,11 +132,24 @@ class BatchInventory:
     fresh_batch_quantity: float = 1500.0
     sale_rate_per_hour: float = RETAIL_SALE_RATE_PER_HOUR
     dc_rho_factor: float = DC_RHO_FACTOR
+    lr_capacity_units_per_hour: float = LR_CAPACITY_UNITS_PER_HOUR
+    recovery_capacity_units_per_hour: float = RECOVERY_CAPACITY_UNITS_PER_HOUR
+    capacity_window_hours: float = CAPACITY_WINDOW_HOURS
     rng: Optional[np.random.Generator] = None
 
     batches: list[Batch] = field(default_factory=list)
     next_batch_id: int = 0
     next_arrival_hour: float = 0.0
+    # Capacity admission ledgers: list of (admit_hour, qty) tuples,
+    # newest at the end. Old entries beyond the rolling window are
+    # pruned in step().
+    lr_admissions: list[tuple[float, float]] = field(default_factory=list)
+    recovery_admissions: list[tuple[float, float]] = field(default_factory=list)
+    # Cumulative capacity-rejection counters for diagnostics.
+    lr_rejected_units: float = 0.0
+    recovery_rejected_units: float = 0.0
+    lr_downgraded_units: float = 0.0  # LR rejection routed to Recovery
+    dc_holdover_units: float = 0.0    # both full, batch stays in DC
 
     def __post_init__(self) -> None:
         if self.rng is None:
@@ -132,6 +159,76 @@ class BatchInventory:
             self._spawn_batch(arrival_hour=-i * 0.25, quantity=per_batch)
         # First fresh-batch arrival scheduled at t=0 + interval.
         self.next_arrival_hour = 1.0 / max(self.fresh_arrival_rate_per_hour, 1e-6)
+
+    # -----------------------------------------------------------------
+    # Capacity helpers
+    # -----------------------------------------------------------------
+    def _prune_admissions(self, hour: float) -> None:
+        """Drop admission records older than the rolling window."""
+        cutoff = hour - self.capacity_window_hours
+        self.lr_admissions = [(h, q) for (h, q) in self.lr_admissions if h > cutoff]
+        self.recovery_admissions = [
+            (h, q) for (h, q) in self.recovery_admissions if h > cutoff
+        ]
+
+    def _admitted_in_window(self, ledger: list[tuple[float, float]]) -> float:
+        return sum(q for (_, q) in ledger)
+
+    def _can_admit(self, route: str, qty: float) -> bool:
+        """Return True if the batch quantity fits in the route's
+        remaining capacity for this rolling window."""
+        if route == "local_redistribute":
+            return (
+                self._admitted_in_window(self.lr_admissions) + qty
+                <= self.lr_capacity_units_per_hour * self.capacity_window_hours
+                + 1e-9
+            )
+        if route == "recovery":
+            return (
+                self._admitted_in_window(self.recovery_admissions) + qty
+                <= self.recovery_capacity_units_per_hour * self.capacity_window_hours
+                + 1e-9
+            )
+        # cold_chain has no capacity model in this simulator.
+        return True
+
+    def _resolve_routing(self, chosen_route: str, qty: float, hour: float
+                          ) -> Optional[str]:
+        """Apply capacity / fallback policy. Returns the realized
+        route name, or None if no tier could admit the batch (it
+        stays in DC).
+
+        Fallback semantics (EU 2008/98/EC waste-hierarchy ordering):
+            chosen LR  -> if full, downgrade to Recovery
+                       -> if Recovery also full, stay in DC
+            chosen Recovery -> if full, stay in DC
+            chosen CC  -> always admitted (CC capacity not modelled)
+        """
+        if chosen_route == "cold_chain":
+            return "cold_chain"
+        if chosen_route == "local_redistribute":
+            if self._can_admit("local_redistribute", qty):
+                self.lr_admissions.append((hour, qty))
+                return "local_redistribute"
+            # LR full: downgrade to Recovery
+            if self._can_admit("recovery", qty):
+                self.recovery_admissions.append((hour, qty))
+                self.lr_downgraded_units += qty
+                self.lr_rejected_units += qty
+                return "recovery"
+            # Both full: stays in DC
+            self.lr_rejected_units += qty
+            self.recovery_rejected_units += qty
+            self.dc_holdover_units += qty
+            return None
+        if chosen_route == "recovery":
+            if self._can_admit("recovery", qty):
+                self.recovery_admissions.append((hour, qty))
+                return "recovery"
+            self.recovery_rejected_units += qty
+            self.dc_holdover_units += qty
+            return None
+        return chosen_route
 
     # -----------------------------------------------------------------
     # Internal helpers
@@ -162,6 +259,8 @@ class BatchInventory:
         d_env_rho: float,
         action_idx: int,
         ambient_temp_c: float = 4.0,
+        arrival_rate_multiplier: float = 1.0,
+        sale_rate_multiplier: float = 1.0,
         action_names: tuple[str, ...] = ("cold_chain", "local_redistribute", "recovery"),
         dt_hours: float = 0.25,
     ) -> dict[str, float]:
@@ -183,6 +282,20 @@ class BatchInventory:
             env_rho depending on whether ambient is below 30, in
             30-35, or above 35 degC. Defaults to 4 degC (cold storage)
             for legacy callers.
+        arrival_rate_multiplier : per-step multiplier on the fresh
+            batch arrival rate. Default 1.0 preserves baseline
+            behaviour. The simulator drives this from the observed
+            inventory level vs INV_BASELINE so that overproduction
+            scenarios (where aggregate inventory climbs to ~5x
+            baseline) actually push more batches through BatchInventory,
+            forcing tier-capacity to bind under surge - addressing
+            the "BatchInventory's flow is constant across scenarios"
+            limitation of the previous design.
+        sale_rate_multiplier : per-step multiplier on the retail
+            sale rate. Default 1.0 preserves baseline. The simulator
+            drives this from the observed demand level vs
+            BASELINE_DEMAND so demand drops in overproduction reduce
+            retail throughput in BatchInventory.
         action_names : ordered action names matching ACTIONS in
             action_selection.py.
         dt_hours : simulation timestep in hours (0.25 for 15-min ticks).
@@ -221,20 +334,38 @@ class BatchInventory:
                 # (display refrigeration is comparable to DC).
                 b.current_rho = min(1.0, b.current_rho + self.dc_rho_factor * d_env)
 
-        # 2) Route the oldest DC batch to action_idx. If no DC batches,
-        #    no routing happens (the simulator's aggregate inventory
-        #    handles the stockout case via demand fulfilment elsewhere).
-        oldest = self._oldest_dc_batch()
-        if oldest is not None:
-            route = action_names[int(action_idx)]
-            oldest.status = f"transit_{route}"
-            oldest.transit_remaining_h = float(TRANSIT_HOURS[route])
-            oldest.routed_to = route
-            oldest.routed_at_hour = float(hour)
+        # 2) Prune the rolling capacity ledgers before any new
+        #    admissions are decided this step.
+        self._prune_admissions(float(hour))
 
-        # 3) Sell off retail-pool inventory at the configured rate.
-        #    FIFO: oldest retail batches sold first.
-        sale_fraction = min(1.0, self.sale_rate_per_hour * dt_hours)
+        # 3) Route the oldest DC batch to action_idx, subject to tier
+        #    capacity. _resolve_routing applies EU-hierarchy fallback:
+        #    LR full -> Recovery; Recovery full -> stays in DC.
+        #    The realized_route returned may differ from the chosen
+        #    route; both are recorded so downstream RLE metrics can
+        #    distinguish "policy intent" from "operational realization."
+        oldest = self._oldest_dc_batch()
+        chosen_route = action_names[int(action_idx)]
+        realized_route: Optional[str] = None
+        if oldest is not None:
+            realized_route = self._resolve_routing(
+                chosen_route, oldest.quantity, float(hour)
+            )
+            if realized_route is not None:
+                oldest.status = f"transit_{realized_route}"
+                oldest.transit_remaining_h = float(TRANSIT_HOURS[realized_route])
+                oldest.routed_to = realized_route
+                oldest.routed_at_hour = float(hour)
+            # else: batch stays in DC, will be retried next step (FIFO).
+
+        # 4) Sell off retail-pool inventory at the configured rate,
+        #    scaled by the demand multiplier (overproduction scenarios
+        #    have demand below baseline so the retail pool clears
+        #    slower; this is what keeps stock building up there too).
+        effective_sale_rate = self.sale_rate_per_hour * max(
+            float(sale_rate_multiplier), 0.0
+        )
+        sale_fraction = min(1.0, effective_sale_rate * dt_hours)
         retail = sorted(
             (b for b in self.batches if b.status == "retail"),
             key=lambda b: b.routed_at_hour or b.arrival_hour,
@@ -250,15 +381,25 @@ class BatchInventory:
             if b.quantity <= 1e-9:
                 b.status = "sold"
 
-        # 4) Spawn fresh arrivals.
-        while self.next_arrival_hour <= hour + dt_hours:
-            self._spawn_batch(
-                arrival_hour=self.next_arrival_hour,
-                quantity=self.fresh_batch_quantity,
-            )
-            self.next_arrival_hour += 1.0 / max(self.fresh_arrival_rate_per_hour, 1e-6)
+        # 5) Spawn fresh arrivals at the surge-adjusted rate.
+        #    Overproduction scenarios push the inventory level (and so
+        #    the multiplier) above 1.0, increasing the per-hour
+        #    arrival rate proportionally - so capacity actually binds
+        #    when the underlying scenario surge would force it, not
+        #    only when policy concentrates on LR.
+        effective_arrival_rate = self.fresh_arrival_rate_per_hour * max(
+            float(arrival_rate_multiplier), 0.0
+        )
+        if effective_arrival_rate > 0.0:
+            interval = 1.0 / effective_arrival_rate
+            while self.next_arrival_hour <= hour + dt_hours:
+                self._spawn_batch(
+                    arrival_hour=self.next_arrival_hour,
+                    quantity=self.fresh_batch_quantity,
+                )
+                self.next_arrival_hour += interval
 
-        # 5) Compute summary statistics for this step.
+        # 6) Compute summary statistics for this step.
         retail_qty = 0.0
         retail_rho_qty = 0.0
         dc_qty = 0.0
@@ -277,7 +418,7 @@ class BatchInventory:
 
         eff_rho = retail_rho_qty / retail_qty if retail_qty > 1e-9 else 0.0
 
-        # 6) Garbage-collect fully sold/recovered batches to keep memory
+        # 7) Garbage-collect fully sold/recovered batches to keep memory
         #    bounded. We retain a small recovered tally elsewhere.
         self.batches = [b for b in self.batches
                         if b.status not in ("sold",)]
@@ -288,4 +429,13 @@ class BatchInventory:
             "dc_quantity": float(dc_qty),
             "in_transit_quantity": float(in_transit_qty),
             "recovered_quantity": float(recovered_qty),
+            "chosen_route": chosen_route,
+            "realized_route": realized_route if realized_route else "stayed_in_dc",
+            "lr_admitted_in_window": float(self._admitted_in_window(self.lr_admissions)),
+            "recovery_admitted_in_window": float(
+                self._admitted_in_window(self.recovery_admissions)
+            ),
+            "lr_rejected_units_cumulative": float(self.lr_rejected_units),
+            "lr_downgraded_units_cumulative": float(self.lr_downgraded_units),
+            "dc_holdover_units_cumulative": float(self.dc_holdover_units),
         }

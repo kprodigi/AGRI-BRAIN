@@ -69,7 +69,7 @@ for _font_path in _ARIAL_FONT_FILES:
             pass
 
 from generate_results import run_all, SCENARIOS, RESULTS_DIR
-from src.models.resilience import RLE_THRESHOLD, compute_effective_rho
+from src.models.resilience import RLE_THRESHOLD, compute_effective_rho, match_quality
 
 # ---------------------------------------------------------------------------
 # Unified publication-quality style
@@ -529,13 +529,13 @@ def fig3_overproduction(data):
     inv = np.array(ab["inventory_trace"])
     dem = np.array(ab["demand_trace"])
     ax.plot(hours, inv, color=COLORS["agribrain"], linewidth=2.0,
-            label="Inventory (units)")
+            label="Inventory")
     ax.set_xlabel("Hours")
     ax.set_ylabel("Inventory (units)")
     ax.ticklabel_format(axis="y", style="scientific", scilimits=(3, 3))
     ax2 = ax.twinx()
     ax2.plot(hours, dem, color=COLORS["hybrid_rl"], linewidth=1.8,
-             alpha=0.85, label="Demand (units/step)")
+             alpha=0.85, label="Demand")
     ax2.set_ylabel("Demand (units/step)")
     ax.set_title("(a) Inventory vs Demand")
     _apply_style(ax)
@@ -545,10 +545,10 @@ def fig3_overproduction(data):
     ax2.yaxis.label.set_weight("bold")
     for lbl in ax2.get_yticklabels():
         lbl.set_fontweight("bold")
-    # Push the "Overproduction" label toward the right end of the window
-    # (xpos\u224854) so its bounding box clears the upper-left legend that
-    # carries the Inventory + Demand entries.
-    _annotate_window(ax, 12, 60, WINDOW_COLOR, "Overproduction", xpos=54)
+    # Position the "Overproduction" label inside the red zone toward
+    # the centre-right (xpos\u224840) so the bounding box sits clearly
+    # within the 12-60 h window without clipping the right edge.
+    _annotate_window(ax, 12, 60, WINDOW_COLOR, "Overproduction", xpos=40)
     h1, l1 = ax.get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()
     _legend(ax, handles=h1 + h2, labels=l1 + l2, loc="upper left")
@@ -568,25 +568,65 @@ def fig3_overproduction(data):
     _annotate_window(ax, 12, 60, WINDOW_COLOR, "Overproduction")
     _legend(ax, loc="upper right")
 
-    # --- (c) RLE rolling with threshold onset annotation ---
-    # RLE measures rerouting *of at-risk batches*, so it is undefined
-    # while no batch in the rolling window has crossed the spoilage
-    # threshold \u03c1 > RLE_THRESHOLD. We mask the undefined region with
-    # NaN so the curve only plots where the metric is meaningful.
+    # --- (c) Capacity-constrained match-quality RLE (rolling) ---
+    # The binary RLE (routed / at_risk) saturates at 1.0 for any policy
+    # that always reroutes, which made the previous panel uninformative.
+    # The current form combines two corrections:
+    #   1. match-quality: scores the tier-vs-severity match at each at-
+    #      risk timestep (LR optimal for marketable rho < 0.30, Recovery
+    #      optimal for non-marketable rho > 0.60; transition zone in
+    #      between). See resilience.match_quality + the Garcia-Garcia
+    #      2017 / Papargyropoulou 2014 provenance.
+    #   2. capacity-constrained: scores the *realised* routing after
+    #      BatchInventory's tier-capacity / fallback policy is applied,
+    #      not the chosen routing. When LR or Recovery saturate, the
+    #      score reflects the operational fallback (LR -> Recovery
+    #      downgrade, Recovery -> stays_in_dc held-over). This means a
+    #      policy that always picks LR but saturates the food-bank
+    #      network sees its RLE drop below the unconstrained match-
+    #      quality form. See resilience.compute_rle_capacity_constrained
+    #      and the LR_CAPACITY_UNITS_PER_HOUR docstring for the
+    #      calibration provenance.
+    # Falls back to chosen-action match-quality when realized_action_trace
+    # is unavailable (legacy result files that pre-date capacity tracking).
     ax = axes[1, 0]
+    action_names = ("cold_chain", "local_redistribute", "recovery")
     for mode in ["static", "hybrid_rl", "agribrain"]:
         ep = op[mode]
         rho = np.array(ep["rho_trace"])
         actions = np.array(ep["action_trace"])
+        realized = ep.get("realized_action_trace")
         at_risk = rho > RLE_THRESHOLD
-        routed = at_risk & (actions >= 1)
-        rle_rolling = np.convolve(routed.astype(float),
+
+        # Per-step match-quality contribution: rho * match(action, rho)
+        # for at-risk timesteps, zero elsewhere. Use realized actions
+        # when available so the RLE reflects operational throughput,
+        # not just policy intent.
+        match_contrib = np.zeros_like(rho)
+        weight = np.zeros_like(rho)
+        for t in range(len(rho)):
+            if at_risk[t]:
+                if realized is not None and t < len(realized):
+                    a = realized[t]
+                    if a == "stayed_in_dc":
+                        # Capacity saturation held the batch in DC: the
+                        # produce remains exposed and was not rerouted.
+                        match_contrib[t] = 0.0
+                    else:
+                        match_contrib[t] = rho[t] * match_quality(a, float(rho[t]))
+                else:
+                    a = action_names[int(actions[t])]
+                    match_contrib[t] = rho[t] * match_quality(a, float(rho[t]))
+                weight[t] = rho[t]
+
+        num_rolling = np.convolve(match_contrib,
                                   np.ones(window) / window, mode="same")
-        rle_denom = np.convolve(at_risk.astype(float),
-                                np.ones(window) / window, mode="same")
+        den_rolling = np.convolve(weight,
+                                  np.ones(window) / window, mode="same")
         # NaN where denominator is zero (no at-risk batches in window).
-        rle_frac = np.full_like(rle_rolling, np.nan)
-        np.divide(rle_rolling, rle_denom, out=rle_frac, where=rle_denom > 0)
+        rle_frac = np.full_like(num_rolling, np.nan)
+        np.divide(num_rolling, den_rolling, out=rle_frac,
+                  where=den_rolling > 0)
         _mode_plot(ax, hours, rle_frac, mode)
 
     # Mark threshold onset with a vertical guide and put the explanatory

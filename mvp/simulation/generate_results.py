@@ -117,7 +117,8 @@ def _compute_effective_rho_trace(
     ).tolist()
 from src.models.reward import compute_reward
 from src.models.action_selection import (
-    ACTIONS, ACTION_KM_KEYS, compute_thermal_stress, compute_slca_attenuation,
+    ACTIONS, ACTION_KM_KEYS, BASELINE_DEMAND,
+    compute_thermal_stress, compute_slca_attenuation,
 )
 from src.models.reverse_logistics import evaluate_recovery_options, compute_circular_economy_score
 from src.models.policy_learner import PolicyLearner
@@ -485,9 +486,17 @@ def run_episode(
     # aggregate-state model; emits batch_effective_rho_trace alongside
     # rho_trace so downstream consumers can compare the policy-responsive
     # retail-pool quality to the exogenous environmental Arrhenius trace.
+    # Also enforces tier capacity: when LR or Recovery admission limits
+    # are saturated the realized routing falls back per the EU
+    # 2008/98/EC waste hierarchy; the chosen vs realized routes are
+    # both emitted so downstream RLE metrics can distinguish "policy
+    # intent" from "operational realization".
     batch_inv = BatchInventory(rng=np.random.default_rng(int(seed) + 17))
     batch_effective_rho_trace: list[float] = []
     batch_retail_qty_trace: list[float] = []
+    realized_action_trace: list[str] = []
+    lr_rejected_trace: list[float] = []
+    lr_downgraded_trace: list[float] = []
     prev_env_rho: float = 0.0
 
     for idx in range(n):
@@ -841,16 +850,29 @@ def run_episode(
         # degC, 1.00 overwhelmed above 35 degC), sells off retail-pool
         # inventory at the configured rate, and emits the
         # quantity-weighted retail-pool effective rho.
+        # Surge multipliers pass the scenario's flow dynamics into
+        # BatchInventory: arrival_mult tracks inv/INV_BASELINE so
+        # overproduction surges (inv ~5x baseline) push 5x more
+        # batches through the queue, forcing tier-capacity to bind
+        # under realistic surge conditions; sale_mult tracks
+        # demand/BASELINE_DEMAND so demand drops slow retail clearance.
         d_env_rho = max(rho - prev_env_rho, 0.0)
+        arrival_mult = max(1.0, float(inv) / float(INV_BASELINE))
+        sale_mult = max(0.1, float(y_hat) / float(BASELINE_DEMAND))
         batch_summary = batch_inv.step(
             hour=float(hours[idx]),
             d_env_rho=d_env_rho,
             action_idx=int(action_idx),
             ambient_temp_c=float(temp),
+            arrival_rate_multiplier=arrival_mult,
+            sale_rate_multiplier=sale_mult,
             dt_hours=0.25,
         )
         batch_effective_rho_trace.append(batch_summary["effective_rho"])
         batch_retail_qty_trace.append(batch_summary["retail_quantity"])
+        realized_action_trace.append(batch_summary["realized_route"])
+        lr_rejected_trace.append(batch_summary["lr_rejected_units_cumulative"])
+        lr_downgraded_trace.append(batch_summary["lr_downgraded_units_cumulative"])
         prev_env_rho = float(rho)
 
         # Collect traces
@@ -969,6 +991,14 @@ def run_episode(
         # Preferred over effective_rho_trace when present.
         "batch_effective_rho_trace": batch_effective_rho_trace,
         "batch_retail_quantity_trace": batch_retail_qty_trace,
+        # Capacity-aware tracking: per-step realized routing action
+        # after the BatchInventory's tier-capacity / fallback policy
+        # is applied. May differ from action_trace when LR or Recovery
+        # capacity is saturated (chosen=LR but realized=recovery, or
+        # chosen=recovery but realized=stayed_in_dc).
+        "realized_action_trace": realized_action_trace,
+        "lr_rejected_units_trace": lr_rejected_trace,
+        "lr_downgraded_units_trace": lr_downgraded_trace,
         "prob_trace": prob_trace, "reward_trace": reward_trace,
         "cumulative_reward": cumulative_reward, "carbon_trace": carbon_trace,
         "slca_component_trace": slca_component_trace, "slca_trace": slca_vals,
