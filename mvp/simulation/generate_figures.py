@@ -717,7 +717,7 @@ def fig4_cyber(data):
     ax.set_title("(a) Adaptive Resilience Index")
     _apply_style(ax)
     _annotate_window(ax, 24, 72, WINDOW_COLOR, "Outage")
-    _legend(ax, loc="lower left")
+    _legend(ax, loc="lower right")
 
     # --- (b) Action distribution pre/during outage ---
     ax = axes[1]
@@ -821,28 +821,48 @@ def fig4_cyber(data):
                edgecolors="white", linewidths=0.6, zorder=4,
                label="Dynamic policy (per-step)")
 
-    # During outage: deterministic edge-stack rate as open squares with a
-    # heavier connecting line, signalling a different (constant-by-design)
-    # quantity is being plotted on the same axis.
+    # During outage: the dynamic softmax does not run. select_action
+    # returns a hardcoded distribution [1-p, p, 0] where p =
+    # CYBER_REROUTE_PROB[mode] (0.74 for AgriBrain, see
+    # action_selection.py). So max(probs) = p at every step by
+    # construction. We render this as a single horizontal *reference
+    # band* rather than dense per-step markers (which look like a
+    # confidence trace and visually conflate the two regimes).
+    # The band makes it explicit: this is a constant-by-design value,
+    # not a per-step measurement.
     if during_idx.any():
         during_t = audit_times_full[during_idx]
         during_v = confidence_scores_full[during_idx]
-        ax.plot(during_t, during_v, color="#1A237E", linewidth=1.6, alpha=0.85, zorder=3)
-        ax.scatter(during_t, during_v, marker="s", facecolors="none",
-                   edgecolors="#1A237E", linewidths=1.4, s=46, zorder=4,
-                   label="Edge-stack reroute rate (mode-dependent)")
-        # Annotate the constant value once, near the right edge.
+        p_reroute = float(during_v[-1])
+        # Thin solid line spanning the outage range at y = p_reroute.
+        ax.plot([during_t[0], during_t[-1]], [p_reroute, p_reroute],
+                color="#1A237E", linewidth=2.4, alpha=0.92,
+                solid_capstyle="round", zorder=3,
+                label=f"Edge-stack reroute rate (p = {p_reroute:.2f})")
+        # In-panel callout that explains the regime change. Placed
+        # high in the outage band so it does not overlap the band line.
+        callout_x = (during_t[0] + during_t[-1]) / 2.0
         ax.annotate(
-            f"p_reroute = {during_v[-1]:.2f}",
-            xy=(during_t[-1], during_v[-1]),
-            xytext=(-6, 14), textcoords="offset points",
-            ha="right", va="bottom", fontsize=10, color="#1A237E",
+            "Outage regime: centralised policy offline.\n"
+            "Plotted value is the fixed edge-stack\n"
+            "reroute success rate, not a per-step\n"
+            "decision confidence.",
+            xy=(callout_x, p_reroute),
+            xytext=(callout_x, 0.32),
+            ha="center", va="center", fontsize=9.5,
+            color="#1A237E", fontweight="bold",
+            bbox=dict(boxstyle="round,pad=0.35", facecolor="white",
+                      edgecolor="#1A237E", linewidth=0.8, alpha=0.92),
+            arrowprops=dict(arrowstyle="-", color="#1A237E",
+                            linewidth=0.8, alpha=0.6),
         )
 
     ax.axhline(BAND, color="#424242", linestyle="--", linewidth=1.2,
                label=f"Committed-decision band (≥{BAND:.2f})")
     ax.set_xlabel("Hours")
-    ax.set_ylabel("Decision Confidence")
+    # Y-axis carries two semantically distinct quantities — see the
+    # in-panel callouts and the legend keys for the regime split.
+    ax.set_ylabel("Confidence / Reroute Rate")
     ax.set_title("(c) Policy Confidence Trace")
     ax.set_ylim(-0.02, 1.02)
     _apply_style(ax)
