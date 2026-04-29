@@ -805,28 +805,26 @@ def fig4_cyber(data):
     # Outage onset: vertical guide where the regime transitions.
     ax.axvline(24.0, color="#424242", linestyle="--", linewidth=1.2, alpha=0.8)
 
-    # Compact in-panel callout explaining the metric semantics across
-    # the two regimes.
+    # Compact in-panel regime labels. Full semantics live in the
+    # function docstring / figure caption; the in-panel labels just
+    # signal where the policy regime changes.
     ax.text(
         12.0, 0.96,
-        "Pre-outage: dynamic softmax + sampling\n"
-        "(rolling fraction of policy reroutings)",
-        ha="center", va="top", fontsize=9.5, color="#212121",
-        bbox=dict(boxstyle="round,pad=0.30", facecolor="white",
+        "Dynamic softmax",
+        ha="center", va="top", fontsize=10, color="#212121",
+        bbox=dict(boxstyle="round,pad=0.25", facecolor="white",
                   edgecolor="#9E9E9E", linewidth=0.6, alpha=0.92),
     )
     ax.text(
         48.0, 0.96,
-        "Outage: edge-stack Bernoulli\n"
-        "(rolling fraction is the empirical\n"
-        "realised reroute success rate)",
-        ha="center", va="top", fontsize=9.5, color="#212121",
-        bbox=dict(boxstyle="round,pad=0.30", facecolor="white",
+        "Edge-stack Bernoulli",
+        ha="center", va="top", fontsize=10, color="#212121",
+        bbox=dict(boxstyle="round,pad=0.25", facecolor="white",
                   edgecolor="#9E9E9E", linewidth=0.6, alpha=0.92),
     )
 
     ax.set_xlabel("Hours")
-    ax.set_ylabel("Reroute Rate (3 h rolling)")
+    ax.set_ylabel("Reroute Rate")
     ax.set_title("(c) Realized Rerouting Rate")
     ax.set_ylim(-0.02, 1.02)
     _apply_style(ax)
