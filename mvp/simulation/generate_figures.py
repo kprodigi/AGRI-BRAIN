@@ -1477,7 +1477,7 @@ def fig8_green_ai(data):
 
     # --- (a) Cumulative CO2 for heatwave scenario ---
     ax = axes[0]
-    fig8a_modes = ["static", "hybrid_rl", "no_pinn", "agribrain"]
+    fig8a_modes = ["static", "hybrid_rl", "agribrain"]
     for mode in fig8a_modes:
         ep = hw[mode]
         cum_carbon = np.cumsum(ep["carbon_trace"])
@@ -1492,7 +1492,7 @@ def fig8_green_ai(data):
     # top-anchored legend strip does not collide with it.
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave", ypos=0.55)
     # Legend anchored to the upper right of the panel \u2014 keeps the
-    # 4-entry row (Static, Hybrid RL, No PINN, AgriBrain) clear of
+    # 3-entry row (Static, Hybrid RL, AgriBrain) clear of
     # the y-axis label and tick marks on the left side.
     _legend(ax, loc="upper right",
             bbox_to_anchor=(0.99, 0.99), ncol=len(fig8a_modes),
