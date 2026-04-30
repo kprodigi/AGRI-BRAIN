@@ -30,10 +30,9 @@ rev. 2 sector codes:
 
 PSILCA's worker-hour or direct-impact method (the latter introduced in
 the 2024 PSILCA update; Krüger et al., 2024) would replace each L/R/P
-prior with a measured risk-hour score. We treat that PSILCA-grounded
-calibration as future work — it requires a licensed copy of the
-database — and label the present scoring as a "social-performance
-proxy" in the manuscript.
+prior with a measured risk-hour score. A PSILCA-grounded calibration
+requires a licensed copy of the database; the present scoring is
+labelled a "social-performance proxy" in the manuscript.
 
 Components
 ----------

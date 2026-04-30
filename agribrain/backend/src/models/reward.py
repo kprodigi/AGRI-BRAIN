@@ -110,7 +110,7 @@ Reasons the linear form is retained:
 
 A hypervolume-indicator based evaluation (Zitzler & Thiele, 1998;
 Hayes et al., 2022) is the natural extension if a non-convex front
-is observed in future scenarios. We treat that as future work.
+is observed in future scenarios.
 
 Backward compatibility
 ----------------------

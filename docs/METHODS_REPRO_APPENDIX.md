@@ -124,8 +124,7 @@ REPRO_RUN_CONTEXT_BENCHMARK=true python mvp/simulation/reproduce_core.py
 - This check verifies that method ranking and relative gains persist
   across early, mid, and late thirds of the **same** 288-row sensor
   trace. It is *not* external validity in the methodological sense
-  (no second dataset, second crop, or second region). Genuine
-  external validity is future work.
+  (no second dataset, second crop, or second region).
 
 ## 7) Figure Uncertainty Policy
 

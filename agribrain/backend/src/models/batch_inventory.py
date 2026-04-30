@@ -199,9 +199,7 @@ class BatchInventory:
             inventory level vs INV_BASELINE so that overproduction
             scenarios (where aggregate inventory climbs to ~5x
             baseline) actually push more batches through BatchInventory,
-            forcing tier-capacity to bind under surge - addressing
-            the "BatchInventory's flow is constant across scenarios"
-            limitation of the previous design.
+            forcing tier-capacity to bind under surge.
         sale_rate_multiplier : per-step multiplier on the retail
             sale rate. Default 1.0 preserves baseline. The simulator
             drives this from the observed demand level vs

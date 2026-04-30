@@ -118,7 +118,7 @@ regulatory document, or a recovery-capacity update may exist somewhere
 in the digital stack, but not in a representation that can
 systematically enter another agent's policy computation. As a result,
 supply-chain intelligence remains modular rather than truly coordinated.
-For perishable systems, this limitation is costly because the decision
+For perishable systems, this gap is costly because the decision
 context is inherently distributed across physical measurements,
 operational rules, historical precedents, and external constraints. A
 routing policy that only reads local state variables cannot naturally
@@ -147,10 +147,10 @@ Structural explainability therefore does not arise independently of
 coordination; it becomes achievable because coordinated,
 machine-actionable communication makes the decision pathway inspectable
 by construction. This need also aligns with broader concerns in process
-systems engineering regarding the limitations of purely data-driven AI,
-especially in scientific and engineering domains where feasible
-decisions must remain consistent with physical knowledge, constraints,
-and domain-specific logic (Venkatasubramanian, 2019; Venkatasubramanian
+systems engineering regarding purely data-driven AI, especially in
+scientific and engineering domains where feasible decisions must
+remain consistent with physical knowledge, constraints, and
+domain-specific logic (Venkatasubramanian, 2019; Venkatasubramanian
 and Chakraborty, 2025).
 
 A third related issue concerns how **nonlocal decision objectives**,
@@ -264,8 +264,7 @@ the system requirements and design principles. Section 3 presents the
 AGRI-BRAIN methodology, including the perception models, communication
 architecture, routing policy, and governance layer. Section 4 reports
 the case-study results, ablation analyses, and robustness tests. Section
-5 concludes with limitations, implications, and future research
-directions.
+5 concludes with implications and discussion.
 
 # System Requirements and Design Principles of AGRI-BRAIN
 

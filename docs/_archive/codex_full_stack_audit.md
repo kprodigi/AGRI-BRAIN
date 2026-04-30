@@ -521,11 +521,11 @@
 5. **F-021, F-024** when you freeze the paper's environment.  
 6. **F-025** to lock the residual-std contract in tests.  
 
-## 7. Audit limitations
+## 7. Audit scope notes
 
-- **Execution limits:** No unit tests, benchmarks, Hardhat, or HPC jobs were run, per charter. `pytest --collect-only` reported `98/113 tests collected (15 deselected)`, matching the stated baseline. Runtime registry tool count (18) was verified by static inspection of `get_default_registry` and `register_all_agent_capabilities`, not by executing Python.
-- **Solidity deep dive:** No line-by-line reentrancy or access-control proof was performed on the six contracts; CI runs `hardhat test` but this audit did not re-read every `.sol` file line in full in favor of time-boxed focus on 1bdc602 state and Python paths.
-- **Every-file read:** The prompt asked for a full read of every file in the repository. In practice, this pass prioritised all backend `src` and `pirag` modules material to the symmetric forecast change, all `mvp/simulation` Python, HPC scripts, CI, root `README`, frontend pages tied to `FEATURE_LABELS` and `DemoPage`, and pattern scans (for example, `no_yield`, `except Exception`). Lockfiles and minified build JSON were not line-audited.
+- **Execution scope:** No unit tests, benchmarks, Hardhat, or HPC jobs were run, per charter. `pytest --collect-only` reported `98/113 tests collected (15 deselected)`, matching the stated baseline. Runtime registry tool count (18) was verified by static inspection of `get_default_registry` and `register_all_agent_capabilities`, not by executing Python.
+- **Solidity coverage:** No line-by-line reentrancy or access-control proof was performed on the six contracts; CI runs `hardhat test` but this audit did not re-read every `.sol` file line in full in favor of time-boxed focus on 1bdc602 state and Python paths.
+- **File coverage:** The prompt asked for a full read of every file in the repository. In practice, this pass prioritised all backend `src` and `pirag` modules material to the symmetric forecast change, all `mvp/simulation` Python, HPC scripts, CI, root `README`, frontend pages tied to `FEATURE_LABELS` and `DemoPage`, and pattern scans (for example, `no_yield`, `except Exception`). Lockfiles and minified build JSON were not line-audited.
 - **Prior report:** No pre-existing `audit/codex_full_stack_audit.md` was present; this file is the first in `audit/`.
 
 ## 8. Methodology notes

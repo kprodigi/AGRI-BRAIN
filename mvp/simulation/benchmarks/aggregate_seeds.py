@@ -789,8 +789,9 @@ def main():
                 # comparable RLE. regulatory_violation_rate is
                 # structurally zero for non-MCP baselines (static,
                 # hybrid_rl, no_pinn, no_slca) because they don't
-                # invoke the compliance tool — same caveat. Reviewers
-                # should not interpret these as falsifiable contrasts.
+                # invoke the compliance tool — same structural-zero
+                # pattern. Reviewers should not interpret these as
+                # falsifiable contrasts.
                 if met == "rle" and baseline == "static":
                     rec["descriptive_only"] = True
                     rec["descriptive_only_reason"] = (

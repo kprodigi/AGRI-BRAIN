@@ -3,15 +3,12 @@
 
 This script evaluates whether method ordering and relative gains persist
 across early, mid, and late thirds of the SAME 288-row sensor trace.
-
-This is NOT external validity in the methodological sense — it is a
-within-trace temporal-stability hold-out. Genuine external validity
-(different crop, different region, real field telemetry) is out of
-scope for this manuscript and is flagged as future work in
-future work. Filenames (`external_validity_*.{json,csv}`)
-are preserved for backward compatibility with the artifact manifest;
-every prose reference to this check should use the
-"within-trace temporal stability" wording.
+It is a within-trace temporal-stability hold-out, not external
+validity in the methodological sense (which would require a second
+dataset, second crop, or second region). Filenames
+(`external_validity_*.{json,csv}`) are preserved for backward
+compatibility with the artifact manifest; every prose reference to
+this check should use the "within-trace temporal stability" wording.
 """
 from __future__ import annotations
 

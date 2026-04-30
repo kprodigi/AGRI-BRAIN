@@ -186,13 +186,13 @@ SAVE_CEIL: dict[str, float] = {
 #
 # Honest scope of this design choice:
 #   - The four deltas are calibration constants, not measurements.
-#     The right way to fix them is to replace each with the empirical
-#     mean save factor observed in the corresponding ablation arm,
-#     with bootstrap CIs. This requires re-running the ablation grid
-#     with save-factor logging enabled and is tracked as future work.
-#   - In the meantime, the *capability composition* (which capabilities
-#     each mode has) is the load-bearing claim. Sensitivity to the
-#     four deltas at ±25 % is exercised in
+#     A measured replacement would substitute each delta with the
+#     empirical mean save factor observed in the corresponding
+#     ablation arm with bootstrap CIs — this requires re-running the
+#     ablation grid with save-factor logging enabled.
+#   - The *capability composition* (which capabilities each mode has)
+#     is the load-bearing claim. Sensitivity to the four deltas at
+#     ±25 % is exercised in
 #     tests/test_metric_variants.py::test_mode_eff_ranking_invariant
 #     to confirm the rank ordering is robust.
 #

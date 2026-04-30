@@ -21,8 +21,8 @@ the canonical entry points.
 ### `codex_full_stack_audit.md`
 Result of the first hostile-reviewer audit pass (2026-04). Each
 finding in this document was either fixed in the codebase or
-intentionally accepted as a documented limitation; the current
-state is reflected in the live tests (`backend/pirag/tests/`,
+intentionally deferred and recorded in the post-fix update; the
+current state is reflected in the live tests (`backend/pirag/tests/`,
 `backend/tests/`) and in `mvp/simulation/results/artifact_manifest.json`.
 
 ## Status

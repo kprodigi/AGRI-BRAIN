@@ -76,11 +76,10 @@ component of action selection.
    actions the policy chooses, not only the per-action save floor.
    This is documented in `docs/MODE_EFF_EMPIRICAL.md`."*
 
-3. **Future work**: a multiplicative-interaction term `δ_PS · 1[PINN]
-   · 1[SLCA]` would close most of the no_slca gap (negative
-   coefficient). Adding it requires re-running the ablation grid
-   with each two-way capability combination held out, which we treat
-   as future calibration work.
+3. **Interaction-term extension**: a multiplicative-interaction term
+   `δ_PS · 1[PINN] · 1[SLCA]` would close most of the no_slca gap
+   (negative coefficient). Adding it requires re-running the ablation
+   grid with each two-way capability combination held out.
 
 ## Reproduction
 
