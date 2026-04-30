@@ -1596,7 +1596,74 @@ def fig8_green_ai(data):
 
 
 def _fig9_load_alignment():
-    """Return per-scenario context-honour summary (honored, ignored, rate)."""
+    """Return per-scenario context-honour summary (honored, ignored, rate).
+
+    Resolution order:
+
+      1. ``benchmark_summary.json`` aggregated across all seeds. The
+         aggregator records ``context_active_steps`` / ``context_honored_steps`` /
+         ``context_honor_rate`` per (scenario, mode) as multi-seed means
+         in the canonical run summary, so this is the broadest source —
+         it covers all 5 scenarios when the benchmark has run them, even
+         if the per-scenario ``context_alignment_<scenario>.json`` files
+         were not all written (e.g., when a partial HPC run only emitted
+         a subset).
+      2. Fallback: per-scenario ``context_alignment_<scenario>.json``
+         files (single-seed, written by ``run_all`` directly). Use
+         whichever scenarios have files when the summary is missing.
+
+    The two paths give different numbers — the summary is the multi-seed
+    average (e.g. heatwave honour ~52% across 20 seeds) while the per-
+    scenario file is single-seed (e.g. heatwave 74% on seed 42). The
+    multi-seed source is more representative of the published claim and
+    is preferred. Either way the rows have the same shape so the panel-C
+    bar-chart code is unchanged.
+    """
+    rows = _fig9_load_alignment_from_summary()
+    if rows:
+        return rows
+    return _fig9_load_alignment_from_files()
+
+
+def _fig9_load_alignment_from_summary():
+    """Pull per-scenario context-honour stats from benchmark_summary.json."""
+    summary_path = RESULTS_DIR / "benchmark_summary.json"
+    if not summary_path.exists():
+        return []
+    import json as _json_mod
+    payload = _json_mod.loads(summary_path.read_text(encoding="utf-8"))
+    if isinstance(payload, dict) and isinstance(payload.get("summary"), dict):
+        summary = payload["summary"]
+    else:
+        summary = payload
+    rows = []
+    for s in SCENARIOS:
+        ag = summary.get(s, {}).get("agribrain", {})
+        if not isinstance(ag, dict):
+            continue
+        cas = ag.get("context_active_steps")
+        chs = ag.get("context_honored_steps")
+        chr_ = ag.get("context_honor_rate")
+        cas_mean = float(cas["mean"]) if isinstance(cas, dict) and "mean" in cas else None
+        chs_mean = float(chs["mean"]) if isinstance(chs, dict) and "mean" in chs else None
+        chr_mean = float(chr_["mean"]) if isinstance(chr_, dict) and "mean" in chr_ else None
+        if cas_mean is None or chr_mean is None:
+            continue
+        if cas_mean <= 0:
+            continue
+        honored = int(round(chs_mean if chs_mean is not None else cas_mean * chr_mean))
+        rows.append({
+            "scenario": s,
+            "label": SCENARIO_LABELS.get(s, s),
+            "honored": honored,
+            "ignored": max(0, int(round(cas_mean)) - honored),
+            "rate": chr_mean,
+        })
+    return rows
+
+
+def _fig9_load_alignment_from_files():
+    """Fallback: per-scenario context_alignment_<scenario>.json files."""
     align_files = [RESULTS_DIR / f"context_alignment_{s}.json" for s in SCENARIOS]
     import json as _json_mod
     rows = []
@@ -1984,20 +2051,40 @@ def fig9_fault_degradation():
         rates_pct = [100.0 * r["rate"] for r in align_rows]
         actives = [r["honored"] + r["ignored"] for r in align_rows]
         x = np.arange(len(labels))
+        # Random baseline: 1/3 because the policy picks one of three
+        # actions (CC / LR / Recovery). A blind agent with no context
+        # signal would honour the recommendation 33% of the time on
+        # average, so any rate above this band is a real context-driven
+        # effect. Drawn first so the bars overlay it.
+        random_pct = 100.0 / 3.0
+        ax.axhline(random_pct, color="#9E9E9E", linewidth=1.4,
+                   linestyle="--", alpha=0.85, zorder=1,
+                   label=f"Random baseline ({random_pct:.0f}%)")
         ax.bar(x, rates_pct, width=0.65,
                color=COLORS.get("agribrain", "#2E7D32"),
-               edgecolor="white", linewidth=0.8, alpha=0.95)
+               edgecolor="white", linewidth=0.8, alpha=0.95, zorder=2)
         for xi, (pct, n) in enumerate(zip(rates_pct, actives)):
-            ax.text(xi, pct + 2.0, f"{pct:.1f}%", ha="center", va="bottom",
+            mult = pct / random_pct if random_pct > 0 else 0.0
+            # Stack two annotations above each bar: the headline rate,
+            # then the multiple-of-random in parentheses on the line
+            # below so the reader sees the effect size at a glance
+            # without doing the arithmetic against the dashed baseline.
+            ax.text(xi, pct + 5.5, f"{pct:.1f}%",
+                    ha="center", va="bottom",
                     fontsize=_F9_ANNOT, fontweight="bold", color="#212121")
+            ax.text(xi, pct + 2.0, f"({mult:.1f}× random)",
+                    ha="center", va="bottom",
+                    fontsize=_F9_ANNOT - 3, fontweight="bold", color="#424242")
             if pct >= 18:
                 ax.text(xi, pct - 3, f"n={n}", ha="center", va="top",
                         fontsize=_F9_ANNOT - 3, fontweight="bold", color="white")
         ax.set_xticks(x)
         ax.set_xticklabels(labels, rotation=20, ha="right")
         ax.set_ylim(0, 110)
-        ax.axhline(80, color="#9E9E9E", linewidth=1.0, linestyle=":",
-                   alpha=0.7, zorder=0)
+        # Compact legend so the random-baseline reference reads as a
+        # documented statistical floor rather than an arbitrary line.
+        ax.legend(loc="upper right", fontsize=_F9_LEG - 2,
+                  framealpha=0.92, edgecolor="#9E9E9E")
     else:
         ax.text(0.5, 0.5, "no context_alignment_*.json files",
                 ha="center", va="center", transform=ax.transAxes,

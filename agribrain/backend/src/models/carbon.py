@@ -76,13 +76,15 @@ def compute_transport_carbon(
     carbon_per_km: float,
     thermal_stress: float = 0.0,
     cop_penalty: float = REFRIG_COP_PENALTY,
+    eff_factor: float = 1.0,
 ) -> float:
     """Compute carbon emissions for a routing action.
 
     Combines GHG Protocol activity-based transport emissions with
-    COP degradation under thermal stress:
+    COP degradation under thermal stress and an optional mode-
+    conditional efficiency multiplier:
 
-        E = km × carbon_per_km × (1 + cop_penalty × thermal_stress)
+        E = km × carbon_per_km × eff_factor × (1 + cop_penalty × thermal_stress)
 
     Parameters
     ----------
@@ -91,10 +93,18 @@ def compute_transport_carbon(
     thermal_stress : normalised thermal stress θ ∈ [0, 1].
         θ = clamp((T_ambient − T₀) / ΔT_max, 0, 1)
     cop_penalty : COP degradation coefficient (default 0.40).
+    eff_factor : mode-conditional efficiency multiplier in (0, 1].
+        1.0 means baseline (no optimisation); values < 1 represent the
+        per-dispatch carbon reduction from PINN-timed dispatching,
+        SLCA-shaped partner selection, and context-aware route
+        optimisation. See ``waste.MODE_CARBON_EFF`` for the per-mode
+        values and provenance. Default 1.0 preserves the previous
+        behaviour for any caller that has not migrated to the
+        mode-conditional API.
 
     Returns
     -------
     Total carbon emissions in kg CO₂-eq.
     """
-    base_carbon = km * carbon_per_km
+    base_carbon = km * carbon_per_km * float(eff_factor)
     return base_carbon * (1.0 + cop_penalty * thermal_stress)

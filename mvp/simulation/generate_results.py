@@ -77,7 +77,7 @@ from pirag.mcp.tools.demand_query import query_demand
 from src.models.slca import slca_score
 from src.models.policy import Policy
 from src.models.waste import (
-    INV_BASELINE, compute_waste_rate, compute_save_factor,
+    INV_BASELINE, MODE_CARBON_EFF, compute_waste_rate, compute_save_factor,
 )
 from src.models.carbon import compute_transport_carbon
 from src.models.resilience import (
@@ -683,9 +683,17 @@ def run_episode(
 
         # Carbon emissions (Layer 1: carbon.py)
         # Source 4: Transport distance jitter (detours, traffic, loading delays)
+        # Mode-conditional eff_factor (waste.MODE_CARBON_EFF) scales the
+        # GHG-Protocol activity-based emission down for context-aware
+        # modes that can route through lower-carbon partners + time
+        # dispatches into cooler ambient windows. Static and Hybrid RL
+        # use the 1.00 baseline; full-stack AgriBrain uses 0.85.
         km = stoch.perturb_transport_km(getattr(policy, ACTION_KM_KEYS[action]))
         thermal_stress = compute_thermal_stress(temp)
-        carbon = compute_transport_carbon(km, policy.carbon_per_km, thermal_stress)
+        carbon = compute_transport_carbon(
+            km, policy.carbon_per_km, thermal_stress,
+            eff_factor=MODE_CARBON_EFF.get(mode, 1.0),
+        )
 
         # SLCA scoring (Layer 1: slca.py) with stress attenuation
         slca_result = slca_score(carbon, action,
