@@ -1,16 +1,26 @@
 {
-  "git_commit": "9d3a801c2813e24b86f2b5d02ba917da85e62a4a",
-  "artifact_count": 123,
+  "git_commit": "f3189915afc07e0d52cdb8a0a65decdae4d160f7",
+  "artifact_count": 92,
   "artifacts": [
     {
+      "file": "artifact_manifest.json",
+      "bytes": 21764,
+      "sha256": "d0c8e7d9e7d2364fed0bf5d6d05a87e969e200b22800ee9d39d70973083a712c"
+    },
+    {
       "file": "benchmark_context_significance.json",
-      "bytes": 21203,
-      "sha256": "10becb3384cbe39bec3bf3eaca55e4058be8445aa71a7bc7abbf2f4f7b963340"
+      "bytes": 119329,
+      "sha256": "bb6b78b605daa4ea5180841ccfeef50f3c115742d4395e55377b2bb2ee127f1f"
     },
     {
       "file": "benchmark_context_summary.json",
-      "bytes": 182106,
-      "sha256": "4ab3b319b6f07dd0ab902a82ff20dbc6d9fbf1fc668366331cc8afa3c957c0d4"
+      "bytes": 46502,
+      "sha256": "49a86721f6cdf59cc10b0513611136356d0ec9b8d1cafd18b4bf147ec9cd2e4b"
+    },
+    {
+      "file": "benchmark_robustness_singleseed.json",
+      "bytes": 34993,
+      "sha256": "7a8bcb595f1a45b95b0741f660dd800cf5799cf7e739a9f73153300c584cc173"
     },
     {
       "file": "benchmark_significance.json",
@@ -23,359 +33,229 @@
       "sha256": "dc84cca5700819bc0e268fd34abd7e7f936c1df4c48cc0d3aec67556ede0403e"
     },
     {
-      "file": "context_alignment_adaptive_pricing.json",
-      "bytes": 981,
-      "sha256": "1380192a89472b47e104c70e230a37c4c7404b3bb16b103a4cc43215c06d7aea"
-    },
-    {
-      "file": "context_alignment_adaptive_pricing_agribrain_cold_start.json",
-      "bytes": 992,
-      "sha256": "0946ac42eda0ebc7ab0a8ceb3b63625d79a848f6a5465257a8e85dd91d9d104d"
-    },
-    {
-      "file": "context_alignment_adaptive_pricing_agribrain_no_bonus.json",
-      "bytes": 887,
-      "sha256": "91d4b6269193a0324e36d173b4dcf8238cddb3b3c23f9022d45facbb3bdcc272"
-    },
-    {
-      "file": "context_alignment_adaptive_pricing_agribrain_pert_10.json",
-      "bytes": 989,
-      "sha256": "dae367a1d664c52b19c9e0d793fcb29732e67d1f9d8068c5cc2a7a4824c7aa39"
-    },
-    {
-      "file": "context_alignment_adaptive_pricing_agribrain_pert_10_static.json",
-      "bytes": 893,
-      "sha256": "19438d7be7c35afeee9f6b1307400e1e55928592a45a5dec8bc74597edf40b1b"
-    },
-    {
-      "file": "context_alignment_adaptive_pricing_agribrain_pert_25.json",
-      "bytes": 989,
-      "sha256": "ffe9a0b580c0a93a390919d7095414770214bbdea70683bdaf1005f9f49ae88c"
-    },
-    {
-      "file": "context_alignment_adaptive_pricing_agribrain_pert_25_static.json",
-      "bytes": 893,
-      "sha256": "2fb757f185928b66ee8b6023ba64fd8dd0a86c35081959c2fdbfc502fb886cae"
-    },
-    {
-      "file": "context_alignment_adaptive_pricing_agribrain_pert_50.json",
-      "bytes": 989,
-      "sha256": "bd7e2d0619ec5f5c25c2f3a6f8c4a8fb9dc4691f1366b30ee24811f0e2915de4"
-    },
-    {
-      "file": "context_alignment_adaptive_pricing_agribrain_pert_50_static.json",
-      "bytes": 893,
-      "sha256": "e4205906f18bc7345598e307aa1c6f9eb49eadd4de15e4bd64b1e271bc4cb907"
-    },
-    {
-      "file": "context_alignment_adaptive_pricing_agribrain_theta_pert_10.json",
-      "bytes": 892,
-      "sha256": "592ee7d9c54453be01e703d3cc7fdd3da142dbbbc9a2fc80c5c12d9386c25fe1"
-    },
-    {
-      "file": "context_alignment_adaptive_pricing_agribrain_theta_pert_25.json",
-      "bytes": 892,
-      "sha256": "121fb5920dc05ee2046c5d65406168ddb91b26c2866163a148f1e25919e4291c"
-    },
-    {
-      "file": "context_alignment_adaptive_pricing_agribrain_theta_pert_50.json",
-      "bytes": 892,
-      "sha256": "e3c78b20fc8eb55cb98e3818eac10524ed6d8132736c350aed8446230206bd14"
-    },
-    {
-      "file": "context_alignment_adaptive_pricing_mcp_only.json",
-      "bytes": 983,
-      "sha256": "79831b819020eb337e32a571af887785b6f9bae139125c4795cd981c1300d50a"
-    },
-    {
-      "file": "context_alignment_adaptive_pricing_pirag_only.json",
-      "bytes": 987,
-      "sha256": "ef0becd2ae6a87d863d13e1180f2a40852a7ec4a5809b1ac3a36d505cd89018f"
-    },
-    {
-      "file": "context_alignment_baseline.json",
-      "bytes": 958,
-      "sha256": "a7a73690d57450b6f74b67db75292300b59f298a46d1a95a5e554e0090f40659"
-    },
-    {
-      "file": "context_alignment_baseline_agribrain_cold_start.json",
-      "bytes": 969,
-      "sha256": "33c47545cf02fce756fd2088852a6dbea98e7f5971e987c36cf2419106280f0d"
-    },
-    {
-      "file": "context_alignment_baseline_agribrain_no_bonus.json",
-      "bytes": 879,
-      "sha256": "840bfb89415e47f3695a06901086798a1094e184261501dc3bd2b2a5fea31b65"
-    },
-    {
-      "file": "context_alignment_baseline_agribrain_pert_10.json",
-      "bytes": 966,
-      "sha256": "5a2fe3156fb232c2f5d19c65b9ea419e9735a980b6ff7a2b2313cbca0c809513"
-    },
-    {
-      "file": "context_alignment_baseline_agribrain_pert_10_static.json",
-      "bytes": 885,
-      "sha256": "1001e0cb1f86ebc96a3796baa83638b1713c832226e0644e0552f11f11333d7a"
-    },
-    {
-      "file": "context_alignment_baseline_agribrain_pert_25.json",
-      "bytes": 966,
-      "sha256": "b56343f7b00b36ecdaf1334ae015dc17a332acc882f43662d22fc2932c924428"
-    },
-    {
-      "file": "context_alignment_baseline_agribrain_pert_25_static.json",
-      "bytes": 885,
-      "sha256": "a802ed8ea01bced8498f79583e3ee3d56a33acb94c49dd726ea67168f3725799"
-    },
-    {
-      "file": "context_alignment_baseline_agribrain_pert_50.json",
-      "bytes": 966,
-      "sha256": "66f19cbbbcb3a1e55b54415f6321d76a9cb18d0cb357d31b19e4ce64952b04af"
-    },
-    {
-      "file": "context_alignment_baseline_agribrain_pert_50_static.json",
-      "bytes": 885,
-      "sha256": "e502f546ed9a481f9556538e18317a5e80dbb6bb18f8ae2a0305c4ae07ec2fed"
-    },
-    {
-      "file": "context_alignment_baseline_agribrain_theta_pert_10.json",
-      "bytes": 884,
-      "sha256": "cda1d021fd2f92c5d550f47da28259f04c1672f57160ef36b78c59177e0538cd"
-    },
-    {
-      "file": "context_alignment_baseline_agribrain_theta_pert_25.json",
-      "bytes": 884,
-      "sha256": "0b780f40580ca01180f0ac7b8d37313f6074cc58019ad61a9455ab3c1693a0ac"
-    },
-    {
-      "file": "context_alignment_baseline_agribrain_theta_pert_50.json",
-      "bytes": 884,
-      "sha256": "c5ebd5f7d76c45a17f5c94dce79778d0521526df71ea0eaa0e2c405b121f52d6"
-    },
-    {
-      "file": "context_alignment_baseline_mcp_only.json",
-      "bytes": 971,
-      "sha256": "30e46d68fb52b171af56fa88091f0c6d319af43c6c6291ad74dbbf2889abc5a2"
-    },
-    {
-      "file": "context_alignment_baseline_pirag_only.json",
-      "bytes": 959,
-      "sha256": "f8bae0d8ce8e53c71a57d604e321e82e3bea34027e1c1a60659a568cc451ddb6"
-    },
-    {
       "file": "context_alignment_cyber_outage.json",
-      "bytes": 977,
-      "sha256": "583083d3dfec3d9ff6887410a4e12e2fe93d245d4f472f4b69f588fc58aa51bf"
+      "bytes": 1018,
+      "sha256": "243ae80b0d5a9a2443538fd959eab08507518f700006d7b785f1ca658e041397"
     },
     {
       "file": "context_alignment_cyber_outage_agribrain_cold_start.json",
-      "bytes": 983,
-      "sha256": "8d093f5541a49c870022ce30b196f1872d2941aece85aa757afffa65e95d2b9c"
+      "bytes": 1029,
+      "sha256": "843af02b65c1cfe37be899770ff00e8dfba1dcab82647bfa24a448e3c2ba38eb"
     },
     {
       "file": "context_alignment_cyber_outage_agribrain_no_bonus.json",
-      "bytes": 883,
+      "bytes": 929,
       "sha256": "d7204fe7bd86d500f38a3fe74b604ed487f9c989527055191f7a8a5fc52abbe4"
     },
     {
       "file": "context_alignment_cyber_outage_agribrain_pert_10.json",
-      "bytes": 985,
-      "sha256": "adf3dd96af620aeb5e73ed7eaf45ced9d555a85df2bc8b5708f724633b9e6efb"
+      "bytes": 928,
+      "sha256": "86cc50605317616659f51b2fddeae7db06092fc62ebfd6561803987b867fc0b8"
     },
     {
       "file": "context_alignment_cyber_outage_agribrain_pert_10_static.json",
-      "bytes": 889,
+      "bytes": 935,
       "sha256": "8b4e0bbe2a8a95ffe32bef488efdc7a9cbc96ff96500d527e5a1d2afd72ac403"
     },
     {
       "file": "context_alignment_cyber_outage_agribrain_pert_25.json",
-      "bytes": 985,
-      "sha256": "ef55fccc729020b4879207edd60515c50638e8ceacccd3f096d19341ff574ff4"
+      "bytes": 928,
+      "sha256": "6c1c0b9ffcc80473fb5345e43039745af979d1a356d09bb8d3864bda669c07af"
     },
     {
       "file": "context_alignment_cyber_outage_agribrain_pert_25_static.json",
-      "bytes": 889,
+      "bytes": 935,
       "sha256": "ef49b90efec329fcb1b34bb9487e04a378ba6878eb3b15337492a0ec2b08ec02"
     },
     {
       "file": "context_alignment_cyber_outage_agribrain_pert_50.json",
-      "bytes": 985,
-      "sha256": "6a0a14ec5eda022942b493a709f8898f6e23fccb2d3c034f3b24dfcebd4467b6"
+      "bytes": 928,
+      "sha256": "b99f42016bef10f2ebc61a3f4d3fa3a7264e6bbe276534248be59f35b29a4bfd"
     },
     {
       "file": "context_alignment_cyber_outage_agribrain_pert_50_static.json",
-      "bytes": 889,
+      "bytes": 935,
       "sha256": "4947c8b455e3293e32b07e36632d9a605d4bffbfe7ff080a267181e6d4df3583"
     },
     {
       "file": "context_alignment_cyber_outage_agribrain_theta_pert_10.json",
-      "bytes": 888,
+      "bytes": 934,
       "sha256": "e3b86b1a785c156fddcceb5ec04193cbf37d61c273ffffa8c8016a7bd6faface"
     },
     {
       "file": "context_alignment_cyber_outage_agribrain_theta_pert_25.json",
-      "bytes": 888,
+      "bytes": 934,
       "sha256": "0be15be5495f660c6c93a439eb92afb0e23ce152b12ddcd5dc21390497f32f74"
     },
     {
       "file": "context_alignment_cyber_outage_agribrain_theta_pert_50.json",
-      "bytes": 888,
+      "bytes": 934,
       "sha256": "f1c1d3bee9199f3751d7a6c0982e3115eff02167eafc4eb2aa88133e4e407b2a"
     },
     {
       "file": "context_alignment_cyber_outage_mcp_only.json",
-      "bytes": 967,
-      "sha256": "ff7caf9db71a233a7913687e9a923e44ed17744708bbbdee9d13e370cd829a74"
+      "bytes": 1029,
+      "sha256": "eeb42a4ca1c070272433a311a3b5ff97bc5e8e070d33b4556311e1147b419cd5"
     },
     {
       "file": "context_alignment_cyber_outage_pirag_only.json",
-      "bytes": 977,
-      "sha256": "9dc0d52ab4373835f0aab2785cf6692fafdc6ab47b4382da3ee36cb14858028e"
+      "bytes": 975,
+      "sha256": "2ae9fb03ed8575a3f6f78ea5157395976420bfd43dfe660fa6306f61e4262a81"
     },
     {
       "file": "context_alignment_heatwave.json",
-      "bytes": 958,
-      "sha256": "bf68dbe92495d41146e6f572dbe6a1120d42fe0d191a99e50f12afc52a934473"
+      "bytes": 1014,
+      "sha256": "0808b18df137250786485d15098f01b498b51abe7fa4cc2ce5e8997dfb8b39fd"
     },
     {
       "file": "context_alignment_heatwave_agribrain_cold_start.json",
-      "bytes": 969,
-      "sha256": "1d0f750950b56d78bac3d741f68ca1e2b1c12a4c6c4775d531b3d1279924dd2c"
+      "bytes": 1025,
+      "sha256": "bca3171d589b4b9fc6f7cc525e32cdb581b2f268bb852398f8424e67553e874a"
     },
     {
       "file": "context_alignment_heatwave_agribrain_no_bonus.json",
-      "bytes": 879,
+      "bytes": 925,
       "sha256": "8413764b6ed65d0dc1e7e7903500d06e6948f0de795eb2bc276247cc8560a908"
     },
     {
       "file": "context_alignment_heatwave_agribrain_pert_10.json",
-      "bytes": 966,
-      "sha256": "b6c45751e1c5376838d02bd9c65ad4f874f07a0e65680bdc7aed016c77b4d75e"
+      "bytes": 1022,
+      "sha256": "b326639861272ece4a0df9a6ca8b4491a10a697956e7b44a4a2cef6b93b6e66e"
     },
     {
       "file": "context_alignment_heatwave_agribrain_pert_10_static.json",
-      "bytes": 885,
+      "bytes": 931,
       "sha256": "6d8ba6300c8f8f87bdd24014493c612bcbdfd5c8b847189054ee3959c3c22e8b"
     },
     {
       "file": "context_alignment_heatwave_agribrain_pert_25.json",
-      "bytes": 891,
-      "sha256": "cff48fb9dc80e4a5e8f2498b5a5a1cc5af235edb8d7b09328c1a2974452b40c4"
+      "bytes": 1022,
+      "sha256": "40b73c1f3b3d21e64c17ceced5f66e17bcd55d80a59202aa202012d4b69a2780"
     },
     {
       "file": "context_alignment_heatwave_agribrain_pert_25_static.json",
-      "bytes": 885,
+      "bytes": 931,
       "sha256": "56e813eedef6764a7a4c1ce676e7e52d379b60b78beba00c3787ab112a87fec8"
     },
     {
       "file": "context_alignment_heatwave_agribrain_pert_50.json",
-      "bytes": 966,
-      "sha256": "d7ce2db9e5095f1686779b0725ca65fe0cb60581be088b2cf1a55bb3648c1a23"
+      "bytes": 967,
+      "sha256": "c04728ca6167dbe42aa00b7385bc783ab2535a97fc6b7787b93dedd449a7599a"
     },
     {
       "file": "context_alignment_heatwave_agribrain_pert_50_static.json",
-      "bytes": 885,
+      "bytes": 931,
       "sha256": "ac2eed5b5332a6eac1e93014a110ec7798319499dd33c7eb2057e470aed15f03"
     },
     {
       "file": "context_alignment_heatwave_agribrain_theta_pert_10.json",
-      "bytes": 884,
+      "bytes": 930,
       "sha256": "5ef051bb00d6131130269fbde7a20ee5b92f2b47fd77760667106c074c69b0ba"
     },
     {
       "file": "context_alignment_heatwave_agribrain_theta_pert_25.json",
-      "bytes": 884,
+      "bytes": 930,
       "sha256": "80174c63a362e981a88a2c6782574005b8c9745d234552e6c0a583dde25390bd"
     },
     {
       "file": "context_alignment_heatwave_agribrain_theta_pert_50.json",
-      "bytes": 884,
+      "bytes": 930,
       "sha256": "1904939280f4f6553961b2d2608f06648bfbe719fcbb458d969688d0b89b19a5"
     },
     {
       "file": "context_alignment_heatwave_mcp_only.json",
-      "bytes": 940,
-      "sha256": "4bcad27baa6e66661d133f6e6335c0889ded01d8c0cf16a0aebe979fdc518eea"
+      "bytes": 1028,
+      "sha256": "3da703974cc59811fddf4b483005156967559f1513082465cd69444a142a1c4b"
     },
     {
       "file": "context_alignment_heatwave_pirag_only.json",
-      "bytes": 960,
-      "sha256": "3ee0a0f477f197b879aff2ddbdc09e42ed12850795f374db7360c1a290b8e15c"
+      "bytes": 1015,
+      "sha256": "d20cd6b2e0ebae5e1bd88b92dc310760142a5e26fe142b8933c2adfa69a6fce1"
     },
     {
       "file": "context_alignment_overproduction.json",
-      "bytes": 907,
-      "sha256": "7717a995e6e7d70f167fd3ff844c3ce96996e9d367cdb34d388e626eb634c0d9"
+      "bytes": 1019,
+      "sha256": "4aa4f7b5e353736c1f6409e4c57f989266be4d92d8dabfedf7f6f9df42143a3c"
     },
     {
       "file": "context_alignment_overproduction_agribrain_cold_start.json",
-      "bytes": 933,
-      "sha256": "661782f885fa586243de13a7cd473cb52afe84e63e6a789ef05b68c0c1972662"
+      "bytes": 1031,
+      "sha256": "15a171ddb70c45521978742ccc41d45b816ed870b5a8a3c7c4fff27decaa422f"
     },
     {
       "file": "context_alignment_overproduction_agribrain_no_bonus.json",
-      "bytes": 885,
+      "bytes": 931,
       "sha256": "f3bcae7debf01a6660408ff9dc313eb8ab139e575239dfb5a6e7d06a30ecb317"
     },
     {
       "file": "context_alignment_overproduction_agribrain_pert_10.json",
-      "bytes": 915,
-      "sha256": "a19b7b08824b567b02cb7a24605c96152e25a2b5933272a1375b69fa5a64102c"
+      "bytes": 930,
+      "sha256": "2b7e2bbe2a43082dc28e96fe395ab10c3c66089c5e5cb117d177a5efe3d1e138"
     },
     {
       "file": "context_alignment_overproduction_agribrain_pert_10_static.json",
-      "bytes": 891,
+      "bytes": 937,
       "sha256": "82c4bf7918a38be0289a718de838b0a35da0fd5d97f8477321b24bb5f55fefd9"
     },
     {
       "file": "context_alignment_overproduction_agribrain_pert_25.json",
       "bytes": 930,
-      "sha256": "a9e5c63e37d97b197facdc5645fd12d67a6abf57a4da18997901c85c6feada96"
+      "sha256": "590e33235adb35bceb651bc0f09fad7ab0e7d0ab348b2efe05a231dff9b3a596"
     },
     {
       "file": "context_alignment_overproduction_agribrain_pert_25_static.json",
-      "bytes": 891,
+      "bytes": 937,
       "sha256": "ec9190b0924167101ec9075c5c171552b0d6e3cdaa406ea883e933154bfd5ea4"
     },
     {
       "file": "context_alignment_overproduction_agribrain_pert_50.json",
-      "bytes": 915,
-      "sha256": "8a2dbe63f502be624b577c65cc64e2dddeeb13dec815948d8c6241af9fc45561"
+      "bytes": 930,
+      "sha256": "e06b5155abccad6b01310d8d2f85f10e808a6ec610b2f5ea6cdb85b5bcce736b"
     },
     {
       "file": "context_alignment_overproduction_agribrain_pert_50_static.json",
-      "bytes": 891,
+      "bytes": 937,
       "sha256": "587277b8624106f39fe468c78b5bd3f195930d02d80ce35288964cdecc77c93e"
     },
     {
       "file": "context_alignment_overproduction_agribrain_theta_pert_10.json",
-      "bytes": 890,
+      "bytes": 936,
       "sha256": "1e4727c70f7077fe08948227896a5c7e32157c98e76218c12df0512c14d84545"
     },
     {
       "file": "context_alignment_overproduction_agribrain_theta_pert_25.json",
-      "bytes": 890,
+      "bytes": 936,
       "sha256": "fcb3294e63cefb7e606e528780badf56013ccb02dbfcc46dee6363bd61cd4023"
     },
     {
       "file": "context_alignment_overproduction_agribrain_theta_pert_50.json",
-      "bytes": 890,
+      "bytes": 936,
       "sha256": "06c653ea3f1a14433ca2d439af9bc1749df4674ab6a906b6428640ec7f23a6d8"
     },
     {
       "file": "context_alignment_overproduction_mcp_only.json",
-      "bytes": 949,
-      "sha256": "8da5ea830722f6c1b67bc5d5e742ac6079ac785f5d10bc8b63da53686cdb3cd1"
+      "bytes": 1034,
+      "sha256": "2ebf2fbee043a0707ef50f1b5ac64102826ba99828f54866ab968915906ba9cc"
     },
     {
       "file": "context_alignment_overproduction_pirag_only.json",
-      "bytes": 904,
-      "sha256": "86dcd0f34f42d96c0eddaec61ad634a0e3ee5ded5c162e40172d16e17ece58c0"
+      "bytes": 1021,
+      "sha256": "0672aa1fdc6c6e91c1ea2f3c66bdba092fd53fb3c2f0ed6e6d806d458326763d"
     },
     {
-      "file": "explainability_metrics.json",
-      "bytes": 62165,
-      "sha256": "3ae021e77db53779ce4105a0558000f63e239ac200511a8b6fa3537b23165f1e"
+      "file": "external_validity_deltas.csv",
+      "bytes": 7081,
+      "sha256": "8d06ca608e36ab27a8573156c1413ea15f400da872a3f4c22d85ed40a1534816"
+    },
+    {
+      "file": "external_validity_summary.csv",
+      "bytes": 11540,
+      "sha256": "526bd9e3c73401ce57d345d8922a3689cdf77f4b0fc04b1138d488d634fe21ba"
+    },
+    {
+      "file": "external_validity_summary.json",
+      "bytes": 21480,
+      "sha256": "e5049e3918018445fe94c0a052ff7469536ed3d078f314ba6c209577cd448b01"
     },
     {
       "file": "feature_heatmap_data.json",
@@ -464,93 +344,68 @@
     },
     {
       "file": "fig9_robustness.pdf",
-      "bytes": 22230,
-      "sha256": "17e2fb055c969e7bd17dbb03211fd3e27e3aa02117ede19f230188a84ec85ff7"
+      "bytes": 91109,
+      "sha256": "ca5f889f75f2b41770d70653382b060d1b7b41b00e2daec6fa265cf35dc0a8c4"
     },
     {
       "file": "fig9_robustness.png",
-      "bytes": 2473921,
-      "sha256": "b0dda13fcb20cbf92264a771c1f3bd8693ad3b8cde5d5f04354550884759d787"
-    },
-    {
-      "file": "learning_trajectory_agribrain.json",
-      "bytes": 10746,
-      "sha256": "1fce7bac21b2dc6db379c02f07d384596907e7ee2dd77f22a6ed6f751c478cf2"
-    },
-    {
-      "file": "learning_trajectory_agribrain_cold_start.json",
-      "bytes": 10673,
-      "sha256": "08d8a4bd0def0a802d48d40821273c8de134df611bffba19bc81afd3772bec94"
-    },
-    {
-      "file": "learning_trajectory_agribrain_pert_10.json",
-      "bytes": 10707,
-      "sha256": "c50cb6e6e6270817e78820ce91b765239ff40f43698fd754ee8ca546d89e5cb1"
-    },
-    {
-      "file": "learning_trajectory_agribrain_pert_25.json",
-      "bytes": 10702,
-      "sha256": "ae6b65f167144b53b06f538eb08c8be86fe6f852924bbfcd1cc78607718bf594"
-    },
-    {
-      "file": "learning_trajectory_agribrain_pert_50.json",
-      "bytes": 10723,
-      "sha256": "97a29f65e8c65dd97681d7cf13377238f85646c96e2acc4cd7b5b19bf83f0871"
+      "bytes": 3045998,
+      "sha256": "0ed8b311082d350ce84b4641b7aabb10bb552b8d34d0ebb327067ba58a0aaf87"
     },
     {
       "file": "mcp_interop_adaptive_pricing.json",
-      "bytes": 9291,
-      "sha256": "13a38cdd7c29a4ef9cb68ac6e0cd6538d831088327736952c1ba6a3a0257a6b7"
+      "bytes": 7799,
+      "sha256": "833cc6bce02a7012e8e246cb04470e2c60847d91d6a29d9e906366eab3e77f79"
     },
     {
       "file": "mcp_interop_baseline.json",
-      "bytes": 9613,
-      "sha256": "634d3230bac8d6b468eab54ca8e5417cda51d4fdffc669ba4c87bcb2d83fe0d8"
+      "bytes": 6915,
+      "sha256": "e999c8242187835a85b085a8882e68db5031571038654ff478dd2ec9172a1bb6"
     },
     {
       "file": "mcp_interop_cyber_outage.json",
-      "bytes": 8199,
-      "sha256": "28783032dc07486d4437ca64a74f2257fcd119031fef74996cf66368e06781d5"
+      "bytes": 7051,
+      "sha256": "75052d499ce427add58eec4d5f51034413639574cb8ada3bf9de0f57805d460f"
     },
     {
       "file": "mcp_interop_heatwave.json",
-      "bytes": 8632,
-      "sha256": "8cc9294aaccad2c08db10d316e7d272a9187e3bf71f4b5489f4453eaf06a6340"
+      "bytes": 7485,
+      "sha256": "25a5a1845831b488e4e9bc8c408aff2115ed2d66b1b23f2aaa850b2e186a1fc1"
     },
     {
       "file": "mcp_interop_overproduction.json",
-      "bytes": 8757,
-      "sha256": "3514a04fb59d8cfcd4839dca1b36ca1efb539404e7ff2376930fe3fdc4fcffe8"
+      "bytes": 7484,
+      "sha256": "7ca77439eddd8a09c09ac7f6656914f8c2fa9a8084dd2b9bae0127c76d2dc5bc"
     },
     {
       "file": "mcp_protocol_adaptive_pricing.json",
-      "bytes": 182684,
-      "sha256": "0d48eb8ec5ac8de6fa29d8a696835dd8af6e34ed14c9aa4453fc934dfea11bc3"
+      "bytes": 165076,
+      "sha256": "51bb4b9e3b4e54aeaa602c90f98c753323ee32d5ca2f5ee5e7064355339ec863"
     },
     {
       "file": "mcp_protocol_baseline.json",
-      "bytes": 180206,
-      "sha256": "13f1ea03cfff9739190083b225b0365c65958f38a587c9ef07d7c1ef997bbef0"
+      "bytes": 149929,
+      "sha256": "fc64c0d1a1c8190d1a0acef67fe2e419b9fb0c12e599a601b4320fc003721ff5"
     },
     {
       "file": "mcp_protocol_cyber_outage.json",
-      "bytes": 179787,
-      "sha256": "0819aac1217d85a92fb67c71c018fafecbe48409fc3dd31c29ab934825efb16f"
+      "bytes": 185548,
+      "sha256": "e998440f7740dc83b26a1278725ca8d4376367c2b9e259ba0d872d961e2cf0c3"
     },
     {
       "file": "mcp_protocol_heatwave.json",
-      "bytes": 178895,
-      "sha256": "b660c10d1a4e796d0774851326a64ed2520ad6214ba9e3b7039442e244660121"
+      "bytes": 184700,
+      "sha256": "fa8a5cdff41de96910da21b3e76c9b9b7d773569945737274e48650fc26cdc80"
     },
     {
       "file": "mcp_protocol_overproduction.json",
-      "bytes": 180575,
-      "sha256": "56d313a588506d47dc2d631a6f2c87af379430eacb1bef02085c3347dc613cb9"
+      "bytes": 186461,
+      "sha256": "e2b068560f796a0c74a2285b3abbb0859f24a10ce27cd825086c194e2e2b495a"
     },
     {
       "file": "paper_benchmark_table.json",
-      "bytes": 616378,
-      "sha256": "beb53e57cf305818aec3255dce135a1182a83acf5f32229b6f8bee739f68363e"
+      "bytes": 171920,
+      "sha256": "ab51285531a19153ac7f8090226796e1b700d37d55a32e3db11d2b99e53d40ba"
     },
     {
       "file": "stress_degradation.csv",
@@ -559,8 +414,8 @@
     },
     {
       "file": "stress_passfail.csv",
-      "bytes": 37566,
-      "sha256": "433549261e67c8871013c03a9c99f1d7a1d0836859f42aa6d3bb6fd9c5a53fc6"
+      "bytes": 11243,
+      "sha256": "9d8bb403303e74508c536656c1003e8a7ecedade377340effdff5f0835d878d1"
     },
     {
       "file": "stress_summary.json",
@@ -569,53 +424,43 @@
     },
     {
       "file": "table1_summary.csv",
-      "bytes": 3586,
+      "bytes": 3570,
       "sha256": "feb84ee5455a7592f129530ccdffbaa69e94876fa9421ac8e7e55a56b91b9f33"
     },
     {
-      "file": "table1_summary_seed42.csv",
-      "bytes": 1526,
-      "sha256": "5a73db7e78fe3eaba4b201f6a309c9a4dbce34c3764c17db12bbb3f2ca70627d"
-    },
-    {
       "file": "table2_ablation.csv",
-      "bytes": 15421,
+      "bytes": 15325,
       "sha256": "8828b1e440f634ced3d0e2a19427203e2349705b58874997f2b2b30093cd5e5b"
     },
     {
-      "file": "table2_ablation_seed42.csv",
-      "bytes": 8005,
-      "sha256": "a8c85cdb1e9d21ab5e39b34fdeee7d3a7a34f1882f1c0d42a27e86df632d6720"
-    },
-    {
       "file": "traces_adaptive_pricing.json",
-      "bytes": 335303,
-      "sha256": "c8b1786c45f0ad3f3a43e215eb55f958bb187f07614d5e7c774a3ecf22e960b2"
+      "bytes": 324682,
+      "sha256": "bec0d149b4f36b7783e2f725de215cc757d45e63fbdf7e9b5c4f1f1ecb6484f6"
     },
     {
       "file": "traces_baseline.json",
-      "bytes": 321218,
-      "sha256": "9a1a58611e88358956ae4c51d79af888717fb42d78837c82d34e8b6614a9f425"
+      "bytes": 280420,
+      "sha256": "6d20406abd8bf076faae8429327a6cb1484811098e6ec37002812bdc69ba9918"
     },
     {
       "file": "traces_cyber_outage.json",
-      "bytes": 326136,
-      "sha256": "f627c71d25c0ca9084b17ea60f5bb324ac7565eb8c1ecd07c38041905b99121f"
+      "bytes": 334610,
+      "sha256": "539dba29a6e7ec6d2e7881d316eb8d675bf2506762e565500f129afa10cfd80a"
     },
     {
       "file": "traces_heatwave.json",
-      "bytes": 335671,
-      "sha256": "5c8f5a1d6883677a5b2aa9d04f56435a50030fb979da3db0cae3a1020da42d51"
+      "bytes": 358016,
+      "sha256": "461a1d530ffe92dad82e331d115e3b139843a9558a981b4cb611b8104e5651eb"
     },
     {
       "file": "traces_overproduction.json",
-      "bytes": 331801,
-      "sha256": "031044f02820044609a7dbe3bc52f045059de5abb247d4a8eefae1442a133537"
+      "bytes": 330951,
+      "sha256": "8d40b8b0fff2df3dc2777880a92c073c8b6634b2b07678d20ee39f93b108bbfb"
     },
     {
       "file": "validation_report.json",
-      "bytes": 1260,
-      "sha256": "8f1a0fbd178a4955bc26d04aeee5471e7d77b456bb95112dc1bac71cb9553e97"
+      "bytes": 1153,
+      "sha256": "bacd7178540d51ef55cbdf5fd0ef53feda1a20509ce29091cbc6600d1c8f86c4"
     }
   ]
 }
