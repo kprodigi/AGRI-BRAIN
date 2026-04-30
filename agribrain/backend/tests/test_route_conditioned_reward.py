@@ -97,24 +97,28 @@ def test_per_action_ranking_below_30c_cold_chain_preferred():
     assert rewards["recovery"] > rewards["cold_chain"] > rewards["local_redistribute"]
 
 
-def test_per_action_ranking_in_stress_band_close():
-    """At 30-35 degC the CC and LR factors are 0.40 vs 0.45 - close,
-    so the rho-channel reward gap is small. Recovery still dominates
-    on the rho channel."""
+def test_per_action_ranking_in_stress_band_cc_above_lr():
+    """At 30-35 degC the CC and LR factors are 0.40 vs 0.65 — CC stays
+    refrigerated while LR's warehouse staging heats up. CC therefore
+    wins the rho-channel reward over LR in the stress band; Recovery
+    still dominates on the rho channel."""
     T = 32.0
     rho = 0.40
     cc = compute_reward(0.70, 0.05, rho, route_factor=route_rho_factor("cold_chain", T))
     lr = compute_reward(0.70, 0.05, rho, route_factor=route_rho_factor("local_redistribute", T))
     rec = compute_reward(0.70, 0.05, rho, route_factor=route_rho_factor("recovery", T))
-    # CC and LR within ~0.05 reward of each other; Recovery clearly wins.
-    assert abs(cc - lr) < 0.05
+    assert cc > lr, (
+        f"at T={T} degC stress band expected CC > LR on rho channel; "
+        f"got CC={cc:.3f} LR={lr:.3f}"
+    )
     assert rec > max(cc, lr)
 
 
 def test_per_action_ranking_above_35c_lr_beats_cc():
     """Above 35 degC, cold chain is overwhelmed (factor 1.00) and LR
-    (0.45) provides better thermal protection. This is the only
-    regime where LR genuinely beats CC on the rho channel."""
+    in the hot band (0.85) provides marginally better thermal
+    exposure (no compressor-failure excursion risk). LR therefore
+    beats CC on the rho channel above 35 degC."""
     T = 38.0
     rho = 0.40
     cc = compute_reward(0.70, 0.05, rho, route_factor=route_rho_factor("cold_chain", T))

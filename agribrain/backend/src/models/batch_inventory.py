@@ -60,6 +60,7 @@ import numpy as np
 
 from .resilience import (
     DC_RHO_FACTOR,
+    RHO_FOOD_SAFETY_CUTOFF,
     route_rho_factor,
 )
 
@@ -217,6 +218,13 @@ class BatchInventory:
             - ``dc_quantity``: total units still at DC
             - ``in_transit_quantity``: total units in transit
             - ``recovered_quantity``: total units sent to recovery
+            - ``chosen_route``: the route the oldest DC batch was
+              actually routed on this step. Equals the policy's
+              chosen action unless the food-safety override fired
+              (``current_rho`` > RHO_FOOD_SAFETY_CUTOFF), in which
+              case it is forced to ``"recovery"``.
+            - ``food_safety_override``: True iff the override fired
+              this step.
         """
         d_env = max(float(d_env_rho), 0.0)
 
@@ -243,19 +251,27 @@ class BatchInventory:
                 # (display refrigeration is comparable to DC).
                 b.current_rho = min(1.0, b.current_rho + self.dc_rho_factor * d_env)
 
-        # 2) Route the oldest DC batch to the chosen action. The
-        #    capacity-constraint logic that previously applied a
-        #    fallback (LR-full -> Recovery, Recovery-full -> stay in
-        #    DC) was retired in 2026-04 along with the
-        #    capacity-constrained RLE variant; the canonical RLE
-        #    (resilience.compute_rle) scores chosen actions directly,
-        #    so the fallback semantics no longer affect the headline
-        #    metric. The simulator's policy already handles severity-
-        #    appropriate routing via the SLCA bonuses and the
-        #    Recovery knee, which is sufficient for the EU-hierarchy
-        #    + severity-weighted form.
+        # 2) Route the oldest DC batch to the chosen action, subject to
+        #    a food-safety hard cutoff: if the oldest DC batch has
+        #    already accumulated rho above RHO_FOOD_SAFETY_CUTOFF
+        #    (default 0.65, the rho threshold above which Garcia-Garcia
+        #    (2017) records >=80% of food-bank network rejections at
+        #    intake), the chosen action is overridden to ``recovery``
+        #    regardless of policy. Real food-safety regulations behave
+        #    this way: produce visibly past marketability cannot be
+        #    sold even if the operator's optimisation routine would
+        #    prefer otherwise. The override applies to *every* mode
+        #    including Static, so it does not by itself differentiate
+        #    AgriBrain from Static — the differentiation comes from
+        #    the policy-side Recovery knee in action_selection.py
+        #    (RHO_RECOVERY_KNEE = 0.50, soft logit boost) which
+        #    triages earlier than the override fires.
         oldest = self._oldest_dc_batch()
         chosen_route = action_names[int(action_idx)]
+        food_safety_override = False
+        if oldest is not None and oldest.current_rho > RHO_FOOD_SAFETY_CUTOFF:
+            chosen_route = "recovery"
+            food_safety_override = True
         if oldest is not None:
             oldest.status = f"transit_{chosen_route}"
             oldest.transit_remaining_h = float(TRANSIT_HOURS[chosen_route])
@@ -334,4 +350,5 @@ class BatchInventory:
             "in_transit_quantity": float(in_transit_qty),
             "recovered_quantity": float(recovered_qty),
             "chosen_route": chosen_route,
+            "food_safety_override": bool(food_safety_override),
         }

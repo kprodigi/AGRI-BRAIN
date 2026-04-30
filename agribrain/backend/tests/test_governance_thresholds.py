@@ -64,18 +64,38 @@ def test_calibration_rejects_out_of_range_quantile():
 
 def test_override_fires_when_context_pushes_cold_chain_down():
     """With a strong local-favouring context modifier and cold-chain-
-    disfavouring logits, the override fires and returns a one-hot on
-    local_redistribute."""
+    disfavouring logits, the governance override fires and returns a
+    one-hot on local_redistribute. Tested at rho=0.20 — inside the
+    at-risk band (>0.10) but below the Recovery knee (0.30), so the
+    LR triage is the right call and the override is not in tension
+    with food-safety routing."""
     rng = np.random.default_rng(0)
     action, probs = select_action(
         mode="agribrain",
-        rho=0.95, inv=5000, y_hat=50, temp=12.0, tau=1.0,
+        rho=0.20, inv=5000, y_hat=50, temp=12.0, tau=1.0,
         policy=_DummyPolicy(), rng=rng, deterministic=True,
         context_modifier=np.array([-5.0, 5.0, 0.0]),
     )
     assert ACTIONS[action] == "local_redistribute"
     # Override returns a one-hot distribution, not the softmax probs.
     np.testing.assert_array_equal(probs, np.array([0.0, 1.0, 0.0]))
+
+
+def test_recovery_knee_overrides_lr_governance_at_high_rho():
+    """At rho well above the Recovery knee (0.30), Recovery's food-
+    safety triage logit boost dominates over the LR-favouring context
+    modifier. The governance override deliberately does *not* force
+    LR in this regime — the safety hierarchy says non-marketable
+    produce must go to Recovery regardless of context. This is the
+    intended behaviour of the boosted knee gain (5.0 / 3.0)."""
+    rng = np.random.default_rng(0)
+    action, _ = select_action(
+        mode="agribrain",
+        rho=0.95, inv=5000, y_hat=50, temp=12.0, tau=1.0,
+        policy=_DummyPolicy(), rng=rng, deterministic=True,
+        context_modifier=np.array([-5.0, 5.0, 0.0]),
+    )
+    assert ACTIONS[action] == "recovery"
 
 
 def test_override_does_not_fire_without_context_modifier():

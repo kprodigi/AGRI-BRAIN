@@ -24,10 +24,17 @@ from src.models.action_selection import (
     select_action,
 )
 from src.models.resilience import (
-    LR_FACTOR_CONSTANT,
-    NOMINAL_ROUTE_RHO_FACTOR,
     CC_FACTOR_NOMINAL,
+    CC_FACTOR_OVERWHELMED,
+    CC_FACTOR_STRESSED,
+    LR_FACTOR_COOL,
+    LR_FACTOR_CONSTANT,
+    LR_FACTOR_HOT,
+    LR_FACTOR_NOMINAL,
+    LR_FACTOR_STRESSED,
+    NOMINAL_ROUTE_RHO_FACTOR,
     compute_effective_rho,
+    route_rho_factor,
 )
 
 
@@ -66,39 +73,86 @@ def test_effective_rho_recovery_only_goes_to_zero():
     assert eff[-1] == pytest.approx(0.0, abs=1e-3)
 
 
-def test_effective_rho_cc_below_lr_at_nominal_ambient():
-    """At nominal ambient, CC has the smaller factor (0.15 vs 0.45 LR),
-    so a CC-only policy produces LOWER retail rho than an LR-only
-    policy. This corrects the previous wrong-physics test that said
-    LR has lower retail rho - in reality cold chain is the better
-    refrigerated route at nominal ambient."""
+def test_effective_rho_cc_below_lr_at_moderate_ambient():
+    """At T in the LR nominal band (15-30 degC), CC's 0.15 factor is
+    well below LR's 0.45, so a CC-only policy produces LOWER retail
+    rho than an LR-only policy. Cold chain is genuinely the better
+    refrigerated route at moderate ambient."""
     env_rho = np.linspace(0.0, 0.7, 288)
-    T = np.full(288, 4.0)
+    T = np.full(288, 20.0)  # LR nominal band
     cc_only = np.tile([1.0, 0.0, 0.0], (288, 1))
     lr_only = np.tile([0.0, 1.0, 0.0], (288, 1))
     eff_cc = compute_effective_rho(env_rho, cc_only, ambient_temp_c=T)
     eff_lr = compute_effective_rho(env_rho, lr_only, ambient_temp_c=T)
     assert eff_cc.mean() < eff_lr.mean(), (
-        f"at nominal ambient expected CC < LR; got "
+        f"at moderate ambient expected CC < LR; got "
         f"CC={eff_cc.mean():.4f} LR={eff_lr.mean():.4f}"
     )
     # At equilibrium the ratio should approach factor_cc/factor_lr.
-    nominal_ratio = CC_FACTOR_NOMINAL / LR_FACTOR_CONSTANT
+    nominal_ratio = CC_FACTOR_NOMINAL / LR_FACTOR_NOMINAL
     assert eff_cc[-1] / max(eff_lr[-1], 1e-9) == pytest.approx(
         nominal_ratio, abs=0.15
     )
 
 
+def test_effective_rho_cc_close_to_lr_at_cool_ambient():
+    """In the LR cool band (T < 15 degC), LR factor drops to 0.20 —
+    near-CC performance because food-bank walk-in coolers operate at
+    4-7 degC. CC still wins on retail rho but the gap is narrow."""
+    env_rho = np.linspace(0.0, 0.5, 288)
+    T = np.full(288, 4.0)  # cool band
+    cc_only = np.tile([1.0, 0.0, 0.0], (288, 1))
+    lr_only = np.tile([0.0, 1.0, 0.0], (288, 1))
+    eff_cc = compute_effective_rho(env_rho, cc_only, ambient_temp_c=T)
+    eff_lr = compute_effective_rho(env_rho, lr_only, ambient_temp_c=T)
+    assert eff_cc.mean() < eff_lr.mean()
+    # Equilibrium ratio: 0.15 / 0.20 = 0.75 — much closer than the
+    # 0.33 ratio of the previous temperature-independent LR factor.
+    cool_ratio = CC_FACTOR_NOMINAL / LR_FACTOR_COOL
+    assert eff_cc[-1] / max(eff_lr[-1], 1e-9) == pytest.approx(
+        cool_ratio, abs=0.15
+    )
+
+
 def test_effective_rho_lr_below_cc_when_overwhelmed():
     """Above 35 degC the cold chain is overwhelmed (factor 1.00) while
-    LR holds at 0.45, so the ordering flips: LR-only < CC-only."""
+    LR holds at 0.85 (hot band), so the ordering flips: LR-only < CC-only."""
     env_rho = np.linspace(0.0, 0.7, 288)
-    T = np.full(288, 38.0)  # cold chain overwhelmed
+    T = np.full(288, 38.0)  # cold chain overwhelmed, LR hot band
     cc_only = np.tile([1.0, 0.0, 0.0], (288, 1))
     lr_only = np.tile([0.0, 1.0, 0.0], (288, 1))
     eff_cc = compute_effective_rho(env_rho, cc_only, ambient_temp_c=T)
     eff_lr = compute_effective_rho(env_rho, lr_only, ambient_temp_c=T)
     assert eff_lr.mean() < eff_cc.mean()
+
+
+def test_route_rho_factor_lr_piecewise():
+    """LR factor is piecewise-constant on ambient temperature with
+    breakpoints at 15, 30, 35 degC. Pin the four bands."""
+    assert route_rho_factor("local_redistribute", 4.0) == LR_FACTOR_COOL
+    assert route_rho_factor("local_redistribute", 14.99) == LR_FACTOR_COOL
+    assert route_rho_factor("local_redistribute", 15.0) == LR_FACTOR_NOMINAL
+    assert route_rho_factor("local_redistribute", 25.0) == LR_FACTOR_NOMINAL
+    assert route_rho_factor("local_redistribute", 30.0) == LR_FACTOR_STRESSED
+    assert route_rho_factor("local_redistribute", 33.0) == LR_FACTOR_STRESSED
+    assert route_rho_factor("local_redistribute", 35.01) == LR_FACTOR_HOT
+    assert route_rho_factor("local_redistribute", 40.0) == LR_FACTOR_HOT
+
+
+def test_route_rho_factor_lr_monotone_in_temperature():
+    """LR factor is monotonically non-decreasing in ambient temperature
+    — warmer staging gives less protection."""
+    temps = np.linspace(0.0, 45.0, 100)
+    factors = np.array([route_rho_factor("local_redistribute", float(t))
+                        for t in temps])
+    assert np.all(np.diff(factors) >= 0.0)
+
+
+def test_lr_factor_constant_alias_matches_nominal():
+    """Backward-compatible alias: the old LR_FACTOR_CONSTANT should
+    equal the nominal-band factor so any un-migrated caller still gets
+    the previous numerics."""
+    assert LR_FACTOR_CONSTANT == LR_FACTOR_NOMINAL
 
 
 def test_effective_rho_clipped_to_unit():
@@ -140,7 +194,9 @@ def test_low_rho_agribrain_is_cold_chain_dominant():
 
 def test_high_rho_agribrain_prefers_recovery_above_knee():
     """Above the Recovery knee (rho > 0.50), the triage logic must
-    flip the policy to Recovery dominance, not LR dominance."""
+    flip the policy to Recovery dominance, not LR dominance. With the
+    boosted knee gain (5.0/3.0) Recovery should be the clear majority,
+    not just plurality."""
     rng = np.random.default_rng(0)
     _, probs = select_action(
         mode="agribrain",
@@ -150,15 +206,44 @@ def test_high_rho_agribrain_prefers_recovery_above_knee():
     cc, lr, rec = probs
     assert rec > cc, f"expected Rec > CC at rho=0.85; got Rec={rec:.3f} CC={cc:.3f}"
     assert rec > lr, f"expected Rec > LR above knee; got Rec={rec:.3f} LR={lr:.3f}"
+    # With KNEE_GAIN=5.0 + LR_PENALTY=3.0, Recovery should be the
+    # clear majority at rho=0.85 (the previous 2.50/1.50 magnitudes
+    # produced only a plurality with Recovery share around 0.4-0.5).
+    assert rec > 0.55, (
+        f"expected Rec > 0.55 with boosted knee at rho=0.85; got Rec={rec:.3f}"
+    )
+
+
+def test_recovery_dominant_at_food_safety_cutoff():
+    """At the food-safety cutoff (rho = 0.65, the threshold above
+    which BatchInventory's hard override fires), the policy should
+    already prefer Recovery over LR via the soft knee, so the policy
+    and the override agree on the routing direction. With the
+    boosted knee gains (5.00 / 3.00) Recovery should be above LR
+    here — the previous (2.50 / 1.50) magnitudes only flipped the
+    ordering at rho > 0.75."""
+    rng = np.random.default_rng(0)
+    _, probs = select_action(
+        mode="agribrain",
+        rho=0.65, inv=10000, y_hat=20, temp=25.0, tau=0.0,
+        policy=_DummyPolicy(), rng=rng, deterministic=True,
+    )
+    cc, lr, rec = probs
+    assert rec > lr, (
+        f"expected Rec > LR at food-safety cutoff rho=0.65; got "
+        f"Rec={rec:.3f} LR={lr:.3f}"
+    )
 
 
 def test_mid_rho_agribrain_prefers_lr_below_knee():
     """In the at-risk band (RLE < rho < knee), the policy should still
-    prefer LR - this is the marketable-but-degrading triage band."""
+    prefer LR - this is the marketable-but-degrading triage band.
+    Tested at rho=0.20 which sits inside the at-risk band (>0.10) and
+    below the new knee threshold of 0.30."""
     rng = np.random.default_rng(0)
     _, probs = select_action(
         mode="agribrain",
-        rho=0.30, inv=10000, y_hat=20, temp=15.0, tau=0.0,
+        rho=0.20, inv=10000, y_hat=20, temp=15.0, tau=0.0,
         policy=_DummyPolicy(), rng=rng, deterministic=True,
     )
     cc, lr, rec = probs
@@ -190,5 +275,5 @@ def test_hybrid_rl_not_subject_to_recovery_knee():
 
 def test_knee_threshold_constant_is_in_realistic_range():
     """The knee should sit between the at-risk threshold (0.10) and
-    the upper marketability boundary (~0.65)."""
-    assert 0.30 < RHO_RECOVERY_KNEE < 0.70
+    the food-safety hard cutoff (0.65)."""
+    assert 0.10 < RHO_RECOVERY_KNEE < 0.65

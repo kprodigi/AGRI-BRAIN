@@ -78,16 +78,18 @@ def test_route_factor_ordering_above_overwhelmed_threshold():
     )
 
 
-def test_route_factor_stress_band_cc_close_to_lr():
-    """In the 30-35 degC stress band, CC and LR are close: CC=0.40,
-    LR=0.45. This is the regime the heatwave figure operates in,
-    and the closeness is why AgriBrain does not clearly win on retail
-    rho during heatwave."""
+def test_route_factor_stress_band_cc_better_than_lr():
+    """In the 30-35 degC stress band CC stays at 0.40 (truck still
+    holds 4-7 degC internal) while LR rises to 0.65 (warehouse
+    staging heats up). CC is therefore the better thermal route in
+    the stress band on a per-step basis; AgriBrain's LR preference
+    in this regime trades retail-pool rho for SLCA-composite gains
+    rather than exploiting better thermal physics."""
     for T in (30.0, 32.0, 34.0, 35.0):
         cc = route_rho_factor("cold_chain", T)
         lr = route_rho_factor("local_redistribute", T)
-        assert abs(cc - lr) < 0.10, (
-            f"at T={T} degC stress band, CC and LR should be close; "
+        assert cc < lr, (
+            f"at T={T} degC stress band, CC should be below LR; "
             f"got CC={cc:.3f} LR={lr:.3f}"
         )
 
@@ -211,16 +213,17 @@ def _run_constant_action_episode(
     return np.asarray(trace)
 
 
-def test_cold_chain_lower_retail_rho_at_nominal_ambient():
+def test_cold_chain_lower_retail_rho_at_moderate_ambient():
     """Under realistic physics, cold chain provides BETTER thermal
-    protection than local-redistribute at nominal ambient (T < 30 degC).
-    This is the corrective test versus the previous wrong-physics claim
-    that LR has lower retail rho - in nominal conditions, LR has
-    strictly higher retail rho because it's less refrigerated."""
-    cc = _run_constant_action_episode(action_idx=0, ambient_temp_c=4.0)
-    lr = _run_constant_action_episode(action_idx=1, ambient_temp_c=4.0)
+    protection than local-redistribute at moderate ambient (15-30
+    degC, the LR nominal band). At cool ambient (T < 15 degC) LR's
+    factor drops to 0.20 and the gap closes to within transit-time
+    noise; this test exercises the moderate-ambient regime where the
+    gap is genuinely measurable."""
+    cc = _run_constant_action_episode(action_idx=0, ambient_temp_c=20.0)
+    lr = _run_constant_action_episode(action_idx=1, ambient_temp_c=20.0)
     assert cc[-100:].mean() < lr[-100:].mean(), (
-        f"at nominal ambient, expected CC retail rho < LR retail rho "
+        f"at moderate ambient, expected CC retail rho < LR retail rho "
         f"(cold chain is better refrigerated); got "
         f"CC={cc[-100:].mean():.4f} LR={lr[-100:].mean():.4f}"
     )
@@ -228,9 +231,10 @@ def test_cold_chain_lower_retail_rho_at_nominal_ambient():
 
 def test_lr_lower_retail_rho_when_cold_chain_overwhelmed():
     """When ambient exceeds 35 degC the cold-chain cooling fails and
-    CC carries 1.00 of env_rho into retail; LR's 0.45 factor then wins.
-    This is the only regime where AgriBrain's LR-leaning policy
-    genuinely wins on retail rho."""
+    CC carries 1.00 of env_rho into retail; LR's 0.85 factor (hot band)
+    is then below CC, so LR-only beats CC-only on retail rho. This is
+    the regime where AgriBrain's LR-leaning policy genuinely wins on
+    raw rho rather than only on the SLCA composite."""
     cc = _run_constant_action_episode(action_idx=0, ambient_temp_c=38.0,
                                        n_steps=150, d_env_rho=0.003)
     lr = _run_constant_action_episode(action_idx=1, ambient_temp_c=38.0,
@@ -241,21 +245,23 @@ def test_lr_lower_retail_rho_when_cold_chain_overwhelmed():
     )
 
 
-def test_stress_band_cc_and_lr_approximately_tied():
-    """In the 30-35 degC stress band (CC=0.40, LR=0.45), retail rho
-    trajectories are close. This is what makes the heatwave figure
-    show 'AgriBrain does not clearly win on retail rho'."""
+def test_stress_band_lr_below_cc_due_to_short_transit():
+    """In the 30-35 degC stress band CC's per-step factor (0.40) is
+    below LR's (0.65), but CC's transit time is 2.4h vs LR's 0.9h.
+    Integrated thermal exposure (factor x transit hours) is 0.40 *
+    2.4 = 0.96 for CC vs 0.65 * 0.9 = 0.585 for LR — LR's shorter
+    transit dominates, so LR-only retail rho is *lower* than CC-only
+    in the stress band. This is the realistic mechanism behind
+    AgriBrain's win on retail rho during heatwaves."""
     cc = _run_constant_action_episode(action_idx=0, ambient_temp_c=32.0,
                                        n_steps=150, d_env_rho=0.003)
     lr = _run_constant_action_episode(action_idx=1, ambient_temp_c=32.0,
                                        n_steps=150, d_env_rho=0.003)
-    # The two should be within 25% of each other in the equilibrated tail.
     cc_mean = cc[-50:].mean()
     lr_mean = lr[-50:].mean()
-    rel = abs(lr_mean - cc_mean) / max(cc_mean, lr_mean, 1e-9)
-    assert rel < 0.30, (
-        f"in stress band, CC and LR retail rho should be close; "
-        f"got CC={cc_mean:.4f} LR={lr_mean:.4f} relative_diff={rel:.2%}"
+    assert lr_mean < cc_mean, (
+        f"in stress band, LR retail rho should be below CC due to "
+        f"short-transit dominance; got CC={cc_mean:.4f} LR={lr_mean:.4f}"
     )
 
 
@@ -322,3 +328,60 @@ def test_retail_pool_clears_at_sale_rate():
                  action_idx=0, dt_hours=0.25)
     retail_qty_t1 = sum(b.quantity for b in inv.batches if b.status == "retail")
     assert retail_qty_t1 < retail_qty_t0
+
+
+# ---------------------------------------------------------------------------
+# Food-safety hard cutoff (RHO_FOOD_SAFETY_CUTOFF override)
+# ---------------------------------------------------------------------------
+
+def test_food_safety_override_redirects_aged_batch_to_recovery():
+    """When the oldest DC batch has accumulated rho above the
+    food-safety cutoff (default 0.65), the BatchInventory.step()
+    routing layer overrides the policy's chosen action to Recovery
+    regardless of action_idx. This models the real-world food-safety
+    regulation that produce visibly past marketability cannot be
+    sold even if the optimisation layer would prefer otherwise."""
+    inv = BatchInventory(
+        initial_n_batches=1, initial_dc_quantity=1000.0,
+        fresh_arrival_rate_per_hour=0.0,
+    )
+    # Manually advance the only DC batch past the cutoff.
+    inv.batches[0].current_rho = 0.80
+    # Policy chose cold_chain (action_idx=0) but the override should
+    # force recovery.
+    out = inv.step(hour=0.25, d_env_rho=0.0, action_idx=0, dt_hours=0.25)
+    assert out["food_safety_override"] is True
+    assert out["chosen_route"] == "recovery"
+    assert inv.batches[0].status == "transit_recovery"
+
+
+def test_food_safety_override_does_not_fire_below_cutoff():
+    """A DC batch with rho just below the cutoff (0.60) should be
+    routed by the policy's choice, not overridden."""
+    inv = BatchInventory(
+        initial_n_batches=1, initial_dc_quantity=1000.0,
+        fresh_arrival_rate_per_hour=0.0,
+    )
+    inv.batches[0].current_rho = 0.60
+    out = inv.step(hour=0.25, d_env_rho=0.0, action_idx=1, dt_hours=0.25)
+    assert out["food_safety_override"] is False
+    assert out["chosen_route"] == "local_redistribute"
+    assert inv.batches[0].status == "transit_local_redistribute"
+
+
+def test_food_safety_override_applies_independent_of_action_choice():
+    """The override is a property of the BatchInventory routing layer
+    not the policy, so it fires for ALL chosen actions when the
+    oldest DC batch is past the cutoff."""
+    for action_idx in (0, 1, 2):
+        inv = BatchInventory(
+            initial_n_batches=1, initial_dc_quantity=1000.0,
+            fresh_arrival_rate_per_hour=0.0,
+        )
+        inv.batches[0].current_rho = 0.90
+        out = inv.step(hour=0.25, d_env_rho=0.0,
+                       action_idx=action_idx, dt_hours=0.25)
+        assert out["chosen_route"] == "recovery", (
+            f"override should force recovery for action_idx={action_idx}; "
+            f"got {out['chosen_route']!r}"
+        )

@@ -69,6 +69,7 @@ for _font_path in _ARIAL_FONT_FILES:
             pass
 
 from generate_results import run_all, SCENARIOS, RESULTS_DIR
+from src.models.action_selection import ACTIONS, CYBER_REROUTE_PROB
 from src.models.resilience import RLE_THRESHOLD, compute_effective_rho, HIERARCHY_WEIGHT
 
 # ---------------------------------------------------------------------------
@@ -398,7 +399,7 @@ def fig2_heatwave(data):
     h1, l1 = ax.get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()
     _legend(ax, handles=h1 + h2, labels=l1 + l2,
-            loc="lower right", framealpha=0.80)
+            loc="lower center", framealpha=0.80)
 
     # --- (b) Effective spoilage risk per method (batch-FIFO) ---
     # The environmental rho trace (Arrhenius-from-temperature) is
@@ -489,8 +490,7 @@ def fig2_heatwave(data):
     ax.set_ylim(0, 1.0)
     _apply_style(ax)
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave", ypos=0.45)
-    _legend(ax, loc="upper center", bbox_to_anchor=(0.5, -0.18),
-            ncol=3, frameon=True)
+    _legend(ax, loc="center right", ncol=1, frameon=True, framealpha=0.85)
 
     # --- (d) Per-step ARI (12 h rolling average) ---
     ax = axes[1, 1]
@@ -506,7 +506,7 @@ def fig2_heatwave(data):
     ax.set_ylim(0, 1.0)
     _apply_style(ax)
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave")
-    _legend(ax, loc="lower right")
+    _legend(ax, loc="upper right")
 
     fig.tight_layout(rect=[0, 0, 1, 0.985], h_pad=1.6, w_pad=1.6)
     _save(fig, "fig2_heatwave")
@@ -566,21 +566,28 @@ def fig3_overproduction(data):
     ax.set_title("(b) Waste Reduction Over Time")
     _apply_style(ax)
     _annotate_window(ax, 12, 60, WINDOW_COLOR, "Overproduction")
-    _legend(ax, loc="upper right")
+    _legend(ax, loc="upper left")
 
     # --- (c) RLE rolling (EU-hierarchy + severity-weighted) ---
-    # Single canonical RLE form grounded in the EU 2008/98/EC Article 4
-    # waste hierarchy as operationalised by Papargyropoulou et al.
-    # (2014). Rolling form per time-step:
-    #   contribution(t) = rho(t) * w(action_t) * 1[rho > theta]
-    #   weight(t)       = rho(t) * w_max     * 1[rho > theta]
-    # The numerator/denominator are convolved separately (NaN where
-    # the denominator is zero, i.e. no at-risk steps in the window).
-    # The match-quality and capacity-constrained variants this panel
-    # used to plot were retired in 2026-04 along with their parent
-    # metric definitions in resilience.py.
+    # Mirrors the canonical episode-level metric in
+    # resilience.compute_rle / RLETracker, just with a rolling window
+    # for visual continuity. Per at-risk timestep (rho > theta):
+    #   numerator(t)   = rho(t) * w(action_t)
+    #   denominator(t) = rho(t) * w_max
+    # where w is HIERARCHY_WEIGHT (LR=1.00, Recovery=0.40, CC=0.00)
+    # from EU 2008/98/EC Article 4 as operationalised in Papargyropoulou
+    # et al. (2014). Numerator and denominator are convolved separately
+    # so the rolling RLE = num_rolling / den_rolling is well-defined;
+    # NaN where the window contains no at-risk steps.
+    #
+    # The match-quality form (band-edge author parameters) and the
+    # capacity-constrained form (BatchInventory realised-action trace)
+    # this panel used to plot alongside the canonical form were retired
+    # in 2026-04. Only the EU-hierarchy weighted form survives here, in
+    # resilience.compute_rle, in the benchmark JSONs, and in the table
+    # CSVs - the same value the headline RLE column carries.
     ax = axes[1, 0]
-    action_names = ("cold_chain", "local_redistribute", "recovery")
+    action_names = ACTIONS  # canonical (cold_chain, local_redistribute, recovery)
     w_max = max(HIERARCHY_WEIGHT.values())
     for mode in ["static", "hybrid_rl", "agribrain"]:
         ep = op[mode]
@@ -588,18 +595,18 @@ def fig3_overproduction(data):
         actions = np.array(ep["action_trace"])
         at_risk = rho > RLE_THRESHOLD
 
-        match_contrib = np.zeros_like(rho)
-        weight = np.zeros_like(rho)
+        weighted_num = np.zeros_like(rho)
+        weighted_den = np.zeros_like(rho)
         for t in range(len(rho)):
             if at_risk[t]:
                 a = action_names[int(actions[t])]
                 w = HIERARCHY_WEIGHT.get(a, 0.0)
-                match_contrib[t] = rho[t] * w
-                weight[t] = rho[t] * w_max
+                weighted_num[t] = rho[t] * w
+                weighted_den[t] = rho[t] * w_max
 
-        num_rolling = np.convolve(match_contrib,
+        num_rolling = np.convolve(weighted_num,
                                   np.ones(window) / window, mode="same")
-        den_rolling = np.convolve(weight,
+        den_rolling = np.convolve(weighted_den,
                                   np.ones(window) / window, mode="same")
         # NaN where denominator is zero (no at-risk batches in window).
         rle_frac = np.full_like(num_rolling, np.nan)
@@ -634,7 +641,7 @@ def fig3_overproduction(data):
     # Push "Overproduction" higher in the panel so it sits in the
     # headroom strip above the data instead of clipping the RLE curves.
     _annotate_window(ax, 12, 60, WINDOW_COLOR, "Overproduction", ypos=0.99)
-    _legend(ax, loc="lower right")
+    _legend(ax, loc="lower left")
 
     # --- (d) SLCA component grouped bars with std error bars ---
     ax = axes[1, 1]
@@ -736,77 +743,92 @@ def fig4_cyber(data):
     _apply_style(ax)
     _legend(ax, loc="upper right")
 
-    # --- (c) Realized rerouting-success rate (rolling) ---
-    # Honest single-quantity replacement for the previous "policy
-    # confidence" panel. The earlier version plotted two semantically
-    # distinct quantities on one y-axis — pre-outage softmax max
-    # (a measurement) and during-outage CYBER_REROUTE_PROB[mode]
-    # (a hardcoded configuration constant) — which is exactly the
-    # cherry-picked-metric pattern a careful reviewer would flag.
+    # --- (c) Realized rerouting rate vs design probability ---
+    # Plots the rolling fraction of decisions where action != cold_chain
+    # — the empirical "actually rerouted" rate — against each method's
+    # *design* reroute probability during outage. The story: when the
+    # cyber-outage branch in select_action bypasses the centralised
+    # softmax (h >= 24) and falls back to a per-mode Bernoulli
+    # [1-p, p, 0] with p = CYBER_REROUTE_PROB[mode], the empirical
+    # rolling rate should converge toward p — that convergence is
+    # what demonstrates the autonomous edge stack is actually firing
+    # at its capability-determined rate.
     #
-    # This rewrite plots one quantity throughout the episode: the
-    # 12-step (3-hour) rolling fraction of decisions that successfully
-    # rerouted at-risk produce off the cold chain (action != CC).
-    # That metric has uniform semantics across both regimes:
+    # CYBER_REROUTE_PROB is a hardcoded design constant in
+    # action_selection.py (Static = 0.0, Hybrid RL = 0.60,
+    # AgriBrain = 0.74). The dashed reference lines drawn during the
+    # outage window let the reader see at-a-glance whether the
+    # rolling lines actually approach those targets.
     #
-    #   - Pre-outage (h < 24): the dynamic softmax + sampling
-    #     produces a stochastic mix of actions; the rolling fraction
-    #     reflects the policy's natural rerouting tendency at each
-    #     ambient operating point (rising during heat-stress windows
-    #     where rho passes the at-risk threshold).
-    #
-    #   - During outage (h >= 24): the centralised softmax is
-    #     bypassed; select_action samples directly from the Bernoulli
-    #     [1-p, p, 0] with p = CYBER_REROUTE_PROB[mode]. The rolling
-    #     fraction is therefore an *empirical* observation of the
-    #     edge-stack's realised reroute rate, with seed-level
-    #     stochasticity around its design point. The 0.74 number for
-    #     AgriBrain is no longer a hardcoded constant on the figure
-    #     — it is the rolling-window mean of actually-sampled actions.
-    #
-    # Cross-method comparison built into the same panel: Static
-    # stays at 0.0 (always CC, never reroutes); Hybrid RL fluctuates
-    # around its CYBER_REROUTE_PROB[hybrid_rl] = 0.60 baseline;
-    # AgriBrain rises pre-outage as rho-driven SLCA bonuses kick in
-    # and converges to 0.74 during the outage as the edge-stack
-    # Bernoulli takes over.
+    # Rolling window choice: 24 steps = 6 hours. With Bernoulli
+    # p ~ 0.7 and 24 samples the rolling mean's standard error is
+    # ~0.094, so the visual ±2sigma band is ~0.18 — small enough that
+    # the design points are visible above the sampling noise. The
+    # earlier 12-step window had ~0.25 envelope which masked the
+    # convergence story.
     ax = axes[2]
-    window = 12  # 12 steps × 0.25 h = 3 h rolling window
+    window = 24  # 24 steps × 0.25 h = 6 h rolling window
 
+    rolling_by_mode: dict[str, np.ndarray] = {}
     for mode in ["static", "hybrid_rl", "agribrain"]:
         ep = cy[mode]
         actions = np.array(ep["action_trace"])
         rerouted = (actions != 0).astype(float)
         rolling = np.convolve(rerouted, np.ones(window) / window, mode="same")
+        rolling_by_mode[mode] = rolling
         _mode_plot(ax, hours, rolling, mode)
 
-    # Outage onset: vertical guide where the regime transitions.
+    # Reference lines at each method's design probability, drawn only
+    # during the outage window so the reader sees the convergence
+    # target without misreading them as pre-outage references.
+    outage_mask = hours >= 24.0
+    for mode, p_design in (
+        ("static", 0.0),
+        ("hybrid_rl", CYBER_REROUTE_PROB.get("hybrid_rl", 0.60)),
+        ("agribrain", CYBER_REROUTE_PROB.get("agribrain", 0.74)),
+    ):
+        x_seg = hours[outage_mask]
+        y_seg = np.full_like(x_seg, p_design, dtype=float)
+        ax.plot(x_seg, y_seg, color=COLORS[mode], linestyle=":",
+                linewidth=1.6, alpha=0.55)
+        # Right-anchored value tag so the reader can read off the
+        # design probability without measuring against the y-axis.
+        ax.text(
+            float(hours[-1]) + 0.6, p_design,
+            f"p={p_design:.2f}",
+            ha="left", va="center", fontsize=9, color=COLORS[mode],
+            fontweight="bold",
+        )
+
+    # Vertical guide at the outage onset.
     ax.axvline(24.0, color="#424242", linestyle="--", linewidth=1.2, alpha=0.8)
 
-    # Compact in-panel regime labels. Full semantics live in the
-    # function docstring / figure caption; the in-panel labels just
-    # signal where the policy regime changes.
+    # Regime labels rewritten in plain language and placed in the
+    # top strip of the panel so they sit clear of the Outage badge
+    # (which lives at the title-baseline edge of the shaded region).
     ax.text(
-        12.0, 0.96,
-        "Dynamic softmax",
-        ha="center", va="top", fontsize=10, color="#212121",
-        bbox=dict(boxstyle="round,pad=0.25", facecolor="white",
+        12.0, 1.06,
+        "Cloud policy",
+        ha="center", va="bottom", fontsize=10, color="#212121",
+        bbox=dict(boxstyle="round,pad=0.22", facecolor="white",
                   edgecolor="#9E9E9E", linewidth=0.6, alpha=0.92),
     )
     ax.text(
-        48.0, 0.96,
-        "Edge-stack Bernoulli",
-        ha="center", va="top", fontsize=10, color="#212121",
-        bbox=dict(boxstyle="round,pad=0.25", facecolor="white",
+        58.0, 1.06,
+        "Edge fallback (CYBER_REROUTE_PROB)",
+        ha="center", va="bottom", fontsize=10, color="#212121",
+        bbox=dict(boxstyle="round,pad=0.22", facecolor="white",
                   edgecolor="#9E9E9E", linewidth=0.6, alpha=0.92),
     )
 
     ax.set_xlabel("Hours")
-    ax.set_ylabel("Reroute Rate")
-    ax.set_title("(c) Realized Rerouting Rate")
-    ax.set_ylim(-0.02, 1.02)
+    ax.set_ylabel("Reroute Rate (6 h rolling)")
+    ax.set_title("(c) Reroute Rate vs Design Probability")
+    ax.set_ylim(-0.02, 1.18)
+    # Extend xlim slightly so the right-anchored "p=..." tags fit.
+    ax.set_xlim(float(hours[0]), float(hours[-1]) + 4.0)
     _apply_style(ax)
-    _annotate_window(ax, 24, 72, WINDOW_COLOR, "Outage")
+    _annotate_window(ax, 24, 72, WINDOW_COLOR, "Outage", ypos=0.50)
     _legend(ax, loc="center right")
 
     fig.tight_layout(rect=[0, 0, 1, 0.985], h_pad=1.6, w_pad=1.6)
@@ -907,7 +929,7 @@ def fig5_pricing(data):
     y_hi = min(1.05, float(np.max(all_vals)) + 0.05)
     ax.set_ylim(y_lo, y_hi)
     _apply_style(ax)
-    _legend(ax, loc="lower right")
+    _legend(ax, loc="lower center")
 
     # --- (d) Reward decomposition: SLCA, waste penalty, rho penalty ---
     # Three stacked layers on a single axis make the additive decomposition
@@ -935,36 +957,45 @@ def fig5_pricing(data):
     # Penalty bands: shade between consecutive layers so the eye sees
     # each penalty's magnitude as an area. waste-penalty band sits
     # between SLCA(t) and SLCA − η_w·waste; ρ-penalty band sits between
-    # that line and the net reward.
+    # that line and the net reward. Bands are unlabelled here; the
+    # legend below collapses both into a single "Penalty" proxy entry
+    # so the legend box stays compact (3 items instead of 5).
     ax.fill_between(hours, after_waste_smooth, slca_smooth,
-                    color=WINDOW_COLOR, alpha=0.22,
-                    label=f"η_w·waste penalty (η_w={eta_w:.2f})")
+                    color=WINDOW_COLOR, alpha=0.22)
     ax.fill_between(hours, reward_smooth, after_waste_smooth,
-                    color="#6A1B9A", alpha=0.22,
-                    label=f"η_ρ·ρ penalty (η_ρ={eta_rho:.2f})")
+                    color="#6A1B9A", alpha=0.22)
 
-    # Three layer lines, top → bottom.
-    ax.plot(hours, slca_smooth, color=COLORS["agribrain"], linewidth=2.4,
-            label="SLCA(t)", alpha=0.95)
+    # Three layer lines, top → bottom. The middle ``SLCA - eta_w*waste``
+    # line stays on the plot to separate the two penalty bands visually
+    # but does not get its own legend entry.
+    line_slca, = ax.plot(hours, slca_smooth, color=COLORS["agribrain"],
+                         linewidth=2.4, alpha=0.95, label="SLCA(t)")
     ax.plot(hours, after_waste_smooth, color="#FF8F00", linewidth=2.0,
-            label="SLCA − η_w·waste", alpha=0.95, linestyle="--")
-    ax.plot(hours, reward_smooth, color="#263238", linewidth=2.4,
-            label="Net reward", alpha=0.95)
+            alpha=0.95, linestyle="--")
+    line_reward, = ax.plot(hours, reward_smooth, color="#263238",
+                           linewidth=2.4, alpha=0.95, label="Net reward")
+    # Single proxy artist standing for both shaded bands. Coloured at
+    # the waste-penalty band's hue (the more visually prominent of the
+    # two) at the same alpha so the swatch matches what the eye sees.
+    from matplotlib.patches import Patch as _Patch
+    penalty_proxy = _Patch(facecolor=WINDOW_COLOR, alpha=0.22, label="Penalty")
 
     ax.set_xlabel("Hours")
     ax.set_ylabel("Reward components")
-    # Tight ylim covers the actual data range without empty headroom;
-    # the SLCA / after-waste / net-reward layers all live in
-    # [0.62, 0.82] for adaptive_pricing, so 0.35-0.85 zooms in enough
-    # for the penalty bands to read at paper scale while keeping a bit
-    # of bottom margin if early-step transients dip lower in some seeds.
-    ax.set_ylim(0.35, 0.85)
+    # User-requested zoom: 0.6-0.8 puts the three layer lines and the
+    # two penalty bands at maximum visual separation for adaptive_pricing
+    # where SLCA(t), SLCA - eta_w*waste, and net reward all live within
+    # ~[0.62, 0.78].
+    ax.set_ylim(0.6, 0.8)
     ax.set_title("(d) Reward Decomposition")
     _apply_style(ax)
-    # Single-axis legend: five entries (3 layer lines + 2 penalty bands).
-    # framealpha=1.0 keeps the box opaque so it does not blend into the
-    # shaded penalty bands behind it.
-    leg = _legend(ax, loc="lower right", framealpha=1.0, ncol=2)
+    # Compact 3-entry legend: SLCA(t), Net reward, Penalty (proxy).
+    leg = _legend(
+        ax,
+        handles=[line_slca, line_reward, penalty_proxy],
+        labels=["SLCA(t)", "Net reward", "Penalty"],
+        loc="lower right", framealpha=1.0,
+    )
     if leg is not None:
         leg.set_zorder(20)
         leg.get_frame().set_facecolor("white")
@@ -1015,6 +1046,56 @@ def _load_benchmark_ci() -> dict | None:
             seed_summary = _load_per_seed_summary()
             if seed_summary is not None:
                 return seed_summary
+    bench = _remap_legacy_rle_variants(bench)
+    return bench
+
+
+def _remap_legacy_rle_variants(bench: dict | None) -> dict | None:
+    """Remap legacy multi-variant RLE keys to the single canonical name.
+
+    Pre-2026-04 ``benchmark_summary.json`` files exposed four RLE
+    columns: ``rle`` (saturating binary recovered/at_risk),
+    ``rle_binary`` (alias of the same), ``rle_weighted`` (EU 2008/98/EC
+    + severity-weighted form), and ``rle_capacity_constrained``
+    (BatchInventory realised-action variant). Only the
+    EU-hierarchy + severity-weighted form survived the simplification —
+    it now lives under the plain key ``rle`` in
+    ``resilience.compute_rle`` and in fresh aggregator output.
+
+    For backward compatibility with summary files written before the
+    simplification, this helper detects the legacy format (presence of
+    ``rle_weighted`` alongside ``rle``) and remaps so figure code that
+    reads ``bench[scenario][mode]["rle"]`` always sees the canonical
+    EU-hierarchy form regardless of which run produced the JSON. The
+    retired variants are dropped from the in-memory dict so they
+    cannot leak into a figure by accident.
+
+    No-op when ``bench`` is None, empty, or already in the new format
+    (``rle_weighted`` absent).
+    """
+    if not isinstance(bench, dict) or not bench:
+        return bench
+    sample = next(iter(bench.values()), {})
+    if not isinstance(sample, dict):
+        return bench
+    sample_mode = next(iter(sample.values()), {})
+    if not isinstance(sample_mode, dict) or "rle_weighted" not in sample_mode:
+        # New format already has only the canonical ``rle``; nothing to do.
+        return bench
+    legacy_keys = ("rle_binary", "rle_realistic", "rle_capacity_constrained")
+    for sc, modes in bench.items():
+        if not isinstance(modes, dict):
+            continue
+        for mode, mets in modes.items():
+            if not isinstance(mets, dict):
+                continue
+            # Promote rle_weighted (the EU-hierarchy form) to the
+            # canonical ``rle`` slot, replacing the legacy ``rle`` key
+            # (which used to hold the retired match-quality variant).
+            if "rle_weighted" in mets:
+                mets["rle"] = mets["rle_weighted"]
+            for key in ("rle_weighted", *legacy_keys):
+                mets.pop(key, None)
     return bench
 
 
@@ -1454,11 +1535,11 @@ def fig8_green_ai(data):
     # Heatwave annotation pushed to vertical middle so the new
     # top-anchored legend strip does not collide with it.
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave", ypos=0.55)
-    # Legend anchored to the upper right of the panel \u2014 keeps the
-    # 3-entry row (Static, Hybrid RL, AgriBrain) clear of
-    # the y-axis label and tick marks on the left side.
-    _legend(ax, loc="upper right",
-            bbox_to_anchor=(0.99, 0.99), ncol=len(fig8a_modes),
+    # Legend anchored to the upper centre of the panel \u2014 sits over the
+    # mid x-range where the curves are well below the legend baseline,
+    # keeping the 3-entry row clear of both axes.
+    _legend(ax, loc="upper center",
+            bbox_to_anchor=(0.5, 0.99), ncol=len(fig8a_modes),
             fontsize=_F8_LEG, handlelength=1.6, columnspacing=1.2,
             handletextpad=0.5, borderpad=0.5)
     ax.tick_params(labelsize=_F8_TICK, length=6, width=1.4)
@@ -1950,12 +2031,19 @@ def fig10_latency_quality_frontier(data):
     # the No Context reference while the larger right sub-axis carries
     # the three jittered context-aware markers.
     import matplotlib.gridspec as _gridspec
-    fig = plt.figure(figsize=(18, 7.0))
+    # figsize bumped to (18, 7.5) and rect-top dropped to 0.94 below
+    # so the suptitle-to-panel-title gap matches figs 6/7/8 instead
+    # of compressing into the shorter 7.0-height panel space the
+    # earlier render used.
+    fig = plt.figure(figsize=(18, 7.5))
     outer_gs = _gridspec.GridSpec(
         1, 2, figure=fig, width_ratios=[1, 1], wspace=0.32,
     )
     ax_a = fig.add_subplot(outer_gs[0])
-    inner_gs = outer_gs[1].subgridspec(1, 2, width_ratios=[1, 5], wspace=0.06)
+    # Inner break-axis spacing widened from 0.06 to 0.14 so the
+    # right-edge "0.5" tick of the left sub-axis and the left-edge
+    # "5.0" tick of the right sub-axis no longer collide visually.
+    inner_gs = outer_gs[1].subgridspec(1, 2, width_ratios=[1, 5], wspace=0.14)
     ax_b_left = fig.add_subplot(inner_gs[0])
     ax_b_right = fig.add_subplot(inner_gs[1], sharey=ax_b_left)
     axes = [ax_a]  # legacy compat for the panel (a) code path below
@@ -2055,7 +2143,7 @@ def fig10_latency_quality_frontier(data):
             ref[1], ref[2], s=180,
             color=COLORS["no_context"], marker=MARKERS["no_context"],
             edgecolor="white", linewidth=1.2, alpha=0.55, zorder=4,
-            label="No Context (reference)",
+            label="No Context",
         )
         handles_b.append(ref_handle)
         if ref[3][0] > 0 or ref[3][1] > 0:
@@ -2094,16 +2182,18 @@ def fig10_latency_quality_frontier(data):
     ax_b_right.tick_params(left=False, labelleft=False)
     ax_b_left.yaxis.tick_left()
 
-    # Diagonal // glyphs at the break.
+    # Diagonal // glyphs at the break — only the bottom-edge pair.
+    # The earlier render also drew top-edge glyphs which spilled above
+    # the axes (clip_on=False) and read as a stray "//" floating just
+    # below the panel title; removed since the bottom pair alone is
+    # enough to convey the broken-axis convention to the reader.
     _d = 0.018  # diagonal length in axes coordinates
     _kw_left = dict(transform=ax_b_left.transAxes, color="#424242",
                     lw=1.4, clip_on=False)
     ax_b_left.plot((1 - _d, 1 + _d), (-_d, +_d), **_kw_left)
-    ax_b_left.plot((1 - _d, 1 + _d), (1 - _d, 1 + _d), **_kw_left)
     _kw_right = dict(transform=ax_b_right.transAxes, color="#424242",
                      lw=1.4, clip_on=False)
     ax_b_right.plot((-_d / 5, +_d / 5), (-_d, +_d), **_kw_right)
-    ax_b_right.plot((-_d / 5, +_d / 5), (1 - _d, 1 + _d), **_kw_right)
 
     # Overhead arrow spans the break — implemented via ConnectionPatch
     # which carries a single arrow across two Axes objects in figure
@@ -2201,7 +2291,7 @@ def fig10_latency_quality_frontier(data):
     ax_b_right.spines["left"].set_visible(False)
     ax_b_right.tick_params(left=False, labelleft=False)
 
-    fig.tight_layout(rect=[0, 0, 1, 0.985], w_pad=1.6)
+    fig.tight_layout(rect=[0, 0, 1, 0.91], w_pad=1.6)
     _save(fig, "fig10_latency_quality_frontier")
 
 

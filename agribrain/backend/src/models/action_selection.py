@@ -328,8 +328,8 @@ marketable and must be diverted to compost / animal feed / bioenergy.
 
 The RHO_RECOVERY_KNEE / KNEE_GAIN block in select_action() adds a
 non-linear boost on top of this linear term: above rho=0.50 the
-Recovery logit gets an additional +1.5 * excess and LR loses
-0.8 * excess, which produces a sharp triage transition rather than a
+Recovery logit gets an additional +5.0 * excess and LR loses
+3.0 * excess, which produces a sharp triage transition rather than a
 smooth slide. The combination (linear gradient + knee) gives Figure 2
 a visible three-regime structure: CC-dominant at low rho, LR-dominant
 in the at-risk band 0.10 < rho < 0.50, Recovery-dominant in the
@@ -347,29 +347,43 @@ CC -> LR -> Recovery transition in stacked-area panels.
 # ---------------------------------------------------------------------------
 # Recovery knee: triage transition at high spoilage risk
 # ---------------------------------------------------------------------------
-RHO_RECOVERY_KNEE: float = 0.50
-"""Spoilage risk above which produce is not safely marketable.
+RHO_RECOVERY_KNEE: float = 0.30
+"""Spoilage risk above which produce-safety triage starts shifting
+toward recovery channels.
 
-Once rho exceeds this threshold, triage logic dictates that the produce
-should be diverted to recovery channels (compost, animal feed,
-bioenergy) rather than redistributed through local food banks or
-markets. 0.50 corresponds to ~50 percent quality loss, the
-food-safety threshold above which produce typically cannot be sold
-through legitimate retail or food-bank channels.
+The earlier 0.50 setting placed the knee at the upper end of the
+marketable band — produce above 0.50 is past safe redistribution and
+must go to compost / animal feed / bioenergy. In practice that meant
+the knee never fired meaningfully in scenarios (heatwave, adaptive
+pricing) where env_rho oscillates between 0.30 and 0.55 and only
+briefly crosses 0.50, so the policy kept routing to LR even when
+batches were drifting into the at-risk band. Lowering to 0.30 makes
+the knee a *triage onset* rather than a *food-safety boundary* — at
+30 percent quality loss produce is still marketable but should start
+having a Recovery option weighted into the routing distribution
+because the next step's continued ambient stress is likely to push
+it past the marketable boundary anyway. The hard food-safety boundary
+lives separately in batch_inventory.RHO_FOOD_SAFETY_CUTOFF (0.65)
+which forces Recovery for any DC batch already past that line.
 """
 
-RHO_RECOVERY_KNEE_GAIN: float = 2.50
+RHO_RECOVERY_KNEE_GAIN: float = 5.00
 """Additional Recovery logit gain per unit rho above the knee.
 
 Applied as: logits[Recovery] += KNEE_GAIN * (rho - KNEE) / (1 - KNEE),
-logits[LR] -= 1.50 * (rho - KNEE) / (1 - KNEE).
-Magnitudes chosen so that at rho >= 0.7 Recovery overtakes LR in the
-softmax (the food-safety triage requirement: produce at 70 percent
-spoilage risk is not safely marketable through retail or food-bank
-channels and must go to compost / animal feed / bioenergy).
+logits[LR] -= 3.00 * (rho - KNEE) / (1 - KNEE).
+The earlier 2.50 / 1.50 magnitudes produced a Recovery share that
+peaked around 18 percent even above the knee — the boost was visibly
+overwhelmed by the SLCA logit bonus toward LR plus the base
+``THETA @ phi`` LR preference. The 5.00 / 3.00 pair lifts Recovery
+into clear dominance in the [0.50, 0.65] rho band where Recovery
+should be selected by triage logic but the food-safety override (see
+batch_inventory.RHO_FOOD_SAFETY_CUTOFF) has not yet fired. At
+rho = 0.65 this puts Recovery 1.5 logits above LR, comfortably
+dominant in softmax.
 """
 
-RHO_RECOVERY_KNEE_LR_PENALTY: float = 1.50
+RHO_RECOVERY_KNEE_LR_PENALTY: float = 3.00
 """LR logit penalty per unit rho above the knee (paired with KNEE_GAIN)."""
 
 # NOPINN_SLCA_SCALE was a 0.5x SLCA-bonus attenuation applied only in

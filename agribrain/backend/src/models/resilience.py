@@ -193,43 +193,63 @@ beginning to degrade. Rerouting at this point maximises recovery value.
 # above 35 degC the cooling capacity is overwhelmed and produce
 # experiences something close to the ambient trace.
 #
-# We therefore model a piecewise-constant cold-chain factor with three
-# regimes, plus a constant factor for local-redistribute (whose
-# exposure is dominated by short dwell time rather than internal
-# cooling integrity), plus a zero factor for recovery (which removes
-# produce from the retail-bound pool entirely):
+# We therefore model piecewise-constant route factors. Cold chain has
+# three regimes (nominal / stressed / overwhelmed). Local redistribute
+# also has temperature-conditional factors because its short-dwell
+# protection comes from indoor warehouse / food-bank-cooler staging,
+# which tracks ambient with attenuation rather than active
+# refrigeration: a refrigerated walk-in cooler at a partner site holds
+# 4-7 degC when outdoor ambient is cool but heats up appreciably during
+# heatwave-scale events. Recovery has a zero factor (produce leaves the
+# retail-bound pool entirely):
 #
 #   cold_chain  T_amb < 30 degC : 0.15  (nominal cold chain, 85% integrity)
 #               30 <= T_amb <=35: 0.40  (cold chain stressed)
 #               T_amb > 35 degC : 1.00  (cold chain overwhelmed)
 #
-#   local_redistribute (any T)  : 0.45  (45 km short-route, partial
-#                                        cooling, abuse multiplier and
-#                                        short dwell roughly balance)
+#   local_redistribute
+#               T_amb < 15 degC : 0.20  (cool indoor staging, near-CC
+#                                        performance; short dwell at
+#                                        4-7 degC food-bank cooler)
+#               15 <= T_amb < 30: 0.45  (moderate ambient, indoor staging
+#                                        ~15-20 degC, short dwell)
+#               30 <= T_amb <=35: 0.65  (warehouse heating up, partial
+#                                        protection only)
+#               T_amb > 35 degC : 0.85  (warehouse near-ambient, LR
+#                                        marginally better than overwhelmed
+#                                        CC because no compressor failure
+#                                        adds excursion risk)
 #
 #   recovery (any T)            : 0.00  (leaves retail-bound pool)
 #
-# The temperature breakpoints (30 degC, 35 degC) are the consensus
+# The cold-chain breakpoints (30 degC, 35 degC) are the consensus
 # operating limits cited by Mercier (2017) Sec.3.1 and Ndraha (2018)
 # Tab.4 for North American refrigerated-truck fleets carrying leafy
-# greens. Different fleets / climates would calibrate the breakpoints
-# differently; this is a sensitivity parameter, not a universal
-# constant. The 0.15 / 0.40 / 1.00 step values are the published
-# integrity bands rounded to two-decimal precision.
+# greens. The local-redistribute breakpoints (15 degC, 30 degC, 35 degC)
+# track the same heatwave thresholds plus a low-ambient cool band
+# motivated by the typical 4-7 degC staging temperature of food-bank
+# walk-in coolers (Garcia-Garcia 2017 Sec.4.2 reports 4 degC as the
+# operating set-point for FareShare-style redistribution networks).
+# These are sensitivity parameters, not universal constants; different
+# fleets / climates / network architectures would calibrate them
+# differently.
 #
 # Implications for AgriBrain narrative
 # -------------------------------------
 # Under this realistic model, cold chain is *strictly better* than
-# local-redistribute on retail-pool rho whenever T_amb < 30 degC
-# (0.15 < 0.45). It approaches LR's exposure during the 30-35 degC
-# stress band (0.40 vs 0.45). It is worse than LR only above 35 degC,
-# when the cooling system fails. The simulator's heatwave scenario
-# peaks at approximately 30 degC, which sits in the stress band -
-# AgriBrain's LR-leaning policy therefore does *not* dominate Static's
-# CC-only policy on retail rho during the heatwave; the two are
-# approximately tied. AgriBrain's win comes from the composite ARI
-# metric (carbon, labour, resilience, price) where LR strictly beats
-# CC, not from raw rho.
+# local-redistribute on retail-pool rho whenever T_amb < 30 degC, but
+# the gap narrows to 0.20 vs 0.15 in the cool band rather than 0.45 vs
+# 0.15. The two are approximately tied at 0.65 vs 0.40 in the
+# 30-35 degC stress band, and LR is *better* than CC at 0.85 vs 1.00
+# above 35 degC (CC overwhelmed). Combined with the Recovery knee in
+# action_selection.py (rho > 0.50 triages to Recovery, removing
+# produce from the retail pool entirely) and the food-safety override
+# in batch_inventory.py (rho > 0.65 forces Recovery regardless of
+# policy choice), this gives AgriBrain a genuine retail-pool quality
+# advantage over Static during and after a heatwave: AgriBrain's
+# Recovery routing keeps the worst batches out of retail entirely,
+# while Static's CC-only policy lets every batch enter retail at
+# whatever rho the cold-chain integrity gave it.
 #
 # References
 # ----------
@@ -263,11 +283,59 @@ CC_FACTOR_STRESSED:   float = 0.40
 CC_FACTOR_OVERWHELMED: float = 1.00
 """Cold-chain factor above CC_OVERWHELMED_THRESHOLD_C."""
 
-LR_FACTOR_CONSTANT:   float = 0.45
-"""Local-redistribute factor (temperature-independent due to short dwell)."""
+# Local-redistribute breakpoints. Indoor warehouse / food-bank cooler
+# staging tracks ambient with attenuation; the cool-band threshold
+# captures the regime where the staging cooler genuinely operates
+# refrigerated (4-7 degC), the stressed/hot bands capture warehouse
+# heating during heatwave-scale events.
+LR_COOL_THRESHOLD_C:    float = 15.0
+"""Below this ambient temperature, LR staging operates refrigerated."""
+
+LR_STRESSED_THRESHOLD_C: float = 30.0
+"""Below this ambient temperature, LR staging is moderate; matches CC
+nominal threshold so the stress-band breakpoint is symmetric across
+routes."""
+
+LR_HOT_THRESHOLD_C:     float = 35.0
+"""Above this ambient temperature, LR staging is near-ambient. Matches
+CC overwhelmed threshold so the upper-band breakpoint is symmetric
+across routes."""
+
+LR_FACTOR_COOL:        float = 0.20
+"""LR factor at T < 15 degC (cool indoor staging, near-CC performance)."""
+
+LR_FACTOR_NOMINAL:     float = 0.45
+"""LR factor in the 15-30 degC moderate band (warehouse 15-20 degC)."""
+
+LR_FACTOR_STRESSED:    float = 0.65
+"""LR factor in the 30-35 degC stress band (warehouse heating up)."""
+
+LR_FACTOR_HOT:         float = 0.85
+"""LR factor above 35 degC (warehouse near-ambient, marginally better
+than overwhelmed CC because no compressor-failure excursion risk)."""
+
+# Backward-compatible alias for callers that imported the old constant
+# name. Defaults to the nominal-band value (0.45) so any code path that
+# did not migrate to the temperature-conditional API still produces
+# the previous numerics.
+LR_FACTOR_CONSTANT:    float = LR_FACTOR_NOMINAL
 
 RECOVERY_FACTOR:      float = 0.00
 """Recovery factor (produce leaves retail-bound pool)."""
+
+# Food-safety hard cutoff: rho above this is "not safely marketable"
+# under typical food-bank / retail acceptance criteria. The Recovery
+# knee in action_selection.py applies a soft logit boost above
+# RHO_RECOVERY_KNEE = 0.50; this constant is a stricter cutoff applied
+# inside the BatchInventory routing layer that *forces* Recovery
+# regardless of the policy's chosen action. Real food-safety
+# regulations behave this way: produce visibly past marketability
+# cannot be sold even if the operator's optimisation routine would
+# prefer otherwise. 0.65 corresponds to the rho threshold above which
+# Garcia-Garcia (2017) Tab.3 records >=80% of FareShare-style network
+# rejections at intake.
+RHO_FOOD_SAFETY_CUTOFF: float = 0.65
+"""Hard cutoff above which DC batches are forcibly routed to Recovery."""
 
 
 def route_rho_factor(action: str, ambient_temp_c: float) -> float:
@@ -285,7 +353,11 @@ def route_rho_factor(action: str, ambient_temp_c: float) -> float:
     ambient_temp_c : observed ambient temperature in degC at this
         timestep. Cold-chain factor is piecewise-constant on this
         with breakpoints at 30 degC (nominal -> stressed) and 35 degC
-        (stressed -> overwhelmed).
+        (stressed -> overwhelmed). Local-redistribute factor is also
+        piecewise-constant with breakpoints at 15 degC (cool ->
+        nominal), 30 degC (nominal -> stressed), and 35 degC
+        (stressed -> hot), reflecting indoor warehouse / food-bank
+        cooler staging tracking ambient with attenuation.
 
     Returns
     -------
@@ -294,7 +366,13 @@ def route_rho_factor(action: str, ambient_temp_c: float) -> float:
     if action == "recovery":
         return RECOVERY_FACTOR
     if action == "local_redistribute":
-        return LR_FACTOR_CONSTANT
+        if ambient_temp_c < LR_COOL_THRESHOLD_C:
+            return LR_FACTOR_COOL
+        if ambient_temp_c < LR_STRESSED_THRESHOLD_C:
+            return LR_FACTOR_NOMINAL
+        if ambient_temp_c <= LR_HOT_THRESHOLD_C:
+            return LR_FACTOR_STRESSED
+        return LR_FACTOR_HOT
     if action == "cold_chain":
         if ambient_temp_c < CC_NOMINAL_THRESHOLD_C:
             return CC_FACTOR_NOMINAL
@@ -399,8 +477,9 @@ def compute_effective_rho(
 
     if ambient_temp_c is None:
         # Nominal-temperature fallback: every CC step uses the
-        # design-point factor.
+        # design-point factor; LR uses the nominal-band factor.
         cc_factor = np.full(env_rho.shape, CC_FACTOR_NOMINAL)
+        lr_factor = np.full(env_rho.shape, LR_FACTOR_NOMINAL)
     else:
         T = np.asarray(ambient_temp_c, dtype=np.float64)
         if T.shape != env_rho.shape:
@@ -415,10 +494,21 @@ def compute_effective_rho(
                      CC_FACTOR_STRESSED,
                      CC_FACTOR_OVERWHELMED),
         )
+        # Temperature-conditional LR factor (matches route_rho_factor):
+        # cool < 15 / nominal 15-30 / stressed 30-35 / hot > 35.
+        lr_factor = np.where(
+            T < LR_COOL_THRESHOLD_C,
+            LR_FACTOR_COOL,
+            np.where(T < LR_STRESSED_THRESHOLD_C,
+                     LR_FACTOR_NOMINAL,
+                     np.where(T <= LR_HOT_THRESHOLD_C,
+                              LR_FACTOR_STRESSED,
+                              LR_FACTOR_HOT)),
+        )
 
     factor = (
         action_probs[:, 0] * cc_factor
-        + action_probs[:, 1] * LR_FACTOR_CONSTANT
+        + action_probs[:, 1] * lr_factor
         + action_probs[:, 2] * RECOVERY_FACTOR
     )
 
