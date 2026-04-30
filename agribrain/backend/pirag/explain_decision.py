@@ -18,8 +18,8 @@ Generates human-readable explanations with:
 3. **Source citations** — inline ``[KB:]`` references to the
    retrieved knowledge-base document IDs. The ``[KB:]`` tag is shared
    across multi-field explanations because only the top-ranked doc
-   is currently surfaced; reviewers should not over-interpret a
-   single ``[KB:]`` per paragraph as a distinct citation per claim.
+   is currently surfaced; a single ``[KB:]`` per paragraph should
+   not be over-interpreted as a distinct citation per claim.
 4. **Provenance** — SHA-256 evidence hashes plus a Merkle root over
    the explanation payload. Optional on-chain anchoring is governed
    by ``CHAIN_REQUIRE_PRIVKEY`` and ``CHAIN_SUBMIT``; the default

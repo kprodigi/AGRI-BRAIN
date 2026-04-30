@@ -150,8 +150,8 @@ class HybridRetriever:
         transformations of either list.
 
         Each result carries its sparse rank, dense rank, and the
-        component RRF contributions so reviewers can see what each
-        retriever contributed.
+        component RRF contributions so the per-retriever contribution
+        is auditable.
         """
         sparse = self.bm25.search(q, k)
         dense = self._dense_search(q, k)

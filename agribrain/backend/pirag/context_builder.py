@@ -380,7 +380,7 @@ def retrieve_role_context(
         # Faithfulness@k and evidence_coverage compare the answer-proxy
         # text against the *full* retrieved passage, not the truncated
         # 300-char preview that lands in ``context["citations"]``. The
-        # 2026-04 audit caught the truncation bug (it under-reported
+        # 2026-04 cleanup caught the truncation bug (it under-reported
         # faithfulness when the matching span lived past char 300);
         # the fix here uses ``response.citations`` directly.
         try:

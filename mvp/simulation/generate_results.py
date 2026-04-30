@@ -275,11 +275,11 @@ _MULTI_EPISODE_MODES: dict = {
 # than learning-vs-no-learning. The pert_10_static / pert_25_static /
 # pert_50_static variants run the *same* perturbation magnitudes with
 # n_iter=1 (no learning) so the paper can also report the raw fixed-prior
-# sensitivity, which is the quantity reviewers ask for when the question
-# is "how robust is the system to a poorly-calibrated prior". Together
-# the two variants give the complete sensitivity story: static modes show
-# the upper bound of perturbation impact; the learning modes show how
-# quickly the system recovers.
+# sensitivity, which is the quantity needed to answer "how robust is the
+# system to a poorly-calibrated prior". Together the two variants give
+# the complete sensitivity story: static modes show the upper bound of
+# perturbation impact; the learning modes show how quickly the system
+# recovers.
 _SENSITIVITY_MODES: dict = {
     "agribrain_pert_10":        0.10,
     "agribrain_pert_25":        0.25,
@@ -1189,8 +1189,8 @@ def run_all(seed: int = SEED) -> dict:
         so the perturbed initial_theta is held fixed across all 4 episodes
         even though n_iter=1 (single-iteration sensitivity is the
         intent). Without lr=0 the learner still nudged theta inside an
-        episode via REINFORCE, which the previous reviewer correctly
-        flagged as "not no-learning".
+        episode via REINFORCE, which had been correctly flagged as
+        "not no-learning".
         """
         if mode_name == "agribrain_cold_start":
             # Cold-start initialises THETA_CONTEXT to zeros, but we still

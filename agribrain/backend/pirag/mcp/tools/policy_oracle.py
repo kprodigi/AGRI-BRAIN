@@ -42,8 +42,8 @@ def check_access(user_id: str, tool_name: str) -> dict:
     Returning a dict (rather than a bare bool) keeps the MCP tool
     contract uniform across tools — every tool returns a dict that
     the protocol layer JSON-encodes inside ``result.content[0].text``.
-    The previous bare-bool return was an inconsistency reviewers had
-    flagged.
+    The previous bare-bool return was an inconsistency relative to the
+    rest of the MCP tool contract.
     """
     _load_policy()
     al = set(_POLICY.get("allowlist", []))

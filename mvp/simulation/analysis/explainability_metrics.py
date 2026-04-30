@@ -21,7 +21,7 @@ The script walks every ``*.jsonl`` file under
 ``mvp/simulation/results/decision_ledger/``, computes the three
 metrics per (mode, scenario), aggregates them, and writes
 ``mvp/simulation/results/explainability_metrics.json``. It also
-prints a one-screen summary so a reviewer can eyeball the paper claim
+prints a one-screen summary so the paper claim can be eyeballed
 without opening the JSON.
 
 Usage::

@@ -187,8 +187,8 @@ do
 done
 
 # decision_ledger is a directory of per-episode jsonl files; pull the
-# whole tree into the archive so reviewers can re-run
-# explainability_metrics + verify_anchored_root from the tarball alone.
+# whole tree into the archive so explainability_metrics +
+# verify_anchored_root can be re-run from the tarball alone.
 [ -d mvp/simulation/results/decision_ledger ] && \
     archive_files+=("mvp/simulation/results/decision_ledger")
 

@@ -17,10 +17,10 @@ effective decay rate "approximately doubles" between 4 °C and 10 °C
 (this is a paraphrase of the simulator's Arrhenius output at those
 temperatures, not a direct citation).
 
-A reviewer evaluating the retrieval and reranking quality should treat
-this corpus as a **labelled retrieval benchmark constructed for the
-simulator**, not as an external knowledge source. Any test of
-generalisation to a new domain should use a fresh corpus.
+When evaluating the retrieval and reranking quality, this corpus
+should be treated as a **labelled retrieval benchmark constructed
+for the simulator**, not as an external knowledge source. Any test
+of generalisation to a new domain should use a fresh corpus.
 
 ## Citations referenced (paraphrased, not verbatim)
 

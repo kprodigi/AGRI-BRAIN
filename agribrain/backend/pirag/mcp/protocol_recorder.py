@@ -103,7 +103,7 @@ class ProtocolRecorder:
             # one (notably the simulator's tool_dispatch, which used to
             # hard-code id=0 on every dispatched request). The wire id
             # remains whatever the caller sent; this `_recorder_seq`
-            # field gives reviewers a per-record correlation key that is
+            # field provides a per-record correlation key that is
             # always unique even when the upstream caller does not
             # multiplex.
             self._next_local_id += 1

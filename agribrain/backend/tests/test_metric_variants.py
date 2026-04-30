@@ -1,8 +1,8 @@
 """Tests for the robustness-variant metrics and the sensitivity claims
 made in the model docstrings.
 
-Each test exercises one of the claims a manuscript reviewer is likely
-to challenge:
+Each test exercises one of the claims that may be challenged in
+manuscript review:
 
   - that the geometric-mean ARI agrees with the multiplicative ARI on
     rank ordering (since ARI_geom is a strictly increasing transform);

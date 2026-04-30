@@ -79,8 +79,8 @@ EXTRA_METRICS = (
 # We now publish ``operational_violation_rate`` (temp OR quality only,
 # symmetric across every mode) as the primary "ConstraintViolationRate"
 # column, and keep the MCP-specific compliance signal under a clearly
-# named ``RegulatoryViolationRate`` column so reviewers can read the two
-# axes without conflating them.
+# named ``RegulatoryViolationRate`` column so the two axes are
+# separable without conflation.
 _TABLE1_COLUMNS = (
     ("ari", "ARI"), ("rle", "RLE"), ("waste", "Waste"),
     ("slca", "SLCA"), ("carbon", "Carbon"), ("equity", "Equity"),
@@ -245,7 +245,7 @@ def wilcoxon_signed_rank_pvalue(a, b, cell_key=("global",)):
         return float(res.pvalue)
     except Exception:
         # Fallback to sign-flip permutation; document the fallback in
-        # the per-comparison record so reviewers can detect it.
+        # the per-comparison record so it is detectable downstream.
         rng = np.random.default_rng(_cell_seed("wilcoxon_fallback", cell_key))
         observed = abs(float(np.mean(d)))
         ge = 0
@@ -317,15 +317,15 @@ def cohens_d_pooled(a, b):
     "given matched conditions, how reliably does method A beat method B
     seed-to-seed?" — its denominator is std(diff), which under a paired
     design that shares scenario template across arms can be very small,
-    pushing d_z into 4-10 range that reviewers correctly flag as
-    implausibly large. Pooled d asks "across realistic deployment
-    variation, how separated are the two methods on the metric scale?" —
-    its denominator is the pooled within-method standard deviation,
-    which captures the run-to-run variability operators actually
-    observe and lands in the empirical 0.5-2.5 range. Reporting both
-    lets the reader see the effect-size claim under the experimental-
-    design lens (paired) and the deployment lens (pooled) without
-    conflating the two.
+    pushing d_z into the 4-10 range, which is implausibly large for
+    operations-research effect sizes. Pooled d asks "across realistic
+    deployment variation, how separated are the two methods on the
+    metric scale?" — its denominator is the pooled within-method
+    standard deviation, which captures the run-to-run variability
+    operators actually observe and lands in the empirical 0.5-2.5
+    range. Reporting both lets the reader see the effect-size claim
+    under the experimental-design lens (paired) and the deployment
+    lens (pooled) without conflating the two.
     """
     x, y = np.array(a, dtype=float), np.array(b, dtype=float)
     if len(x) < 2 or len(y) < 2:
@@ -728,8 +728,8 @@ def main():
     # contrast (agribrain vs no_context) on one metric (ARI) per
     # scenario, m=5. We also report Holm across an extended grid (3
     # endpoints x 3 paired baselines x 5 scenarios = 45 tests) as an
-    # auxiliary so reviewers can judge headline robustness under a
-    # wider family. The auxiliary is not the canonical correction.
+    # auxiliary so headline robustness can be judged under a wider
+    # family. The auxiliary is not the canonical correction.
     primary_h1_holm = holm_bonferroni(primary_h1_pvals)
 
     # Build extended Holm grid: ARI / RLE / SLCA on all paired baselines.
@@ -748,8 +748,8 @@ def main():
 
     # Pass 2b: BH-FDR (PRDS-assuming) AND BY-FDR (arbitrary-dependence)
     # within each scenario across all (baseline, metric) pairs. Reporting
-    # both lets reviewers see the conservative bound (BY) when within-
-    # scenario metric correlations have mixed signs.
+    # both surfaces the conservative bound (BY) when within-scenario
+    # metric correlations have mixed signs.
     per_scenario_bh: dict[str, dict[str, float]] = {
         sc: benjamini_hochberg(per_scenario_pvals[sc]) for sc in SCENARIOS
     }
@@ -790,7 +790,7 @@ def main():
                 # structurally zero for non-MCP baselines (static,
                 # hybrid_rl, no_pinn, no_slca) because they don't
                 # invoke the compliance tool — same structural-zero
-                # pattern. Reviewers should not interpret these as
+                # pattern. These should not be interpreted as
                 # falsifiable contrasts.
                 if met == "rle" and baseline == "static":
                     rec["descriptive_only"] = True

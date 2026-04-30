@@ -224,7 +224,7 @@ def reset_dispatch_id_counter() -> None:
     Called by ``AgentCoordinator.reset`` so per-episode protocol
     traces use comparable id ranges (otherwise the counter grows
     unboundedly across the simulator's 5-scenario × 20-mode loop and
-    reviewers comparing two scenario runs see disjoint id ranges).
+    comparing two scenario runs surfaces disjoint id ranges).
     """
     global _dispatch_id_counter
     with _dispatch_id_lock:
@@ -236,7 +236,7 @@ class _ToolProtocolError(RuntimeError):
     call returned a JSON-RPC error or a structured ``isError: True``
     response. Caught by ``dispatch_tools`` so the failure populates
     ``_tools_failed`` instead of being silently masked as a successful
-    payload (the previous behaviour after the 2026-04 audit fix that
+    payload (the previous behaviour after the 2026-04 fix that
     introduced ``isError`` surfacing).
     """
 

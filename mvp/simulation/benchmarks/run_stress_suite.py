@@ -253,7 +253,7 @@ def main() -> None:
             # The previous design graded each mode against its own
             # nominal, which a method that totally collapses can pass if
             # its nominal was low. Adding cross-mode "agribrain_stressed
-            # vs <other>_stressed" rows gives reviewers the rank-stability
+            # vs <other>_stressed" rows surfaces the rank-stability
             # answer directly. Computed only when both arms ran for the
             # current stressor, on the metrics shared across modes.
             if "agribrain" in modes:
@@ -299,8 +299,8 @@ def main() -> None:
     df.to_csv(RESULTS_DIR / "stress_degradation.csv", index=False)
     # Pass/fail computed against the *mean* delta across seeds, with
     # the per-seed pass-rate also reported as a Clopper-Pearson CI on
-    # the binomial proportion. This addresses the previous reviewer
-    # concern that 40/40 single-seed passes carried no uncertainty.
+    # the binomial proportion. This addresses the previous concern
+    # that 40/40 single-seed passes carried no uncertainty.
     pass_rows = []
     for _, r in df.iterrows():
         rec = r.to_dict()

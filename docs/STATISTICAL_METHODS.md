@@ -49,8 +49,8 @@ on this design, recording the choice in the `is_paired_design` and
   Cohen's d for transparency. With n=20 the correction is approximately
   0.987.
 - **Legacy sign-flip permutation** (`p_value_legacy_signflip`) is also
-  recorded for paired comparisons so reviewers can compare the two test
-  bases. The Wilcoxon p-value is the canonical `p_value`.
+  recorded for paired comparisons so the two test bases can be
+  compared. The Wilcoxon p-value is the canonical `p_value`.
 
 Bootstrap CIs in this implementation use the percentile method with
 10,000 resamples and per-cell deterministic seeds derived from
@@ -98,9 +98,9 @@ The paired Cohen's d_z values reported by the aggregator are sensitive
 to the size of the within-pair standard deviation, which under our
 matched-seed design captures only the residual variance after
 partialling out the shared environmental realisation. We document this
-explicitly because reviewers correctly observe that paired d_z values
-above ~3 are uncommon in empirical operations-research literature; in
-our setting d_z lands at ~1.5–3 because the simulator includes a
+explicitly because paired d_z values above ~3 are uncommon in
+empirical operations-research literature; in our setting d_z lands at
+~1.5–3 because the simulator includes a
 per-(mode, seed) policy-temperature draw that introduces mode-
 differential noise (`STOCH_POLICY_TEMP_STD=0.25`). Reporting the
 unpaired `cohens_d_pooled` alongside d_z lets the reader interpret the
@@ -136,13 +136,13 @@ The post-aggregation validator (`validation/validate_results.py`) runs
 in **strict mode by default** as of 2026-04 and exits non-zero when
 the range / interval checks declared in the validator source fire. It
 writes `validation_report.json` with the full list of flagged items so
-reviewers can inspect them. Set `STRICT_VALIDATION=0` to restore the
+they can be inspected. Set `STRICT_VALIDATION=0` to restore the
 previous report-only behaviour for local debugging — this is not the
 canonical configuration.
 
 The previous default (report-mode) was an explicit response to an
-earlier reviewer's concern that range/ordering gates encoded the
-manuscript's preferred ordering and risked confirmation bias. To
+earlier concern that range/ordering gates encoded the manuscript's
+preferred ordering and risked confirmation bias. To
 retain that protection, this version of the validator (i) ships
 *ranges* not orderings (each metric is checked against an absolute
 interval, not against a "agribrain > X" ordering), and (ii) gates

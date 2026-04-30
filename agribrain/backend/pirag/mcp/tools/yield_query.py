@@ -26,8 +26,7 @@ the tool runs ``yield_supply_forecast`` itself and returns
 ``"source": "computed"``. The previous prose in this file
 (and the paper) gave MCP credit for the forecast in *every* call;
 the simulator-cached calls credit MCP only with the contract layer,
-not the numerics. Reviewers should read the ``source`` field to
-distinguish.
+not the numerics. The ``source`` field distinguishes the two.
 """
 from __future__ import annotations
 

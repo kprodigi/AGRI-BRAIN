@@ -11,7 +11,7 @@ authors:
     affiliation: "Karen M. Swindler Department of Chemical and Biological Engineering, South Dakota School of Mines and Technology, Rapid City, SD 57701, USA"
 version: "1.1.0"
 date-released: "2025-04-11"
-# Active maintenance through 2026-Q2 (see git log for the audit-fix
+# Active maintenance through 2026-Q2 (see git log for the cleanup
 # pass that landed in 2026-04). Cite the version + commit SHA from
 # `mvp/simulation/results/artifact_manifest.json` for paper-grade
 # reproducibility.

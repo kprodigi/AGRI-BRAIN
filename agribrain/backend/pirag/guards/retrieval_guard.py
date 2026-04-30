@@ -20,8 +20,8 @@ and the previous floor of ``0.15`` would never pass. The floor is
 rescaled to ``0.012`` (about 75% of the maximum RRF score, i.e.
 "either retriever ranks the top doc better than rank 4 of 4") so the
 guard still gates idle-floor retrievals while staying compatible
-with the RRF score distribution. Reviewers verifying the guard
-calibration should compare against ``HybridRetriever.RRF_K``.
+with the RRF score distribution. To verify the guard calibration,
+compare against ``HybridRetriever.RRF_K``.
 """
 from __future__ import annotations
 

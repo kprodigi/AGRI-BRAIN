@@ -223,7 +223,7 @@ def ingest_decision_history(
         hour_end = block[-1].get("hour", (start + len(block)) * 0.25)
 
         doc = synthesize_decision_document(block, scenario, (hour_start, hour_end))
-        # Tag the document with its source so a reviewer can tell
+        # Tag the document with its source so it is auditable
         # whether the feedback loop was reading the chain or the
         # in-memory fallback at synthesis time.
         if doc.get("metadata"):

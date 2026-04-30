@@ -22,7 +22,7 @@ _ALLOWED_UNITS = [
 # aggregation in context_builder. The guard is meant to catch numeric
 # formulae with bogus unit symbols (xyzUnit etc.), not to police
 # documentary prose, so we whitelist the common English unit phrases
-# that appear in the §3.7 corpus. Reviewers verifying this list should
+# that appear in the §3.7 corpus. To verify this list,
 # scan ``agribrain/backend/pirag/knowledge_base/*.txt`` for the actual
 # vocabulary used.
 _DOCUMENTARY_UNIT_WORDS = {

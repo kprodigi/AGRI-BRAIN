@@ -5,7 +5,7 @@ tracks a single ``rho`` and a single ``inv`` per timestep. That makes the
 "rho on retail-bound inventory" metric impossible to derive
 mechanically - it has to be inferred from the action-probability mix.
 ``compute_effective_rho`` in :mod:`resilience` does that inference, but
-a reviewer can fairly call it "an accounting transformation, not a
+it is fairly characterised as "an accounting transformation, not a
 physical mechanism."
 
 This module adds an explicit batch-level FIFO model that runs alongside

@@ -108,7 +108,7 @@ class Policy(BaseModel):
     # the cited Field "Range:" bounds; they were chosen so the volatility
     # tilt does not dominate the policy under low-spoilage operating
     # conditions where rho-driven routing should still drive the decision.
-    # Reviewer-level defence is the sign pattern, which is supported by
+    # The load-bearing defence is the sign pattern, which is supported by
     # the cited literature; the magnitudes are tunable parameters that
     # the sensitivity ablations (THETA_CONTEXT pert_*) operate around.
     gamma_coldchain: float = Field(
@@ -205,11 +205,11 @@ class Policy(BaseModel):
     # redistribution step (~5.4 kg) maps to C ~= 0.89, and a recovery
     # step (~9.6 kg) maps to C ~= 0.81 — i.e., so the C component
     # produces a ~20-percentage-point spread across actions, comparable
-    # to the L/R/P components. A reviewer challenging "why 50?" can be
-    # answered: the absolute value is a sensitivity-free monotone
-    # rescaling of carbon_kg; the figures report rankings, and any cap
-    # in [40, 70] preserves both the rank order and the qualitative gap
-    # between actions. Verified via spot-check at 30 and 80.
+    # to the L/R/P components. The "why 50?" question is answered by:
+    # the absolute value is a sensitivity-free monotone rescaling of
+    # carbon_kg; the figures report rankings, and any cap in [40, 70]
+    # preserves both the rank order and the qualitative gap between
+    # actions. Verified via spot-check at 30 and 80.
     carbon_cap: float = Field(
         50.0,
         description="Carbon normalization cap (kg CO2-eq per step) for SLCA "

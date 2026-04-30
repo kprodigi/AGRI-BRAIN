@@ -1,8 +1,8 @@
 """Unit tests for the four agentic features added in 2026-04.
 
-Each test pins a behaviour the previous Reviewer-2 audit flagged as
-either logged-and-forgotten or undocumented. A future refactor that
-silently disables one of these behaviours will fail this suite.
+Each test pins a behaviour previously identified as either
+logged-and-forgotten or undocumented. A future refactor that silently
+disables one of these behaviours will fail this suite.
 
 1. ``test_per_role_learners_diverge_after_independent_updates`` —
    each agent role keeps its own ``PolicyDeltaLearner`` instance and

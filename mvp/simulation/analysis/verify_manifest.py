@@ -11,8 +11,8 @@ Usage::
     python mvp/simulation/analysis/verify_manifest.py
     python mvp/simulation/analysis/verify_manifest.py --strict-commit
 
-Reviewers should run this on a fresh clone after `reproduce_core.py`
-to confirm the published artifacts' integrity. The 2026-04 audit
+This should be run on a fresh clone after `reproduce_core.py`
+to confirm the published artifacts' integrity. The 2026-04 cleanup
 flagged that the manifest was produced but never verified anywhere;
 this script closes that gap.
 """

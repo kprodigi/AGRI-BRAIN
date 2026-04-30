@@ -10,7 +10,7 @@ pragma solidity ^0.8.28;
 ///
 /// @dev    PROTOTYPE — research code, not deployed to a permissioned EVM in
 ///         the published runs. See `agribrain/contracts/README.md`
-///         for the audit findings the 2026-04 hardening addresses:
+///         for the security issues the 2026-04 hardening addresses:
 ///
 ///         - Replaces single-key Ownable with role-based access control:
 ///           ADMIN_ROLE manages role grants; REWARDER_ROLE can mint

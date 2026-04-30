@@ -1,10 +1,10 @@
 """Regression tests for the policy_oracle MCP tool's dict contract.
 
-Reviewer-2 flagged that ``check_access`` previously returned a bare
-bool while consumers (``context_builder.py``, ``tool_dispatch.py``)
-defended against a dict shape. The bool→dict migration in 2026-04
-made the contract uniform across MCP tools but introduced the risk
-that a future refactor reverts to bool, breaking the consumers.
+``check_access`` previously returned a bare bool while consumers
+(``context_builder.py``, ``tool_dispatch.py``) defended against a
+dict shape. The bool→dict migration in 2026-04 made the contract
+uniform across MCP tools but introduced the risk that a future
+refactor reverts to bool, breaking the consumers.
 
 This module pins:
 

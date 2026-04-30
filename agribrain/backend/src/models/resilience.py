@@ -5,7 +5,7 @@ This module exposes both the primary metrics reported in the manuscript
 and a set of complementary "robustness" variants grounded in established
 composite-indicator, waste-hierarchy, and welfare-economics literature.
 The robustness variants are computed alongside the primary metrics so
-reviewers can verify that the rank ordering of methods is invariant
+that the rank ordering of methods can be verified to be invariant
 under alternative aggregation rules.
 
 Adaptive Resilience Index (ARI)
@@ -28,7 +28,7 @@ Each factor is in [0, 1], producing ARI ∈ [0, 1].
 
 On the perceived ρ-vs-waste redundancy
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-A common reviewer concern is that ``(1 − waste)`` and ``(1 − ρ)``
+A potential concern is that ``(1 − waste)`` and ``(1 − ρ)``
 appear to double-count spoilage. They do not, because they measure
 different physical properties of the supply-chain outcome:
 
@@ -47,11 +47,10 @@ while ρ at delivery remains high (the surviving product is mediocre
 quality). The multiplicative form requires *both* that mass survive
 *and* that surviving mass be fresh — which is the operationally
 correct definition of "resilience" in a perishable cold chain.
-A reviewer asking why the ARI does not use ``(1 − waste)`` alone is
-correctly rejecting the case where lots of low-quality product is
-delivered; a reviewer asking why it does not use ``(1 − ρ)`` alone
-is correctly rejecting the case where high-quality product is
-delivered in tiny quantity.
+Asking why the ARI does not use ``(1 − waste)`` alone correctly
+rejects the case where lots of low-quality product is delivered;
+asking why it does not use ``(1 − ρ)`` alone correctly rejects
+the case where high-quality product is delivered in tiny quantity.
 
 The geometric-mean variant (ARI_geom) is reported as a robustness check
 for two reasons. First, it is the form UNDP adopted for the Human

@@ -3,8 +3,8 @@
 ## What this file is
 
 The 2025-04 commit that fixed the multi-episode-learning fairness asymmetry
-left no record of what the previous numbers were. Reviewer 2 correctly
-flagged that as an undocumented unblinding edit. This file is the public
+left no record of what the previous numbers were. That was correctly
+flagged as an undocumented unblinding edit. This file is the public
 record of what changed and why; it is committed so anyone diffing the
 repository can see the size of the correction.
 
@@ -65,9 +65,9 @@ fairness fix" in `mvp/simulation/generate_results.py`. The
 values in adjacent comment lines.
 
 The pre-fix snapshot of the full benchmark numbers is **not** in the
-repo. If a reviewer requires those numbers, the user can reproduce
-them by checking out the commit just before the fairness-fix commit
-and re-running `run_single_seed.py` for `agribrain_cold_start` with
+repo. If those numbers are needed, the user can reproduce them by
+checking out the commit just before the fairness-fix commit and
+re-running `run_single_seed.py` for `agribrain_cold_start` with
 n_iter=4 and `agribrain` with n_iter=1.
 
 ## Status
@@ -81,7 +81,7 @@ mvp/simulation/generate_results.py` step against the historical
 code.
 
 This file is intentionally a *qualitative* record rather than a
-table: the 2026-04 audit caught the open `_to populate_`
+table: the 2026-04 cleanup caught the open `_to populate_`
 placeholders that had sat unfilled since 2025 and rejected them as
 either-fill-or-delete. The honest resolution is delete-the-table:
 the manuscript text in §4.7 already pins the fair-budget
@@ -91,7 +91,7 @@ either (a) a rerun of historical code that no longer matches the
 current `_MULTI_EPISODE_MODES`, or (b) blank cells that look like
 pending work.
 
-If a reviewer wants the historical comparison numbers, the procedure
+If the historical comparison numbers are wanted, the procedure
 is documented above (`git checkout <pre-fix-commit>` + a single-seed
 benchmark run); the post-fix numbers are in
 `mvp/simulation/results/benchmark_summary.json`. The size of the

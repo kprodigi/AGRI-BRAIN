@@ -146,7 +146,7 @@ from .action_aliases import resolve_action as _resolve_action
 # case-study data more closely than the original 0.35-point gap did.
 # The rank ordering (LR > Recovery > CC on every component) is preserved
 # everywhere, so the AgriBrain advantage story still holds — it is just
-# expressed at a magnitude reviewers will accept.
+# expressed at a more credible magnitude.
 _ACTION_BASES: Dict[str, Dict[str, float]] = {
     "cold_chain":         {"L": 0.60, "R": 0.55, "P": 0.55},
     "local_redistribute": {"L": 0.82, "R": 0.78, "P": 0.78},

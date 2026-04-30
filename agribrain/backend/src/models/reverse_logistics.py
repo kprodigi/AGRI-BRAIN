@@ -194,7 +194,7 @@ def compute_mci(
         cold_chain         → W ≈ M       (no recovery action)
 
     The result is a literature-grounded circularity score that
-    reviewers familiar with EMF MCI can interpret directly. Provided
+    readers familiar with EMF MCI can interpret directly. Provided
     alongside the stylised ``compute_circular_economy_score`` as a
     robustness check.
 

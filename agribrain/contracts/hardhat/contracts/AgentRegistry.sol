@@ -6,7 +6,7 @@ pragma solidity ^0.8.28;
 ///         roles and metadata. Active status controls participation in the multi-agent
 ///         decision system. Registration is gated by an existing operator-tier agent
 ///         (or the contract owner during bootstrap) to prevent Sybil capture of the
-///         AgriDAO quorum, addressing the previous reviewer concern that any address
+///         AgriDAO quorum, addressing the previous risk that any address
 ///         could self-register and immediately vote.
 contract AgentRegistry {
     struct Agent {

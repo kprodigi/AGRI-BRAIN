@@ -162,7 +162,7 @@ if all(v is not None for v in [ab_rle_hw, ab_rle_op, ab_rle_cy]):
         _ord(f"RLE scenario order: HW={ab_rle_hw:.3f} >= OP={ab_rle_op:.3f} > CY={ab_rle_cy:.3f} VIOLATED")
 # Also assert agribrain RLE no longer trivially hits 1.0 across the board:
 # a saturated 1.0000 is a tautology of the policy, not a measurement, and
-# was a reviewer red-flag in the previous run. Allow at most one scenario
+# was flagged as a problem in the previous run. Allow at most one scenario
 # at 1.0 (extreme edge case where every step rerouted by chance).
 ab_rle_all = [get(sc, "agribrain", "RLE") for sc in ["heatwave","overproduction","cyber_outage","adaptive_pricing","baseline"]]
 n_at_one = sum(1 for v in ab_rle_all if v is not None and v >= 0.999)
@@ -170,7 +170,7 @@ if n_at_one >= 4:
     # Range-style anti-saturation gate: >=4 scenarios at the ceiling means
     # the metric is degenerate, not a "agribrain wins" claim. Keep as a
     # hard error.
-    errors.append(f"RLE saturation: {n_at_one}/5 scenarios hit RLE >= 0.999. Recalibrate the policy or noise; reviewers will flag this as tautological.")
+    errors.append(f"RLE saturation: {n_at_one}/5 scenarios hit RLE >= 0.999. Recalibrate the policy or noise; this is tautological.")
 
 # ============================================================
 # CHECK 5: Waste ranges and ordering
@@ -371,10 +371,10 @@ if bench_path.exists():
 # Implementation note: 2026-04 validator-mode change.
 #
 # A 2025-04 revision had downgraded the validator to report-only by
-# default to address an earlier reviewer's confirmation-bias concern
-# (range *and* ordering claims were both gating the build, and the
-# orderings encoded the manuscript's preferred direction). The
-# 2026-04 fix is more surgical: ordering claims now go through
+# default to address an earlier confirmation-bias concern (range *and*
+# ordering claims were both gating the build, and the orderings encoded
+# the manuscript's preferred direction). The 2026-04 fix is more
+# surgical: ordering claims now go through
 # `_ord(...)` and are reported as warnings only, while range / interval
 # checks stay as hard errors and gate the build by default.
 #
@@ -388,8 +388,8 @@ _mode_label = "DETERMINISTIC" if DETERMINISTIC_MODE else "STOCHASTIC"
 print(f"\n{'='*70}")
 print(f"Validation mode: {_mode_label} (strict={_strict})")
 
-# Always write a machine-readable report so reviewers / CI can inspect
-# the gate outcomes without re-running the validator.
+# Always write a machine-readable report so CI and downstream readers
+# can inspect the gate outcomes without re-running the validator.
 report = {
     "mode": _mode_label,
     "strict": _strict,

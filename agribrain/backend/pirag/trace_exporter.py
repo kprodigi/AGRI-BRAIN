@@ -426,9 +426,9 @@ class TraceExporter:
         similar early-hour observations (e.g., ``baseline`` and
         ``cyber_outage`` before hour 24, where cyber's perturbation
         had not yet kicked in), the resulting per-scenario JSON files
-        had byte-identical content. Reviewers would diff
+        had byte-identical content. Diffing
         ``mcp_interop_baseline.json`` vs ``mcp_interop_cyber_outage.json``
-        and find the same SHA-256 — a real reproducibility red flag
+        produced the same SHA-256 — a real reproducibility red flag
         even though the underlying simulator was honest. The fix
         includes the scenario tag, the full numeric quantities the
         traces refer to (so floating-point differences across

@@ -121,8 +121,8 @@ function renderPhase(idx, m) {
         </IOCard>
         <IOCard label="Supply State" className="bg-slate-50 dark:bg-slate-900/30">
           {/* No fake fallback: render an em-dash when the inventory cannot
-              be parsed from the note, so reviewers cannot confuse a
-              missing value for a real one. */}
+              be parsed from the note, so a missing value is not
+              displayed as a real one. */}
           <Kv
             k="Inventory"
             v={

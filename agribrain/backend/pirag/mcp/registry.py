@@ -68,7 +68,7 @@ class ToolRegistry:
         Permissive by default (preserves the legacy overwrite
         semantics that ``register_*_capabilities`` helpers rely on).
         Duplicate registrations log at WARN with the previous and
-        replacement tool ids so reviewers can audit silent shadowing.
+        replacement tool ids so silent shadowing is auditable.
         Callers that want strict deduplication can use :meth:`replace`
         (explicit overwrite) or :meth:`register_strict` (raise on
         duplicate).
@@ -122,9 +122,9 @@ class ToolRegistry:
         if spec.cacheable and spec.cache_key_params:
             key_data = {p: kwargs.get(p) for p in spec.cache_key_params}
             # SHA-256 instead of MD5 — same cache-key role, but Bandit /
-            # security scanners flag MD5 by default and reviewers tend
-            # to ask. Cost difference is irrelevant at registry-cache
-            # frequency.
+            # security scanners flag MD5 by default and it tends to
+            # raise questions. Cost difference is irrelevant at
+            # registry-cache frequency.
             cache_key = f"{tool_name}:{hashlib.sha256(json.dumps(key_data, sort_keys=True, default=str).encode()).hexdigest()}"
             if cache_key in self._cache:
                 return self._cache[cache_key]
@@ -450,8 +450,8 @@ def mcp_registration_status() -> Dict[str, Any]:
     """Return the registration outcome of every optional MCP tool.
 
     Provides a structured view of which optional tools registered and
-    which failed with their import error so reviewers can spot partial
-    registrations. Used by the MCP `mcp.registry.status` resource.
+    which failed with their import error so partial registrations are
+    visible. Used by the MCP `mcp.registry.status` resource.
     """
     reg = get_default_registry()
     registered = sorted(reg._tools.keys())

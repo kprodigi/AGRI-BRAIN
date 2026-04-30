@@ -2,7 +2,7 @@
 
 The pre-2026-04 test suite was labelled "integration" but used
 hand-rolled `_Obs` stubs and never went through the FastAPI request
-path. This file adds real HTTP tests so a reviewer who clones and
+path. This file adds real HTTP tests so anyone who clones and
 runs `pytest` sees the request/response contract exercised through
 the canonical FastAPI surface.
 

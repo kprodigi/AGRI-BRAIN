@@ -54,7 +54,7 @@ from matplotlib import font_manager as _font_manager
 # for the embedded math text. On Windows the four canonical Arial faces
 # live under C:\Windows\Fonts; we register them explicitly so matplotlib
 # does not silently fall back to DejaVu Sans (which produces a slightly
-# heavier glyph set than reviewers expect from a "set Arial" fix).
+# heavier glyph set than expected from a "set Arial" fix).
 _ARIAL_FONT_FILES = (
     r"C:\Windows\Fonts\arial.ttf",
     r"C:\Windows\Fonts\arialbd.ttf",
@@ -1417,7 +1417,7 @@ def fig7_ablation(data):
     # plus x_scale dropped from 1.25 to 1.10 means each group occupies
     # ~89% of its allotted x-slot instead of ~72%, so the bars are
     # visibly chunkier and the inter-group gap shrinks proportionally —
-    # which is what reviewers expect when each group already carries 8
+    # which is the expected layout when each group already carries 8
     # well-separated bars distinguished by colour.
     width = 0.98 / n_modes
     x_scale = 1.10
@@ -1937,7 +1937,7 @@ def fig9_fault_degradation():
         ax.set_yticklabels([SCENARIO_LABELS.get(s, s) for s in scenarios_in_sig])
 
         # Slim colourbar on the right edge — gives the gradient an
-        # explicit scale for reviewers who want exact magnitudes.
+        # explicit scale for readers who want exact magnitudes.
         cbar = fig.colorbar(im, ax=ax, fraction=0.045, pad=0.03)
         cbar.set_label("Cohen's d (ARI)",
                        fontsize=_F9_ANNOT, fontweight="bold")

@@ -18,7 +18,7 @@ Wiring (load-bearing — do not delete this file as "unused"):
   ``register_recovery_capabilities`` directly to assert tools land in
   the registry.
 
-The "orphan tool" finding from the 2026-04 audit referred to these
+The "orphan tool" finding from the 2026-04 cleanup referred to these
 tools being absent from the *static* MCP registry returned by
 ``get_default_registry``. They are deliberately runtime-registered
 because the tools close over the agent instances created at

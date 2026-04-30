@@ -28,8 +28,8 @@ function CausalExplanation({ explainability }) {
 
   if (!text) {
     // Fail loud, not silent: a missing causal narrative is unusual and
-    // a reviewer should see that the field was empty rather than have
-    // the section vanish.
+    // the empty field should be visible rather than the section
+    // vanishing silently.
     return (
       <div className="space-y-2">
         <div className="flex items-center gap-2">

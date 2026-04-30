@@ -255,8 +255,8 @@ i.e. the policy commits almost entirely to local redistribution under
 spoilage urgency. The earlier docstring claim of "~45 % CC / 45 % LR /
 10 % Rec at baseline" is rough at best for hybrid_rl (closer to 56/33/11
 at the conditions above) and does NOT describe agribrain (which is
-LR-leaning by design due to SLCA_BONUS). Reviewers should treat the
-distribution table above as the operative baseline.
+LR-leaning by design due to SLCA_BONUS). The distribution table
+above is the operative baseline.
 
 Implementation note: sensitivity provenance.
 THETA itself has no automated calibration; the entries are domain
@@ -264,8 +264,8 @@ priors. The published sensitivity ablations
 (``agribrain_pert_10/25/50`` in mvp/simulation/generate_results.py)
 perturb the *piRAG context-to-logits* matrix THETA_CONTEXT, not THETA.
 A direct THETA sensitivity sweep is therefore not part of the existing
-benchmark; if a reviewer challenges the specific magnitudes, the
-defence is (a) per-column literature provenance documented above,
+benchmark; the specific magnitudes are defended by (a) per-column
+literature provenance documented above,
 (b) the calibrated GOVERNANCE_* thresholds derived from the resulting
 rollouts, and (c) the system-level robustness shown in Figure 9 /
 Table 10 across fault categories, which is the integrated test of
@@ -340,7 +340,7 @@ Previous magnitudes were [-0.5, +1.0, +0.15] (saturated LR ~95 % at
 rho=0.5) and [-0.30, +0.55, +0.20] (LR-locked at high rho with
 Recovery share never breaking 25 %). The current vector plus the
 Recovery knee jointly fix the "AgriBrain never chooses Recovery even
-when spoilage is imminent" reviewer concern, and restore the visible
+when spoilage is imminent" issue, and restore the visible
 CC -> LR -> Recovery transition in stacked-area panels.
 """
 
@@ -513,7 +513,7 @@ CYBER_REROUTE_PROB: dict[str, float] = {
     # Previous values made the four context-aware modes (agribrain,
     # no_context, mcp_only, pirag_only) all use 0.74, which produced
     # IDENTICAL cyber-outage RLE for all four (0.7482 in the last HPC
-    # run). A reviewer reading the table would correctly conclude the
+    # run). A reader inspecting the table would correctly conclude the
     # four ablations are not separable on this metric. The new values
     # differentiate along the context-channel-richness axis:
     #   agribrain    (full context: MCP + piRAG)              -> 0.74
@@ -562,14 +562,13 @@ the most autonomous edge-inference, hybrid_rl the least") rather than
 an absolute success rate, and the cyber-outage scenario figure
 therefore tests a *conditional* claim: given that AgriBrain's edge
 stack reroutes 82 % of the time and the centralised baselines reroute
-55-65 %, the integrated ARI behaves as shown in Fig. 4 / Table X. A
-reviewer challenging the magnitudes can be referred to the mode
-ordering, which is the load-bearing claim and is preserved under any
-monotonic relabelling of the four numbers above. If the absolute
-values matter to the reviewer, they should be re-derived from a
-controlled fault-injection experiment in agri-brain-mvp; that is
-out-of-scope for the current paper and is flagged here for the
-follow-up work.
+55-65 %, the integrated ARI behaves as shown in Fig. 4 / Table X. The
+magnitudes are defended by reference to the mode ordering, which is
+the load-bearing claim and is preserved under any monotonic relabelling
+of the four numbers above. If the absolute values are needed, they
+should be re-derived from a controlled fault-injection experiment in
+agri-brain-mvp; that is out-of-scope for the current paper and is
+flagged here for the follow-up work.
 """
 
 # ---------------------------------------------------------------------------

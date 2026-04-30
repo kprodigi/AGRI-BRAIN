@@ -30,7 +30,7 @@ def simulate(endpoint: str, payload: Dict[str, Any], timeout: int = 30) -> Dict[
     Returns a structured ``{"_status": "error", ...}`` payload when the
     sim API is not configured (e.g., simulator subprocess), instead of
     raising. The MCP tools/call handler now flips ``result.isError =
-    True`` when ``_status == "error"`` so reviewers can still see this
+    True`` when ``_status == "error"`` so the failure is still visible
     as a tool failure in protocol traces — but it does not crash the
     dispatcher with an exception, and the recorder records a
     well-formed response either way.

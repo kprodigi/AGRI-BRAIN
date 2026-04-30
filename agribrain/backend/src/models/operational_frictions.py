@@ -8,10 +8,10 @@ at any timestep with zero capacity, scheduling, or sensor-noise cost.
 This is appropriate for the upper-bound performance claim reported in
 the manuscript, but a deployed system will face frictions that lower
 RLE_w below the unconstrained ceiling. This module exposes three
-opt-in frictions, each grounded in published literature, so reviewers
-asking "what happens with N% reroute capacity / Y mg sensor noise" can
-be answered with a quantitative stress test without re-running the
-core benchmark.
+opt-in frictions, each grounded in published literature, so that
+the question "what happens with N% reroute capacity / Y mg sensor
+noise" can be answered with a quantitative stress test without
+re-running the core benchmark.
 
 The frictions are *off by default* (the simulator's published behaviour
 is unchanged). Enable them via the ``FrictionConfig`` dataclass when

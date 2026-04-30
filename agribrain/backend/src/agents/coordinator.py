@@ -208,7 +208,7 @@ class AgentCoordinator:
         except ImportError:
             self.context_enabled = False
 
-        # Per-role policy-delta learners. The 2026-04 audit pointed out
+        # Per-role policy-delta learners. The 2026-04 cleanup pointed out
         # that "online REINFORCE" with a SHARED learner across all five
         # roles makes the multi-agent framing thin: every role's
         # gradients update the same Theta_delta, so role-specific

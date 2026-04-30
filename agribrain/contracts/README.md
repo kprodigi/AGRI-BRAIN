@@ -25,7 +25,7 @@ Hardhat config now ships three networks:
 The contracts are research code; production deployments should run
 the Slither analysis and the rest of the production checklist below.
 
-## Access-control posture (post 2026-04 audit)
+## Access-control posture (post 2026-04 hardening)
 
 | Contract              | Access model                                                        |
 |-----------------------|---------------------------------------------------------------------|
@@ -36,7 +36,7 @@ the Slither analysis and the rest of the production checklist below.
 | `ProvenanceRegistry`  | **role-based** (ADMIN_ROLE / ANCHORER_ROLE) with legacy `onlyOwner` |
 | `SLCARewards`         | **role-based** (ADMIN/REWARDER/SLASHER)                             |
 
-The 2026-04 audit's "single-key Ownable" finding for `DecisionLogger`
+The 2026-04 cleanup's "single-key Ownable" finding for `DecisionLogger`
 and `ProvenanceRegistry` is closed: both contracts now expose
 `grantRole`/`revokeRole`/`hasRole` mirrored on the SLCARewards
 pattern. The deployer is granted ADMIN + functional roles at
@@ -62,7 +62,7 @@ Tests:
 
 `backend/src/chain/decision_ledger.py` produces a per-episode Merkle
 root. The publish path is gated by `CHAIN_SUBMIT=1` and the chain
-config is supplied via `CHAIN_CFG_JSON`. The 2026-04 audit found
+config is supplied via `CHAIN_CFG_JSON`. The 2026-04 cleanup found
 that `submit_onchain` previously swallowed every exception silently —
 operators believed an anchoring had happened when it had not. The
 fixed implementation **logs at WARN/ERROR and re-raises by default**;
@@ -70,8 +70,8 @@ set `CHAIN_BEST_EFFORT=true` to restore the previous swallow-and-
 return-None behaviour for long-running simulation loops where
 anchoring is best-effort. The simulator (`mvp/simulation/generate_results.py`)
 defaults to `CHAIN_BEST_EFFORT=true` for HPC runs but records the
-outcome in `decision_ledger_tx_status` so reviewers can count how
-many submissions actually landed.
+outcome in `decision_ledger_tx_status` so the count of how many
+submissions actually landed is auditable.
 
 There is no verifying reader for anchored roots. A future hardening
 should add a `verify_anchored_root.py` that reads the on-chain root
@@ -89,8 +89,8 @@ and compares against the local ledger.
       (`mvp/simulation/analysis/verify_anchored_root.py`).
 - [ ] OpenZeppelin `ReentrancyGuard` import in `AgriDAO.sol`. The
       hand-rolled `_LocalReentrancyGuard` is functionally equivalent
-      and Slither passes, but a reviewer may prefer the canonical
-      import. Replacing it requires adding OpenZeppelin as an npm
+      and Slither passes, but the canonical import is preferable.
+      Replacing it requires adding OpenZeppelin as an npm
       dependency and is queued for a follow-up.
 - [ ] CI workflow that compiles and runs Solidity tests against a
       live Besu network (the current CI runs against localhost

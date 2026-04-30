@@ -3,7 +3,7 @@
 The previous test suite covered neither tool directly; integration
 checks were limited to "the registry exposes the names". These tests
 exercise both code paths (cached short-circuit and computed) and pin
-the contract reviewers will see in the protocol traces.
+the contract that the protocol traces expose.
 """
 from __future__ import annotations
 

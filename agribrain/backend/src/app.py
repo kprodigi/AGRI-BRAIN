@@ -279,7 +279,7 @@ def _policy_signature(p) -> str:
 #
 # logit_bias is sourced from agents.roles.ROLE_BIASES so the live
 # endpoint and the simulator share a single source of truth — the
-# 2026-04 audit caught a stale parallel set of biases here that no
+# 2026-04 cleanup caught a stale parallel set of biases here that no
 # longer matched the simulator's. The remaining keys (km_overrides,
 # slca_weights) are REST-side configuration: km_overrides drive the
 # carbon and SLCA computations against the cooperative's own route

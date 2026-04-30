@@ -76,9 +76,9 @@ component of action selection.
    consistent with the observed ablation table within ±0.07 except
    for the no_slca interaction."
 
-2. **The no_slca anomaly is itself a result.** A reviewer asking why
+2. **The no_slca anomaly is itself a result.** The question of why
    the model's predicted ordering hybrid_rl < no_slca was reversed
-   in the data should be answered with: *"removing SLCA hurts more
+   in the data is answered as follows: *"removing SLCA hurts more
    than the additive model predicts because SLCA also shapes which
    actions the policy chooses, not only the per-action save floor.
    This is documented in `docs/MODE_EFF_EMPIRICAL.md`."*

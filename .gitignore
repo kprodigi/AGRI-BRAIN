@@ -26,7 +26,7 @@ dist/
 .env.production
 .envrc
 
-# Cryptographic keys and credentials — broad patterns so a reviewer
+# Cryptographic keys and credentials — broad patterns so an operator
 # cloning the repo and running an on-chain experiment cannot
 # accidentally `git add -A` a private keypair or token file.
 *.pem
