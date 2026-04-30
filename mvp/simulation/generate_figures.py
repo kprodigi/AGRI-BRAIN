@@ -1581,12 +1581,20 @@ def _fig9_load_method_means():
     absolute ARI units) into a relative gain over the baseline mean ARI.
     Returns ``{scenario: {method: mean_ari}}`` or ``None`` if the file
     is absent.
+
+    Handles both the flat legacy layout
+    (``{"heatwave": {"agribrain": {"ari": {"mean": ...}}}, ...}``) and
+    the post-2026-04 aggregator layout that nests the scenario dict
+    under a ``summary`` key alongside ``_meta``.
     """
     summary_path = RESULTS_DIR / "benchmark_summary.json"
     if not summary_path.exists():
         return None
     import json as _json_mod
     summary = _json_mod.loads(summary_path.read_text(encoding="utf-8"))
+    if isinstance(summary, dict) and "summary" in summary \
+            and isinstance(summary["summary"], dict):
+        summary = summary["summary"]
     out: dict = {}
     for sc, modes in summary.items():
         out[sc] = {}
@@ -1605,27 +1613,53 @@ def _fig9_load_significance():
     benchmark_significance.json carries, for each scenario × baseline ×
     metric, the bootstrap mean_diff with 95% CI, the multiplicity-adjusted
     p-value, and Cohen's d. Returns None when the file is absent.
+
+    Two on-disk shapes are supported:
+
+      - flat (legacy, pre-2026-04 aggregator): scenarios at the top
+        level — ``{"heatwave": {"agribrain_vs_static": {...}}, ...}``
+      - nested (current aggregator): scenarios under a ``significance``
+        key alongside ``_meta`` and ``primary_h1_holm_adjusted`` —
+        ``{"_meta": {...}, "significance": {"heatwave": {...}}, ...}``
+
+    The loader unwraps the new nesting if present so the rest of the
+    fig9 code path can keep its scenario-keyed access pattern. Without
+    this unwrap, ``scenarios_in_sig = [s for s in SCENARIOS if s in sig_data]``
+    silently evaluates to the empty list (because ``"heatwave" in {"_meta": ..., "significance": ...}``
+    is False), producing the empty-panel rendering bug that surfaced
+    after the aggregator restructured the file in 2026-04.
     """
     sig_path = RESULTS_DIR / "benchmark_significance.json"
     if not sig_path.exists():
         return None
     import json as _json_mod
-    return _json_mod.loads(sig_path.read_text(encoding="utf-8"))
+    payload = _json_mod.loads(sig_path.read_text(encoding="utf-8"))
+    if isinstance(payload, dict) and "significance" in payload \
+            and isinstance(payload["significance"], dict):
+        return payload["significance"]
+    return payload
 
 
 def _fig9_load_n_seeds():
     """Best-effort lookup of the per-scenario seed count from benchmark_summary.
 
     All 5 scenarios usually share the same n_seeds; return the modal value
-    or None if the summary file is missing.
+    or None if the summary file is missing. Supports the post-2026-04
+    aggregator layout that nests scenarios under a ``summary`` key as
+    well as the legacy flat layout.
     """
     summary_path = RESULTS_DIR / "benchmark_summary.json"
     if not summary_path.exists():
         return None
     import json as _json_mod
     summary = _json_mod.loads(summary_path.read_text(encoding="utf-8"))
+    if isinstance(summary, dict) and "summary" in summary \
+            and isinstance(summary["summary"], dict):
+        summary = summary["summary"]
     counts = []
     for sc, modes in summary.items():
+        if not isinstance(modes, dict):
+            continue
         for mode, metrics in modes.items():
             ari = metrics.get("ari") if isinstance(metrics, dict) else None
             if isinstance(ari, dict) and "n_seeds" in ari:
