@@ -28,7 +28,10 @@ from src.models.action_selection import ACTIONS, ACTION_KM_KEYS
 from src.models.action_selection import compute_thermal_stress, compute_slca_attenuation
 from src.models.carbon import compute_transport_carbon
 from src.models.slca import slca_score
-from src.models.waste import INV_BASELINE, compute_waste_rate, compute_save_factor
+from src.models.waste import (
+    INV_BASELINE, MODE_CARBON_EFF,
+    compute_waste_rate, compute_save_factor,
+)
 from src.models.spoilage import arrhenius_k
 from src.models.resilience import compute_ari, route_rho_factor
 from src.models.reward import compute_reward
@@ -85,7 +88,10 @@ def _run_short_episode(df, mode, context_enabled, n_steps=48):
 
         km = getattr(policy, ACTION_KM_KEYS[action])
         thermal_stress = compute_thermal_stress(temp)
-        carbon = compute_transport_carbon(km, policy.carbon_per_km, thermal_stress)
+        carbon = compute_transport_carbon(
+            km, policy.carbon_per_km, thermal_stress,
+            eff_factor=MODE_CARBON_EFF.get(mode, 1.0),
+        )
 
         slca_result = slca_score(carbon, action)
         slca_raw = slca_result["composite"]

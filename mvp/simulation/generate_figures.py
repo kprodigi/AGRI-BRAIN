@@ -69,7 +69,9 @@ for _font_path in _ARIAL_FONT_FILES:
             pass
 
 from generate_results import run_all, SCENARIOS, RESULTS_DIR
-from src.models.action_selection import ACTIONS, CYBER_REROUTE_PROB
+from src.models.action_selection import (
+    ACTIONS, CYBER_REROUTE_PROB, RHO_RECOVERY_KNEE,
+)
 from src.models.resilience import RLE_THRESHOLD, compute_effective_rho, HIERARCHY_WEIGHT
 
 # ---------------------------------------------------------------------------
@@ -359,8 +361,10 @@ def fig2_heatwave(data):
 
     Panel (c) shows AgriBrain's action-probability stacked area with
     three regime guides: at-risk threshold crossing (rho >= 0.10),
-    Recovery knee crossing (rho >= 0.50), and post-heatwave fresh-batch
-    cold-chain recovery.
+    Recovery knee crossing (rho >= RHO_RECOVERY_KNEE), and post-
+    heatwave fresh-batch cold-chain recovery. Knee threshold is
+    imported from action_selection so the visual stays in sync with
+    the policy module.
 
     Panel (d) plots per-step ARI (12 h rolling) - the composite metric
     the paper sells. ARI is bounded [0, 1] so the cross-method gap is
@@ -470,17 +474,19 @@ def fig2_heatwave(data):
         return float(hours[idx])
 
     h_atrisk = _first_cross(RLE_THRESHOLD)
-    h_knee = _first_cross(0.50)
+    h_knee = _first_cross(RHO_RECOVERY_KNEE)
     if h_atrisk is not None:
         ax.axvline(h_atrisk, color="#424242", linestyle="--", linewidth=1.1,
                    alpha=0.65)
-        ax.text(h_atrisk + 0.4, 0.05, f"\u03c1>0.10\n@h{h_atrisk:.0f}",
+        ax.text(h_atrisk + 0.4, 0.05,
+                f"\u03c1>{RLE_THRESHOLD:.2f}\n@h{h_atrisk:.0f}",
                 fontsize=ANNOT_FONT_SIZE - 1, color="#212121",
                 fontweight="bold", va="bottom")
     if h_knee is not None:
         ax.axvline(h_knee, color="#424242", linestyle="--", linewidth=1.1,
                    alpha=0.65)
-        ax.text(h_knee + 0.4, 0.05, f"\u03c1>0.50\n@h{h_knee:.0f}",
+        ax.text(h_knee + 0.4, 0.05,
+                f"\u03c1>{RHO_RECOVERY_KNEE:.2f}\n@h{h_knee:.0f}",
                 fontsize=ANNOT_FONT_SIZE - 1, color="#212121",
                 fontweight="bold", va="bottom")
 

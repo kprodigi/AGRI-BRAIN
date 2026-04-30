@@ -129,9 +129,13 @@ class ContextMatrixLearner:
         self.reward_baseline = 0.0
         self.n_updates = 0
 
-        # SLCA amplification coefficient (also learned)
-        self.slca_amp_coeff = 0.25
-        self.slca_amp_initial = 0.25
+        # SLCA amplification coefficient (also learned). Initial value
+        # bumped to 0.40 in 2026-04 to match the action_selection.py
+        # default; the learner updates this via REINFORCE so the
+        # initial only matters when the learner has not yet observed
+        # enough reward signal to deviate.
+        self.slca_amp_coeff = 0.40
+        self.slca_amp_initial = 0.40
 
         # Temporal modulation parameters (also learned)
         self.temporal_base = 1.3

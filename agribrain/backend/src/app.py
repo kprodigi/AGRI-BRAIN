@@ -50,7 +50,10 @@ from .models.action_selection import (
     ACTIONS, ACTION_KM_KEYS, PRICE_FACTOR,
     select_action, compute_thermal_stress, compute_slca_attenuation,
 )
-from .models.waste import INV_BASELINE, compute_waste_rate, compute_save_factor
+from .models.waste import (
+    INV_BASELINE, MODE_CARBON_EFF,
+    compute_waste_rate, compute_save_factor,
+)
 from .models.carbon import compute_transport_carbon
 from .models.reverse_logistics import evaluate_recovery_options, compute_circular_economy_score
 from .models.policy_learner import PolicyLearner
@@ -742,8 +745,14 @@ def decide(d: DecideIn):
     km = km_ov.get(km_key, getattr(p, km_key))
 
     # ---- carbon with COP degradation (Eq. 18) ----------------------------
+    # Mode-conditional eff_factor (waste.MODE_CARBON_EFF) scales emissions
+    # down for context-aware modes that route through lower-carbon
+    # partners and PINN-time dispatches into cooler windows.
     thermal_stress = compute_thermal_stress(temp)
-    carbon = compute_transport_carbon(km, p.carbon_per_km, thermal_stress)
+    carbon = compute_transport_carbon(
+        km, p.carbon_per_km, thermal_stress,
+        eff_factor=MODE_CARBON_EFF.get(d.mode, 1.0),
+    )
 
     # ---- SLCA with stress attenuation (Eq. 12) ---------------------------
     surplus_ratio = max(0.0, inv / INV_BASELINE - 1.0)

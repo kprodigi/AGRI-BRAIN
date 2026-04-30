@@ -258,6 +258,15 @@ _MODE_CAPABILITIES: dict[str, tuple[bool, bool, bool, bool]] = {
     "agribrain_pert_10_static": (True, True, True, True),
     "agribrain_pert_25_static": (True, True, True, True),
     "agribrain_pert_50_static": (True, True, True, True),
+    # 2026-04 sensitivity modes share full agribrain capabilities; they
+    # perturb policy weights / SLCA bonuses, not the capability stack.
+    # Without these entries, MODE_EFF.get returns 0.0 (Static-equivalent)
+    # and MODE_CARBON_EFF.get returns 1.00, silently downgrading these
+    # modes to baseline efficiency.
+    "agribrain_no_bonus":        (True, True, True, True),
+    "agribrain_theta_pert_10":   (True, True, True, True),
+    "agribrain_theta_pert_25":   (True, True, True, True),
+    "agribrain_theta_pert_50":   (True, True, True, True),
 }
 
 MODE_EFF: dict[str, float] = {
@@ -272,13 +281,13 @@ values (with default deltas):
 
   static       0.00   (no RL)
   hybrid_rl    0.45   (base RL only)
-  no_slca      0.60   (RL + PINN + context, missing SLCA)
-  no_pinn      0.64   (RL + SLCA + context, missing PINN)
+  no_slca      0.68   (RL + PINN + context, missing SLCA)
+  no_pinn      0.68   (RL + SLCA + context, missing PINN)
   no_context   0.75   (RL + PINN + SLCA, no context channel)
-  mcp_only     0.79   (full system, MCP-only context features)
-  pirag_only   0.79   (full system, piRAG-only context features)
-  agribrain    0.79   (full system)
-  pert_*       0.79   (full system, perturbed priors)
+  mcp_only     0.83   (full system, MCP-only context features)
+  pirag_only   0.83   (full system, piRAG-only context features)
+  agribrain    0.83   (full system)
+  pert_*       0.83   (full system, perturbed priors)
 
 Note that mcp_only / pirag_only / agribrain share the same MODE_EFF —
 they differ only in *which* context features inform routing, not in

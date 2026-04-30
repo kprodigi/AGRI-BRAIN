@@ -326,7 +326,7 @@ RECOVERY_FACTOR:      float = 0.00
 # Food-safety hard cutoff: rho above this is "not safely marketable"
 # under typical food-bank / retail acceptance criteria. The Recovery
 # knee in action_selection.py applies a soft logit boost above
-# RHO_RECOVERY_KNEE = 0.50; this constant is a stricter cutoff applied
+# RHO_RECOVERY_KNEE = 0.30; this constant is a stricter cutoff applied
 # inside the BatchInventory routing layer that *forces* Recovery
 # regardless of the policy's chosen action. Real food-safety
 # regulations behave this way: produce visibly past marketability

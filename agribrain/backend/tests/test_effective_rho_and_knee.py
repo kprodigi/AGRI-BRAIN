@@ -193,10 +193,11 @@ def test_low_rho_agribrain_is_cold_chain_dominant():
 
 
 def test_high_rho_agribrain_prefers_recovery_above_knee():
-    """Above the Recovery knee (rho > 0.50), the triage logic must
-    flip the policy to Recovery dominance, not LR dominance. With the
-    boosted knee gain (5.0/3.0) Recovery should be the clear majority,
-    not just plurality."""
+    """Above the Recovery knee (rho > RHO_RECOVERY_KNEE = 0.30), the
+    triage logic must flip the policy to Recovery dominance, not LR
+    dominance. With the boosted knee gain (5.0/3.0) Recovery should
+    be the clear majority, not just plurality, by the time rho
+    reaches 0.85."""
     rng = np.random.default_rng(0)
     _, probs = select_action(
         mode="agribrain",

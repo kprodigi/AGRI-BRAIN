@@ -37,7 +37,10 @@ from src.models.carbon import compute_transport_carbon
 from src.models.resilience import route_rho_factor
 from src.models.reward import compute_reward_extended
 from src.models.spoilage import arrhenius_k
-from src.models.waste import INV_BASELINE, compute_waste_rate, compute_save_factor
+from src.models.waste import (
+    INV_BASELINE, MODE_CARBON_EFF,
+    compute_waste_rate, compute_save_factor,
+)
 from src.models.policy import Policy
 
 logger = logging.getLogger(__name__)
@@ -199,7 +202,10 @@ def _decide_standalone(req: DecideRequest) -> dict:
 
     km = km_map[action]
     thermal_stress = compute_thermal_stress(temp)
-    carbon = compute_transport_carbon(km, carbon_per_km, thermal_stress)
+    carbon = compute_transport_carbon(
+        km, carbon_per_km, thermal_stress,
+        eff_factor=MODE_CARBON_EFF.get(req.mode, 1.0),
+    )
 
     try:
         from src.models.slca import slca_score

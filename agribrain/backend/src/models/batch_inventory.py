@@ -264,7 +264,7 @@ class BatchInventory:
         #    including Static, so it does not by itself differentiate
         #    AgriBrain from Static — the differentiation comes from
         #    the policy-side Recovery knee in action_selection.py
-        #    (RHO_RECOVERY_KNEE = 0.50, soft logit boost) which
+        #    (RHO_RECOVERY_KNEE = 0.30, soft logit boost) which
         #    triages earlier than the override fires.
         oldest = self._oldest_dc_batch()
         chosen_route = action_names[int(action_idx)]
