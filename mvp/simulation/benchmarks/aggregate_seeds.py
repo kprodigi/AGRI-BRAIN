@@ -42,8 +42,7 @@ if str(_SIM_DIR) not in sys.path:
 from generate_results import SCENARIOS as _SIM_SCENARIOS, MODES as _SIM_MODES
 SCENARIOS = list(_SIM_SCENARIOS)
 MODES = list(_SIM_MODES)
-METRICS = ("ari", "waste", "rle", "rle_binary", "rle_weighted",
-           "rle_capacity_constrained", "slca", "carbon", "equity")
+METRICS = ("ari", "waste", "rle", "slca", "carbon", "equity")
 # Extra metrics exposed by run_single_seed.py when they are present in the
 # per-seed dump. Aggregator does bootstrap CIs on these the same way as the
 # core METRICS; missing values (e.g. context_honor_rate for static) are

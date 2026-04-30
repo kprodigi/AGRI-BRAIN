@@ -34,7 +34,6 @@ from src.models.resilience import (
     compute_equity,
     compute_equity_sen,
     compute_rle,
-    compute_rle_weighted,
 )
 from src.models.reverse_logistics import (
     compute_circular_economy_score,
@@ -90,33 +89,27 @@ def test_ari_geom_rank_agrees_with_multiplicative():
 
 
 # ---------------------------------------------------------------------------
-# RLE: weighted form distinguishes redistribute from recovery
+# RLE: hierarchy-weighted form distinguishes redistribute from recovery
 # ---------------------------------------------------------------------------
 
-def test_binary_rle_saturates_for_either_reroute():
-    rho = [0.5] * 10
-    actions_lr = ["local_redistribute"] * 10
-    actions_rec = ["recovery"] * 10
-    assert compute_rle(rho, actions_lr) == 1.0
-    assert compute_rle(rho, actions_rec) == 1.0  # binary cannot tell them apart
-
-
-def test_weighted_rle_distinguishes_redistribute_from_recovery():
+def test_rle_distinguishes_redistribute_from_recovery():
+    """The canonical EU-hierarchy + severity-weighted RLE must rank LR
+    above Recovery above cold-chain — the discriminating property the
+    earlier saturating ``recovered / at_risk`` form lacked."""
     rho = [0.5] * 10
     actions_lr = ["local_redistribute"] * 10
     actions_rec = ["recovery"] * 10
     actions_cc = ["cold_chain"] * 10
-    assert compute_rle_weighted(rho, actions_lr) == pytest.approx(1.0)
+    assert compute_rle(rho, actions_lr) == pytest.approx(1.0)
     expected_rec = HIERARCHY_WEIGHT["recovery"] / max(HIERARCHY_WEIGHT.values())
-    assert compute_rle_weighted(rho, actions_rec) == pytest.approx(expected_rec)
-    assert compute_rle_weighted(rho, actions_cc) == 0.0
+    assert compute_rle(rho, actions_rec) == pytest.approx(expected_rec)
+    assert compute_rle(rho, actions_cc) == 0.0
 
 
-def test_weighted_rle_under_threshold_returns_zero():
+def test_rle_under_threshold_returns_zero():
     """No timesteps above threshold ⇒ denominator zero ⇒ metric = 0."""
     rho = [RLE_THRESHOLD * 0.5] * 5
     actions = ["local_redistribute"] * 5
-    assert compute_rle_weighted(rho, actions) == 0.0
     assert compute_rle(rho, actions) == 0.0
 
 

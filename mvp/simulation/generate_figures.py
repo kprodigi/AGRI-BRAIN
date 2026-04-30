@@ -69,7 +69,7 @@ for _font_path in _ARIAL_FONT_FILES:
             pass
 
 from generate_results import run_all, SCENARIOS, RESULTS_DIR
-from src.models.resilience import RLE_THRESHOLD, compute_effective_rho, match_quality
+from src.models.resilience import RLE_THRESHOLD, compute_effective_rho, HIERARCHY_WEIGHT
 
 # ---------------------------------------------------------------------------
 # Unified publication-quality style
@@ -568,56 +568,34 @@ def fig3_overproduction(data):
     _annotate_window(ax, 12, 60, WINDOW_COLOR, "Overproduction")
     _legend(ax, loc="upper right")
 
-    # --- (c) Capacity-constrained match-quality RLE (rolling) ---
-    # The binary RLE (routed / at_risk) saturates at 1.0 for any policy
-    # that always reroutes, which made the previous panel uninformative.
-    # The current form combines two corrections:
-    #   1. match-quality: scores the tier-vs-severity match at each at-
-    #      risk timestep (LR optimal for marketable rho < 0.30, Recovery
-    #      optimal for non-marketable rho > 0.60; transition zone in
-    #      between). See resilience.match_quality + the Garcia-Garcia
-    #      2017 / Papargyropoulou 2014 provenance.
-    #   2. capacity-constrained: scores the *realised* routing after
-    #      BatchInventory's tier-capacity / fallback policy is applied,
-    #      not the chosen routing. When LR or Recovery saturate, the
-    #      score reflects the operational fallback (LR -> Recovery
-    #      downgrade, Recovery -> stays_in_dc held-over). This means a
-    #      policy that always picks LR but saturates the food-bank
-    #      network sees its RLE drop below the unconstrained match-
-    #      quality form. See resilience.compute_rle_capacity_constrained
-    #      and the LR_CAPACITY_UNITS_PER_HOUR docstring for the
-    #      calibration provenance.
-    # Falls back to chosen-action match-quality when realized_action_trace
-    # is unavailable (legacy result files that pre-date capacity tracking).
+    # --- (c) RLE rolling (EU-hierarchy + severity-weighted) ---
+    # Single canonical RLE form grounded in the EU 2008/98/EC Article 4
+    # waste hierarchy as operationalised by Papargyropoulou et al.
+    # (2014). Rolling form per time-step:
+    #   contribution(t) = rho(t) * w(action_t) * 1[rho > theta]
+    #   weight(t)       = rho(t) * w_max     * 1[rho > theta]
+    # The numerator/denominator are convolved separately (NaN where
+    # the denominator is zero, i.e. no at-risk steps in the window).
+    # The match-quality and capacity-constrained variants this panel
+    # used to plot were retired in 2026-04 along with their parent
+    # metric definitions in resilience.py.
     ax = axes[1, 0]
     action_names = ("cold_chain", "local_redistribute", "recovery")
+    w_max = max(HIERARCHY_WEIGHT.values())
     for mode in ["static", "hybrid_rl", "agribrain"]:
         ep = op[mode]
         rho = np.array(ep["rho_trace"])
         actions = np.array(ep["action_trace"])
-        realized = ep.get("realized_action_trace")
         at_risk = rho > RLE_THRESHOLD
 
-        # Per-step match-quality contribution: rho * match(action, rho)
-        # for at-risk timesteps, zero elsewhere. Use realized actions
-        # when available so the RLE reflects operational throughput,
-        # not just policy intent.
         match_contrib = np.zeros_like(rho)
         weight = np.zeros_like(rho)
         for t in range(len(rho)):
             if at_risk[t]:
-                if realized is not None and t < len(realized):
-                    a = realized[t]
-                    if a == "stayed_in_dc":
-                        # Capacity saturation held the batch in DC: the
-                        # produce remains exposed and was not rerouted.
-                        match_contrib[t] = 0.0
-                    else:
-                        match_contrib[t] = rho[t] * match_quality(a, float(rho[t]))
-                else:
-                    a = action_names[int(actions[t])]
-                    match_contrib[t] = rho[t] * match_quality(a, float(rho[t]))
-                weight[t] = rho[t]
+                a = action_names[int(actions[t])]
+                w = HIERARCHY_WEIGHT.get(a, 0.0)
+                match_contrib[t] = rho[t] * w
+                weight[t] = rho[t] * w_max
 
         num_rolling = np.convolve(match_contrib,
                                   np.ones(window) / window, mode="same")
@@ -1254,11 +1232,9 @@ def fig6_cross(data):
     _F6_TICK  = TICK_FONT_SIZE + 3       # 18
     _F6_LEG   = LEGEND_FONT_SIZE + 3     # 18
 
-    # Headline RLE migrated from the saturating binary form to the
-    # severity-aware match-quality form (rle_realistic). Falls back
-    # to the legacy "rle" key when consumed against pre-migration
-    # JSON results.
-    metrics = [("ari", "ARI", "(a)"), ("rle_realistic", "RLE", "(b)"),
+    # Single canonical RLE: EU-hierarchy + severity-weighted form
+    # (resilience.compute_rle, post-2026-04 simplification).
+    metrics = [("ari", "ARI", "(a)"), ("rle", "RLE", "(b)"),
                ("waste", "Waste Rate", "(c)"), ("slca", "SLCA Score", "(d)")]
     methods = ["static", "hybrid_rl", "agribrain"]
     scenarios_plot = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing"]
@@ -1268,13 +1244,7 @@ def fig6_cross(data):
         width = 0.26
 
         for i, mode in enumerate(methods):
-            # rle_realistic falls back to legacy "rle" for older JSONs.
-            def _val(s, mode_):
-                ep = data["results"][s][mode_]
-                if metric == "rle_realistic":
-                    return ep.get("rle_realistic", ep.get("rle", 0.0))
-                return ep[metric]
-            vals = [_val(s, mode) for s in scenarios_plot]
+            vals = [data["results"][s][mode][metric] for s in scenarios_plot]
             yerr = _resolve_yerr(bench, scenarios_plot, mode, metric, vals)
             if yerr is not None:
                 # Replace point estimates with bootstrap means when the CI
@@ -1349,11 +1319,10 @@ def fig7_ablation(data):
     # fig7-specific font; placeholder kept here so layout calculations
     # leave headroom even if the suite-wide rcParams are inspected.
 
-    # Headline RLE migrated from saturating binary form to the
-    # severity-aware match-quality form. Falls back to "rle" for
-    # pre-migration JSON results in the read path below.
+    # Single canonical RLE: EU-hierarchy + severity-weighted form
+    # (resilience.compute_rle, post-2026-04 simplification).
     metrics = [("ari", "ARI", "(a)"), ("waste", "Waste Rate", "(b)"),
-               ("rle_realistic", "RLE", "(c)")]
+               ("rle", "RLE", "(c)")]
     stress_scenarios = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing"]
 
     n_modes = len(fig7_modes)
@@ -1379,13 +1348,7 @@ def fig7_ablation(data):
         x = np.arange(len(stress_scenarios)) * x_scale
 
         for i, mode in enumerate(fig7_modes):
-            # rle_realistic falls back to legacy "rle" for pre-migration JSONs.
-            def _val(s, mode_):
-                ep = data["results"][s][mode_]
-                if metric == "rle_realistic":
-                    return ep.get("rle_realistic", ep.get("rle", 0.0))
-                return ep[metric]
-            vals = [_val(s, mode) for s in stress_scenarios]
+            vals = [data["results"][s][mode][metric] for s in stress_scenarios]
             yerr = _resolve_yerr(bench, stress_scenarios, mode, metric, vals)
             if yerr is not None:
                 vals = [bench.get(s, {}).get(mode, {}).get(metric, {}).get("mean", vals[k])

@@ -114,14 +114,8 @@ def _run_pair(
             "ari": float(ep["ari"]),
             "waste": float(ep["waste"]),
             "slca": float(ep["slca"]),
-            # Headline RLE = realistic match-quality.
-            "rle": float(ep.get("rle_realistic", ep["rle"])),
-            "rle_binary": float(ep["rle"]),
-            "rle_weighted": float(ep.get("rle_weighted", ep["rle"])),
-            "rle_capacity_constrained": float(
-                ep.get("rle_capacity_constrained",
-                       ep.get("rle_realistic", ep["rle"]))
-            ),
+            # Single canonical RLE: EU-hierarchy + severity-weighted.
+            "rle": float(ep["rle"]),
             "carbon": float(ep["carbon"]),
             "equity": float(ep["equity"]),
             "constraint_violation_rate": float(ep.get("constraint_violation_rate", 0.0)),
