@@ -189,7 +189,7 @@ def ingest_decision_history(
         the on-chain ``DecisionLogger`` first. Falls back to
         ``decisions`` when chain not configured or unreachable. Default
         True so the §3.7 "blockchain-to-retrieval feedback loop"
-        framing is honoured by default whenever a chain is up.
+        framing is honored by default whenever a chain is up.
     chain_window : number of most-recent on-chain ``DecisionLogged``
         events to fetch when ``prefer_chain`` is enabled. Mirrors the
         coordinator's 24-step block size by default (4 blocks).

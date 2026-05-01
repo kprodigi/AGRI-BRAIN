@@ -251,7 +251,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         help=(
             "max(abs(modifier)) above which a decision counts as "
             "'context-influenced'. Default 0.05 matches the headline "
-            "context-honour threshold used elsewhere."
+            "context-honor threshold used elsewhere."
         ),
     )
     p.add_argument(

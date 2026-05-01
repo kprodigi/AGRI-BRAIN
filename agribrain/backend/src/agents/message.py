@@ -80,7 +80,7 @@ def message_bias_from_inbox(
 
     The bias is added to the active agent's role_bias before softmax.
     See module-level ``_MESSAGE_TYPE_BIAS`` for the per-type mapping;
-    REROUTE_REQUEST honours an optional ``requested_action`` payload
+    REROUTE_REQUEST honors an optional ``requested_action`` payload
     field and CAPACITY_UPDATE scales by the sender's reported
     ``available_capacity``. The cumulative bias is clamped to
     ±``_MESSAGE_BIAS_CAP`` per action so a flooded inbox cannot

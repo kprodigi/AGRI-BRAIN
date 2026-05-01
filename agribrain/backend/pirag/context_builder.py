@@ -316,7 +316,7 @@ def retrieve_role_context(
                 "sha256": cit.sha256,
             })
 
-        # 2026-04 fix: honour the rerank order — top is rank 1, not the
+        # 2026-04 fix: honor the rerank order — top is rank 1, not the
         # max-by-score-over-iteration which is sensitive to dict order
         # on RRF ties.
         if ranked_citations:

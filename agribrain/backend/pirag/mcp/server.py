@@ -131,7 +131,7 @@ async def mcp_endpoint(
 ):
     """JSON-RPC 2.0 MCP endpoint. Routes to ``MCPServer.handle_message``.
 
-    Honours the JSON-RPC 2.0 §6 batch contract: when the request body
+    Honors the JSON-RPC 2.0 §6 batch contract: when the request body
     is a JSON array, each member is dispatched independently and the
     array of non-notification responses is returned (or HTTP 204 No
     Content when every member is a notification, per spec). When the

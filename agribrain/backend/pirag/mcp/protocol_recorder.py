@@ -69,7 +69,7 @@ class ProtocolRecorder:
 
             # JSON-RPC 2.0 notification: server returned None. Record
             # the request as a notification and return None so the
-            # transport / caller honours the spec.
+            # transport / caller honors the spec.
             if response is None:
                 self._next_local_id += 1
                 seq = self._next_local_id

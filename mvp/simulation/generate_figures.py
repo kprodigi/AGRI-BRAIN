@@ -1785,7 +1785,7 @@ def fig8_green_ai(data):
 
 
 def _fig9_load_alignment():
-    """Return per-scenario context-honour summary (honored, ignored, rate).
+    """Return per-scenario context-honor summary (honored, ignored, rate).
 
     Resolution order:
 
@@ -1802,7 +1802,7 @@ def _fig9_load_alignment():
          whichever scenarios have files when the summary is missing.
 
     The two paths give different numbers — the summary is the multi-seed
-    average (e.g. heatwave honour ~52% across 20 seeds) while the per-
+    average (e.g. heatwave honor ~52% across 20 seeds) while the per-
     scenario file is single-seed (e.g. heatwave 74% on seed 42). The
     multi-seed source is more representative of the published claim and
     is preferred. Either way the rows have the same shape so the panel-C
@@ -1815,7 +1815,7 @@ def _fig9_load_alignment():
 
 
 def _fig9_load_alignment_from_summary():
-    """Pull per-scenario context-honour stats from benchmark_summary.json."""
+    """Pull per-scenario context-honor stats from benchmark_summary.json."""
     summary_path = RESULTS_DIR / "benchmark_summary.json"
     if not summary_path.exists():
         return []
@@ -1849,6 +1849,61 @@ def _fig9_load_alignment_from_summary():
             "rate": chr_mean,
         })
     return rows
+
+
+def _fig9_load_honor_matrix(modes=("agribrain", "mcp_only",
+                                    "pirag_only", "no_context")):
+    """Per-(scenario, mode) context-honor rate + bootstrap CI matrix.
+
+    Returns ``{scenario: {mode: {"rate": float, "ci_low": float,
+    "ci_high": float, "active": float}}}`` pulled from
+    benchmark_summary.json. The ``ci_low`` / ``ci_high`` keys are the
+    bootstrap-mean confidence interval bounds (BCa) used by panel C
+    of fig 9 to render asymmetric error bars on the grouped-bar
+    plot. ``active`` is the mean number of context-active steps used
+    to flag modes with zero context activity (e.g. ``no_context``,
+    where the rate is 0/0 by construction and should be plotted as
+    a structural-zero comparison rather than a measurement).
+
+    Empty dict when the summary file is missing.
+    """
+    summary_path = RESULTS_DIR / "benchmark_summary.json"
+    if not summary_path.exists():
+        return {}
+    import json as _json_mod
+    payload = _json_mod.loads(summary_path.read_text(encoding="utf-8"))
+    if isinstance(payload, dict) and isinstance(payload.get("summary"), dict):
+        summary = payload["summary"]
+    else:
+        summary = payload
+    out: dict = {}
+    for sc in SCENARIOS:
+        sc_block = summary.get(sc, {})
+        if not isinstance(sc_block, dict):
+            continue
+        sc_out = {}
+        for mode in modes:
+            ep = sc_block.get(mode, {})
+            if not isinstance(ep, dict):
+                continue
+            chr_ = ep.get("context_honor_rate")
+            if not isinstance(chr_, dict):
+                continue
+            rate = float(chr_.get("mean", 0.0))
+            ci_low = float(chr_.get("ci_low", rate))
+            ci_high = float(chr_.get("ci_high", rate))
+            cas = ep.get("context_active_steps", {})
+            cas_mean = (float(cas.get("mean", 0.0))
+                         if isinstance(cas, dict) else 0.0)
+            sc_out[mode] = {
+                "rate": rate,
+                "ci_low": ci_low,
+                "ci_high": ci_high,
+                "active": cas_mean,
+            }
+        if sc_out:
+            out[sc] = sc_out
+    return out
 
 
 def _fig9_load_alignment_from_files():
@@ -1977,7 +2032,7 @@ def _fig9_load_n_seeds():
 #   (a) Cohen's d heatmap — agribrain vs each of 5 baselines, log-coloured.
 #   (b) % ARI improvement forest plot — same 25 comparisons, recoded to
 #       relative gain so the axis reads in human terms.
-#   (c) Context honour rate per scenario.
+#   (c) Context honor rate per scenario.
 # The earlier ARI-only fault-degradation panel and the H2 pass-rate matrix
 # were both retired because they had no visual variance (every cell passed,
 # every bar was small) — the effect-size and % improvement encodings carry
@@ -1995,7 +2050,7 @@ _STRESSOR_ORDER = ("sensor_noise", "missing_data", "telemetry_delay",
 
 
 def fig9_fault_degradation():
-    """Consolidated Figure 9: effect-size, performance gain, context honour.
+    """Consolidated Figure 9: effect-size, performance gain, context honor.
 
     Three panels, each keyed on benchmark_significance.json and built to
     carry visual variance proportional to the strength of the result:
@@ -2009,7 +2064,7 @@ def fig9_fault_degradation():
           and multiplicity-adjusted p-value stars. The relative scale
           makes "+63 % vs static" and "+2 % vs MCP-only" instantly
           interpretable, where the absolute ΔARI hid the magnitude.
-      (c) Context honour rate. Fraction of context-active decisions
+      (c) Context honor rate. Fraction of context-active decisions
           where the policy followed the dominant context recommendation.
           Source: context_alignment_{scenario}.json.
     """
@@ -2245,52 +2300,93 @@ def fig9_fault_degradation():
     _restyle(ax, "(b) % ARI Improvement vs Baselines")
 
     # =================================================================
-    # Panel (c) — Context honour rate (post-2026-04 simplification)
+    # Panel (c) — Context honor rate per scenario x mode
     # =================================================================
-    # Stripped of the random-baseline dashed line, the per-bar
-    # "(Nx random)" multiplier text, the legend, and the in-bar
-    # "n=72" sample-size labels per user request. The remaining
-    # encoding is bar height + percent label - the cleanest
-    # visualisation of "what fraction of context-active steps did
-    # the policy honour the dominant context recommendation". The
-    # random-baseline framing the previous version emphasised
-    # belongs in the methods section / caption, not in every panel
-    # render.
+    # Grouped-bar comparison across 4 ablation modes (agribrain,
+    # mcp_only, pirag_only, no_context) for each scenario. The
+    # previous single-mode-per-scenario layout answered "does
+    # context get honored?" but not "does the full stack matter?".
+    # The 4-mode comparison directly tests the substantive ablation
+    # claim: agribrain (full context) > pirag_only > mcp_only,
+    # with no_context as the structural-zero floor (0% by
+    # construction since the no_context arm has zero context-
+    # active steps).
+    #
+    # Error bars: BCa bootstrap CI bounds from
+    # benchmark_summary.json's ``context_honor_rate.ci_low /
+    # ci_high`` per (scenario, mode) cell. Asymmetric so the
+    # rendered error caps reflect the actual uncertainty band
+    # (typically narrower on the high side because the rate is
+    # bounded above at 1.0). Cells with no per-seed CI fall back
+    # to a zero-width bar rather than a misleading symmetric
+    # default.
     ax = axes[2]
-    if align_rows:
-        labels = [r["label"] for r in align_rows]
-        rates_pct = [100.0 * r["rate"] for r in align_rows]
-        x = np.arange(len(labels))
-        ax.bar(x, rates_pct, width=0.65,
-               color=COLORS.get("agribrain", "#2E7D32"),
-               edgecolor="white", linewidth=0.8, alpha=0.95, zorder=2)
-        for xi, pct in enumerate(rates_pct):
-            ax.text(xi, pct + 2.0, f"{pct:.1f}%",
-                    ha="center", va="bottom",
-                    fontsize=_F9_ANNOT, fontweight="bold", color="#212121")
-        ax.set_xticks(x)
-        ax.set_xticklabels(labels, rotation=20, ha="right")
-        ax.set_ylim(0, 110)
+    honor_matrix = _fig9_load_honor_matrix()
+    _PANEL_C_MODES = [
+        ("agribrain",   "AgriBrain",    COLORS.get("agribrain",   "#26A69A")),
+        ("pirag_only",  "piRAG only",   COLORS.get("pirag_only",  "#1565C0")),
+        ("mcp_only",    "MCP only",     COLORS.get("mcp_only",    "#E65100")),
+        ("no_context",  "No Context",   COLORS.get("no_context",  "#6A1B9A")),
+    ]
+    if honor_matrix:
+        scenarios_in_matrix = [s for s in SCENARIOS if s in honor_matrix]
+        n_groups = len(scenarios_in_matrix)
+        n_modes = len(_PANEL_C_MODES)
+        # Tight grouping: total width 0.85 of the unit slot, evenly
+        # split across 4 modes -> bar width 0.21 each. Inter-group
+        # gap 0.15 of slot.
+        bar_w = 0.85 / n_modes
+        x_base = np.arange(n_groups)
+
+        for i, (mode, label, color) in enumerate(_PANEL_C_MODES):
+            heights = []
+            err_low = []
+            err_high = []
+            for sc in scenarios_in_matrix:
+                cell = honor_matrix.get(sc, {}).get(mode, {})
+                rate = cell.get("rate", 0.0)
+                heights.append(100.0 * rate)
+                # Asymmetric BCa CI bounds, clipped to [0, 100].
+                lo = max(0.0, 100.0 * (rate - cell.get("ci_low", rate)))
+                hi = max(0.0, 100.0 * (cell.get("ci_high", rate) - rate))
+                err_low.append(lo)
+                err_high.append(hi)
+            xs = x_base + (i - (n_modes - 1) / 2) * bar_w
+            ax.bar(xs, heights, width=bar_w * 0.92, color=color,
+                   edgecolor="white", linewidth=0.7, alpha=0.95,
+                   label=label, zorder=2,
+                   yerr=[err_low, err_high],
+                   capsize=_ERR_CAPSIZE, error_kw=_ERR_KW)
+
+        ax.set_xticks(x_base)
+        ax.set_xticklabels(
+            [SCENARIO_LABELS.get(s, s) for s in scenarios_in_matrix],
+            rotation=20, ha="right",
+        )
+        ax.set_ylim(0, 100)
+        # Mode legend in the upper right where no scenario has
+        # rates above ~70%.
+        ax.legend(loc="upper right", fontsize=_F9_LEG - 2,
+                  ncol=2, framealpha=0.92, edgecolor="#9E9E9E")
     else:
-        ax.text(0.5, 0.5, "no context_alignment_*.json files",
+        ax.text(0.5, 0.5, "benchmark_summary.json not available",
                 ha="center", va="center", transform=ax.transAxes,
                 fontsize=_F9_ANNOT, color="#616161")
     # Y-axis title size matched to the x-axis tick label size per
     # user request. Panel (c) has no explicit x-axis title (no
     # set_xlabel), so the x-axis text the reader sees is the
     # rotated tick labels; matching the y-axis title to those keeps
-    # both axes' lettering at the same visual weight. Dropping
-    # _F9_AXIS in the call below from 22 to _F9_TICK=20 + the
-    # explicit re-apply after _restyle (mirroring the fig 7 fix in
-    # commit 3feb090) ensures the rendered y-axis title actually
-    # lands at 20pt instead of being silently overridden back to
+    # both axes' lettering at the same visual weight. The explicit
+    # re-apply after _restyle (mirroring the fig 7 fix in commit
+    # 3feb090) ensures the rendered y-axis title actually lands at
+    # _F9_TICK=20pt instead of being silently overridden back to
     # AXIS_LABEL_SIZE=17 by _apply_style inside _restyle.
-    _restyle(ax, "(c) Context Honour Rate",
-             ylabel="Honour rate (% of active steps)")
+    _restyle(ax, "(c) Context Honor Rate",
+             ylabel="Honor rate (% of active steps)")
     ax.yaxis.label.set_size(_F9_TICK)
     ax.yaxis.label.set_weight("bold")
 
-    fig.suptitle("Performance Gain over Baselines and Context Honour",
+    fig.suptitle("Performance Gain over Baselines and Context Honor",
                  y=0.995, fontsize=FIG_TITLE_SIZE, fontweight="bold")
     # Title-to-subplot gap matches the canonical figure 3 pattern
     # (rect top 0.985, suptitle y 0.995) so all paper figures share
@@ -2616,7 +2712,7 @@ def generate_all_figures(data=None):
     fig6_cross(data)
     fig7_ablation(data)
     fig8_green_ai(data)
-    # Single consolidated Figure 9: fault-degradation + context honour +
+    # Single consolidated Figure 9: fault-degradation + context honor +
     # MCP protocol reliability. Depends on the stress-suite CSV produced by
     # hpc/hpc_aggregate.sh Stage 6 and the per-scenario alignment / protocol
     # JSONs; emits a "no data" placeholder if any input is missing.

@@ -443,7 +443,7 @@ def test_compute_rle_uniform_eu_agnostic_companion():
 
 def test_rletracker_uses_rho_conditional_weight():
     """RLETracker.update must pull weights via ``hierarchy_weight``
-    so the rho-conditional table is honoured. A direct
+    so the rho-conditional table is honored. A direct
     ``HIERARCHY_WEIGHT.get(...)`` lookup would re-introduce the bug
     where Recovery routing scored 0.40 even at rho=0.70 (the very
     band where Recovery should be the *top* tier)."""

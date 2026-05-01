@@ -741,7 +741,7 @@ class AgentCoordinator:
                     and _cooperative_window_active(obs.hour)):
                 try:
                     coop_obs = cooperative.observe(obs.raw, obs.hour)
-                    # Honour ablation gating in the cooperative overlay
+                    # Honor ablation gating in the cooperative overlay
                     # too — otherwise ``pirag_only`` would re-introduce
                     # MCP signals via the cooperative dispatch and
                     # ``mcp_only`` would re-introduce piRAG via
@@ -805,7 +805,7 @@ class AgentCoordinator:
                         # Hierarchical override: cooperative's modifier
                         # replaces the primary's. Bias toward local
                         # redistribution (action 1) so the next-step
-                        # decision honours the cooperative's safety
+                        # decision honors the cooperative's safety
                         # signal even when the active agent's local
                         # MCP did not surface it.
                         veto_bias = np.array([-0.20, +0.20, 0.0])

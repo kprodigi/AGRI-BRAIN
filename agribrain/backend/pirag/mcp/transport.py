@@ -55,7 +55,7 @@ class InProcessTransport(MCPTransport):
     def send(self, message: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Send a JSON-RPC message and return the response.
 
-        Honours the JSON-RPC 2.0 notification path: when the input
+        Honors the JSON-RPC 2.0 notification path: when the input
         message has no ``id`` field, the server is invoked for its
         side effect and ``None`` is returned. Callers that need a
         response must include an ``id``.

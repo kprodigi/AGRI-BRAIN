@@ -447,7 +447,7 @@ Results are saved to `mvp/simulation/results/`:
 | `fig6_cross.png/pdf`     | Cross-scenario performance comparison (2x2 grouped bars)    |
 | `fig7_ablation.png/pdf`  | Ablation study (1x3 grouped bars, 8 modes)                  |
 | `fig8_green_ai.png/pdf`  | Green AI and carbon footprint (1x2 panel)                   |
-| `fig9_robustness.png/pdf` | Consolidated robustness (faults + context honour + protocol) |
+| `fig9_robustness.png/pdf` | Consolidated robustness (faults + context honor + protocol) |
 | `fig10_latency_quality_frontier.png/pdf` | Quality-latency operational frontier       |
 
 Each figure is also saved as PDF for LaTeX inclusion.

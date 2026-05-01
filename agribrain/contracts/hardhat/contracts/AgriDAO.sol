@@ -178,7 +178,7 @@ contract AgriDAO is _LocalReentrancyGuard {
         uint256 policyValue
     ) external onlyRegisteredAgent returns (uint256) {
         uint256 id = ++nextId;
-        // Honour the optional VOTING_DELAY: when zero the proposal is
+        // Honor the optional VOTING_DELAY: when zero the proposal is
         // immediately Active (legacy behaviour preserved); otherwise it
         // is held in Pending until ``votingStartsAt`` is reached.
         ProposalState initialState = VOTING_DELAY == 0

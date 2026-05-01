@@ -12,7 +12,7 @@
 // SLCARewards.sol, AgriDAO.sol) are EVM-portable; the only chain-side
 // distinction between localhost and a permissioned consortium is which
 // addresses hold ADMIN_ROLE and the LOGGER_ROLE / ANCHORER_ROLE /
-// REWARDER_ROLE / SLASHER_ROLE grants. ``deploy.js`` honours
+// REWARDER_ROLE / SLASHER_ROLE grants. ``deploy.js`` honors
 // ``EXTRA_LOGGERS`` / ``EXTRA_ANCHORERS`` env vars at deploy time so
 // the validator set on a permissioned chain receives its grants in the
 // same transaction batch as deployment.
