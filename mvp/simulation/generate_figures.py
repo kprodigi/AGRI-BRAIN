@@ -2302,15 +2302,19 @@ def fig9_fault_degradation():
     # =================================================================
     # Panel (c) — Context honor rate per scenario x mode
     # =================================================================
-    # Grouped-bar comparison across 4 ablation modes (agribrain,
-    # mcp_only, pirag_only, no_context) for each scenario. The
-    # previous single-mode-per-scenario layout answered "does
-    # context get honored?" but not "does the full stack matter?".
-    # The 4-mode comparison directly tests the substantive ablation
-    # claim: agribrain (full context) > pirag_only > mcp_only,
-    # with no_context as the structural-zero floor (0% by
-    # construction since the no_context arm has zero context-
-    # active steps).
+    # Grouped-bar comparison across the three context-active ablation
+    # modes (agribrain, pirag_only, mcp_only) for each scenario. The
+    # previous single-mode-per-scenario layout answered "does context
+    # get honored?" but not "does the full stack matter?". The 3-mode
+    # comparison directly tests the substantive ablation claim:
+    # agribrain (full context) > pirag_only > mcp_only.
+    #
+    # The no_context arm is omitted by user request - it is
+    # structurally zero (the no_context coordinator skips
+    # _compute_step_context entirely so context_active_steps == 0
+    # and the rate is 0/0 by construction). That structural-zero
+    # comparison belongs in the manuscript text rather than as a
+    # 0%-bar that conveys no information visually.
     #
     # Error bars: BCa bootstrap CI bounds from
     # benchmark_summary.json's ``context_honor_rate.ci_low /
@@ -2321,12 +2325,13 @@ def fig9_fault_degradation():
     # to a zero-width bar rather than a misleading symmetric
     # default.
     ax = axes[2]
-    honor_matrix = _fig9_load_honor_matrix()
+    honor_matrix = _fig9_load_honor_matrix(
+        modes=("agribrain", "pirag_only", "mcp_only"),
+    )
     _PANEL_C_MODES = [
         ("agribrain",   "AgriBrain",    COLORS.get("agribrain",   "#26A69A")),
         ("pirag_only",  "piRAG only",   COLORS.get("pirag_only",  "#1565C0")),
         ("mcp_only",    "MCP only",     COLORS.get("mcp_only",    "#E65100")),
-        ("no_context",  "No Context",   COLORS.get("no_context",  "#6A1B9A")),
     ]
     if honor_matrix:
         scenarios_in_matrix = [s for s in SCENARIOS if s in honor_matrix]
@@ -2365,9 +2370,10 @@ def fig9_fault_degradation():
         )
         ax.set_ylim(0, 100)
         # Mode legend in the upper right where no scenario has
-        # rates above ~70%.
+        # rates above ~70%. Single column with 3 entries fits
+        # cleanly in the upper-right corner.
         ax.legend(loc="upper right", fontsize=_F9_LEG - 2,
-                  ncol=2, framealpha=0.92, edgecolor="#9E9E9E")
+                  ncol=1, framealpha=0.92, edgecolor="#9E9E9E")
     else:
         ax.text(0.5, 0.5, "benchmark_summary.json not available",
                 ha="center", va="center", transform=ax.transAxes,
