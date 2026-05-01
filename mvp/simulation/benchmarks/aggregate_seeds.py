@@ -280,13 +280,45 @@ def paired_permutation_pvalue(a, b, n_perm=10_000, cell_key=("global",)):
     return float((ge + 1) / (n_perm + 1))
 
 
-def mann_whitney_pvalue(a, b):
-    """Two-sided Mann-Whitney U p-value (unpaired non-parametric)."""
+def mann_whitney_pvalue(a, b, cell_key=("global",)):
+    """Two-sided Mann-Whitney U p-value (unpaired non-parametric).
+
+    Falls back to an unpaired-mean-difference permutation test when the
+    scipy call fails. The previous implementation returned a silent
+    p=1.0 on any exception, which silently nullified the headline
+    AgriBrain-vs-Static and AgriBrain-vs-Hybrid-RL significance claims
+    on HPC clusters whose scipy was older than the ``alternative=
+    "two-sided"`` keyword (or on edge cases where mannwhitneyu raised
+    on perfect rank separation). The fallback gives the correct p
+    estimate (typically ~1/n_perm for huge effects) consistent with
+    ``paired_permutation_pvalue`` returned in
+    ``p_value_legacy_signflip``.
+    """
+    x = np.asarray(a, dtype=float)
+    y = np.asarray(b, dtype=float)
+    if x.size == 0 or y.size == 0:
+        return 1.0
     try:
         from scipy.stats import mannwhitneyu
-        return float(mannwhitneyu(a, b, alternative="two-sided").pvalue)
+        res = mannwhitneyu(x, y, alternative="two-sided")
+        return float(res.pvalue)
     except Exception:
-        return 1.0
+        pass
+    # Fallback: unpaired permutation on the difference of means. Pool
+    # both arms, repeatedly shuffle the partition into two equal-size
+    # halves, and count the fraction with |mean diff| >= observed.
+    rng = np.random.default_rng(_cell_seed("mannwhitney_fallback", cell_key))
+    observed = abs(float(np.mean(x) - np.mean(y)))
+    pooled = np.concatenate([x, y])
+    n_a = x.size
+    n_perm = 10_000
+    ge = 0
+    for _ in range(n_perm):
+        rng.shuffle(pooled)
+        diff = abs(float(np.mean(pooled[:n_a]) - np.mean(pooled[n_a:])))
+        if diff >= observed:
+            ge += 1
+    return float((ge + 1) / (n_perm + 1))
 
 
 def cohens_dz(a, b):
@@ -656,7 +688,7 @@ def main():
                 if is_paired:
                     p_value = wilcoxon_signed_rank_pvalue(a, b, cell_key=cell_key)
                 else:
-                    p_value = mann_whitney_pvalue(a, b)
+                    p_value = mann_whitney_pvalue(a, b, cell_key=cell_key)
                 p_perm_legacy = paired_permutation_pvalue(a, b, cell_key=cell_key)
                 dz = cohens_dz(a, b) if is_paired else float("nan")
                 d_pooled = cohens_d_pooled(a, b)

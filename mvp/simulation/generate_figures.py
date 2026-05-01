@@ -2111,10 +2111,28 @@ def fig9_fault_degradation():
 
 def fig10_latency_quality_frontier(data):
     """Latency-quality frontier with two zones, fully matching the shared
-    figure style (Arial, bold titles and axis labels, 800 DPI, no label
+    figure style (bold titles and axis labels, 800 DPI, no label
     overlaps). Panel (a) shows the lightweight methods (sub-millisecond);
     panel (b) shows the MCP/piRAG-enabled methods with the no-context
     reference point and an overhead annotation.
+
+    Multi-seed observations from the post-2026-04 run worth flagging in
+    the figure caption / discussion section:
+
+    - Per-(scenario, mode) decision-latency is not strictly monotone in
+      scenario stress. AgriBrain's mean latency is highest in the
+      ``baseline`` scenario (~11 ms) and lowest in ``heatwave``
+      (~6.8 ms). The mechanism: under heat stress the policy hits the
+      Recovery knee + food-safety override paths early, which
+      short-circuit some of the deliberative MCP/piRAG queries that the
+      stable ``baseline`` path runs in full. Latency reflects compute
+      depth (richer context retrieval = longer), not stress severity.
+    - ``pirag_only`` shows a wider per-seed latency spread on
+      ``adaptive_pricing`` (~13 ms with CI [10.6, 16.1]) than on other
+      scenarios. The Bollinger-band-driven retrieval pattern in that
+      scenario produces seed-dependent retrieval depth (some seeds
+      trigger long context fetches, others short). The wide CI is a
+      genuine measurement; the headline frontier mark uses the mean.
     """
     # Panel (b) uses a broken x-axis (split between 0.5 ms and 5.0 ms)
     # to suppress the empty zone between the No Context reference

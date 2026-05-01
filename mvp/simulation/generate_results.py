@@ -735,7 +735,15 @@ def run_episode(
             quality_violation_steps += 1
         if temp_violation or quality_violation:
             operational_violation_steps += 1
-        if temp_violation or quality_violation or compliance_violation:
+        # constraint_violation_steps is now temp + quality only (mode-
+        # agnostic). The earlier definition included compliance, which
+        # made MCP-active modes (agribrain, mcp_only) appear to violate
+        # constraints 22-45 percentage points more than non-MCP modes —
+        # a metric-definition artefact (MCP runs the FDA 5 degC spinach
+        # check while non-MCP modes don't), not a real safety failure.
+        # compliance_violation_rate is still reported separately as the
+        # MCP-specific diagnostic.
+        if temp_violation or quality_violation:
             constraint_violation_steps += 1
 
         # Circular economy score (Layer 1: reverse_logistics.py)

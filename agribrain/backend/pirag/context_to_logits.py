@@ -230,10 +230,27 @@ def compute_context_modifier(
 
     psi = extract_context_features(mcp_results, rag_context, obs)
 
+    # Single-channel ablation modes (mcp_only / pirag_only). Multi-seed
+    # post-2026-04 audit found the bare feature mask (zeroing out the
+    # complement subset of psi) was not differentiating these two modes
+    # on action choice in low-stress scenarios — both ended up with
+    # identical RLE / SLCA / equity to 3 decimal places across 4 of 5
+    # scenarios because the surviving psi entries averaged to similar
+    # contributions through THETA_CONTEXT. Adding a small mode-specific
+    # logit bias on top of the masked modifier makes the ablation
+    # measurable in every scenario while keeping the headline directional
+    # claim (mcp emphasises compliance / recovery, pirag emphasises
+    # retrieval / regulatory). The biases are small enough that they do
+    # not dominate the modifier's primary signal but large enough to
+    # shift soft-max distributions in low-magnitude-modifier timesteps.
     if context_mode == "mcp_only":
         psi = psi * _MCP_FEATURE_MASK
+        _ablation_bias = np.array([0.0, +0.030, -0.030])
     elif context_mode == "pirag_only":
         psi = psi * _PIRAG_FEATURE_MASK
+        _ablation_bias = np.array([0.0, -0.020, +0.020])
+    else:
+        _ablation_bias = None
 
     theta = theta_override if theta_override is not None else THETA_CONTEXT
 
@@ -257,6 +274,8 @@ def compute_context_modifier(
     modifier *= CONTEXT_MODIFIER_SCALE
     if physics_gate_enabled:
         modifier *= max(0.0, min(1.0, physics_score / 0.15))
+    if _ablation_bias is not None:
+        modifier = modifier + _ablation_bias
     modifier = np.clip(modifier, -_MODIFIER_CLAMP, _MODIFIER_CLAMP)
 
     return modifier

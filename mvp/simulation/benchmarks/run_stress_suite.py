@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
-"""Stress-test suite for C&CE robustness reporting."""
+"""Stress-test suite for C&CE robustness reporting.
+
+Caveat for manuscript caption: a small subset of (scenario, stressor)
+cells show ARI deltas that are slightly *positive* under stress —
+notably ``telemetry_delay`` on heatwave / cyber_outage / adaptive_pricing
+where AgriBrain ARI rises ~+0.005 vs the no-stress baseline. This is a
+genuine noise-as-regularisation effect: the delayed-telemetry sensor
+trace acts as a low-pass filter on rho, smoothing out brief spikes that
+would otherwise trigger unnecessary Recovery routing. The smoothed
+input → fewer over-reactions → marginally higher ARI. The delta
+magnitudes (<+0.01 absolute) are inside the within-scenario seed CI so
+the effect is small; flag in the manuscript stress-suite caption rather
+than treating as a fault-tolerance success.
+"""
 from __future__ import annotations
 
 import json
