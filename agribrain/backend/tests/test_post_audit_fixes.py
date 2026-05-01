@@ -419,6 +419,100 @@ def test_hierarchy_weight_step_recovers_with_zero_halfwidth():
                             halfwidth=0.0) == 0.00
 
 
+def test_wilcoxon_signed_rank_falls_back_when_scipy_unavailable(monkeypatch):
+    """Mirror the existing Mann-Whitney scipy-fallback test for the
+    paired Wilcoxon path. When scipy.stats.wilcoxon raises, the
+    function must hit the sign-flip permutation fallback and return a
+    finite p-value rather than the silent 1.0 the previous
+    implementation returned on any exception."""
+    SIM_BENCH = Path(__file__).resolve().parents[3] / "mvp" / "simulation" / "benchmarks"
+    sys.path.insert(0, str(SIM_BENCH))
+    import aggregate_seeds as agg
+    import scipy.stats as ss
+
+    def _raise(*args, **kwargs):
+        raise RuntimeError("simulated scipy failure")
+
+    monkeypatch.setattr(ss, "wilcoxon", _raise)
+    a = [0.55, 0.56, 0.57, 0.58, 0.59] * 4
+    b = [0.40, 0.41, 0.42, 0.43, 0.44] * 4
+    p = agg.wilcoxon_signed_rank_pvalue(a, b, cell_key=("scipy_fallback_wilcoxon",))
+    assert 0.0 < p < 0.001, (
+        f"Wilcoxon permutation fallback should give p in (0, 0.001) "
+        f"for complete separation; got {p}."
+    )
+
+
+def test_holm_bonferroni_basic_correctness():
+    """Holm step-down correction must produce monotone-non-decreasing
+    adjusted p-values (p_(1) <= p_(2) <= ...) and saturate at 1.0
+    for the largest input. m=5 case from the primary H1 family."""
+    SIM_BENCH = Path(__file__).resolve().parents[3] / "mvp" / "simulation" / "benchmarks"
+    sys.path.insert(0, str(SIM_BENCH))
+    from aggregate_seeds import holm_bonferroni
+    p_values = {"a": 0.001, "b": 0.005, "c": 0.010, "d": 0.040, "e": 0.080}
+    adj = holm_bonferroni(p_values)
+    # Sort by original p_value to verify monotone non-decreasing.
+    ordered_keys = sorted(p_values, key=lambda k: p_values[k])
+    adj_in_order = [adj[k] for k in ordered_keys]
+    for i in range(1, len(adj_in_order)):
+        assert adj_in_order[i] >= adj_in_order[i - 1] - 1e-12, (
+            f"Holm adjusted p-values not monotone: {adj_in_order}"
+        )
+    # Holm saturates at 1.0 if min(p * (m - rank + 1)) >= 1.0; the
+    # largest input here is 0.080 with m - rank + 1 = 1, so the last
+    # adjusted value is min(1.0, 0.080 * 1) = 0.080 (not 1.0).
+    # Smallest input p=0.001, rank=1: 0.001 * 5 = 0.005.
+    assert adj["a"] == pytest.approx(0.005), (
+        f"Smallest p adjusted: expected 0.001 * 5 = 0.005; got {adj['a']}"
+    )
+    # Empty input must not crash.
+    assert holm_bonferroni({}) == {}
+
+
+def test_benjamini_hochberg_step_up_monotone():
+    """BH step-up must produce non-decreasing adjusted p-values when
+    the inputs are sorted ascending. Pin the propagation fix:
+    ``prev = adjusted[k]`` (post-clip) instead of ``prev = q`` so the
+    propagated bound is always in [0, 1]."""
+    SIM_BENCH = Path(__file__).resolve().parents[3] / "mvp" / "simulation" / "benchmarks"
+    sys.path.insert(0, str(SIM_BENCH))
+    from aggregate_seeds import benjamini_hochberg
+    p_values = {"a": 0.001, "b": 0.005, "c": 0.010, "d": 0.040, "e": 0.080}
+    adj = benjamini_hochberg(p_values)
+    for v in adj.values():
+        assert 0.0 <= v <= 1.0, f"BH adjusted out of [0, 1]: {v}"
+    # Empty input must not crash.
+    assert benjamini_hochberg({}) == {}
+    # Single-input case: adjustment is identity.
+    single = benjamini_hochberg({"x": 0.04})
+    assert single == {"x": pytest.approx(0.04)}
+
+
+def test_bca_ci_handles_degenerate_bootstraps():
+    """``_bca_ci_from_boots`` must fall back to percentile when all
+    bootstrap replicates equal theta_hat (p0 in {0, 1}) without
+    crashing or returning NaN. Increments the
+    fallback_p0_degenerate counter so the aggregator's _meta block
+    surfaces a non-zero fallback rate."""
+    SIM_BENCH = Path(__file__).resolve().parents[3] / "mvp" / "simulation" / "benchmarks"
+    sys.path.insert(0, str(SIM_BENCH))
+    from aggregate_seeds import _bca_ci_from_boots, _reset_bca_fallback_stats, _bca_fallback_stats_snapshot
+    import numpy as np
+    _reset_bca_fallback_stats()
+    boots = np.zeros(1000)
+    theta_hat = 0.0
+    jacks = np.zeros(20)
+    lo, hi = _bca_ci_from_boots(boots, theta_hat, jacks, alpha=0.05)
+    assert np.isfinite(lo) and np.isfinite(hi), (
+        f"BCa with all-zero bootstraps returned non-finite CI: ({lo}, {hi})"
+    )
+    stats = _bca_fallback_stats_snapshot()
+    assert stats["fallback_p0_degenerate"] == 1, (
+        f"Expected 1 p0-degenerate fallback; got {stats}"
+    )
+
+
 def test_rho_transition_halfwidth_pinned():
     """Pin ``RHO_TRANSITION_HALFWIDTH = 0.05`` at the constant level
     so a silent bump of the smooth-transition band breaks this test

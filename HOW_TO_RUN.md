@@ -440,15 +440,15 @@ Results are saved to `mvp/simulation/results/`:
 | `artifact_manifest.json` | SHA-256 reproducibility manifest                            |
 | `traces_*.json`          | Decision traces with keywords, causal reasoning, provenance |
 | `mcp_protocol_*.json`    | Genuine MCP JSON-RPC interaction logs                       |
-| `fig2_heatwave.png/pdf`  | Heatwave scenario comparison (2x2 panel)                    |
-| `fig3_overproduction.png/pdf` | Overproduction scenario comparison (2x2 panel)         |
-| `fig4_cyber.png/pdf`     | Cyber outage scenario comparison (1x3 panel)                |
-| `fig5_pricing.png/pdf`   | Adaptive pricing scenario comparison (2x2 panel)            |
-| `fig6_cross.png/pdf`     | Cross-scenario performance comparison (2x2 grouped bars)    |
-| `fig7_ablation.png/pdf`  | Ablation study (1x3 grouped bars, 8 modes)                  |
-| `fig8_green_ai.png/pdf`  | Green AI and carbon footprint (1x2 panel)                   |
-| `fig9_robustness.png/pdf` | Consolidated robustness (faults + context honor + protocol) |
-| `fig10_latency_quality_frontier.png/pdf` | Quality-latency operational frontier       |
+| `fig2_heatwave.png/pdf`  | Heatwave scenario: env exposure, spoilage trajectory, AgriBrain action probs, per-step (1-waste)*SLCA policy-quality factor (2x2) |
+| `fig3_overproduction.png/pdf` | Overproduction & reverse logistics: inventory vs demand, waste reduction, RLE trajectory, SLCA components (2x2) |
+| `fig4_cyber.png/pdf`     | Cyber outage: ARI per step, action distribution shift, cumulative anomaly defenses triggered (cooperative veto + physics gate + fault recovery) (1x3) |
+| `fig5_pricing.png/pdf`   | Adaptive pricing: demand + Bollinger triggers, routing distribution, price equity, per-step reward comparison across modes (2x2) |
+| `fig6_cross.png/pdf`     | Cross-scenario performance comparison: ARI / RLE / Waste / SLCA grouped bars across the 4 stress scenarios x 3 methods (2x2) |
+| `fig7_ablation.png/pdf`  | Ablation study: ARI / Waste / RLE grouped bars across 4 stress scenarios x 8 modes (1x3) |
+| `fig8_green_ai.png/pdf`  | Green AI and carbon footprint: cumulative CO2 trajectory + total carbon bar chart (1x2) |
+| `fig9_robustness.png/pdf` | Performance gain over baselines + context honor: Cohen's d heatmap, ARI improvement vs baselines, 3-mode honor-rate per scenario (1x3) |
+| `fig10_latency_quality_frontier.png/pdf` | Latency vs ARI frontier: lightweight methods + context-aware methods with broken x-axis (1x2) |
 
 Each figure is also saved as PDF for LaTeX inclusion.
 
