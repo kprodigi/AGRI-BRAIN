@@ -2512,6 +2512,15 @@ def fig10_latency_quality_frontier(data):
     fig.suptitle("Latency vs ARI Frontier", fontsize=FIG_TITLE_SIZE,
                  fontweight="bold", y=0.995)
 
+    # Per-element font sizes matched to fig 8 (the other 1x2 paper
+    # figure) per user request. Same +4 / +3 / +3 / +3 bumps over
+    # the canonical sizes that fig 8 uses, so figs 8 and 10 render
+    # at identical text scale across panels.
+    _F10_TITLE = SUBPLOT_TITLE_SIZE + 4   # 23
+    _F10_AXIS  = AXIS_LABEL_SIZE + 3      # 20
+    _F10_TICK  = TICK_FONT_SIZE + 3       # 18
+    _F10_LEG   = LEGEND_FONT_SIZE + 3     # 18
+
     bench = _load_benchmark_ci() or {}
 
     fast_modes = ["static", "hybrid_rl", "no_pinn", "no_slca", "no_context"]
@@ -2560,7 +2569,11 @@ def fig10_latency_quality_frontier(data):
 
     # --- (a) Fast modes (sub-millisecond) ---
     ax = axes[0]
-    ax.set_title("(a) Lightweight Methods (<1 ms)")
+    # Title simplified to "(a) Lightweight Methods" per user request -
+    # the "<1 ms" parenthetical is redundant with the x-axis range
+    # which already shows the latency scale directly.
+    ax.set_title("(a) Lightweight Methods", fontsize=_F10_TITLE,
+                 fontweight="bold", pad=14)
     for mode, x, y, yerr in fast_pts:
         ax.scatter(x, y, s=220, color=COLORS[mode], marker=MARKERS[mode],
                    edgecolor="white", linewidth=1.4, alpha=0.95, zorder=5,
@@ -2568,28 +2581,44 @@ def fig10_latency_quality_frontier(data):
         if yerr[0] > 0 or yerr[1] > 0:
             ax.errorbar([x], [y], yerr=np.array([[yerr[0]], [yerr[1]]]), fmt="none",
                         ecolor=COLORS[mode], elinewidth=1.6, capsize=4, alpha=0.85, zorder=4)
-    ax.set_xlabel("Mean Decision Latency (ms)")
-    ax.set_ylabel("Mean ARI")
-    # X-axis zoomed to 0.08-0.20 ms so the cluster of fast lightweight
-    # methods (Hybrid RL, No PINN, No SLCA, No Context near
-    # lat ≈ 0.16-0.18 ms) and the Static reference (~0.09 ms) are
-    # separated visually. The previous adaptive limits added 10%
-    # right-padding past the largest latency, which compressed the
-    # five markers into the right half of the panel and left a wide
-    # blank zone on the left.
-    ax.set_xlim(0.08, 0.20)
+    ax.set_xlabel("Mean Decision Latency (ms)", fontsize=_F10_AXIS,
+                  fontweight="bold")
+    ax.set_ylabel("Mean ARI", fontsize=_F10_AXIS, fontweight="bold")
+    # X-axis upper bound dropped from 0.20 to 0.175 per user request -
+    # the rightmost lightweight cluster (No Context, No PINN) sits
+    # near 0.16-0.17 ms so 0.175 still leaves a small right margin
+    # without the wasted 0.18-0.20 white space the earlier limit had.
+    ax.set_xlim(0.08, 0.175)
     pts_with_err_a = [(p[2], p[3]) for p in fast_pts]
     bar_lo_a = min(y - e[0] for y, e in pts_with_err_a)
     bar_hi_a = max(y + e[1] for y, e in pts_with_err_a)
-    ax.set_ylim(bar_lo_a - 0.02, bar_hi_a + 0.02)
+    # Bottom ylim margin bumped from 0.02 to 0.04 per user feedback -
+    # the static marker (s=220, ~15pt diameter) at ARI~0.45 was
+    # being clipped by the previous 0.02 margin which only gave the
+    # marker ~0.018 ARI of clearance below its centre. 0.04 gives
+    # the full marker radius plus headroom so the static circle
+    # renders cleanly inside the panel border.
+    ax.set_ylim(bar_lo_a - 0.04, bar_hi_a + 0.02)
     # Cap the x-axis to ~5 major ticks so the sub-millisecond values
     # are not crowded onto the axis. Earlier matplotlib's default
     # locator placed nine ticks (0, 0.025, 0.050, ..., 0.200) on the
     # narrow sub-ms range, which made the labels collide visually.
     from matplotlib.ticker import MaxNLocator as _MaxNLocator
     ax.xaxis.set_major_locator(_MaxNLocator(nbins=5, prune="lower"))
-    _legend(ax, loc="lower right", ncol=1)
+    _legend(ax, loc="lower right", ncol=1, fontsize=_F10_LEG)
     _apply_style(ax)
+    # Re-apply font sizes after _apply_style normalises them - same
+    # render-path bug pattern fixed in figs 7 and 9 (set_size on
+    # title / axis labels / tick labels after _apply_style).
+    ax.title.set_size(_F10_TITLE)
+    ax.title.set_weight("bold")
+    ax.xaxis.label.set_size(_F10_AXIS)
+    ax.xaxis.label.set_weight("bold")
+    ax.yaxis.label.set_size(_F10_AXIS)
+    ax.yaxis.label.set_weight("bold")
+    ax.tick_params(labelsize=_F10_TICK, length=6, width=1.4)
+    for lbl in list(ax.get_xticklabels()) + list(ax.get_yticklabels()):
+        lbl.set_fontsize(_F10_TICK); lbl.set_fontweight("bold")
 
     # --- (b) Context-aware methods (MCP/piRAG overhead) ---
     # Broken x-axis: ax_b_left covers 0.0-0.5 ms (the No Context
@@ -2712,28 +2741,59 @@ def fig10_latency_quality_frontier(data):
     # Y-label only on the left sub-axis. X-label and title placed
     # via fig-level helpers so they read as a single panel rather
     # than as two adjacent sub-axes.
-    ax_b_left.set_ylabel("Mean ARI")
+    ax_b_left.set_ylabel("Mean ARI", fontsize=_F10_AXIS, fontweight="bold")
+
+    # Apply tick / label fonts on both sub-axes (matched to fig 8).
+    for _ax in (ax_b_left, ax_b_right):
+        _apply_style(_ax)
+        _ax.tick_params(labelsize=_F10_TICK, length=6, width=1.4)
+        for lbl in list(_ax.get_xticklabels()) + list(_ax.get_yticklabels()):
+            lbl.set_fontsize(_F10_TICK); lbl.set_fontweight("bold")
+    ax_b_left.yaxis.label.set_size(_F10_AXIS)
+    ax_b_left.yaxis.label.set_weight("bold")
+    # Re-hide the inner spines after _apply_style restores defaults.
+    ax_b_left.spines["right"].set_visible(False)
+    ax_b_right.spines["left"].set_visible(False)
+    ax_b_right.tick_params(left=False, labelleft=False)
+
+    # tight_layout BEFORE the fig.text title/xlabel placements so
+    # bbox.y0/y1 read the post-layout panel positions and the
+    # labels land in their final coordinates instead of pre-layout
+    # ones. rect_top dropped from 0.91 to 0.985 to match fig 8's
+    # suptitle-to-panel spacing per user request - this pulls the
+    # panels up close to the suptitle so the gap is the same as
+    # the canonical fig 8 / fig 6 / fig 7 layout. The +0.005
+    # offsets below position the panel-B title and x-label just
+    # outside the axes box, mirroring how ax.set_title with pad=14
+    # places the panel-A title relative to its axes.
+    fig.tight_layout(rect=[0, 0, 1, 0.985], w_pad=1.6)
 
     # Compute the geometric centre of the broken pair in figure
-    # coordinates — both labels and title use this so they appear
+    # coordinates - both labels and title use this so they appear
     # centred over the (left + right) sub-axis pair rather than
-    # tied to one sub-axis.
+    # tied to one sub-axis. Read AFTER tight_layout so positions
+    # reflect the final layout.
     bbox_left = ax_b_left.get_position()
     bbox_right = ax_b_right.get_position()
     pair_x_centre = (bbox_left.x0 + bbox_right.x1) / 2.0
 
-    # X-label centred under the broken pair.
-    fig.text(pair_x_centre, bbox_left.y0 - 0.07,
+    # X-label centred under the broken pair, far enough below the
+    # axes to clear the rotated tick labels.
+    fig.text(pair_x_centre, bbox_left.y0 - 0.08,
              "Mean Decision Latency (ms)",
              ha="center", va="top",
-             fontsize=AXIS_LABEL_SIZE, fontweight="bold")
-    # Panel (b) title centred over the broken pair.
-    fig.text(pair_x_centre, bbox_left.y1 + 0.025,
+             fontsize=_F10_AXIS, fontweight="bold")
+    # Panel (b) title centred over the broken pair. Offset reduced
+    # from +0.025 to +0.005 alongside the rect_top bump to 0.985
+    # so the title sits just above the panel's top spine, matching
+    # the visual y position of panel A's set_title (pad=14 inside
+    # the axes box).
+    fig.text(pair_x_centre, bbox_left.y1 + 0.005,
              "(b) Context-Aware Methods",
              ha="center", va="bottom",
-             fontsize=SUBPLOT_TITLE_SIZE, fontweight="bold")
+             fontsize=_F10_TITLE, fontweight="bold")
 
-    # Legend on the right sub-axis (lower centre) — but the handle
+    # Legend on the right sub-axis (lower centre) - but the handle
     # list must combine entries from both sub-axes (the No Context
     # reference scatter lives on ax_b_left and would otherwise be
     # missing from the legend).
@@ -2745,15 +2805,8 @@ def fig10_latency_quality_frontier(data):
                 leg_handles.append(h)
                 leg_labels.append(lbl)
     _legend(ax_b_right, handles=leg_handles, labels=leg_labels,
-            loc="lower center", ncol=2)
-    _apply_style(ax_b_left)
-    _apply_style(ax_b_right)
-    # Re-hide the spine after _apply_style restores defaults.
-    ax_b_left.spines["right"].set_visible(False)
-    ax_b_right.spines["left"].set_visible(False)
-    ax_b_right.tick_params(left=False, labelleft=False)
+            loc="lower center", ncol=2, fontsize=_F10_LEG)
 
-    fig.tight_layout(rect=[0, 0, 1, 0.91], w_pad=1.6)
     _save(fig, "fig10_latency_quality_frontier")
 
 
