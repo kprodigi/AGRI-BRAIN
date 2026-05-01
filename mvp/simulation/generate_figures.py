@@ -1074,70 +1074,40 @@ def fig5_pricing(data):
     # R = SLCA − η_w·waste − η_ρ·ρ visually obvious. The vertical gap
     # between consecutive lines is each penalty's contribution at time t,
     # and the shaded bands quantify those magnitudes without a twin axis.
+    # --- (d) Per-step reward comparison across modes ---
+    # Replaces the previous SLCA(t) / Net reward / Penalty bands view
+    # which was AgriBrain-only and visually compressed (three lines
+    # within ~[0.62, 0.78] hard to read against a 0.6-0.8 y-axis).
+    # The new panel plots a 3-hour rolling mean of per-step reward
+    # for each mode so the AgriBrain > Hybrid RL > Static ordering
+    # this scenario is meant to demonstrate becomes directly visible.
+    #
+    # Why the lines are differentiable: per-step reward has ~0.05-0.07
+    # noise from adaptive_pricing demand volatility. The 12-step (3h)
+    # rolling window reduces noise by sqrt(12) ~= 3.5x to ~0.015.
+    # Expected mode means under this scenario:
+    #   Static    ~0.55-0.60  (low SLCA, high waste, all-CC routing)
+    #   Hybrid RL ~0.65-0.70  (medium SLCA, medium waste)
+    #   AgriBrain ~0.70-0.75  (high SLCA via LR-heavy routing, low
+    #                          waste via mode_eff = 0.83 capability stack)
+    # Gaps of 0.04-0.10 are 3-7x the smoothed noise floor, giving
+    # clean visual separation.
     ax = axes[1, 1]
-    slca_vals = np.array(ab["slca_trace"])
-    waste_vals = np.array(ab["waste_trace"])
-    rho_vals = np.array(ab["rho_trace"])
-    reward_vals = np.array(ab["reward_trace"])
-    # Pull eta_w / eta_rho from the Policy defaults so the panel stays in
-    # sync with reward.py if either default is retuned in future.
-    from src.models.policy import Policy as _PolicyDefaults
-    _p = _PolicyDefaults()
-    eta_w = float(_p.eta)
-    eta_rho = float(_p.eta_rho)
-    after_waste_vals = slca_vals - eta_w * waste_vals
-
-    window = 12
-    slca_smooth = np.convolve(slca_vals, np.ones(window) / window, mode="same")
-    after_waste_smooth = np.convolve(after_waste_vals, np.ones(window) / window, mode="same")
-    reward_smooth = np.convolve(reward_vals, np.ones(window) / window, mode="same")
-
-    # Penalty bands: shade between consecutive layers so the eye sees
-    # each penalty's magnitude as an area. waste-penalty band sits
-    # between SLCA(t) and SLCA − η_w·waste; ρ-penalty band sits between
-    # that line and the net reward. Bands are unlabelled here; the
-    # legend below collapses both into a single "Penalty" proxy entry
-    # so the legend box stays compact (3 items instead of 5).
-    ax.fill_between(hours, after_waste_smooth, slca_smooth,
-                    color=WINDOW_COLOR, alpha=0.22)
-    ax.fill_between(hours, reward_smooth, after_waste_smooth,
-                    color="#6A1B9A", alpha=0.22)
-
-    # Three layer lines, top → bottom. The middle ``SLCA - eta_w*waste``
-    # line stays on the plot to separate the two penalty bands visually
-    # but does not get its own legend entry.
-    line_slca, = ax.plot(hours, slca_smooth, color=COLORS["agribrain"],
-                         linewidth=2.4, alpha=0.95, label="SLCA(t)")
-    ax.plot(hours, after_waste_smooth, color="#FF8F00", linewidth=2.0,
-            alpha=0.95, linestyle="--")
-    line_reward, = ax.plot(hours, reward_smooth, color="#263238",
-                           linewidth=2.4, alpha=0.95, label="Net reward")
-    # Single proxy artist standing for both shaded bands. Coloured at
-    # the waste-penalty band's hue (the more visually prominent of the
-    # two) at the same alpha so the swatch matches what the eye sees.
-    from matplotlib.patches import Patch as _Patch
-    penalty_proxy = _Patch(facecolor=WINDOW_COLOR, alpha=0.22, label="Penalty")
+    window = 12  # 12 steps * 0.25 h = 3 h rolling
+    for mode in ["static", "hybrid_rl", "agribrain"]:
+        ep = ap[mode]
+        reward = np.array(ep["reward_trace"])
+        rolling = np.convolve(reward, np.ones(window) / window, mode="same")
+        _mode_plot(ax, hours, rolling, mode)
 
     ax.set_xlabel("Hours")
-    ax.set_ylabel("Reward components")
-    # User-requested zoom: 0.6-0.8 puts the three layer lines and the
-    # two penalty bands at maximum visual separation for adaptive_pricing
-    # where SLCA(t), SLCA - eta_w*waste, and net reward all live within
-    # ~[0.62, 0.78].
-    ax.set_ylim(0.6, 0.8)
-    ax.set_title("(d) Reward Decomposition")
+    ax.set_ylabel("Reward (3 h rolling)")
+    ax.set_title("(d) Per-step Reward Comparison")
     _apply_style(ax)
-    # Compact 3-entry legend: SLCA(t), Net reward, Penalty (proxy).
-    leg = _legend(
-        ax,
-        handles=[line_slca, line_reward, penalty_proxy],
-        labels=["SLCA(t)", "Net reward", "Penalty"],
-        loc="lower right", framealpha=1.0,
-    )
-    if leg is not None:
-        leg.set_zorder(20)
-        leg.get_frame().set_facecolor("white")
-        leg.get_frame().set_alpha(1.0)
+    # Lower-right corner is typically clear in this scenario - mode
+    # rewards stay within their bands the whole episode and the
+    # rightmost edge is the lowest density region.
+    _legend(ax, loc="lower right")
 
     fig.tight_layout(rect=[0, 0, 1, 0.985], h_pad=1.6, w_pad=1.6)
     _save(fig, "fig5_pricing")
