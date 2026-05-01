@@ -835,7 +835,33 @@ def fig4_cyber(data):
     hours = np.array(ab["hours"])
 
     fig, axes = plt.subplots(1, 3, figsize=(21, 7.0))
-    fig.suptitle("Cyber Outage Scenario", y=0.995)
+    fig.suptitle("Cyber Outage Scenario", y=0.995, fontsize=FIG_TITLE_SIZE,
+                 fontweight="bold")
+
+    # Per-element font sizes aligned to fig 7's pattern (25/20/20/19)
+    # per user "all three-panel figures must be identical" request.
+    # Same calculation pattern figs 7 / 9 use, so figs 4 / 7 / 9
+    # share the same text scale across their three panels.
+    _F4_TITLE = SUBPLOT_TITLE_SIZE + 6   # 25
+    _F4_AXIS  = TICK_FONT_SIZE + 5       # 20 (matched to _F4_TICK)
+    _F4_TICK  = TICK_FONT_SIZE + 5       # 20
+    _F4_LEG   = LEGEND_FONT_SIZE + 4     # 19
+
+    def _f4_style(ax_):
+        """Apply fig 4's font-size override + the y-axis-label
+        re-apply pattern that defeats _apply_style's silent stomp
+        (same fix used in figs 7 / 9). Call after _apply_style."""
+        ax_.title.set_size(_F4_TITLE)
+        ax_.title.set_weight("bold")
+        if ax_.xaxis.label.get_text():
+            ax_.xaxis.label.set_size(_F4_AXIS)
+            ax_.xaxis.label.set_weight("bold")
+        if ax_.yaxis.label.get_text():
+            ax_.yaxis.label.set_size(_F4_AXIS)
+            ax_.yaxis.label.set_weight("bold")
+        ax_.tick_params(labelsize=_F4_TICK, length=6, width=1.4)
+        for lbl in list(ax_.get_xticklabels()) + list(ax_.get_yticklabels()):
+            lbl.set_fontsize(_F4_TICK); lbl.set_fontweight("bold")
 
     # --- (a) ARI over time with outage shading ---
     # ARI = (1 - waste) * SLCA * (1 - rho). Spoilage risk rho rises
@@ -855,11 +881,13 @@ def fig4_cyber(data):
     ax.set_ylabel("ARI")
     ax.set_title("(a) Adaptive Resilience Index")
     _apply_style(ax)
+    _f4_style(ax)
     _annotate_window(ax, 24, 72, WINDOW_COLOR, "Outage")
     # Position the legend between lower-left and lower-centre so it
     # sits clear of both the AgriBrain decay tail (right) and the
     # high-ARI pre-outage region (left of h=24).
-    _legend(ax, loc="lower left", bbox_to_anchor=(0.18, 0.0))
+    _legend(ax, loc="lower left", bbox_to_anchor=(0.18, 0.0),
+            fontsize=_F4_LEG)
 
     # --- (b) Action distribution pre/during outage ---
     ax = axes[1]
@@ -895,7 +923,8 @@ def fig4_cyber(data):
     ax.set_ylim(0, max(max(pre_counts + pre_se * 2), max(during_counts + during_se * 2)) * 1.25 + 0.02)
     ax.set_title("(b) Action Distribution Shift")
     _apply_style(ax)
-    _legend(ax, loc="upper right")
+    _f4_style(ax)
+    _legend(ax, loc="upper right", fontsize=_F4_LEG)
 
     # --- (c) Cumulative anomaly defenses triggered ---
     # Counts the cumulative number of edge-stack integrity-defense
@@ -966,8 +995,9 @@ def fig4_cyber(data):
     ax.set_ylabel("Cumulative Anomaly Defenses Triggered")
     ax.set_title("(c) Cumulative Anomaly Defenses Triggered")
     _apply_style(ax)
+    _f4_style(ax)
     _annotate_window(ax, 24, 72, WINDOW_COLOR, "Outage", ypos=0.50)
-    _legend(ax, loc="upper left")
+    _legend(ax, loc="upper left", fontsize=_F4_LEG)
 
     fig.tight_layout(rect=[0, 0, 1, 0.985], h_pad=1.6, w_pad=1.6)
     _save(fig, "fig4_cyber")
@@ -1469,13 +1499,16 @@ def fig6_cross(data):
     fig, axes = plt.subplots(2, 2, figsize=(18, 13))
     # suptitle is applied at the end with the larger fig6-specific font.
 
-    # Bumped per-element font sizes to match fig 7's denser layout. The
-    # cross-scenario figure carries the paper's headline numbers and
-    # benefits from the larger typography on standalone reading.
-    _F6_TITLE = SUBPLOT_TITLE_SIZE + 4   # 23
-    _F6_AXIS  = AXIS_LABEL_SIZE + 3      # 20
-    _F6_TICK  = TICK_FONT_SIZE + 3       # 18
-    _F6_LEG   = LEGEND_FONT_SIZE + 3     # 18
+    # Per-element font sizes aligned to the four-panel-figure family
+    # (figs 2 / 3 / 5 / 6 all use the +1 bump over canonical) per
+    # user "all four-panel figures must be identical" request.
+    # Previously fig 6 used a larger +4/+3/+3/+3 bump; bringing it
+    # down to +1 across the board gives all four 4-panel figures
+    # the same text scale.
+    _F6_TITLE = SUBPLOT_TITLE_SIZE + 1   # 20 (matches figs 2/3/5)
+    _F6_AXIS  = AXIS_LABEL_SIZE + 1      # 18 (matches figs 2/3/5)
+    _F6_TICK  = TICK_FONT_SIZE + 1       # 16 (matches figs 2/3/5)
+    _F6_LEG   = LEGEND_FONT_SIZE + 1     # 16 (matches figs 2/3/5)
 
     # Single canonical RLE: EU-hierarchy + severity-weighted form
     # (resilience.compute_rle, post-2026-04 simplification).
@@ -2087,12 +2120,18 @@ def fig9_fault_degradation():
     fig, axes = plt.subplots(1, 3, figsize=(22, 7.5),
                              gridspec_kw={"width_ratios": [1.40, 1.20, 1.20]})
 
-    # Per-element font sizes — bumped above figs 6/7/8 so the cell
-    # values and bar labels read clearly at paper scale.
-    _F9_TITLE = SUBPLOT_TITLE_SIZE + 7    # 26
-    _F9_AXIS  = AXIS_LABEL_SIZE + 5       # 22
-    _F9_TICK  = TICK_FONT_SIZE + 5        # 20
-    _F9_LEG   = LEGEND_FONT_SIZE + 3      # 18
+    # Per-element font sizes aligned to fig 7's pattern (25/20/20/19)
+    # per user "all three-panel figures must be identical" request.
+    # Same calculation pattern fig 7 uses (TITLE=SUBPLOT+6,
+    # AXIS=TICK+5, TICK=TICK+5, LEG=LEG+4) so figs 4 / 7 / 9 share
+    # the same text scale across all three panels of each figure.
+    # _F9_ANNOT is unchanged from the previous +4 bump - it sits
+    # between the legend and the tick label sizes and reads cleanly
+    # at the same point size used elsewhere.
+    _F9_TITLE = SUBPLOT_TITLE_SIZE + 6    # 25 (matches _F7_TITLE)
+    _F9_AXIS  = TICK_FONT_SIZE + 5        # 20 (matches _F7_AXIS, equals _F9_TICK)
+    _F9_TICK  = TICK_FONT_SIZE + 5        # 20 (matches _F7_TICK)
+    _F9_LEG   = LEGEND_FONT_SIZE + 4      # 19 (matches _F7_LEG)
     _F9_ANNOT = ANNOT_FONT_SIZE + 4       # 18
 
     def _restyle(ax_, title, ylabel=None, xlabel=None):
@@ -2332,19 +2371,12 @@ def fig9_fault_degradation():
     # bounded above at 1.0). Cells with no per-seed CI fall back
     # to a zero-width bar rather than a misleading symmetric
     # default.
-    # Panel C font sizes + bar styling matched to fig 7 (the ablation
-    # grouped-bar figure) per user request. fig 7 uses:
-    #   _F7_TITLE = SUBPLOT_TITLE_SIZE + 6 = 25 (panel title)
-    #   _F7_AXIS  = TICK_FONT_SIZE + 5     = 20 (axis label, matched to ticks)
-    #   _F7_TICK  = TICK_FONT_SIZE + 5     = 20 (tick labels)
-    #   _F7_LEG   = LEGEND_FONT_SIZE + 4   = 19 (legend)
-    # plus alpha=0.92, edgecolor="white", linewidth=0.7, total group
-    # width 0.98/n_modes. Replicating those constants here keeps panel
-    # C's styling visually identical to fig 7's ablation panels.
-    _PANEL_C_TITLE = SUBPLOT_TITLE_SIZE + 6   # 25
-    _PANEL_C_AXIS  = TICK_FONT_SIZE + 5       # 20
-    _PANEL_C_TICK  = TICK_FONT_SIZE + 5       # 20
-    _PANEL_C_LEG   = LEGEND_FONT_SIZE + 4     # 19
+    # Panel C bar styling + font sizes match fig 7 (the ablation
+    # grouped-bar figure). With the post-2026-04 alignment of _F9_*
+    # to _F7_* (TITLE=25, AXIS=20, TICK=20, LEG=19), the per-panel
+    # _PANEL_C_* constants this block previously defined became
+    # redundant and were retired - panel C now reads directly from
+    # the figure-level _F9_* constants alongside panels A and B.
 
     ax = axes[2]
     honor_matrix = _fig9_load_honor_matrix(
@@ -2414,32 +2446,23 @@ def fig9_fault_degradation():
         # Mode legend in the upper right where no scenario has rates
         # above ~70%. Single column with 3 entries fits cleanly in
         # the upper-right corner.
-        ax.legend(loc="upper right", fontsize=_PANEL_C_LEG,
+        ax.legend(loc="upper right", fontsize=_F9_LEG,
                   ncol=1, framealpha=0.95, edgecolor="#757575",
                   fancybox=False, shadow=False)
     else:
         ax.text(0.5, 0.5, "benchmark_summary.json not available",
                 ha="center", va="center", transform=ax.transAxes,
                 fontsize=_F9_ANNOT, color="#616161")
-    # Title / axis label / tick label sizes matched to fig 7 ablation
-    # panels (25 / 20 / 20). _restyle uses _F9_TITLE=26 and _F9_TICK=20
-    # by default, so we override the title size to _PANEL_C_TITLE=25
-    # explicitly after the _restyle call. The y-axis title is set to
-    # _PANEL_C_AXIS=20 (matched to the tick labels) and re-applied
-    # after _apply_style to defeat the same render-path bug fixed in
-    # fig 7 (commit 3feb090).
+    # Y-axis title size re-applied after _restyle to defeat the
+    # _apply_style render-path bug (same fix as fig 7 commit
+    # 3feb090): _restyle calls _apply_style internally which
+    # silently normalises ax.yaxis.label back to AXIS_LABEL_SIZE=17
+    # even when set_ylabel was called with fontsize=_F9_AXIS. The
+    # explicit re-apply ensures the rendered y-axis title actually
+    # lands at _F9_AXIS=20 to match the x-axis tick labels.
     _restyle(ax, "(c) Context Honor Rate",
              ylabel="Honor rate (% of active steps)")
-    ax.title.set_size(_PANEL_C_TITLE)
-    ax.title.set_weight("bold")
-    ax.tick_params(labelsize=_PANEL_C_TICK, length=6, width=1.4)
-    for lbl in ax.get_xticklabels():
-        lbl.set_fontsize(_PANEL_C_TICK)
-        lbl.set_fontweight("bold")
-    for lbl in ax.get_yticklabels():
-        lbl.set_fontsize(_PANEL_C_TICK)
-        lbl.set_fontweight("bold")
-    ax.yaxis.label.set_size(_PANEL_C_AXIS)
+    ax.yaxis.label.set_size(_F9_AXIS)
     ax.yaxis.label.set_weight("bold")
 
     fig.suptitle("Performance Gain over Baselines and Context Honor",
