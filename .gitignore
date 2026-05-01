@@ -10,6 +10,16 @@ __pycache__/
 # .tmp_paper.md draft is matched here too.
 /.tmp_*
 
+# HPC pipeline outputs. The slurm orchestrator writes per-job stdout
+# / stderr into ``logs/`` and the aggregator's last step produces
+# ``hpc_results_<RUN_TAG>.tar.gz`` at the repo root. Both are
+# transient run artefacts that should not enter the GitHub history;
+# keeping them gitignored keeps the dirty-tree check in
+# build_artifact_manifest.py focused on actual uncommitted code
+# changes rather than expected run output.
+/logs/
+/hpc_results_*.tar.gz
+
 # Stochastic feasibility test scripts (diagnostic, not production)
 docs/screenshots/_check/
 node_modules/

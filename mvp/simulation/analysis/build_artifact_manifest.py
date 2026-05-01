@@ -118,7 +118,32 @@ def main() -> None:
                     stderr=subprocess.PIPE,
                 ).decode("utf-8").strip()
             )
-            is_dirty = bool(porcelain)
+            # Filter out changes inside ``mvp/simulation/results/``
+            # before deciding "dirty". The HPC pipeline regenerates
+            # every figure / CSV / JSON in that directory by design,
+            # so those paths are EXPECTED to differ from their
+            # committed versions at manifest-build time. The
+            # dirty-tree refusal exists to catch uncommitted CODE
+            # changes (which would silently break the
+            # commit-SHA-stamps-the-actual-code reproducibility
+            # guarantee), not run-artifact regeneration. Without
+            # this filter, the manifest builder would have refused
+            # every HPC run because the post-aggregation tree
+            # always carries modified figures/tables relative to
+            # the committed snapshot.
+            non_artifact_lines = []
+            for raw_line in porcelain.split("\n"):
+                if not raw_line.strip():
+                    continue
+                # `git status --porcelain` lines are "XX path", with
+                # rename targets formatted "XX old -> new".
+                path = raw_line[3:].strip() if len(raw_line) >= 4 else ""
+                if " -> " in path:
+                    path = path.split(" -> ", 1)[1].strip()
+                if path.startswith("mvp/simulation/results/"):
+                    continue
+                non_artifact_lines.append(raw_line)
+            is_dirty = bool(non_artifact_lines)
     except Exception:
         # If status fails, assume dirty to avoid stamping a falsely-clean
         # SHA — better to fail loud than silent.

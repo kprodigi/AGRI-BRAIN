@@ -513,6 +513,38 @@ def test_bca_ci_handles_degenerate_bootstraps():
     )
 
 
+def test_manifest_dirty_check_filters_results_path():
+    """Pin the post-2026-04 fix that ``build_artifact_manifest.py``'s
+    dirty-tree refusal filters out paths inside
+    ``mvp/simulation/results/`` before deciding ``is_dirty``. The HPC
+    pipeline regenerates every figure / CSV / JSON in that directory
+    by design, so without the filter every HPC run would fail at the
+    manifest-build step with "working tree is dirty" - the dirty-tree
+    refusal is meant to catch uncommitted *code* changes, not
+    run-artifact regeneration."""
+    src_path = (Path(__file__).resolve().parents[3] / "mvp" / "simulation" /
+                "analysis" / "build_artifact_manifest.py")
+    src = src_path.read_text(encoding="utf-8")
+    assert "mvp/simulation/results/" in src, (
+        "build_artifact_manifest.py no longer references the results/ "
+        "filter path. Did the dirty-tree filter regress?"
+    )
+    # The filter must compare against the path AFTER stripping the
+    # XX-status prefix and (optional) rename target syntax. Pin the
+    # path-strip + rename-handling.
+    assert 'path.startswith("mvp/simulation/results/")' in src, (
+        "build_artifact_manifest.py is missing the .startswith filter "
+        "for results/ paths. The HPC manifest step will refuse on every "
+        "run because the tree is dirty by design."
+    )
+    assert ' -> ' in src, (
+        "build_artifact_manifest.py is missing the rename-target "
+        "handling. ``git status --porcelain`` reports renames as "
+        "'old -> new'; without splitting on ' -> ', a renamed results "
+        "file would slip past the filter."
+    )
+
+
 def test_rho_transition_halfwidth_pinned():
     """Pin ``RHO_TRANSITION_HALFWIDTH = 0.05`` at the constant level
     so a silent bump of the smooth-transition band breaks this test
