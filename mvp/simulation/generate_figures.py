@@ -613,6 +613,61 @@ def fig3_overproduction(data):
     ab = op["agribrain"]
     hours = np.array(ab["hours"])
 
+    # Per-figure font-size bump for fig 3 (post-2026-04 user request).
+    # Uniform +1 across body / ticks / axis labels / subplot titles /
+    # suptitle / legend / in-plot annotations - matches the gentle
+    # bump applied to fig 2. Scoped to this function via try/finally
+    # so other figures (fig 4, fig 5, ...) keep the canonical sizes.
+    global BODY_FONT_SIZE, TICK_FONT_SIZE, AXIS_LABEL_SIZE
+    global SUBPLOT_TITLE_SIZE, FIG_TITLE_SIZE, LEGEND_FONT_SIZE
+    global ANNOT_FONT_SIZE
+    _saved_sizes = (
+        BODY_FONT_SIZE, TICK_FONT_SIZE, AXIS_LABEL_SIZE,
+        SUBPLOT_TITLE_SIZE, FIG_TITLE_SIZE, LEGEND_FONT_SIZE,
+        ANNOT_FONT_SIZE,
+    )
+    BODY_FONT_SIZE = _saved_sizes[0] + 1
+    TICK_FONT_SIZE = _saved_sizes[1] + 1
+    AXIS_LABEL_SIZE = _saved_sizes[2] + 1
+    SUBPLOT_TITLE_SIZE = _saved_sizes[3] + 1
+    FIG_TITLE_SIZE = _saved_sizes[4] + 1
+    LEGEND_FONT_SIZE = _saved_sizes[5] + 1
+    ANNOT_FONT_SIZE = _saved_sizes[6] + 1
+    _saved_rc = {
+        "font.size": plt.rcParams["font.size"],
+        "axes.labelsize": plt.rcParams["axes.labelsize"],
+        "axes.titlesize": plt.rcParams["axes.titlesize"],
+        "xtick.labelsize": plt.rcParams["xtick.labelsize"],
+        "ytick.labelsize": plt.rcParams["ytick.labelsize"],
+        "legend.fontsize": plt.rcParams["legend.fontsize"],
+        "legend.title_fontsize": plt.rcParams["legend.title_fontsize"],
+        "figure.titlesize": plt.rcParams["figure.titlesize"],
+    }
+    plt.rcParams.update({
+        "font.size": BODY_FONT_SIZE,
+        "axes.labelsize": AXIS_LABEL_SIZE,
+        "axes.titlesize": SUBPLOT_TITLE_SIZE,
+        "xtick.labelsize": TICK_FONT_SIZE,
+        "ytick.labelsize": TICK_FONT_SIZE,
+        "legend.fontsize": LEGEND_FONT_SIZE,
+        "legend.title_fontsize": LEGEND_FONT_SIZE,
+        "figure.titlesize": FIG_TITLE_SIZE,
+    })
+
+    try:
+        return _fig3_overproduction_inner(op, ab, hours)
+    finally:
+        (BODY_FONT_SIZE, TICK_FONT_SIZE, AXIS_LABEL_SIZE,
+         SUBPLOT_TITLE_SIZE, FIG_TITLE_SIZE, LEGEND_FONT_SIZE,
+         ANNOT_FONT_SIZE) = _saved_sizes
+        plt.rcParams.update(_saved_rc)
+
+
+def _fig3_overproduction_inner(op, ab, hours):
+    """Body of fig 3. Extracted from ``fig3_overproduction`` so the
+    per-figure font-size overrides applied above can be cleanly torn
+    down via try/finally regardless of how the body returns or
+    raises."""
     fig, axes = plt.subplots(2, 2, figsize=(18, 13))
     fig.suptitle("Overproduction & Reverse Logistics", y=0.995)
 
@@ -730,10 +785,17 @@ def fig3_overproduction(data):
     ax.set_title("(c) Reverse Logistics Efficiency")
     ax.set_ylim(-0.05, 1.15)
     _apply_style(ax)
-    # Push "Overproduction" higher in the panel so it sits in the
-    # headroom strip above the data instead of clipping the RLE curves.
-    _annotate_window(ax, 12, 60, WINDOW_COLOR, "Overproduction", ypos=0.99)
-    _legend(ax, loc="lower left")
+    # Place the "Overproduction" label toward the right of the window
+    # (xpos=53) so it does not collide with the upper-left legend that
+    # was moved here from lower-left in the post-2026-04 user request.
+    _annotate_window(ax, 12, 60, WINDOW_COLOR, "Overproduction",
+                     ypos=0.99, xpos=53)
+    # Legend moved from "lower left" to "upper left" - the lower-left
+    # corner already carries the "first rho > 0.1 at h~32" threshold-
+    # onset annotation, and the RLE curves in this band are above 0.6
+    # so the legend sits in clear headroom near the y=1.0 plateau on
+    # the AgriBrain trace.
+    _legend(ax, loc="upper left")
 
     # --- (d) SLCA component grouped bars with std error bars ---
     ax = axes[1, 1]
