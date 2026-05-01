@@ -39,6 +39,7 @@ from src.models.resilience import (  # noqa: E402
     compute_equity,
     compute_equity_sen,
     compute_rle,
+    compute_rle_uniform,
 )
 
 
@@ -81,9 +82,13 @@ def _backfill_one(path: Path) -> Dict[str, Any]:
     ]
     ari_mean = float(sum(ari_per_step) / max(len(ari_per_step), 1))
     rle_value = compute_rle(rho_vals, actions)
+    rle_uniform_value = compute_rle_uniform(rho_vals, actions)
     eq_primary = compute_equity(slca_vals)
 
-    # Robustness variants: ari_geom + Sen-welfare equity.
+    # Robustness variants: ari_geom + Sen-welfare equity + EU-agnostic
+    # rle_uniform companion (uniform action weights so the metric does
+    # not encode the EU 2008/98/EC hierarchy ordering; defends against
+    # the "EU-shaped policy wins on EU-shaped metric" attack).
     ari_geom_per_step = [
         compute_ari_geom(w, s, r) for w, s, r in zip(waste_vals, slca_vals, rho_vals)
     ]
@@ -103,6 +108,7 @@ def _backfill_one(path: Path) -> Dict[str, Any]:
         "robustness": {
             "ari_geom": ari_geom_mean,
             "equity_sen": eq_sen,
+            "rle_uniform": rle_uniform_value,
         },
     }
 

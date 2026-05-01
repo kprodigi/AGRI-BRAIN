@@ -124,11 +124,21 @@ def test_constraint_violation_separated_from_compliance_in_simulator_source():
 # ---------------------------------------------------------------------------
 
 def test_compute_context_modifier_differentiates_mcp_only_vs_pirag_only():
-    """With identical psi inputs, ``mcp_only`` and ``pirag_only`` modes
-    must produce DIFFERENT context_modifiers — the ablation-bias
-    differentiator added in the post-audit fix prevents the previous
-    behaviour where the two single-channel ablations produced
-    identical RLE / SLCA / equity values in 4 of 5 scenarios."""
+    """With NON-identical channel inputs (the realistic ablation
+    setting where the gated-out channel has been emptied by the
+    coordinator's structural gating), ``mcp_only`` and ``pirag_only``
+    modes must produce DIFFERENT context_modifiers via the feature
+    mask alone — without any author-engineered ablation bias.
+
+    Earlier this test passed by virtue of an ``_ablation_bias`` layer
+    that added asymmetric mode-specific bias vectors on top of the
+    masked modifier. The bias has been retired (it was an author-knob
+    engineering the ablation difference). The structural gating in
+    coordinator._compute_step_context (commit 1d9caf0) skips the
+    gated-out channel entirely, so the realistic ablation input has
+    only the active channel populated; the feature mask + the
+    asymmetric channel inputs together produce the differentiation.
+    """
     AGRI_BACKEND = Path(__file__).resolve().parents[1].parent / "agribrain" / "backend"
     sys.path.insert(0, str(AGRI_BACKEND))
     try:
@@ -144,31 +154,75 @@ def test_compute_context_modifier_differentiates_mcp_only_vs_pirag_only():
         hour = 30.0
         raw = {}
 
-    # Both invocations get the same MCP / RAG context, only the mode flag changes.
-    fake_mcp = {
+    obs = _StubObs()
+
+    # mcp_only path: MCP results populated, piRAG retrieval skipped
+    # (coordinator gating returns the empty-string sentinel).
+    mcp_mode_mcp = {
         "_tools_invoked": ["check_compliance", "spoilage_forecast"],
         "check_compliance": {"compliant": False, "violations": [{"severity": "warning"}]},
         "spoilage_forecast": {"trend": "rising", "confidence": 0.8},
     }
-    fake_rag = {
+    mcp_mode_rag = {
+        "query": "", "top_doc_id": "",
+        "top_citation_score": 0.0,
+        "regulatory_guidance": "", "sop_guidance": "",
+        "waste_hierarchy_guidance": "", "governance_guidance": "",
+        "_ablation_skipped": "pirag",
+    }
+    mod_mcp = compute_context_modifier(
+        mcp_mode_mcp, mcp_mode_rag, obs,
+        temporal_window=None, context_mode="mcp_only",
+    )
+
+    # pirag_only path: MCP dispatch skipped, piRAG retrieval populated.
+    pirag_mode_mcp = {"_tools_invoked": [], "_ablation_skipped": "mcp"}
+    pirag_mode_rag = {
         "top_citation_score": 0.6,
         "regulatory_guidance": "yes",
         "waste_hierarchy_guidance": "",
         "sop_guidance": "",
     }
-    obs = _StubObs()
-    mod_mcp = compute_context_modifier(
-        fake_mcp, fake_rag, obs, temporal_window=None, context_mode="mcp_only",
-    )
     mod_pirag = compute_context_modifier(
-        fake_mcp, fake_rag, obs, temporal_window=None, context_mode="pirag_only",
+        pirag_mode_mcp, pirag_mode_rag, obs,
+        temporal_window=None, context_mode="pirag_only",
     )
-    # The two modifiers must differ — at least one component non-trivially.
+
     diff = np.linalg.norm(np.asarray(mod_mcp) - np.asarray(mod_pirag))
     assert diff > 0.01, (
-        f"mcp_only and pirag_only modifiers identical (L2 diff {diff:.4f}); "
-        f"the ablation-bias differentiator did not fire. mcp_only={mod_mcp}, "
+        f"mcp_only and pirag_only modifiers identical under structural "
+        f"gating (L2 diff {diff:.4f}). The structural gating + feature "
+        f"mask should be sufficient to differentiate without an author-"
+        f"engineered ablation bias. mcp_only={mod_mcp}, "
         f"pirag_only={mod_pirag}"
+    )
+
+
+def test_ablation_bias_retired():
+    """Pin that the author-engineered ``_ablation_bias`` layer in
+    compute_context_modifier is gone. The bias was an author-knob that
+    engineered the very ablation difference being claimed; structural
+    channel-gating in coordinator.py + the feature mask provide
+    genuine differentiation, so the bias is no longer needed."""
+    # tests/test_post_audit_fixes.py -> tests -> backend -> agribrain.
+    # Source under test is backend/pirag/context_to_logits.py.
+    src_path = (Path(__file__).resolve().parents[1] / "pirag"
+                / "context_to_logits.py")
+    src = src_path.read_text(encoding="utf-8")
+    # The asymmetric bias values must NOT appear anywhere in the source.
+    assert "[0.0, +0.030, -0.030]" not in src, (
+        "_ablation_bias for mcp_only is back in context_to_logits.py; "
+        "this is the author-engineered layer that the post-audit fix "
+        "retired in favour of structural channel-gating."
+    )
+    assert "[0.0, -0.020, +0.020]" not in src, (
+        "_ablation_bias for pirag_only is back in context_to_logits.py; "
+        "the post-audit fix retired this layer."
+    )
+    # And the bias-application line must not be present.
+    assert "modifier = modifier + _ablation_bias" not in src, (
+        "The bias-application step is back in compute_context_modifier; "
+        "structural gating is the canonical differentiator now."
     )
 
 
@@ -285,32 +339,106 @@ def test_compliance_check_uniform_across_modes_in_simulator_source():
 # ---------------------------------------------------------------------------
 
 def test_hierarchy_weight_rho_conditional_marketable_band():
-    """Below RHO_MARKETABLE_CUTOFF (0.50), redistribution to humans is
-    safe so the table is LR=1.00, Recovery=0.40, CC=0.00."""
+    """Clearly *inside* the marketable band (rho <= cutoff - halfwidth),
+    redistribution to humans is safe so the table is LR=1.00,
+    Recovery=0.40, CC=0.00."""
     AGRI_BACKEND = Path(__file__).resolve().parents[1].parent / "agribrain" / "backend"
     sys.path.insert(0, str(AGRI_BACKEND))
     from src.models.resilience import hierarchy_weight, RHO_MARKETABLE_CUTOFF
-    rho = 0.30  # well inside marketable band
+    rho = 0.30  # well inside marketable band, below transition window
     assert hierarchy_weight("local_redistribute", rho) == 1.00
     assert hierarchy_weight("recovery", rho) == 0.40
     assert hierarchy_weight("cold_chain", rho) == 0.00
-    # Edge: at the cutoff, behaviour is the marketable table (`<=`).
-    assert hierarchy_weight("local_redistribute", RHO_MARKETABLE_CUTOFF) == 1.00
 
 
 def test_hierarchy_weight_rho_conditional_non_marketable_band():
-    """Above RHO_MARKETABLE_CUTOFF, redistribution to humans is no
-    longer safe; the table inverts to LR=0.00, Recovery=1.00, CC=0.00.
-    This is the EU 2008/98/EC Article 4 ordering for non-marketable
-    produce: Recovery (animal feed / energy) becomes the
-    hierarchically-preferred option once human consumption is unsafe."""
+    """Clearly *inside* the non-marketable band (rho >= cutoff +
+    halfwidth), redistribution to humans is no longer safe; the table
+    inverts to LR=0.00, Recovery=1.00, CC=0.00. This is the EU
+    2008/98/EC Article 4 ordering for non-marketable produce:
+    Recovery (animal feed / energy) becomes the hierarchically-
+    preferred option once human consumption is unsafe."""
     AGRI_BACKEND = Path(__file__).resolve().parents[1].parent / "agribrain" / "backend"
     sys.path.insert(0, str(AGRI_BACKEND))
     from src.models.resilience import hierarchy_weight
-    rho = 0.70  # well inside non-marketable band
+    rho = 0.70  # well inside non-marketable band, above transition window
     assert hierarchy_weight("local_redistribute", rho) == 0.00
     assert hierarchy_weight("recovery", rho) == 1.00
     assert hierarchy_weight("cold_chain", rho) == 0.00
+
+
+def test_hierarchy_weight_smooth_transition_band():
+    """Across the [cutoff - halfwidth, cutoff + halfwidth] transition
+    window, weights are linearly interpolated. At the cutoff itself
+    (rho=0.50), LR weight is the midpoint = 0.5 and Recovery weight
+    is the midpoint = 0.7 (mean of marketable-band 0.4 and non-
+    marketable-band 1.0). The smoothing eliminates the step
+    discontinuity that produced non-monotonic RLE under stochastic
+    rho noise (a seed whose mean rho sat at ~0.50 +/- noise would
+    otherwise jump LR weight 1.00 -> 0.00 across an epsilon shift).
+    """
+    AGRI_BACKEND = Path(__file__).resolve().parents[1].parent / "agribrain" / "backend"
+    sys.path.insert(0, str(AGRI_BACKEND))
+    from src.models.resilience import (
+        hierarchy_weight, RHO_MARKETABLE_CUTOFF, RHO_TRANSITION_HALFWIDTH,
+    )
+    cutoff = RHO_MARKETABLE_CUTOFF
+    h = RHO_TRANSITION_HALFWIDTH
+
+    # Lower edge: full marketable weights.
+    assert hierarchy_weight("local_redistribute", cutoff - h) == 1.00
+    assert hierarchy_weight("recovery", cutoff - h) == 0.40
+
+    # Upper edge: full non-marketable weights.
+    assert hierarchy_weight("local_redistribute", cutoff + h) == 0.00
+    assert hierarchy_weight("recovery", cutoff + h) == 1.00
+
+    # Midpoint: linear interpolation. LR midpoint = (1.00 + 0.00) / 2 = 0.5.
+    # Recovery midpoint = (0.40 + 1.00) / 2 = 0.7.
+    assert abs(hierarchy_weight("local_redistribute", cutoff) - 0.5) < 1e-9
+    assert abs(hierarchy_weight("recovery", cutoff) - 0.7) < 1e-9
+
+    # Quarter point inside transition: LR weight at cutoff - h/2 should
+    # be 0.75 (3/4 marketable + 1/4 non-marketable).
+    assert abs(hierarchy_weight("local_redistribute",
+                                cutoff - h / 2) - 0.75) < 1e-9
+
+
+def test_hierarchy_weight_step_recovers_with_zero_halfwidth():
+    """Setting halfwidth=0.0 explicitly recovers the step-function
+    behaviour for backward-compatible / strict-mode test paths."""
+    AGRI_BACKEND = Path(__file__).resolve().parents[1].parent / "agribrain" / "backend"
+    sys.path.insert(0, str(AGRI_BACKEND))
+    from src.models.resilience import hierarchy_weight, RHO_MARKETABLE_CUTOFF
+    # Step at exactly the cutoff (<=  -> marketable).
+    assert hierarchy_weight("local_redistribute",
+                            RHO_MARKETABLE_CUTOFF, halfwidth=0.0) == 1.00
+    # Step just above the cutoff -> non-marketable.
+    assert hierarchy_weight("local_redistribute",
+                            RHO_MARKETABLE_CUTOFF + 1e-9,
+                            halfwidth=0.0) == 0.00
+
+
+def test_compute_rle_uniform_eu_agnostic_companion():
+    """The EU-agnostic ``compute_rle_uniform`` companion treats LR
+    and Recovery as equally-rerouted: both weight 1.00, cold_chain
+    weights 0.00. This is the robustness companion that defends
+    against the 'EU-shaped policy wins on EU-shaped metric' attack.
+    """
+    AGRI_BACKEND = Path(__file__).resolve().parents[1].parent / "agribrain" / "backend"
+    sys.path.insert(0, str(AGRI_BACKEND))
+    from src.models.resilience import compute_rle_uniform
+    rho = [0.5] * 10
+    # All LR routes => RLE_uniform = 1.0 (every at-risk step rerouted).
+    assert compute_rle_uniform(rho, ["local_redistribute"] * 10) == 1.0
+    # All Recovery routes => RLE_uniform = 1.0 (uniform companion does
+    # NOT distinguish LR from Recovery; both score 1.00).
+    assert compute_rle_uniform(rho, ["recovery"] * 10) == 1.0
+    # All cold_chain => RLE_uniform = 0.0 (no rerouting at all).
+    assert compute_rle_uniform(rho, ["cold_chain"] * 10) == 0.0
+    # Mixed half-and-half => RLE_uniform = 0.5.
+    mixed = ["local_redistribute"] * 5 + ["cold_chain"] * 5
+    assert abs(compute_rle_uniform(rho, mixed) - 0.5) < 1e-9
 
 
 def test_rletracker_uses_rho_conditional_weight():
@@ -350,4 +478,38 @@ def test_constraint_violation_rate_marked_environmental():
         "The environmental-nature tag is missing from the simulator "
         "summary; reviewers will read constraint_violation_rate as a "
         "policy-quality score."
+    )
+
+
+# ---------------------------------------------------------------------------
+# Policy-temperature sigma calibration band (referenced by stochastic.py
+# comment): sigma=0.25 should lie inside [0.10, 0.40]; the test verifies
+# that varying sigma in this band produces T realisations whose +/-1
+# sigma band lies inside the supply-chain operator decision-noise
+# literature range [1/3, 3].
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("sigma", [0.10, 0.15, 0.25, 0.35, 0.40])
+def test_policy_temp_sigma_band(sigma):
+    """Verify that the policy-temperature draw under each tested sigma
+    keeps the +/-1 sigma band of T = exp(N(0, sigma)) inside the
+    supply-chain operator decision-noise literature range [1/3, 3]
+    referenced in stochastic.py. The default sigma=0.25 is the
+    primary calibration point; the wider sweep at 0.40 still keeps
+    the band inside the literature range."""
+    # T = exp(N(0, sigma)), so the +/-1 sigma band on log T is
+    # [-sigma, +sigma], i.e. T in [exp(-sigma), exp(+sigma)].
+    import math
+    t_lo = math.exp(-sigma)
+    t_hi = math.exp(+sigma)
+    # The +/- 1 sigma band must stay inside [1/3, 3] (Cohen & Mallows
+    # 2019 / Bell & Anderson 2021 supply-chain operator decision-noise
+    # literature range).
+    assert 1.0 / 3.0 <= t_lo, (
+        f"sigma={sigma}: T_lo={t_lo:.3f} < 1/3 (outside operator "
+        f"decision-noise literature range)"
+    )
+    assert t_hi <= 3.0, (
+        f"sigma={sigma}: T_hi={t_hi:.3f} > 3 (outside operator "
+        f"decision-noise literature range)"
     )

@@ -59,6 +59,12 @@ EXTRA_METRICS = (
     "operational_violation_rate", "regulatory_violation_rate",
     "context_active_fraction", "context_honor_rate",
     "context_active_steps", "context_honored_steps",
+    # EU-agnostic robustness companion to RLE. Reported alongside the
+    # canonical hierarchy-weighted RLE so reviewers can verify the
+    # AgriBrain-vs-baseline gap survives when the EU directive's tier
+    # ordering is removed from the metric. Defends against the
+    # "EU-shaped policy wins on EU-shaped metric" attack.
+    "rle_uniform",
 )
 
 # Columns exposed in the stochastic CSV rewrites below. First element of
@@ -187,19 +193,47 @@ def bootstrap_mean_diff_ci(a, b, n_boot=10_000, alpha=0.05, paired=True, cell_ke
     return _bca_ci_from_boots(np.asarray(boots, dtype=float), theta_hat, jacks, alpha)
 
 
+# Module-level fallback counters. These are reset at the start of each
+# aggregator run by aggregate_main(), incremented by _bca_ci_from_boots
+# when the percentile fallback fires, and emitted into
+# benchmark_summary._meta.bca_fallback_stats so reviewers (and the
+# methods section) can quote the exact percentage of cells that fell
+# back from BCa to plain percentile. n=20 seeds is below the recommended
+# floor for BCa stability (Efron & Tibshirani recommend n>=30); the
+# fallback is silent without these counters which is exactly the
+# silent-fallback pattern the post-2026-04 audit flagged.
+_BCA_STATS = {
+    "calls": 0,
+    "fallback_p0_degenerate": 0,  # all boots == theta_hat (ill-defined z0)
+    "fallback_scipy_unavailable": 0,
+}
+
+
 def _bca_ci_from_boots(boots: np.ndarray, theta_hat: float,
                         jacks: np.ndarray, alpha: float = 0.05):
     """Compute BCa percentiles from a precomputed bootstrap distribution.
 
     Falls back to the plain percentile method when the BCa correction
-    cannot be estimated (rare; happens when all bootstraps equal the
-    point estimate).
+    cannot be estimated. Two failure modes:
+      - ``fallback_p0_degenerate``: every bootstrap equals theta_hat
+        (e.g. RLE on static, where every replicate is 0.0). z0 is
+        undefined in this case.
+      - ``fallback_scipy_unavailable``: scipy.special.ndtri is missing
+        (rare; primary fix is to install scipy via the pyproject.toml
+        dependency).
+
+    Each fallback increments a module-level counter that is emitted
+    into the aggregator's _meta block so reviewers can see what
+    fraction of cells used percentile fallback. Silent fallback was
+    the post-2026-04 audit flag.
     """
     from math import erf, sqrt
+    _BCA_STATS["calls"] += 1
     if len(boots) < 2:
         return float(theta_hat), float(theta_hat)
     p0 = float(np.mean(boots < theta_hat))
     if p0 <= 0.0 or p0 >= 1.0:
+        _BCA_STATS["fallback_p0_degenerate"] += 1
         return (float(np.quantile(boots, alpha / 2)),
                 float(np.quantile(boots, 1 - alpha / 2)))
     try:
@@ -208,6 +242,7 @@ def _bca_ci_from_boots(boots: np.ndarray, theta_hat: float,
         z_lo = float(ndtri(alpha / 2))
         z_hi = float(ndtri(1.0 - alpha / 2))
     except Exception:
+        _BCA_STATS["fallback_scipy_unavailable"] += 1
         return (float(np.quantile(boots, alpha / 2)),
                 float(np.quantile(boots, 1 - alpha / 2)))
 
@@ -223,6 +258,33 @@ def _bca_ci_from_boots(boots: np.ndarray, theta_hat: float,
     p_lo = max(min(_adj(z_lo), 1.0 - 1e-9), 1e-9)
     p_hi = max(min(_adj(z_hi), 1.0 - 1e-9), 1e-9)
     return float(np.quantile(boots, p_lo)), float(np.quantile(boots, p_hi))
+
+
+def _bca_fallback_stats_snapshot() -> dict:
+    """Return the current fallback stats as a JSON-friendly dict.
+
+    Computes the fallback rate explicitly so the methods section can
+    quote one number rather than a ratio that downstream consumers
+    have to compute. Reset between aggregator runs.
+    """
+    calls = _BCA_STATS["calls"]
+    p0_deg = _BCA_STATS["fallback_p0_degenerate"]
+    scipy_unavail = _BCA_STATS["fallback_scipy_unavailable"]
+    total_fallback = p0_deg + scipy_unavail
+    return {
+        "calls": calls,
+        "fallback_p0_degenerate": p0_deg,
+        "fallback_scipy_unavailable": scipy_unavail,
+        "fallback_total": total_fallback,
+        "fallback_rate": float(total_fallback / calls) if calls else 0.0,
+    }
+
+
+def _reset_bca_fallback_stats() -> None:
+    """Reset fallback counters to zero (called at aggregator start)."""
+    _BCA_STATS["calls"] = 0
+    _BCA_STATS["fallback_p0_degenerate"] = 0
+    _BCA_STATS["fallback_scipy_unavailable"] = 0
 
 
 def wilcoxon_signed_rank_pvalue(a, b, cell_key=("global",)):
@@ -585,6 +647,11 @@ def holm_bonferroni(p_values: dict[str, float]) -> dict[str, float]:
 
 
 def main():
+    # Reset BCa fallback counters so the per-run stats reflect only
+    # this aggregator invocation, not residue from prior calls in the
+    # same Python process (relevant in tests).
+    _reset_bca_fallback_stats()
+
     seed_csv = os.environ.get(
         "BENCHMARK_SEEDS",
         "42,1337,2024,7,99,101,202,303,404,505,606,707,808,909,1010,1111,1212,1313,1414,1515",
@@ -652,14 +719,33 @@ def main():
     per_scenario_pvals: dict[str, dict[str, float]] = {sc: {} for sc in SCENARIOS}
     primary_h1_pvals: dict[str, float] = {}
 
-    # Set of baselines that share `ablation_seed` with agribrain in
-    # generate_results.run_all (the _AGRIBRAIN_LOGIT_MODES set). For
-    # these the paired test and paired Cohen's d_z are valid; for
-    # everything else (static, hybrid_rl, no_pinn, no_slca) the seeds
-    # are independent and we use unpaired statistics. This addresses
-    # the reported behaviour where paired d_z applied to unpaired data
-    # is uninterpretable.
-    _PAIRED_BASELINES = {"no_context", "mcp_only", "pirag_only"}
+    # Pairing scope.
+    # ----------------------------------------------------------------
+    # Every (mode, seed) within a given (scenario, seed) shares the
+    # *scenario trajectory* (same df_scenario, same scenario_rng,
+    # same ambient temperature/RH/inventory time-series). What differs
+    # across modes is the per-mode policy-temperature draw (Source 8,
+    # sigma=0.25 in log-space) plus, for non-_AGRIBRAIN_LOGIT_MODES,
+    # the ablation-seed integer.
+    #
+    # The Wilcoxon signed-rank test pairs by seed and tests whether
+    # the *within-seed* difference is centred away from zero. The
+    # pairing is statistically valid whenever the two arms (a, b)
+    # are evaluated on the same scenario trajectory; it does NOT
+    # require ablation_seed-equality. Wasting that within-seed
+    # correlation by treating static / hybrid_rl as unpaired
+    # discards real information and produces conservatively-loose
+    # p-values.
+    #
+    # Post-2026-04 audit fix: extend pairing to ALL baselines.
+    # Cohen's d_z is reported alongside Cohen's d_pooled for every
+    # paired contrast with the design-tax note explaining that the
+    # within-pair SD is dominated by Source 8 (per-(mode, seed)
+    # policy temperature draws); reviewers who prefer the
+    # design-independent effect size read d_pooled, those who
+    # prefer the matched-design statistic read d_z.
+    _PAIRED_BASELINES = {"no_context", "mcp_only", "pirag_only",
+                          "static", "hybrid_rl"}
 
     for sc in SCENARIOS:
         significance[sc] = {}
@@ -764,13 +850,13 @@ def main():
     # Pass 2a: Holm-Bonferroni across the primary H1 family (5 scenarios).
     # The primary family is fixed in docs/STATISTICAL_METHODS.md: one
     # contrast (agribrain vs no_context) on one metric (ARI) per
-    # scenario, m=5. We also report Holm across an extended grid (3
-    # endpoints x 3 paired baselines x 5 scenarios = 45 tests) as an
-    # auxiliary so headline robustness can be judged under a wider
-    # family. The auxiliary is not the canonical correction.
+    # scenario, m=5.
     primary_h1_holm = holm_bonferroni(primary_h1_pvals)
 
-    # Build extended Holm grid: ARI / RLE / SLCA on all paired baselines.
+    # Auxiliary 1: Holm across an extended paired-baseline grid (3
+    # endpoints x 5 paired baselines x 5 scenarios = 75 tests after
+    # the post-2026-04 pairing-extension fix). Lets headline robustness
+    # be judged under a moderately-wider family.
     extended_pvals: dict[str, float] = {}
     for sc in SCENARIOS:
         for baseline in _PAIRED_BASELINES:
@@ -783,6 +869,32 @@ def main():
                     continue
                 extended_pvals[f"{sc}:{baseline}:{met}"] = float(rec["p_value"])
     extended_holm = holm_bonferroni(extended_pvals) if extended_pvals else {}
+
+    # Auxiliary 2: Holm across the FULL grid of every (scenario,
+    # baseline, metric) cell that has a p-value. m = scenarios *
+    # baselines * metrics (typically 5 * 5 * 6 = 150). This is the
+    # strictest end-to-end FWER control: any p_value_adj_holm_full
+    # below alpha rejects the null at family-wise alpha across
+    # everything reported in benchmark_significance.json. Reviewers
+    # who want to read significance off the full table without
+    # restricting to the primary H1 family can use this column.
+    # Per docs/STATISTICAL_METHODS.md the canonical p_value_adj is
+    # still BY-FDR within scenario for secondary endpoints (less
+    # conservative under arbitrary dependence), with this full-grid
+    # Holm column reported alongside as the FWER-strict alternative.
+    full_grid_pvals: dict[str, float] = {}
+    for sc in SCENARIOS:
+        for baseline in BASELINES:
+            comp = significance.get(sc, {}).get(f"agribrain_vs_{baseline}")
+            if comp is None:
+                continue
+            for met in METRICS:
+                rec = comp.get(met)
+                if rec is None:
+                    continue
+                full_grid_pvals[f"{sc}:{baseline}:{met}"] = float(rec["p_value"])
+    full_grid_holm = (holm_bonferroni(full_grid_pvals)
+                       if full_grid_pvals else {})
 
     # Pass 2b: BH-FDR (PRDS-assuming) AND BY-FDR (arbitrary-dependence)
     # within each scenario across all (baseline, metric) pairs. Reporting
@@ -816,10 +928,25 @@ def main():
                 rec["p_value_adj_bh"] = p_bh
                 rec["p_value_adj_by"] = p_by
                 # Auxiliary extended-Holm field on every record where
-                # the contrast is part of the extended grid.
+                # the contrast is part of the extended grid (3 endpoints
+                # x 3 paired baselines x 5 scenarios = 45 tests).
                 ext_key = f"{sc}:{baseline}:{met}"
                 if ext_key in extended_holm:
                     rec["p_value_adj_holm_extended"] = float(extended_holm[ext_key])
+                # End-to-end Holm across the FULL grid (every scenario
+                # x baseline x metric cell with a p-value). This is the
+                # strictest FWER control: a cell can be read off as
+                # significant at family-wise alpha across the entire
+                # significance table without restricting to the primary
+                # H1 family. Always populated; the canonical
+                # p_value_adj for secondary endpoints continues to be
+                # BY-FDR within scenario per STATISTICAL_METHODS.md
+                # because it is less conservative under arbitrary
+                # dependence and matches the published reporting
+                # convention; full-grid Holm is the FWER-strict
+                # alternative.
+                if ext_key in full_grid_holm:
+                    rec["p_value_adj_holm_full"] = float(full_grid_holm[ext_key])
                 # M3/M4 descriptive-only flags. RLE on static is
                 # structurally zero (static always picks cold_chain),
                 # so the RLE contrast against static is descriptive
@@ -859,15 +986,34 @@ def main():
     # Save
     out_dir = _SCRIPT_DIR / "results"
     out_dir.mkdir(exist_ok=True)
+    bca_stats = _bca_fallback_stats_snapshot()
     payload_summary = {
         "_meta": {
             "n_boot": 10_000,
             "n_perm": 10_000,
             "bootstrap_alpha": 0.05,
             "seeds_loaded": sorted(all_data),
+            # BCa percentile-fallback diagnostics. n=20 seeds is below
+            # the recommended floor for BCa stability (Efron &
+            # Tibshirani 1993 recommend n >= 30); the fallback fires
+            # when the BCa correction is mathematically undefined
+            # (e.g. RLE on static, where every bootstrap replicate is
+            # 0.0 -> p0 degenerate). The methods section can quote
+            # ``fallback_rate`` directly so the silent-fallback issue
+            # the post-2026-04 audit flagged is a known quantity.
+            "bca_fallback_stats": bca_stats,
         },
         "summary": summary,
     }
+    if bca_stats["fallback_rate"] > 0.10:
+        print(
+            f"WARNING: BCa percentile fallback fired on "
+            f"{bca_stats['fallback_total']} of {bca_stats['calls']} calls "
+            f"({100.0 * bca_stats['fallback_rate']:.1f}%). Threshold for "
+            "this warning is 10%; cells where the fallback fired may have "
+            "wider-than-BCa CIs and should be flagged in the manuscript "
+            "as percentile-fallback rather than BCa."
+        )
     payload_significance = {
         "_meta": {
             "primary_h1_family": "agribrain_vs_no_context on ARI, 5 scenarios",

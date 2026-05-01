@@ -59,34 +59,96 @@ def main() -> None:
     #   2. git rev-parse HEAD subprocess (the local-dev path);
     #   3. "unknown" sentinel (last-resort fallback; verify_manifest.py
     #      with --strict-commit will reject this, by design).
-    # Step 2's failure is logged as a WARNING (not debug) so the user
-    # sees it even when env-var override is unavailable, rather than a
-    # silent "unknown" reaching the JSON and breaking CI 30 seconds
-    # later in the next stage.
-    commit = os.environ.get("AGRIBRAIN_GIT_COMMIT", "").strip()
-    if not commit:
-        try:
-            commit = (
+    #
+    # Reproducibility hardening (post-2026-04 audit fix):
+    #   - When the env-var override is supplied, we cross-check it against
+    #     ``git rev-parse HEAD`` (when git is available) and reject the
+    #     stamping if they disagree. A user could otherwise export an old
+    #     SHA (deliberately or accidentally) and the manifest would record
+    #     a commit that does not match the working tree the simulator
+    #     actually ran on.
+    #   - When the working tree is dirty (``git status --porcelain``
+    #     non-empty), we record ``dirty=True`` and append "+dirty" to the
+    #     stamped commit so verify_manifest.py --strict-commit (which
+    #     rejects non-clean commits by default) catches the mismatch.
+    #     This prevents the silent "the run matches commit X" claim being
+    #     true-modulo-uncommitted-changes which is the canonical
+    #     non-reproducible-stamping failure mode.
+    #   - ``AGRIBRAIN_ALLOW_DIRTY=1`` overrides the dirty rejection for
+    #     contexts where the user has explicitly accepted the dirty stamp
+    #     (e.g. local exploratory runs where reproducibility is not the
+    #     goal). The override still appends "+dirty" to the SHA so the
+    #     resulting manifest is honestly labelled.
+    git_root = str(RESULTS_DIR.parent.parent.parent)
+    head_sha = ""
+    is_dirty = False
+    git_available = True
+    try:
+        head_sha = (
+            subprocess.check_output(
+                ["git", "rev-parse", "HEAD"], cwd=git_root,
+                stderr=subprocess.PIPE,
+            ).decode("utf-8").strip()
+        )
+    except Exception:
+        git_available = False
+    try:
+        if git_available:
+            porcelain = (
                 subprocess.check_output(
-                    ["git", "rev-parse", "HEAD"],
-                    cwd=str(RESULTS_DIR.parent.parent.parent),
+                    ["git", "status", "--porcelain"], cwd=git_root,
                     stderr=subprocess.PIPE,
-                )
-                .decode("utf-8")
-                .strip()
+                ).decode("utf-8").strip()
             )
-        except Exception as _exc:
-            _log.warning(
-                "build_artifact_manifest: git rev-parse HEAD failed (%s) and "
-                "AGRIBRAIN_GIT_COMMIT env var not set; manifest will record "
-                "'unknown' which verify_manifest.py --strict-commit will "
-                "reject. To fix this on HPC, export AGRIBRAIN_GIT_COMMIT="
-                "$(git rev-parse HEAD) before invoking the aggregate job.",
-                _exc,
+            is_dirty = bool(porcelain)
+    except Exception:
+        # If status fails, assume dirty to avoid stamping a falsely-clean
+        # SHA — better to fail loud than silent.
+        is_dirty = True
+
+    env_override = os.environ.get("AGRIBRAIN_GIT_COMMIT", "").strip()
+    if env_override:
+        if git_available and head_sha and env_override != head_sha:
+            raise RuntimeError(
+                f"AGRIBRAIN_GIT_COMMIT env var ({env_override!r}) does not "
+                f"match the working tree's HEAD ({head_sha!r}). Stamping a "
+                f"manifest with a SHA that does not reflect the actual "
+                f"checked-out code is exactly the silent-non-reproducibility "
+                f"failure mode this check exists to prevent. To fix: unset "
+                f"AGRIBRAIN_GIT_COMMIT or re-export it as "
+                f"$(git rev-parse HEAD)."
             )
-            commit = "unknown"
+        commit = env_override
+    elif head_sha:
+        commit = head_sha
+    else:
+        _log.warning(
+            "build_artifact_manifest: git rev-parse HEAD failed and "
+            "AGRIBRAIN_GIT_COMMIT env var not set; manifest will record "
+            "'unknown' which verify_manifest.py --strict-commit will "
+            "reject. To fix this on HPC, export AGRIBRAIN_GIT_COMMIT="
+            "$(git rev-parse HEAD) before invoking the aggregate job."
+        )
+        commit = "unknown"
+
+    if is_dirty:
+        allow_dirty = os.environ.get("AGRIBRAIN_ALLOW_DIRTY", "").strip() == "1"
+        if not allow_dirty:
+            raise RuntimeError(
+                "build_artifact_manifest: working tree is dirty (uncommitted "
+                "changes present). Stamping the manifest now would record a "
+                "commit SHA that does not capture the actual code that ran. "
+                "To proceed, either commit the changes (recommended) or set "
+                "AGRIBRAIN_ALLOW_DIRTY=1 to explicitly accept a dirty stamp; "
+                "the latter will append '+dirty' to the SHA so reviewers can "
+                "see the stamp is not reproducible."
+            )
+        # Honest labelling: caller has acknowledged the dirty stamp.
+        commit = f"{commit}+dirty"
+
     payload = {
         "git_commit": commit,
+        "git_dirty": bool(is_dirty),
         "artifact_count": len(include),
         "artifacts": include,
     }
