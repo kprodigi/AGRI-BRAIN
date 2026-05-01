@@ -457,8 +457,7 @@ def run_episode(
 
     ari_vals, waste_vals, slca_vals = [], [], []
     rle_tracker = RLETracker()
-    carbon_total, cum_r = 0.0, 0.0
-    cumulative_reward = []
+    carbon_total = 0.0
     rho_trace, action_trace, prob_trace = [], [], []
     reward_trace, carbon_trace, slca_component_trace = [], [], []
     # Per-step anomaly-defense traces. Read off the coordinator's
@@ -474,7 +473,6 @@ def run_episode(
     cooperative_veto_trace: list[int] = []
     fault_recovery_trace: list[int] = []
     physics_gate_trace: list[int] = []
-    active_agent_trace = []
     circular_scores = []
     supply_hats = []
     decision_latency_ms = []
@@ -678,7 +676,6 @@ def run_episode(
         # bit-identical across machines for the same seed.
         decision_latency_ms.append((time.perf_counter() - step_t0) * 1000.0)
         action = ACTIONS[action_idx]
-        active_agent_trace.append(active_agent.role)
 
         # Context-honor scoring. The coordinator records the per-step context
         # modifier vector (THETA_CONTEXT @ psi); when it carries a meaningful
@@ -869,7 +866,6 @@ def run_episode(
             eta=policy.eta, eta_rho=policy.eta_rho,
             route_factor=route_rho_factor(action, float(temp)),
         )
-        cum_r += reward
 
         # Green AI footprint tracking (Section 4.12)
         meter.compute_footprint(steps=1)
@@ -979,7 +975,6 @@ def run_episode(
         waste_vals.append(waste)
         slca_vals.append(slca_c)
         carbon_total += carbon
-        cumulative_reward.append(cum_r)
         rho_trace.append(rho)
         action_trace.append(action_idx)
         prob_trace.append(probs.tolist())
@@ -1111,9 +1106,8 @@ def run_episode(
         "batch_effective_rho_trace": batch_effective_rho_trace,
         "batch_retail_quantity_trace": batch_retail_qty_trace,
         "prob_trace": prob_trace, "reward_trace": reward_trace,
-        "cumulative_reward": cumulative_reward, "carbon_trace": carbon_trace,
+        "carbon_trace": carbon_trace,
         "slca_component_trace": slca_component_trace, "slca_trace": slca_vals,
-        "decision_latency_ms_trace": decision_latency_ms,
         "equity_trace": equity_trace,
         "hours": hours.tolist(),
         # Per-step anomaly-defense traces. Each entry is 0 or 1; for
@@ -1129,7 +1123,6 @@ def run_episode(
         "rh_trace": observed_rh_trace,
         "demand_trace": observed_demand_trace,
         "inventory_trace": observed_inv_trace,
-        "active_agent_trace": active_agent_trace,
         "footprint": meter.summary(),
         "agent_summaries": coordinator.agent_summaries(),
         "message_count": len(coordinator.message_log),

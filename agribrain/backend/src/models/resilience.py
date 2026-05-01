@@ -365,8 +365,13 @@ RECOVERY_FACTOR:      float = 0.00
 # anchor in food-bank operations literature (FareShare, Sirop annual
 # reports 2018-2022) supports this band; the specific value 0.65 is a
 # calibration choice within that band rather than a single-source
-# reading. Sensitivity to the cutoff in [0.55, 0.75] is exercised in
-# tests/test_effective_rho_and_knee.py::test_food_safety_cutoff_band.
+# reading. Future work: a dedicated cutoff sensitivity sweep over
+# [0.55, 0.75] in test_effective_rho_and_knee.py would tighten the
+# defensibility of the specific 0.65 value; currently the only
+# coverage is the existence-and-range test
+# test_knee_threshold_constant_is_in_realistic_range, which pins
+# the constant within the [0.55, 0.75] band but does not exercise
+# the routing-behaviour sensitivity to perturbations within it.
 # This constant is *separate* from RHO_MARKETABLE_CUTOFF (the metric
 # weight-table boundary, default 0.50) which is the *softer*
 # marketable/non-marketable gradient centre rather than the hard

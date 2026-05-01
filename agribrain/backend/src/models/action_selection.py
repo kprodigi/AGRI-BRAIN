@@ -372,8 +372,15 @@ questions and live in different layers:
     Food-safety reject line, calibrated against food-bank intake
     rejection-rate literature.
 
-Sensitivity to the knee in [0.20, 0.40] is exercised in
-tests/test_effective_rho_and_knee.py::test_recovery_knee_band.
+Sensitivity to the knee. The currently-published coverage in
+tests/test_effective_rho_and_knee.py exercises the knee-firing
+condition at fixed knee=0.30 (test_select_action_recovery_dominates_above_knee
+and the related knee-band tests), and pins the constant inside
+the [0.20, 0.40] realistic band via
+test_knee_threshold_constant_is_in_realistic_range. A dedicated
+parametric sweep over knee in [0.20, 0.40] for routing-behaviour
+sensitivity is future work; the existing tests cover the firing
+correctness and the constant-range invariant.
 The previous 0.50 setting placed the knee at the metric boundary
 which made the policy reactive rather than proactive — the policy
 only shifted toward Recovery once produce was already at the

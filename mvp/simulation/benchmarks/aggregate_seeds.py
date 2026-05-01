@@ -304,7 +304,7 @@ def wilcoxon_signed_rank_pvalue(a, b, cell_key=("global",)):
     Wilcoxon signed-rank test is valid under the weaker assumption that
     d is symmetric in *rank* (which holds for many common distributions
     of paired differences). When SciPy is unavailable, we fall back to
-    a sign-flip permutation labelled clearly as such.
+    a sign-flip permutation labeled clearly as such.
     """
     x, y = np.array(a, dtype=float), np.array(b, dtype=float)
     if x.shape != y.shape or len(x) == 0:
@@ -756,7 +756,7 @@ def main():
     # the ablation-seed integer.
     #
     # The Wilcoxon signed-rank test pairs by seed and tests whether
-    # the *within-seed* difference is centred away from zero. The
+    # the *within-seed* difference is centered away from zero. The
     # pairing is statistically valid whenever the two arms (a, b)
     # are evaluated on the same scenario trajectory; it does NOT
     # require ablation_seed-equality. Wasting that within-seed

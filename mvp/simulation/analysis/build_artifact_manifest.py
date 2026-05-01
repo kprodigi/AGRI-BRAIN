@@ -96,7 +96,7 @@ def main() -> None:
     #     contexts where the user has explicitly accepted the dirty stamp
     #     (e.g. local exploratory runs where reproducibility is not the
     #     goal). The override still appends "+dirty" to the SHA so the
-    #     resulting manifest is honestly labelled.
+    #     resulting manifest is honestly labeled.
     git_root = str(RESULTS_DIR.parent.parent.parent)
     head_sha = ""
     is_dirty = False
@@ -161,7 +161,7 @@ def main() -> None:
                 "the latter will append '+dirty' to the SHA so reviewers can "
                 "see the stamp is not reproducible."
             )
-        # Honest labelling: caller has acknowledged the dirty stamp.
+        # Honest labeling: caller has acknowledged the dirty stamp.
         commit = f"{commit}+dirty"
 
     payload = {

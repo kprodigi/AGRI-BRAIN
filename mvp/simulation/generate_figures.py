@@ -22,7 +22,7 @@ Styling principles (aligned with Word-document manuscript body text):
   projection.
 - **No overlap**: window annotations use axes-fraction placement outside
   the plotting area; long scenario names rotate -20 degrees; legends
-  prefer bottom-centre placement or outside-right; tight_layout plus
+  prefer bottom-center placement or outside-right; tight_layout plus
   explicit padding.
 - **Image quality**: 800 DPI PNG and vector PDF; explicit bbox_inches
   tight with pad_inches=0.15 to avoid clipping bold labels.
@@ -163,6 +163,19 @@ COLORS = {
     "agribrain_pert_10":    "#26A69A",  # light teal
     "agribrain_pert_25":    "#4DB6AC",  # lighter teal
     "agribrain_pert_50":    "#80CBC4",  # lightest teal
+    # 2026-04 sensitivity-mode additions: paired _static variants
+    # (REINFORCE off so theta is the perturbed prior throughout the
+    # episode), agribrain_no_bonus (SLCA bonus zeroed), and
+    # theta_pert variants (THETA matrix perturbed). Mirror the
+    # pert_*/_static teal-shade walk on the perturbation side so a
+    # crowded legend stays distinguishable.
+    "agribrain_pert_10_static":  "#1DE9B6",  # bright cyan-teal
+    "agribrain_pert_25_static":  "#64FFDA",  # lighter cyan-teal
+    "agribrain_pert_50_static":  "#A7FFEB",  # lightest cyan-teal
+    "agribrain_no_bonus":        "#00897B",  # mid-dark teal
+    "agribrain_theta_pert_10":   "#3949AB",  # indigo (different family)
+    "agribrain_theta_pert_25":   "#5C6BC0",  # lighter indigo
+    "agribrain_theta_pert_50":   "#9FA8DA",  # lightest indigo
 }
 
 MARKERS = {
@@ -178,6 +191,13 @@ MARKERS = {
     "agribrain_pert_10":    "h",
     "agribrain_pert_25":    "H",
     "agribrain_pert_50":    "8",
+    "agribrain_pert_10_static":  "p",
+    "agribrain_pert_25_static":  "<",
+    "agribrain_pert_50_static":  ">",
+    "agribrain_no_bonus":        "x",
+    "agribrain_theta_pert_10":   "1",
+    "agribrain_theta_pert_25":   "2",
+    "agribrain_theta_pert_50":   "3",
 }
 
 LINESTYLES = {
@@ -193,6 +213,13 @@ LINESTYLES = {
     "agribrain_pert_10":    (0, (4, 1, 1, 1)),
     "agribrain_pert_25":    (0, (3, 1, 1, 2)),
     "agribrain_pert_50":    (0, (2, 1, 1, 3)),
+    "agribrain_pert_10_static":  (0, (5, 1, 2, 1)),
+    "agribrain_pert_25_static":  (0, (4, 1, 2, 1)),
+    "agribrain_pert_50_static":  (0, (3, 1, 2, 1)),
+    "agribrain_no_bonus":        (0, (8, 2)),
+    "agribrain_theta_pert_10":   (0, (6, 2, 1, 2)),
+    "agribrain_theta_pert_25":   (0, (5, 2, 1, 2)),
+    "agribrain_theta_pert_50":   (0, (4, 2, 1, 2)),
 }
 
 MODE_LABELS = {
@@ -208,6 +235,13 @@ MODE_LABELS = {
     "agribrain_pert_10":    "Pert 10%",
     "agribrain_pert_25":    "Pert 25%",
     "agribrain_pert_50":    "Pert 50%",
+    "agribrain_pert_10_static":  "Pert 10% (static)",
+    "agribrain_pert_25_static":  "Pert 25% (static)",
+    "agribrain_pert_50_static":  "Pert 50% (static)",
+    "agribrain_no_bonus":        "No Bonus",
+    "agribrain_theta_pert_10":   "Theta Pert 10%",
+    "agribrain_theta_pert_25":   "Theta Pert 25%",
+    "agribrain_theta_pert_50":   "Theta Pert 50%",
 }
 
 SCENARIO_LABELS = {
@@ -313,7 +347,7 @@ def _annotate_window(ax, x0, x1, color, label, alpha=WINDOW_ALPHA,
     axes, for instance) are respected. ``ypos`` is the axes-fraction
     vertical position of the bbox top edge. ``xpos`` overrides the
     horizontal position (data coordinates); the default of ``None``
-    centres the label on the window."""
+    centers the label on the window."""
     ax.axvspan(x0, x1, alpha=alpha, color=color, zorder=0)
     # Add top headroom once per axes so the label never occludes data.
     if not getattr(ax, "_window_headroom_applied", False) and ax.get_autoscaley_on():
@@ -356,7 +390,7 @@ def fig2_heatwave(data):
     band that the heatwave scenario operates in. AgriBrain therefore
     does *not* clearly win on raw retail rho - its win comes from
     the composite ARI (panel d), where the LR-leaning policy gains
-    on carbon, labour, resilience, and price-transparency at modest
+    on carbon, labor, resilience, and price-transparency at modest
     rho cost.
 
     Panel (c) shows AgriBrain's action-probability stacked area with
@@ -458,7 +492,7 @@ def _fig2_heatwave_inner(hw, ab, hours):
     ax2.set_ylim(40, 100)
     # "Heatwave" annotation moved downward (ypos=0.45 -> sits in the
     # lower band of the heatwave window so it does not overlap the
-    # temperature peak line); legend nudged right of centre so the
+    # temperature peak line); legend nudged right of center so the
     # combined Temperature / Safe-storage / RH labels don't sit
     # directly above the rising heatwave temperature curve.
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave", ypos=0.45)
@@ -558,9 +592,9 @@ def _fig2_heatwave_inner(hw, ab, hours):
     ax.set_ylim(0, 1.0)
     _apply_style(ax)
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave", ypos=0.45)
-    # Legend moved from "center right" to a left-of-centre, slightly-
-    # above-centre anchor so it sits over the Local Redist. band
-    # (which is the dominant area in the centre of the plot) without
+    # Legend moved from "center right" to a left-of-center, slightly-
+    # above-center anchor so it sits over the Local Redist. band
+    # (which is the dominant area in the center of the plot) without
     # covering the AgriBrain rho-threshold annotations on the right.
     _legend(ax, loc="center left", bbox_to_anchor=(0.02, 0.62),
             ncol=1, frameon=True, framealpha=0.85)
@@ -693,7 +727,7 @@ def _fig3_overproduction_inner(op, ab, hours):
     for lbl in ax2.get_yticklabels():
         lbl.set_fontweight("bold")
     # Position the "Overproduction" label inside the red zone toward
-    # the centre-right (xpos\u224840) so the bounding box sits clearly
+    # the center-right (xpos\u224840) so the bounding box sits clearly
     # within the 12-60 h window without clipping the right edge.
     _annotate_window(ax, 12, 60, WINDOW_COLOR, "Overproduction", xpos=40)
     h1, l1 = ax.get_legend_handles_labels()
@@ -728,7 +762,7 @@ def _fig3_overproduction_inner(op, ab, hours):
     # NaN where the window contains no at-risk steps.
     #
     # The match-quality form (band-edge author parameters) and the
-    # capacity-constrained form (BatchInventory realised-action trace)
+    # capacity-constrained form (BatchInventory realized-action trace)
     # this panel used to plot alongside the canonical form were retired
     # in 2026-04. Only the EU-hierarchy weighted form survives here, in
     # resilience.compute_rle, in the benchmark JSONs, and in the table
@@ -800,7 +834,7 @@ def _fig3_overproduction_inner(op, ab, hours):
     # --- (d) SLCA component grouped bars with std error bars ---
     ax = axes[1, 1]
     components = ["C", "L", "R", "P"]
-    comp_labels = ["Carbon", "Labour", "Resilience", "Price Transp."]
+    comp_labels = ["Carbon", "Labor", "Resilience", "Price Transp."]
     x = np.arange(len(components))
     width = 0.26
     for i, mode in enumerate(["static", "hybrid_rl", "agribrain"]):
@@ -883,7 +917,7 @@ def fig4_cyber(data):
     _apply_style(ax)
     _f4_style(ax)
     _annotate_window(ax, 24, 72, WINDOW_COLOR, "Outage")
-    # Position the legend between lower-left and lower-centre so it
+    # Position the legend between lower-left and lower-center so it
     # sits clear of both the AgriBrain decay tail (right) and the
     # high-ARI pre-outage region (left of h=24).
     _legend(ax, loc="lower left", bbox_to_anchor=(0.18, 0.0),
@@ -1264,7 +1298,7 @@ def _remap_legacy_rle_variants(bench: dict | None) -> dict | None:
     columns: ``rle`` (saturating binary recovered/at_risk),
     ``rle_binary`` (alias of the same), ``rle_weighted`` (EU 2008/98/EC
     + severity-weighted form), and ``rle_capacity_constrained``
-    (BatchInventory realised-action variant). Only the
+    (BatchInventory realized-action variant). Only the
     EU-hierarchy + severity-weighted form survived the simplification —
     it now lives under the plain key ``rle`` in
     ``resilience.compute_rle`` and in fresh aggregator output.
@@ -1622,7 +1656,7 @@ def fig7_ablation(data):
     # ~89% of its allotted x-slot instead of ~72%, so the bars are
     # visibly chunkier and the inter-group gap shrinks proportionally —
     # which is the expected layout when each group already carries 8
-    # well-separated bars distinguished by colour.
+    # well-separated bars distinguished by color.
     width = 0.98 / n_modes
     x_scale = 1.10
 
@@ -1770,7 +1804,7 @@ def fig8_green_ai(data):
     # Heatwave annotation pushed to vertical middle so the new
     # top-anchored legend strip does not collide with it.
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave", ypos=0.55)
-    # Legend anchored to the upper centre of the panel \u2014 sits over the
+    # Legend anchored to the upper center of the panel \u2014 sits over the
     # mid x-range where the curves are well below the legend baseline,
     # keeping the 3-entry row clear of both axes.
     _legend(ax, loc="upper center",
@@ -2075,7 +2109,7 @@ def _fig9_load_n_seeds():
 # ---------------------------------------------------------------------------
 # Figure 9: Consolidated statistical-superiority panel. Three panels keyed on
 # benchmark_significance.json + context_alignment_*.json:
-#   (a) Cohen's d heatmap — agribrain vs each of 5 baselines, log-coloured.
+#   (a) Cohen's d heatmap — agribrain vs each of 5 baselines, log-colored.
 #   (b) % ARI improvement forest plot — same 25 comparisons, recoded to
 #       relative gain so the axis reads in human terms.
 #   (c) Context honor rate per scenario.
@@ -2102,7 +2136,7 @@ def fig9_fault_degradation():
     carry visual variance proportional to the strength of the result:
 
       (a) Effect-size heatmap. Cohen's d for ARI, agribrain vs each of
-          5 baselines, per scenario. Log-coloured so the 36× spread
+          5 baselines, per scenario. Log-colored so the 36× spread
           (d ≈ 2 to d ≈ 76 across the 25 comparisons) reads as a clear
           gradient. Cell text = numeric d and significance star.
       (b) % ARI improvement forest plot. Same 25 comparisons recoded
@@ -2208,7 +2242,7 @@ def fig9_fault_degradation():
                 d = d_mat[i, j]
                 if not np.isfinite(d):
                     continue
-                # Pick text colour that contrasts: white on saturated
+                # Pick text color that contrasts: white on saturated
                 # cells (upper third of log range), dark on pale cells.
                 cell_frac = (np.log(d) - np.log(d_min)) / (np.log(d_max) - np.log(d_min))
                 txt_color = "white" if cell_frac > 0.55 else "#1B5E20"
@@ -2243,7 +2277,7 @@ def fig9_fault_degradation():
         ax.set_yticks(np.arange(n_rows))
         ax.set_yticklabels([SCENARIO_LABELS.get(s, s) for s in scenarios_in_sig])
 
-        # Slim colourbar on the right edge — gives the gradient an
+        # Slim colorbar on the right edge — gives the gradient an
         # explicit scale for readers who want exact magnitudes.
         cbar = fig.colorbar(im, ax=ax, fraction=0.045, pad=0.03)
         cbar.set_label("Cohen's d (ARI)",
@@ -2631,7 +2665,7 @@ def fig10_latency_quality_frontier(data):
     # Bottom ylim margin bumped from 0.02 to 0.04 per user feedback -
     # the static marker (s=220, ~15pt diameter) at ARI~0.45 was
     # being clipped by the previous 0.02 margin which only gave the
-    # marker ~0.018 ARI of clearance below its centre. 0.04 gives
+    # marker ~0.018 ARI of clearance below its center. 0.04 gives
     # the full marker radius plus headroom so the static circle
     # renders cleanly inside the panel border.
     ax.set_ylim(bar_lo_a - 0.04, bar_hi_a + 0.02)
@@ -2804,32 +2838,32 @@ def fig10_latency_quality_frontier(data):
     # places the panel-A title relative to its axes.
     fig.tight_layout(rect=[0, 0, 1, 0.985], w_pad=1.6)
 
-    # Compute the geometric centre of the broken pair in figure
+    # Compute the geometric center of the broken pair in figure
     # coordinates - both labels and title use this so they appear
-    # centred over the (left + right) sub-axis pair rather than
+    # centered over the (left + right) sub-axis pair rather than
     # tied to one sub-axis. Read AFTER tight_layout so positions
     # reflect the final layout.
     bbox_left = ax_b_left.get_position()
     bbox_right = ax_b_right.get_position()
-    pair_x_centre = (bbox_left.x0 + bbox_right.x1) / 2.0
+    pair_x_center = (bbox_left.x0 + bbox_right.x1) / 2.0
 
-    # X-label centred under the broken pair, far enough below the
+    # X-label centered under the broken pair, far enough below the
     # axes to clear the rotated tick labels.
-    fig.text(pair_x_centre, bbox_left.y0 - 0.08,
+    fig.text(pair_x_center, bbox_left.y0 - 0.08,
              "Mean Decision Latency (ms)",
              ha="center", va="top",
              fontsize=_F10_AXIS, fontweight="bold")
-    # Panel (b) title centred over the broken pair. Offset reduced
+    # Panel (b) title centered over the broken pair. Offset reduced
     # from +0.025 to +0.005 alongside the rect_top bump to 0.985
     # so the title sits just above the panel's top spine, matching
     # the visual y position of panel A's set_title (pad=14 inside
     # the axes box).
-    fig.text(pair_x_centre, bbox_left.y1 + 0.005,
+    fig.text(pair_x_center, bbox_left.y1 + 0.005,
              "(b) Context-Aware Methods",
              ha="center", va="bottom",
              fontsize=_F10_TITLE, fontweight="bold")
 
-    # Legend on the right sub-axis (lower centre) - but the handle
+    # Legend on the right sub-axis (lower center) - but the handle
     # list must combine entries from both sub-axes (the No Context
     # reference scatter lives on ax_b_left and would otherwise be
     # missing from the legend).

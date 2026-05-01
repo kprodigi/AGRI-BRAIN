@@ -419,6 +419,36 @@ def test_hierarchy_weight_step_recovers_with_zero_halfwidth():
                             halfwidth=0.0) == 0.00
 
 
+def test_rho_transition_halfwidth_pinned():
+    """Pin ``RHO_TRANSITION_HALFWIDTH = 0.05`` at the constant level
+    so a silent bump of the smooth-transition band breaks this test
+    before any figure regenerates with a different smoothness shape.
+    The previous coverage at test_hierarchy_weight_smooth_transition_band
+    READ the constant but did not assert a specific value, so a
+    maintainer who changed 0.05 -> 0.10 in resilience.py would only
+    see indirect breakage downstream."""
+    AGRI_BACKEND = Path(__file__).resolve().parents[1].parent / "agribrain" / "backend"
+    sys.path.insert(0, str(AGRI_BACKEND))
+    from src.models.resilience import RHO_TRANSITION_HALFWIDTH, RHO_MARKETABLE_CUTOFF
+    assert RHO_TRANSITION_HALFWIDTH == 0.05, (
+        f"RHO_TRANSITION_HALFWIDTH changed from 0.05 to "
+        f"{RHO_TRANSITION_HALFWIDTH}. The value is the half-width of "
+        f"the smooth-transition band centred on RHO_MARKETABLE_CUTOFF "
+        f"(0.50); bumping it widens or narrows the [cutoff-h, "
+        f"cutoff+h] linear-interpolation window which directly "
+        f"affects RLE values for any rho near the boundary. If this "
+        f"change is intentional, also update "
+        f"test_hierarchy_weight_smooth_transition_band's expected "
+        f"midpoint and quarter-point assertions, which currently pin "
+        f"the weights at cutoff and cutoff-h/2 under halfwidth=0.05."
+    )
+    assert RHO_MARKETABLE_CUTOFF == 0.50, (
+        f"RHO_MARKETABLE_CUTOFF changed from 0.50 to {RHO_MARKETABLE_CUTOFF}; "
+        f"this is the EU 2008/98/EC marketable / non-marketable boundary "
+        f"and should not be moved without manuscript co-update."
+    )
+
+
 def test_cell_seed_deterministic_across_pythonhashseed():
     """The aggregator's per-cell RNG seed must be stable across
     Python processes / PYTHONHASHSEED values / OSes. The earlier

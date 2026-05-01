@@ -413,7 +413,7 @@ if bench_path.exists():
 # `_ord(...)` and are reported as warnings only, while range / interval
 # checks stay as hard errors and gate the build by default.
 #
-# To restore the previous report-only behaviour for local debugging,
+# To restore the previous report-only behavior for local debugging,
 # export STRICT_VALIDATION=0. The canonical configuration is strict.
 import os as _os
 import json as _json

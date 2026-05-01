@@ -65,7 +65,7 @@ All models are imported from the backend (`backend/src/models/`):
   `FORECAST_METHOD`. Yield/supply forecasting always uses Holt's
   linear via `query_yield` (`pirag.mcp.tools.yield_query`).
 - **SLCA**: 4-component Social Life-Cycle Assessment
-  (Carbon, Labour, Resilience, Price transparency)
+  (Carbon, Labor, Resilience, Price transparency)
 - **Policy**: Contextual softmax policy with weight matrix
   Theta of shape (3 actions x 10 features) and Bollinger volatility
   regime tilt. The 5-dimensional institutional context vector psi has

@@ -202,7 +202,7 @@ def main() -> None:
     # any quantified uncertainty. We now run STRESS_N_SEEDS seeds per
     # cell (default 5) and report mean delta, std, and Clopper-Pearson
     # 95 % CI on the pass proportion. Set STRESS_N_SEEDS=1 to recover
-    # the old single-seed behaviour for fast iteration.
+    # the old single-seed behavior for fast iteration.
     n_seeds = max(1, int(os.environ.get("STRESS_N_SEEDS", "5")))
     seed_list = [42 + 13 * i for i in range(n_seeds)]
 
@@ -231,7 +231,7 @@ def main() -> None:
             stressed_by_seed: Dict[int, Dict[str, Dict[str, float]]] = {}
             for seed in seed_list:
                 # Re-seed the perturbation RNG per-seed so each (scenario,
-                # stressor, seed) gets independent perturbation realisations.
+                # stressor, seed) gets independent perturbation realizations.
                 cell_rng = np.random.default_rng(abs(hash((scenario, stressor, seed))) % (2**32))
                 if stressor == "mcp_fault_injection":
                     stressed_df = scenario_df
