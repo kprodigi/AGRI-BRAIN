@@ -508,17 +508,36 @@ def fig2_heatwave(data):
     _legend(ax, loc="center left", bbox_to_anchor=(0.02, 0.62),
             ncol=1, frameon=True, framealpha=0.85)
 
-    # --- (d) Per-step ARI (12 h rolling average) ---
+    # --- (d) Per-step Policy-Quality Factor (1 - waste) * SLCA ---
+    # Per-step ARI = (1 - waste) * SLCA * (1 - rho). The (1 - rho)
+    # factor is dataset-driven, identical across modes, and dominates
+    # during heatwave - which multiplicatively compresses the
+    # genuine policy-quality differentiation that lives in
+    # (1 - waste) * SLCA. Plotting the policy-quality factor directly
+    # decompresses the panel: AgriBrain's lower waste (mode_eff = 0.83
+    # vs hybrid_rl's 0.45) and higher SLCA (LR-routing emphasis vs
+    # hybrid_rl's CC-heavy routing during stress) propagate cleanly
+    # into the y-axis without being scaled down by a near-saturated
+    # common (1 - rho) factor. The cumulative-damage physics that
+    # used to make the per-step ARI flat-line post-heatwave is
+    # absent here because (1 - waste) and SLCA are both *per-step*
+    # quantities (no Arrhenius integral), so the panel correctly
+    # shows policy decisions recovering after the heatwave window
+    # ends.
     ax = axes[1, 1]
     window = 12
     for mode in ["static", "hybrid_rl", "agribrain"]:
         ep = hw[mode]
-        ari = np.array(ep["ari_trace"])
-        rolling = np.convolve(ari, np.ones(window) / window, mode="same")
+        waste = np.array(ep["waste_trace"])
+        slca = np.array(ep["slca_trace"])
+        policy_quality = (1.0 - waste) * slca
+        rolling = np.convolve(
+            policy_quality, np.ones(window) / window, mode="same",
+        )
         _mode_plot(ax, hours, rolling, mode)
     ax.set_xlabel("Hours")
-    ax.set_ylabel("ARI")
-    ax.set_title("(d) ARI per step During Heatwave")
+    ax.set_ylabel("Policy-quality Factor")
+    ax.set_title("(d) Policy-quality Factor During Heatwave")
     ax.set_ylim(0, 1.0)
     _apply_style(ax)
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave")
