@@ -1583,9 +1583,23 @@ def fig7_ablation(data):
     # Bumped per-element font sizes for fig7 — the previous +3-tick /
     # +4-title bumps still read small against the 24-inch figure width
     # at paper scale, so each tier moves up another 2 points to land
-    # the title at 25pt, axis at 22pt, ticks at 20pt, legend at 19pt.
+    # the title at 25pt, axis at 20pt (matched to ticks), ticks at
+    # 20pt, legend at 19pt.
+    #
+    # 2026-04 fix: y-axis title size is matched to the x-axis tick
+    # label size (both 20pt) per the user's "match all y-axis titles
+    # to x-axis title size" request. fig7 has no explicit x-axis
+    # title, so the x-axis text the reader sees is the rotated tick
+    # labels (Heatwave / Overproduction / Cyber Outage / Price
+    # Volatility); matching the y-axis title to those keeps the two
+    # axes' lettering at the same visual weight. The previous +5
+    # axis bump put the y-axis title at 22pt, which already exceeded
+    # the tick label size, but it was being silently overridden back
+    # to AXIS_LABEL_SIZE = 17 by _apply_style further below. The
+    # re-apply line after _apply_style fixes that override AND
+    # cements the new 20pt match.
     _F7_TITLE = SUBPLOT_TITLE_SIZE + 6   # 25
-    _F7_AXIS  = AXIS_LABEL_SIZE + 5      # 22
+    _F7_AXIS  = TICK_FONT_SIZE + 5       # 20 (matches _F7_TICK)
     _F7_TICK  = TICK_FONT_SIZE + 5       # 20
     _F7_LEG   = LEGEND_FONT_SIZE + 4     # 19
 
@@ -1622,6 +1636,17 @@ def fig7_ablation(data):
         for lbl in ax.get_yticklabels():
             lbl.set_fontsize(_F7_TICK)
             lbl.set_fontweight("bold")
+        # Re-apply the y-axis title size after _apply_style. Without
+        # this, _apply_style.set_size(AXIS_LABEL_SIZE) silently
+        # overrides the _F7_AXIS=20 we just set above and the
+        # rendered y-axis title falls back to the canonical 17pt -
+        # which is why the previous fig7 panels showed the y-axis
+        # title visibly smaller than the x-axis tick labels even
+        # though the source code claimed it was larger. The
+        # re-apply mirrors what is already done for the x/y tick
+        # labels above.
+        ax.yaxis.label.set_size(_F7_AXIS)
+        ax.yaxis.label.set_weight("bold")
 
     # All eight modes in a single row, sitting tight under the bars.
     handles, labels = axes[0].get_legend_handles_labels()
