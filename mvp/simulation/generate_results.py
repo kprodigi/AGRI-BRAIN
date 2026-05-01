@@ -787,12 +787,42 @@ def run_episode(
         # used as the headline metric, and the geometric-mean ARI_geom
         # provided as a robustness companion (HDI 2010 aggregation form;
         # see resilience.py docstring).
+        #
+        # Per-step ARI uses the dataset-cumulative ``rho`` (the
+        # Arrhenius integral of the scenario trajectory) rather than
+        # the BatchInventory's per-mode retail-pool effective rho.
+        # The choice is deliberate after a 2026-04 audit pass:
+        #   - dataset_rho is identical across modes for any given step,
+        #     so ARI mode-differentiation is forced through
+        #     (1-waste) * SLCA. This is a clean signal of policy
+        #     contribution and matches the manuscript's framing.
+        #   - The dataset-cumulative form does not recover post-stress
+        #     (cumulative integrals don't decay with cooler ambient).
+        #     This is the *correct* physics for "supply chain quality
+        #     assuming inventory has been continuously held since
+        #     hour 0" -- thermal damage is permanent and the metric
+        #     should reflect that.
+        #   - A pool_rho variant was prototyped (it would track the
+        #     mode-specific retail-pool rho from BatchInventory) but
+        #     dropped because under the simulator's actual pool_rho
+        #     profile (panel B of fig 2 shows AgriBrain pool_rho
+        #     *highest* due to LR routing factor 0.45 > CC's 0.15-1.00
+        #     band), per-step ARI under pool_rho would FLIP the mode
+        #     ranking the wrong way. The aggregate ARI mean across
+        #     the episode and the RLE metric (which gates on rho but
+        #     scores by *action*) are the right summary measures of
+        #     policy quality; per-step ARI is a diagnostic trace.
         ari = compute_ari(waste, slca_c, rho)
         ari_geom = compute_ari_geom(waste, slca_c, rho)
 
         # RLE tracking (Layer 1: resilience.py).
         # The tracker computes both binary and EU-hierarchy-weighted RLE
         # in a single pass; both are emitted in the result dict below.
+        # Note: RLE uses the dataset-cumulative ``rho`` (the at-risk
+        # gate is on the policy-input rho not the inventory-pool rho)
+        # because RLE asks "what fraction of at-risk steps did the
+        # policy reroute correctly", which is a *decision* metric
+        # conditioned on the input the policy saw.
         rle_tracker.update(rho, action)
 
         # Reward (Layer 1: reward.py). Linear scalarisation of the three

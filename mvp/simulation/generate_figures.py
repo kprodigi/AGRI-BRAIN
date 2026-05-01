@@ -399,11 +399,16 @@ def fig2_heatwave(data):
     for lbl in ax2.get_yticklabels():
         lbl.set_fontweight("bold")
     ax2.set_ylim(40, 100)
-    _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave", ypos=0.55)
+    # "Heatwave" annotation moved downward (ypos=0.45 -> sits in the
+    # lower band of the heatwave window so it does not overlap the
+    # temperature peak line); legend nudged right of centre so the
+    # combined Temperature / Safe-storage / RH labels don't sit
+    # directly above the rising heatwave temperature curve.
+    _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave", ypos=0.45)
     h1, l1 = ax.get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()
     _legend(ax, handles=h1 + h2, labels=l1 + l2,
-            loc="lower center", framealpha=0.80)
+            loc="lower right", framealpha=0.80)
 
     # --- (b) Effective spoilage risk per method (batch-FIFO) ---
     # The environmental rho trace (Arrhenius-from-temperature) is
@@ -444,7 +449,7 @@ def fig2_heatwave(data):
         _mode_plot(ax, hours, eff, mode)
     ax.axhline(RLE_THRESHOLD, color=WINDOW_COLOR, linestyle="--",
                linewidth=1.6, alpha=0.85,
-               label=f"At-risk threshold (\u03c1={RLE_THRESHOLD:.2f})")
+               label="At-risk threshold")
     ax.set_xlabel("Hours")
     ax.set_ylabel("Spoilage Risk")
     ax.set_title("(b) Spoilage Risk Trajectory")
@@ -496,7 +501,12 @@ def fig2_heatwave(data):
     ax.set_ylim(0, 1.0)
     _apply_style(ax)
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave", ypos=0.45)
-    _legend(ax, loc="center right", ncol=1, frameon=True, framealpha=0.85)
+    # Legend moved from "center right" to a left-of-centre, slightly-
+    # above-centre anchor so it sits over the Local Redist. band
+    # (which is the dominant area in the centre of the plot) without
+    # covering the AgriBrain rho-threshold annotations on the right.
+    _legend(ax, loc="center left", bbox_to_anchor=(0.02, 0.62),
+            ncol=1, frameon=True, framealpha=0.85)
 
     # --- (d) Per-step ARI (12 h rolling average) ---
     ax = axes[1, 1]
