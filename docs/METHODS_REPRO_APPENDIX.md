@@ -75,15 +75,20 @@ REPRO_RUN_CONTEXT_BENCHMARK=true python mvp/simulation/reproduce_core.py
   - Mann-Whitney U p-value (unpaired comparisons against `static`,
     `hybrid_rl`, `no_pinn`, `no_slca` whose mode_seeds are independent
     of the agribrain ablation_seed).
-  - Percentile bootstrap with 10,000 resamples for mean / mean-diff CI.
-    Per-cell RNG seed `hash((scope, scenario, mode, metric))` so
-    adjacent cells have independent Monte Carlo error.
+  - BCa bootstrap (Efron 1987) with 10,000 resamples for mean /
+    mean-diff CI, with percentile fallback when the BCa correction
+    is mathematically undefined (all-equal replicates, or scipy
+    unavailable). Per-cell RNG seed
+    `blake2b((scope, scenario, mode, metric))` so adjacent cells
+    have independent Monte Carlo error and the seed is stable
+    across PYTHONHASHSEED / process / OS boundaries.
 - Reported statistics per metric:
-  - paired or unpaired mean difference (matches the design of the
-    comparison; `is_paired_design` flag in each record names the choice)
-  - 95 % percentile bootstrap CI for the mean difference
-  - 95 % percentile bootstrap CI for the effect size itself
-    (`effect_size_ci_low/high`)
+  - paired mean difference (all five baselines now share the
+    scenario trajectory and are paired; the
+    `is_paired_design` flag is True on every record)
+  - 95 % BCa bootstrap CI for the mean difference
+  - 95 % BCa bootstrap CI for the effect size itself
+    (`effect_size_ci_low/high`, `effect_size_ci_method = "BCa"`)
   - p-value from the test appropriate to the design (Wilcoxon for
     paired, Mann-Whitney for unpaired); `test_type` field documents
     which test was used per comparison

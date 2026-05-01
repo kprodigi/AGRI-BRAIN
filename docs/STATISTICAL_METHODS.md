@@ -20,31 +20,53 @@ manuscript text should describe these as "the analysis specified in
 
 ## Paired vs unpaired comparisons
 
-The simulator's seed plumbing assigns the same `ablation_seed` to all
-context-aware modes (`agribrain`, `no_context`, `mcp_only`, `pirag_only`,
-and the §4.7 ablation variants) so they share the per-step environmental
-realisation. Comparisons against these baselines are therefore **paired**.
+Every (mode, scenario) seed shares the **same scenario trajectory**
+(same `df_scenario`, `scenario_rng`, ambient temperature/RH/inventory
+time-series) by construction in `generate_results.run_all`. What
+differs across modes within a scenario is (a) the per-mode policy-
+temperature draw (Source 8, σ=0.25 in log-space) and (b) for non-
+`_AGRIBRAIN_LOGIT_MODES` modes, the ablation-seed integer used for
+the policy-internal RNG.
 
-Comparisons against `static`, `hybrid_rl`, `no_pinn`, `no_slca` use
-**independent** mode seeds for the comparator arm, so paired statistics
-do not apply. The aggregator selects the test type per comparison based
-on this design, recording the choice in the `is_paired_design` and
-`test_type` fields of every comparison record.
+Wilcoxon signed-rank and other paired tests pair on **shared scenario
+trajectory**, not on shared ablation-seed integer. Within-pair
+correlation comes from the common environmental realisation, which is
+the dominant noise source. Treating any baseline as unpaired wastes
+that within-seed correlation and produces conservatively-loose
+p-values. The post-2026-04 audit therefore extended pairing to **all
+five baselines** (`no_context`, `mcp_only`, `pirag_only`, `static`,
+`hybrid_rl`); the aggregator's `_PAIRED_BASELINES` set carries this
+union and the `is_paired_design` field is set to `True` on every
+record.
+
+The reported `cohens_dz` for `static`/`hybrid_rl` is therefore the
+seed-list-aligned within-pair effect size. Reviewers who prefer the
+design-independent statistic should read `cohens_d_pooled` (also
+reported on every record), which standardises by the pooled within-
+method standard deviation rather than the within-pair difference SD.
 
 ## Tests and Effect Size
 
-- **Paired comparisons (vs `no_context`, `mcp_only`, `pirag_only`, ablation variants)**:
+- **Paired comparisons (all five baselines: `no_context`, `mcp_only`,
+  `pirag_only`, `static`, `hybrid_rl`)**:
   - Wilcoxon signed-rank test (SciPy `wilcoxon` with `zsplit` tie handling).
   - Paired effect size `cohens_dz`.
-  - 10,000-resample percentile bootstrap CI for both the mean difference
-    and the effect size.
-- **Unpaired comparisons (vs `static`, `hybrid_rl`, `no_pinn`, `no_slca`)**:
+  - Canonical effect size `cohens_d_pooled` reported alongside.
+  - 10,000-resample BCa bootstrap CI (Efron 1987) for both the mean
+    difference and both effect-size statistics. When the BCa
+    correction is mathematically undefined (e.g. all bootstrap
+    replicates equal the point estimate, or scipy.special.ndtri is
+    unavailable) the routine falls back to the plain percentile
+    method and increments a per-call counter so the aggregator's
+    `_meta.bca_fallback_stats.fallback_rate` field surfaces the
+    fraction of cells that fell back from BCa.
+- **Unpaired path** (retained for `no_pinn`, `no_slca` which don't
+  participate in the canonical paired family per `_PAIRED_BASELINES`):
   - Mann-Whitney U test.
   - Pooled effect size `cohens_d_pooled`.
-  - 10,000-resample independent-arm percentile bootstrap CI for both
-    the mean difference and the effect size.
+  - Same BCa bootstrap CI structure (independent-arm resampling).
 - **Effect-size CIs are reported in every record** (`effect_size_ci_low`,
-  `effect_size_ci_high`).
+  `effect_size_ci_high`, `effect_size_ci_method = "BCa"`).
 - **Hedges' g** small-sample correction (`hedges_g`) is reported alongside
   Cohen's d for transparency. With n=20 the correction is approximately
   0.987.
@@ -52,10 +74,14 @@ on this design, recording the choice in the `is_paired_design` and
   recorded for paired comparisons so the two test bases can be
   compared. The Wilcoxon p-value is the canonical `p_value`.
 
-Bootstrap CIs in this implementation use the percentile method with
-10,000 resamples and per-cell deterministic seeds derived from
-`hash((scope, scenario, mode, metric))` so adjacent cells have
-independent Monte Carlo error.
+Bootstrap CI seeds. Per-cell deterministic seeds are derived from
+`blake2b((scope, scenario, mode, metric))` (a 32-bit BLAKE2b digest
+of the canonical-string-joined cell key). The earlier
+`hash((scope, *cell_key))` derivation was PYTHONHASHSEED-randomised
+by default, so two HPC runs in different processes produced
+different bootstrap samples for the same cell. The blake2b digest is
+purely deterministic and gives the same 32-bit seed across processes,
+operating systems, and Python versions.
 
 ## Multiple Testing Control
 

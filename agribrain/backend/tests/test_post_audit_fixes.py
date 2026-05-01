@@ -419,6 +419,37 @@ def test_hierarchy_weight_step_recovers_with_zero_halfwidth():
                             halfwidth=0.0) == 0.00
 
 
+def test_cell_seed_deterministic_across_pythonhashseed():
+    """The aggregator's per-cell RNG seed must be stable across
+    Python processes / PYTHONHASHSEED values / OSes. The earlier
+    implementation used Python's built-in ``hash()`` which is
+    PYTHONHASHSEED-randomised by default for str / tuple inputs, so
+    two HPC runs in different processes produced different bootstrap
+    samples for the same cell. This test pins the new
+    ``hashlib.blake2b`` derivation that removes the dependency on
+    PYTHONHASHSEED.
+
+    Pinned values are computed once with the post-fix code and
+    encoded here. If the seed derivation algorithm ever changes
+    (e.g. different hash function or canonicalisation), this test
+    fails before the change reaches HPC and a downstream consumer
+    that depends on the pinned seed gets advance notice.
+    """
+    SIM_BENCH = Path(__file__).resolve().parents[3] / "mvp" / "simulation" / "benchmarks"
+    sys.path.insert(0, str(SIM_BENCH))
+    from aggregate_seeds import _cell_seed
+    # Stability pin: BLAKE2b digest of the canonical-string-joined
+    # ("bootstrap_ci", "heatwave", "agribrain", "ari") cell key.
+    expected = 732674068
+    assert _cell_seed("bootstrap_ci", ("heatwave", "agribrain", "ari")) == expected
+    # Different keys must produce different seeds (collision check
+    # at the smallest cell-key delta).
+    assert _cell_seed("bootstrap_ci", ("heatwave", "agribrain", "rle")) != expected
+    assert _cell_seed("bootstrap_ci", ("heatwave", "static", "ari")) != expected
+    assert _cell_seed("bootstrap_ci", ("baseline", "agribrain", "ari")) != expected
+    assert _cell_seed("bootstrap_diff_ci", ("heatwave", "agribrain", "ari")) != expected
+
+
 def test_context_modes_aligned_across_simulator_and_coordinator():
     """Pin the 2026-04 single-source-of-truth alignment: the
     coordinator's ``_CONTEXT_MODES`` set must equal the simulator's

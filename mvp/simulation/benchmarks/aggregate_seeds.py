@@ -110,15 +110,28 @@ seed_dir = _SCRIPT_DIR / "results" / "benchmark_seeds"
 def _cell_seed(scope: str, cell_key: tuple) -> int:
     """Deterministic but cell-keyed RNG seed.
 
-    Implementation note: 2025-04 cell-correlation fix.
+    Implementation note: 2025-04 cell-correlation fix +
+    2026-04 cross-process reproducibility fix.
+
     Previous revisions used a constant seed (42, 24, 123) for every
     bootstrap and permutation call, which made adjacent (scenario, mode,
     metric) cells share the same resample sequence and therefore have
-    correlated bootstrap noise. We now derive a 32-bit seed from
-    hash((scope, *cell_key)) so each cell gets independent resampling
-    while remaining fully reproducible run-to-run.
+    correlated bootstrap noise. The 2025-04 fix derived a 32-bit seed
+    from ``hash((scope, *cell_key))`` so each cell got independent
+    resampling. The 2026-04 fix replaced ``hash()`` with
+    ``hashlib.blake2b()``: Python's built-in ``hash()`` is
+    PYTHONHASHSEED-randomised by default for str / bytes / tuple
+    inputs, so two HPC runs in different Python processes (or the
+    same process with different PYTHONHASHSEED) produced different
+    bootstrap samples for the same cell - silently breaking the
+    "fully reproducible run-to-run" claim this docstring made. The
+    blake2b digest is purely deterministic and gives the same 32-bit
+    seed across processes / OSes / Python versions.
     """
-    return abs(hash((scope, *cell_key))) % (2**32)
+    import hashlib
+    payload = "::".join((scope,) + tuple(str(p) for p in cell_key))
+    digest = hashlib.blake2b(payload.encode("utf-8"), digest_size=4).digest()
+    return int.from_bytes(digest, byteorder="big")
 
 
 def bootstrap_ci(vals, n_boot=10_000, alpha=0.05, cell_key=("global",)):
@@ -501,9 +514,17 @@ def _bca_quantiles(boots: np.ndarray, theta_hat: float,
 
     Falls back to the plain percentile method when the acceleration or
     bias-correction terms cannot be estimated (rare; happens when all
-    bootstrap replicates equal theta_hat exactly).
+    bootstrap replicates equal theta_hat exactly). Increments the
+    module-level ``_BCA_STATS`` counters on each fallback path so the
+    aggregator's _meta block surfaces a non-zero ``fallback_rate``
+    when the effect-size BCa step degenerates - mirrors the
+    instrumentation in ``_bca_ci_from_boots``. Earlier, only the
+    mean-CI BCa path incremented the counters and the effect-size CI
+    fallbacks were silent, which under-reported the published
+    fallback_rate value.
     """
     from math import erf, sqrt
+    _BCA_STATS["calls"] += 1
     n_boot = len(boots)
     if n_boot < 2:
         return float(theta_hat), float(theta_hat)
@@ -512,6 +533,7 @@ def _bca_quantiles(boots: np.ndarray, theta_hat: float,
     p0 = float(np.mean(boots < theta_hat))
     if p0 <= 0.0 or p0 >= 1.0:
         # All bootstrap values on one side of theta_hat -> percentile fallback
+        _BCA_STATS["fallback_p0_degenerate"] += 1
         return (float(np.quantile(boots, alpha / 2)),
                 float(np.quantile(boots, 1 - alpha / 2)))
 
@@ -523,6 +545,7 @@ def _bca_quantiles(boots: np.ndarray, theta_hat: float,
     try:
         z0 = _phi_inv(p0)
     except Exception:
+        _BCA_STATS["fallback_scipy_unavailable"] += 1
         return (float(np.quantile(boots, alpha / 2)),
                 float(np.quantile(boots, 1 - alpha / 2)))
 
@@ -601,6 +624,16 @@ def benjamini_hochberg(p_values: dict[str, float]) -> dict[str, float]:
 
     Controls the false discovery rate at alpha. Preserves input keys.
     Returns each key's BH-adjusted p-value. Order-independent in the output.
+
+    Implementation note: post-2026-04 propagation-bug fix. The earlier
+    body used ``prev = q`` after the clip-to-[0, 1] step, which left
+    ``prev`` carrying the unclipped pre-clip ``q`` from the previous
+    iteration when ``p * m / i > 1``. BY-FDR (above) correctly used
+    ``prev = adjusted[k]`` so the propagated bound is the clipped
+    value. Asymmetry between the two FDR routines was confusing for
+    a maintainer reading the code; switched BH to the same
+    ``prev = adjusted[k]`` idiom so both functions track the same
+    monotonic-in-rank step-up envelope.
     """
     keys = list(p_values.keys())
     m = len(keys)
@@ -613,7 +646,7 @@ def benjamini_hochberg(p_values: dict[str, float]) -> dict[str, float]:
         i = m - rank_rev + 1
         q = min(prev, (p * m) / max(i, 1))
         adjusted[k] = float(min(max(q, 0.0), 1.0))
-        prev = q
+        prev = adjusted[k]
     return adjusted
 
 
