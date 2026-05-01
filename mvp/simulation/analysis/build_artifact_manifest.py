@@ -41,14 +41,32 @@ def _sha256(path: Path) -> str:
 def main() -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     include = []
-    for p in sorted(RESULTS_DIR.glob("*")):
+    # Recursive glob so the manifest also covers per-seed dumps
+    # (benchmark_seeds/*/seed_*.json) and per-step audit-trail
+    # ledgers (decision_ledger/*.jsonl). The earlier non-recursive
+    # ``RESULTS_DIR.glob("*")`` skipped both subdirectories
+    # entirely, so verify_manifest.py --strict-commit could not
+    # detect tampering of the per-seed evidence the manuscript
+    # cites. Filter out hidden files and any files inside
+    # ``__pycache__`` regardless of nesting depth.
+    for p in sorted(RESULTS_DIR.rglob("*")):
         if not p.is_file():
             continue
-        if p.name.startswith("."):
+        # Skip dotfiles (.gitkeep etc.) and any path component that
+        # starts with "." (covers .ipynb_checkpoints / .pytest_cache).
+        if any(part.startswith(".") for part in p.relative_to(RESULTS_DIR).parts):
             continue
+        if "__pycache__" in p.parts:
+            continue
+        # Manifest path is the relative POSIX path so the JSON is
+        # platform-stable (Windows backslashes never reach the
+        # serialized output). The verify_manifest.py reader joins
+        # this against RESULTS_DIR using Path() which is
+        # cross-platform.
+        rel = p.relative_to(RESULTS_DIR).as_posix()
         include.append(
             {
-                "file": p.name,
+                "file": rel,
                 "bytes": p.stat().st_size,
                 "sha256": _sha256(p),
             }

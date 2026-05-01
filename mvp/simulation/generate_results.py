@@ -349,8 +349,29 @@ def apply_scenario(df: pd.DataFrame, name: str, policy: Policy,
 # ---------------------------------------------------------------------------
 # Single episode runner (orchestration only — calls Layer 1 models)
 # ---------------------------------------------------------------------------
-_PINN_MODES = {"agribrain", "no_slca", "no_context", "mcp_only", "pirag_only"}
-"""Modes that use PINN-enhanced spoilage prediction."""
+_PINN_MODES = {
+    # Core context-active modes that exercise PINN.
+    "agribrain", "no_slca", "no_context", "mcp_only", "pirag_only",
+    # 2026-04 single-source-of-truth pass: all §4.7 ablation modes
+    # are agribrain variants and must run with the SAME PINN spoilage
+    # path so the §4.7 contrast measures the variable under test
+    # (cold-start REINFORCE init, prior-perturbation magnitude,
+    # SLCA bonus zeroing, THETA perturbation) and NOT a
+    # confounded-with-PINN difference. Earlier this set excluded the
+    # variants which silently routed them through plain Arrhenius
+    # while agribrain ran with PINN, conflating the §4.7 ablation
+    # axis with the PINN axis.
+    "agribrain_cold_start",
+    "agribrain_pert_10", "agribrain_pert_25", "agribrain_pert_50",
+    "agribrain_pert_10_static", "agribrain_pert_25_static",
+    "agribrain_pert_50_static",
+    "agribrain_no_bonus",
+    "agribrain_theta_pert_10", "agribrain_theta_pert_25",
+    "agribrain_theta_pert_50",
+}
+"""Modes that use PINN-enhanced spoilage prediction. Aligned to
+``_CONTEXT_ENABLED_MODES`` and ``_AGRIBRAIN_LOGIT_MODES`` so the
+three sets always include the same core + §4.7 ablation modes."""
 
 
 def run_episode(

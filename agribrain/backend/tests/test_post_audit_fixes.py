@@ -419,6 +419,64 @@ def test_hierarchy_weight_step_recovers_with_zero_halfwidth():
                             halfwidth=0.0) == 0.00
 
 
+def test_context_modes_aligned_across_simulator_and_coordinator():
+    """Pin the 2026-04 single-source-of-truth alignment: the
+    coordinator's ``_CONTEXT_MODES`` set must equal the simulator's
+    ``_CONTEXT_ENABLED_MODES`` set. Earlier divergence (coordinator
+    missing the seven 2026-04 sensitivity-mode variants) caused an
+    AssertionError at the context-evaluator path on any HPC run that
+    exercised those modes."""
+    AGRI_BACKEND = Path(__file__).resolve().parents[1].parent / "agribrain" / "backend"
+    sys.path.insert(0, str(AGRI_BACKEND))
+    SIM_DIR = Path(__file__).resolve().parents[3] / "mvp" / "simulation"
+    sys.path.insert(0, str(SIM_DIR))
+    from src.agents.coordinator import _CONTEXT_MODES as coord_modes
+    from generate_results import _CONTEXT_ENABLED_MODES as sim_modes
+    assert coord_modes == sim_modes, (
+        f"coordinator._CONTEXT_MODES != generate_results._CONTEXT_ENABLED_MODES. "
+        f"In coordinator only: {coord_modes - sim_modes}. "
+        f"In simulator only: {sim_modes - coord_modes}. "
+        f"Both sets must match - the coordinator's "
+        f"`assert self._step_mode in _CONTEXT_MODES` will AssertionError "
+        f"during HPC for any mode in `sim_modes - coord_modes`."
+    )
+
+
+def test_pinn_modes_includes_section_47_ablations():
+    """Pin that ``_PINN_MODES`` covers all §4.7 ablation modes
+    (agribrain_cold_start, agribrain_pert_*, agribrain_pert_*_static,
+    agribrain_no_bonus, agribrain_theta_pert_*). Earlier this set
+    excluded those variants, which silently routed them through
+    plain Arrhenius spoilage while agribrain ran with PINN -
+    conflating the §4.7 contrast (cold-start / perturbation /
+    bonus / theta) with the PINN axis."""
+    SIM_DIR = Path(__file__).resolve().parents[3] / "mvp" / "simulation"
+    sys.path.insert(0, str(SIM_DIR))
+    from generate_results import _PINN_MODES, _CONTEXT_ENABLED_MODES
+    section_47_variants = {
+        "agribrain_cold_start",
+        "agribrain_pert_10", "agribrain_pert_25", "agribrain_pert_50",
+        "agribrain_pert_10_static", "agribrain_pert_25_static",
+        "agribrain_pert_50_static",
+        "agribrain_no_bonus",
+        "agribrain_theta_pert_10", "agribrain_theta_pert_25",
+        "agribrain_theta_pert_50",
+    }
+    missing = section_47_variants - _PINN_MODES
+    assert not missing, (
+        f"_PINN_MODES is missing §4.7 ablation modes: {missing}. "
+        f"These variants must run on the same PINN spoilage path as "
+        f"the agribrain baseline so the ablation contrast measures "
+        f"the variable under test, not a confounded-with-PINN "
+        f"difference."
+    )
+    # Sanity: every §4.7 variant is also in _CONTEXT_ENABLED_MODES.
+    missing_ctx = section_47_variants - _CONTEXT_ENABLED_MODES
+    assert not missing_ctx, (
+        f"_CONTEXT_ENABLED_MODES is missing: {missing_ctx}"
+    )
+
+
 def test_companion_metrics_are_retired():
     """Pin the 2026-04 single-version-of-the-truth pass: the three
     companion metrics (compute_ari_geom, compute_rle_uniform,

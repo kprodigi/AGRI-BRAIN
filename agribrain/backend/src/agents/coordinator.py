@@ -32,14 +32,43 @@ from ..models.action_selection import select_action
 
 _log = logging.getLogger(__name__)
 
-# Context modes that enable MCP/piRAG infrastructure
+# Context modes that enable MCP/piRAG infrastructure.
+#
+# 2026-04 single-source-of-truth pass: this set must stay aligned
+# with ``_CONTEXT_ENABLED_MODES`` in mvp/simulation/generate_results.py
+# (the simulator's authoritative list). Earlier the two sets had
+# drifted - the coordinator's set was missing the seven 2026-04
+# ablation variants (agribrain_no_bonus, agribrain_pert_*_static,
+# agribrain_theta_pert_*) which made
+# ``assert self._step_mode in _CONTEXT_MODES`` at the
+# context-evaluator code path AssertionError out on any HPC run that
+# exercised those modes.
+#
+# The full set is defined here authoritatively because coordinator.py
+# is imported very early in the pirag stack and pulling from
+# generate_results would create a circular dependency. Both sides
+# carry the same enumeration; tests/test_post_audit_fixes.py pins
+# the equality so any future divergence fails CI before reaching
+# HPC.
 _CONTEXT_MODES = {
     "agribrain", "mcp_only", "pirag_only",
-    # Paper §4.7 ablation modes: zero-init REINFORCE + three perturbation
-    # strengths of the hand-calibrated prior. They share agribrain's full
-    # context pipeline; only the THETA_CONTEXT initialization differs.
+    # Paper §4.7 ablation modes: zero-init REINFORCE + three
+    # perturbation strengths of the hand-calibrated prior. They share
+    # agribrain's full context pipeline; only the THETA_CONTEXT
+    # initialization differs.
     "agribrain_cold_start",
     "agribrain_pert_10", "agribrain_pert_25", "agribrain_pert_50",
+    # 2026-04 sensitivity-mode additions: paired _static variants
+    # (REINFORCE off so theta is the perturbed prior throughout the
+    # episode), agribrain_no_bonus (SLCA bonus zeroed), and
+    # theta_pert variants (THETA matrix perturbed). All share the
+    # full context channel; they differ in policy hyperparameters,
+    # not in the dispatch pipeline.
+    "agribrain_pert_10_static", "agribrain_pert_25_static",
+    "agribrain_pert_50_static",
+    "agribrain_no_bonus",
+    "agribrain_theta_pert_10", "agribrain_theta_pert_25",
+    "agribrain_theta_pert_50",
 }
 
 # Map operating mode to context_mode parameter for feature masking. Cold-
@@ -53,6 +82,13 @@ _CONTEXT_MODE_MAP = {
     "agribrain_pert_10": "full",
     "agribrain_pert_25": "full",
     "agribrain_pert_50": "full",
+    "agribrain_pert_10_static": "full",
+    "agribrain_pert_25_static": "full",
+    "agribrain_pert_50_static": "full",
+    "agribrain_no_bonus": "full",
+    "agribrain_theta_pert_10": "full",
+    "agribrain_theta_pert_25": "full",
+    "agribrain_theta_pert_50": "full",
 }
 
 # Cooperative agent overlay window (simulation hours).

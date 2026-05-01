@@ -960,6 +960,24 @@ def fig4_cyber(data):
     # the cyber-resilience capability is uniquely a property of the
     # AgriBrain edge stack rather than an artefact of metric definition.
     ax = axes[2]
+
+    def _align_to_grid(arr: np.ndarray, n_steps: int) -> np.ndarray:
+        """Pad / truncate a per-step trace to match the hour grid.
+
+        The earlier implementation tried ``locals()[arr_name] = arr``
+        in a loop to mutate three local variables, which silently
+        no-ops in CPython function scope (``locals()`` is a snapshot
+        copy, not a writable view). Replaced with this explicit
+        function that returns the corrected array - callers reassign
+        the result directly.
+        """
+        if arr.shape[0] == n_steps:
+            return arr
+        if arr.shape[0] > n_steps:
+            return arr[:n_steps]
+        pad = np.zeros(n_steps - arr.shape[0], dtype=float)
+        return np.concatenate([arr, pad])
+
     for mode in ["static", "hybrid_rl", "agribrain"]:
         ep = cy[mode]
         n_steps = len(hours)
@@ -971,16 +989,11 @@ def fig4_cyber(data):
                           dtype=float)
         # Pad / truncate to the panel's hour grid in the unlikely event
         # the per-mode trace length disagrees with hours (defensive
-        # against mid-flight regenerations).
-        for arr_name in ("coop", "physics", "fault"):
-            arr = locals()[arr_name]
-            if arr.shape[0] != n_steps:
-                if arr.shape[0] > n_steps:
-                    arr = arr[:n_steps]
-                else:
-                    pad = np.zeros(n_steps - arr.shape[0], dtype=float)
-                    arr = np.concatenate([arr, pad])
-                locals()[arr_name] = arr
+        # against mid-flight regenerations). Explicit reassignment
+        # because the previous locals()-mutation idiom was a no-op.
+        coop = _align_to_grid(coop, n_steps)
+        physics = _align_to_grid(physics, n_steps)
+        fault = _align_to_grid(fault, n_steps)
         total = coop + physics + fault
         cumulative = np.cumsum(total)
         _mode_plot(ax, hours, cumulative, mode)

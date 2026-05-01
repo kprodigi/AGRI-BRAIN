@@ -41,6 +41,31 @@ if [ "${DETERMINISTIC_MODE:-false}" = "true" ]; then
 fi
 export DETERMINISTIC_MODE=false
 
+# Enable the three anomaly-defense flags so fig 4 panel C
+# (Cumulative Anomaly Defenses Triggered) actually carries non-zero
+# defense events for AgriBrain. The coordinator gates each defense
+# on a separate policy_flags entry:
+#   FAILURE_INJECTION       -> coordinator injects MCP-tool faults
+#                              every 11h and the fault_recovery
+#                              trace records each one. without this,
+#                              fault_recovery_trace is all zeros for
+#                              every mode and panel C only shows
+#                              cooperative_veto events (firing
+#                              narrowly inside the 12-30h window).
+#   PHYSICS_CONSISTENCY_GATE -> compute_context_modifier zeros the
+#                              modifier when the retrieved-context
+#                              physics_consistency_score < 0.03 and
+#                              the physics_gate trace records each
+#                              firing. without this, the gate is
+#                              silent and physics_gate_trace stays
+#                              at zero.
+# These two are propagated into Policy.policy_flags by
+# generate_results.run_episode (see env-var read at the top of the
+# function); the coordinator reads them via obs.raw["policy_flags"]
+# during _compute_step_context.
+export FAILURE_INJECTION=true
+export PHYSICS_CONSISTENCY_GATE=true
+
 # Map array index to the canonical 20-seed list.
 SEEDS=(42 1337 2024 7 99 101 202 303 404 505 \
        606 707 808 909 1010 1111 1212 1313 1414 1515)
