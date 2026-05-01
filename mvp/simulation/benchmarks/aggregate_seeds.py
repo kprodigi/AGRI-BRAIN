@@ -66,21 +66,27 @@ EXTRA_METRICS = (
 # human-facing display name (kept identical to the legacy single-seed CSV
 # so the paper's Tables 7 and 9 and the validate_results.py row["..."]
 # reads continue to work against the 20-seed CSV).
-# Implementation note: 2025-04 instrumentation symmetry fix.
-# The previous schema used ``constraint_violation_rate`` as the public
-# constraint column. That field is computed as
-#   constraint = temp_violation OR quality_violation OR compliance_violation
-# and ``compliance_violation`` only fires for modes in _MCP_WASTE_MODES
-# (agribrain and friends). Static and hybrid_rl never invoke
-# check_compliance, so their compliance count is structurally zero,
-# which made AgriBrain look uniquely bad on the OR'd metric (~0.80 vs
-# ~0.59 for static). The asymmetry was instrumentation, not behaviour.
+# Implementation note: 2026-04 deep-audit fix (commit 1d9caf0).
+# Two coupled fixes were applied to make the per-mode constraint and
+# compliance columns symmetric across every mode:
 #
-# We now publish ``operational_violation_rate`` (temp OR quality only,
-# symmetric across every mode) as the primary "ConstraintViolationRate"
-# column, and keep the MCP-specific compliance signal under a clearly
-# named ``RegulatoryViolationRate`` column so the two axes are
-# separable without conflation.
+#  (a) ``constraint_violation_steps`` in generate_results.py is now
+#      counted only on (temp_violation OR quality_violation) — both
+#      ambient-driven, so the metric is symmetric across every mode by
+#      construction. The new ``constraint_violation_rate_is_environmental``
+#      tag in the per-episode summary makes this framing explicit.
+#  (b) ``check_compliance`` is now invoked uniformly on every step
+#      regardless of mode (previously gated on _MCP_WASTE_MODES, which
+#      pinned compliance_violation_steps to zero on static/hybrid_rl).
+#      compliance_violation_rate / regulatory_violation_rate are now
+#      directly comparable across all 8 modes.
+#
+# Schema-side: the public ``ConstraintViolationRate`` CSV column maps
+# to ``operational_violation_rate`` (temp OR quality only — same value
+# as ``constraint_violation_rate`` after fix (a), kept as a separate
+# key for backward compat with downstream tooling). The
+# ``RegulatoryViolationRate`` column maps to ``regulatory_violation_rate``
+# which is now compliance-only and uniform across all modes.
 _TABLE1_COLUMNS = (
     ("ari", "ARI"), ("rle", "RLE"), ("waste", "Waste"),
     ("slca", "SLCA"), ("carbon", "Carbon"), ("equity", "Equity"),
@@ -818,26 +824,24 @@ def main():
                 # structurally zero (static always picks cold_chain),
                 # so the RLE contrast against static is descriptive
                 # only — it measures the policy ceiling, not a
-                # comparable RLE. regulatory_violation_rate is
+                # comparable RLE. regulatory_violation_rate USED to be
                 # structurally zero for non-MCP baselines (static,
-                # hybrid_rl, no_pinn, no_slca) because they don't
-                # invoke the compliance tool — same structural-zero
-                # pattern. These should not be interpreted as
-                # falsifiable contrasts.
+                # hybrid_rl, no_pinn, no_slca) because they didn't
+                # invoke the compliance tool, but the post-2026-04
+                # deep-audit fix routes check_compliance uniformly on
+                # every step regardless of mode (commit 1d9caf0), so
+                # compliance_violation_rate / regulatory_violation_rate
+                # are now directly comparable across every mode and the
+                # descriptive_only flag for non-MCP baselines is
+                # retired. Only the static-RLE flag remains because
+                # that one is genuinely structural (static never
+                # selects a recovery action; the metric scores the
+                # *action*, not the environment).
                 if met == "rle" and baseline == "static":
                     rec["descriptive_only"] = True
                     rec["descriptive_only_reason"] = (
                         "static RLE is structurally 0 (always cold_chain); "
                         "the contrast measures policy ceiling, not RLE"
-                    )
-                if met == "regulatory_violation_rate" and baseline in (
-                    "static", "hybrid_rl", "no_pinn", "no_slca",
-                ):
-                    rec["descriptive_only"] = True
-                    rec["descriptive_only_reason"] = (
-                        f"regulatory_violation_rate is structurally 0 for "
-                        f"{baseline} (no MCP compliance tool invoked); the "
-                        f"contrast is non-falsifiable"
                     )
                 if baseline == "no_context" and met == "ari":
                     p_holm = float(primary_h1_holm.get(sc, rec["p_value"]))

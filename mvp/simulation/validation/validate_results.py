@@ -366,9 +366,19 @@ if "ConstraintViolationRate" in t1.columns:
                     f"AB <= ST; if this fires, the asymmetric instrumentation regressed."
                 )
 
-# RegulatoryViolationRate (compliance-only, structurally zero for non-MCP modes)
-# is reported but not range-checked because zero is a valid value for static
-# and hybrid_rl by construction.
+# RegulatoryViolationRate (compliance-only). Post-2026-04 deep-audit fix
+# (commit 1d9caf0) routes check_compliance uniformly on every step
+# regardless of mode, so this rate is now non-zero for static / hybrid_rl
+# / no_pinn / no_slca too — it tracks how much of the scenario's ambient
+# trajectory falls outside the FDA cold-chain envelope, which is an
+# environmental property. Range-check that the CSV value lies in [0, 1].
+for _, row in t1.iterrows():
+    rv = row.get("RegulatoryViolationRate")
+    if rv is not None and not (0.0 <= float(rv) <= 1.0):
+        errors.append(
+            f"RegulatoryViolationRate out of bounds: "
+            f"{row['Method']}/{row['Scenario']} = {rv}"
+        )
 
 # ============================================================
 # REPORT
