@@ -2018,16 +2018,19 @@ def fig9_fault_degradation():
     n_seeds_global = _fig9_load_n_seeds()
     method_means = _fig9_load_method_means() or {}
 
-    # Width-ratio rebalancing for the upcoming 5-scenario panel (c).
-    # Panel (c) currently renders 3 bars (heatwave, overproduction,
-    # cyber_outage are the only context_alignment_*.json files present),
-    # but adaptive_pricing and baseline are scheduled to be added on
-    # the next HPC run. Bumping panel (c) from 1.05 to 1.40 leaves room
-    # for the extra two bars without re-flowing the figure later. The
-    # panel-(a)/(b) shrink is small (1.10→1.00, 1.45→1.35) and does not
-    # cramp either panel — both still carry the same content density.
+    # Width-ratio rebalancing post-2026-04 user fix. Panel (a) was at
+    # 1.00 which crammed the 5x5 Cohen's-d heatmap into a panel
+    # narrow enough that the bold 20pt cell numerics ("22.5", "6.5",
+    # "1.8" etc.) overflowed adjacent cells horizontally. Bumped to
+    # 1.40 so each cell is wide enough to hold its number cleanly.
+    # Panel (b) lost its "(range ...)" annotations in the same
+    # commit, so the bar+label combo fits in a slimmer panel - cut
+    # from 1.35 to 1.20. Panel (c) lost the random-baseline dashed
+    # line, the (Nx random) multiplier text, and the n=N labels in
+    # the same commit, so it likewise fits in a slimmer slot - cut
+    # from 1.40 to 1.20. Total stays at 3.80 (was 3.75).
     fig, axes = plt.subplots(1, 3, figsize=(22, 7.5),
-                             gridspec_kw={"width_ratios": [1.00, 1.35, 1.40]})
+                             gridspec_kw={"width_ratios": [1.40, 1.20, 1.20]})
 
     # Per-element font sizes — bumped above figs 6/7/8 so the cell
     # values and bar labels read clearly at paper scale.
@@ -2107,9 +2110,15 @@ def fig9_fault_degradation():
                 # is reported in the headline below ("25/25 p<0.05") and
                 # in panel (b)'s star annotations; repeating it here mixes
                 # an effect-size encoding with a p-value encoding.
+                # Cell text reduced from _F9_TICK=20 to _F9_TICK-4=16
+                # alongside the panel-A width bump - even at the new
+                # 1.40 width ratio, 20pt bold three-character strings
+                # like "22.5" and "76.0" overflow the cell footprint.
+                # 16pt bold sits comfortably within each cell at the
+                # 22-inch figure width without losing legibility.
                 t = ax.text(j, i, f"{d:.1f}",
                             ha="center", va="center",
-                            fontsize=_F9_TICK, fontweight="bold",
+                            fontsize=_F9_TICK - 4, fontweight="bold",
                             color=txt_color)
                 t.set_path_effects([_pe.withStroke(linewidth=1.6, foreground=halo)])
 
@@ -2194,10 +2203,14 @@ def fig9_fault_degradation():
             for x_end in (v["lo"], v["hi"]):
                 ax.plot([x_end, x_end], [i - 0.18, i + 0.18],
                         color="#212121", linewidth=2.0, zorder=3)
-            # Numeric label: mean + range on the right side of each bar.
+            # Numeric label: mean only on the right side of each bar.
+            # The (range ...) annotation that used to follow was removed
+            # per user request - the min/max whiskers on the bar
+            # already convey the same per-scenario spread without
+            # duplicating it as text.
             label_x = v["hi"] + 0.5 if v["hi"] < 2.0 else v["hi"] * 1.10
             ax.text(label_x, i,
-                    f"+{v['mean']:.1f}%   (range {v['lo']:.1f}–{v['hi']:.1f}%)",
+                    f"+{v['mean']:.1f}%",
                     va="center", ha="left",
                     fontsize=_F9_ANNOT - 1, fontweight="bold", color="#212121")
 
@@ -2232,54 +2245,50 @@ def fig9_fault_degradation():
     _restyle(ax, "(b) % ARI Improvement vs Baselines")
 
     # =================================================================
-    # Panel (c) — Context honour rate (preserved from previous design)
+    # Panel (c) — Context honour rate (post-2026-04 simplification)
     # =================================================================
+    # Stripped of the random-baseline dashed line, the per-bar
+    # "(Nx random)" multiplier text, the legend, and the in-bar
+    # "n=72" sample-size labels per user request. The remaining
+    # encoding is bar height + percent label - the cleanest
+    # visualisation of "what fraction of context-active steps did
+    # the policy honour the dominant context recommendation". The
+    # random-baseline framing the previous version emphasised
+    # belongs in the methods section / caption, not in every panel
+    # render.
     ax = axes[2]
     if align_rows:
         labels = [r["label"] for r in align_rows]
         rates_pct = [100.0 * r["rate"] for r in align_rows]
-        actives = [r["honored"] + r["ignored"] for r in align_rows]
         x = np.arange(len(labels))
-        # Random baseline: 1/3 because the policy picks one of three
-        # actions (CC / LR / Recovery). A blind agent with no context
-        # signal would honour the recommendation 33% of the time on
-        # average, so any rate above this band is a real context-driven
-        # effect. Drawn first so the bars overlay it.
-        random_pct = 100.0 / 3.0
-        ax.axhline(random_pct, color="#9E9E9E", linewidth=1.4,
-                   linestyle="--", alpha=0.85, zorder=1,
-                   label=f"Random baseline ({random_pct:.0f}%)")
         ax.bar(x, rates_pct, width=0.65,
                color=COLORS.get("agribrain", "#2E7D32"),
                edgecolor="white", linewidth=0.8, alpha=0.95, zorder=2)
-        for xi, (pct, n) in enumerate(zip(rates_pct, actives)):
-            mult = pct / random_pct if random_pct > 0 else 0.0
-            # Stack two annotations above each bar: the headline rate,
-            # then the multiple-of-random in parentheses on the line
-            # below so the reader sees the effect size at a glance
-            # without doing the arithmetic against the dashed baseline.
-            ax.text(xi, pct + 5.5, f"{pct:.1f}%",
+        for xi, pct in enumerate(rates_pct):
+            ax.text(xi, pct + 2.0, f"{pct:.1f}%",
                     ha="center", va="bottom",
                     fontsize=_F9_ANNOT, fontweight="bold", color="#212121")
-            ax.text(xi, pct + 2.0, f"({mult:.1f}× random)",
-                    ha="center", va="bottom",
-                    fontsize=_F9_ANNOT - 3, fontweight="bold", color="#424242")
-            if pct >= 18:
-                ax.text(xi, pct - 3, f"n={n}", ha="center", va="top",
-                        fontsize=_F9_ANNOT - 3, fontweight="bold", color="white")
         ax.set_xticks(x)
         ax.set_xticklabels(labels, rotation=20, ha="right")
         ax.set_ylim(0, 110)
-        # Compact legend so the random-baseline reference reads as a
-        # documented statistical floor rather than an arbitrary line.
-        ax.legend(loc="upper right", fontsize=_F9_LEG - 2,
-                  framealpha=0.92, edgecolor="#9E9E9E")
     else:
         ax.text(0.5, 0.5, "no context_alignment_*.json files",
                 ha="center", va="center", transform=ax.transAxes,
                 fontsize=_F9_ANNOT, color="#616161")
+    # Y-axis title size matched to the x-axis tick label size per
+    # user request. Panel (c) has no explicit x-axis title (no
+    # set_xlabel), so the x-axis text the reader sees is the
+    # rotated tick labels; matching the y-axis title to those keeps
+    # both axes' lettering at the same visual weight. Dropping
+    # _F9_AXIS in the call below from 22 to _F9_TICK=20 + the
+    # explicit re-apply after _restyle (mirroring the fig 7 fix in
+    # commit 3feb090) ensures the rendered y-axis title actually
+    # lands at 20pt instead of being silently overridden back to
+    # AXIS_LABEL_SIZE=17 by _apply_style inside _restyle.
     _restyle(ax, "(c) Context Honour Rate",
              ylabel="Honour rate (% of active steps)")
+    ax.yaxis.label.set_size(_F9_TICK)
+    ax.yaxis.label.set_weight("bold")
 
     fig.suptitle("Performance Gain over Baselines and Context Honour",
                  y=0.995, fontsize=FIG_TITLE_SIZE, fontweight="bold")
