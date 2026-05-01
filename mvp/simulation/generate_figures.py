@@ -375,11 +375,11 @@ def fig2_heatwave(data):
     hours = np.array(ab["hours"])
 
     # Per-figure font-size bump for fig 2 (post-2026-04 user request).
-    # Uniform +4 across body / ticks / axis labels / subplot titles /
-    # legend / in-plot annotations and a +5 bump on the suptitle so
-    # the relative hierarchy is preserved while everything reads
-    # noticeably larger. Scoped to this function via try/finally so
-    # other figures (fig 3, fig 4, ...) keep the global constants.
+    # Uniform +1 across body / ticks / axis labels / subplot titles /
+    # suptitle / legend / in-plot annotations - a gentle bump that
+    # keeps the relative hierarchy intact while reading slightly
+    # larger. Scoped to this function via try/finally so other
+    # figures (fig 3, fig 4, ...) keep the canonical global sizes.
     global BODY_FONT_SIZE, TICK_FONT_SIZE, AXIS_LABEL_SIZE
     global SUBPLOT_TITLE_SIZE, FIG_TITLE_SIZE, LEGEND_FONT_SIZE
     global ANNOT_FONT_SIZE
@@ -388,13 +388,13 @@ def fig2_heatwave(data):
         SUBPLOT_TITLE_SIZE, FIG_TITLE_SIZE, LEGEND_FONT_SIZE,
         ANNOT_FONT_SIZE,
     )
-    BODY_FONT_SIZE = _saved_sizes[0] + 4
-    TICK_FONT_SIZE = _saved_sizes[1] + 4
-    AXIS_LABEL_SIZE = _saved_sizes[2] + 4
-    SUBPLOT_TITLE_SIZE = _saved_sizes[3] + 4
-    FIG_TITLE_SIZE = _saved_sizes[4] + 5
-    LEGEND_FONT_SIZE = _saved_sizes[5] + 4
-    ANNOT_FONT_SIZE = _saved_sizes[6] + 4
+    BODY_FONT_SIZE = _saved_sizes[0] + 1
+    TICK_FONT_SIZE = _saved_sizes[1] + 1
+    AXIS_LABEL_SIZE = _saved_sizes[2] + 1
+    SUBPLOT_TITLE_SIZE = _saved_sizes[3] + 1
+    FIG_TITLE_SIZE = _saved_sizes[4] + 1
+    LEGEND_FONT_SIZE = _saved_sizes[5] + 1
+    ANNOT_FONT_SIZE = _saved_sizes[6] + 1
     _saved_rc = {
         "font.size": plt.rcParams["font.size"],
         "axes.labelsize": plt.rcParams["axes.labelsize"],
