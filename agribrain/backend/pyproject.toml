@@ -20,6 +20,14 @@ dependencies=[
     'web3>=7.14,<8',
     'python-multipart>=0.0.22,<1',
     'pyyaml>=6.0,<7',
+    # scipy is required by aggregate_seeds.py for the Wilcoxon and
+    # Mann-Whitney significance tests. Both code paths have permutation
+    # fallbacks, but without scipy the headline AB-vs-Static and
+    # AB-vs-Hybrid-RL p-values used to silently return 1.0 from the
+    # except clause; pinning scipy here ensures the HPC venv install
+    # picks up the canonical implementation with the fallback acting
+    # as a defensive backstop rather than the primary code path.
+    'scipy>=1.11,<2',
 ]
 [build-system]
 requires=['setuptools','wheel']

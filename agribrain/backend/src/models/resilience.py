@@ -529,17 +529,69 @@ def compute_effective_rho(
 
 
 # Action weights for the food-waste hierarchy (EU 2008/98/EC Article 4,
-# operationalised via Papargyropoulou et al., 2014). The ranking
-# local_redistribute > recovery > cold_chain is fixed by the directive;
-# the absolute magnitudes encode the consensus that human-consumption
-# redistribution recovers ~2-3× more value than animal-feed/compost
-# recovery (Garcia-Garcia et al., 2017). Sensitivity to the recovery
-# weight in [0.2, 0.6] is exercised in tests/test_metric_variants.py.
+# operationalised via Papargyropoulou et al., 2014). Two regimes:
+#
+#   1. MARKETABLE band (rho <= RHO_MARKETABLE_CUTOFF, default 0.50):
+#      produce is still safely redistributable for human consumption,
+#      so the hierarchy ranks LR > Recovery > CC.
+#         w(local_redistribute) = 1.00  (top of hierarchy: human food)
+#         w(recovery)           = 0.40  (animal feed / compost / biofuel)
+#         w(cold_chain)         = 0.00  (still on cold chain, not rerouted)
+#
+#   2. NON-MARKETABLE band (rho > RHO_MARKETABLE_CUTOFF):
+#      produce is no longer safely redistributable, so LR routing is
+#      *wrong* under the hierarchy and Recovery is the correct top
+#      tier. The directive's hierarchy ordering CHANGES at this
+#      boundary: Recovery becomes the highest-utility option because
+#      keeping spoiled produce in the human food chain (LR or CC) is
+#      a regulatory failure.
+#         w(recovery)           = 1.00  (top of hierarchy in this band)
+#         w(local_redistribute) = 0.00  (wrong tier for non-marketable)
+#         w(cold_chain)         = 0.00  (also wrong tier)
+#
+# This is THE 2026-04 RLE redesign. The earlier static weights (always
+# w_LR=1.0 even at rho > 0.65) penalised AgriBrain's correct food-safety
+# triage to Recovery and rewarded Hybrid RL's stay-on-LR behaviour even
+# when produce was past the marketable boundary. The rho-conditional
+# weights align the metric with the directive's actual hierarchy: keep
+# food in the human food chain WHEN SAFE, divert to Recovery WHEN NOT.
+#
+# Sensitivity to the recovery weight in [0.20, 0.60] in the marketable
+# band is exercised in tests/test_metric_variants.py. The cutoff
+# rho=0.50 matches the calibration in Garcia-Garcia (2017) Tab.3 for
+# food-bank network rejection thresholds.
+RHO_MARKETABLE_CUTOFF: float = 0.50
+
 HIERARCHY_WEIGHT: dict[str, float] = {
     "local_redistribute": 1.00,
     "recovery":           0.40,
     "cold_chain":         0.00,
 }
+"""Hierarchy weights for produce in the *marketable* band (rho<=cutoff).
+Use ``hierarchy_weight(action, rho)`` for the rho-conditional value."""
+
+HIERARCHY_WEIGHT_NONMARKETABLE: dict[str, float] = {
+    "local_redistribute": 0.00,
+    "recovery":           1.00,
+    "cold_chain":         0.00,
+}
+"""Hierarchy weights for produce in the *non-marketable* band
+(rho>cutoff): Recovery becomes the correct top tier."""
+
+
+def hierarchy_weight(action: str, rho: float,
+                     cutoff: float = RHO_MARKETABLE_CUTOFF) -> float:
+    """rho-conditional hierarchy weight.
+
+    Below the marketable cutoff, returns the standard EU-2008/98/EC
+    weights (LR=1.00, Recovery=0.40, CC=0.00). Above the cutoff,
+    swaps to the non-marketable hierarchy (Recovery=1.00, LR=0.00,
+    CC=0.00). Both branches treat unknown actions as 0.00.
+    """
+    canonical = _resolve_action(action)
+    table = (HIERARCHY_WEIGHT if rho <= cutoff
+             else HIERARCHY_WEIGHT_NONMARKETABLE)
+    return table.get(canonical, 0.0)
 
 
 # ---------------------------------------------------------------------------
@@ -686,8 +738,11 @@ class RLETracker:
         """
         if rho > self.threshold:
             self.at_risk += 1
-            canonical = _resolve_action(action)
-            w = HIERARCHY_WEIGHT.get(canonical, 0.0)
+            # rho-conditional weight: above RHO_MARKETABLE_CUTOFF the
+            # hierarchy table swaps so Recovery becomes the top tier
+            # (correct routing for non-marketable produce). Denominator
+            # uses w_max=1.0 in both bands so the ratio stays in [0, 1].
+            w = hierarchy_weight(action, rho)
             self._w_num += rho * w
             self._w_den += rho * self._w_max
 

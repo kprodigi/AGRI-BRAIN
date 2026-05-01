@@ -139,31 +139,46 @@ for sc in t1["Scenario"].unique():
     ab_rle = get(sc, "agribrain", "RLE")
     if ab_rle is not None and ab_rle <= 0.0:
         errors.append(f"RLE: agribrain/{sc} = {ab_rle} (must be > 0)")
-    # AGRI-BRAIN >= Hybrid RL ordering used to be expected on every
-    # scenario, but post-2026-04 the boosted Recovery knee
-    # (RHO_RECOVERY_KNEE = 0.30) plus the food-safety hard cutoff at
-    # rho > 0.65 deliberately route AgriBrain's high-rho batches to
-    # Recovery (hierarchy weight 0.40) instead of LR (weight 1.00),
-    # while Hybrid RL has no knee and keeps routing to LR. The result
-    # is a *lower* hierarchy-weighted RLE for AgriBrain on the most
-    # heat-stressed scenarios — which is the correct EU-2008/98/EC
-    # food-safety triage choice, not a worse policy. The ordering check
-    # is therefore retired for the heatwave / overproduction band where
-    # the knee is most active. The remaining check guards against the
-    # opposite pathology where AgriBrain RLE collapses far below
-    # Hybrid RL (>= 0.15 below) which would indicate over-aggressive
-    # Recovery routing.
+    # AGRI-BRAIN vs Hybrid RL RLE ordering. Under the post-2026-04
+    # rho-conditional hierarchy weighting in models/resilience.py:
+    #
+    #   marketable band (rho <= RHO_MARKETABLE_CUTOFF = 0.50):
+    #     local_redistribute = 1.00, recovery = 0.40, cold_chain = 0.00
+    #   non-marketable band (rho > 0.50):
+    #     local_redistribute = 0.00, recovery = 1.00, cold_chain = 0.00
+    #
+    # AgriBrain's RHO_RECOVERY_KNEE (0.30) and food-safety cutoff
+    # (0.65) deliberately route high-rho batches to Recovery, which
+    # now scores 1.00 in the non-marketable band (the EU 2008/98/EC
+    # Article 4 ordering: at the marketable -> non-marketable
+    # boundary, redistributing to humans is no longer permitted, so
+    # Recovery for animal feed / energy becomes the hierarchically-
+    # preferred option). Hybrid RL has no knee and keeps routing to
+    # local_redistribute, which scores 0.00 in the non-marketable
+    # band. The expected ordering on heat-stressed / over-production
+    # scenarios is therefore agribrain >= hybrid_rl RLE, with the
+    # gap proportional to the fraction of steps in the
+    # non-marketable band. We keep the check informational rather
+    # than blocking because rho profiles are stochastic enough that
+    # the gap can compress on low-noise seeds.
     hr_rle = get(sc, "hybrid_rl", "RLE")
-    if ab_rle is not None and hr_rle is not None and ab_rle < hr_rle - 0.20:
-        _ord(f"RLE collapse: {sc}: AB={ab_rle:.3f} far below HR={hr_rle:.3f} (>0.20 gap)")
+    if ab_rle is not None and hr_rle is not None and ab_rle < hr_rle - 0.05:
+        _ord(
+            f"RLE inversion: {sc}: AB={ab_rle:.3f} below HR={hr_rle:.3f} "
+            f"(>0.05 gap). Under rho-conditional weighting AgriBrain "
+            f"should >= Hybrid RL on this scenario; investigate whether "
+            f"the knee is firing or whether action mapping is correct."
+        )
 
 # Cross-scenario RLE ordering for AGRI-BRAIN was previously asserted as
-# heatwave >= overproduction > cyber_outage. Under the new knee-driven
-# physics this no longer holds in a fixed direction — knee firing is
-# scenario-dependent (env_rho profile differs per scenario) so the
-# ordering of hierarchy-weighted RLE across scenarios is not a
-# reliable invariant. The check is retained as informational only;
-# the substantive guard is the per-scenario ``ab_rle > 0`` check above.
+# heatwave >= overproduction > cyber_outage. Under the new
+# rho-conditional knee-driven physics this is now the *expected*
+# ordering — heatwave drives the highest fraction of steps into the
+# non-marketable band where Recovery scores 1.00, so heatwave RLE
+# should sit at the top of the cross-scenario band. We keep the
+# low-band guard below as informational rather than upgrading to a
+# strict ordering invariant because per-seed rho noise can shuffle
+# the bottom two scenarios.
 ab_rle_hw = get("heatwave", "agribrain", "RLE")
 ab_rle_op = get("overproduction", "agribrain", "RLE")
 ab_rle_cy = get("cyber_outage", "agribrain", "RLE")

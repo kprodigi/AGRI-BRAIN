@@ -555,33 +555,62 @@ class AgentCoordinator:
                 "rho": obs.rho, "y_hat": obs.y_hat, "tau": obs.tau,
             }
 
-            # MCP tool dispatch (route through protocol for recording)
-            mcp_results = dispatch_tools(
-                active.role, obs, self._registry, self._shared_context,
-                mcp_server=self._mcp_server,
-                dispatch_config=self._step_dispatch_cfg,
-            )
-            if isinstance(obs.raw, dict):
-                flags = obs.raw.get("policy_flags", {})
-                if flags.get("enable_failure_injection", False):
-                    # Deterministic injection pattern for reproducibility.
-                    if int(hour) % 11 == 0:
-                        mcp_results["_fault_injected"] = "drop_tool_results"
-                        for tool_name in list(mcp_results.get("_tools_invoked", [])):
-                            mcp_results[tool_name] = None
+            # Structural ablation gating. Post-audit fix: previously the
+            # only difference between ``mcp_only`` and ``pirag_only`` was
+            # a feature-mask inside compute_context_modifier, which left
+            # the two modes invoking the same MCP tools and the same
+            # piRAG retrieval — producing identical action distributions
+            # and identical decision-latency in 4 of 5 scenarios. Now
+            # the *channel itself* is gated: ``pirag_only`` does not
+            # call ``dispatch_tools`` and ``mcp_only`` does not call
+            # ``retrieve_role_context``. The ablation-bias inside
+            # compute_context_modifier remains as a defensive amplifier
+            # for the cases where one channel happens to return empty.
+            _skip_mcp = (context_mode == "pirag_only")
+            _skip_rag = (context_mode == "mcp_only")
 
-            # Publish to shared context
-            if self._shared_context is not None:
-                for tool_name in mcp_results.get("_tools_invoked", []):
-                    self._shared_context.publish(
-                        active.role, tool_name, mcp_results.get(tool_name), hour,
-                    )
+            # MCP tool dispatch (route through protocol for recording)
+            if _skip_mcp:
+                mcp_results = {"_tools_invoked": [], "_ablation_skipped": "mcp"}
+            else:
+                mcp_results = dispatch_tools(
+                    active.role, obs, self._registry, self._shared_context,
+                    mcp_server=self._mcp_server,
+                    dispatch_config=self._step_dispatch_cfg,
+                )
+                if isinstance(obs.raw, dict):
+                    flags = obs.raw.get("policy_flags", {})
+                    if flags.get("enable_failure_injection", False):
+                        # Deterministic injection pattern for reproducibility.
+                        if int(hour) % 11 == 0:
+                            mcp_results["_fault_injected"] = "drop_tool_results"
+                            for tool_name in list(mcp_results.get("_tools_invoked", [])):
+                                mcp_results[tool_name] = None
+
+                # Publish to shared context
+                if self._shared_context is not None:
+                    for tool_name in mcp_results.get("_tools_invoked", []):
+                        self._shared_context.publish(
+                            active.role, tool_name, mcp_results.get(tool_name), hour,
+                        )
 
             # piRAG retrieval
-            rag_context = retrieve_role_context(
-                active.role, obs, scenario, mcp_results,
-                self._pirag_pipeline, self._mcp_server,
-            )
+            if _skip_rag:
+                rag_context = {
+                    "query": "",
+                    "top_doc_id": "",
+                    "top_citation_score": 0.0,
+                    "regulatory_guidance": "",
+                    "sop_guidance": "",
+                    "waste_hierarchy_guidance": "",
+                    "governance_guidance": "",
+                    "_ablation_skipped": "pirag",
+                }
+            else:
+                rag_context = retrieve_role_context(
+                    active.role, obs, scenario, mcp_results,
+                    self._pirag_pipeline, self._mcp_server,
+                )
             if self._context_evaluator is not None:
                 cf = rag_context.get("counterfactual", {})
                 if isinstance(cf, dict) and cf:
@@ -646,15 +675,36 @@ class AgentCoordinator:
                     and _cooperative_window_active(obs.hour)):
                 try:
                     coop_obs = cooperative.observe(obs.raw, obs.hour)
-                    coop_mcp = dispatch_tools(
-                        "cooperative", coop_obs, self._registry, self._shared_context,
-                        mcp_server=self._mcp_server,
-                        dispatch_config=self._step_dispatch_cfg,
-                    )
-                    coop_rag = retrieve_role_context(
-                        "cooperative", coop_obs, "", coop_mcp,
-                        self._pirag_pipeline, self._mcp_server,
-                    )
+                    # Honour ablation gating in the cooperative overlay
+                    # too — otherwise ``pirag_only`` would re-introduce
+                    # MCP signals via the cooperative dispatch and
+                    # ``mcp_only`` would re-introduce piRAG via
+                    # cooperative retrieval, defeating the structural
+                    # ablation the post-audit fix is meant to enforce.
+                    if _skip_mcp:
+                        coop_mcp = {"_tools_invoked": [], "_ablation_skipped": "mcp"}
+                    else:
+                        coop_mcp = dispatch_tools(
+                            "cooperative", coop_obs, self._registry, self._shared_context,
+                            mcp_server=self._mcp_server,
+                            dispatch_config=self._step_dispatch_cfg,
+                        )
+                    if _skip_rag:
+                        coop_rag = {
+                            "query": "",
+                            "top_doc_id": "",
+                            "top_citation_score": 0.0,
+                            "regulatory_guidance": "",
+                            "sop_guidance": "",
+                            "waste_hierarchy_guidance": "",
+                            "governance_guidance": "",
+                            "_ablation_skipped": "pirag",
+                        }
+                    else:
+                        coop_rag = retrieve_role_context(
+                            "cooperative", coop_obs, "", coop_mcp,
+                            self._pirag_pipeline, self._mcp_server,
+                        )
                     coop_modifier = compute_context_modifier(
                         coop_mcp, coop_rag, coop_obs,
                         self._temporal_window,
