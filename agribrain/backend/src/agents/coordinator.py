@@ -147,6 +147,31 @@ class AgentCoordinator:
         self._step_override: bool = False
         self._step_counterfactual_action: int = 0
         self._step_counterfactual_probs: Optional[np.ndarray] = None
+        # Per-step anomaly-defense flags. AgriBrain's edge stack carries
+        # three layers of integrity protection that fire when the
+        # primary context channel surfaces something suspect:
+        #   _step_cooperative_veto: cooperative agent's compliance
+        #     check found a critical violation the primary missed and
+        #     replaced the primary's modifier with a recovery-biased
+        #     override. Fires only inside the cooperative window
+        #     (12-30h) and only when (coop_critical AND primary_missed).
+        #   _step_fault_recovery: a fault-injection event was detected
+        #     in this step (mcp_results["_fault_injected"] sentinel)
+        #     and the policy fell back to defaults rather than
+        #     propagating None tool results into the action.
+        #   _step_physics_gate: the physics-consistency gate fired
+        #     because retrieved-context physics_score < 0.03; the
+        #     modifier was forced to zero so the policy did not act
+        #     on inconsistent context.
+        # All three are False by default and only set True for the
+        # subset of modes that go through ``_compute_step_context``
+        # (agribrain / mcp_only / pirag_only / no_pinn / no_slca).
+        # Modes that skip the context channel (static / hybrid_rl /
+        # no_context) have all three permanently False, which is the
+        # structural-zero baseline panel C of fig 4 plots them at.
+        self._step_cooperative_veto: bool = False
+        self._step_fault_recovery: bool = False
+        self._step_physics_gate: bool = False
         self._step_keywords: Dict[str, Any] = {}
         self._last_explanation: Optional[Dict[str, Any]] = None
         self._step_dispatch_cfg: Dict[str, Any] = {}
@@ -317,6 +342,9 @@ class AgentCoordinator:
         self._step_override = False
         self._step_counterfactual_action = 0
         self._step_counterfactual_probs = None
+        self._step_cooperative_veto = False
+        self._step_fault_recovery = False
+        self._step_physics_gate = False
         self._step_keywords = {}
         self._last_explanation = None
         self._step_dispatch_cfg = {}
@@ -430,6 +458,12 @@ class AgentCoordinator:
         self._step_scenario = scenario
         self._step_role_bias = combined_bias
         self._step_override = False
+        # Reset per-step anomaly-defense flags. They get set True by
+        # _compute_step_context when triggered; modes that skip the
+        # context path leave them at False (structural zero).
+        self._step_cooperative_veto = False
+        self._step_fault_recovery = False
+        self._step_physics_gate = False
         self._step_dispatch_cfg = {
             "enable_qos_routing": bool(getattr(policy, "enable_mcp_qos_routing", False)),
             "enable_reliability": bool(getattr(policy, "enable_mcp_reliability", False)),
@@ -586,6 +620,14 @@ class AgentCoordinator:
                             mcp_results["_fault_injected"] = "drop_tool_results"
                             for tool_name in list(mcp_results.get("_tools_invoked", [])):
                                 mcp_results[tool_name] = None
+                            # Defense trigger: AgriBrain detected the
+                            # injected fault (the sentinel write above
+                            # is the detection event) and falls back to
+                            # default-prior policy below rather than
+                            # propagating None tool results into the
+                            # action. Counted as one anomaly defense
+                            # firing for fig 4 panel C.
+                            self._step_fault_recovery = True
 
                 # Publish to shared context
                 if self._shared_context is not None:
@@ -648,6 +690,30 @@ class AgentCoordinator:
                 theta_override = self._context_learner.get_theta()
                 slca_amp_override = self._context_learner.get_slca_amp()
                 temporal_params_override = self._context_learner.get_temporal_params()
+
+            # Physics-consistency gate detection. compute_context_modifier
+            # below will force the modifier to zero if the policy_flags
+            # have ``enable_physics_consistency_gate`` set AND the
+            # retrieved-context physics_consistency_score is below 0.03
+            # (the threshold below which the retrieval is treated as
+            # likely-anomalous and not used to nudge the policy). We
+            # replicate the same condition here so the coordinator's
+            # per-step ``_step_physics_gate`` flag can be set without
+            # invasively threading a return value through the modifier
+            # function. Counted as one anomaly defense firing for fig 4
+            # panel C (the policy did NOT act on inconsistent context).
+            if isinstance(obs.raw, dict):
+                _pf = obs.raw.get("policy_flags", {})
+                _physics_enabled = bool(
+                    _pf.get("enable_physics_consistency_gate", False)
+                )
+            else:
+                _physics_enabled = False
+            _physics_score = float(rag_context.get(
+                "physics_consistency_score", 1.0,
+            ))
+            if _physics_enabled and _physics_score < 0.03:
+                self._step_physics_gate = True
 
             modifier = compute_context_modifier(
                 mcp_results, rag_context, obs,

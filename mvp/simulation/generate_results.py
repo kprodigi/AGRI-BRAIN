@@ -443,6 +443,19 @@ def run_episode(
     cumulative_reward = []
     rho_trace, action_trace, prob_trace = [], [], []
     reward_trace, carbon_trace, slca_component_trace = [], [], []
+    # Per-step anomaly-defense traces. Read off the coordinator's
+    # _step_cooperative_veto / _step_fault_recovery / _step_physics_gate
+    # flags after each coordinator.step() call. Modes that skip the
+    # context channel (static / hybrid_rl / no_context) leave all three
+    # at False every step, which is the structural-zero baseline that
+    # fig 4 panel C (Cumulative Anomaly Defenses Triggered) plots them
+    # at. For AgriBrain (and the partial-context ablations) the flags
+    # rise as the cooperative agent overrides bad-compliance decisions,
+    # the physics gate rejects anomalous retrievals, and fault-injection
+    # events are caught by the graceful-degradation fallback.
+    cooperative_veto_trace: list[int] = []
+    fault_recovery_trace: list[int] = []
+    physics_gate_trace: list[int] = []
     active_agent_trace = []
     circular_scores = []
     supply_hats = []
@@ -957,6 +970,19 @@ def run_episode(
         reward_trace.append(reward)
         carbon_trace.append(carbon)
         slca_component_trace.append(slca_result)
+        # Read the coordinator's per-step anomaly-defense flags.
+        # ``getattr`` defaults guard against runs that swap in a
+        # coordinator without these attributes (e.g. older pickled
+        # learner-state replays).
+        cooperative_veto_trace.append(int(bool(
+            getattr(coordinator, "_step_cooperative_veto", False),
+        )))
+        fault_recovery_trace.append(int(bool(
+            getattr(coordinator, "_step_fault_recovery", False),
+        )))
+        physics_gate_trace.append(int(bool(
+            getattr(coordinator, "_step_physics_gate", False),
+        )))
 
     # PolicyLearner: apply gradient update at episode end (disabled by default)
     if learner is not None:
@@ -1090,6 +1116,15 @@ def run_episode(
         "decision_latency_ms_trace": decision_latency_ms,
         "equity_trace": equity_trace,
         "hours": hours.tolist(),
+        # Per-step anomaly-defense traces. Each entry is 0 or 1; for
+        # static / hybrid_rl / no_context every entry is 0 by
+        # construction (those modes skip the context channel where the
+        # defenses live). Read by fig 4 panel C as
+        # ``cumsum(cooperative_veto + fault_recovery + physics_gate)``
+        # to plot Cumulative Anomaly Defenses Triggered.
+        "cooperative_veto_trace": cooperative_veto_trace,
+        "fault_recovery_trace": fault_recovery_trace,
+        "physics_gate_trace": physics_gate_trace,
         "temp_trace": observed_temp_trace,
         "rh_trace": observed_rh_trace,
         "demand_trace": observed_demand_trace,

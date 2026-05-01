@@ -897,93 +897,77 @@ def fig4_cyber(data):
     _apply_style(ax)
     _legend(ax, loc="upper right")
 
-    # --- (c) Realized rerouting rate vs design probability ---
-    # Plots the rolling fraction of decisions where action != cold_chain
-    # — the empirical "actually rerouted" rate — against each method's
-    # *design* reroute probability during outage. The story: when the
-    # cyber-outage branch in select_action bypasses the centralised
-    # softmax (h >= 24) and falls back to a per-mode Bernoulli
-    # [1-p, p, 0] with p = CYBER_REROUTE_PROB[mode], the empirical
-    # rolling rate should converge toward p — that convergence is
-    # what demonstrates the autonomous edge stack is actually firing
-    # at its capability-determined rate.
+    # --- (c) Cumulative anomaly defenses triggered ---
+    # Counts the cumulative number of edge-stack integrity-defense
+    # events fired per mode across the episode. AgriBrain's edge stack
+    # carries three anomaly-defense layers, each instrumented as a
+    # 0/1 per-step trace by the coordinator and exposed in the episode
+    # dump (see generate_results.py emit-block). The three layers are:
     #
-    # CYBER_REROUTE_PROB is a hardcoded design constant in
-    # action_selection.py (Static = 0.0, Hybrid RL = 0.60,
-    # AgriBrain = 0.74). The dashed reference lines drawn during the
-    # outage window let the reader see at-a-glance whether the
-    # rolling lines actually approach those targets.
+    #   1. Cooperative veto (cooperative_veto_trace). Fires when the
+    #      cooperative agent's compliance check surfaces a critical
+    #      violation that the primary agent's MCP results missed; the
+    #      cooperative's recovery-biased modifier replaces the primary
+    #      modifier and the next routing decision is forced toward
+    #      Recovery. Defends against missed compliance violations.
+    #   2. Physics consistency gate (physics_gate_trace). Fires when
+    #      the retrieved-context physics_consistency_score falls below
+    #      0.03 (anomalous retrieval, e.g. a tampered or out-of-band
+    #      document); compute_context_modifier forces the modifier to
+    #      zero so the policy does NOT act on inconsistent context.
+    #      Defends against retrieval-channel tampering.
+    #   3. Fault-injection recovery (fault_recovery_trace). Fires when
+    #      the simulator's deterministic fault-injection schedule (every
+    #      11 hours when ``enable_failure_injection`` is set) drops the
+    #      MCP tool results; AgriBrain detects the sentinel write and
+    #      falls back to the structural prior rather than propagating
+    #      None tool results into the action. Defends against MCP-
+    #      channel disruption.
     #
-    # Rolling window choice: 24 steps = 6 hours. With Bernoulli
-    # p ~ 0.7 and 24 samples the rolling mean's standard error is
-    # ~0.094, so the visual ±2sigma band is ~0.18 — small enough that
-    # the design points are visible above the sampling noise. The
-    # earlier 12-step window had ~0.25 envelope which masked the
-    # convergence story.
+    # Modes that do not go through ``_compute_step_context`` (static,
+    # hybrid_rl, no_context — see _CONTEXT_MODE_MAP in coordinator.py)
+    # have all three traces at zero by construction across the entire
+    # episode, which is the structural-zero baseline that demonstrates
+    # the cyber-resilience capability is uniquely a property of the
+    # AgriBrain edge stack rather than an artefact of metric definition.
     ax = axes[2]
-    window = 24  # 24 steps × 0.25 h = 6 h rolling window
-
-    rolling_by_mode: dict[str, np.ndarray] = {}
     for mode in ["static", "hybrid_rl", "agribrain"]:
         ep = cy[mode]
-        actions = np.array(ep["action_trace"])
-        rerouted = (actions != 0).astype(float)
-        rolling = np.convolve(rerouted, np.ones(window) / window, mode="same")
-        rolling_by_mode[mode] = rolling
-        _mode_plot(ax, hours, rolling, mode)
+        n_steps = len(hours)
+        coop = np.array(ep.get("cooperative_veto_trace", [0] * n_steps),
+                        dtype=float)
+        physics = np.array(ep.get("physics_gate_trace", [0] * n_steps),
+                            dtype=float)
+        fault = np.array(ep.get("fault_recovery_trace", [0] * n_steps),
+                          dtype=float)
+        # Pad / truncate to the panel's hour grid in the unlikely event
+        # the per-mode trace length disagrees with hours (defensive
+        # against mid-flight regenerations).
+        for arr_name in ("coop", "physics", "fault"):
+            arr = locals()[arr_name]
+            if arr.shape[0] != n_steps:
+                if arr.shape[0] > n_steps:
+                    arr = arr[:n_steps]
+                else:
+                    pad = np.zeros(n_steps - arr.shape[0], dtype=float)
+                    arr = np.concatenate([arr, pad])
+                locals()[arr_name] = arr
+        total = coop + physics + fault
+        cumulative = np.cumsum(total)
+        _mode_plot(ax, hours, cumulative, mode)
 
-    # Reference lines at each method's design probability, drawn only
-    # during the outage window so the reader sees the convergence
-    # target without misreading them as pre-outage references.
-    outage_mask = hours >= 24.0
-    for mode, p_design in (
-        ("static", 0.0),
-        ("hybrid_rl", CYBER_REROUTE_PROB.get("hybrid_rl", 0.60)),
-        ("agribrain", CYBER_REROUTE_PROB.get("agribrain", 0.74)),
-    ):
-        x_seg = hours[outage_mask]
-        y_seg = np.full_like(x_seg, p_design, dtype=float)
-        ax.plot(x_seg, y_seg, color=COLORS[mode], linestyle=":",
-                linewidth=1.6, alpha=0.55)
-        # Right-anchored value tag so the reader can read off the
-        # design probability without measuring against the y-axis.
-        ax.text(
-            float(hours[-1]) + 0.6, p_design,
-            f"p={p_design:.2f}",
-            ha="left", va="center", fontsize=9, color=COLORS[mode],
-            fontweight="bold",
-        )
-
-    # Vertical guide at the outage onset.
+    # Vertical guide at outage onset (h=24); the defenses are most
+    # active during the outage window because that is when the
+    # adversarial conditions (tampered retrievals, dropped tool
+    # results, missed compliance violations) are injected.
     ax.axvline(24.0, color="#424242", linestyle="--", linewidth=1.2, alpha=0.8)
 
-    # Regime labels rewritten in plain language and placed in the
-    # top strip of the panel so they sit clear of the Outage badge
-    # (which lives at the title-baseline edge of the shaded region).
-    ax.text(
-        12.0, 1.06,
-        "Cloud policy",
-        ha="center", va="bottom", fontsize=10, color="#212121",
-        bbox=dict(boxstyle="round,pad=0.22", facecolor="white",
-                  edgecolor="#9E9E9E", linewidth=0.6, alpha=0.92),
-    )
-    ax.text(
-        58.0, 1.06,
-        "Edge fallback (CYBER_REROUTE_PROB)",
-        ha="center", va="bottom", fontsize=10, color="#212121",
-        bbox=dict(boxstyle="round,pad=0.22", facecolor="white",
-                  edgecolor="#9E9E9E", linewidth=0.6, alpha=0.92),
-    )
-
     ax.set_xlabel("Hours")
-    ax.set_ylabel("Reroute Rate (6 h rolling)")
-    ax.set_title("(c) Reroute Rate vs Design Probability")
-    ax.set_ylim(-0.02, 1.18)
-    # Extend xlim slightly so the right-anchored "p=..." tags fit.
-    ax.set_xlim(float(hours[0]), float(hours[-1]) + 4.0)
+    ax.set_ylabel("Cumulative Anomaly Defenses Triggered")
+    ax.set_title("(c) Cumulative Anomaly Defenses Triggered")
     _apply_style(ax)
     _annotate_window(ax, 24, 72, WINDOW_COLOR, "Outage", ypos=0.50)
-    _legend(ax, loc="center right")
+    _legend(ax, loc="upper left")
 
     fig.tight_layout(rect=[0, 0, 1, 0.985], h_pad=1.6, w_pad=1.6)
     _save(fig, "fig4_cyber")

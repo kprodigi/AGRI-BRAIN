@@ -602,6 +602,107 @@ def test_compute_ari_dataset_rho_preserves_mode_ranking_under_load():
     )
 
 
+def test_coordinator_exposes_anomaly_defense_flags():
+    """The coordinator must expose three per-step anomaly-defense
+    flags consumed by fig 4 panel C (Cumulative Anomaly Defenses
+    Triggered): ``_step_cooperative_veto``, ``_step_fault_recovery``,
+    ``_step_physics_gate``. All three default to False after a fresh
+    instantiation; modes that skip the context channel (static /
+    hybrid_rl / no_context) leave them at False every step, which is
+    the structural-zero baseline panel C plots them at.
+    """
+    AGRI_BACKEND = Path(__file__).resolve().parents[1].parent / "agribrain" / "backend"
+    sys.path.insert(0, str(AGRI_BACKEND))
+    from src.agents.coordinator import AgentCoordinator
+    coord = AgentCoordinator()
+    assert hasattr(coord, "_step_cooperative_veto"), (
+        "AgentCoordinator missing _step_cooperative_veto attribute - "
+        "fig 4 panel C cannot read the cooperative-veto defense trace."
+    )
+    assert hasattr(coord, "_step_fault_recovery"), (
+        "AgentCoordinator missing _step_fault_recovery attribute - "
+        "fig 4 panel C cannot read the fault-recovery defense trace."
+    )
+    assert hasattr(coord, "_step_physics_gate"), (
+        "AgentCoordinator missing _step_physics_gate attribute - "
+        "fig 4 panel C cannot read the physics-gate defense trace."
+    )
+    # All three default to False so the panel C cumulative count
+    # starts at zero on episode init for every mode.
+    assert coord._step_cooperative_veto is False
+    assert coord._step_fault_recovery is False
+    assert coord._step_physics_gate is False
+    # reset() must also clear them so episode boundaries do not bleed
+    # defense triggers from a previous episode into the next.
+    coord._step_cooperative_veto = True
+    coord._step_fault_recovery = True
+    coord._step_physics_gate = True
+    coord.reset()
+    assert coord._step_cooperative_veto is False, (
+        "_step_cooperative_veto not reset by AgentCoordinator.reset()"
+    )
+    assert coord._step_fault_recovery is False, (
+        "_step_fault_recovery not reset by AgentCoordinator.reset()"
+    )
+    assert coord._step_physics_gate is False, (
+        "_step_physics_gate not reset by AgentCoordinator.reset()"
+    )
+
+
+def test_simulator_emits_anomaly_defense_traces_in_result_dict():
+    """The simulator's per-episode result dict must carry the three
+    anomaly-defense traces. Source-line invariant: the keys
+    ``cooperative_veto_trace``, ``fault_recovery_trace``, and
+    ``physics_gate_trace`` must all be present in the result dict
+    emitted by run_episode. Without these, fig 4 panel C falls back
+    to the zero-defaults sentinel and the panel reads as flat-zero
+    for every mode.
+    """
+    src_path = (Path(__file__).resolve().parents[3] / "mvp" / "simulation" /
+                "generate_results.py")
+    src = src_path.read_text(encoding="utf-8")
+    assert '"cooperative_veto_trace": cooperative_veto_trace' in src, (
+        "cooperative_veto_trace not emitted in run_episode result dict; "
+        "fig 4 panel C cannot read cooperative-veto defenses."
+    )
+    assert '"fault_recovery_trace": fault_recovery_trace' in src, (
+        "fault_recovery_trace not emitted in run_episode result dict; "
+        "fig 4 panel C cannot read fault-recovery defenses."
+    )
+    assert '"physics_gate_trace": physics_gate_trace' in src, (
+        "physics_gate_trace not emitted in run_episode result dict; "
+        "fig 4 panel C cannot read physics-gate defenses."
+    )
+
+
+def test_panel_c_consumes_anomaly_defense_traces():
+    """Pin that fig 4 panel C reads the three anomaly-defense traces
+    from the episode dict. Source-line invariant guards against any
+    future refactor that re-points panel C at a different metric
+    (e.g. the retired ``Reroute Rate vs Design Probability`` plot
+    that this implementation replaced)."""
+    fig_path = (Path(__file__).resolve().parents[3] / "mvp" / "simulation" /
+                "generate_figures.py")
+    src = fig_path.read_text(encoding="utf-8")
+    assert 'ep.get("cooperative_veto_trace"' in src, (
+        "fig 4 panel C no longer reads cooperative_veto_trace; the "
+        "Cumulative Anomaly Defenses Triggered panel has regressed."
+    )
+    assert 'ep.get("physics_gate_trace"' in src, (
+        "fig 4 panel C no longer reads physics_gate_trace."
+    )
+    assert 'ep.get("fault_recovery_trace"' in src, (
+        "fig 4 panel C no longer reads fault_recovery_trace."
+    )
+    # Also pin the new panel title so a maintainer who removes the
+    # cumulative cumsum logic without updating the title gets a
+    # failing test rather than a half-broken panel.
+    assert "Cumulative Anomaly Defenses Triggered" in src, (
+        "Panel C title 'Cumulative Anomaly Defenses Triggered' is "
+        "missing from generate_figures.py."
+    )
+
+
 @pytest.mark.parametrize("sigma", [0.10, 0.15, 0.25, 0.35, 0.40])
 def test_policy_temp_sigma_band(sigma):
     """Verify that the policy-temperature draw under each tested sigma
