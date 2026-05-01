@@ -2178,8 +2178,16 @@ def fig9_fault_degradation():
                 t.set_path_effects([_pe.withStroke(linewidth=1.6, foreground=halo)])
 
         ax.set_xticks(np.arange(n_cols))
+        # Rotation bumped from 20° to 30° per "no overlapping"
+        # mandate: at 20° with 5 baseline labels and panel A at
+        # 1.40 width_ratio, the horizontal projection of "vs Hybrid
+        # RL" (~1.5 inches) was crowding the adjacent "vs No
+        # Context". 30° with rotation_mode="anchor" rotates the
+        # label about its right edge so it stays under its own
+        # column without invading neighbors.
         ax.set_xticklabels([lbl for _, lbl in _BASELINES],
-                           rotation=20, ha="right")
+                           rotation=30, ha="right",
+                           rotation_mode="anchor")
         ax.set_yticks(np.arange(n_rows))
         ax.set_yticklabels([SCENARIO_LABELS.get(s, s) for s in scenarios_in_sig])
 
@@ -2324,6 +2332,20 @@ def fig9_fault_degradation():
     # bounded above at 1.0). Cells with no per-seed CI fall back
     # to a zero-width bar rather than a misleading symmetric
     # default.
+    # Panel C font sizes + bar styling matched to fig 7 (the ablation
+    # grouped-bar figure) per user request. fig 7 uses:
+    #   _F7_TITLE = SUBPLOT_TITLE_SIZE + 6 = 25 (panel title)
+    #   _F7_AXIS  = TICK_FONT_SIZE + 5     = 20 (axis label, matched to ticks)
+    #   _F7_TICK  = TICK_FONT_SIZE + 5     = 20 (tick labels)
+    #   _F7_LEG   = LEGEND_FONT_SIZE + 4   = 19 (legend)
+    # plus alpha=0.92, edgecolor="white", linewidth=0.7, total group
+    # width 0.98/n_modes. Replicating those constants here keeps panel
+    # C's styling visually identical to fig 7's ablation panels.
+    _PANEL_C_TITLE = SUBPLOT_TITLE_SIZE + 6   # 25
+    _PANEL_C_AXIS  = TICK_FONT_SIZE + 5       # 20
+    _PANEL_C_TICK  = TICK_FONT_SIZE + 5       # 20
+    _PANEL_C_LEG   = LEGEND_FONT_SIZE + 4     # 19
+
     ax = axes[2]
     honor_matrix = _fig9_load_honor_matrix(
         modes=("agribrain", "pirag_only", "mcp_only"),
@@ -2337,11 +2359,12 @@ def fig9_fault_degradation():
         scenarios_in_matrix = [s for s in SCENARIOS if s in honor_matrix]
         n_groups = len(scenarios_in_matrix)
         n_modes = len(_PANEL_C_MODES)
-        # Tight grouping: total width 0.85 of the unit slot, evenly
-        # split across 4 modes -> bar width 0.21 each. Inter-group
-        # gap 0.15 of slot.
-        bar_w = 0.85 / n_modes
-        x_base = np.arange(n_groups)
+        # Match fig 7's bar layout: total group width 0.98, x_scale
+        # 1.10 so adjacent groups have a 0.12 inter-group gap. Each
+        # bar takes 0.98/n_modes = 0.327 axis units when n_modes=3.
+        width = 0.98 / n_modes
+        x_scale = 1.10
+        x_base = np.arange(n_groups) * x_scale
 
         for i, (mode, label, color) in enumerate(_PANEL_C_MODES):
             heights = []
@@ -2356,50 +2379,84 @@ def fig9_fault_degradation():
                 hi = max(0.0, 100.0 * (cell.get("ci_high", rate) - rate))
                 err_low.append(lo)
                 err_high.append(hi)
-            xs = x_base + (i - (n_modes - 1) / 2) * bar_w
-            ax.bar(xs, heights, width=bar_w * 0.92, color=color,
-                   edgecolor="white", linewidth=0.7, alpha=0.95,
-                   label=label, zorder=2,
+            xs = x_base + i * width
+            # Bar styling matched to fig 7 panel-bar exactly:
+            # alpha=0.92, edgecolor="white", linewidth=0.7. Yerr
+            # block uses the existing _ERR_CAPSIZE / _ERR_KW
+            # constants shared across figs 6 / 7 / 8 / 9.
+            ax.bar(xs, heights, width, color=color,
+                   alpha=0.92, edgecolor="white", linewidth=0.7,
+                   label=label,
                    yerr=[err_low, err_high],
                    capsize=_ERR_CAPSIZE, error_kw=_ERR_KW)
 
-        ax.set_xticks(x_base)
+        # Center each x-tick under its group of n_modes bars (same
+        # idiom fig 7 uses for its 8-mode groups).
+        ax.set_xticks(x_base + (n_modes - 1) * width / 2)
+        # Rotation bumped from 20° to 30° + rotation_mode="anchor"
+        # per "no overlapping" mandate: at 20° with 5 scenario
+        # labels in a panel of this width, the longest label
+        # ("Overproduction") at 14 chars projects ~1 inch
+        # horizontally and was crowding the adjacent group.
+        # rotation_mode="anchor" rotates each label around its
+        # right edge so the label stays under its own group.
         ax.set_xticklabels(
             [SCENARIO_LABELS.get(s, s) for s in scenarios_in_matrix],
-            rotation=20, ha="right",
+            rotation=30, ha="right", rotation_mode="anchor",
         )
-        ax.set_ylim(0, 100)
-        # Mode legend in the upper right where no scenario has
-        # rates above ~70%. Single column with 3 entries fits
-        # cleanly in the upper-right corner.
-        ax.legend(loc="upper right", fontsize=_F9_LEG - 2,
-                  ncol=1, framealpha=0.92, edgecolor="#9E9E9E")
+        # ylim bumped from 100 to 110 so the upper-right legend
+        # has visible headroom above the highest bar+CI cap
+        # (overproduction agribrain reaches ~75% with the upper
+        # whisker, leaving ~25% in [0, 100] which is just enough
+        # for a 3-entry single-column legend at 19pt; pushing to
+        # [0, 110] guarantees zero overlap).
+        ax.set_ylim(0, 110)
+        # Mode legend in the upper right where no scenario has rates
+        # above ~70%. Single column with 3 entries fits cleanly in
+        # the upper-right corner.
+        ax.legend(loc="upper right", fontsize=_PANEL_C_LEG,
+                  ncol=1, framealpha=0.95, edgecolor="#757575",
+                  fancybox=False, shadow=False)
     else:
         ax.text(0.5, 0.5, "benchmark_summary.json not available",
                 ha="center", va="center", transform=ax.transAxes,
                 fontsize=_F9_ANNOT, color="#616161")
-    # Y-axis title size matched to the x-axis tick label size per
-    # user request. Panel (c) has no explicit x-axis title (no
-    # set_xlabel), so the x-axis text the reader sees is the
-    # rotated tick labels; matching the y-axis title to those keeps
-    # both axes' lettering at the same visual weight. The explicit
-    # re-apply after _restyle (mirroring the fig 7 fix in commit
-    # 3feb090) ensures the rendered y-axis title actually lands at
-    # _F9_TICK=20pt instead of being silently overridden back to
-    # AXIS_LABEL_SIZE=17 by _apply_style inside _restyle.
+    # Title / axis label / tick label sizes matched to fig 7 ablation
+    # panels (25 / 20 / 20). _restyle uses _F9_TITLE=26 and _F9_TICK=20
+    # by default, so we override the title size to _PANEL_C_TITLE=25
+    # explicitly after the _restyle call. The y-axis title is set to
+    # _PANEL_C_AXIS=20 (matched to the tick labels) and re-applied
+    # after _apply_style to defeat the same render-path bug fixed in
+    # fig 7 (commit 3feb090).
     _restyle(ax, "(c) Context Honor Rate",
              ylabel="Honor rate (% of active steps)")
-    ax.yaxis.label.set_size(_F9_TICK)
+    ax.title.set_size(_PANEL_C_TITLE)
+    ax.title.set_weight("bold")
+    ax.tick_params(labelsize=_PANEL_C_TICK, length=6, width=1.4)
+    for lbl in ax.get_xticklabels():
+        lbl.set_fontsize(_PANEL_C_TICK)
+        lbl.set_fontweight("bold")
+    for lbl in ax.get_yticklabels():
+        lbl.set_fontsize(_PANEL_C_TICK)
+        lbl.set_fontweight("bold")
+    ax.yaxis.label.set_size(_PANEL_C_AXIS)
     ax.yaxis.label.set_weight("bold")
 
     fig.suptitle("Performance Gain over Baselines and Context Honor",
                  y=0.995, fontsize=FIG_TITLE_SIZE, fontweight="bold")
-    # Title-to-subplot gap matches the canonical figure 3 pattern
-    # (rect top 0.985, suptitle y 0.995) so all paper figures share
-    # the same header spacing. w_pad kept at 1.0 so panel (c) has
-    # room for the upcoming 5-scenario layout without losing space
-    # to padding.
-    fig.tight_layout(rect=[0, 0.02, 1, 0.985], w_pad=1.0)
+    # Layout spacing tightened post-2026-04 per user "there must be
+    # no overlapping" mandate:
+    #   - rect bottom raised from 0.02 to 0.06 so the rotated x-tick
+    #     labels in panels (a) and (c) get extra clearance below the
+    #     panel and do not clip into the figure margin.
+    #   - w_pad raised from 1.0 to 2.5 so panels (a) (heatmap) /
+    #     (b) (forest plot with right-anchored labels) / (c)
+    #     (grouped bars with rotated tick labels) have enough
+    #     horizontal padding that tick labels and legend boxes from
+    #     adjacent panels cannot collide. The 22-inch figure width
+    #     absorbs this generously - each panel still has 6+ inches
+    #     of plotting area.
+    fig.tight_layout(rect=[0, 0.06, 1, 0.985], w_pad=2.5)
     _save(fig, "fig9_robustness")
 
 
