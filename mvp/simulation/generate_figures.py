@@ -982,6 +982,62 @@ def fig5_pricing(data):
     ab = ap["agribrain"]
     hours = np.array(ab["hours"])
 
+    # Per-figure font-size bump for fig 5 (post-2026-04 user request).
+    # Uniform +1 across body / ticks / axis labels / subplot titles /
+    # suptitle / legend / in-plot annotations - matches the bump
+    # applied to fig 2 (commit a4144d1) and fig 3 (commit e6151e5)
+    # so all three perishable-scenario figures render at the same
+    # text size. Scoped to this function via try/finally so other
+    # figures keep the canonical sizes.
+    global BODY_FONT_SIZE, TICK_FONT_SIZE, AXIS_LABEL_SIZE
+    global SUBPLOT_TITLE_SIZE, FIG_TITLE_SIZE, LEGEND_FONT_SIZE
+    global ANNOT_FONT_SIZE
+    _saved_sizes = (
+        BODY_FONT_SIZE, TICK_FONT_SIZE, AXIS_LABEL_SIZE,
+        SUBPLOT_TITLE_SIZE, FIG_TITLE_SIZE, LEGEND_FONT_SIZE,
+        ANNOT_FONT_SIZE,
+    )
+    BODY_FONT_SIZE = _saved_sizes[0] + 1
+    TICK_FONT_SIZE = _saved_sizes[1] + 1
+    AXIS_LABEL_SIZE = _saved_sizes[2] + 1
+    SUBPLOT_TITLE_SIZE = _saved_sizes[3] + 1
+    FIG_TITLE_SIZE = _saved_sizes[4] + 1
+    LEGEND_FONT_SIZE = _saved_sizes[5] + 1
+    ANNOT_FONT_SIZE = _saved_sizes[6] + 1
+    _saved_rc = {
+        "font.size": plt.rcParams["font.size"],
+        "axes.labelsize": plt.rcParams["axes.labelsize"],
+        "axes.titlesize": plt.rcParams["axes.titlesize"],
+        "xtick.labelsize": plt.rcParams["xtick.labelsize"],
+        "ytick.labelsize": plt.rcParams["ytick.labelsize"],
+        "legend.fontsize": plt.rcParams["legend.fontsize"],
+        "legend.title_fontsize": plt.rcParams["legend.title_fontsize"],
+        "figure.titlesize": plt.rcParams["figure.titlesize"],
+    }
+    plt.rcParams.update({
+        "font.size": BODY_FONT_SIZE,
+        "axes.labelsize": AXIS_LABEL_SIZE,
+        "axes.titlesize": SUBPLOT_TITLE_SIZE,
+        "xtick.labelsize": TICK_FONT_SIZE,
+        "ytick.labelsize": TICK_FONT_SIZE,
+        "legend.fontsize": LEGEND_FONT_SIZE,
+        "legend.title_fontsize": LEGEND_FONT_SIZE,
+        "figure.titlesize": FIG_TITLE_SIZE,
+    })
+
+    try:
+        return _fig5_pricing_inner(ap, ab, hours)
+    finally:
+        (BODY_FONT_SIZE, TICK_FONT_SIZE, AXIS_LABEL_SIZE,
+         SUBPLOT_TITLE_SIZE, FIG_TITLE_SIZE, LEGEND_FONT_SIZE,
+         ANNOT_FONT_SIZE) = _saved_sizes
+        plt.rcParams.update(_saved_rc)
+
+
+def _fig5_pricing_inner(ap, ab, hours):
+    """Body of fig 5. Extracted from ``fig5_pricing`` so the per-figure
+    font-size overrides applied above can be cleanly torn down via
+    try/finally regardless of how the body returns or raises."""
     fig, axes = plt.subplots(2, 2, figsize=(18, 13))
     fig.suptitle("Adaptive Pricing & Demand Volatility", y=0.995)
 
@@ -1101,7 +1157,7 @@ def fig5_pricing(data):
         _mode_plot(ax, hours, rolling, mode)
 
     ax.set_xlabel("Hours")
-    ax.set_ylabel("Reward (3 h rolling)")
+    ax.set_ylabel("Reward")
     ax.set_title("(d) Per-step Reward Comparison")
     _apply_style(ax)
     # Lower-right corner is typically clear in this scenario - mode
