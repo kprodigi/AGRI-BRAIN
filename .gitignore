@@ -3,6 +3,13 @@ __pycache__/
 *.pyo
 .pytest_cache/
 
+# Working scratch files at repo root (audit-pass tmp scripts, draft
+# manuscript snapshots, sanity-check probes). Strict pattern at the
+# repo root so a stray `git add -A` cannot leak a draft manuscript or
+# diagnostic script into the GitHub history. The user's working
+# .tmp_paper.md draft is matched here too.
+/.tmp_*
+
 # Stochastic feasibility test scripts (diagnostic, not production)
 docs/screenshots/_check/
 node_modules/

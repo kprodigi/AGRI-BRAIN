@@ -107,36 +107,29 @@ The threshold θ (default 0.10) corresponds to 10 % quality loss — the
 point where produce is still marketable but beginning to degrade and
 should be considered for rerouting.
 
-EU-agnostic robustness companion: ``compute_rle_uniform`` reports the
-same ratio under uniform action weights (LR = Recovery = 1.00, CC = 0)
-so the AgriBrain-vs-baseline gap can be verified to survive when the
-hierarchy's tier ordering is removed from the metric. Reported
-alongside the canonical hierarchy-weighted RLE in the manuscript.
-
 This form does not saturate at 1.0 unless every at-risk batch is
 routed to the band-appropriate top tier (LR in marketable, Recovery
 in non-marketable). Earlier drafts of this codebase also exposed a
 binary ``recovered / at_risk`` variant, a continuous match-quality
-variant, and a capacity-constrained variant; all three have been
-retired in favour of the single hierarchy-weighted form, which is the
-only variant whose action weights derive from the EU directive
-itself rather than from author choices.
+variant, a capacity-constrained variant, and a uniform-weights
+EU-agnostic companion; all four have been retired in favour of the
+single hierarchy-weighted form, which is the only variant whose
+action weights derive from the EU directive itself rather than from
+author choices. The 2026-04 single-version-of-the-truth pass
+ensures every metric in this module has exactly one formulation per
+the user mandate.
 
 Equity (welfare-economic form)
 ------------------------------
-Two variants are exposed:
+Single canonical form:
 
-  - ``compute_equity``      — primary, mean(SLCA) × (1 − std(SLCA)).
-  - ``compute_equity_sen``  — robustness, Sen's social welfare function
-                              μ × (1 − G) with G the true Gini coefficient.
+  - ``compute_equity``      — mean(SLCA) × (1 − std(SLCA)).
 
-The primary form pairs uniformity with mean SLCA so a high score
-requires both temporal stability *and* a high stable level. This is
-a stability-weighted mean in the sense of Allison (1978); we no
-longer label it "Gini-inspired" since the formula does not implement
-the Gini coefficient. The Sen-welfare variant uses the actual mean
-absolute difference Gini and is the canonical welfare-economic form
-(Sen, 1976), provided alongside as a robustness check.
+This stability-weighted mean pairs uniformity with mean SLCA so a
+high score requires both temporal stability *and* a high stable
+level (Allison 1978). The Sen-welfare robustness companion
+(``compute_equity_sen``) that earlier versions exposed was retired
+in the 2026-04 single-version-of-the-truth pass.
 
 References
 ----------
@@ -696,31 +689,6 @@ HIERARCHY_WEIGHT_NONMARKETABLE: dict[str, float] = {
 """Hierarchy weights for produce in the *non-marketable* band
 (rho>cutoff): Recovery becomes the correct top tier."""
 
-# ---------------------------------------------------------------------
-# EU-agnostic robustness companion: uniform action weights.
-# ---------------------------------------------------------------------
-# The hierarchy-weighted RLE *is* the EU directive operationalised as
-# a metric, by design. A reviewer might therefore ask: "of course an
-# EU-shaped policy wins on an EU-shaped metric. What does the gap
-# look like under a metric that does NOT encode the hierarchy?"
-#
-# ``HIERARCHY_WEIGHT_UNIFORM`` answers that. Every rerouted action
-# (LR or Recovery) scores 1.00; only cold_chain (no rerouting)
-# scores 0.00. The companion metric ``compute_rle_uniform`` reports
-# "fraction of at-risk steps that the policy successfully rerouted",
-# without committing to either tier ordering. The headline
-# hierarchy-weighted RLE is the primary metric; this uniform variant
-# is reported alongside as a robustness check in the manuscript so
-# the reader can see whether AgriBrain's win on RLE survives when
-# the EU directive's tier ordering is removed from the metric.
-HIERARCHY_WEIGHT_UNIFORM: dict[str, float] = {
-    "local_redistribute": 1.00,
-    "recovery":           1.00,
-    "cold_chain":         0.00,
-}
-"""Uniform-action weights for the EU-agnostic RLE companion metric."""
-
-
 def hierarchy_weight(action: str, rho: float,
                      cutoff: float = RHO_MARKETABLE_CUTOFF,
                      halfwidth: float = RHO_TRANSITION_HALFWIDTH) -> float:
@@ -768,32 +736,23 @@ def hierarchy_weight(action: str, rho: float,
     return float((1.0 - alpha) * w_market + alpha * w_nonmarket)
 
 
-def hierarchy_weight_uniform(action: str) -> float:
-    """EU-agnostic action weight (uniform across rerouted actions).
-
-    Returns 1.00 for any rerouted action (``local_redistribute`` or
-    ``recovery``) and 0.00 for ``cold_chain`` (no rerouting). Used
-    by the EU-agnostic RLE companion metric to demonstrate that the
-    AgriBrain-vs-baseline gap on RLE is not solely an artefact of
-    the hierarchy's tier ordering. See module docstring for the
-    robustness-companion rationale.
-    """
-    canonical = _resolve_action(action)
-    return HIERARCHY_WEIGHT_UNIFORM.get(canonical, 0.0)
-
-
 # ---------------------------------------------------------------------------
 # ARI
 # ---------------------------------------------------------------------------
 
 def compute_ari(waste: float, slca_composite: float, rho: float) -> float:
-    """Compute the Adaptive Resilience Index for a single timestep (primary form).
+    """Compute the Adaptive Resilience Index for a single timestep.
 
     ARI = (1 − waste) × SLCA_composite × (1 − ρ)
 
     This multiplicative form follows the unit-interval composite
-    convention discussed in OECD/JRC (2008, §6). It is the form
-    reported as the headline ARI throughout the manuscript.
+    convention discussed in OECD/JRC (2008, §6) and is the *single*
+    canonical ARI throughout the codebase - no parallel "geometric
+    mean" / "rank-only" / etc. variants are exposed. The
+    geometric-mean robustness companion that earlier versions also
+    emitted (compute_ari_geom) was retired in the 2026-04 single-
+    version-of-the-truth pass per the user mandate that every
+    metric have exactly one formulation in the repository.
 
     Parameters
     ----------
@@ -806,45 +765,6 @@ def compute_ari(waste: float, slca_composite: float, rho: float) -> float:
     ARI value in [0, 1].
     """
     return (1.0 - waste) * slca_composite * (1.0 - rho)
-
-
-def compute_ari_geom(waste: float, slca_composite: float, rho: float) -> float:
-    """Geometric-mean ARI (robustness variant).
-
-    ARI_geom = ((1 − waste) × SLCA_composite × (1 − ρ))^(1/3)
-
-    Reported as a robustness check on the primary multiplicative ARI.
-    The geometric mean is the same aggregation UNDP adopted for the
-    Human Development Index in 2010 (Klugman, Rodríguez & Choi, 2011)
-    on the explicit ground that high performance on one pillar should
-    not be allowed to substitute fully for failure on another. The
-    cube-root rescales the composite onto an interpretable [0, 1]
-    range where typical values are not compressed near zero by the
-    multiplicative product.
-
-    By construction, the rank ordering of methods under ARI and
-    ARI_geom agrees up to ties (the geometric mean is a strictly
-    increasing function of the multiplicative product on the unit
-    cube), so this variant does not change the directional claims —
-    it documents them under an alternative aggregation rule.
-
-    Parameters
-    ----------
-    waste : net waste fraction after intervention, in [0, 1].
-    slca_composite : attenuated SLCA composite score, in [0, 1].
-    rho : spoilage risk (1 − shelf_left), in [0, 1].
-
-    Returns
-    -------
-    ARI_geom value in [0, 1]. Returns 0 if any factor is non-positive.
-    """
-    a = max(0.0, 1.0 - waste)
-    b = max(0.0, slca_composite)
-    c = max(0.0, 1.0 - rho)
-    product = a * b * c
-    if product <= 0.0:
-        return 0.0
-    return float(product ** (1.0 / 3.0))
 
 
 # ---------------------------------------------------------------------------
@@ -971,61 +891,12 @@ def compute_rle(rho_values: List[float], actions: List[str],
     return tracker.rle
 
 
-def compute_rle_uniform(rho_values: List[float], actions: List[str],
-                        threshold: float = RLE_THRESHOLD) -> float:
-    """EU-agnostic RLE companion: uniform action weights.
-
-    Robustness companion to ``compute_rle`` that strips the EU
-    hierarchy's tier ordering from the metric. Every rerouted action
-    (LR or Recovery) scores 1.00; only ``cold_chain`` scores 0.00.
-    Mathematically identical to the canonical form except for the
-    weight table:
-
-        RLE_uniform = sum_t [rho(t) * w_uniform(a_t) * 1[rho(t) > theta]] /
-                      sum_t [rho(t) * w_max * 1[rho(t) > theta]]
-
-    where w_max = max(HIERARCHY_WEIGHT_UNIFORM.values()) = 1.00 and
-    w_uniform = 1.00 for any rerouted action.
-
-    Reported alongside the canonical RLE in the manuscript so the
-    reader can see whether the AgriBrain-vs-baseline gap survives
-    when the hierarchy's tier ordering is removed from the metric.
-    Under the canonical form a Recovery-routing policy scores 1.00
-    in the non-marketable band and 0.40 in the marketable band;
-    under the uniform companion a Recovery-routing policy scores
-    1.00 in both bands. The two metrics agree on the
-    Hybrid-RL-vs-AgriBrain ranking iff the gap is driven by *whether*
-    each policy reroutes (uniform-detectable) rather than by *which
-    tier* it reroutes to (hierarchy-only).
-
-    Parameters
-    ----------
-    rho_values : per-step spoilage risk values.
-    actions : per-step routing action names.
-    threshold : spoilage risk threshold for "at-risk".
-
-    Returns
-    -------
-    RLE in [0, 1]. 0.0 when no batches are at-risk.
-    """
-    w_max = max(HIERARCHY_WEIGHT_UNIFORM.values())
-    num = 0.0
-    den = 0.0
-    for rho, action in zip(rho_values, actions):
-        if rho > threshold:
-            num += rho * hierarchy_weight_uniform(action)
-            den += rho * w_max
-    if den <= 0.0:
-        return 0.0
-    return float(num / den)
-
-
 # ---------------------------------------------------------------------------
 # Equity
 # ---------------------------------------------------------------------------
 
 def compute_equity(slca_values: List[float] | np.ndarray) -> float:
-    """Stability-weighted mean SLCA (primary form).
+    """Stability-weighted mean SLCA (single canonical equity metric).
 
     Equity = mean(SLCA) × (1 − std(SLCA))
 
@@ -1037,9 +908,13 @@ def compute_equity(slca_values: List[float] | np.ndarray) -> float:
     practice of pairing a consistency term with a quality term rather
     than reporting them independently (Atkinson, 1970; Allison, 1978).
 
-    The std-based form is *not* a Gini coefficient (despite earlier
-    docstring framing); see ``compute_equity_sen`` for the canonical
-    Sen-welfare variant μ × (1 − G).
+    This is the *single* canonical equity throughout the codebase -
+    no parallel "Sen welfare" / "Gini-based" / etc. variants are
+    exposed. The Sen-welfare robustness companion that earlier
+    versions also emitted (compute_equity_sen) was retired in the
+    2026-04 single-version-of-the-truth pass per the user mandate
+    that every metric have exactly one formulation in the
+    repository.
 
     Parameters
     ----------
@@ -1059,42 +934,3 @@ def compute_equity(slca_values: List[float] | np.ndarray) -> float:
     # that assume a unit-interval metric.
     uniformity = max(0.0, min(1.0, 1.0 - std_s))
     return max(0.0, min(1.0, mean_s * uniformity))
-
-
-def compute_equity_sen(slca_values: List[float] | np.ndarray) -> float:
-    """Sen welfare equity (robustness variant).
-
-    Equity_sen = μ × (1 − G)
-
-    where G is the Gini coefficient computed via the mean-absolute-
-    difference form:
-
-        G = Σ_i Σ_j |x_i − x_j| / (2 n² μ)
-
-    This is the canonical welfare-economic aggregation of level and
-    distributional equality (Sen, 1976, eq. 6). Provided alongside the
-    primary stability-weighted mean as a robustness check that uses
-    the actual Gini coefficient rather than a std-based proxy.
-
-    Parameters
-    ----------
-    slca_values : per-step attenuated SLCA composite scores, in [0, 1].
-
-    Returns
-    -------
-    Sen welfare value in [0, 1].
-    """
-    arr = np.asarray(slca_values, dtype=float)
-    if arr.size == 0:
-        return 0.0
-    mean_s = float(arr.mean())
-    if mean_s <= 0.0:
-        return 0.0
-    # Gini via mean absolute difference. Vectorised pairwise difference
-    # is O(n²) in memory but n is the episode length (~100s of steps),
-    # so this is well within budget.
-    diffs = np.abs(arr[:, None] - arr[None, :]).sum()
-    n = arr.size
-    gini = float(diffs / (2.0 * n * n * mean_s))
-    gini = max(0.0, min(1.0, gini))
-    return max(0.0, min(1.0, mean_s * (1.0 - gini)))

@@ -82,10 +82,8 @@ from src.models.waste import (
 from src.models.carbon import compute_transport_carbon
 from src.models.resilience import (
     compute_ari,
-    compute_ari_geom,
     compute_effective_rho,
     compute_equity,
-    compute_equity_sen,
     route_rho_factor,
     RLETracker,
 )
@@ -437,7 +435,6 @@ def run_episode(
         )
 
     ari_vals, waste_vals, slca_vals = [], [], []
-    ari_geom_vals: list[float] = []  # geometric-mean ARI robustness companion
     rle_tracker = RLETracker()
     carbon_total, cum_r = 0.0, 0.0
     cumulative_reward = []
@@ -826,7 +823,6 @@ def run_episode(
         #     scores by *action*) are the right summary measures of
         #     policy quality; per-step ARI is a diagnostic trace.
         ari = compute_ari(waste, slca_c, rho)
-        ari_geom = compute_ari_geom(waste, slca_c, rho)
 
         # RLE tracking (Layer 1: resilience.py).
         # The tracker computes both binary and EU-hierarchy-weighted RLE
@@ -959,7 +955,6 @@ def run_episode(
 
         # Collect traces
         ari_vals.append(ari)
-        ari_geom_vals.append(ari_geom)
         waste_vals.append(waste)
         slca_vals.append(slca_c)
         carbon_total += carbon
@@ -993,25 +988,17 @@ def run_episode(
         print(f"  Policy weights updated via REINFORCE (delta norm: {delta_norm:.6f})")
 
     # Episode-level metrics (Layer 1: resilience.py).
-    # Both primary and robustness-variant equity are emitted so the
-    # benchmark output can populate RLE_w / equity_sen / ari_geom in
-    # downstream tables without a re-run of policy logic.
-    # Single canonical RLE: EU-hierarchy + severity-weighted form (see
-    # resilience.py module docstring for the rationale and the retired
-    # variants). The simulator no longer emits rle_binary, rle_weighted,
-    # rle_realistic, or rle_capacity_constrained — just `rle`.
+    # 2026-04 single-version-of-the-truth pass: per user mandate every
+    # metric has exactly one formulation across the codebase. The
+    # simulator emits one ARI (compute_ari, multiplicative), one RLE
+    # (compute_rle, EU-hierarchy + severity-weighted, rho-conditional
+    # with smooth transition), one equity (compute_equity, stability-
+    # weighted mean) - no parallel "geometric-mean" / "uniform-
+    # weights" / "Sen-welfare" companions. The earlier robustness
+    # companions (ari_geom, rle_uniform, equity_sen) were retired
+    # alongside their function definitions in resilience.py.
     rle = rle_tracker.rle
-    # EU-agnostic RLE companion: uniform action weights (LR=Recovery=1.00,
-    # CC=0.00). Reported alongside the canonical hierarchy-weighted RLE so
-    # reviewers can verify the AgriBrain-vs-baseline gap is not solely an
-    # artefact of the EU directive's tier ordering. See resilience.py
-    # module docstring (EU-agnostic robustness companion section).
-    from src.models.resilience import compute_rle_uniform as _compute_rle_uniform
-    _action_names = ["cold_chain", "local_redistribute", "recovery"]
-    _action_name_trace = [_action_names[int(a)] for a in action_trace]
-    rle_uniform = _compute_rle_uniform(rho_trace, _action_name_trace)
     equity = compute_equity(slca_vals)
-    equity_sen = compute_equity_sen(slca_vals)
 
     # Rolling equity (6-hour window = 24 steps at 15-min resolution)
     eq_window = 24
@@ -1029,14 +1016,6 @@ def run_episode(
     latency_penalty_usd = float(np.sum(np.maximum(latency_arr - 50.0, 0.0)) * 0.0002)
     result = {
         "ari": float(np.mean(ari_vals)), "rle": float(rle),
-        # Robustness companions: geometric-mean ARI, Sen-welfare equity,
-        # and EU-agnostic uniform-weights RLE (defends against the
-        # "EU-shaped policy wins on EU-shaped metric" attack). Grounding
-        # lives in the resilience.py module docstring; these populate
-        # the robustness-table cells in aggregate_seeds.
-        "ari_geom": float(np.mean(ari_geom_vals)),
-        "equity_sen": float(equity_sen),
-        "rle_uniform": float(rle_uniform),
         "waste": float(np.mean(waste_vals)), "slca": float(np.mean(slca_vals)),
         "carbon": float(carbon_total), "equity": float(equity),
         "circular_economy": float(np.mean(circular_scores)),

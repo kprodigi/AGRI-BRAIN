@@ -59,12 +59,6 @@ EXTRA_METRICS = (
     "operational_violation_rate", "regulatory_violation_rate",
     "context_active_fraction", "context_honor_rate",
     "context_active_steps", "context_honored_steps",
-    # EU-agnostic robustness companion to RLE. Reported alongside the
-    # canonical hierarchy-weighted RLE so reviewers can verify the
-    # AgriBrain-vs-baseline gap survives when the EU directive's tier
-    # ordering is removed from the metric. Defends against the
-    # "EU-shaped policy wins on EU-shaped metric" attack.
-    "rle_uniform",
 )
 
 # Columns exposed in the stochastic CSV rewrites below. First element of

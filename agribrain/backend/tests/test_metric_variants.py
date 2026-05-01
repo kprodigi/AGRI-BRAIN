@@ -30,9 +30,7 @@ from src.models.resilience import (
     HIERARCHY_WEIGHT,
     RLE_THRESHOLD,
     compute_ari,
-    compute_ari_geom,
     compute_equity,
-    compute_equity_sen,
     compute_rle,
 )
 from src.models.reverse_logistics import (
@@ -59,39 +57,6 @@ from src.models.waste import (
     compute_save_factor,
     compute_waste_rate,
 )
-
-
-# ---------------------------------------------------------------------------
-# ARI: multiplicative vs geometric agreement
-# ---------------------------------------------------------------------------
-
-def test_ari_geom_bounded():
-    assert compute_ari_geom(0.0, 1.0, 0.0) == pytest.approx(1.0)
-    assert compute_ari_geom(1.0, 0.0, 1.0) == 0.0
-    for w in np.linspace(0, 1, 6):
-        for s in np.linspace(0, 1, 6):
-            for r in np.linspace(0, 1, 6):
-                v = compute_ari_geom(w, s, r)
-                assert 0.0 <= v <= 1.0
-
-
-def test_ari_geom_rank_agrees_with_multiplicative():
-    """Geometric mean is strictly increasing in the multiplicative
-    product on the unit cube, so the rank ordering of any two policies
-    under ARI agrees with the rank ordering under ARI_geom (modulo ties).
-    """
-    rng = np.random.default_rng(seed=0)
-    triples = rng.uniform(0, 1, size=(40, 3))
-    aris = [compute_ari(*t) for t in triples]
-    geoms = [compute_ari_geom(*t) for t in triples]
-    # All pairwise orderings agree
-    n = len(aris)
-    for i in range(n):
-        for j in range(i + 1, n):
-            if aris[i] < aris[j]:
-                assert geoms[i] <= geoms[j] + 1e-12
-            elif aris[i] > aris[j]:
-                assert geoms[i] >= geoms[j] - 1e-12
 
 
 # ---------------------------------------------------------------------------
@@ -137,29 +102,12 @@ def test_rle_under_threshold_returns_zero():
 
 
 # ---------------------------------------------------------------------------
-# Equity: Sen welfare reduces correctly
+# Equity: stability-weighted mean canonical form
 # ---------------------------------------------------------------------------
 
-def test_sen_equity_constant_input_equals_mean():
-    """When SLCA is constant, Gini = 0 and Sen welfare = mean."""
-    vals = [0.7] * 8
-    assert compute_equity_sen(vals) == pytest.approx(0.7)
-
-
-def test_sen_equity_bounded():
-    rng = np.random.default_rng(seed=1)
-    for _ in range(20):
-        vals = rng.uniform(0, 1, size=10)
-        v = compute_equity_sen(vals)
-        assert 0.0 <= v <= 1.0
-
-
-def test_sen_equity_zero_when_mean_zero():
-    assert compute_equity_sen([0.0] * 5) == 0.0
-
-
 def test_primary_equity_unchanged_for_constant_input():
-    """Existing primary equity should still equal mean when std = 0."""
+    """When SLCA is constant std=0, equity = mean (the stability-weighted
+    mean degenerates to the level since there is nothing to penalise)."""
     vals = [0.7] * 8
     assert compute_equity(vals) == pytest.approx(0.7)
 

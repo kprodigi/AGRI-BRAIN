@@ -419,26 +419,29 @@ def test_hierarchy_weight_step_recovers_with_zero_halfwidth():
                             halfwidth=0.0) == 0.00
 
 
-def test_compute_rle_uniform_eu_agnostic_companion():
-    """The EU-agnostic ``compute_rle_uniform`` companion treats LR
-    and Recovery as equally-rerouted: both weight 1.00, cold_chain
-    weights 0.00. This is the robustness companion that defends
-    against the 'EU-shaped policy wins on EU-shaped metric' attack.
+def test_companion_metrics_are_retired():
+    """Pin the 2026-04 single-version-of-the-truth pass: the three
+    companion metrics (compute_ari_geom, compute_rle_uniform,
+    compute_equity_sen) plus their supporting machinery
+    (hierarchy_weight_uniform, HIERARCHY_WEIGHT_UNIFORM) must NOT
+    exist in resilience.py per the user mandate that every metric
+    have exactly one formulation in the repository.
     """
     AGRI_BACKEND = Path(__file__).resolve().parents[1].parent / "agribrain" / "backend"
     sys.path.insert(0, str(AGRI_BACKEND))
-    from src.models.resilience import compute_rle_uniform
-    rho = [0.5] * 10
-    # All LR routes => RLE_uniform = 1.0 (every at-risk step rerouted).
-    assert compute_rle_uniform(rho, ["local_redistribute"] * 10) == 1.0
-    # All Recovery routes => RLE_uniform = 1.0 (uniform companion does
-    # NOT distinguish LR from Recovery; both score 1.00).
-    assert compute_rle_uniform(rho, ["recovery"] * 10) == 1.0
-    # All cold_chain => RLE_uniform = 0.0 (no rerouting at all).
-    assert compute_rle_uniform(rho, ["cold_chain"] * 10) == 0.0
-    # Mixed half-and-half => RLE_uniform = 0.5.
-    mixed = ["local_redistribute"] * 5 + ["cold_chain"] * 5
-    assert abs(compute_rle_uniform(rho, mixed) - 0.5) < 1e-9
+    from src.models import resilience as res
+    for retired in (
+        "compute_ari_geom",
+        "compute_rle_uniform",
+        "compute_equity_sen",
+        "hierarchy_weight_uniform",
+        "HIERARCHY_WEIGHT_UNIFORM",
+    ):
+        assert not hasattr(res, retired), (
+            f"resilience.{retired} is back in the codebase. Single "
+            f"version-of-the-truth requirement: every metric must "
+            f"have exactly one formulation."
+        )
 
 
 def test_rletracker_uses_rho_conditional_weight():
