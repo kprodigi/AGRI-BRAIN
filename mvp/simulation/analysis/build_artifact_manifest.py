@@ -112,12 +112,19 @@ def main() -> None:
         git_available = False
     try:
         if git_available:
-            porcelain = (
-                subprocess.check_output(
-                    ["git", "status", "--porcelain"], cwd=git_root,
-                    stderr=subprocess.PIPE,
-                ).decode("utf-8").strip()
-            )
+            # Decode without .strip(): a whole-output strip eats
+            # the leading status-column space of the FIRST porcelain
+            # line (entries like " M path" become "M path" after
+            # the strip), which then makes the column-offset parser
+            # below mis-read the path field. The downstream
+            # "mvp/simulation/results/" prefix filter then fails to
+            # match the first alphabetical results file
+            # (artifact_manifest.json) and the dirty check
+            # spuriously fires on every HPC re-stamp.
+            porcelain = subprocess.check_output(
+                ["git", "status", "--porcelain"], cwd=git_root,
+                stderr=subprocess.PIPE,
+            ).decode("utf-8")
             # Filter out changes inside ``mvp/simulation/results/``
             # before deciding "dirty". The HPC pipeline regenerates
             # every figure / CSV / JSON in that directory by design,
@@ -132,12 +139,19 @@ def main() -> None:
             # always carries modified figures/tables relative to
             # the committed snapshot.
             non_artifact_lines = []
-            for raw_line in porcelain.split("\n"):
+            for raw_line in porcelain.splitlines():
                 if not raw_line.strip():
                     continue
-                # `git status --porcelain` lines are "XX path", with
-                # rename targets formatted "XX old -> new".
-                path = raw_line[3:].strip() if len(raw_line) >= 4 else ""
+                # Whitespace-tolerant parse: the (1-or-2 char)
+                # status field is whitespace-separated from the path
+                # field, regardless of whether the leading column is
+                # a space (unstaged-only entry) or a status letter
+                # (staged entry). Robust to porcelain v1 quirks the
+                # column-offset parser previously assumed away.
+                # Rename pairs ("R  old -> new") still get the
+                # right-hand path via the " -> " split below.
+                parts = raw_line.split(None, 1)
+                path = parts[1] if len(parts) >= 2 else ""
                 if " -> " in path:
                     path = path.split(" -> ", 1)[1].strip()
                 if path.startswith("mvp/simulation/results/"):
