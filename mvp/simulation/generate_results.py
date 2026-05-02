@@ -888,9 +888,24 @@ def run_episode(
             [float(v) for v in np.asarray(_mod_vec).flatten()]
             if _mod_vec is not None else None
         )
-        dominant_psi_idx = (
-            int(np.argmax(np.abs(np.asarray(_psi_vec)))) if _psi_vec is not None else None
-        )
+        # Action-aware dominance: the feature whose contribution to the
+        # CHOSEN action's logit shift dominates in absolute value.
+        # Older code used argmax|psi| which is action-agnostic and made
+        # the sign-consistency check report a false mismatch whenever
+        # the largest-|psi| feature projected weakly onto the chosen
+        # action's row. compute_context_modifier applies only
+        # non-sign-flipping factors (positive temporal/physics scalars
+        # plus a symmetric clamp), so sign(mod[a]) == sign((THETA @ psi)[a])
+        # for nonzero mod[a]; making dominance action-aware ties the
+        # claim "feature j drove action a" to the actual largest
+        # contributor to mod[a].
+        if _psi_vec is not None:
+            from pirag.context_to_logits import THETA_CONTEXT as _THETA_CTX_DOM
+            _psi_arr = np.asarray(_psi_vec)
+            _theta_row = _THETA_CTX_DOM[int(action_idx)]
+            dominant_psi_idx = int(np.argmax(np.abs(_theta_row * _psi_arr)))
+        else:
+            dominant_psi_idx = None
         dominant_action_idx = (
             int(np.argmax(np.asarray(_mod_vec))) if _mod_vec is not None else None
         )

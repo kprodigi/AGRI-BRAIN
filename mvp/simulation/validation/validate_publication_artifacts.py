@@ -31,6 +31,12 @@ def _load_json(path: Path) -> Any:
 def _validate_significance() -> None:
     path = RESULTS_DIR / "benchmark_significance.json"
     data = _load_json(path)
+    # 2026-04 schema: per-(scenario, comparison, metric) records are
+    # nested under top-level "significance" alongside "_meta" and
+    # "primary_h1_holm_adjusted". Unwrap so the traversal works on
+    # both wrapped and legacy-flat formats.
+    if isinstance(data, dict) and isinstance(data.get("significance"), dict):
+        data = data["significance"]
     required = {
         "p_value",
         "p_value_adj",
@@ -164,6 +170,8 @@ def _validate_threshold_assertions() -> None:
     descriptive fields (mean_diff, cohens_d) are present and finite.
     """
     sig = _load_json(RESULTS_DIR / "benchmark_significance.json")
+    if isinstance(sig, dict) and isinstance(sig.get("significance"), dict):
+        sig = sig["significance"]
     summary = _load_json(RESULTS_DIR / "benchmark_summary.json")
     if isinstance(summary, dict) and "summary" in summary and isinstance(summary["summary"], dict):
         summary = summary["summary"]

@@ -126,32 +126,41 @@ def _has_full_chain(rec: Dict[str, Any]) -> bool:
 
 
 def _sign_consistent(rec: Dict[str, Any], theta_context) -> Optional[bool]:
-    """Does the stated dominant feature's matrix entry agree in sign with
-    the modifier component for the chosen action?
+    """Does the dominant feature's matrix entry agree in sign with the
+    modifier component for the chosen action?
 
-    Returns None when the row does not carry the data needed to check."""
+    Returns None when the row does not carry the data needed to check.
+
+    "Dominant" is defined here as the feature j whose contribution to
+    the chosen action's logit shift is largest in absolute value:
+    ``argmax_j |THETA[a, j] * psi[j]|``. This is action-aware. The
+    decision ledger may carry an older action-agnostic value
+    (``argmax_j |psi[j]|``) - earlier writers stored that - so we
+    re-derive dominance from ``(theta_context, action_idx, psi)`` here
+    when those are available. The recorded ``dominant_psi_idx`` is
+    used only as a fallback when ``theta_context`` is not importable
+    (CI without the backend on the path), since the action-agnostic
+    value cannot detect mismatches the action-aware definition would.
+    """
     if theta_context is None:
         return None
     psi = rec.get("psi")
     mod = rec.get("context_modifier")
-    j = rec.get("dominant_psi_idx")
     a = rec.get("action_idx")
     if not isinstance(psi, list) or not isinstance(mod, list):
         return None
-    if j is None or a is None:
+    if a is None:
         return None
     try:
-        theta_aj = float(theta_context[a, j])
-        psi_j = float(psi[j])
-        mod_a = float(mod[a])
+        a_int = int(a)
+        psi_arr = [float(x) for x in psi]
+        theta_row = [float(theta_context[a_int, k]) for k in range(len(psi_arr))]
+        contributions = [theta_row[k] * psi_arr[k] for k in range(len(psi_arr))]
+        j = max(range(len(contributions)), key=lambda k: abs(contributions[k]))
+        contribution = contributions[j]
+        mod_a = float(mod[a_int])
     except Exception:  # noqa: BLE001
         return None
-    # Contribution of the dominant feature to the chosen action's logit.
-    contribution = theta_aj * psi_j
-    # When the contribution is non-trivial, it must share a sign with the
-    # modifier component the explanation reports for that action. (When
-    # the dominant feature is a piRAG feature masked off by mcp_only,
-    # psi_j == 0 and there is nothing to check; treat as consistent.)
     if abs(contribution) < 1e-9:
         return True
     return (contribution >= 0) == (mod_a >= 0)
