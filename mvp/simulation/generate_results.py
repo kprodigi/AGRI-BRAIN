@@ -486,6 +486,22 @@ def run_episode(
     # so across-mode comparisons are fair. MCP modes see compliance too; non-
     # MCP modes don't invoke check_compliance and so never flag compliance.
     operational_violation_steps = 0
+    # Outcome-side disposition on the env-driven violation event set:
+    # of the steps where (temp_violation OR quality_violation) fired,
+    # what did the agent's chosen action do with the at-risk batch?
+    # cold_chain = let it continue downstream toward retail (BAD), local
+    # redistribute = reroute to short-dwell food-bank channel (mitigated),
+    # recovery = remove from retail-bound pool (CONTAINED). Static will
+    # land at downstream ~= 1.0 by construction; AgriBrain should be
+    # significantly lower because the Recovery knee at rho=0.30 and the
+    # food-safety override at rho=0.65 fire on exactly this event set.
+    # See compute_violation_disposition in resilience.py for the
+    # canonical definition; counters below mirror it inline so the
+    # episode summary can be emitted without an extra trace pass.
+    violation_routed_to_cold_chain = 0
+    violation_routed_to_local = 0
+    violation_routed_to_recovery = 0
+    violation_event_count_local = 0
 
     # Context-alignment counters: did the chosen action match the action that
     # the context layer most strongly recommended? Only counted for steps
@@ -780,6 +796,18 @@ def run_episode(
             quality_violation_steps += 1
         if temp_violation or quality_violation:
             operational_violation_steps += 1
+            # Outcome-side: record what the policy chose to do with the
+            # at-risk batch on this violation step. action is the
+            # canonical name from ACTIONS so the equality checks below
+            # cover every dispatch path; aliased equivalents would
+            # already have resolved through ACTIONS earlier in the loop.
+            violation_event_count_local += 1
+            if action == "cold_chain":
+                violation_routed_to_cold_chain += 1
+            elif action == "local_redistribute":
+                violation_routed_to_local += 1
+            elif action == "recovery":
+                violation_routed_to_recovery += 1
         # constraint_violation_steps counts ambient-driven safety
         # window breaches: ``temp_violation`` (cold-chain ceiling
         # exceeded) and ``quality_violation`` (shelf-fraction below
@@ -1083,6 +1111,31 @@ def run_episode(
         # the MCP compliance tool in their dispatch set.
         "operational_violation_rate": float(operational_violation_steps / max(n, 1)),
         "regulatory_violation_rate": float(compliance_violation_steps / max(n, 1)),
+        # Outcome-side disposition on the env-driven violation event set
+        # (steps where temp_violation OR quality_violation fired). The
+        # three rates are conditional on a violation event having
+        # occurred and sum to 1.0 by construction whenever
+        # violation_event_count > 0; when the episode had zero violation
+        # events, all three are 0.0 by convention. Unlike
+        # constraint_violation_rate / regulatory_violation_rate (env-
+        # driven, near-flat across modes within a scenario by design),
+        # these three ARE policy-driven by construction: they record
+        # what the agent chose to do with the at-risk batch. Static
+        # always picks cold_chain so its downstream rate ~= 1.0;
+        # AgriBrain's Recovery knee + food-safety override drive
+        # contained_rate up sharply on the same event set. See
+        # resilience.compute_violation_disposition for the canonical
+        # definition.
+        "downstream_violation_rate": float(
+            violation_routed_to_cold_chain / max(violation_event_count_local, 1)
+        ) if violation_event_count_local > 0 else 0.0,
+        "redistribute_violation_rate": float(
+            violation_routed_to_local / max(violation_event_count_local, 1)
+        ) if violation_event_count_local > 0 else 0.0,
+        "contained_violation_rate": float(
+            violation_routed_to_recovery / max(violation_event_count_local, 1)
+        ) if violation_event_count_local > 0 else 0.0,
+        "violation_event_count": int(violation_event_count_local),
         "context_active_steps": int(context_active_steps),
         "context_active_fraction": float(context_active_steps / max(n, 1)),
         "context_honored_steps": int(context_honored_steps),
@@ -1572,6 +1625,14 @@ def run_all(seed: int = SEED) -> dict:
                 "DecisionLatencyMs": round(ep["mean_decision_latency_ms"], 3),
                 "ConstraintViolationRate": round(ep["constraint_violation_rate"], 4),
                 "ComplianceViolationRate": round(ep["compliance_violation_rate"], 4),
+                # Outcome-side disposition: of the env-driven violation
+                # events, what did the policy do with the at-risk batch?
+                # Static -> ~1.0 (downstream); AgriBrain -> << 1.0 because
+                # the Recovery knee + food-safety override divert at-risk
+                # batches off the retail-bound pool. See resilience.py
+                # compute_violation_disposition for the canonical definition.
+                "DownstreamViolationRate": round(ep.get("downstream_violation_rate", 0.0), 4),
+                "ContainedViolationRate": round(ep.get("contained_violation_rate", 0.0), 4),
             })
     table1 = pd.DataFrame(table1_rows)
 
@@ -1586,6 +1647,8 @@ def run_all(seed: int = SEED) -> dict:
                 "Waste": round(ep["waste"], 3), "SLCA": round(ep["slca"], 3),
                 "DecisionLatencyMs": round(ep["mean_decision_latency_ms"], 3),
                 "ConstraintViolationRate": round(ep["constraint_violation_rate"], 4),
+                "DownstreamViolationRate": round(ep.get("downstream_violation_rate", 0.0), 4),
+                "ContainedViolationRate": round(ep.get("contained_violation_rate", 0.0), 4),
             })
     table2 = pd.DataFrame(table2_rows)
 

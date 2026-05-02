@@ -59,6 +59,14 @@ EXTRA_METRICS = (
     "operational_violation_rate", "regulatory_violation_rate",
     "context_active_fraction", "context_honor_rate",
     "context_active_steps", "context_honored_steps",
+    # Outcome-side violation disposition: policy-quality score on the
+    # env-driven violation event set. See resilience.py
+    # compute_violation_disposition. The aggregator runs the same
+    # bootstrap CI machinery on these as for the headline metrics so the
+    # CSV picks up DownstreamViolationRate / ContainedViolationRate
+    # columns alongside ConstraintViolationRate.
+    "downstream_violation_rate", "redistribute_violation_rate",
+    "contained_violation_rate", "violation_event_count",
 )
 
 # Columns exposed in the stochastic CSV rewrites below. First element of
@@ -93,11 +101,18 @@ _TABLE1_COLUMNS = (
     ("mean_decision_latency_ms", "DecisionLatencyMs"),
     ("operational_violation_rate", "ConstraintViolationRate"),
     ("regulatory_violation_rate", "RegulatoryViolationRate"),
+    # Outcome-side disposition on the violation event set. Static lands
+    # near 1.0 by construction; AgriBrain is significantly lower because
+    # the Recovery knee + food-safety override divert at-risk batches.
+    ("downstream_violation_rate", "DownstreamViolationRate"),
+    ("contained_violation_rate", "ContainedViolationRate"),
 )
 _TABLE2_COLUMNS = (
     ("ari", "ARI"), ("rle", "RLE"), ("waste", "Waste"), ("slca", "SLCA"),
     ("mean_decision_latency_ms", "DecisionLatencyMs"),
     ("operational_violation_rate", "ConstraintViolationRate"),
+    ("downstream_violation_rate", "DownstreamViolationRate"),
+    ("contained_violation_rate", "ContainedViolationRate"),
 )
 _TABLE1_ROW_METHODS = ("static", "hybrid_rl", "agribrain")
 BASELINES = ("mcp_only", "pirag_only", "no_context",

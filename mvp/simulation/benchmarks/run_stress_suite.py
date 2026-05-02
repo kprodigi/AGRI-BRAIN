@@ -133,6 +133,14 @@ def _run_pair(
             "equity": float(ep["equity"]),
             "constraint_violation_rate": float(ep.get("constraint_violation_rate", 0.0)),
             "decision_latency_ms": float(ep.get("mean_decision_latency_ms", 0.0)),
+            # Outcome-side disposition: under stressors, did the policy
+            # still contain at-risk batches off the retail-bound pool, or
+            # did the noise drive it back toward an undifferentiated
+            # cold_chain default? Carrying these through stress_summary
+            # lets downstream readers spot stressor-induced regressions
+            # in policy decisiveness without re-running the simulator.
+            "downstream_violation_rate": float(ep.get("downstream_violation_rate", 0.0)),
+            "contained_violation_rate": float(ep.get("contained_violation_rate", 0.0)),
         }
     return results
 

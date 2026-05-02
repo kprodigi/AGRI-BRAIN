@@ -897,6 +897,126 @@ def compute_rle(rho_values: List[float], actions: List[str],
 
 
 # ---------------------------------------------------------------------------
+# Violation disposition (outcome-side metric on the safety-window event set)
+# ---------------------------------------------------------------------------
+# constraint_violation_rate / regulatory_violation_rate / compliance_
+# violation_rate are all driven by the dataset's ambient temperature and
+# humidity trajectory and are computed by predicates that do not consult
+# the chosen action. They are therefore *environmental signatures* of how
+# stress-laden a scenario is, not measures of policy quality. Reading
+# table1's ConstraintViolationRate or RegulatoryViolationRate column
+# naively as "AgriBrain has the same compliance failure rate as Static"
+# misreads the metric: every method is being scored on the same env-
+# driven event set by construction.
+#
+# The *outcome* question — "given that the env was in a violation state,
+# what did the agent do about it?" — is answered by the per-violation
+# action disposition: of those violation timesteps, what fraction did the
+# agent send into the cold-chain (downstream toward retail) vs route to
+# local-redistribute or recovery (off the retail-bound pool)? This is a
+# pure policy metric: every method is asked the same question on the
+# same event subset, so cross-method differences come entirely from the
+# action distribution conditional on the environmental violation event.
+#
+# Expected ranking under healthy policies:
+#
+#   Static                downstream ~= 1.00  (no policy, always cold_chain)
+#   Hybrid RL             downstream  < 1.00  (RL learned to reroute some)
+#   AgriBrain             downstream << 1.00  (Recovery knee + food-safety
+#                                              override fire on rho > 0.30
+#                                              and rho > 0.65 respectively)
+#
+# Companion metrics:
+#
+#   contained_violation_rate    = fraction routed to ``recovery`` (off retail)
+#   redistribute_violation_rate = fraction routed to ``local_redistribute``
+#
+# The three sum to 1.0 by construction whenever there are violation
+# events. When the episode has no violation events, all three return
+# 0.0 to avoid divide-by-zero and to flag "no event data to score
+# disposition on" downstream.
+#
+# References
+# ----------
+# Pettit, T.J., Croxton, K.L. & Fiksel, J. (2013). §4.2 ("response
+# fitness" as the fraction of stress events the policy responded to)
+# anchors the conditional-on-event framing the metric uses.
+def compute_violation_disposition(
+    temp_violations: List[bool],
+    quality_violations: List[bool],
+    actions: List[str],
+) -> dict:
+    """Action-disposition rates over the env-driven violation event set.
+
+    Records what the policy did on each timestep where the environment
+    was in a safety-window violation state (temperature ceiling exceeded
+    OR shelf-fraction below expedite floor — the same predicate the
+    simulator uses for ``constraint_violation_rate`` and
+    ``operational_violation_rate``). Returns the conditional disposition
+    rates, with the three action buckets summing to 1.0 by construction
+    whenever at least one violation event fired during the episode.
+
+    Parameters
+    ----------
+    temp_violations : per-step booleans, ``True`` iff the cold-chain
+        temperature ceiling was exceeded at that step.
+    quality_violations : per-step booleans, ``True`` iff shelf-life
+        fell below the expedite floor at that step.
+    actions : per-step routing action names ("cold_chain",
+        "local_redistribute", "recovery", or any aliased equivalent
+        resolved by ``action_aliases.resolve_action``).
+
+    Returns
+    -------
+    dict with keys
+        downstream_violation_rate    in [0, 1] — fraction of violation
+                                     events the policy let into the
+                                     retail-bound cold chain.
+        redistribute_violation_rate  in [0, 1] — fraction routed to
+                                     local_redistribute.
+        contained_violation_rate     in [0, 1] — fraction routed to
+                                     recovery (off the retail-bound pool).
+        violation_event_count        int — how many event timesteps the
+                                     rates are conditioned on. 0 means
+                                     the three rates are by-convention
+                                     zero rather than meaningful.
+    """
+    if not (len(temp_violations) == len(quality_violations) == len(actions)):
+        raise ValueError(
+            f"trace lengths must match; got temp={len(temp_violations)}, "
+            f"quality={len(quality_violations)}, actions={len(actions)}"
+        )
+    total_violations = 0
+    routed_to_cold_chain = 0
+    routed_to_local = 0
+    routed_to_recovery = 0
+    for tv, qv, a in zip(temp_violations, quality_violations, actions):
+        if not (bool(tv) or bool(qv)):
+            continue
+        total_violations += 1
+        canonical = _resolve_action(a)
+        if canonical == "cold_chain":
+            routed_to_cold_chain += 1
+        elif canonical == "local_redistribute":
+            routed_to_local += 1
+        elif canonical == "recovery":
+            routed_to_recovery += 1
+    if total_violations == 0:
+        return {
+            "downstream_violation_rate":    0.0,
+            "redistribute_violation_rate":  0.0,
+            "contained_violation_rate":     0.0,
+            "violation_event_count":        0,
+        }
+    return {
+        "downstream_violation_rate":    float(routed_to_cold_chain / total_violations),
+        "redistribute_violation_rate":  float(routed_to_local      / total_violations),
+        "contained_violation_rate":     float(routed_to_recovery   / total_violations),
+        "violation_event_count":        int(total_violations),
+    }
+
+
+# ---------------------------------------------------------------------------
 # Equity
 # ---------------------------------------------------------------------------
 

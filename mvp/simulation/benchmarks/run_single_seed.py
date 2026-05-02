@@ -82,6 +82,16 @@ def main() -> None:
                 "operational_violation_rate", "regulatory_violation_rate",
                 "context_active_steps", "context_active_fraction",
                 "context_honored_steps", "context_honor_rate",
+                # Outcome-side violation disposition: cross-method-honest
+                # policy-quality score on the env-driven violation event
+                # set. See resilience.compute_violation_disposition for
+                # the canonical definition. The three rates sum to 1.0
+                # whenever violation_event_count > 0 and are all 0.0
+                # otherwise (no events to score disposition on).
+                "downstream_violation_rate",
+                "redistribute_violation_rate",
+                "contained_violation_rate",
+                "violation_event_count",
             ):
                 if extra in ep:
                     metrics[sc][mode][extra] = ep[extra] if not isinstance(

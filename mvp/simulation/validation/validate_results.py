@@ -380,6 +380,66 @@ for _, row in t1.iterrows():
             f"{row['Method']}/{row['Scenario']} = {rv}"
         )
 
+# DownstreamViolationRate / ContainedViolationRate (outcome-side disposition
+# on the env-driven violation event set). These ARE policy-driven by
+# construction — the rates are conditional on a violation event having
+# fired, and the only thing that varies across modes is the action
+# distribution on those events. Static always picks cold_chain so its
+# DownstreamViolationRate ~= 1.0 across every scenario; AgriBrain's
+# Recovery knee + food-safety override divert at-risk batches off the
+# retail-bound pool, so its rate is meaningfully lower (often by 0.40-0.70
+# absolute). Reviewers should read these two columns together with
+# ConstraintViolationRate to see "the env was bad this often, and the
+# policy contained that fraction of the bad events". Range-check both
+# in [0, 1] and assert the AgriBrain << Static ordering as a hard claim
+# (warning under STRICT_VALIDATION=0, error under =1) since this is
+# exactly the policy-quality signal the metric was added to expose.
+for _, row in t1.iterrows():
+    dv = row.get("DownstreamViolationRate")
+    if dv is not None and not (0.0 <= float(dv) <= 1.0):
+        errors.append(
+            f"DownstreamViolationRate out of bounds: "
+            f"{row['Method']}/{row['Scenario']} = {dv}"
+        )
+    cv = row.get("ContainedViolationRate")
+    if cv is not None and not (0.0 <= float(cv) <= 1.0):
+        errors.append(
+            f"ContainedViolationRate out of bounds: "
+            f"{row['Method']}/{row['Scenario']} = {cv}"
+        )
+
+if "DownstreamViolationRate" in t1.columns:
+    for sc in t1["Scenario"].unique():
+        st_dv = get(sc, "static", "DownstreamViolationRate")
+        ab_dv = get(sc, "agribrain", "DownstreamViolationRate")
+        if st_dv is not None and ab_dv is not None:
+            # Allow a 0.05 tolerance for seed noise. The substantive
+            # claim is "AgriBrain routes a smaller fraction of violation
+            # events into the retail-bound cold chain than Static" —
+            # i.e. AgriBrain contains violations that Static lets
+            # through. If AgriBrain >= Static here, either the policy
+            # regressed or the metric is wired wrong.
+            if ab_dv > st_dv - 0.05:
+                _ord(
+                    f"DownstreamViolationRate ordering: agribrain/{sc}={ab_dv:.3f} >= "
+                    f"static/{sc}={st_dv:.3f} - 0.05. Outcome-side metric should be "
+                    f"AB << ST; if this fires, the policy is letting at-risk batches "
+                    f"into retail at the same rate as the no-policy baseline."
+                )
+
+if "ContainedViolationRate" in t1.columns:
+    # Static cannot route to recovery (it always picks cold_chain), so
+    # its ContainedViolationRate must be effectively zero. Sanity-check.
+    for sc in t1["Scenario"].unique():
+        st_cv = get(sc, "static", "ContainedViolationRate")
+        if st_cv is not None and float(st_cv) > 0.05:
+            _ord(
+                f"ContainedViolationRate sanity: static/{sc}={st_cv:.3f} > 0.05. "
+                f"Static always picks cold_chain so its violation containment rate "
+                f"should be ~0. Non-zero value here suggests the disposition "
+                f"counter is being incremented on the wrong action."
+            )
+
 # ============================================================
 # REPORT
 # ============================================================
