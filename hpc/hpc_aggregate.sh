@@ -1,8 +1,11 @@
 #!/bin/bash
 # SLURM aggregation job: runs after the seed array completes.
-# Stage 1 (generate_results), Stage 3 (context benchmark aggregator),
+# Stage 1 (generate_results), Stage 2 (early validate),
+# Stage 3 (context benchmark aggregator),
+# Stage 4 (within-trace temporal stability / C6 evidence),
 # Stage 5 (canonical aggregate_seeds), Stage 6 (stress suite),
-# Stage 7 (figures), and the paper-evidence / manifest / validation stages.
+# Stage 7 (figures), Stage 7.5 (explainability), Stage 8 (paper evidence),
+# Stage 9 (artifact manifest), Stage 10 (final strict validation).
 #SBATCH --job-name=agribrain-aggregate
 # 24h wall-time. Realistic runtime is 1-2h (stress suite is the longest
 # single stage at ~1h). 24h is a full day of headroom in case the stress
@@ -98,8 +101,24 @@ echo "=== Stage 1: generate base tables ==="
 (cd mvp/simulation && python generate_results.py)
 
 # Stage 2: validation pass on the freshly written tables.
+#
+# IMPORTANT: this validates the SINGLE-SEED tables that Stage 1 just
+# wrote (generate_results.py runs deterministic seed42 only). Stage 5
+# below renames those files to *_seed42.csv siblings and rewrites the
+# canonical table1_summary.csv / table2_ablation.csv as 20-seed mean
+# + bootstrap CI tables. Stage 10 then re-validates the 20-seed
+# rewrite. So Stage 2 and Stage 10 see *different files under the
+# same path* — any ablation-ordering or range warning from Stage 2
+# that doesn't reappear in Stage 10 was a single-seed artefact that
+# averaged out across the 20-seed bootstrap.
+#
+# The Stage 2 pass exists for early termination: if the seed42 run
+# produces grossly out-of-range values (validator emits hard errors,
+# not warnings), the script aborts before consuming the seed array's
+# work. Treat its WARN-level ordering output as informational; the
+# canonical numbers are Stage 10's.
 echo ""
-echo "=== Stage 2: validate ==="
+echo "=== Stage 2: validate (single-seed; canonical 20-seed validation runs at Stage 10) ==="
 (cd mvp/simulation && python validation/validate_results.py)
 
 # Stage 3: refactored context-ablation aggregator reads the tagged seeds dir.
@@ -108,6 +127,26 @@ echo "=== Stage 3: context benchmark aggregator ==="
 python mvp/simulation/benchmarks/run_benchmark_suite.py \
     --seeds-dir "$SEEDS_DIR" \
     --output-dir "$RESULTS_DIR"
+
+# Stage 4: within-trace temporal stability (early/mid/late thirds of
+# the same 288-row trace; "external_validity" filenames retained for
+# back-compat with the artifact manifest). Produces
+# external_validity_summary.{json,csv} and external_validity_deltas.csv
+# which carry the C6 paper-evidence claim ("AgriBrain ranking/gains
+# persist across the three thirds of the same trace").
+#
+# Stage 4 was missing from this script through 2026-04. The aggregator
+# went 1 -> 2 -> 3 -> 5 -> 6 ..., so the C6 files were only present on
+# HPC if a maintainer ran the script manually after the aggregator
+# completed. CLAIMS_TO_EVIDENCE.md C6 lists external_validity_*.{json,csv}
+# as the canonical evidence files, and validate_publication_artifacts.py
+# (Stage 10's strict-mode pass) treats them as required artifacts.
+# Inserting Stage 4 here puts the C6 files inside the
+# afterok-dependent aggregator job so the canonical pipeline emits
+# them every run.
+echo ""
+echo "=== Stage 4: within-trace temporal stability ==="
+python mvp/simulation/benchmarks/run_external_validity.py
 
 # Stage 5: canonical aggregator expects flat seed_<n>.json files under
 # mvp/simulation/results/benchmark_seeds/. Copy (not symlink) the tagged

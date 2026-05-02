@@ -67,20 +67,31 @@ class ToolRegistry:
 
         Permissive by default (preserves the legacy overwrite
         semantics that ``register_*_capabilities`` helpers rely on).
-        Duplicate registrations log at WARN with the previous and
-        replacement tool ids so silent shadowing is auditable.
-        Callers that want strict deduplication can use :meth:`replace`
-        (explicit overwrite) or :meth:`register_strict` (raise on
-        duplicate).
+        Duplicate registrations with a *different underlying callable*
+        log at WARN with the previous and replacement tool ids so silent
+        shadowing is auditable. Re-registrations of the *same callable*
+        (which is what happens when benchmark code recreates a
+        coordinator/registry per window — common in
+        ``run_external_validity.py`` and the stress suite) are silent;
+        the dispatch behaviour is unchanged so a warning would just be
+        log noise. Callers that want strict deduplication can use
+        :meth:`replace` (explicit overwrite) or :meth:`register_strict`
+        (raise on duplicate).
         """
         existing = self._tools.get(spec.name)
         if existing is not None and existing is not spec:
-            _log.warning(
-                "MCP registry: overwriting tool %r (previous fn=%s, new fn=%s)",
-                spec.name,
-                getattr(existing.fn, "__qualname__", existing.fn),
-                getattr(spec.fn, "__qualname__", spec.fn),
-            )
+            # Compare the underlying functions, not the ToolSpec objects.
+            # When a benchmark loop reconstructs the coordinator each
+            # iteration, it builds new ToolSpec wrappers around the same
+            # capability function; ``existing.fn is spec.fn`` is the
+            # right "this is genuinely the same registration" check.
+            if existing.fn is not spec.fn:
+                _log.warning(
+                    "MCP registry: overwriting tool %r (previous fn=%s, new fn=%s)",
+                    spec.name,
+                    getattr(existing.fn, "__qualname__", existing.fn),
+                    getattr(spec.fn, "__qualname__", spec.fn),
+                )
         self._tools[spec.name] = spec
 
     def register_strict(self, spec: ToolSpec) -> None:

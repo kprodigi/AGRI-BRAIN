@@ -161,24 +161,41 @@ upper end of the tested range. Both environments produce the same
 canonical artifacts because the pure-numpy stack does not change
 behaviour across these minor versions.
 
-- OS: `Windows-11-10.0.26200-SP0`
-- Python: `3.13.5` (local/HPC reference); CI uses `3.11`
-- Node.js / npm: `v24.11.1` / `11.6.2`
-- Core Python packages:
-  - `numpy==2.1.3`
-  - `pandas==2.2.3`
-  - `matplotlib==3.10.0`
-  - `scipy==1.15.3`
-  - `fastapi==0.135.1`
-  - `pydantic==2.10.3`
-  - `uvicorn==0.42.0`
-  - `web3==7.14.1`
+- OS: `Windows-11-10.0.26200-SP0` (local); SLES on the SDSMT cluster (HPC).
+- Python: `3.13.x` (local/HPC reference, exact patch version varies);
+  CI uses `3.11`.
+- Node.js / npm: `v24.11.1` / `11.6.2`.
+- Core Python packages — minimum supported, NOT exact pins. The
+  pure-numpy stack used for the canonical metrics is stable across
+  the patch ranges typical of conda / pip resolves: minor numpy /
+  pandas / scipy version drift between the development laptop, HPC
+  cluster, and CI does not change the published numerics. The
+  `requirements-lock.txt` snapshot of any individual run is the
+  reproducibility-grade pin; the table below is the
+  "what-to-install-fresh" guidance.
+  - `numpy >= 2.1`     (HPC 15a8464 run: `2.4.4`; local: `2.4.2`; CI: `2.1.3`)
+  - `pandas >= 2.2`    (HPC: `2.3.3`; local: `3.0.1`; CI: `2.2.3`)
+  - `matplotlib >= 3.10` (HPC: `3.10.x`; local: `3.10.8`; CI: `3.10.0`)
+  - `scipy >= 1.15`    (HPC: `1.17.1`; local: `1.15.3`; CI: `1.15.3`)
+  - `fastapi >= 0.135`
+  - `pydantic >= 2.10`
+  - `uvicorn >= 0.42`
+  - `web3 >= 7.14`
 
-To freeze exact versions for archival:
+  Cross-version stability is exercised in `test_metric_variants.py`
+  (statistical-aggregation invariants) and the seed-array bootstrap
+  CIs make any sub-significance numeric drift visible in the
+  significance-table CIs themselves.
+
+To freeze exact versions for archival reproduction of a specific run:
 
 ```bash
 python -m pip freeze > requirements-lock.txt
 ```
+
+This is the canonical reproducibility-grade pin. Commit
+`requirements-lock.txt` alongside the manifest if you intend the
+exact run to be byte-reproducible from source.
 
 ## 11) Claims Traceability
 
