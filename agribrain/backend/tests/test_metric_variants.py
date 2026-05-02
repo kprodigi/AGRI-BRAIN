@@ -244,6 +244,38 @@ def test_cyber_reroute_ranking_invariant(perturbation):
     # no_slca all beat it.
     assert mcp_only > no_context
     assert pirag_only > no_context
+    # Capability-composition prediction for the cyber_outage table:
+    # both no_slca and no_pinn outperform hybrid_rl during the outage
+    # because their AgriBrain-derived capability stack still carries
+    # MCP + piRAG (the offline-cache delta of +0.10 in the full-context
+    # case). hybrid_rl has only the base RL competence (0.55) and drops
+    # below both ablations even though hybrid_rl retains, on the
+    # non-outage portion, a "less hand-shaped" policy that some
+    # readers might expect to make it competitive overall. The
+    # 15a8464_20260501_0109 HPC run flagged
+    # cyber_outage: hybrid_rl=0.551 < no_slca=0.573 as an "Ablation
+    # ARI inversion" warning - this is exactly the structural
+    # consequence the capability model predicts and we lock it in
+    # here so any future capability-table edit that flips the
+    # ordering trips a regression. Sensitivity is exercised at +/-50%
+    # via the parametrized perturbation fixture so the ordering is
+    # not a tuned-constants tautology.
+    assert no_slca > hybrid_rl, (
+        f"capability-composition ordering broken at "
+        f"perturbation {perturbation:+.2f}: no_slca={no_slca:.4f} "
+        f"<= hybrid_rl={hybrid_rl:.4f}. The cyber_outage panel of the "
+        f"manuscript tells the story 'AgriBrain's offline-cache "
+        f"capability stack outperforms a pure-RL baseline even when "
+        f"SLCA scoring is ablated' - if this assertion fires the "
+        f"capability deltas have drifted enough that the story no "
+        f"longer holds and the panel needs a revisit."
+    )
+    assert no_pinn > hybrid_rl, (
+        f"capability-composition ordering broken at "
+        f"perturbation {perturbation:+.2f}: no_pinn={no_pinn:.4f} "
+        f"<= hybrid_rl={hybrid_rl:.4f}. Same story as the no_slca "
+        f"assertion above (PINN ablation still keeps the offline cache)."
+    )
 
 
 @pytest.mark.parametrize(
