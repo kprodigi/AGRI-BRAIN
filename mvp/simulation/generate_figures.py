@@ -1184,7 +1184,12 @@ def _fig5_pricing_inner(ap, ab, hours):
     y_hi = min(1.05, float(np.max(all_vals)) + 0.05)
     ax.set_ylim(y_lo, y_hi)
     _apply_style(ax)
-    _legend(ax, loc="lower center")
+    # Lower-center, lifted ~10 % off the x-axis: the central horizontal
+    # band of the panel below the data (y ~ y_lo .. 0.45) is empty
+    # because the three mode traces stay above ~0.55 across the
+    # interior hours, so the legend sits in clear space without
+    # touching any line.
+    _legend(ax, loc="lower center", bbox_to_anchor=(0.5, 0.10))
 
     # --- (d) Reward decomposition: SLCA, waste penalty, rho penalty ---
     # Three stacked layers on a single axis make the additive decomposition
@@ -1221,10 +1226,11 @@ def _fig5_pricing_inner(ap, ab, hours):
     ax.set_ylabel("Reward")
     ax.set_title("(d) Per-step Reward Comparison")
     _apply_style(ax)
-    # Lower-right corner is typically clear in this scenario - mode
-    # rewards stay within their bands the whole episode and the
-    # rightmost edge is the lowest density region.
-    _legend(ax, loc="lower right")
+    # Match panel (c)'s legend placement (lower-center, lifted ~10 %
+    # off the x-axis) so the two bottom-row panels read symmetrically.
+    # The reward traces stay above ~0.50 across the interior hours, so
+    # the lifted lower-center anchor is clear of all three lines.
+    _legend(ax, loc="lower center", bbox_to_anchor=(0.5, 0.10))
 
     fig.tight_layout(rect=[0, 0, 1, 0.985], h_pad=1.6, w_pad=1.6)
     _save(fig, "fig5_pricing")
