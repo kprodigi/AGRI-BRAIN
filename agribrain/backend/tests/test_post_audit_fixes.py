@@ -923,31 +923,61 @@ def test_simulator_emits_anomaly_defense_traces_in_result_dict():
     )
 
 
-def test_panel_c_consumes_anomaly_defense_traces():
-    """Pin that fig 4 panel C reads the three anomaly-defense traces
-    from the episode dict. Source-line invariant guards against any
-    future refactor that re-points panel C at a different metric
-    (e.g. the retired ``Reroute Rate vs Design Probability`` plot
-    that this implementation replaced)."""
+def test_panel_c_plots_defensive_reroutes_under_risk():
+    """Pin that fig 4 panel C plots the time-resolved RLE numerator -
+    cumulative count of steps where rho > RLE_THRESHOLD AND the policy
+    routed away from the cold chain.
+
+    Replaces the earlier ``test_panel_c_consumes_anomaly_defense_traces``
+    regression guard. The previous panel (Cumulative Anomaly Defenses
+    Triggered) cumsum-summed three coordinator-side traces
+    (``cooperative_veto``, ``physics_gate``, ``fault_recovery``) that
+    only fire when the env-flag triad
+    FAILURE_INJECTION / PHYSICS_CONSISTENCY_GATE / MCP_RELIABILITY is
+    explicitly enabled. The published HPC pipeline runs with all three
+    off, so the panel collapsed to a flat line at y=0 across every mode
+    and conveyed no information. The replacement panel uses
+    always-populated traces (``rho_trace`` + ``action_trace``) keyed
+    on the same RLE_THRESHOLD that drives the headline RLE column in
+    Table 1, so it tells a substantive cyber-resilience story under
+    the default flag configuration.
+
+    The three anomaly-defense traces are still emitted by the
+    simulator (see ``test_simulator_emits_anomaly_defense_traces_in
+    _result_dict``) - the data path is preserved for any future
+    feature-flag-on rendering, just no longer consumed by panel C in
+    the canonical figure.
+    """
     fig_path = (Path(__file__).resolve().parents[3] / "mvp" / "simulation" /
                 "generate_figures.py")
     src = fig_path.read_text(encoding="utf-8")
-    assert 'ep.get("cooperative_veto_trace"' in src, (
-        "fig 4 panel C no longer reads cooperative_veto_trace; the "
-        "Cumulative Anomaly Defenses Triggered panel has regressed."
+    assert 'ep["rho_trace"]' in src, (
+        "fig 4 panel C no longer reads rho_trace; the Defensive "
+        "Reroutes Under Risk panel has regressed."
     )
-    assert 'ep.get("physics_gate_trace"' in src, (
-        "fig 4 panel C no longer reads physics_gate_trace."
+    assert 'ep["action_trace"]' in src, (
+        "fig 4 panel C no longer reads action_trace; the Defensive "
+        "Reroutes Under Risk panel has regressed."
     )
-    assert 'ep.get("fault_recovery_trace"' in src, (
-        "fig 4 panel C no longer reads fault_recovery_trace."
+    # The metric pins: at-risk gate + away-from-cold-chain + cumsum.
+    assert "rho > RLE_THRESHOLD" in src, (
+        "fig 4 panel C no longer gates on rho > RLE_THRESHOLD; the "
+        "at-risk filter has regressed."
     )
-    # Also pin the new panel title so a maintainer who removes the
-    # cumulative cumsum logic without updating the title gets a
-    # failing test rather than a half-broken panel.
-    assert "Cumulative Anomaly Defenses Triggered" in src, (
-        "Panel C title 'Cumulative Anomaly Defenses Triggered' is "
-        "missing from generate_figures.py."
+    assert "actions != 0" in src, (
+        "fig 4 panel C no longer filters on actions != 0 "
+        "(away from cold chain); the defensive-reroute filter has "
+        "regressed."
+    )
+    assert "np.cumsum(defensive)" in src, (
+        "fig 4 panel C no longer cumulatively sums the defensive "
+        "indicator; the panel has regressed to a non-cumulative view."
+    )
+    # Pin the new panel title so a maintainer who refactors the
+    # metric logic without updating the title gets a failing test.
+    assert "Defensive Reroutes Under Risk" in src, (
+        "Panel C title 'Defensive Reroutes Under Risk' is missing "
+        "from generate_figures.py."
     )
 
 
