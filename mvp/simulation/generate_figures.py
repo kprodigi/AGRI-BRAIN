@@ -919,15 +919,17 @@ def fig4_cyber(data):
     _apply_style(ax)
     _f4_style(ax)
     _annotate_window(ax, 24, 72, WINDOW_COLOR, "Outage")
-    # Position the legend between lower-left and lower-center so it
-    # sits clear of both the AgriBrain decay tail (right) and the
-    # high-ARI pre-outage region (left of h=24).
-    _legend(ax, loc="lower left", bbox_to_anchor=(0.18, 0.0),
-            fontsize=_F4_LEG)
+    # Legend at upper-right: ARI declines monotonically from its
+    # h~15 peak so the right edge of the panel sits well below the
+    # data ceiling, leaving the upper-right corner clear of the three
+    # mode traces.
+    _legend(ax, loc="upper right", fontsize=_F4_LEG)
 
     # --- (b) Action distribution pre/during outage ---
     ax = axes[1]
-    action_names = ["Cold Chain", "Local Redistribute", "Recovery"]
+    # Wrap multi-word tick labels onto two lines so the wider fig 4
+    # font stack does not overlap adjacent ticks.
+    action_names = ["Cold\nChain", "Local\nRedistribute", "Recovery"]
     pre_mask = np.array(hours) < 24
     during_mask = np.array(hours) >= 24
 
