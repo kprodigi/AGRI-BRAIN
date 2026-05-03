@@ -2662,8 +2662,12 @@ def fig10_latency_quality_frontier(data):
     # are not crowded onto the axis. Earlier matplotlib's default
     # locator placed nine ticks (0, 0.025, 0.050, ..., 0.200) on the
     # narrow sub-ms range, which made the labels collide visually.
+    # ``prune`` is left at the default (None) so the leftmost tick at
+    # the start of the data range stays visible - the previous
+    # ``prune="lower"`` removed the smallest tick label and made the
+    # x-axis appear to start mid-air with no value at the left edge.
     from matplotlib.ticker import MaxNLocator as _MaxNLocator
-    ax.xaxis.set_major_locator(_MaxNLocator(nbins=5, prune="lower"))
+    ax.xaxis.set_major_locator(_MaxNLocator(nbins=5))
     _legend(ax, loc="lower right", ncol=1, fontsize=_F10_LEG)
     _apply_style(ax)
     # Re-apply font sizes after _apply_style normalises them - same
@@ -2705,10 +2709,17 @@ def fig10_latency_quality_frontier(data):
             )
 
     # Plot the three context-aware modes on the RIGHT sub-axis with
-    # the small horizontal jitter that visually separates the cluster.
+    # horizontal jitter that visually separates the cluster.
     # Underlying data is unjittered; the overhead annotation below is
     # computed from the true AgriBrain latency vs the No Context ref.
-    _ctx_jitter = {"agribrain": -0.10, "mcp_only": 0.0, "pirag_only": +0.10}
+    # Spacing widened from ±0.10 to ±0.30 ms because the markers are
+    # rendered at s=260 (~0.12 ms wide on this axis range), so the
+    # narrower spacing left MCP Only's marker visually buried under
+    # AgriBrain's triangle when the two modes' actual latencies
+    # happened to coincide. ±0.30 ms guarantees clear separation
+    # between the three context-aware markers regardless of the
+    # underlying latency means.
+    _ctx_jitter = {"agribrain": -0.30, "mcp_only": 0.0, "pirag_only": +0.30}
     for mode, x, y, yerr in ctx_pts:
         x_plot = x + _ctx_jitter.get(mode, 0.0)
         h = ax_b_right.scatter(
@@ -2852,10 +2863,10 @@ def fig10_latency_quality_frontier(data):
              ha="center", va="bottom",
              fontsize=_F10_TITLE, fontweight="bold")
 
-    # Legend on the right sub-axis (lower center) - but the handle
-    # list must combine entries from both sub-axes (the No Context
-    # reference scatter lives on ax_b_left and would otherwise be
-    # missing from the legend).
+    # Legend on the right sub-axis (lower center, lifted ~6 % off the
+    # x-axis) - the handle list must combine entries from both
+    # sub-axes since the No Context reference scatter lives on
+    # ax_b_left and would otherwise be missing from the legend.
     leg_handles = []
     leg_labels = []
     for ax_ in (ax_b_left, ax_b_right):
@@ -2864,7 +2875,8 @@ def fig10_latency_quality_frontier(data):
                 leg_handles.append(h)
                 leg_labels.append(lbl)
     _legend(ax_b_right, handles=leg_handles, labels=leg_labels,
-            loc="lower center", ncol=2, fontsize=_F10_LEG)
+            loc="lower center", bbox_to_anchor=(0.5, 0.06),
+            ncol=2, fontsize=_F10_LEG)
 
     _save(fig, "fig10_latency_quality_frontier")
 
