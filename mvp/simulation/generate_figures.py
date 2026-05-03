@@ -2143,19 +2143,17 @@ def fig9_fault_degradation():
     n_seeds_global = _fig9_load_n_seeds()
     method_means = _fig9_load_method_means() or {}
 
-    # Width-ratio rebalancing post-2026-04 user fix. Panel (a) was at
-    # 1.00 which crammed the 5x5 Cohen's-d heatmap into a panel
-    # narrow enough that the bold 20pt cell numerics ("22.5", "6.5",
-    # "1.8" etc.) overflowed adjacent cells horizontally. Bumped to
-    # 1.40 so each cell is wide enough to hold its number cleanly.
-    # Panel (b) lost its "(range ...)" annotations in the same
-    # commit, so the bar+label combo fits in a slimmer panel - cut
-    # from 1.35 to 1.20. Panel (c) lost the random-baseline dashed
-    # line, the (Nx random) multiplier text, and the n=N labels in
-    # the same commit, so it likewise fits in a slimmer slot - cut
-    # from 1.40 to 1.20. Total stays at 3.80 (was 3.75).
+    # Width-ratio rebalancing. Panel (a) stays at 1.40 so the bold 20pt
+    # heatmap cell numerics fit cleanly. Panel (b) shrinks to 1.00 -
+    # its 5 horizontal bars + numeric labels fit comfortably in the
+    # narrower slot (the headline +Static bar still reaches axis-
+    # fraction ~0.85 under the symlog mapping, well clear of the right
+    # edge). Panel (c) absorbs the freed width up to 1.40, matching
+    # panel (a); the wider C panel spreads the 5 rotated scenario
+    # ticks and gives the upper-left legend more clearance from the
+    # bar tops. Total stays at 3.80.
     fig, axes = plt.subplots(1, 3, figsize=(22, 7.5),
-                             gridspec_kw={"width_ratios": [1.40, 1.20, 1.20]})
+                             gridspec_kw={"width_ratios": [1.40, 1.00, 1.40]})
 
     # Per-element font sizes aligned to fig 7's pattern (25/20/20/19)
     # per user "all three-panel figures must be identical" request.
@@ -2473,17 +2471,18 @@ def fig9_fault_degradation():
             [SCENARIO_LABELS.get(s, s) for s in scenarios_in_matrix],
             rotation=30, ha="right", rotation_mode="anchor",
         )
-        # ylim bumped from 100 to 110 so the upper-right legend
-        # has visible headroom above the highest bar+CI cap
-        # (overproduction agribrain reaches ~75% with the upper
-        # whisker, leaving ~25% in [0, 100] which is just enough
-        # for a 3-entry single-column legend at 19pt; pushing to
-        # [0, 110] guarantees zero overlap).
-        ax.set_ylim(0, 110)
-        # Mode legend in the upper right where no scenario has rates
-        # above ~70%. Single column with 3 entries fits cleanly in
-        # the upper-right corner.
-        ax.legend(loc="upper right", fontsize=_F9_LEG,
+        # ylim bumped to 115 so the legend has visible headroom above
+        # the highest bar+CI cap. Heatwave's tallest bar (mcp_only)
+        # tops at ~67% with the upper whisker reaching ~73%; in axis-
+        # fraction terms that is ~0.63, leaving the upper third of
+        # the panel (y > 80) as clear headroom for the legend.
+        ax.set_ylim(0, 115)
+        # Legend at upper-left: the leftmost two scenario groups
+        # (Heatwave, Overproduction) have their tallest bar+whisker
+        # tops well below axis-fraction 0.70, so a 3-entry single-
+        # column legend at 19pt sits cleanly in the upper-left corner
+        # with no overlap on any bar, whisker, or tick label.
+        ax.legend(loc="upper left", fontsize=_F9_LEG,
                   ncol=1, framealpha=0.95, edgecolor="#757575",
                   fancybox=False, shadow=False)
     else:
