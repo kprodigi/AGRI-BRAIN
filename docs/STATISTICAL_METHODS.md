@@ -85,24 +85,55 @@ operating systems, and Python versions.
 
 ## Multiple Testing Control
 
-Two-level multiplicity control:
+Three-level multiplicity control:
 
 1. **Primary H1 family** (5 tests, one per scenario, `agribrain` vs
    `no_context` on ARI): **Holm-Bonferroni** step-down correction.
    Controls the family-wise error rate. The canonical `p_value_adj` on
    the five primary records uses this correction, and the same value
    also appears as `p_value_adj_holm`.
-2. **Secondary family** (within each scenario: all baselines × all
-   metrics): **Benjamini-Yekutieli (BY) FDR** correction applied per
-   scenario, valid under arbitrary dependence (which the within-
-   scenario metric correlations may violate, since waste vs ARI are
-   mechanically negatively correlated). Canonical `p_value_adj` on
-   non-primary records uses BY. **Benjamini-Hochberg (BH)** is also
-   reported (`p_value_adj_bh`) for transparency, though it requires
-   PRDS which we do not assume.
+2. **Channel-decomposition family** (10 tests: 2 contrasts ×
+   5 scenarios on ARI; contrasts are `mcp_only` vs `no_context` and
+   `pirag_only` vs `no_context`): **Holm-Bonferroni** within the
+   family of 10. Closes the C4 paper-claim gap that each individual
+   context channel (MCP, piRAG) contributes to quality improvements.
+   Until 2026-05 the aggregator computed only `agribrain_vs_<baseline>`
+   pairs, leaving C4 inferable only by transitivity from the primary
+   H1 contrast and the (non-)significance of `agribrain_vs_pirag_only`
+   / `agribrain_vs_mcp_only`. The cross-baseline pairs in this family
+   provide direct tests on the same paired-seed design as primary H1.
+   The canonical `p_value_adj` on each cell of this family uses this
+   correction (also exposed as `p_value_adj_holm_channel`); the
+   family-corrected p-values are also surfaced as
+   `channel_decomposition_holm_adjusted` at the top of
+   `benchmark_significance.json` so reviewers can read the C4 family
+   without reaching into per-cell records.
+3. **Secondary family** (within each scenario: all `(comparison, metric)`
+   pairs, including both `agribrain_vs_X` and the channel-decomposition
+   contrasts on the non-ARI metrics): **Benjamini-Yekutieli (BY) FDR**
+   correction applied per scenario, valid under arbitrary dependence
+   (which the within-scenario metric correlations may violate, since
+   waste vs ARI are mechanically negatively correlated). Canonical
+   `p_value_adj` on non-primary, non-channel records uses BY.
+   **Benjamini-Hochberg (BH)** is also reported (`p_value_adj_bh`) for
+   transparency, though it requires PRDS which we do not assume.
+
+A fourth, FWER-strict diagnostic — **full-grid Holm**
+(`p_value_adj_holm_full`) — is computed across every
+`(scenario, comparison, metric)` cell with a p-value (typically
+~150 cells before the channel-decomposition extension, ~210 cells
+after). It is the strictest available correction for any cell in the
+table; reviewers who want family-wise alpha control across the entire
+significance JSON without restricting to any sub-family can use it.
+Always populated; the canonical `p_value_adj` choice above is left
+intact for the documented-family interpretation.
 
 Every record additionally carries a `correction_method` field naming
-the canonical adjustment used.
+the canonical adjustment used. The three canonical values are:
+
+  - `holm_bonferroni_across_scenarios`              — primary H1 cells
+  - `holm_bonferroni_channel_decomposition`         — channel-decomp ARI
+  - `by_fdr_within_scenario`                        — everything else
 
 ## Alpha and Interpretation
 

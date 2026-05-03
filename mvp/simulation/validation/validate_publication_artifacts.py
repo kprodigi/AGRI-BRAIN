@@ -189,44 +189,79 @@ def _validate_threshold_assertions() -> None:
         if ari_mean < 0.05:
             failures.append(f"{sc}/agribrain ARI mean {ari_mean} suspiciously low (<0.05)")
 
-        rec = sig.get(sc, {}).get("agribrain_vs_no_context", {}).get("ari")
-        if not isinstance(rec, dict):
-            failures.append(f"{sc}/agribrain_vs_no_context/ari record missing")
-            continue
+        # ------------------------------------------------------------
+        # Primary H1 contrast: agribrain vs no_context
+        # ------------------------------------------------------------
+        _check_contrast_record(sig, sc, "agribrain_vs_no_context",
+                               failures, require_p=True)
 
-        # mean_diff must be present and finite.
-        try:
-            md = float(rec["mean_diff"])
-        except (KeyError, TypeError, ValueError):
-            failures.append(f"{sc}/agribrain_vs_no_context ari mean_diff missing or non-numeric")
-            continue
-        import math as _m
-        if not _m.isfinite(md):
-            failures.append(f"{sc}/agribrain_vs_no_context ari mean_diff non-finite ({md})")
-
-        # p_value: required in [0,1] when present; absence is tolerated
-        # for the n=1 table-fallback aggregator (degenerate sample
-        # size) which skips significance tests.
-        if "p_value" in rec and rec["p_value"] is not None:
-            try:
-                p = float(rec["p_value"])
-                if not (0.0 <= p <= 1.0):
-                    failures.append(f"{sc}/agribrain_vs_no_context ari p_value {p} out of [0,1]")
-            except (TypeError, ValueError):
-                failures.append(f"{sc}/agribrain_vs_no_context ari p_value non-numeric")
-
-        # Effect-size CI bracketed correctly (ci_low <= ci_high).
-        lo = rec.get("effect_size_ci_low")
-        hi = rec.get("effect_size_ci_high")
-        if lo is not None and hi is not None and float(lo) > float(hi):
-            failures.append(
-                f"{sc}/agribrain_vs_no_context ari effect-size CI inverted: "
-                f"low={lo} > high={hi}"
-            )
+        # ------------------------------------------------------------
+        # Channel-decomposition family (C4): both single-channel modes
+        # vs no-context floor must be present per scenario. Each cell
+        # must additionally carry the family-specific Holm correction
+        # (p_value_adj_holm_channel) so the C4 family-corrected
+        # p-values are auditable from every cell, not just the JSON
+        # top-level channel_decomposition_holm_adjusted dict.
+        # ------------------------------------------------------------
+        for comp_name in ("mcp_only_vs_no_context", "pirag_only_vs_no_context"):
+            rec = sig.get(sc, {}).get(comp_name, {}).get("ari")
+            if not isinstance(rec, dict):
+                failures.append(
+                    f"{sc}/{comp_name}/ari record missing — C4 family "
+                    "incomplete (channel-decomposition family added "
+                    "2026-05; if the aggregator on this run pre-dates "
+                    "that change, re-run mvp/simulation/benchmarks/"
+                    "aggregate_seeds.py against the seed dump)"
+                )
+                continue
+            _check_contrast_record(sig, sc, comp_name, failures,
+                                   require_p=True)
+            if "p_value_adj_holm_channel" not in rec:
+                failures.append(
+                    f"{sc}/{comp_name}/ari missing p_value_adj_holm_channel "
+                    "(family-corrected canonical p-value for C4)"
+                )
 
     if failures:
         _fail("threshold assertions failed:\n  - " + "\n  - ".join(failures[:20]))
     print("[PASS] per-claim threshold assertions")
+
+
+def _check_contrast_record(sig: dict, sc: str, comp_name: str,
+                           failures: list, require_p: bool) -> None:
+    """Shared sanity-check for any (scenario, comparison) ARI record.
+
+    Validates: record exists; mean_diff present and finite; p_value
+    in [0, 1] when ``require_p``; effect-size CI bracketed correctly.
+    Tolerant of n=1 table-fallback aggregator outputs that skip
+    significance tests (record exists but p_value is None).
+    """
+    import math as _m
+    rec = sig.get(sc, {}).get(comp_name, {}).get("ari")
+    if not isinstance(rec, dict):
+        failures.append(f"{sc}/{comp_name}/ari record missing")
+        return
+    try:
+        md = float(rec["mean_diff"])
+    except (KeyError, TypeError, ValueError):
+        failures.append(f"{sc}/{comp_name} ari mean_diff missing or non-numeric")
+        return
+    if not _m.isfinite(md):
+        failures.append(f"{sc}/{comp_name} ari mean_diff non-finite ({md})")
+    if require_p and "p_value" in rec and rec["p_value"] is not None:
+        try:
+            p = float(rec["p_value"])
+            if not (0.0 <= p <= 1.0):
+                failures.append(f"{sc}/{comp_name} ari p_value {p} out of [0,1]")
+        except (TypeError, ValueError):
+            failures.append(f"{sc}/{comp_name} ari p_value non-numeric")
+    lo = rec.get("effect_size_ci_low")
+    hi = rec.get("effect_size_ci_high")
+    if lo is not None and hi is not None and float(lo) > float(hi):
+        failures.append(
+            f"{sc}/{comp_name} ari effect-size CI inverted: "
+            f"low={lo} > high={hi}"
+        )
 
 
 def main() -> None:

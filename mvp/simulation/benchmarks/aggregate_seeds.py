@@ -118,6 +118,32 @@ _TABLE1_ROW_METHODS = ("static", "hybrid_rl", "agribrain")
 BASELINES = ("mcp_only", "pirag_only", "no_context",
              "hybrid_rl", "static")
 
+# Channel-decomposition family (C4 paper claim "MCP and piRAG context
+# channels each contribute to quality improvements"). The default
+# significance grid only computes ``agribrain_vs_<baseline>`` pairs,
+# which means C4 is only inferable by transitivity from
+# ``agribrain_vs_no_context`` significance and ``agribrain_vs_pirag_only``
+# / ``agribrain_vs_mcp_only`` (non-)significance — no direct test that
+# either single-channel ablation outperforms ``no_context`` per scenario.
+#
+# These two pairs close that gap by directly testing each channel
+# against the no-context floor on the same paired-seed design as the
+# primary H1 family. The Holm correction is applied within the
+# 2 contrasts x 5 scenarios = 10 tests of this family separately from
+# the primary H1 (5 tests) and the extended/full grids, so the
+# multiple-comparison adjustment for C4 is family-honest. The
+# canonical p_value_adj on every cell of this family is
+# ``p_value_adj_holm_channel``; cells also carry the per-scenario
+# BY-FDR (canonical secondary correction) and full-grid Holm so the
+# reader can choose any of three corrections without rerunning the
+# aggregator.
+_CHANNEL_DECOMPOSITION_PAIRS: tuple[tuple[str, str], ...] = (
+    ("mcp_only",   "no_context"),
+    ("pirag_only", "no_context"),
+)
+"""Cross-baseline pairs that test each context channel directly
+against the no-context floor (C4 paper claim)."""
+
 _SCRIPT_DIR = Path(__file__).resolve().parent.parent
 seed_dir = _SCRIPT_DIR / "results" / "benchmark_seeds"
 
@@ -889,6 +915,103 @@ def main():
                     primary_h1_pvals[sc] = p_value
             significance[sc][f"agribrain_vs_{baseline}"] = comp
 
+    # Pass 1.5: Channel-decomposition family.
+    # Direct tests for the C4 claim that each context channel (MCP,
+    # piRAG) contributes to quality improvements. The agribrain_vs_X
+    # family alone leaves C4 inferable only by transitivity; this loop
+    # adds the single-channel-vs-no_context contrasts on the same
+    # paired-seed design.
+    #
+    # Both modes in each pair (e.g. mcp_only and no_context) share the
+    # ablation_seed for Sources 1-5, so the Wilcoxon signed-rank pairing
+    # is statistically valid - same logic as the agribrain_vs_X loop
+    # above. Canonical effect size remains cohens_d_pooled; cohens_dz
+    # is reported alongside with the design-tax note.
+    channel_pvals: dict[str, float] = {}
+    for sc in SCENARIOS:
+        for a_mode, b_mode in _CHANNEL_DECOMPOSITION_PAIRS:
+            seeds_paired = sorted(
+                s for s in all_data
+                if a_mode in all_data[s].get(sc, {})
+                and b_mode in all_data[s].get(sc, {})
+            )
+            if not seeds_paired:
+                continue
+            comp: dict = {
+                "is_paired_design": True,
+                "test_type": "wilcoxon_signed_rank",
+                "effect_size_primary": "cohens_d_pooled",
+                "_family": "channel_decomposition",
+            }
+            for met in METRICS:
+                a = [all_data[s][sc][a_mode][met] for s in seeds_paired]
+                b = [all_data[s][sc][b_mode][met] for s in seeds_paired]
+                cell_key = (sc, f"{a_mode}_vs_{b_mode}", met)
+                p_value = wilcoxon_signed_rank_pvalue(a, b, cell_key=cell_key)
+                p_perm_legacy = paired_permutation_pvalue(a, b, cell_key=cell_key)
+                dz = cohens_dz(a, b)
+                d_pooled = cohens_d_pooled(a, b)
+                hg = hedges_g(a, b, paired=True)
+                lo_diff, hi_diff = bootstrap_mean_diff_ci(
+                    a, b, paired=True, cell_key=cell_key
+                )
+                d_lo, d_hi = bootstrap_effect_size_ci(
+                    a, b, paired=True, cell_key=cell_key,
+                    statistic="pooled",
+                )
+                dz_lo, dz_hi = bootstrap_effect_size_ci(
+                    a, b, paired=True, cell_key=cell_key,
+                    statistic="dz",
+                )
+                paired_diff = np.array(a, dtype=float) - np.array(b, dtype=float)
+                within_pair_sd = (
+                    float(np.std(paired_diff, ddof=1))
+                    if len(paired_diff) >= 2 else 0.0
+                )
+                mean_diff = float(np.mean(a) - np.mean(b))
+                comp[met] = {
+                    "p_value": p_value,
+                    "p_value_legacy_signflip": p_perm_legacy,
+                    "cohens_d": d_pooled,
+                    "cohens_dz": dz,
+                    "cohens_d_pooled": d_pooled,
+                    "hedges_g": hg,
+                    "effect_size_ci_low": d_lo,
+                    "effect_size_ci_high": d_hi,
+                    "effect_size_ci_method": "BCa",
+                    "cohens_dz_ci_low": dz_lo,
+                    "cohens_dz_ci_high": dz_hi,
+                    "within_pair_sd": within_pair_sd,
+                    "design_tax_note": (
+                        "d_z denominator is within-pair SD; for paired "
+                        "channel-decomposition contrasts the arms share "
+                        "ablation_seed for Sources 1-5, so within-pair "
+                        "SD is dominated by Source 8 (per-(mode, seed) "
+                        "policy temperature, sigma=0.25). Report "
+                        "cohens_d_pooled as the design-independent "
+                        "effect size."
+                    ),
+                    "mean_diff": mean_diff,
+                    "mean_diff_ci_low": lo_diff,
+                    "mean_diff_ci_high": hi_diff,
+                    "n_seeds": len(seeds_paired),
+                }
+                # Per-scenario secondary FDR participation: the channel
+                # contrasts are within-scenario secondary endpoints
+                # exactly like the agribrain_vs_X cells, so they go
+                # through the same per-scenario BY-FDR / BH-FDR
+                # correction below. Keying convention prefixes with
+                # the comparison name to avoid collision with the
+                # ``baseline:metric`` keys that agribrain_vs_X uses.
+                per_scenario_pvals[sc][f"{a_mode}_vs_{b_mode}:{met}"] = p_value
+                # Channel-decomposition Holm family covers the ARI
+                # endpoint only (matching the primary H1 family
+                # convention of one metric per scenario per contrast).
+                # Other metrics participate via per-scenario FDR.
+                if met == "ari":
+                    channel_pvals[f"{sc}:{a_mode}_vs_{b_mode}"] = p_value
+            significance[sc][f"{a_mode}_vs_{b_mode}"] = comp
+
     # Pass 2a: Holm-Bonferroni across the primary H1 family (5 scenarios).
     # The primary family is fixed in docs/STATISTICAL_METHODS.md: one
     # contrast (agribrain vs no_context) on one metric (ARI) per
@@ -935,8 +1058,33 @@ def main():
                 if rec is None:
                     continue
                 full_grid_pvals[f"{sc}:{baseline}:{met}"] = float(rec["p_value"])
+        # Channel-decomposition contrasts also participate in the
+        # full-grid Holm. Same shape as agribrain_vs_X cells, just
+        # different comparison name.
+        for a_mode, b_mode in _CHANNEL_DECOMPOSITION_PAIRS:
+            comp = significance.get(sc, {}).get(f"{a_mode}_vs_{b_mode}")
+            if comp is None:
+                continue
+            for met in METRICS:
+                rec = comp.get(met)
+                if rec is None:
+                    continue
+                full_grid_pvals[f"{sc}:{a_mode}_vs_{b_mode}:{met}"] = float(rec["p_value"])
     full_grid_holm = (holm_bonferroni(full_grid_pvals)
                        if full_grid_pvals else {})
+
+    # Auxiliary 3: Channel-decomposition Holm-Bonferroni.
+    # 2 contrasts (mcp_only_vs_no_context, pirag_only_vs_no_context) x
+    # 5 scenarios = 10 tests on ARI. Closes the C4 paper-claim gap
+    # (each context channel contributes to quality improvements) by
+    # applying a family-honest multiple-comparison correction within
+    # the channel-decomposition family alone — separate from the
+    # primary H1 family (5 tests) and the extended/full grids. The
+    # canonical p_value_adj on every channel-decomposition cell uses
+    # this correction; reviewers interested in single-channel
+    # contributions can read significance off this column without
+    # restricting to either the H1 family or the full grid.
+    channel_holm = holm_bonferroni(channel_pvals) if channel_pvals else {}
 
     # Pass 2b: BH-FDR (PRDS-assuming) AND BY-FDR (arbitrary-dependence)
     # within each scenario across all (baseline, metric) pairs. Reporting
@@ -1025,6 +1173,57 @@ def main():
                     rec["p_value_adj"] = p_by
                     rec["correction_method"] = "by_fdr_within_scenario"
 
+        # Pass 3b: write adjusted p-values into the channel-decomposition
+        # records (mcp_only_vs_no_context, pirag_only_vs_no_context).
+        # Each cell carries:
+        #   p_value_adj_bh / p_value_adj_by  — per-scenario FDR (matches
+        #                                      the agribrain_vs_X cells'
+        #                                      treatment of secondary
+        #                                      endpoints; the same
+        #                                      per_scenario_pvals[sc]
+        #                                      dictionary fed BH/BY)
+        #   p_value_adj_holm_full            — full-grid Holm (FWER-strict
+        #                                      across the entire significance
+        #                                      table)
+        #   p_value_adj_holm_channel         — Holm within the
+        #                                      channel-decomposition family
+        #                                      of 10 tests (ARI only)
+        #   p_value_adj                      — canonical: holm_channel on
+        #                                      ARI (the C4 family); BY-FDR
+        #                                      on every other metric
+        #   correction_method                — names which correction was
+        #                                      applied
+        for a_mode, b_mode in _CHANNEL_DECOMPOSITION_PAIRS:
+            comp_key = f"{a_mode}_vs_{b_mode}"
+            comp = significance[sc].get(comp_key)
+            if comp is None:
+                continue
+            for met in METRICS:
+                rec = comp.get(met)
+                if rec is None:
+                    continue
+                key = f"{a_mode}_vs_{b_mode}:{met}"
+                p_bh = float(bh_map.get(key, rec["p_value"]))
+                p_by = float(by_map.get(key, rec["p_value"]))
+                rec["p_value_adj_bh"] = p_bh
+                rec["p_value_adj_by"] = p_by
+                full_key = f"{sc}:{a_mode}_vs_{b_mode}:{met}"
+                if full_key in full_grid_holm:
+                    rec["p_value_adj_holm_full"] = float(full_grid_holm[full_key])
+                if met == "ari":
+                    ch_key = f"{sc}:{a_mode}_vs_{b_mode}"
+                    p_holm_channel = float(
+                        channel_holm.get(ch_key, rec["p_value"])
+                    )
+                    rec["p_value_adj_holm_channel"] = p_holm_channel
+                    rec["p_value_adj"] = p_holm_channel
+                    rec["correction_method"] = (
+                        "holm_bonferroni_channel_decomposition"
+                    )
+                else:
+                    rec["p_value_adj"] = p_by
+                    rec["correction_method"] = "by_fdr_within_scenario"
+
     # Save
     out_dir = _SCRIPT_DIR / "results"
     out_dir.mkdir(exist_ok=True)
@@ -1060,12 +1259,31 @@ def main():
         "_meta": {
             "primary_h1_family": "agribrain_vs_no_context on ARI, 5 scenarios",
             "primary_h1_correction": "holm_bonferroni",
-            "secondary_correction": "bh_fdr",
-            "secondary_family_scope": "per-scenario, all (baseline, metric) pairs",
+            "secondary_correction": "by_fdr",
+            "secondary_family_scope": "per-scenario, all (comparison, metric) pairs",
+            # Channel-decomposition family closes the C4 paper-claim
+            # gap: agribrain_vs_no_context (the primary H1) shows that
+            # the context channel as a whole matters; the C4 claim
+            # additionally states that each individual channel (MCP,
+            # piRAG) contributes. The two pairs below test that
+            # claim directly — single-channel mode vs the no-context
+            # floor on the same paired-seed design as primary H1.
+            "channel_decomposition_family": (
+                "{mcp_only,pirag_only}_vs_no_context on ARI, 5 scenarios "
+                "(2 contrasts x 5 = 10 tests)"
+            ),
+            "channel_decomposition_correction": "holm_bonferroni",
+            "channel_decomposition_canonical_field": "p_value_adj_holm_channel",
             "n_perm": 10_000,
             "paired": True,
         },
         "primary_h1_holm_adjusted": primary_h1_holm,
+        # Family-specific Holm-adjusted ARI p-values for the
+        # channel-decomposition contrasts. Reviewers reading C4 in the
+        # paper can pull the {scenario}:{a_mode}_vs_{b_mode} key from
+        # this dict to get the family-corrected p-value without
+        # reaching into the per-cell records.
+        "channel_decomposition_holm_adjusted": channel_holm,
         "significance": significance,
     }
     (out_dir / "benchmark_summary.json").write_text(
@@ -1102,6 +1320,21 @@ def main():
                 continue
             print(f"    {sc:<22} {comp_name:<28} {rec['p_value_adj']:>7.4f} "
                   f"{rec['cohens_dz']:>+7.3f} {rec.get('cohens_d_pooled', 0.0):>+9.3f}")
+
+    print()
+    print("Channel-decomposition family (Holm across 2 x 5 = 10 ARI tests):")
+    print(f"    {'Scenario':<22} {'Comparison':<32} {'p_adj_holm':>11} {'d_pooled':>9}")
+    for sc in SCENARIOS:
+        for a_mode, b_mode in _CHANNEL_DECOMPOSITION_PAIRS:
+            comp_name = f"{a_mode}_vs_{b_mode}"
+            rec = significance[sc].get(comp_name, {}).get("ari")
+            if rec is None:
+                continue
+            print(
+                f"    {sc:<22} {comp_name:<32} "
+                f"{rec.get('p_value_adj_holm_channel', float('nan')):>11.4f} "
+                f"{rec.get('cohens_d_pooled', 0.0):>+9.3f}"
+            )
 
     # ------------------------------------------------------------------
     # Rewrite the Stage 1 CSVs with 20-seed statistics (Option 1).
