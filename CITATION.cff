@@ -9,17 +9,33 @@ authors:
   - family-names: Kazi
     given-names: Monzure-Khoda
     affiliation: "Karen M. Swindler Department of Chemical and Biological Engineering, South Dakota School of Mines and Technology, Rapid City, SD 57701, USA"
-version: "1.1.0"
-date-released: "2025-04-11"
-# Active maintenance through 2026-Q2 (see git log for the cleanup
-# pass that landed in 2026-04). Cite the version + commit SHA from
-# `mvp/simulation/results/artifact_manifest.json` for paper-grade
+version: "1.2.0"
+date-released: "2026-05-04"
+# Versioning policy: the pinned ``version`` here must match
+# ``[project] version`` in agribrain/backend/pyproject.toml. The
+# tests/test_metadata_consistency.py guard fails the build if they
+# drift. ``date-released`` is set to the date the v<X.Y.Z> tag is
+# pushed; bump both together with the tag.
+#
+# Active maintenance through 2026-Q2. Cite the version + commit SHA
+# from `mvp/simulation/results/artifact_manifest.json` for paper-grade
 # reproducibility.
 license: MIT
 repository-code: "https://github.com/kprodigi/AGRI-BRAIN"
-# DOI will be added when the preprint is registered. Until then,
-# cite the repository plus the commit SHA pinned in the artifact
-# manifest.
+
+# DOI placeholder. To register a DOI for this release:
+#   1. Tag the commit:
+#        git tag -a v1.2.0 -m "AGRI-BRAIN v1.2.0"
+#        git push origin v1.2.0
+#   2. Mint a Zenodo DOI by importing the GitHub repo at
+#      https://zenodo.org/account/settings/github/ (one-time setup)
+#      and publish the v1.2.0 release on GitHub. Zenodo will
+#      auto-create a versioned DOI of the form
+#        10.5281/zenodo.<NNNNNNN>
+#   3. Replace the empty `doi:` value below with the minted DOI.
+#   4. The README citation block reads from this file via cff-cli;
+#      no other file needs editing.
+doi: ""
 keywords:
   - multi-agent systems
   - agri-food supply chain
