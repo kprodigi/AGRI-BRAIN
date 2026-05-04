@@ -293,6 +293,11 @@ def _df_signature(df) -> str:
     the first/last timestamp + temperature so two distinct CSV loads
     are guaranteed to produce different signatures even when row count
     matches. Avoids hashing the full dataframe (slow on every poll).
+
+    Best-effort: a malformed dataframe (missing columns, empty index,
+    non-numeric tempC) degrades to a no-cache signature, which is the
+    correct fallback. Narrow the catch to the realistic shapes we
+    encounter; an unexpected exception type now propagates.
     """
     try:
         first_ts = str(df["timestamp"].iloc[0])
@@ -300,7 +305,8 @@ def _df_signature(df) -> str:
         first_t = float(df["tempC"].iloc[0])
         last_t = float(df["tempC"].iloc[-1])
         return f"{df.shape[0]}x{df.shape[1]}|{first_ts}|{last_ts}|{first_t:.4f}|{last_t:.4f}"
-    except Exception:  # noqa: BLE001
+    except (KeyError, AttributeError, IndexError, ValueError, TypeError) as exc:
+        logger.debug("PINN cache signature fell back to nosig: %s", exc)
         return f"{getattr(df, 'shape', '?')}|nosig"
 
 
@@ -311,13 +317,17 @@ def _policy_signature(p) -> str:
     beta_humidity, lag_lambda) — changing carbon factors or SLCA
     weights does not change the spoilage trajectory, so they are
     excluded from the cache key.
+
+    Best-effort: a missing attribute on the policy object falls back
+    to a no-cache signature (correct fallback). Narrow the catch.
     """
     try:
         return (
             f"k={p.k_ref:.6g}|Ea_R={p.Ea_R:.6g}|Tref={p.T_ref_K:.6g}|"
             f"beta={p.beta_humidity:.6g}|lam={p.lag_lambda:.6g}"
         )
-    except Exception:  # noqa: BLE001
+    except (AttributeError, TypeError, ValueError) as exc:
+        logger.debug("policy signature fell back to nosig: %s", exc)
         return "policy:nosig"
 
 # ---------------------------------------------------------------------------
@@ -528,8 +538,17 @@ def predictions():
             shelf_pinn = df_pinn["shelf_left"].round(4).tolist()
             risk_pinn = df_pinn["spoilage_risk"].round(4).tolist()
             pinn_available = True
-        except Exception as exc:  # noqa: BLE001
-            logger.debug("PINN overlay skipped: %s", exc)
+        except (ImportError, RuntimeError, ValueError, KeyError) as exc:
+            # ImportError -> torch not installed; RuntimeError -> training
+            # divergence or shape mismatch; ValueError/KeyError -> bad
+            # dataframe shape. The /predictions response sets
+            # pinn_available=false so the frontend already conveys this
+            # to the user; we log at INFO with structured cause for
+            # operators reading server logs.
+            logger.info(
+                "predictions.pinn_overlay_skipped exception_type=%s exception=%s",
+                type(exc).__name__, exc,
+            )
         _PINN_OVERLAY_CACHE[cache_key] = (shelf_pinn, risk_pinn, pinn_available)
         # Keep the cache bounded — at most a handful of (df, policy)
         # combinations per session in practice (case_load happens once,
@@ -1069,13 +1088,44 @@ def _finalize_decision_side_effects(memo: Dict[str, Any]) -> Dict[str, Any]:
     #   "0x0" : legacy sentinel from older deployments (treated as
     #           "not anchored" by the frontend's verification logic)
     #   "0x..": real on-chain transaction hash
+    #
+    # Best-effort posture is governed by CHAIN_BEST_EFFORT (default
+    # false outside dev). When false, an on-chain submission failure
+    # propagates so operators do not silently believe an anchor
+    # happened when it did not. When true, the failure is logged at
+    # WARNING with structured fields for monitoring counters and
+    # tx remains None.
     tx = None
+    chain_best_effort = os.environ.get(
+        "CHAIN_BEST_EFFORT",
+        "true" if SETTINGS.env == "dev" else "false",
+    ).strip().lower() in {"1", "true", "yes", "on"}
     try:
         txh = log_decision_onchain(memo, state.get("chain", {}))
         if txh:
             tx = txh
-    except (ConnectionError, TimeoutError, ValueError) as e:
-        logger.debug("on-chain log skipped: %s", e)
+    except (ConnectionError, TimeoutError, ValueError) as exc:
+        # Network / RPC failures and explicit revert ValueErrors. Reraise
+        # in strict mode so /decide returns 500 rather than silently
+        # dropping the on-chain log.
+        logger.warning(
+            "chain.log_decision_onchain rpc_failure exception_type=%s exception=%s "
+            "best_effort=%s mode=%s",
+            type(exc).__name__, exc, chain_best_effort, memo.get("mode"),
+        )
+        if not chain_best_effort:
+            raise
+    except RuntimeError as exc:
+        # On-chain transaction reverted (raised by log_decision_onchain
+        # itself). Same posture: surface in strict mode so the operator
+        # cannot mistake "0x0 / null tx_hash" for "the anchor went
+        # through and I just missed seeing it".
+        logger.warning(
+            "chain.log_decision_onchain tx_reverted exception=%s best_effort=%s",
+            exc, chain_best_effort,
+        )
+        if not chain_best_effort:
+            raise
     memo["tx"] = tx
     memo["tx_hash"] = tx
 
@@ -1089,13 +1139,21 @@ def _finalize_decision_side_effects(memo: Dict[str, Any]) -> Dict[str, Any]:
     except (ImportError, KeyError):
         pass
 
-    # broadcast to websockets (best effort)
+    # Broadcast to websockets (best effort by intent: a missing event
+    # bus must not block the supply-chain decision pipeline). Narrow
+    # the catch and log at WARN so operators can see broadcast loss.
+    # We catch RuntimeError/OSError (transport-level), ImportError
+    # (anyio not installed in some test contexts), and Exception only
+    # as a last-resort safety net with type-info preserved in the log.
     try:
         from src.agents.bus import BUS
         import anyio
         anyio.from_thread.run(BUS.emit, "decision", memo)
-    except (ImportError, RuntimeError) as e:
-        logger.debug("websocket broadcast skipped: %s", e)
+    except (ImportError, RuntimeError, OSError) as exc:
+        logger.warning(
+            "decision.broadcast_failed exception_type=%s exception=%s",
+            type(exc).__name__, exc,
+        )
 
     return memo
 

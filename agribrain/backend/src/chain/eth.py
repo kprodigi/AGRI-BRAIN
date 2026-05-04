@@ -1,8 +1,15 @@
 # backend/src/chain/eth.py
 from __future__ import annotations
+
+import logging
 from typing import Optional
+
 from web3 import Web3
+from web3.exceptions import Web3Exception
 from eth_account import Account
+
+
+_log = logging.getLogger(__name__)
 
 # Minimal ABI for our single function + event
 ABI = [
@@ -60,15 +67,33 @@ def _contract(w3: Web3, addr: str):
 
 
 def _fee_params(w3: Web3) -> tuple[int, int]:
-    """Use dynamic EIP-1559 fees when available; fallback to conservative defaults."""
+    """Use dynamic EIP-1559 fees when available; fallback to conservative defaults.
+
+    Best-effort by design: we never want to fail an on-chain log
+    submission because the RPC node refused to surface a base fee.
+    But the previous implementation swallowed every Exception silently;
+    operators only saw "transaction underpriced" downstream errors
+    without a paper trail. Narrow the catch to RPC-level failures
+    (Web3Exception covers HTTP / decoding / contract reverts; OSError
+    covers transport drops) and log at WARN with structured context so
+    monitoring can count fallbacks.
+    """
     try:
         latest = w3.eth.get_block("latest")
         base_fee = int(latest.get("baseFeePerGas") or 0)
-    except Exception:
+    except (Web3Exception, OSError, ValueError) as exc:
+        _log.warning(
+            "chain.fee_params get_block_failed; falling back to flat 2 gwei. "
+            "exception=%s", exc,
+        )
         base_fee = 0
     try:
         priority = int(w3.eth.max_priority_fee)
-    except Exception:
+    except (Web3Exception, OSError, ValueError) as exc:
+        _log.warning(
+            "chain.fee_params max_priority_fee_failed; using 1 gwei. "
+            "exception=%s", exc,
+        )
         priority = int(w3.to_wei("1", "gwei"))
     if base_fee > 0:
         max_fee = int(base_fee * 2 + priority)
