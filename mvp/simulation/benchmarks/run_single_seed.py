@@ -82,6 +82,11 @@ def main() -> None:
                 "operational_violation_rate", "regulatory_violation_rate",
                 "context_active_steps", "context_active_fraction",
                 "context_honored_steps", "context_honor_rate",
+                # 2026-05 fig9-c headline: context-influence rate
+                # (% of context-active steps where the modifier
+                # changed the chosen action). Honor rate is retained
+                # above as a supplementary-methods companion.
+                "context_influenced_steps", "context_influence_rate",
                 # Outcome-side violation disposition: cross-method-honest
                 # policy-quality score on the env-driven violation event
                 # set. See resilience.compute_violation_disposition for

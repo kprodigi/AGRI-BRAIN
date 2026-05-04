@@ -187,6 +187,99 @@ deployment-variation lens (pooled).
 - Deterministic mode is for reproducibility gates and exact drift checks.
 - Stochastic mode is required for uncertainty quantification and inferential claims.
 
+## Context-channel diagnostic metrics (fig 9 panel c)
+
+Two complementary metrics describe how the MCP+piRAG context channel
+interacts with the base policy. Both are reported per (scenario, mode)
+in `benchmark_summary.json` with the same bootstrap-CI machinery as
+the headline metrics; the figure consumes one and the supplementary
+methods table reports both for transparency.
+
+**Active-step gate (shared denominator).** A step is "context-active"
+when the L-infinity norm of the context modifier vector exceeds the
+calibration threshold:
+
+> `max(|context_modifier|) > 0.10`
+
+Modes that bypass the modifier branch entirely (`static`, `hybrid_rl`
+when no context is computed, the cyber-outage Bernoulli reroute path
+during the outage window) contribute zero active steps and are
+excluded from rate computation by definition (rate is `0/0`). The
+threshold was chosen post-2026-04 to match the calibration-derived
+"meaningful signal" magnitude in `pirag.context_to_logits` and is
+swept at `{0.05, 0.10, 0.15, 0.20}` in the per-cell
+`context_threshold_counters` for sensitivity reporting.
+
+**Context honor rate (legacy; supplementary methods only).**
+
+> `honor_rate = honored / active`, where a step is *honored* when
+> `argmax(context_modifier) == argmax(base_logits + context_modifier)` — i.e.
+> the modifier's strongest-positive direction matched the action the
+> policy actually chose.
+
+Honor rate measures whether the modifier *won the argmax race* against
+the base logits. It is reported in the supplementary methods table for
+continuity with the pre-2026-05 panel-c metric and to enable
+direct cross-version comparison of older runs.
+
+Honor rate has known structural biases that motivated the metric
+switch:
+
+1. *Asymmetry across modes.* Modes with richer base logits
+   (full AgriBrain: PINN-corrected ρ + full SLCA + batch-FIFO physics
+   + the full MCP+piRAG modifier) override the modifier's argmax more
+   often than thinner-stack modes (`mcp_only`, `pirag_only`). The
+   denominators differ as well because richer ψ produces meaningful
+   modifiers more often.
+
+2. *Negative-only modifiers count as honor failures.* When all three
+   modifier components are negative ("avoid every action a little") the
+   active gate `max(|modifier|) > 0.10` still fires and
+   `argmax(signed)` returns the least-negative component as
+   "the recommendation". A policy that correctly ignores that noise is
+   recorded as "did not honor context".
+
+3. *Penalty for integration.* A policy that combines context with
+   strong base signals can pick an action that lies just below
+   `argmax(modifier)` because the base-logit component pushed a
+   different action higher; the modifier still moved the decision
+   boundary, but honor rate records the step as "not honored".
+
+**Context influence rate (headline; fig 9 panel c).**
+
+> `influence_rate = flipped / active`, where a step is *flipped* when
+> `argmax(base_logits) != argmax(base_logits + context_modifier)` — i.e.
+> the modifier *changed* the chosen action vs the base argmax.
+
+Influence rate measures whether the modifier *changed the decision*.
+It is mode-symmetric (richer base logits produce more near-tie
+configurations the modifier can flip), has no degenerate-signal
+pathology (uniform-negative modifiers preserve the ranking and
+correctly report no influence), and aligns with the substantive
+paper claim ("MCP+piRAG context drives the decision in scenarios where
+context is load-bearing").
+
+Both rates share the same active-step denominator and are reported
+side-by-side in `benchmark_summary.json` so any reviewer can verify
+the relationship between them. The figure caption identifies which
+metric is rendered ("Influence rate" in current main-text figures);
+the supplementary methods table provides honor rate alongside.
+
+**Code surfaces (single source of truth):**
+
+* `agribrain/backend/src/models/action_selection.py::select_action`
+  populates `out["base_argmax"]` on the regular logit-construction
+  path (not on the static or cyber-outage Bernoulli paths).
+* `mvp/simulation/generate_results.py::run_episode` increments
+  `context_honored_steps` and `context_influenced_steps` in lockstep
+  inside the same active-step gate; emits both rates and per-threshold
+  sensitivity counters in the result dict.
+* `mvp/simulation/benchmarks/aggregate_seeds.py` includes both rates in
+  `EXTRA_METRICS` so the bootstrap-CI machinery picks them up.
+* `mvp/simulation/generate_figures.py::_fig9_load_honor_matrix(metric_key=...)`
+  selects which rate the panel renders; default is
+  `context_influence_rate`.
+
 ## Validator policy
 
 The post-aggregation validator (`validation/validate_results.py`) runs

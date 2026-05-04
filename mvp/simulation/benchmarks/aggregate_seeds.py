@@ -59,6 +59,11 @@ EXTRA_METRICS = (
     "operational_violation_rate", "regulatory_violation_rate",
     "context_active_fraction", "context_honor_rate",
     "context_active_steps", "context_honored_steps",
+    # 2026-05 context-influence rate (fig 9 panel-c headline). Honor
+    # rate is retained alongside as a supplementary-methods companion;
+    # both rates are reported with the same bootstrap-CI machinery so
+    # a reviewer can read either off the same benchmark_summary cell.
+    "context_influence_rate", "context_influenced_steps",
     # Outcome-side violation disposition: policy-quality score on the
     # env-driven violation event set. See resilience.py
     # compute_violation_disposition. The aggregator runs the same

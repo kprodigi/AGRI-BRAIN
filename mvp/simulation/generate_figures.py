@@ -2163,8 +2163,9 @@ def _fig9_load_alignment_from_summary():
 
 
 def _fig9_load_honor_matrix(modes=("agribrain", "mcp_only",
-                                    "pirag_only", "no_context")):
-    """Per-(scenario, mode) context-honor rate + bootstrap CI matrix.
+                                    "pirag_only", "no_context"),
+                            metric_key: str = "context_influence_rate"):
+    """Per-(scenario, mode) context-rate + bootstrap CI matrix.
 
     Returns ``{scenario: {mode: {"rate": float, "ci_low": float,
     "ci_high": float, "active": float}}}`` pulled from
@@ -2175,6 +2176,19 @@ def _fig9_load_honor_matrix(modes=("agribrain", "mcp_only",
     to flag modes with zero context activity (e.g. ``no_context``,
     where the rate is 0/0 by construction and should be plotted as
     a structural-zero comparison rather than a measurement).
+
+    The 2026-05 update made ``metric_key`` selectable. Fig 9 panel (c)
+    now defaults to ``context_influence_rate`` (the count of steps
+    where the modifier flipped the chosen action vs base argmax) as
+    the headline metric; ``context_honor_rate`` (the count of steps
+    where modifier-argmax matched chosen action) is retained in the
+    JSON for the supplementary methods table and is selectable here
+    by passing ``metric_key="context_honor_rate"``. Both rates share
+    the same denominator (``context_active_steps`` gated at
+    ``max(|modifier|) > 0.10``) so the cells are directly
+    comparable. The function silently falls back to
+    ``context_honor_rate`` when the requested key is absent from the
+    summary, so legacy benchmark snapshots continue to render.
 
     Empty dict when the summary file is missing.
     """
@@ -2197,7 +2211,16 @@ def _fig9_load_honor_matrix(modes=("agribrain", "mcp_only",
             ep = sc_block.get(mode, {})
             if not isinstance(ep, dict):
                 continue
-            chr_ = ep.get("context_honor_rate")
+            chr_ = ep.get(metric_key)
+            # Legacy-snapshot fallback: older benchmark_summary.json
+            # files only carry context_honor_rate. If the requested
+            # key is missing but honor_rate is present, render with
+            # honor_rate so the panel does not vanish on legacy
+            # snapshots. The fig 9 caption / supplementary methods
+            # is responsible for noting which metric a given run
+            # rendered with.
+            if not isinstance(chr_, dict) and metric_key != "context_honor_rate":
+                chr_ = ep.get("context_honor_rate")
             if not isinstance(chr_, dict):
                 continue
             rate = float(chr_.get("mean", 0.0))
@@ -2623,14 +2646,24 @@ def fig9_fault_degradation():
     _restyle(ax, "(b) % ARI Improvement vs Baselines")
 
     # =================================================================
-    # Panel (c) — Context honor rate per scenario x mode
+    # Panel (c) — Context influence rate per scenario x mode
     # =================================================================
     # Grouped-bar comparison across the three context-active ablation
-    # modes (agribrain, pirag_only, mcp_only) for each scenario. The
-    # previous single-mode-per-scenario layout answered "does context
-    # get honored?" but not "does the full stack matter?". The 3-mode
-    # comparison directly tests the substantive ablation claim:
-    # agribrain (full context) > pirag_only > mcp_only.
+    # modes (agribrain, pirag_only, mcp_only) for each scenario.
+    #
+    # 2026-05 metric switch: this panel now reports ``context_influence_rate``,
+    # the fraction of context-active steps where the modifier
+    # CHANGED the chosen action (argmax(base_logits + modifier) !=
+    # argmax(base_logits)). The previous metric ``context_honor_rate``
+    # measured whether the modifier's argmax matched the chosen
+    # action -- which was structurally biased against the full-stack
+    # AgriBrain mode because the policy's richer base logits (PINN +
+    # full SLCA + batch FIFO + both context channels) override the
+    # modifier's argmax more often even though the modifier still
+    # moved the decision boundary. The honor metric was retained in
+    # benchmark_summary.json for the supplementary methods table; a
+    # reviewer who wants to see both can read either off the same
+    # cells.
     #
     # The no_context arm is omitted by user request - it is
     # structurally zero (the no_context coordinator skips
@@ -2640,7 +2673,7 @@ def fig9_fault_degradation():
     # 0%-bar that conveys no information visually.
     #
     # Error bars: BCa bootstrap CI bounds from
-    # benchmark_summary.json's ``context_honor_rate.ci_low /
+    # benchmark_summary.json's ``context_influence_rate.ci_low /
     # ci_high`` per (scenario, mode) cell. Asymmetric so the
     # rendered error caps reflect the actual uncertainty band
     # (typically narrower on the high side because the rate is
@@ -2655,8 +2688,14 @@ def fig9_fault_degradation():
     # the figure-level _F9_* constants alongside panels A and B.
 
     ax = axes[2]
+    # 2026-05: switched from context_honor_rate to context_influence_rate
+    # (see panel docstring above). The loader falls back to
+    # context_honor_rate when the new field is absent (legacy
+    # benchmark_summary snapshots), so the panel still renders during
+    # the transition window.
     honor_matrix = _fig9_load_honor_matrix(
         modes=("agribrain", "pirag_only", "mcp_only"),
+        metric_key="context_influence_rate",
     )
     _PANEL_C_MODES = [
         ("agribrain",   "AgriBrain",    COLORS.get("agribrain",   "#26A69A")),
@@ -2737,12 +2776,12 @@ def fig9_fault_degradation():
     # even when set_ylabel was called with fontsize=_F9_AXIS. The
     # explicit re-apply ensures the rendered y-axis title actually
     # lands at _F9_AXIS=20 to match the x-axis tick labels.
-    _restyle(ax, "(c) Context Honor Rate",
-             ylabel="Honor rate (% of active steps)")
+    _restyle(ax, "(c) Context Influence Rate",
+             ylabel="Influence rate (% of context-active steps)")
     ax.yaxis.label.set_size(_F9_AXIS)
     ax.yaxis.label.set_weight("bold")
 
-    fig.suptitle("Performance Gain over Baselines and Context Honor",
+    fig.suptitle("Performance Gain over Baselines and Context Influence",
                  y=0.995, fontsize=FIG_TITLE_SIZE, fontweight="bold")
     # Layout spacing tightened post-2026-04 per user "there must be
     # no overlapping" mandate:

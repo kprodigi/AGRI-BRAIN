@@ -168,6 +168,14 @@ class AgentCoordinator:
         self._step_rag_context: Dict[str, Any] = {}
         self._step_context_modifier: Optional[np.ndarray] = None
         self._step_context_features: Optional[np.ndarray] = None
+        # Pre-modifier argmax of the base logits, set by
+        # ``select_action`` via its ``out`` side-channel when a
+        # context modifier is supplied. Used by generate_results.py
+        # to compute the context-influence rate alongside the
+        # legacy honor rate. None when not applicable (static path
+        # or cyber-outage Bernoulli reroute path, both of which
+        # bypass the modifier).
+        self._step_base_argmax: Optional[int] = None
         self._step_probs: Optional[np.ndarray] = None
         self._step_rules_fired: List[int] = []
         self._step_policy: Any = None
@@ -363,6 +371,7 @@ class AgentCoordinator:
         self._step_rag_context = {}
         self._step_context_modifier = None
         self._step_context_features = None
+        self._step_base_argmax = None
         self._step_probs = None
         self._step_rules_fired = []
         self._step_policy = None
@@ -487,6 +496,7 @@ class AgentCoordinator:
         self._step_rag_context = {}
         self._step_context_modifier = None
         self._step_context_features = None
+        self._step_base_argmax = None
         self._step_probs = None
         self._step_rules_fired = []
         self._step_policy = policy
@@ -571,6 +581,15 @@ class AgentCoordinator:
             _slca_rho_delta = None
             _no_slca_offset_delta = None
 
+        # Side-channel for the context-influence metric (fig 9 panel c):
+        # ``select_action`` populates ``base_argmax`` with the pre-modifier
+        # argmax when a context_modifier is supplied. We stash the value
+        # on the coordinator instance so generate_results.py can compare
+        # it against ``action_idx`` to count "context-flipped" steps
+        # without re-running the policy. Initialised to None each step
+        # so a stale value from the prior step never leaks.
+        self._step_base_argmax: Optional[int] = None
+        _select_out: Dict[str, object] = {}
         action_idx, probs = select_action(
             mode=mode,
             rho=obs.rho,
@@ -594,7 +613,10 @@ class AgentCoordinator:
             slca_rho_delta=_slca_rho_delta,
             no_slca_offset_delta=_no_slca_offset_delta,
             policy_temperature=policy_temperature,
+            out=_select_out,
         )
+        if "base_argmax" in _select_out:
+            self._step_base_argmax = int(_select_out["base_argmax"])
 
         # Store probs for learner update
         self._step_probs = probs

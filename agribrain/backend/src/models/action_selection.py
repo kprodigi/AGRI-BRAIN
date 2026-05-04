@@ -868,6 +868,7 @@ def select_action(
     slca_rho_delta: np.ndarray | None = None,
     no_slca_offset_delta: np.ndarray | None = None,
     policy_temperature: float = 1.0,
+    out: dict | None = None,
 ) -> tuple[int, np.ndarray]:
     """Select routing action based on mode-specific softmax policy.
 
@@ -907,6 +908,21 @@ def select_action(
         is bounded at 25 percent of each entry's initial magnitude so
         the learned policy cannot drift more than a quarter away from
         the domain priors.
+    out : optional mutable dict that, when provided, receives
+        diagnostic side-channel data the caller may want to consume
+        without changing the function's return signature. Populated
+        keys (only when applicable):
+
+          ``base_argmax`` (int): argmax of the logits *before* the
+            ``context_modifier`` is added, i.e. the action the policy
+            would choose if the context channel were zeroed. Used by
+            ``generate_results.py`` to compute the
+            ``context_influence_rate`` companion to ``context_honor_rate``
+            (a step is "context-influenced" iff
+            ``argmax(base) != argmax(base + modifier)``). Set only on
+            the regular logit-construction path; not set on the
+            cyber-outage Bernoulli reroute path or the static path
+            (those bypass the modifier entirely).
 
     Returns
     -------
@@ -1009,6 +1025,18 @@ def select_action(
         logits = logits + role_bias
 
     if context_modifier is not None:
+        # Capture the pre-modifier argmax for the context-influence
+        # metric (see ``out`` docstring above). Computed here -- after
+        # THETA, gamma, slca_bonus, knee, theta_delta, role_bias --
+        # so the comparison isolates the *modifier's* contribution
+        # against the otherwise-final base logits. Note: when the
+        # caller is in the cyber-outage Bernoulli branch (which
+        # returns above), this code is unreachable, so out["base_argmax"]
+        # is correctly left unset for those steps -- they have no
+        # modifier-vs-base comparison to make.
+        if out is not None:
+            out["base_argmax"] = int(np.argmax(logits))
+
         # SLCA amplification based on piRAG context signal magnitude.
         # Default 0.40 (raised from 0.25 in 2026-04): a non-trivial
         # context_modifier from piRAG retrieval indicates the policy
