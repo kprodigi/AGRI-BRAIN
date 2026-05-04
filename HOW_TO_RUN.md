@@ -88,12 +88,32 @@ source .venv/bin/activate        # Linux / macOS
 
 ### 2b. Install backend dependencies
 
+For interactive development (loose pyproject ranges):
+
 ```bash
-pip install -e agribrain/backend
+pip install -e "agribrain/backend[dev]"
 ```
 
-This installs all dependencies listed in `pyproject.toml`:
-fastapi, uvicorn, pydantic, numpy, pandas, matplotlib, reportlab, orjson, requests, web3, python-multipart, pyyaml.
+For paper-grade reproducibility (pinned versions matching the
+artifact-manifest commit):
+
+```bash
+pip install -r agribrain/backend/requirements-lock.txt
+pip install -e agribrain/backend --no-deps      # editable wiring only
+```
+
+The `[dev]` extra adds `httpx` and `pytest-asyncio`, required by the
+TestClient-based integration tests. The `requirements-lock.txt`
+header documents the Python version used to generate it; if your
+Python differs from the lockfile baseline, run `docs/RELEASE.md`
+step 2 to regenerate from a clean venv. Without the lockfile,
+dependencies float within their pyproject ranges (e.g.
+`numpy>=2.1,<3`); with the lockfile, every transitive dep is pinned
+for bit-comparable reproduction.
+
+The pyproject declares: fastapi, uvicorn, pydantic, numpy, pandas,
+matplotlib, reportlab, orjson, requests, web3, python-multipart,
+pyyaml, scipy. The `[dev]` extra adds pytest, httpx, pytest-asyncio.
 
 ### 2b-extra. Environment variables (optional)
 

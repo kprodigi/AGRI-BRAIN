@@ -96,6 +96,57 @@ jobs:
         run: |
           python mvp/simulation/validation/run_regression_guard.py
 
+  # Regenerate the lockfile under canonical Python (3.11) on every push
+  # and upload as artifact + warn on drift. We do NOT fail the build on
+  # drift -- transitive deps move at upstream cadence and we don't want
+  # green CI to block on that. The artifact is uploaded so a maintainer
+  # can download the refreshed lock and commit it as part of the
+  # release procedure documented in docs/RELEASE.md.
+  lockfile-drift:
+    name: lockfile drift check (advisory)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Regenerate lockfile from pyproject
+        run: |
+          python -m pip install --upgrade pip
+          python -m venv .venv-lock
+          .venv-lock/bin/pip install --upgrade pip
+          .venv-lock/bin/pip install -e "agribrain/backend[dev]"
+          .venv-lock/bin/pip freeze --exclude-editable > /tmp/freeze.lock.bare
+          # Apply the same header the committed file carries.
+          {
+            sed -n '/^# AGRI-BRAIN backend dependency lockfile/,/^$/p' \
+              agribrain/backend/requirements-lock.txt | head -20
+            cat /tmp/freeze.lock.bare
+          } > /tmp/freeze.lock.full
+      - name: Compare with committed lockfile (warn-only)
+        run: |
+          # Strip the header from both sides so the comparison is purely
+          # the version pins.
+          grep -v '^#' agribrain/backend/requirements-lock.txt | sort > /tmp/committed.lock
+          grep -v '^#' /tmp/freeze.lock.bare | sort > /tmp/fresh.lock
+          if diff -u /tmp/committed.lock /tmp/fresh.lock > /tmp/lock.diff; then
+            echo "Lockfile is current."
+          else
+            echo "::warning::Committed lockfile drifted from a fresh 3.11 freeze."
+            echo "::group::diff (committed vs fresh)"
+            cat /tmp/lock.diff
+            echo "::endgroup::"
+            echo "Refresh procedure: docs/RELEASE.md step 2."
+          fi
+      - name: Upload refreshed lockfile (Python 3.11)
+        uses: actions/upload-artifact@v4
+        with:
+          name: requirements-lock-py311
+          path: /tmp/freeze.lock.full
+
   python-lint:
     name: python-lint (ruff)
     runs-on: ubuntu-latest
