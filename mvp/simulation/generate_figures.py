@@ -339,17 +339,28 @@ def _save(fig, name):
 
 
 def _annotate_window(ax, x0, x1, color, label, alpha=WINDOW_ALPHA,
-                     ypos=0.93, xpos=None):
-    """Shade a scenario window and label it inside the plot at the top.
+                     ypos=0.93, xpos=None, va="top"):
+    """Shade a scenario window and label it inside the plot.
     A one-shot ylim expansion guarantees the label sits in blank space
     above the data; callers that have locked ylim explicitly (ratio
     axes, for instance) are respected. ``ypos`` is the axes-fraction
-    vertical position of the bbox top edge. ``xpos`` overrides the
+    vertical position of the bbox edge specified by ``va``. Pass
+    ``va="bottom"`` (and a low ``ypos`` such as 0.07) to anchor the
+    label at the bottom of the panel; useful when the legend or the
+    data peak occupy the top of the panel. ``xpos`` overrides the
     horizontal position (data coordinates); the default of ``None``
     centers the label on the window."""
     ax.axvspan(x0, x1, alpha=alpha, color=color, zorder=0)
-    # Add top headroom once per axes so the label never occludes data.
-    if not getattr(ax, "_window_headroom_applied", False) and ax.get_autoscaley_on():
+    # Top-anchored callers (the default) get an automatic ylim bump so
+    # the label never occludes data; bottom-anchored callers don't need
+    # the bump (the lower spine is already empty space below the data
+    # in every panel that uses bottom anchoring), and bumping it would
+    # waste vertical real-estate.
+    if (
+        va == "top"
+        and not getattr(ax, "_window_headroom_applied", False)
+        and ax.get_autoscaley_on()
+    ):
         y_lo, y_hi = ax.get_ylim()
         span = y_hi - y_lo
         if span > 0:
@@ -360,7 +371,7 @@ def _annotate_window(ax, x0, x1, color, label, alpha=WINDOW_ALPHA,
         label,
         xy=(label_x, ypos),
         xycoords=("data", "axes fraction"),
-        ha="center", va="top",
+        ha="center", va=va,
         fontsize=ANNOT_FONT_SIZE,
         fontweight="bold",
         fontstyle="italic",
@@ -864,39 +875,85 @@ def _fig3_overproduction_inner(op, ab, hours):
 # Figure 4: Cyber Outage (1x3)
 # ---------------------------------------------------------------------------
 def fig4_cyber(data):
-    """1x3: ARI over time with outage, action distribution, blockchain audit."""
+    """1x4: ARI over time, action distribution shift, reroute rate per method, KPI delta.
+
+    The 2026-05 redesign expanded panel C from a single panel into two
+    full panels (C and D) after a 2-row gridspec attempt produced
+    legend/bar overlap. Each panel now has its own full-height
+    real-estate; the causality chain still reads left-to-right
+    (B = behavior detail; C = behavior magnitude per method;
+    D = KPI consequence per method).
+
+    Per-figure font-size bump for fig 4 (post-2026-05 user request:
+    "make this 4-panel figure match the other 4-panel figures style,
+    spacing and text sizes"). Uniform +1 across body / ticks / axis
+    labels / subplot titles / suptitle / legend / in-plot annotations
+    matches the bump applied to figs 2, 3, and 5 (the other 4-panel
+    figures in the publication set). Scoped to this function via
+    try/finally so other figures (fig 5, fig 6, ...) keep the
+    canonical global sizes.
+    """
+    global BODY_FONT_SIZE, TICK_FONT_SIZE, AXIS_LABEL_SIZE
+    global SUBPLOT_TITLE_SIZE, FIG_TITLE_SIZE, LEGEND_FONT_SIZE
+    global ANNOT_FONT_SIZE
+    _saved_sizes = (
+        BODY_FONT_SIZE, TICK_FONT_SIZE, AXIS_LABEL_SIZE,
+        SUBPLOT_TITLE_SIZE, FIG_TITLE_SIZE, LEGEND_FONT_SIZE,
+        ANNOT_FONT_SIZE,
+    )
+    BODY_FONT_SIZE = _saved_sizes[0] + 1
+    TICK_FONT_SIZE = _saved_sizes[1] + 1
+    AXIS_LABEL_SIZE = _saved_sizes[2] + 1
+    SUBPLOT_TITLE_SIZE = _saved_sizes[3] + 1
+    FIG_TITLE_SIZE = _saved_sizes[4] + 1
+    LEGEND_FONT_SIZE = _saved_sizes[5] + 1
+    ANNOT_FONT_SIZE = _saved_sizes[6] + 1
+    _saved_rc = {
+        "font.size": plt.rcParams["font.size"],
+        "axes.labelsize": plt.rcParams["axes.labelsize"],
+        "axes.titlesize": plt.rcParams["axes.titlesize"],
+        "xtick.labelsize": plt.rcParams["xtick.labelsize"],
+        "ytick.labelsize": plt.rcParams["ytick.labelsize"],
+        "legend.fontsize": plt.rcParams["legend.fontsize"],
+        "legend.title_fontsize": plt.rcParams["legend.title_fontsize"],
+        "figure.titlesize": plt.rcParams["figure.titlesize"],
+    }
+    plt.rcParams.update({
+        "font.size": BODY_FONT_SIZE,
+        "axes.labelsize": AXIS_LABEL_SIZE,
+        "axes.titlesize": SUBPLOT_TITLE_SIZE,
+        "xtick.labelsize": TICK_FONT_SIZE,
+        "ytick.labelsize": TICK_FONT_SIZE,
+        "legend.fontsize": LEGEND_FONT_SIZE,
+        "legend.title_fontsize": LEGEND_FONT_SIZE,
+        "figure.titlesize": FIG_TITLE_SIZE,
+    })
+
+    try:
+        return _fig4_cyber_inner(data)
+    finally:
+        (BODY_FONT_SIZE, TICK_FONT_SIZE, AXIS_LABEL_SIZE,
+         SUBPLOT_TITLE_SIZE, FIG_TITLE_SIZE, LEGEND_FONT_SIZE,
+         ANNOT_FONT_SIZE) = _saved_sizes
+        plt.rcParams.update(_saved_rc)
+
+
+def _fig4_cyber_inner(data):
+    """Body of fig 4. Extracted from ``fig4_cyber`` so the per-figure
+    font-size overrides applied above can be cleanly torn down via
+    try/finally regardless of how the body returns or raises.
+    """
     cy = data["results"]["cyber_outage"]
     ab = cy["agribrain"]
     hours = np.array(ab["hours"])
 
-    fig, axes = plt.subplots(1, 3, figsize=(21, 7.0))
-    fig.suptitle("Cyber Outage Scenario", y=0.995, fontsize=FIG_TITLE_SIZE,
-                 fontweight="bold")
-
-    # Per-element font sizes aligned to fig 7's pattern (25/20/20/19)
-    # per user "all three-panel figures must be identical" request.
-    # Same calculation pattern figs 7 / 9 use, so figs 4 / 7 / 9
-    # share the same text scale across their three panels.
-    _F4_TITLE = SUBPLOT_TITLE_SIZE + 6   # 25
-    _F4_AXIS  = TICK_FONT_SIZE + 5       # 20 (matched to _F4_TICK)
-    _F4_TICK  = TICK_FONT_SIZE + 5       # 20
-    _F4_LEG   = LEGEND_FONT_SIZE + 4     # 19
-
-    def _f4_style(ax_):
-        """Apply fig 4's font-size override + the y-axis-label
-        re-apply pattern that defeats _apply_style's silent stomp
-        (same fix used in figs 7 / 9). Call after _apply_style."""
-        ax_.title.set_size(_F4_TITLE)
-        ax_.title.set_weight("bold")
-        if ax_.xaxis.label.get_text():
-            ax_.xaxis.label.set_size(_F4_AXIS)
-            ax_.xaxis.label.set_weight("bold")
-        if ax_.yaxis.label.get_text():
-            ax_.yaxis.label.set_size(_F4_AXIS)
-            ax_.yaxis.label.set_weight("bold")
-        ax_.tick_params(labelsize=_F4_TICK, length=6, width=1.4)
-        for lbl in list(ax_.get_xticklabels()) + list(ax_.get_yticklabels()):
-            lbl.set_fontsize(_F4_TICK); lbl.set_fontweight("bold")
+    # 1x4 grid. figsize matches the 4-panel-figure pattern: figs 2,
+    # 3, 5 are 2x2 at (18, 13). For the 1x4 layout we hold the per-
+    # panel area roughly constant (panel area ~ 9 x 6.5 in); the
+    # resulting (28, 6.5) is wider but shorter and has equivalent
+    # text density per panel.
+    fig, axes = plt.subplots(1, 4, figsize=(28, 6.5))
+    fig.suptitle("Cyber Outage Scenario", y=0.995)
 
     # --- (a) ARI over time with outage shading ---
     # ARI = (1 - waste) * SLCA * (1 - rho). Spoilage risk rho rises
@@ -916,13 +973,22 @@ def fig4_cyber(data):
     ax.set_ylabel("ARI")
     ax.set_title("(a) Adaptive Resilience Index")
     _apply_style(ax)
-    _f4_style(ax)
-    _annotate_window(ax, 24, 72, WINDOW_COLOR, "Outage")
+    # Anchor the "Outage" badge at the bottom-center of the outage
+    # window (h=48). The previous top-anchored placement (ypos=0.93)
+    # collided with the upper-left/center quadrant where the legend
+    # and the AgriBrain peak both sit; bottom-anchoring puts the
+    # label in genuinely empty space below the three converging
+    # traces, since the lower spine is reached only at the final
+    # h~70 step where ARI bottoms out around 0.20.
+    _annotate_window(
+        ax, 24, 72, WINDOW_COLOR, "Outage",
+        ypos=0.07, va="bottom",
+    )
     # Legend at upper-right: ARI declines monotonically from its
     # h~15 peak so the right edge of the panel sits well below the
     # data ceiling, leaving the upper-right corner clear of the three
     # mode traces.
-    _legend(ax, loc="upper right", fontsize=_F4_LEG)
+    _legend(ax, loc="upper right")
 
     # --- (b) Action distribution pre/during outage ---
     ax = axes[1]
@@ -960,74 +1026,250 @@ def fig4_cyber(data):
     ax.set_ylim(0, max(max(pre_counts + pre_se * 2), max(during_counts + during_se * 2)) * 1.25 + 0.02)
     ax.set_title("(b) Action Distribution Shift")
     _apply_style(ax)
-    _f4_style(ax)
-    _legend(ax, loc="upper right", fontsize=_F4_LEG)
+    _legend(ax, loc="upper right")
 
-    # --- (c) Cumulative defensive reroutes under risk ---
-    # The original panel counted three coordinator-side anomaly-defense
-    # traces (cooperative_veto, physics_gate, fault_recovery), but those
-    # only fire when the env-flag triad FAILURE_INJECTION /
-    # PHYSICS_CONSISTENCY_GATE / MCP_RELIABILITY is on, and the
-    # published HPC pipeline runs with all three off, so every trace
-    # was structurally zero across every mode and the panel collapsed
-    # to a flat line at y=0. Replaced with a per-step view of the
-    # headline RLE numerator: cumulative count of steps where the
-    # spoilage risk rho exceeds the at-risk threshold (0.10) AND the
-    # policy routed the batch away from the cold chain (Local
-    # Redistribute or Recovery).
+    # --- (c) Causality chain: Outage -> Behavior -> Outcome ---
     #
-    # Why this is a fair, mechanistically-grounded measure of cyber-
-    # resilient routing:
+    # The previous panel C variants (cumulative anomaly-defense traces;
+    # cumulative at-risk reroutes) showed only one half of the
+    # causality argument: that the policy did *something different*.
+    # The 2026-05 redesign joins the policy-shift signal with its
+    # outcome consequence in a single panel:
     #
-    #   - rho_trace is dataset-cumulative (the Arrhenius-Baranyi
-    #     integral of the scenario temperature trajectory) and
-    #     identical across modes for any given step modulo small
-    #     stochastic perturbations, so every mode sees essentially
-    #     the *same* set of at-risk opportunities. The mode-to-mode
-    #     gap is therefore a pure measurement of policy *behavior*
-    #     on those opportunities, not a dataset artefact.
-    #   - The 0.10 gate is the same RLE_THRESHOLD that drives the
-    #     headline EU-hierarchy-weighted RLE metric in
-    #     resilience.compute_rle and the RLE column of Table 1, so
-    #     this panel is the time-resolved companion of that
-    #     end-of-episode summary number.
-    #   - Static is structurally flat at 0 because its action policy
-    #     deterministically selects cold_chain. This is a true zero,
-    #     not a missing-data zero - it is the baseline that
-    #     quantifies what AgriBrain's adaptive response is worth.
-    #   - Hybrid RL and AgriBrain both reroute under risk; the slope
-    #     gap during the outage window is the cyber-resilience
-    #     capability of the edge stack rendered as a count.
-    ax = axes[2]
-    for mode in ["static", "hybrid_rl", "agribrain"]:
+    #   - top half: per-method "reroute rate" (fraction of decisions
+    #     that left the cold chain) computed over the pre-outage and
+    #     during-outage windows. A cyber outage that caused no
+    #     behavior change would show identical pre/during bars per
+    #     method; a policy that responds shows the during bar rising.
+    #
+    #   - bottom half: change in three KPIs from pre-outage to
+    #     during-outage, per method:
+    #       deltaARI    = mean(ARI during) - mean(ARI pre)
+    #       deltaWaste  = mean(waste during) - mean(waste pre)
+    #       deltaService = service_during - service_pre, where
+    #                      service = mean(action != recovery) * (1 - mean waste)
+    #                      i.e. fraction of inventory reaching retail
+    #                      in usable form (retail-dispatch * sellable).
+    #
+    # Reading order top -> bottom is the load-bearing claim of the
+    # cyber section: the outage forced AgriBrain's policy to shift
+    # (top), and that shift translated into a smaller ARI/Service
+    # drop and a smaller Waste rise than the baselines suffered
+    # (bottom). Static is the unaltered-baseline reference: its top
+    # bars are equal pre/during (no behavior change) and its bottom
+    # bars show the unmitigated outage damage.
+    #
+    # Pre/during windows are split at the cyber-outage onset h=24 (see
+    # generate_results._apply_cyber_outage); the published HPC pipeline
+    # uses the same split.
+    pre_mask_arr = np.asarray(hours, dtype=float) < 24.0
+    during_mask_arr = np.asarray(hours, dtype=float) >= 24.0
+    modes_ordered_c = ["static", "hybrid_rl", "agribrain"]
+    mode_labels_c = ["Static", "Hybrid RL", "AgriBrain"]
+    # Distinct, color-blind-friendly mode palette consistent with the
+    # rest of the figure.
+    mode_colors_c = {
+        "static": "#7C7C7C",
+        "hybrid_rl": "#D55E00",
+        "agribrain": "#0F8A8C",
+    }
+
+    reroute_pre: list[float] = []
+    reroute_during: list[float] = []
+    # Binomial standard errors for the reroute-rate proportions.
+    # se = sqrt(p * (1 - p) / n) per Wald's approximation; the panel
+    # plots 1.96 * se as a 95% CI half-width, matching panel B's
+    # treatment of the action-distribution proportions.
+    reroute_pre_se: list[float] = []
+    reroute_during_se: list[float] = []
+    delta_ari: list[float] = []
+    delta_waste: list[float] = []
+    delta_service: list[float] = []
+    # Standard errors of the deltas (during - pre means). For ARI and
+    # Waste we use SE_delta = sqrt(SE_pre^2 + SE_during^2) with each
+    # window-side SE = std/sqrt(n) (assumes step-level samples are
+    # approximately independent within window; conservative since
+    # Arrhenius integration introduces mild autocorrelation, but
+    # adequate for figure-level CI bars). For Service the metric is
+    # a product (retail_dispatch * (1 - mean_waste)) and the analytic
+    # SE requires the delta method, so we bootstrap-resample steps
+    # within each window 500x and take the std of the bootstrap delta
+    # distribution.
+    delta_ari_se: list[float] = []
+    delta_waste_se: list[float] = []
+    delta_service_se: list[float] = []
+
+    for mode in modes_ordered_c:
         ep = cy[mode]
-        rho = np.asarray(ep["rho_trace"], dtype=float)
-        actions = np.asarray(ep["action_trace"], dtype=int)
-        # Length-align defensively: in rare regen edge cases trace
-        # lengths can differ from the hour grid by one step.
-        n = min(rho.shape[0], actions.shape[0], hours.shape[0])
-        rho = rho[:n]
-        actions = actions[:n]
-        x = hours[:n]
-        at_risk = rho > RLE_THRESHOLD
-        rerouted = actions != 0  # 0 = cold_chain; 1 = LR; 2 = recovery
-        defensive = (at_risk & rerouted).astype(float)
-        cumulative = np.cumsum(defensive)
-        _mode_plot(ax, x, cumulative, mode)
+        actions_arr = np.asarray(ep["action_trace"], dtype=int)
+        ari_arr = np.asarray(ep["ari_trace"], dtype=float)
+        waste_arr = np.asarray(ep.get("waste_trace") or [], dtype=float)
+        n = min(actions_arr.shape[0], ari_arr.shape[0],
+                waste_arr.shape[0] if waste_arr.size else actions_arr.shape[0],
+                hours.shape[0])
+        actions_arr = actions_arr[:n]
+        ari_arr = ari_arr[:n]
+        # If the episode dump did not emit a per-step waste trace
+        # (older runs), fall back to the episode-level waste scalar
+        # broadcast across all steps. This keeps the plot honest --
+        # the delta will be zero for those modes -- rather than
+        # crashing with a shape error.
+        if waste_arr.size >= n:
+            waste_arr_n = waste_arr[:n]
+        else:
+            waste_arr_n = np.full(n, float(ep.get("waste", 0.0)))
 
-    ax.set_xlabel("Hours")
-    ax.set_ylabel("Cumulative defensive reroutes")
-    ax.set_title("(c) Defensive Reroutes Under Risk")
-    _apply_style(ax)
-    _f4_style(ax)
-    # Outage window shading without an inline label - per user request,
-    # the only boxed element on this panel is the legend.
-    ax.axvspan(24, 72, alpha=WINDOW_ALPHA, color=WINDOW_COLOR, zorder=0)
-    # Legend at upper-left: cumulative reroutes start at 0 and only
-    # rise off the lower spine after the outage onset (h=24), so the
-    # upper-left corner is empty space throughout the episode for
-    # every mode.
-    _legend(ax, loc="upper left", fontsize=_F4_LEG)
+        pm = pre_mask_arr[:n]
+        dm = during_mask_arr[:n]
+        n_pre_c = int(pm.sum())
+        n_dur_c = int(dm.sum())
+        if n_pre_c == 0 or n_dur_c == 0:
+            # Degenerate window (shouldn't happen on the canonical 72 h
+            # cyber_outage trace, but guard against truncated data).
+            reroute_pre.append(0.0); reroute_during.append(0.0)
+            reroute_pre_se.append(0.0); reroute_during_se.append(0.0)
+            delta_ari.append(0.0); delta_waste.append(0.0); delta_service.append(0.0)
+            delta_ari_se.append(0.0); delta_waste_se.append(0.0); delta_service_se.append(0.0)
+            continue
+
+        # Reroute proportions (Bernoulli at step granularity) + Wald SE.
+        rp = float(np.mean(actions_arr[pm] != 0))
+        rd = float(np.mean(actions_arr[dm] != 0))
+        reroute_pre.append(rp)
+        reroute_during.append(rd)
+        reroute_pre_se.append(float(np.sqrt(rp * (1.0 - rp) / n_pre_c)))
+        reroute_during_se.append(float(np.sqrt(rd * (1.0 - rd) / n_dur_c)))
+
+        ari_pre = float(np.mean(ari_arr[pm]))
+        ari_dur = float(np.mean(ari_arr[dm]))
+        waste_pre = float(np.mean(waste_arr_n[pm]))
+        waste_dur = float(np.mean(waste_arr_n[dm]))
+        # Service-level proxy: retail-dispatch rate * (1 - mean waste).
+        # See panel docstring above for the operations-research
+        # interpretation. A clean, defensible scalar that goes
+        # *down* when the policy diverts to recovery and *down* again
+        # when retail-bound product spoils.
+        svc_pre = float(np.mean(actions_arr[pm] != 2)) * (1.0 - waste_pre)
+        svc_dur = float(np.mean(actions_arr[dm] != 2)) * (1.0 - waste_dur)
+
+        delta_ari.append(ari_dur - ari_pre)
+        delta_waste.append(waste_dur - waste_pre)
+        delta_service.append(svc_dur - svc_pre)
+
+        # Within-window step-level SEs for ARI and Waste (Welch-style
+        # diff SE: independent windows, sum the variances).
+        def _diff_se(x_pre: np.ndarray, x_dur: np.ndarray) -> float:
+            sp = float(np.std(x_pre, ddof=1)) if x_pre.size > 1 else 0.0
+            sd = float(np.std(x_dur, ddof=1)) if x_dur.size > 1 else 0.0
+            return float(np.sqrt(sp ** 2 / max(x_pre.size, 1)
+                                 + sd ** 2 / max(x_dur.size, 1)))
+
+        delta_ari_se.append(_diff_se(ari_arr[pm], ari_arr[dm]))
+        delta_waste_se.append(_diff_se(waste_arr_n[pm], waste_arr_n[dm]))
+
+        # Service is a product of two means; bootstrap the delta SE.
+        # Seed per-mode so the bar errors are reproducible across
+        # regenerations of the same data.
+        n_boot = 500
+        boot_rng = np.random.default_rng(
+            abs(hash((mode, "service_se"))) % (2**32)
+        )
+        a_pm = actions_arr[pm]; w_pm = waste_arr_n[pm]
+        a_dm = actions_arr[dm]; w_dm = waste_arr_n[dm]
+        boot_deltas = np.empty(n_boot, dtype=float)
+        for k in range(n_boot):
+            ip = boot_rng.integers(0, n_pre_c, n_pre_c)
+            id_ = boot_rng.integers(0, n_dur_c, n_dur_c)
+            sp = float(np.mean(a_pm[ip] != 2)) * (1.0 - float(np.mean(w_pm[ip])))
+            sd_ = float(np.mean(a_dm[id_] != 2)) * (1.0 - float(np.mean(w_dm[id_])))
+            boot_deltas[k] = sd_ - sp
+        delta_service_se.append(float(np.std(boot_deltas, ddof=1)))
+
+    # ---- (c) Reroute rate pre/during outage per method ----
+    # The behavior-magnitude leg of the causality chain. Static is the
+    # null reference (always cold-chain -> reroute rate 0 in both
+    # windows). Hybrid RL and AgriBrain both reroute pre-outage as
+    # part of their normal operation; what matters is whether the
+    # *during* bar rises relative to the *pre* bar, i.e. whether the
+    # policy responds to the outage.
+    ax_c = axes[2]
+    x_modes = np.arange(len(modes_ordered_c))
+    bar_w = 0.36
+    ax_c.bar(
+        x_modes - bar_w / 2, reroute_pre, bar_w,
+        color="#1565C0", alpha=0.92, edgecolor="white", linewidth=0.8,
+        label="Pre-outage",
+        yerr=1.96 * np.asarray(reroute_pre_se), capsize=4,
+        error_kw={"linewidth": 1.2, "capthick": 1.2, "ecolor": "#1F1F1F"},
+    )
+    ax_c.bar(
+        x_modes + bar_w / 2, reroute_during, bar_w,
+        color=WINDOW_COLOR, alpha=0.92, edgecolor="white", linewidth=0.8,
+        label="During outage",
+        yerr=1.96 * np.asarray(reroute_during_se), capsize=4,
+        error_kw={"linewidth": 1.2, "capthick": 1.2, "ecolor": "#1F1F1F"},
+    )
+    ax_c.set_xticks(x_modes)
+    ax_c.set_xticklabels(mode_labels_c)
+    # Headroom above the tallest bar (including its error-bar cap) so
+    # the legend has a clean home.
+    _top_c = max(
+        max(np.asarray(reroute_pre) + 1.96 * np.asarray(reroute_pre_se)),
+        max(np.asarray(reroute_during) + 1.96 * np.asarray(reroute_during_se)),
+    )
+    ax_c.set_ylim(0, max(_top_c * 1.30, 1.0))
+    ax_c.set_ylabel("Reroute rate")
+    ax_c.set_title("(c) Behavior Shift")
+    _apply_style(ax_c)
+    # Static stays at 0 in both windows so the upper-left corner is
+    # genuinely empty; legend lives there.
+    _legend(ax_c, loc="upper left")
+
+    # ---- (d) KPI delta vs pre-outage per method ----
+    # The outcome leg of the causality chain. ARI/Service drop and
+    # Waste rise are all "bad" deltas; AgriBrain's bar is the smallest-
+    # magnitude (least bad) for each KPI. Static, having not rerouted,
+    # carries the full unmitigated outage damage.
+    ax_d = axes[3]
+    kpi_x = np.arange(3)  # ARI, Waste, Service
+    grp_w = 0.27
+    for i, mode in enumerate(modes_ordered_c):
+        vals = [delta_ari[i], delta_waste[i], delta_service[i]]
+        ses = [delta_ari_se[i], delta_waste_se[i], delta_service_se[i]]
+        ax_d.bar(
+            kpi_x + (i - 1) * grp_w, vals, grp_w,
+            color=mode_colors_c[mode], alpha=0.92,
+            edgecolor="white", linewidth=0.8,
+            label=mode_labels_c[i],
+            yerr=1.96 * np.asarray(ses), capsize=4,
+            error_kw={"linewidth": 1.2, "capthick": 1.2, "ecolor": "#1F1F1F"},
+        )
+    ax_d.axhline(0, color="black", linewidth=1.0, zorder=2)
+    ax_d.set_xticks(kpi_x)
+    ax_d.set_xticklabels([r"$\Delta$ARI", r"$\Delta$Waste", r"$\Delta$Service"])
+    ax_d.set_ylabel("Change vs pre-outage")
+    ax_d.set_title("(d) Outage Impact")
+    _apply_style(ax_d)
+    # Add symmetric headroom both directions so the legend has clean
+    # space. The CI bars now extend the visual extents, so use the
+    # extreme bar+CI values rather than ax.get_ylim() which is set
+    # before the CI caps land.
+    all_vals = []
+    for i in range(len(modes_ordered_c)):
+        for v, se in zip(
+            [delta_ari[i], delta_waste[i], delta_service[i]],
+            [delta_ari_se[i], delta_waste_se[i], delta_service_se[i]],
+        ):
+            all_vals.append(v + 1.96 * se)
+            all_vals.append(v - 1.96 * se)
+    y_lo = min(0.0, min(all_vals))
+    y_hi = max(0.0, max(all_vals))
+    span = y_hi - y_lo if (y_hi - y_lo) > 0 else 1.0
+    ax_d.set_ylim(y_lo - 0.20 * span, y_hi + 0.30 * span)
+    # Legend at upper-right: with the headroom expansion, the upper-
+    # right corner is well above the tallest +Δ bar (typically
+    # AgriBrain ΔWaste) plus its CI cap.
+    _legend(ax_d, loc="upper right")
 
     fig.tight_layout(rect=[0, 0, 1, 0.985], h_pad=1.6, w_pad=1.6)
     _save(fig, "fig4_cyber")

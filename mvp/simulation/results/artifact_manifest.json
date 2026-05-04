@@ -1210,13 +1210,13 @@
     },
     {
       "file": "fig4_cyber.pdf",
-      "bytes": 32267,
-      "sha256": "444d6e2cccb7f6e093055e4ca893fa56379c2184accbe86cf4a7085276a9d200"
+      "bytes": 56221,
+      "sha256": "de6bb2ceef990c2d3105ad951817b22914257d8d6cf562da09a3df44a2a91225"
     },
     {
       "file": "fig4_cyber.png",
-      "bytes": 2181000,
-      "sha256": "22df03216adb8bc0ffed3e7ae5fd2cd6aab155491f338bdb9d6f2339f7fd6db5"
+      "bytes": 1997183,
+      "sha256": "25fe4c584f3d2f3bd6059956a58b77bccec01ca3fc625cb409c1c995ed13cc54"
     },
     {
       "file": "fig5_pricing.pdf",

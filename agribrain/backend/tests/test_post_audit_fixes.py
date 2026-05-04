@@ -924,60 +924,86 @@ def test_simulator_emits_anomaly_defense_traces_in_result_dict():
 
 
 def test_panel_c_plots_defensive_reroutes_under_risk():
-    """Pin that fig 4 panel C plots the time-resolved RLE numerator -
-    cumulative count of steps where rho > RLE_THRESHOLD AND the policy
-    routed away from the cold chain.
+    """Pin fig 4 as the 1x4 "Outage -> Behavior -> Outcome" causality
+    layout introduced in 2026-05.
 
-    Replaces the earlier ``test_panel_c_consumes_anomaly_defense_traces``
-    regression guard. The previous panel (Cumulative Anomaly Defenses
-    Triggered) cumsum-summed three coordinator-side traces
-    (``cooperative_veto``, ``physics_gate``, ``fault_recovery``) that
-    only fire when the env-flag triad
-    FAILURE_INJECTION / PHYSICS_CONSISTENCY_GATE / MCP_RELIABILITY is
-    explicitly enabled. The published HPC pipeline runs with all three
-    off, so the panel collapsed to a flat line at y=0 across every mode
-    and conveyed no information. The replacement panel uses
-    always-populated traces (``rho_trace`` + ``action_trace``) keyed
-    on the same RLE_THRESHOLD that drives the headline RLE column in
-    Table 1, so it tells a substantive cyber-resilience story under
-    the default flag configuration.
+    Design history (newest first):
+      * **2026-05 redesign (current):** fig 4 is a 1x4 layout. Panel
+        C = per-method reroute rate (mean(action != cold_chain))
+        under pre vs during outage -- the *behavior change* signal.
+        Panel D = grouped deltaARI / deltaWaste / deltaService bars
+        per method -- the *outcome* signal. Together panels B + C +
+        D make the cyber-resilience causality argument explicit
+        ("outage forced behavior change; behavior change drove KPI
+        delta").
+      * 2026-05 (intermediate): a 2-row gridspec inside the third
+        column. Replaced because legends and bars overlapped within
+        the cramped sub-panel real estate.
+      * 2026-05 (earlier): a single-axis "Reroutes Away From Cold
+        Chain" panel showing the cumulative count of at-risk
+        reroutes. Replaced because reviewers wanted the outcome
+        consequence on the same figure as the behavior change.
+      * 2026-04: time-resolved RLE numerator (cumulative count of
+        steps where rho > RLE_THRESHOLD AND action != cold_chain).
+      * pre-2026-04: anomaly-defense trace cumsum
+        (cooperative_veto + physics_gate + fault_recovery), which
+        was structurally zero under the published flag config and
+        conveyed no information.
 
-    The three anomaly-defense traces are still emitted by the
-    simulator (see ``test_simulator_emits_anomaly_defense_traces_in
-    _result_dict``) - the data path is preserved for any future
-    feature-flag-on rendering, just no longer consumed by panel C in
-    the canonical figure.
+    The simulator still emits the three anomaly-defense traces
+    (`test_simulator_emits_anomaly_defense_traces_in_result_dict`
+    pins that data path) for any future feature-flag-on rendering;
+    the canonical fig 4 just doesn't consume them under the
+    published flag config.
     """
     fig_path = (Path(__file__).resolve().parents[3] / "mvp" / "simulation" /
                 "generate_figures.py")
     src = fig_path.read_text(encoding="utf-8")
-    assert 'ep["rho_trace"]' in src, (
-        "fig 4 panel C no longer reads rho_trace; the Defensive "
-        "Reroutes Under Risk panel has regressed."
-    )
+    # Panel C / D consume per-step action_trace and ari_trace to
+    # compute pre/during-outage statistics; both must be present.
     assert 'ep["action_trace"]' in src, (
-        "fig 4 panel C no longer reads action_trace; the Defensive "
-        "Reroutes Under Risk panel has regressed."
+        "fig 4 panels C/D no longer read action_trace; the behavior-"
+        "shift signal has regressed."
     )
-    # The metric pins: at-risk gate + away-from-cold-chain + cumsum.
-    assert "rho > RLE_THRESHOLD" in src, (
-        "fig 4 panel C no longer gates on rho > RLE_THRESHOLD; the "
-        "at-risk filter has regressed."
+    assert 'ep["ari_trace"]' in src, (
+        "fig 4 panel D no longer reads ari_trace; the deltaARI "
+        "computation has regressed."
     )
-    assert "actions != 0" in src, (
-        "fig 4 panel C no longer filters on actions != 0 "
-        "(away from cold chain); the defensive-reroute filter has "
-        "regressed."
+    # The pre/during-outage split is the load-bearing comparison.
+    # The masks must be derived from `hours` against the h=24 onset.
+    assert "pre_mask_arr" in src and "during_mask_arr" in src, (
+        "fig 4 panels C/D lost the pre/during-outage masks; the "
+        "behavior-shift comparison cannot run without them."
     )
-    assert "np.cumsum(defensive)" in src, (
-        "fig 4 panel C no longer cumulatively sums the defensive "
-        "indicator; the panel has regressed to a non-cumulative view."
+    # Three KPI deltas pin the outcome story.
+    for delta in ("delta_ari", "delta_waste", "delta_service"):
+        assert delta in src, (
+            f"fig 4 panel D lost the {delta} computation; the KPI-"
+            f"delta panel cannot render without it."
+        )
+    # Service-level definition lives in the panel-C/D shared block
+    # and must be the documented "retail-dispatch * sellable" form.
+    assert "actions_arr[pm] != 2" in src and "(1.0 - waste_pre)" in src, (
+        "fig 4 service-level definition no longer matches "
+        "retail_dispatch * (1 - waste); the documented composition "
+        "has regressed."
     )
-    # Pin the new panel title so a maintainer who refactors the
-    # metric logic without updating the title gets a failing test.
-    assert "Defensive Reroutes Under Risk" in src, (
-        "Panel C title 'Defensive Reroutes Under Risk' is missing "
-        "from generate_figures.py."
+    # 1x4 layout: four-axes subplots call.
+    assert "plt.subplots(1, 4" in src, (
+        "fig 4 is no longer the 1x4 layout introduced in 2026-05; "
+        "the Outage -> Behavior -> Outcome causality split across "
+        "panels B/C/D has regressed."
+    )
+    # Title pins for the 1x4 layout:
+    #   * (c) "Behavior Shift" -- per-method reroute rate pre/during outage
+    #   * (d) "Outage Impact"  -- per-method delta-ARI/Waste/Service
+    # A maintainer who refactors the rendering without updating the
+    # headings gets a failing test.
+    assert '"(c) Behavior Shift"' in src, (
+        "Panel C title 'Behavior Shift' is missing from generate_figures.py."
+    )
+    assert '"(d) Outage Impact"' in src, (
+        "Panel D title 'Outage Impact' is missing from generate_figures.py."
     )
 
 
