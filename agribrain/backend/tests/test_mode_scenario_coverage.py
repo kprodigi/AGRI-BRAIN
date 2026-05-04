@@ -205,13 +205,28 @@ def test_agribrain_under_cyber_outage_runs(sim_runtime, short_df):
 @pytest.mark.slow
 def test_cyber_outage_reports_bernoulli_policy(sim_runtime):
     """Post-fix invariant: during a cyber outage the reported policy
-    distribution must be the Bernoulli reroute distribution [1 - p, p, 0],
-    not a sampled one-hot. Regression guard for commit 59dbc1c.
+    distribution must be the Bernoulli reroute distribution
+    ``[1 - p, p, 0]``, not a sampled one-hot. Regression guard for
+    commit 59dbc1c.
 
-    agribrain's reroute success probability is 0.82, so every outage-step
-    ``prob_trace`` entry must equal [0.18, 0.82, 0.0] with zero recovery
-    mass.
+    The probability ``p`` is read from
+    ``src.models.action_selection.CYBER_REROUTE_PROB[mode]`` rather
+    than hardcoded so the assertion stays correct under the
+    capability-additive calibration introduced in 2026-04 (commit
+    b0f7d9a, which replaced the hand-tuned per-mode dict --
+    `agribrain` was 0.82 before, is 0.73 after, and may evolve again
+    if the per-capability deltas are recalibrated). What is being
+    pinned here is the *Bernoulli structure* of the prob_trace under
+    outage, not the absolute calibration: cold_chain mass must be
+    ``1 - p``, local mass must be ``p``, recovery mass must be 0,
+    and the rng must not produce a sampled one-hot. The absolute
+    calibration is exercised by
+    ``test_metric_variants::test_cyber_reroute_ranking_invariant``
+    (which sweeps each delta at +/-50% and verifies the cross-mode
+    ordering survives).
     """
+    from src.models.action_selection import CYBER_REROUTE_PROB
+
     gr, st = sim_runtime
     policy = gr.Policy()
     scen_rng = np.random.default_rng(0)
@@ -223,6 +238,21 @@ def test_cyber_outage_reports_bernoulli_policy(sim_runtime):
     ep = gr.run_episode(df, "agribrain", policy, np.random.default_rng(42),
                          "cyber_outage", stoch=scen_stoch)
 
+    expected_p = CYBER_REROUTE_PROB["agribrain"]
+    # Sanity-check the calibration window. Lower bound: even with all
+    # deltas perturbed -50% the success probability stays above 0.27
+    # (base 0.275). Upper bound: 1.0 by construction. If the value
+    # falls outside this band, either CYBER_REROUTE_PROB has been
+    # rewritten radically or _CYBER_BASE_RL_COMPETENCE was zeroed,
+    # both of which warrant a deliberate test update rather than a
+    # green CI run.
+    assert 0.27 < expected_p < 1.0, (
+        f"CYBER_REROUTE_PROB['agribrain'] = {expected_p} outside the "
+        f"calibration band (0.27, 1.0). If this is a deliberate change, "
+        f"update test_cyber_outage_reports_bernoulli_policy and the "
+        f"capability deltas in action_selection.py together."
+    )
+
     outage_probs = [
         probs for probs, hour in zip(ep["prob_trace"], ep["hours"])
         if hour >= 24.0
@@ -231,5 +261,11 @@ def test_cyber_outage_reports_bernoulli_policy(sim_runtime):
     for probs in outage_probs:
         assert abs(sum(probs) - 1.0) < 1e-9
         assert probs[2] == 0.0, "recovery mass must be zero under outage"
-        assert abs(probs[0] - 0.18) < 1e-9, f"cold-chain mass {probs[0]} != 0.18"
-        assert abs(probs[1] - 0.82) < 1e-9, f"local mass {probs[1]} != 0.82"
+        assert abs(probs[0] - (1.0 - expected_p)) < 1e-9, (
+            f"cold-chain mass {probs[0]} != 1 - CYBER_REROUTE_PROB['agribrain'] "
+            f"= {1.0 - expected_p}"
+        )
+        assert abs(probs[1] - expected_p) < 1e-9, (
+            f"local-redistribute mass {probs[1]} != CYBER_REROUTE_PROB['agribrain'] "
+            f"= {expected_p}"
+        )
