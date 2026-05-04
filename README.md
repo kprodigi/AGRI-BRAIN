@@ -253,7 +253,7 @@ run `python mvp/simulation/validation/validate_results.py` and
 | `DATA_CSV` | (auto) | Override path to spinach sensor CSV |
 | `RAG_CONTEXT_ENABLED` | `true` | Enable MCP/piRAG context integration in agribrain mode |
 | `SIM_API_BASE` | `http://127.0.0.1:8100` | Base URL for simulation API |
-| `DETERMINISTIC_MODE` | `false` | `true` = exact reproducibility (audit), `false` = 7-source stochastic perturbations |
+| `DETERMINISTIC_MODE` | `false` | `true` = exact reproducibility (audit), `false` = 8-source stochastic perturbations (see HOW_TO_RUN.md for the canonical default values) |
 
 ### Security/ops flags
 
@@ -381,7 +381,7 @@ AGRI-BRAIN/
     simulation/
       generate_results.py       # Scenario x mode simulation runner
       generate_figures.py       # Publication figure generator
-      stochastic.py             # 7-source stochastic perturbation engine
+      stochastic.py             # 8-source stochastic perturbation engine (+ 1 orthogonal lag channel)
       reproduce_core.py         # One-command full reproduction pipeline
       benchmarks/               # Multi-seed benchmark & stress suites
         run_benchmark_suite.py

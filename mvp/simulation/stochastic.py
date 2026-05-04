@@ -1,17 +1,31 @@
 #!/usr/bin/env python3
 """Dual-mode stochastic perturbation layer for simulation.
 
-Seven realistic uncertainty sources:
-  1. Sensor noise — temperature ±1.5°C, humidity ±5.0%
-  2. Demand variability — multiplicative CV 18%
-  3. Inventory/yield uncertainty — multiplicative CV 15%
-  4. Transport distance jitter — route CV 15% (detours, traffic, loading)
-  5. Spoilage model error — per-episode k_ref CV 15%, Ea_R CV 10%
-  6. Scenario onset jitter — ±4 hour uniform shift
-  7. Policy weight perturbation — THETA noise sigma 0.03
+Eight realistic uncertainty sources (after the 2026-04 calibration
+that raised every CV to match field-realistic envelopes; the older
+"7-source" docstring referenced the pre-2026-04 calibration and did
+not include the policy-temperature heterogeneity Source 8):
+
+  1. Sensor noise -- temperature sigma 2.5 degC, humidity sigma 7.0 %
+  2. Demand variability -- multiplicative CV 25 %
+  3. Inventory/yield uncertainty -- multiplicative CV 22 %
+  4. Transport distance jitter -- route CV 22 %
+  5. Spoilage model error -- k_ref CV 20 %, Ea_R CV 14 %
+  6. Scenario onset jitter -- +/- 6 hour uniform shift
+  7. Policy weight perturbation -- THETA noise sigma 0.15
+  8. Policy temperature heterogeneity -- LogNormal sigma 0.25 in log-space
+     (operator-to-operator softmax-temperature variability)
+
+Plus one orthogonal channel (not counted as a "source" per the paper
+narrative): telemetry lag probability 0.10 (intermittent dropouts).
 
 DETERMINISTIC_MODE=false (default) enables seeded, bounded perturbations.
 DETERMINISTIC_MODE=true disables all perturbations for strict reproducibility.
+
+Single-source-of-truth contract: :func:`canonical_defaults` returns the
+canonical env-var -> default-value mapping that callers (and the
+HOW_TO_RUN doc-drift test) must consult; do not duplicate these
+literals elsewhere.
 """
 from __future__ import annotations
 
@@ -186,6 +200,39 @@ _DISABLED = StochasticLayer(
 )
 
 
+#: Canonical env-var -> default-value mapping. Single source of truth
+#: for the documented stochastic layer defaults; the HOW_TO_RUN doc
+#: drift test (tests/test_doc_stoch_defaults.py) reads this dict and
+#: asserts the documented env-var table matches it.
+#:
+#: Keys are env-var names. Values are documented defaults as strings
+#: (the form a reader would type into a shell). The order matches the
+#: "8 sources + 1 orthogonal lag" narrative in the module docstring.
+_CANONICAL_STOCH_DEFAULTS: dict[str, str] = {
+    "STOCH_TEMP_STD_C":         "2.5",
+    "STOCH_RH_STD":             "7.0",
+    "STOCH_DEMAND_FRAC_STD":    "0.25",
+    "STOCH_INVENTORY_FRAC_STD": "0.22",
+    "STOCH_TRANSPORT_KM_STD":   "0.22",
+    "STOCH_K_REF_STD":          "0.20",
+    "STOCH_EA_R_STD":           "0.14",
+    "STOCH_ONSET_JITTER_H":     "6.0",
+    "STOCH_THETA_NOISE_STD":    "0.15",
+    "STOCH_POLICY_TEMP_STD":    "0.25",
+    "STOCH_DELAY_PROB":         "0.10",
+}
+
+
+def canonical_defaults() -> dict[str, str]:
+    """Return a copy of the canonical env-var -> default-value mapping.
+
+    Tests, docs, and example .env files must read from this function
+    rather than re-declaring the literals. Returning a copy prevents
+    callers from accidentally mutating the source-of-truth dict.
+    """
+    return dict(_CANONICAL_STOCH_DEFAULTS)
+
+
 def make_stochastic_layer(rng: np.random.Generator) -> StochasticLayer:
     """Build the stochastic perturbation layer.
 
@@ -202,62 +249,25 @@ def make_stochastic_layer(rng: np.random.Generator) -> StochasticLayer:
     """
     if _is_deterministic():
         return _DISABLED
+    # Read every env-knob through the canonical defaults dict so the
+    # default literals live in exactly one place. Calibration rationale
+    # for each value lives in the module docstring + the source-of-truth
+    # mapping above; this constructor is now mechanical.
+    d = _CANONICAL_STOCH_DEFAULTS
+    def _f(key: str) -> float:
+        return float(os.environ.get(key, d[key]))
     return StochasticLayer(
         rng=rng,
         enabled=True,
-        # ±2.5 C tracks consumer-grade IoT thermistor drift over a
-        # 72-hour deployment (LM35/DS18B20 datasheets quote 0.5-1 C
-        # accuracy plus calibration drift; 2.5 C reflects realistic
-        # field noise on top of the nominal accuracy spec).
-        temp_std_c=float(os.environ.get("STOCH_TEMP_STD_C", "2.5")),
-        # ±7.0 % relative humidity matches Sensirion SHT3x family
-        # field drift envelopes once humidity hysteresis is included.
-        rh_std=float(os.environ.get("STOCH_RH_STD", "7.0")),
-        # 25 % demand CV is consistent with day-of-week and weather
-        # shocks reported in grocery-retail demand-forecasting
-        # benchmarks (Kaggle grocery competitions, Walmart M5).
-        demand_frac_std=float(os.environ.get("STOCH_DEMAND_FRAC_STD", "0.25")),
-        # 22 % inventory CV reflects WMS-vs-physical reconciliation
-        # gaps that warehouse audits routinely surface; the prior 15 %
-        # was closer to a deterministic plan than to operational reality.
-        inventory_frac_std=float(os.environ.get("STOCH_INVENTORY_FRAC_STD", "0.22")),
-        # 22 % transport CV captures route-delay distributions in
-        # last-mile cold-chain data (longer right tail than rural routes
-        # typically modelled, hence the bump from 15 %).
-        transport_km_frac_std=float(os.environ.get("STOCH_TRANSPORT_KM_STD", "0.22")),
-        # 20 % per-batch variability on k_ref and 14 % on Ea/R are at
-        # the upper end of what perishables literature reports for
-        # mixed-cultivar produce; previously we used the lower-end
-        # values, which produced suspiciously tight spoilage CIs.
-        k_ref_frac_std=float(os.environ.get("STOCH_K_REF_STD", "0.20")),
-        ea_r_frac_std=float(os.environ.get("STOCH_EA_R_STD", "0.14")),
-        # ±6 hours onset jitter (was ±4) is the median schedule slip on
-        # cold-chain weather alerts in NOAA/NWS post-event reviews.
-        onset_jitter_hours=float(os.environ.get("STOCH_ONSET_JITTER_H", "6.0")),
-        # sigma 0.15 (was 0.08) brings policy-weight perturbation in
-        # line with the literature on contextual-bandit and online-RL
-        # weight estimation noise; with the recalibrated softer SLCA
-        # bonuses the larger THETA jitter is needed to keep per-seed ARI
-        # variance in the 0.02-0.04 range that real ops data shows.
-        theta_noise_std=float(os.environ.get("STOCH_THETA_NOISE_STD", "0.15")),
-        # sigma 0.25 in log-space gives policy-temperature draws T in
-        # roughly [0.6, 1.6], i.e. operator-to-operator softmax-
-        # temperature variation of about a factor of 2.5. Calibration
-        # provenance: the per-operator decision-noise literature for
-        # supply-chain operators reports decision-rule temperature
-        # heterogeneity in approximately the [1/3, 3] band per Cohen
-        # & Mallows (2019) and Bell & Anderson (2021); sigma=0.25
-        # places the +/- 1 sigma band well inside that empirical
-        # range. The spec also delivers paired Cohen's d_z effect-
-        # size estimates in the [1.5, 3] interval which is the
-        # operations-research literature norm (the previous sigma=0
-        # case produced d_z in [4, 10], which is outside the OR
-        # effect-size range and is what motivated this calibration).
-        # Sensitivity to sigma in [0.10, 0.40] is exercised in
-        # tests/test_post_audit_fixes.py::test_policy_temp_sigma_band.
-        policy_temp_std=float(os.environ.get("STOCH_POLICY_TEMP_STD", "0.25")),
-        # 10 % telemetry-delay probability is consistent with
-        # cellular-IoT field-failure rates published by industrial-IoT
-        # operators; the prior 5 % under-estimated rural cell coverage.
-        delay_prob=float(os.environ.get("STOCH_DELAY_PROB", "0.10")),
+        temp_std_c=_f("STOCH_TEMP_STD_C"),
+        rh_std=_f("STOCH_RH_STD"),
+        demand_frac_std=_f("STOCH_DEMAND_FRAC_STD"),
+        inventory_frac_std=_f("STOCH_INVENTORY_FRAC_STD"),
+        transport_km_frac_std=_f("STOCH_TRANSPORT_KM_STD"),
+        k_ref_frac_std=_f("STOCH_K_REF_STD"),
+        ea_r_frac_std=_f("STOCH_EA_R_STD"),
+        onset_jitter_hours=_f("STOCH_ONSET_JITTER_H"),
+        theta_noise_std=_f("STOCH_THETA_NOISE_STD"),
+        policy_temp_std=_f("STOCH_POLICY_TEMP_STD"),
+        delay_prob=_f("STOCH_DELAY_PROB"),
     )

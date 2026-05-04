@@ -64,7 +64,7 @@ AGRI-BRAIN/
 │   └── simulation/             # Standalone simulation & figure scripts
 │       ├── generate_results.py # Scenario x mode simulation runner
 │       ├── generate_figures.py # Publication figure generator
-│       ├── stochastic.py       # 7-source stochastic perturbation engine
+│       ├── stochastic.py       # 8-source stochastic perturbation engine (+ orthogonal telemetry-lag channel)
 │       ├── reproduce_core.py   # One-command full reproduction pipeline
 │       ├── benchmarks/         # Multi-seed benchmark & stress suites
 │       ├── validation/         # Result validation & regression guards
@@ -124,17 +124,25 @@ pyyaml, scipy. The `[dev]` extra adds pytest, httpx, pytest-asyncio.
 | `LLM_PROVIDER` | `template` | RAG answer engine: `template` or `api` |
 | `DATA_CSV` | (auto) | Override path to spinach sensor CSV |
 | `RAG_CONTEXT_ENABLED` | `true` | Enable MCP/piRAG context integration in agribrain mode |
-| `DETERMINISTIC_MODE` | `false` | `true` = exact reproducibility (audit), `false` = 7-source stochastic perturbations |
-| `STOCH_TEMP_STD_C` | `1.5` | Source 1: temperature sensor noise sigma (°C) |
-| `STOCH_RH_STD` | `5.0` | Source 1: humidity sensor noise sigma (%) |
-| `STOCH_DEMAND_FRAC_STD` | `0.18` | Source 2: demand multiplicative CV (daily retail variability) |
-| `STOCH_INVENTORY_FRAC_STD` | `0.15` | Source 3: inventory/yield multiplicative CV (shrinkage, weather) |
-| `STOCH_TRANSPORT_KM_STD` | `0.15` | Source 4: transport distance jitter CV (detours, traffic, loading) |
-| `STOCH_K_REF_STD` | `0.15` | Source 5: Arrhenius decay rate k_ref CV (batch-to-batch biological variability) |
-| `STOCH_EA_R_STD` | `0.10` | Source 5: Arrhenius activation energy Ea/R CV |
-| `STOCH_ONSET_JITTER_H` | `4.0` | Source 6: scenario onset timing jitter ±hours (uniform) |
-| `STOCH_THETA_NOISE_STD` | `0.03` | Source 7: policy weight THETA noise sigma (per element) |
-| `STOCH_DELAY_PROB` | `0.05` | Telemetry lag probability per step (intermittent dropouts) |
+| `DETERMINISTIC_MODE` | `false` | `true` = exact reproducibility (audit), `false` = 8-source stochastic perturbations |
+| `STOCH_TEMP_STD_C` | `2.5` | Source 1: temperature sensor noise sigma (°C) |
+| `STOCH_RH_STD` | `7.0` | Source 1: humidity sensor noise sigma (%) |
+| `STOCH_DEMAND_FRAC_STD` | `0.25` | Source 2: demand multiplicative CV (daily retail variability) |
+| `STOCH_INVENTORY_FRAC_STD` | `0.22` | Source 3: inventory/yield multiplicative CV (shrinkage, weather) |
+| `STOCH_TRANSPORT_KM_STD` | `0.22` | Source 4: transport distance jitter CV (detours, traffic, loading) |
+| `STOCH_K_REF_STD` | `0.20` | Source 5: Arrhenius decay rate k_ref CV (batch-to-batch biological variability) |
+| `STOCH_EA_R_STD` | `0.14` | Source 5: Arrhenius activation energy Ea/R CV |
+| `STOCH_ONSET_JITTER_H` | `6.0` | Source 6: scenario onset timing jitter ±hours (uniform) |
+| `STOCH_THETA_NOISE_STD` | `0.15` | Source 7: policy weight THETA noise sigma (per element) |
+| `STOCH_POLICY_TEMP_STD` | `0.25` | Source 8: policy-temperature LogNormal sigma in log-space (operator softmax-temperature heterogeneity) |
+| `STOCH_DELAY_PROB` | `0.10` | Orthogonal to the 8 sources: telemetry lag probability per step (intermittent dropouts) |
+
+> The defaults above are the single source of truth for the published
+> 20-seed HPC benchmark calibration. They are emitted by
+> `mvp.simulation.stochastic.canonical_defaults()` and asserted by the
+> CI guard `tests/test_doc_stoch_defaults.py`. If you edit the table,
+> either update `canonical_defaults()` to match (and rerun the HPC
+> benchmark) or revert.
 | `BENCHMARK_SEEDS` | `42,1337,2024,7,99,101,202,303,404,505,606,707,808,909,1010,1111,1212,1313,1414,1515` | Comma-separated seeds for multi-seed benchmark (default: 20 seeds) |
 
 Security/runtime flags:
