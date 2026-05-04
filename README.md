@@ -178,7 +178,7 @@ source .venv/bin/activate          # Linux / macOS
 # .venv\Scripts\activate           # Windows (cmd)
 # .venv\Scripts\Activate.ps1       # Windows (PowerShell)
 pip install -e agribrain/backend
-python -m uvicorn src.app:API --port 8100 --app-dir agribrain/backend
+python -m uvicorn src.app:API --port 8100
 ```
 
 ### Frontend (port 5173)

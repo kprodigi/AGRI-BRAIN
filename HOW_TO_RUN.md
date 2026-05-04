@@ -150,18 +150,37 @@ Security/runtime flags:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `APP_ENV` | `dev` | Runtime mode (`dev`/`prod`) |
-| `REQUIRE_API_KEY` | `false` in dev | Require `x-api-key` on API routes |
-| `APP_API_KEY` | (empty) | API key value when auth is enabled |
-| `ALLOW_LOCAL_WITHOUT_API_KEY` | `true` in dev | Allow loopback bypass for local development |
-| `ENABLE_DEBUG_ROUTES` | `true` in dev | Enables `/debug/*` routes |
-| `WS_REQUIRE_API_KEY` | `false` in dev | Require websocket API key |
+| `REQUIRE_API_KEY` | `false` in dev, `true` in prod | Require `x-api-key` on API routes |
+| `APP_API_KEY` | (empty) | Global API key value when auth is enabled |
+| `ALLOW_LOCAL_WITHOUT_API_KEY` | `true` in dev, `false` in prod | Allow loopback bypass for local development |
+| `ENABLE_DEBUG_ROUTES` | `true` in dev, `false` in prod | Enables `/debug/*` routes |
+| `WS_REQUIRE_API_KEY` | `false` in dev, `true` in prod | Require websocket API key |
 | `WS_API_KEY` | falls back to `APP_API_KEY` | Websocket auth key |
-| `CORS_ORIGINS` | `*` in dev | Comma-separated allowed origins |
+| `CORS_ORIGINS` | `*` in dev, `http://localhost:5173` in prod | Comma-separated allowed origins |
+| `PROTECT_DOCS` | `false` in dev, `true` outside dev | Gate `/docs`, `/redoc`, `/openapi.json` behind the API-key middleware. Production deployments should leave this on so an unauthenticated `GET /openapi.json` cannot enumerate the route schema. Disable only when docs are terminated upstream by a reverse proxy / IP allowlist. |
+| `GOVERNANCE_API_KEY` | falls back to `APP_API_KEY` | Scoped key accepted for the `/governance/*` routes (in addition to `APP_API_KEY`). Use to limit blast radius of a single leaked credential. |
+| `CHAIN_API_KEY`      | falls back to `APP_API_KEY` | Scoped key accepted for `POST /chain/config`. |
+| `PHASE_API_KEY`      | falls back to `APP_API_KEY` | Scoped key accepted for the `/phase/*` deployment-phase routes. |
+| `MCP_API_KEY`        | falls back to `APP_API_KEY` | Scoped key accepted for the `/mcp/*` JSON-RPC surface. |
+| `MCP_RATE_LIMITS`    | `transport` (default) / `enabled` / `disabled` | Per-tool token-bucket policy from `pirag/configs/policy.yaml`. `transport` (default): enforced only at the public MCP HTTP/JSON-RPC boundary so the simulator's in-process registry calls bypass the bucket. `enabled` / `on` / `true`: enforce on every tool invocation including the simulator hot path. `disabled` / `off` / `false`: skip enforcement entirely. |
+| `STRICT_VALIDATION`  | `1`           | `mvp/simulation/validation/validate_results.py` exits non-zero on missing tables or range violations. Set to `0` to downgrade to advisory-only for local debugging. |
+| `STRICT_SMOKE`       | `1`           | `mvp/simulation/tests/test_stochastic_quick.py` exits non-zero on `BROKEN` / `NEEDS TUNING` verdicts. Set to `0` to make the smoke test advisory-only. |
+| `ALLOW_MISSING_BASELINE` | `0` outside CI | When `1`, `run_regression_guard.py` treats a missing `baseline_snapshot.json` as a SKIP rather than a failure. CI sets this to `1` so the drift gate fires only on real drift, never on first-run-on-a-fresh-branch. |
+| `CHAIN_REQUIRE_PRIVKEY` | `true` | Require `CHAIN_PRIVKEY` to be set before chain-anchoring code paths run. The signing key is **only** loaded from this env var; `POST /chain/config` no longer accepts it in the request body (rejected with 422). |
+| `CHAIN_BEST_EFFORT`  | `false` in prod | When `false`, on-chain submission failures raise; when `true`, they log at WARN and `submit_onchain` returns `None`. Production must keep this `false` so operators do not silently believe an anchor happened when it did not. |
+| `DYNAMIC_KB_FEEDBACK` | `true` (dev), `false` (published runs) | Enables the piRAG dynamic-knowledge re-ingestion loop. Disable for HPC publication runs because the loop re-ingests the agent's own actions as documents, which biases ablation comparisons. |
+
+> Production hardening checklist: `APP_ENV=prod`, `REQUIRE_API_KEY=true`,
+> `APP_API_KEY=<strong>`, `PROTECT_DOCS=true`, `ALLOW_LOCAL_WITHOUT_API_KEY=false`,
+> `ENABLE_DEBUG_ROUTES=false`, `WS_REQUIRE_API_KEY=true`, `WS_API_KEY=<strong>`,
+> `CORS_ORIGINS=https://your-frontend.example.com`, `CHAIN_REQUIRE_PRIVKEY=true`,
+> `CHAIN_BEST_EFFORT=false`. The `.env.prod.example` file at the repo root tracks
+> these settings for you.
 
 ### 2c. Start the backend
 
 ```bash
-python -m uvicorn src.app:API --host 127.0.0.1 --port 8100 --app-dir agribrain/backend
+python -m uvicorn src.app:API --host 127.0.0.1 --port 8100
 ```
 
 You should see:
@@ -628,7 +647,7 @@ backend:
 
 ```bash
 export CHAIN_PRIVKEY=0xac0974…  # printed by the script
-python -m uvicorn src.app:API --host 127.0.0.1 --port 8100 --app-dir agribrain/backend
+python -m uvicorn src.app:API --host 127.0.0.1 --port 8100
 ```
 
 The next decision you trigger (via the Admin Quick Decision tab or
@@ -686,7 +705,7 @@ Run everything end-to-end in order:
 # --- Terminal 1: Backend ---
 cd AGRI-BRAIN
 source .venv/bin/activate  # if using venv
-python -m uvicorn src.app:API --host 127.0.0.1 --port 8100 --app-dir agribrain/backend
+python -m uvicorn src.app:API --host 127.0.0.1 --port 8100
 
 # --- Terminal 2: Frontend ---
 cd AGRI-BRAIN/agribrain/frontend
@@ -756,11 +775,9 @@ For publication reporting policy, see:
 - `docs/STATISTICAL_METHODS.md`
 - `docs/CLAIMS_TO_EVIDENCE.md`
 
-Recommended environment lock (for archival reproducibility):
-
-```bash
-python -m pip freeze > requirements-lock.txt
-```
+A pre-generated lockfile ships at `agribrain/backend/requirements-lock.txt`.
+For paper-grade reproducibility install with that file (see §2b above);
+to regenerate from scratch, follow `docs/RELEASE.md` step 2.
 
 ---
 
@@ -768,8 +785,8 @@ python -m pip freeze > requirements-lock.txt
 
 | Issue | Fix |
 |-------|-----|
-| `ModuleNotFoundError: No module named 'src'` | Use `--app-dir agribrain/backend` flag or run uvicorn from that directory |
-| `ModuleNotFoundError: No module named 'pirag'` | Run `pip install -e agribrain/backend` |
+| `ModuleNotFoundError: No module named 'src'` | Make sure the editable install succeeded: `pip install -e "agribrain/backend[dev]"`. Since the 2026-05 packaging fix the `--app-dir` flag is **not** required and the uvicorn invocation should be just `python -m uvicorn src.app:API --port 8100`. |
+| `ModuleNotFoundError: No module named 'pirag'` | Same: `pip install -e "agribrain/backend[dev]"`. The packaging fix exposes both `src` and `pirag` to the editable install. |
 | Port 8100 already in use | Kill the existing process: `lsof -ti:8100 \| xargs kill` |
 | Frontend CORS errors | Ensure backend is on port 8100 and frontend on port 5173 |
 | Charts show skeleton loaders | Ensure `/case/load` was called first |

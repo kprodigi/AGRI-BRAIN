@@ -1,117 +1,21 @@
-# AGRI-BRAIN MVP
+# AGRI-BRAIN
 
-An adaptive supply-chain intelligence system for sustainable food logistics.
+This directory holds the implementation of the AGRI-BRAIN system:
 
-## Prerequisites
+- `backend/` -- FastAPI backend (port 8100), MCP / piRAG layer, decision engine, chain client.
+- `frontend/` -- React + Vite dashboard (port 5173).
+- `contracts/` -- Solidity smart contracts (Hardhat).
+- `agents/` -- multi-episode agent runner.
 
-- **Python** >= 3.10 with pip
-- **Node.js** >= 18 with npm
+## Where to start
 
-## Quick Start
+The canonical README and run guide live at the repository root:
 
-### 1. Backend
+- [Repository README](../README.md) -- architecture overview, claims, screenshots.
+- [HOW_TO_RUN.md](../HOW_TO_RUN.md) -- complete setup, environment variables, and walk-throughs.
+- [docs/RELEASE.md](../docs/RELEASE.md) -- release procedure (version bumps, lockfile, DOI, tagging).
+- [docs/METHODS_REPRO_APPENDIX.md](../docs/METHODS_REPRO_APPENDIX.md) -- the canonical reproduction recipe.
+- [docs/CLAIMS_TO_EVIDENCE.md](../docs/CLAIMS_TO_EVIDENCE.md) -- claim-to-artifact crosswalk.
 
-```bash
-cd AGRI-BRAIN
-python -m venv .venv && source .venv/bin/activate
-pip install -e agribrain/backend
-python -m uvicorn src.app:API --port 8100 --app-dir agribrain/backend
-```
-
-Load sensor data (required for dashboard):
-
-```bash
-curl -X POST http://localhost:8100/case/load
-```
-
-API docs at http://127.0.0.1:8100/docs
-
-### 2. Frontend
-
-```bash
-cd agribrain/frontend
-npm install
-npm run dev
-```
-
-Open http://localhost:5173 — dashboard with eight pages:
-
-- **Operations** — KPI cards, real-time telemetry charts, spoilage & yield preview
-- **Quality** — Spoilage risk gauge, shelf-life countdown, IoT sensor charts, PINN vs ODE comparison
-- **Decisions** — Timeline view with filters, decision analytics sidebar, CSV/PDF export
-- **Map** — Leaflet map of South Dakota supply chain nodes with route overlays
-- **Analytics** — Cross-scenario tables, charts, radar profiles, scenario deep-dive gallery
-- **MCP/piRAG** — Protocol overview, context features, knowledge base, traces, causal reasoning
-- **Demo** — Interactive system demo with pipeline walkthrough and agent decision theater
-- **Admin** — Policy, Blockchain, Audit, Scenarios, Quick Decision, Runtime, MCP tabs
-
-Features: dark mode toggle, WebSocket live indicator, notification bell, responsive sidebar.
-
-### 3. Simulation
-
-```bash
-cd mvp/simulation
-python generate_results.py
-python generate_figures.py
-```
-
-Results saved to `mvp/simulation/results/`.
-
-## Key API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | /health | Health check |
-| POST | /case/load | Load spinach CSV into state |
-| GET | /kpis | Computed KPIs |
-| GET | /telemetry | Sensor time-series (tempC, RH, inventory, demand) |
-| GET | /predictions | Spoilage predictions and yield forecast |
-| POST | /decide | Run decision engine |
-| GET | /decisions | Decision feed |
-| POST | /scenarios/run | Apply a scenario |
-| POST | /scenarios/reset | Reset to baseline |
-| GET | /scenarios/list | List available scenarios |
-| GET | /governance/policy | Current policy parameters |
-| POST | /governance/policy | Update policy |
-| GET | /governance/chain | Blockchain config |
-| GET | /audit/logs | Audit log |
-| POST | /results/generate | Run full simulation |
-| GET | /results/status | Poll simulation progress |
-| GET | /results/summary | Fetch completed results |
-| GET | /results/figures/{name} | Serve generated figures |
-| POST | /mcp/mcp | MCP JSON-RPC 2.0 endpoint |
-| GET | /mcp/resources | List MCP resources |
-| GET | /mcp/prompts | List MCP prompts |
-| POST | /rag/ask | Query piRAG knowledge base |
-| POST | /rag/ingest | Ingest documents into piRAG |
-| WS | /stream | Real-time decision stream |
-
-## Tech Stack
-
-**Backend:** FastAPI, uvicorn, numpy, pandas, matplotlib, reportlab, web3
-
-**Frontend:** React 18, React Router 7, shadcn/ui (Radix), Tailwind CSS, Recharts, React-Leaflet, Framer Motion, Sonner, Vite 7
-
-## Project Structure
-
-```
-agribrain/
-  backend/
-    src/
-      app.py                # FastAPI application
-      models/               # PINN spoilage, forecast, SLCA, footprint, policy
-      routers/              # API route handlers
-      chain/                # Blockchain integration (Hardhat)
-      agents/               # Agent runtime and WebSocket bus
-    pirag/                  # PiRAG integration (RAG, MCP, provenance)
-    experiments/            # Policy experiment scripts and outputs
-  frontend/
-    src/
-      pages/                # Ops, Quality, Decisions, Map, Analytics, Admin
-      components/ui/        # shadcn/ui component library
-      layouts/              # MainLayout (sidebar, header, theme, notifications)
-      hooks/                # useTheme, useWebSocket
-      lib/                  # Utility functions (cn, fmt, jget, jpost)
-      mvp/                  # API configuration and helpers
-  contracts/                # Solidity smart contracts
-```
+This stub replaces a previous duplicate quick-start that drifted out of sync
+with the root README. Edit the root README only.
