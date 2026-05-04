@@ -46,7 +46,6 @@ import matplotlib
 matplotlib.use("Agg")
 
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import font_manager as _font_manager
 
@@ -70,7 +69,7 @@ for _font_path in _ARIAL_FONT_FILES:
 
 from generate_results import run_all, SCENARIOS, RESULTS_DIR
 from src.models.action_selection import (
-    ACTIONS, CYBER_REROUTE_PROB, RHO_RECOVERY_KNEE,
+    ACTIONS, RHO_RECOVERY_KNEE,
 )
 from src.models.resilience import RLE_THRESHOLD, compute_effective_rho, HIERARCHY_WEIGHT
 

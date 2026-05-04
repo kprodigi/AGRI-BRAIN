@@ -1,3 +1,33 @@
+# MCP access-policy configuration consumed by:
+#   - pirag.mcp.tools.policy_oracle.check_access (allowlist)
+#   - pirag.mcp.rate_limiter.RateLimiter        (rate_limits, enforced
+#     by pirag.mcp.registry.ToolRegistry.invoke)
+#
+# allowlist semantics
+# -------------------
+# An empty list ([]) is permissive: every user_id is allowed. Populate
+# the list with concrete user identifiers to switch to deny-by-default.
+# This explicit "empty == allow-all" is intentional so a fresh checkout
+# does not silently lock out the simulator (which calls in as
+# user_id="system"); it is documented here rather than left as folklore.
+#
+# rate_limits semantics
+# ---------------------
+# Each entry is a "<tool_name>: <count>/<period>" string. Periods are
+# parsed by pirag.mcp.rate_limiter._parse_rate (s, sec, min, hour). The
+# limiter uses a token bucket whose capacity is <count> and which
+# refills at <count>/<period_seconds>. Tools without an entry are
+# unlimited (the registry itself gates registration).
+#
+# To disable enforcement at runtime, set MCP_RATE_LIMITS=disabled on the
+# server process. The registry still records the configured limits for
+# diagnostics under RateLimiter.configured_limits().
+#
+# retention_days is a documentation field consumed by the audit
+# pipeline; the simulator's trace_exporter and the chain anchoring
+# scripts read it via pirag.audit.retention_days() to compute the
+# trim window for ProtocolRecorder traces.
+
 allowlist: []
 retention_days: 90
 rate_limits:

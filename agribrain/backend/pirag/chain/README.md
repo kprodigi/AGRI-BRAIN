@@ -18,4 +18,8 @@ Environment variables read by ``client.py``:
 
 - ``CHAIN_RPC`` or ``ANCHOR_RPC_URL`` — HTTP RPC endpoint
 - ``CHAIN_PROVENANCE_ADDRESS`` or ``ANCHOR_REGISTRY_ADDR`` — deployed registry address
-- ``CHAIN_PRIVKEY`` or ``ANCHOR_ACCOUNT_KEY`` — signing key (fallback when POST /chain/config has not supplied one)
+- ``CHAIN_PRIVKEY`` or ``ANCHOR_ACCOUNT_KEY`` — signing key. The HTTP
+  ``POST /chain/config`` endpoint no longer accepts a body field for the
+  key (2026-04 hardening); env-only is the sole configuration channel
+  so the secret cannot be captured by misconfigured proxies or HTTP
+  access logs.

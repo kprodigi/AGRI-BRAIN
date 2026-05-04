@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Any, Iterable, List
+from typing import Dict, Any, Iterable
 
 import numpy as np
 

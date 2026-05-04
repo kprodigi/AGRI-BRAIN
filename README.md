@@ -435,8 +435,12 @@ The system uses IoT sensor telemetry from fresh spinach cold-chain storage, incl
 | `timestamp` | ISO 8601 datetime (UTC) |
 | `tempC` | Refrigeration temperature (°C) |
 | `RH` | Relative humidity (%) |
-| `inventory_units` | Current inventory level |
-| `demand_rate` | Daily demand rate |
+| `shockG` | Mechanical shock (g) |
+| `ambientC` | Ambient temperature (°C) |
+| `inventory_units` | Current inventory level (units) |
+| `demand_units` | Demand rate (units / step) |
+| `quality_preference` | Buyer-side quality preference signal |
+| `regulatory_temp_max` | FDA cold-chain temperature ceiling (°C) |
 
 ## Citation
 

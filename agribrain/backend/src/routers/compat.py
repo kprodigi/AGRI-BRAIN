@@ -1,10 +1,22 @@
+"""Compatibility router for legacy decision-endpoint shapes.
+
+The 2026-05 consolidation collapsed the parallel decision implementation
+into :func:`src.app.decide`. This router stays as a thin coercion layer
+that maps legacy GET/POST/query payloads onto the canonical request
+shape so existing dashboards and scripts keep working.
+"""
+from __future__ import annotations
+
 import json
+from typing import Any, Dict, Optional
+
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
-from typing import Any, Dict, Optional
-from src.routers.decide import decide, DecideRequest
+
+from src.routers.decide import DecideRequest, decide
 
 router = APIRouter()
+
 
 def _coerce(payload: Dict[str, Any] | None) -> DecideRequest:
     d = dict(payload or {})
@@ -21,6 +33,7 @@ def _coerce(payload: Dict[str, Any] | None) -> DecideRequest:
             kwargs[fld] = float(d[fld])
     return DecideRequest(**kwargs)
 
+
 async def _payload(req: Request) -> Dict[str, Any]:
     data: Dict[str, Any] = {}
     if req.method in ("POST", "PUT", "PATCH"):
@@ -32,21 +45,24 @@ async def _payload(req: Request) -> Dict[str, Any]:
         data.setdefault(k, v)
     return data
 
-@router.api_route("/decision/take",      methods=["GET","POST"])
-@router.api_route("/decisions/take",     methods=["GET","POST"])
-@router.api_route("/decision",           methods=["GET","POST"])
-@router.api_route("/case/decide",        methods=["GET","POST"])
-@router.api_route("/api/decision/take",  methods=["GET","POST"])
+
+@router.api_route("/decision/take",      methods=["GET", "POST"])
+@router.api_route("/decisions/take",     methods=["GET", "POST"])
+@router.api_route("/decision",           methods=["GET", "POST"])
+@router.api_route("/case/decide",        methods=["GET", "POST"])
+@router.api_route("/api/decision/take",  methods=["GET", "POST"])
 async def legacy_any(req: Request):
+    """Coerce a legacy payload into the canonical DecideRequest and dispatch."""
     return decide(_coerce(await _payload(req)))
 
 
 # ---------------------------------------------------------------------------
-# /sim/validate — feasibility guard endpoint (piRAG feasibility_guard.py)
+# /sim/validate -- feasibility guard endpoint (piRAG feasibility_guard.py)
 # ---------------------------------------------------------------------------
 class SimValidateRequest(BaseModel):
     answer: str = ""
     context: Optional[Dict[str, Any]] = None
+
 
 @router.post("/sim/validate")
 def sim_validate(req: SimValidateRequest):

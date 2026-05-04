@@ -78,14 +78,45 @@ jobs:
       - name: Deterministic-mode regression check
         env:
           DETERMINISTIC_MODE: "true"
+          # Allow the guard to skip cleanly when a baseline snapshot is not
+          # committed yet (e.g. first run on a new branch). Set this env var
+          # to 0 in protected branches to make missing snapshots a hard
+          # failure -- otherwise the only failure path the guard reports
+          # (drift) still gates the build deterministically. The previous
+          # `|| echo "..."` broad mask suppressed every failure mode
+          # including drift; this scoped opt-in only suppresses the
+          # missing-baseline branch.
+          ALLOW_MISSING_BASELINE: "1"
         run: |
-          # Single-seed deterministic run + regression guard. Catches
-          # silent drift in published numbers between branches.
-          # Falls back to skip if the snapshot baseline isn't present
-          # (first run on a new branch); the local /HPC pipeline must
-          # commit baseline_snapshot.json before drift gating fires.
-          python mvp/simulation/validation/run_regression_guard.py || \
-            echo "regression guard skipped (no baseline snapshot)"
+          python mvp/simulation/validation/run_regression_guard.py
+
+  python-lint:
+    name: python-lint (ruff)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install ruff
+        run: |
+          python -m pip install --upgrade pip
+          pip install "ruff>=0.5,<1"
+      - name: Run ruff (lint -- structural correctness gate)
+        run: |
+          # ruff.toml at repo root configures per-file ignores. We gate
+          # on the rules that catch real defects rather than style:
+          #   E9/F63/F7/F82  -- syntax errors and parse failures
+          #   F401          -- unused imports (the review flagged these)
+          #   F821          -- undefined names (catches refactor breakage)
+          # Style rules (I import-sorting, B bug-prone patterns) are
+          # intentionally not yet gated; they should be tightened in a
+          # focused cleanup pass before turning them on as build gates.
+          ruff check --select E9,F63,F7,F82,F401,F821 \
+            agribrain/backend mvp/simulation
 
   contract-tests:
     runs-on: ubuntu-latest
@@ -101,7 +132,7 @@ jobs:
       - name: Install and test
         run: |
           npm install
-          npx hardhat test
+          npm test
 
   frontend-build:
     runs-on: ubuntu-latest

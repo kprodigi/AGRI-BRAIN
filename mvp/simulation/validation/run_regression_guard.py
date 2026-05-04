@@ -66,9 +66,22 @@ def main() -> None:
             SNAPSHOT.write_text(json.dumps(current, indent=2), encoding="utf-8")
             print(f"[regression-guard] Created baseline snapshot: {SNAPSHOT}")
             return
+        # The 2026-05 hardening makes the missing-baseline branch explicit
+        # rather than CI-soft (the workflow used to mask every failure mode
+        # with `|| echo "skipped"`). When a baseline snapshot is genuinely
+        # not yet committed (first run on a new branch), set
+        # ALLOW_MISSING_BASELINE=1 to downgrade this to a SKIP. Otherwise
+        # this is a real failure: production CI must commit the snapshot.
+        allow_missing = os.environ.get("ALLOW_MISSING_BASELINE", "0").lower() in {"1", "true", "yes"}
+        if allow_missing:
+            print("[regression-guard] SKIPPED: baseline snapshot missing "
+                  "and ALLOW_MISSING_BASELINE=1 explicitly opt-in")
+            print(f"  Expected snapshot: {SNAPSHOT}")
+            return
         print("[regression-guard] FAILED: baseline snapshot missing")
         print(f"  Expected snapshot: {SNAPSHOT}")
         print("  To initialize intentionally, run with REGRESSION_GUARD_INIT=true")
+        print("  To skip on a fresh branch, run with ALLOW_MISSING_BASELINE=1")
         raise SystemExit(1)
 
     baseline = json.loads(SNAPSHOT.read_text(encoding="utf-8"))

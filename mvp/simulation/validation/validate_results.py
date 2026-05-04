@@ -6,7 +6,14 @@ Run after generate_results.py. ALL checks must pass before committing.
 
 Stochastic mode: uses relaxed bounds and ordering tolerance (0.01) to
 accommodate seeded perturbation noise. Deterministic mode: strict exact checks.
+
+Strict mode (STRICT_VALIDATION=1, the default in CI and production) requires
+the result tables to exist. If they are missing, the validator exits with a
+non-zero status so that CI cannot pass without producing the artifacts. To
+intentionally skip when tables are absent (e.g. on a clean checkout before
+running generate_results.py), export STRICT_VALIDATION=0.
 """
+import os
 import sys
 from pathlib import Path
 
@@ -19,12 +26,40 @@ if str(_SIM_DIR) not in sys.path:
     sys.path.insert(0, str(_SIM_DIR))
 from stochastic import DETERMINISTIC_MODE
 
+# Resolve strict mode early -- a missing-artifacts gate must use the same
+# STRICT_VALIDATION semantics as the rest of the validator.
+_STRICT_VALIDATION = os.environ.get("STRICT_VALIDATION", "1") == "1"
+
 _RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 _T1 = _RESULTS_DIR / "table1_summary.csv"
 _T2 = _RESULTS_DIR / "table2_ablation.csv"
 if not _T1.exists() or not _T2.exists():
-    print(f"SKIP: result tables not present in {_RESULTS_DIR}")
+    missing = [str(p.relative_to(_RESULTS_DIR.parent.parent))
+               for p in (_T1, _T2) if not p.exists()]
+    msg_label = "VALIDATION FAILED" if _STRICT_VALIDATION else "SKIP"
+    print(f"{msg_label}: result tables missing in {_RESULTS_DIR}")
+    for p in missing:
+        print(f"  missing: {p}")
     print("      Run generate_results.py to produce them, then re-run this script.")
+
+    # Always emit a machine-readable report so CI artifacts include the
+    # gate outcome even on the missing-artifact path.
+    try:
+        _RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+        (_RESULTS_DIR / "validation_report.json").write_text(json.dumps({
+            "mode": "DETERMINISTIC" if DETERMINISTIC_MODE else "STOCHASTIC",
+            "strict": _STRICT_VALIDATION,
+            "n_errors": 1 if _STRICT_VALIDATION else 0,
+            "errors": [f"missing artifact: {p}" for p in missing] if _STRICT_VALIDATION else [],
+            "n_ordering_warnings": 0,
+            "ordering_warnings": [],
+            "missing_artifacts": missing,
+        }, indent=2))
+    except OSError:
+        pass
+
+    if _STRICT_VALIDATION:
+        sys.exit(1)
     sys.exit(0)
 t1 = pd.read_csv(_T1)
 t2 = pd.read_csv(_T2)
@@ -507,14 +542,13 @@ if bench_path.exists():
 # the manuscript's preferred direction). The 2026-04 fix is more
 # surgical: ordering claims now go through
 # `_ord(...)` and are reported as warnings only, while range / interval
-# checks stay as hard errors and gate the build by default.
+# checks stay as hard errors and gate the build by default. The 2026-05
+# follow-up extends the strict gate to cover the missing-artifacts
+# branch above so CI cannot silently pass without producing tables.
 #
 # To restore the previous report-only behavior for local debugging,
 # export STRICT_VALIDATION=0. The canonical configuration is strict.
-import os as _os
-import json as _json
-
-_strict = _os.environ.get("STRICT_VALIDATION", "1") == "1"
+_strict = _STRICT_VALIDATION
 _mode_label = "DETERMINISTIC" if DETERMINISTIC_MODE else "STOCHASTIC"
 print(f"\n{'='*70}")
 print(f"Validation mode: {_mode_label} (strict={_strict})")
@@ -531,8 +565,8 @@ report = {
 }
 try:
     _RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    (_RESULTS_DIR / "validation_report.json").write_text(_json.dumps(report, indent=2))
-except Exception:
+    (_RESULTS_DIR / "validation_report.json").write_text(json.dumps(report, indent=2))
+except OSError:
     pass
 
 if warnings_ord:

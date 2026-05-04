@@ -354,6 +354,25 @@ class MCPServer:
             if alt in arguments and canonical not in arguments:
                 arguments[canonical] = arguments.pop(alt)
 
+        # Public-facing transport: enforce policy.yaml rate_limits before
+        # dispatch. The simulator's in-process registry calls bypass this
+        # bucket (source="registry"); only requests that arrive over the
+        # MCP JSON-RPC envelope consume a token. See pirag.mcp.rate_limiter.
+        try:
+            from .rate_limiter import get_rate_limiter, RateLimitExceeded
+            get_rate_limiter().check(name, source="transport")
+        except RateLimitExceeded as exc:
+            return MCPMessage(
+                id=msg.id,
+                result={
+                    "content": [{"type": "text", "text": json.dumps({
+                        "error": str(exc),
+                        "code": "rate_limit_exceeded",
+                    })}],
+                    "isError": True,
+                },
+            )
+
         try:
             result = self._registry.invoke(name, **arguments)
             # If the tool returned a structured error envelope (e.g.

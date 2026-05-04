@@ -14,15 +14,17 @@ def get_audit() -> List[Dict[str, Any]]:
     """Return audit entries from the app-level decision log (state.py removed)."""
     return []
 
-try:
-    from src.routers.decide import LAST as _LAST, DECISIONS as _DECISIONS  # type: ignore
-except ImportError:  # pragma: no cover
-    _LAST, _DECISIONS = None, []
-
-try:
-    from src.routers.case import STATE as _CASE_STATE  # type: ignore
-except ImportError:  # pragma: no cover
-    _CASE_STATE = {}
+# The standalone DECISIONS/LAST log was removed in 2026-05 when the
+# duplicate decision path was consolidated -- the canonical store lives
+# in app.state["log"]. The 2026-05 follow-up reads through the
+# centralized accessors in src.app_state instead of reaching into
+# module globals so future storage changes (Redis, Postgres) only need
+# to update the accessor.
+from src.app_state import (
+    get_case_state as _case_state_snapshot,
+    get_decision_log as _decision_log_snapshot,
+    get_last_decision as _last_decision_snapshot,
+)
 
 # --------------------------------- Helpers -----------------------------------
 def _as_dict(x: Any) -> Dict[str, Any]:
@@ -35,26 +37,9 @@ def _as_dict(x: Any) -> Dict[str, Any]:
     return x if isinstance(x, dict) else {}
 
 def _get_last_decision_raw() -> Dict[str, Any]:
-    """Best-effort: app.state -> LAST -> DECISIONS -> case.STATE['last_decision']."""
-    # Prefer the app-level log (has full softmax memo)
-    try:
-        from src.app import state as _app_state  # lazy to avoid circular at import
-        log = _app_state.get("log")
-        if log:
-            return log[-1]
-    except ImportError:
-        pass
-    if _LAST:
-        return _as_dict(_LAST)
-    if _DECISIONS:
-        return _as_dict(_DECISIONS[-1])
-    try:
-        ld = _CASE_STATE.get("last_decision")
-        if isinstance(ld, dict):
-            return ld
-    except (TypeError, KeyError, AttributeError):
-        pass
-    return {}
+    """Return the most recent decision memo, falling back across stores."""
+    last = _last_decision_snapshot()
+    return _as_dict(last) if last else {}
 
 def _map_for_pdf(memo: Dict[str, Any]) -> Dict[str, Any]:
     """Normalize last-decision keys to the labels used in the PDF."""
@@ -93,7 +78,8 @@ def _ensure_state_has_kpis() -> None:
     PDF header has non-zero numbers even when /case/load wasn't called.
     """
     try:
-        if _CASE_STATE.get("summary", {}).get("records"):
+        case_state = _case_state_snapshot()
+        if case_state.get("summary", {}).get("records"):
             return
         from src.routers import case as _case  # type: ignore
         import os
@@ -102,7 +88,7 @@ def _ensure_state_has_kpis() -> None:
         if os.path.exists(csv_path):
             rows = _case._load_csv(csv_path)                 # noqa: SLF001
             summary = _case._compute_summary(rows)           # noqa: SLF001
-            _CASE_STATE.update({
+            case_state.update({
                 "rows": rows,
                 "summary": summary,
                 "loaded_at": int(_t.time()),
@@ -128,8 +114,9 @@ def _fetch_kpis() -> Dict[str, Any]:
     metrics: Dict[str, Any] = {}
     rows: List[Dict[str, Any]] = []
     try:
-        metrics = _CASE_STATE.get("summary") or _CASE_STATE.get("metrics") or {}
-        rows = _CASE_STATE.get("rows") or []
+        case_state = _case_state_snapshot()
+        metrics = case_state.get("summary") or case_state.get("metrics") or {}
+        rows = case_state.get("rows") or []
     except (TypeError, KeyError, AttributeError):
         pass
 
@@ -258,12 +245,8 @@ def _render_pdf(kpis: Dict[str, Any], last: Dict[str, Any]) -> bytes:
 def audit_logs():
     # Merge the global audit log with the app-level decision log
     items = list(get_audit())
-    try:
-        from src.app import state as _app_state  # lazy import avoids circular at module level
-        for m in _app_state.get("log", []):
-            items.append(_map_for_pdf(m))
-    except ImportError:
-        pass
+    for m in _decision_log_snapshot():
+        items.append(_map_for_pdf(m))
     return {"items": items}
 
 @router.get("/memo.json")
@@ -300,9 +283,9 @@ def audit_memo_pdf_alias2():
 @router.get("/chain")
 def audit_chain():
     try:
-        from src.routers.governance import CHAIN as CHAIN_CFG  # type: ignore
+        from src.app_state import get_chain_config
         from src.chain.eth import fetch_recent_decisions          # type: ignore
-        items = fetch_recent_decisions(CHAIN_CFG or {}, 0, "latest")
+        items = fetch_recent_decisions(get_chain_config() or {}, 0, "latest")
         return {"items": list(reversed(items))}
     except (ImportError, ConnectionError) as e:
         return {"items": [], "error": str(e)}

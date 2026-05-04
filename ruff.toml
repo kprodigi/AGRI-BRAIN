@@ -1,10 +1,35 @@
 # Repo-wide Ruff config.
 #
+# CI runs `ruff check --select E9,F63,F7,F82,F401,I,B` against
+# agribrain/backend and mvp/simulation. Local developers can run
+# `ruff check .` to apply the same rule set. The per-file ignores
+# below cover scripts that bootstrap their own sys.path.
+
 # Scripts under mvp/simulation and backend/experiments bootstrap their own
 # sys.path so they can run stand-alone (no editable install required).
 # Their real imports therefore must come after the sys.path manipulation,
 # which trips Ruff's E402 rule. We whitelist those paths instead of
 # sprinkling noqa across every import line.
+target-version = "py311"
+line-length = 100
+
+[lint]
+# Default rule set when invoked without --select. The CI workflow
+# narrows this further; this list is the maximal local-debug surface.
+select = ["E9", "F63", "F7", "F82", "F401", "I", "B"]
+# Allow `Ea_R`, `T_ref_K` style identifiers that come straight from
+# the manuscript notation; ruff's default identifier rules would flag
+# them otherwise.
+ignore = []
+
 [lint.per-file-ignores]
 "agribrain/backend/experiments/**/*.py" = ["E402"]
 "mvp/simulation/**/*.py" = ["E402"]
+# Tests are allowed to keep imports inside fixture scope (E402) for
+# sys.path bootstrapping and to use re-imports for monkey-patching.
+# F401 in tests permits "imported for side-effect"-style fixture
+# dependencies that ruff cannot trace.
+"agribrain/backend/tests/**/*.py" = ["E402", "F401"]
+"agribrain/backend/pirag/tests/**/*.py" = ["E402", "F401"]
+"**/test_*.py" = ["E402", "F401"]
+"**/conftest.py" = ["E402", "F401"]

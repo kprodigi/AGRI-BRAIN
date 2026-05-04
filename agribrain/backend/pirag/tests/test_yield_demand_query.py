@@ -109,6 +109,20 @@ def test_registry_status_reports_no_failures():
     from pirag.mcp.registry import get_default_registry, mcp_registration_status
     get_default_registry()  # ensure populated
     status = mcp_registration_status()
-    assert status["registered_count"] >= 14
-    # On a clean install no optional tools should fail to import.
-    assert status["failed_count"] == 0
+    # 13 always-registered core tools + an optional ``simulate`` tool
+    # that is only registered when SIM_API_BASE is configured. The
+    # 2026-05 settings change reverted SIM_API_BASE to empty by default
+    # (the simulator subprocess does not expose a REST endpoint), so
+    # the canonical post-startup count is 13 with simulate listed as a
+    # configuration-driven non-failure under "failed".
+    assert status["registered_count"] >= 13
+    # On a clean install no optional tools should fail to *import*. The
+    # configuration-gated entries (currently only ``simulate`` when
+    # SIM_API_BASE is empty) appear in ``failed`` with a reason string
+    # that begins with the parameter name -- they are intentional
+    # opt-outs, not import errors.
+    real_failures = {
+        name: reason for name, reason in status["failed"].items()
+        if not (name == "simulate" and "SIM_API_BASE" in reason)
+    }
+    assert real_failures == {}, f"unexpected MCP tool failures: {real_failures}"

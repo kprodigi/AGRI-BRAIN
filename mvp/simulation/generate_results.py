@@ -65,7 +65,7 @@ import pandas as pd
 _log = logging.getLogger(__name__)
 
 # Layer 1 imports — all scientific logic lives here
-from src.models.spoilage import compute_spoilage, compute_spoilage_pinn, arrhenius_k, volatility_flags
+from src.models.spoilage import compute_spoilage_pinn, arrhenius_k
 from src.models.footprint import FootprintMeter
 from src.models.forecast import yield_demand_forecast
 from src.models.lstm_demand import lstm_demand_forecast
@@ -292,20 +292,16 @@ DATA_CSV = Path(os.environ.get("DATA_CSV", "")) if os.environ.get("DATA_CSV") el
 
 
 # ---------------------------------------------------------------------------
-# Scenario perturbation — delegates to backend canonical implementations
+# Scenario perturbation — delegates to the backend pure-domain engine
+# (src.models.scenario_engine), not the FastAPI router. The simulator
+# is a Python subprocess; depending on the router would couple it to
+# HTTP-coupled module-level state and complicate cross-platform reuse.
 # ---------------------------------------------------------------------------
-from src.routers.scenarios import (
-    _apply_heatwave, _apply_overproduction,
-    _apply_cyber_outage, _apply_adaptive_pricing,
-    _hours_from_start, register_app_state as _register_scenario_state,
+from src.models import scenario_engine as _scenario_engine
+from src.models.scenario_engine import (  # noqa: F401
+    SCENARIO_FUNCTIONS as _SCENARIO_FN,
+    hours_from_start as _hours_from_start,
 )
-
-_SCENARIO_FN = {
-    "heatwave": _apply_heatwave,
-    "overproduction": _apply_overproduction,
-    "cyber_outage": _apply_cyber_outage,
-    "adaptive_pricing": _apply_adaptive_pricing,
-}
 
 
 def apply_scenario(df: pd.DataFrame, name: str, policy: Policy,
@@ -316,19 +312,12 @@ def apply_scenario(df: pd.DataFrame, name: str, policy: Policy,
     ±onset_jitter_hours via a timestamp offset before calling the
     canonical scenario function.
     """
-    # Ensure scenario functions use our policy for _recompute_derived
-    _register_scenario_state({"policy": policy})
-    fn = _SCENARIO_FN.get(name)
-    if fn is None:
-        # baseline — just recompute derived columns
-        df = compute_spoilage(df.copy(), k_ref=policy.k_ref, Ea_R=policy.Ea_R,
-                              T_ref_K=policy.T_ref_K, beta=policy.beta_humidity,
-                              lag_lambda=policy.lag_lambda)
-        df["volatility"] = volatility_flags(df, window=policy.boll_window, k=policy.boll_k)
-        return df
+    if name not in _SCENARIO_FN:
+        # baseline — just recompute derived columns against this policy
+        return _scenario_engine.recompute_derived(df.copy(), policy)
 
     # Source 6: Scenario onset jitter — shift timestamps so the scenario
-    # function (which uses _hours_from_start) sees a shifted timeline.
+    # function (which uses hours_from_start) sees a shifted timeline.
     # baseline and adaptive_pricing have no fixed onset, so skip jitter.
     jitter_td = pd.Timedelta(0)
     if stoch is not None and stoch.enabled and name not in ("baseline", "adaptive_pricing"):
@@ -337,7 +326,7 @@ def apply_scenario(df: pd.DataFrame, name: str, policy: Policy,
         df = df.copy()
         df["timestamp"] = df["timestamp"] - jitter_td  # shift earlier = scenario starts later
 
-    result = fn(df)
+    result = _scenario_engine.apply(name, df, policy=policy, intensity=1.0)
 
     # Restore original timestamps after scenario application
     if jitter_td != pd.Timedelta(0):

@@ -37,10 +37,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 # When run as a module the package import is fine; when run as a script we
 # need to make THETA_CONTEXT importable.

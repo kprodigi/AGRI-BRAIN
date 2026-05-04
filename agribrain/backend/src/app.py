@@ -9,6 +9,7 @@ import uuid
 
 import inspect
 import logging
+import os
 import time as _time
 import numpy as np
 import pandas as pd
@@ -129,13 +130,27 @@ API.add_middleware(
 )
 
 
-_AUTH_EXEMPT_PATHS = {"/health", "/docs", "/redoc", "/openapi.json", "/favicon.ico", "/"}
+# Always-exempt paths (health probe, root redirect, favicon, static assets).
+# The Swagger / ReDoc / OpenAPI surface is exempted only when
+# SETTINGS.protect_docs is False -- production deployments keep the docs
+# behind the API key so an unauthenticated GET /openapi.json cannot
+# enumerate the full route schema for reconnaissance.
+_ALWAYS_EXEMPT_PATHS = {"/health", "/favicon.ico", "/"}
+_DOCS_PATHS = {"/docs", "/redoc", "/openapi.json"}
+
 
 @API.middleware("http")
 async def api_key_middleware(request: Request, call_next):
     """Enforce API key on all routes when REQUIRE_API_KEY=true."""
     path = request.url.path.rstrip("/") or "/"
-    if path not in _AUTH_EXEMPT_PATHS and not path.startswith("/static"):
+    is_static = path.startswith("/static")
+    is_docs = path in _DOCS_PATHS
+    is_exempt = path in _ALWAYS_EXEMPT_PATHS or is_static
+    # Docs are exempt only when explicitly opted out via PROTECT_DOCS=false.
+    if is_docs and not SETTINGS.protect_docs:
+        is_exempt = True
+
+    if not is_exempt:
         from src.security import enforce_api_key
         try:
             enforce_api_key(request, request.headers.get("x-api-key"))
@@ -164,20 +179,39 @@ async def request_logging_middleware(request: Request, call_next):
 
 # ---------------------------------------------------------------------------
 # Mount routers (each once)
+#
+# Scoped API-key dependencies (governance, chain, phase, mcp) live as
+# router-level Depends so a single leaked credential cannot mutate
+# every privileged surface. The global REQUIRE_API_KEY middleware
+# authenticates *any* valid key; the scoped check then narrows that to
+# the keys configured for the specific scope. Both layers are no-ops
+# when REQUIRE_API_KEY=false (the dev default).
 # ---------------------------------------------------------------------------
+from fastapi import Depends as _Depends  # noqa: E402  (after other top-level imports)
+from src.security import require_scope_api_key  # noqa: E402
+
 API.include_router(_case.router,        prefix="/case",       tags=["case"])
 API.include_router(_audit.router,       prefix="/audit",      tags=["audit"])
-API.include_router(_gov.router,         prefix="/governance", tags=["governance"])
+API.include_router(
+    _gov.router, prefix="/governance", tags=["governance"],
+    dependencies=[_Depends(require_scope_api_key("governance"))],
+)
 API.include_router(_scn.router,         prefix="/scenarios",  tags=["scenarios"])
 API.include_router(_compat.router,                          tags=["compat"])
 API.include_router(_debug.router,                           tags=["debug"])
 API.include_router(_stream.router)  # no prefix => /stream (websocket)
 
 API.include_router(_results.router,    prefix="/results",    tags=["results"])
-API.include_router(_phase.router,      prefix="/phase",      tags=["phase"])
+API.include_router(
+    _phase.router, prefix="/phase", tags=["phase"],
+    dependencies=[_Depends(require_scope_api_key("phase"))],
+)
 
 API.include_router(rag_router, prefix="/rag", tags=["pirag"])
-API.include_router(mcp_router, prefix="/mcp", tags=["mcp"])
+API.include_router(
+    mcp_router, prefix="/mcp", tags=["mcp"],
+    dependencies=[_Depends(require_scope_api_key("mcp"))],
+)
 
 # ---------------------------------------------------------------------------
 # Static + Swagger branding (logo, favicon, CSS)
@@ -222,11 +256,23 @@ def root():
 # In-memory state + config
 # ---------------------------------------------------------------------------
 DATA = Path(SETTINGS.data_csv) if SETTINGS.data_csv else Path(__file__).parent / "data_spinach.csv"
+# Bootstrap the chain signing key from env so on-chain calls work even
+# when /chain/config has never been POSTed. The 2026-04 hardening
+# removed the body-based ingestion path (private_key is no longer a
+# field on ChainConfig); this env-only path stays as the sole
+# configuration channel for the signing key.
+_BOOTSTRAP_CHAIN_PRIVKEY = os.environ.get("CHAIN_PRIVKEY", "") or None
+_BOOTSTRAP_CHAIN_RPC = os.environ.get("CHAIN_RPC", "") or None
 state: Dict[str, Any] = {
     "df": None,
     "df_original": None,        # pristine copy for scenario reset
     "policy": Policy(),
-    "chain": {"rpc": None, "addresses": {}, "chain_id": 31337, "private_key": None},
+    "chain": {
+        "rpc": _BOOTSTRAP_CHAIN_RPC,
+        "addresses": {},
+        "chain_id": 31337,
+        "private_key": _BOOTSTRAP_CHAIN_PRIVKEY,
+    },
 }
 
 
@@ -723,10 +769,23 @@ def decide(d: DecideIn):
     slca_w = profile.get("slca_weights", {})
 
     # ---- RAG context (best effort) — computed before action selection -----
+    # The active scenario flows in from /scenarios/run via the scenarios
+    # router's ACTIVE container. Earlier this was hardcoded to "baseline",
+    # which kept compliance/regulatory retrieval pointed at the
+    # baseline-scenario corpus even after operators selected heatwave /
+    # cyber_outage / etc. via the Admin panel -- explainability and
+    # decision logits could then disagree about the operating context.
     rag_context = {}
     try:
         from pirag.context_provider import get_policy_context
-        rag_context = get_policy_context(scenario="baseline", spoilage_risk=rho, temperature=temp)
+        try:
+            from src.routers.scenarios import ACTIVE as _SCN_ACTIVE
+            _scenario_name = (_SCN_ACTIVE.get("name") or "baseline")
+        except (ImportError, AttributeError):
+            _scenario_name = "baseline"
+        rag_context = get_policy_context(
+            scenario=_scenario_name, spoilage_risk=rho, temperature=temp,
+        )
     except Exception as _exc:
         logger.debug("RAG policy context skipped: %s", _exc)
 
@@ -959,16 +1018,25 @@ def decide(d: DecideIn):
         logger.debug("explainability enrichment skipped: %s", _e)
         memo["explainability"] = None
 
-    # PolicyLearner: record experience for optional online learning. The
-    # live /case_decide endpoint does not carry supply or demand forecast
-    # uncertainties yet; pass None so phi_6..phi_8 default to zero and
-    # the learner sees the same 10-dim state the policy saw.
+    # PolicyLearner: record experience for optional online learning.
+    # Earlier this stub fed (supply_hat=None, supply_std=None,
+    # demand_std=None) into build_feature_vector even though the policy
+    # selection upstream had used the real query_yield / query_demand
+    # outputs -- so the learner's gradient was being computed against a
+    # *different* state vector from the one the action was sampled
+    # under. The 2026-05 fix mirrors the same supply_hat / supply_std /
+    # demand_std / price_signal that select_action() consumed, so the
+    # phi(s) recorded in the buffer matches the phi(s) the policy
+    # actually saw.
     if PolicyLearner.is_enabled():
         _learner = state.setdefault("_policy_learner", PolicyLearner())
         from .models.action_selection import build_feature_vector
         phi = build_feature_vector(
             rho, inv, y_hat, temp,
-            supply_hat=None, supply_std=None, demand_std=None,
+            supply_hat=supply_hat,
+            supply_std=supply_std,
+            demand_std=demand_std,
+            price_signal=price_signal,
         )
         _learner.record(phi, action_idx, reward_total)
 
@@ -1071,9 +1139,26 @@ def _redacted_chain_config(chain_cfg: dict) -> dict:
     return redacted
 
 
-@API.post("/chain/config")
+@API.post(
+    "/chain/config",
+    dependencies=[_Depends(require_scope_api_key("chain"))],
+)
 def chain_config(cfg: ChainConfig):
+    """Update RPC / chain id / addresses; the signing key is env-only.
+
+    The signing key is never accepted in the HTTP request body. We pull
+    it from ``CHAIN_PRIVKEY`` once here (not on every decision) so that
+    operators see whether it is configured in the response, but the
+    flag is redacted to ``set`` / ``unset`` in the response. Submitting
+    a body field named ``private_key`` will fail Pydantic validation
+    with a 422 because :class:`ChainConfig` declares ``extra="forbid"``.
+    """
     chain_cfg = cfg.model_dump()
+    # Preserve any previously-loaded private key (from env or a prior
+    # process-internal write); the body never mutates the key.
+    existing_key = (state.get("chain") or {}).get("private_key")
+    env_key = os.environ.get("CHAIN_PRIVKEY", "")
+    chain_cfg["private_key"] = existing_key or (env_key or None)
     state["chain"] = chain_cfg
     # Keep governance module config in sync with local chain config endpoint.
     try:

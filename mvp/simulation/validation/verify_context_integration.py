@@ -37,7 +37,7 @@ from src.models.resilience import compute_ari, route_rho_factor
 from src.models.reward import compute_reward
 from src.models.lstm_demand import lstm_demand_forecast
 
-from src.routers.scenarios import _hours_from_start, register_app_state as _register_scenario_state
+from src.models.scenario_engine import hours_from_start as _hours_from_start
 
 DATA_CSV = _BACKEND_SRC / "src" / "data_spinach.csv"
 SEED = 42
@@ -145,7 +145,8 @@ def main():
         return
 
     policy = Policy()
-    _register_scenario_state({"policy": policy})
+    # Scenario engine is now policy-pure (src.models.scenario_engine);
+    # no router state to register.
 
     df = pd.read_csv(DATA_CSV, parse_dates=["timestamp"])
     df = compute_spoilage(df, k_ref=policy.k_ref, Ea_R=policy.Ea_R,

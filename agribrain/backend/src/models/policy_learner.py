@@ -33,7 +33,15 @@ class PolicyLearner:
     def __init__(
         self,
         n_actions: int = 3,
-        n_features: int = 6,
+        # n_features matches the canonical phi(s) returned by
+        # action_selection.build_feature_vector, which grew to 10 dims
+        # in the 2025-04 forecast-uncertainty extension. The default
+        # here is informational; record() does not enforce it (it stores
+        # whatever array shape is passed) and update() uses
+        # np.zeros_like(theta) so the gradient buffer matches the
+        # provided theta. The previous default of 6 referred to the
+        # original physics-and-ops state vector.
+        n_features: int = 10,
         lr: float = 0.001,
         max_buffer: int = 2000,
     ) -> None:

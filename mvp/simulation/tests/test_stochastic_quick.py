@@ -76,7 +76,20 @@ def run_mini(seed, stochastic):
     return out
 
 
-def main():
+def main() -> int:
+    """Run the smoke test and return a process exit code.
+
+    Exit codes
+    ----------
+    0  VERDICT: FEASIBLE -- variation detected and method ordering preserved.
+    1  VERDICT: BROKEN -- no stochastic variation, the layer is inert.
+    2  VERDICT: NEEDS TUNING -- one or more ordering violations.
+
+    The 2026-05 hardening makes BROKEN and NEEDS TUNING fail the CI smoke
+    test instead of returning the verdict as text and letting the job
+    pass with exit 0. STRICT_SMOKE=0 restores the legacy permissive
+    behavior for local debugging.
+    """
     print("=" * 60)
     print("QUICK STOCHASTIC FEASIBILITY TEST")
     print(f"  Data: {MAX_ROWS} timesteps, {len(SCENARIOS)} scenarios, "
@@ -149,14 +162,27 @@ def main():
     print(f"Ordering preserved: {checks - violations}/{checks}")
     print(f"Total runtime: {time.time()-t_total:.1f}s")
 
+    # Verdict gates the exit code so CI cannot pass with a broken
+    # stochastic layer or a regressed method ordering.
     print()
-    if violations == 0 and any_diff:
-        print("VERDICT: FEASIBLE")
-    elif not any_diff:
+    strict = os.environ.get("STRICT_SMOKE", "1") == "1"
+    if not any_diff:
         print("VERDICT: BROKEN - no variation detected")
-    else:
+        if strict:
+            print("Strict smoke gate: failing with exit code 1 "
+                  "(set STRICT_SMOKE=0 to make this advisory).")
+            return 1
+        return 0
+    if violations > 0:
         print(f"VERDICT: NEEDS TUNING - {violations} ordering violations")
+        if strict:
+            print("Strict smoke gate: failing with exit code 2 "
+                  "(set STRICT_SMOKE=0 to make this advisory).")
+            return 2
+        return 0
+    print("VERDICT: FEASIBLE")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

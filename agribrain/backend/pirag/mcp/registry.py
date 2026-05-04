@@ -123,10 +123,22 @@ class ToolRegistry:
     def invoke(self, tool_name: str, **kwargs: Any) -> Any:
         """Invoke a tool by name. Uses cache if applicable.
 
+        Enforces the ``rate_limits`` block from
+        ``configs/policy.yaml`` via :class:`pirag.mcp.rate_limiter.RateLimiter`.
+        Tools with no configured limit pass through unchanged. Setting
+        ``MCP_RATE_LIMITS=disabled`` skips the check (used by tests
+        that exercise burst behaviour).
+
+        Cache hits skip the rate-limit check on the principle that they
+        do not exercise the underlying tool -- consistent with how the
+        rest of the system treats a cached result as a free read.
+
         Raises
         ------
         KeyError
             If ``tool_name`` is not registered.
+        RateLimitExceeded
+            If the per-tool rate-limit bucket is empty.
         """
         spec = self._tools[tool_name]
 
@@ -139,11 +151,22 @@ class ToolRegistry:
             cache_key = f"{tool_name}:{hashlib.sha256(json.dumps(key_data, sort_keys=True, default=str).encode()).hexdigest()}"
             if cache_key in self._cache:
                 return self._cache[cache_key]
+            self._rate_limit(tool_name)
             result = spec.fn(**kwargs)
             self._cache[cache_key] = result
             return result
 
+        self._rate_limit(tool_name)
         return spec.fn(**kwargs)
+
+    @staticmethod
+    def _rate_limit(tool_name: str) -> None:
+        """Apply the configured rate limit (lazy import to avoid cycles)."""
+        # Late import: rate_limiter pulls in yaml at module-load, and
+        # registry is itself imported very early. Keeping the import
+        # local also lets the limiter be patched in tests.
+        from .rate_limiter import get_rate_limiter
+        get_rate_limiter().check(tool_name)
 
     def get(self, tool_name: str) -> Optional[ToolSpec]:
         """Return a tool spec by name, or None if not found."""

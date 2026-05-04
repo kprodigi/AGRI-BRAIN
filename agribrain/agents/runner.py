@@ -23,7 +23,13 @@ from typing import Any, Dict, List
 import requests
 
 API = os.environ.get("API_BASE", "http://127.0.0.1:8100").rstrip("/")
-ROLES = ["farm", "processor", "distributor", "retail"]
+# 5-agent coordinator (matches README "Architecture Highlights" and
+# src.agents.coordinator). The earlier 4-role rotation
+# ("farm/processor/distributor/retail") drifted from the canonical
+# 5-role set by skipping cooperative and recovery and inventing a
+# "retail" role that the backend's ROLE_PROFILES does not define --
+# decisions for that role fell through to the empty-profile default.
+ROLES = ["farm", "processor", "cooperative", "distributor", "recovery"]
 
 
 # ---------------------------------------------------------------------------
