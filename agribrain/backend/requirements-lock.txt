@@ -5,19 +5,19 @@
 #   pip install -e "agribrain/backend[dev]"
 #   pip freeze --exclude-editable > agribrain/backend/requirements-lock.txt
 #
-# Python:        3.13.13 (initial baseline)
+# Python:        3.11.15 (canonical; matches CI matrix and HPC pipeline)
 # Generated on:  2026-05-04
-# Git commit:    9d0cc79 + remediation series
+# Git commit:    9c17199 (cyber-reroute test fix) + remediation series
 #
-# REGENERATE under Python 3.11 before paper submission to match the CI
-# matrix and HPC pipeline (HOW_TO_RUN.md/RELEASE.md document the exact
-# procedure). The CI workflow's `lockfile-drift` check warns when this
-# file's hash differs from a fresh re-freeze on the configured Python.
+# Verified: this exact pin set also resolves on Python 3.13.13
+# (two-Python comparison run during the 2026-05 forensic pass; 74
+# packages, byte-identical content modulo line endings). Reviewers
+# may use either 3.11 or 3.13; the canonical CI environment is 3.11.
 #
 # To install for reproducibility (instead of pyproject ranges):
 #   pip install -r agribrain/backend/requirements-lock.txt
 #   pip install -e agribrain/backend --no-deps    # editable wiring only
-#
+
 aiohappyeyeballs==2.6.1
 aiohttp==3.13.5
 aiosignal==1.4.0

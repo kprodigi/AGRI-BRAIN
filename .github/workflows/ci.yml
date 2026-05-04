@@ -45,6 +45,40 @@ jobs:
         run: |
           python mvp/simulation/tests/test_stochastic_quick.py
 
+  # Slow-marker tests: full end-to-end simulator runs (mode x scenario
+  # matrix) that the default `addopts = "-m 'not slow'"` skips. We run
+  # them here on Linux/Python 3.11 only -- they are not expected to be
+  # platform-sensitive but they are minutes-per-test rather than
+  # milliseconds, so the cross-platform matrix above stays fast.
+  # The 2026-05 forensic pass surfaced a stale calibration in one slow
+  # test that was hidden behind the addopts opt-out; this job ensures
+  # future drift fails CI loudly. continue-on-error is intentionally
+  # not set: a slow-test failure must red the build.
+  slow-tests:
+    name: slow-tests (ubuntu / py3.11)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install backend (with [dev] extras)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e "agribrain/backend[dev]"
+      - name: Run slow-marked tests
+        run: |
+          # --override-ini="addopts=" wins over the addopts in
+          # agribrain/backend/pyproject.toml ("-m 'not slow'") so the
+          # explicit -m slow selector here is honoured. Without the
+          # override, the addopts and the -m flag conflict and pytest
+          # selects nothing.
+          python -m pytest --override-ini="addopts=" -m slow \
+            agribrain/backend
+
   # Ubuntu-only artifact validation: line-ending differences on Windows
   # checkouts would shift tracked-artifact SHA-256s and false-positive
   # the manifest verifier. The artifacts themselves were written and
