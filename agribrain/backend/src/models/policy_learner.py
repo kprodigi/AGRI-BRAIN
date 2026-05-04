@@ -68,7 +68,26 @@ class PolicyLearner:
         features : feature vector phi(s) of shape (n_features,).
         action : action index taken.
         reward : observed reward.
+
+        The 2026-05 hardening adds a shape assertion: prior to this,
+        the buffer silently accepted any 1-D array, so a caller that
+        passed a 6-dim phi (legacy) into a 10-dim learner produced
+        misaligned theta gradients on update without raising. The
+        assertion fails loudly so feature-vector regressions surface
+        at record-time rather than as silent learning drift.
         """
+        if features.ndim != 1 or features.shape[0] != self.n_features:
+            raise ValueError(
+                f"PolicyLearner.record expected features of shape "
+                f"({self.n_features},); got shape={features.shape}. "
+                f"This usually means the caller is using an older "
+                f"phi(s) layout; see action_selection.build_feature_vector."
+            )
+        if not (0 <= action < self.n_actions):
+            raise ValueError(
+                f"PolicyLearner.record expected action in [0, {self.n_actions}); "
+                f"got {action}."
+            )
         self._buffer.append((features.copy(), action, reward))
         if len(self._buffer) > self.max_buffer:
             self._buffer.pop(0)

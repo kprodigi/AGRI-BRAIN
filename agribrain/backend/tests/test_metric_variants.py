@@ -728,15 +728,9 @@ def test_mode_eff_predicted_within_observed_range():
 
     obs_mean = sum(saves) / len(saves)
     # Predicted MODE_EFF['agribrain'] should be within ±0.20 of observed.
-    # TOLERANCE TIGHTENING TODO (post-HPC-rerun): the current 0.20
-    # window is wide enough to accommodate the calibration drift
-    # between the post-2026-04 simulator (which emits the new physics
-    # + Levers 1+2 + MODE_CARBON_EFF) and the on-disk
-    # benchmark_summary.json which was produced by the pre-fix
-    # simulator. Once hpc/hpc_run.sh regenerates the bench file with
-    # the new physics, the empirical save mean is expected to rise
-    # from ~0.68 to ~0.80, closing the gap to MODE_EFF['agribrain']
-    # = 0.83 to within ~0.05. Retighten to 0.10 after that lands.
+    # FOLLOWUP: tighten 0.20 -> 0.10 after the next HPC rerun.
+    # See docs/FOLLOWUPS.md "After the next 20-seed HPC publication
+    # run" for the calibration rationale and the reactivation rule.
     assert abs(MODE_EFF["agribrain"] - obs_mean) <= 0.20, (
         f"MODE_EFF predicts {MODE_EFF['agribrain']:.3f} but empirical "
         f"average is {obs_mean:.3f}; documented gap should be ≤0.20 "

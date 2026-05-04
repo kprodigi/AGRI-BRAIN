@@ -50,6 +50,35 @@ jobs:
           BENCHMARK_WRITE_COMPAT: "true"
         run: |
           python mvp/simulation/benchmarks/run_benchmark_suite.py
+      - name: Print smoke summary
+        # Human-readable digest of the nightly run that lands in the
+        # job log so a maintainer doesn't have to download artifacts to
+        # see whether numbers regressed.
+        run: |
+          python - <<'PY'
+          import json, os, sys
+          path = "mvp/simulation/results/benchmark_summary.json"
+          if not os.path.exists(path):
+              print(f"::warning::{path} not produced by the smoke run")
+              sys.exit(0)
+          with open(path) as f:
+              data = json.load(f)
+          summary = data.get("summary", data)
+          print("\n=== Nightly smoke summary (agribrain) ===")
+          for sc in ("baseline", "heatwave", "overproduction",
+                     "cyber_outage", "adaptive_pricing"):
+              row = summary.get(sc, {}).get("agribrain", {})
+              if not row:
+                  print(f"  {sc:>18s}: <missing>")
+                  continue
+              ari   = row.get("ari", {}).get("mean", float("nan"))
+              waste = row.get("waste", {}).get("mean", float("nan"))
+              rle   = row.get("rle", {}).get("mean", float("nan"))
+              slca  = row.get("slca", {}).get("mean", float("nan"))
+              print(f"  {sc:>18s}: ARI={ari:.3f}  Waste={waste:.3f}  "
+                    f"RLE={rle:.3f}  SLCA={slca:.3f}")
+          print()
+          PY
       - name: Upload benchmark artifact
         uses: actions/upload-artifact@v4
         with:

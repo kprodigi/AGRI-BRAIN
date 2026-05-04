@@ -554,7 +554,9 @@ print(f"\n{'='*70}")
 print(f"Validation mode: {_mode_label} (strict={_strict})")
 
 # Always write a machine-readable report so CI and downstream readers
-# can inspect the gate outcomes without re-running the validator.
+# can inspect the gate outcomes without re-running the validator. The
+# ``missing_artifacts`` field is unconditionally present (empty list
+# on success) so downstream consumers don't have to test for the key.
 report = {
     "mode": _mode_label,
     "strict": _strict,
@@ -562,6 +564,7 @@ report = {
     "errors": list(errors),
     "n_ordering_warnings": len(warnings_ord),
     "ordering_warnings": list(warnings_ord),
+    "missing_artifacts": [],
 }
 try:
     _RESULTS_DIR.mkdir(parents=True, exist_ok=True)
