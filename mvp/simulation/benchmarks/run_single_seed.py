@@ -5,18 +5,54 @@ Usage:
     python run_single_seed.py 42
     python run_single_seed.py 1337
     python run_single_seed.py 42 --output-dir /scratch/run_abc123/seed_42
+
+Output JSON envelope (post 2026-05):
+
+    {
+      "seed": <int>,
+      "scenarios": {<sc>: {<mode>: {<scalar metric>: float, ...}}},
+      "traces":    {<sc>: {<mode>: {<trace name>: [floats]}}}
+    }
+
+The "scenarios" block carries the scalar metrics that
+``aggregate_seeds.py`` bootstrap-CIs over the seed dimension. The
+"traces" block carries per-step arrays (currently ``ari_trace`` only)
+for the ``static``, ``hybrid_rl``, ``agribrain`` modes -- the canonical
+paper trio plotted in fig 2 panel (d) -- so the figure can render
+seed-stacked CI ribbons without re-running the simulator. Other modes
+and other trace fields can be added by extending TRACE_MODES /
+TRACE_FIELDS below.
+
+Backward compatibility: the previous JSON format dumped the
+"scenarios" block at the root with no envelope. The
+``_load_per_seed_summary`` loader in ``generate_figures.py`` already
+prefers ``obj.get("scenarios")`` over the legacy root-as-scenarios
+fallback, so old benchmark snapshots aggregate the same way and new
+ones expose traces additively.
 """
 import argparse
 import json
 from pathlib import Path
 
 try:
-    from ..generate_results import run_all, SCENARIOS, MODES
+    from ..generate_results import run_all, MODES
 except ImportError:
     import sys as _sys
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
-    from generate_results import run_all, SCENARIOS, MODES
+    from generate_results import run_all, MODES  # noqa: E402
+
+
+#: Modes that get per-step traces dumped. The canonical paper trio for
+#: fig 2 panel (d) and fig 4 panel (a). Adding more modes is cheap
+#: (each mode adds ~3 KB of JSON per seed at 4-decimal precision) but
+#: deliberately limited here so the per-seed JSONs stay tractable.
+TRACE_MODES = ("static", "hybrid_rl", "agribrain")
+
+#: Trace fields to dump. ``ari_trace`` is consumed by fig 2 panel (d)
+#: for the seed-CI ribbon. Add other fields here if a future panel
+#: needs seed-stacked per-step uncertainty.
+TRACE_FIELDS = ("ari_trace",)
 
 
 def main() -> None:
@@ -41,16 +77,34 @@ def main() -> None:
     print(f"Running full simulation with seed={seed}...")
     data = run_all(seed=seed)
 
-    # Drive the per-seed metric dump off the canonical MODES list in
-    # generate_results so cold_start and the three sensitivity-perturbation
-    # modes land in seed_<N>.json alongside the eight legacy modes. Keeping
-    # a second hardcoded list here would silently drop the new ablation
-    # data from every downstream aggregator stage.
+    # Drive the per-seed metric dump off the data dict's actual keys
+    # rather than the imported SCENARIOS / MODES module-level
+    # constants. Two reasons:
+    #   1. Robustness against in-process patching: callers that
+    #      monkeypatch gr.SCENARIOS / gr.MODES (e.g. limit-to-one-
+    #      scenario probes) only mutate the *generate_results*
+    #      module's bindings; this module imported the names at
+    #      import time and would otherwise iterate the un-patched
+    #      original lists, then crash on `data["results"][sc]`
+    #      when sc isn't present.
+    #   2. Future-proofing: when a new ablation mode is added to
+    #      generate_results.MODES the script picks it up automatically
+    #      without a parallel edit here, which is the original spirit
+    #      of "single source of truth in generate_results".
+    results = data["results"]
+    scenarios_run = list(results.keys())
+    modes_seen: set[str] = set()
+    for sc in scenarios_run:
+        modes_seen.update((results.get(sc) or {}).keys())
+    # Preserve canonical ordering when the run touched the full set.
+    modes_run = [m for m in MODES if m in modes_seen] + sorted(
+        modes_seen.difference(MODES)
+    )
     metrics = {}
-    for sc in SCENARIOS:
+    for sc in scenarios_run:
         metrics[sc] = {}
-        for mode in MODES:
-            ep = data["results"][sc].get(mode)
+        for mode in modes_run:
+            ep = (results.get(sc) or {}).get(mode)
             if ep is None:
                 continue
             metrics[sc][mode] = {
@@ -103,8 +157,42 @@ def main() -> None:
                         ep[extra], (list, tuple)
                     ) else list(ep[extra])
 
+    # Per-step trace dump for seed-CI ribbon panels (fig 2 panel d
+    # ARI ribbon at present; extend by editing TRACE_MODES /
+    # TRACE_FIELDS at the top of this file). Rounded to 4 decimal
+    # places; that is well below the per-step measurement noise
+    # (theta-perturbation sigma 0.15, source 7) and keeps the per-
+    # seed JSON in the ~50 KB range.
+    # Iterate the actual scenarios run (see the metrics-loop comment
+    # above for the rationale: robustness against in-process
+    # SCENARIOS patching).
+    traces: dict = {}
+    for sc in scenarios_run:
+        sc_traces: dict = {}
+        for mode in TRACE_MODES:
+            ep = (results.get(sc) or {}).get(mode)
+            if ep is None:
+                continue
+            cell: dict = {}
+            for field in TRACE_FIELDS:
+                if field not in ep:
+                    continue
+                arr = ep[field]
+                if hasattr(arr, "tolist"):
+                    arr = arr.tolist()
+                cell[field] = [round(float(x), 4) for x in arr]
+            if cell:
+                sc_traces[mode] = cell
+        if sc_traces:
+            traces[sc] = sc_traces
+
     out_file = out_dir / f"seed_{seed}.json"
-    out_file.write_text(json.dumps(metrics, indent=2))
+    payload = {
+        "seed": int(seed),
+        "scenarios": metrics,
+        "traces": traces,
+    }
+    out_file.write_text(json.dumps(payload, indent=2))
     print(f"Saved: {out_file}")
 
 

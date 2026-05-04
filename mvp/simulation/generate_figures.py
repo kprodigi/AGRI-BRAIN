@@ -624,13 +624,49 @@ def _fig2_heatwave_inner(hw, ab, hours):
     # stress) lift its ARI above the baselines, while the shared
     # (1 - rho) factor pulls every mode downward through the heatwave
     # window in line with the cumulative thermal-damage physics.
+    #
+    # 2026-05 seed-CI ribbon: when per-seed JSONs are present (HPC
+    # 20-seed run output dumped by run_single_seed.py with traces
+    # enabled), render the seed-mean line plus a 95% percentile-
+    # bootstrap CI ribbon per mode. Falls back to the single-seed
+    # smoothed line when traces aren't available (local single-seed
+    # development; legacy benchmark snapshots that pre-date the
+    # trace dump). The fallback is silent on the figure (no missing-
+    # data placeholder) because the line itself is meaningful at
+    # single-seed; the ribbon just isn't shown.
     ax = axes[1, 1]
     window = 12
     for mode in ["static", "hybrid_rl", "agribrain"]:
         ep = hw[mode]
-        ari = np.array(ep["ari_trace"])
-        rolling = np.convolve(ari, np.ones(window) / window, mode="same")
-        _mode_plot(ax, hours, rolling, mode)
+        # Always plot the per-seed-mean (or single-seed) line so the
+        # panel reads identically with or without per-seed data.
+        per_seed = _load_per_seed_traces("heatwave", mode, "ari_trace")
+        if per_seed is not None and per_seed.shape[0] >= 2:
+            # Stacked seeds: render seed-mean as the line, 2.5/97.5
+            # percentile band as the ribbon. Smoothing is applied to
+            # the per-seed mean so the ribbon edges don't jitter
+            # against a smoothed line.
+            n = min(per_seed.shape[1], hours.shape[0])
+            seed_mean = per_seed[:, :n].mean(axis=0)
+            seed_lo = np.percentile(per_seed[:, :n], 2.5, axis=0)
+            seed_hi = np.percentile(per_seed[:, :n], 97.5, axis=0)
+            kernel = np.ones(window) / window
+            mean_smooth = np.convolve(seed_mean, kernel, mode="same")
+            lo_smooth = np.convolve(seed_lo, kernel, mode="same")
+            hi_smooth = np.convolve(seed_hi, kernel, mode="same")
+            x = hours[:n]
+            color = COLORS.get(mode, "#444444")
+            ax.fill_between(x, lo_smooth, hi_smooth,
+                            color=color, alpha=0.18, linewidth=0,
+                            zorder=2)
+            _mode_plot(ax, x, mean_smooth, mode)
+        else:
+            # No per-seed traces: render the single-seed line (the
+            # legacy behaviour). The ribbon emerges automatically on
+            # the next HPC run.
+            ari = np.array(ep["ari_trace"])
+            rolling = np.convolve(ari, np.ones(window) / window, mode="same")
+            _mode_plot(ax, hours, rolling, mode)
     ax.set_xlabel("Hours")
     ax.set_ylabel("ARI")
     ax.set_title("(d) ARI During Heatwave")
@@ -1655,6 +1691,72 @@ def _load_per_seed_summary() -> dict | None:
                     "n_seeds": len(arr),
                 }
     return summary
+
+
+def _load_per_seed_traces(scenario: str, mode: str,
+                          field: str = "ari_trace") -> np.ndarray | None:
+    """Stack per-step traces across seeds for one (scenario, mode, field).
+
+    Walks ``RESULTS_DIR/benchmark_seeds/`` (flat layout or
+    ``<RUN_TAG>/seed_*.json`` tagged layout, same convention
+    ``_load_per_seed_summary`` uses) and returns an
+    ``(n_seeds, n_steps)`` numpy array stacking the requested trace.
+
+    The per-seed JSON envelope (post 2026-05) is:
+        {"seed": int, "scenarios": {...}, "traces": {sc: {mode: {field: [...]}}}}
+    Older per-seed JSONs that predate the trace dump don't carry a
+    "traces" key; this loader returns None for those (and the
+    figure falls back to its single-seed line render).
+
+    Returns
+    -------
+    np.ndarray of shape (n_seeds, n_steps), or None when no per-seed
+    traces are found. Seeds with mismatched step counts are dropped
+    (the simulator emits a fixed length per scenario, so this should
+    not fire in practice, but guard against partial/truncated dumps).
+    """
+    seeds_root = RESULTS_DIR / "benchmark_seeds"
+    if not seeds_root.exists():
+        return None
+    import json
+    # Same flat-or-tagged discovery pattern _load_per_seed_summary uses.
+    seed_files = list(seeds_root.glob("seed_*.json"))
+    if not seed_files:
+        for sub in seeds_root.iterdir():
+            if sub.is_dir():
+                seed_files.extend(sub.glob("seed_*.json"))
+    if not seed_files:
+        return None
+
+    arrs: list[np.ndarray] = []
+    for sp in seed_files:
+        try:
+            obj = json.loads(sp.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        traces = obj.get("traces") if isinstance(obj, dict) else None
+        if not isinstance(traces, dict):
+            continue
+        cell = traces.get(scenario, {}).get(mode, {})
+        if not isinstance(cell, dict):
+            continue
+        seq = cell.get(field)
+        if not isinstance(seq, list) or not seq:
+            continue
+        arrs.append(np.asarray(seq, dtype=float))
+    if not arrs:
+        return None
+    # Drop any rare seeds whose trace length disagrees with the modal
+    # length (truncated runs). The mode is taken as the most common
+    # length across the seeds we collected.
+    lengths = [a.shape[0] for a in arrs]
+    if not lengths:
+        return None
+    n = max(set(lengths), key=lengths.count)
+    arrs = [a for a in arrs if a.shape[0] == n]
+    if not arrs:
+        return None
+    return np.vstack(arrs)
 
 
 # Bold error bar styling so tight 20-seed CIs remain visible at figure scale.
