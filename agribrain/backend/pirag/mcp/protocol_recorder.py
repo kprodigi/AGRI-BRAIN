@@ -146,11 +146,22 @@ class ProtocolRecorder:
         with open(filepath, "w") as f:
             json.dump(data, f, indent=2, default=str)
 
+    # Tool errors that are documented as "by design" rather than real
+    # tool failures. Each entry is (tool_name, error_kind_substring).
+    # The simulator runs MCP without a live FastAPI app, so
+    # chain_query intentionally returns state_unavailable; counting
+    # that as a tool failure inflates the fig9(b) reliability bar.
+    _BY_DESIGN_TOOL_ERRORS: tuple[tuple[str, str], ...] = (
+        ("chain_query", "state_unavailable"),
+    )
+
     def summary(self) -> Dict[str, Any]:
         with self._lock:
             methods: Dict[str, int] = {}
             jsonrpc_errors = 0
             tool_iserror = 0
+            tool_iserror_by_design = 0
+            tool_iserror_breakdown: Dict[str, int] = {}
             notifications = 0
             for r in self._records:
                 m = r["request"]["method"]
@@ -171,12 +182,43 @@ class ProtocolRecorder:
                 result = resp.get("result")
                 if isinstance(result, dict) and result.get("isError") is True:
                     tool_iserror += 1
+                    # Recover the tool name + error kind so the figure
+                    # consumer can subtract by-design failures.
+                    tool_name = ""
+                    params = r["request"].get("params") or {}
+                    if isinstance(params, dict):
+                        tool_name = str(params.get("name") or "")
+                    content = result.get("content") or []
+                    error_text = ""
+                    if (
+                        isinstance(content, list)
+                        and content
+                        and isinstance(content[0], dict)
+                    ):
+                        error_text = str(content[0].get("text") or "")
+                    breakdown_key = tool_name or "<unknown>"
+                    tool_iserror_breakdown[breakdown_key] = (
+                        tool_iserror_breakdown.get(breakdown_key, 0) + 1
+                    )
+                    for known_tool, known_kind in self._BY_DESIGN_TOOL_ERRORS:
+                        if tool_name == known_tool and known_kind in error_text:
+                            tool_iserror_by_design += 1
+                            break
+            tool_iserror_real = tool_iserror - tool_iserror_by_design
             return {
                 "total_interactions": len(self._records),
                 "dropped_interactions": self._dropped,
                 "methods": methods,
                 "jsonrpc_errors": jsonrpc_errors,
                 "tool_iserror_responses": tool_iserror,
+                # 2026-05: split the by-design simulator errors out so
+                # fig9(b) reliability bar can use *_real (genuine tool
+                # failures) rather than the raw count. Older consumers
+                # keep reading tool_iserror_responses for backward
+                # compatibility.
+                "tool_iserror_responses_real": tool_iserror_real,
+                "tool_iserror_responses_by_design": tool_iserror_by_design,
+                "tool_iserror_breakdown": tool_iserror_breakdown,
                 "notifications": notifications,
                 "has_errors": jsonrpc_errors > 0 or tool_iserror > 0,
             }

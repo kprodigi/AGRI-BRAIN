@@ -1,9 +1,18 @@
 # Repo-wide Ruff config.
 #
-# CI runs `ruff check --select E9,F63,F7,F82,F401,I,B` against
-# agribrain/backend and mvp/simulation. Local developers can run
-# `ruff check .` to apply the same rule set. The per-file ignores
-# below cover scripts that bootstrap their own sys.path.
+# CI's python-lint job runs `ruff check --select E9,F63,F7,F82,F401,F821`
+# against agribrain/backend and mvp/simulation. The structural rules
+# (syntax errors, undefined names, unused imports) gate the build.
+# Style rules (I import-sorting, B bug-prone patterns) are surfaced
+# via the broader [lint] select below for local debugging but are NOT
+# CI-gated yet -- they would require a focused cleanup pass before
+# they can land as build gates.
+#
+# To exactly reproduce CI locally:
+#   ruff check --select E9,F63,F7,F82,F401,F821 agribrain/backend mvp/simulation
+#
+# To get the broader local-debug surface:
+#   ruff check .
 
 # Scripts under mvp/simulation and backend/experiments bootstrap their own
 # sys.path so they can run stand-alone (no editable install required).
