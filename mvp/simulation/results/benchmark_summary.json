@@ -26,11 +26,11 @@
       2024
     ],
     "bca_fallback_stats": {
-      "calls": 1875,
-      "fallback_p0_degenerate": 153,
+      "calls": 2435,
+      "fallback_p0_degenerate": 168,
       "fallback_scipy_unavailable": 0,
-      "fallback_total": 153,
-      "fallback_rate": 0.0816
+      "fallback_total": 168,
+      "fallback_rate": 0.06899383983572896
     }
   },
   "summary": {
@@ -79,10 +79,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.10705490510897815,
-          "std": 0.030552263766038604,
-          "ci_low": 0.0949539745788686,
-          "ci_high": 0.12188235780317075,
+          "mean": 0.10560366604800542,
+          "std": 0.08227716718832147,
+          "ci_low": 0.08631502423518703,
+          "ci_high": 0.1811512488739952,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -139,6 +139,34 @@
           "std": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 1.0,
+          "std": 0.0,
+          "ci_low": 1.0,
+          "ci_high": 1.0,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.0,
+          "std": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.0,
+          "std": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 170.3,
+          "std": 4.69148164229596,
+          "ci_low": 168.15,
+          "ci_high": 172.2,
           "n_seeds": 20
         }
       },
@@ -186,10 +214,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.17799131035442567,
-          "std": 0.04871005506467993,
-          "ci_low": 0.16432597659016265,
-          "ci_high": 0.2160670530715218,
+          "mean": 0.18985953114073104,
+          "std": 0.03945679679491674,
+          "ci_low": 0.174805719343569,
+          "ci_high": 0.21040559128174957,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -246,6 +274,34 @@
           "std": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.14260956748735423,
+          "std": 0.04076229792388713,
+          "ci_low": 0.1252035408739856,
+          "ci_high": 0.16086123017165035,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7709239782589742,
+          "std": 0.06382509210046729,
+          "ci_low": 0.742058821275665,
+          "ci_high": 0.7974414828858284,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.08646645425367147,
+          "std": 0.03704544053270368,
+          "ci_low": 0.07172538700481927,
+          "ci_high": 0.1038163664437589,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 169.95,
+          "std": 4.609501057598316,
+          "ci_low": 167.9,
+          "ci_high": 171.9,
           "n_seeds": 20
         }
       },
@@ -293,10 +349,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.16257695202107744,
-          "std": 0.012791633691485348,
-          "ci_low": 0.1576689651928004,
-          "ci_high": 0.16899580124801256,
+          "mean": 0.16591090914314713,
+          "std": 0.005388568005380484,
+          "ci_low": 0.1634776304924585,
+          "ci_high": 0.16822538706682896,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -353,6 +409,34 @@
           "std": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.1252694191050992,
+          "std": 0.037034449994821285,
+          "ci_low": 0.1089639989487114,
+          "ci_high": 0.14154620844316068,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7313475240934787,
+          "std": 0.06374396158821082,
+          "ci_low": 0.7025035568836162,
+          "ci_high": 0.7584790970571748,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.14338305680142197,
+          "std": 0.04091470051213455,
+          "ci_low": 0.12515309077816658,
+          "ci_high": 0.16127773753327515,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 171.3,
+          "std": 4.8072861366887665,
+          "ci_low": 169.2,
+          "ci_high": 173.45,
           "n_seeds": 20
         }
       },
@@ -400,10 +484,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.16146653304329245,
-          "std": 0.011904192696446618,
-          "ci_low": 0.15678685663270248,
-          "ci_high": 0.16740838449512946,
+          "mean": 0.16449814672038582,
+          "std": 0.0058106731401092295,
+          "ci_low": 0.16182356907012674,
+          "ci_high": 0.16697137597367237,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -461,6 +545,34 @@
           "ci_low": 0.0,
           "ci_high": 0.0,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.25437142635645404,
+          "std": 0.050008610093547255,
+          "ci_low": 0.2321297144621541,
+          "ci_high": 0.27605229727828956,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6089771474475778,
+          "std": 0.05305160683701161,
+          "ci_low": 0.5865928229415452,
+          "ci_high": 0.6329428845395246,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.1366514261959681,
+          "std": 0.04113742012812887,
+          "ci_low": 0.1161963414232822,
+          "ci_high": 0.153031759330671,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 170.15,
+          "std": 4.089926649709014,
+          "ci_low": 168.4,
+          "ci_high": 171.95,
+          "n_seeds": 20
         }
       },
       "agribrain": {
@@ -507,10 +619,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 8.892017208321098,
-          "std": 4.339192642064789,
-          "ci_low": 7.223876463670698,
-          "ci_high": 11.165879432581727,
+          "mean": 9.0700525783177,
+          "std": 3.533706022464159,
+          "ci_low": 7.826585973907196,
+          "ci_high": 11.086651820801041,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -568,6 +680,34 @@
           "ci_low": 33.5,
           "ci_high": 39.65,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.12129966563670672,
+          "std": 0.039211314288885565,
+          "ci_low": 0.10344527739605525,
+          "ci_high": 0.13807987361319718,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7311563451644086,
+          "std": 0.06727147248873566,
+          "ci_low": 0.7026444065629687,
+          "ci_high": 0.7618846171480441,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.14754398919888465,
+          "std": 0.04128646762951851,
+          "ci_low": 0.1311699817170795,
+          "ci_high": 0.16774043830246912,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 171.05,
+          "std": 3.9808918598726084,
+          "ci_low": 169.35,
+          "ci_high": 172.75,
+          "n_seeds": 20
         }
       },
       "no_context": {
@@ -614,10 +754,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.15843186014939822,
-          "std": 0.007151223238659781,
-          "ci_low": 0.15602714212603475,
-          "ci_high": 0.16274480087293303,
+          "mean": 0.1673950226783442,
+          "std": 0.006417575466391694,
+          "ci_low": 0.16461839339696924,
+          "ci_high": 0.17029668189202982,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -674,57 +814,85 @@
           "std": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.1248761106937443,
+          "std": 0.04710567364277509,
+          "ci_low": 0.10515318338590252,
+          "ci_high": 0.14641502852363303,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7254982276109206,
+          "std": 0.06730915693966721,
+          "ci_low": 0.6926955449172023,
+          "ci_high": 0.7521806446211119,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.14962566169533495,
+          "std": 0.03936897733787892,
+          "ci_low": 0.1344403293240755,
+          "ci_high": 0.16917167037567601,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 169.3,
+          "std": 4.302324952859791,
+          "ci_low": 167.3,
+          "ci_high": 171.1,
           "n_seeds": 20
         }
       },
       "mcp_only": {
         "ari": {
-          "mean": 0.5483461292432829,
-          "std": 0.010183382698007568,
-          "ci_low": 0.5436809968295436,
-          "ci_high": 0.5525970885635895,
+          "mean": 0.5482503710980515,
+          "std": 0.010244114884321271,
+          "ci_low": 0.5435479830928653,
+          "ci_high": 0.5525183660477355,
           "n_seeds": 20
         },
         "waste": {
-          "mean": 0.02996728163224202,
-          "std": 0.0040105780216967354,
-          "ci_low": 0.02842483431147131,
-          "ci_high": 0.03192840089180008,
+          "mean": 0.029987005069494845,
+          "std": 0.003990093302679155,
+          "ci_low": 0.02845431685756784,
+          "ci_high": 0.03194485926379788,
           "n_seeds": 20
         },
         "rle": {
-          "mean": 0.8410600907471707,
-          "std": 0.045743993622943645,
-          "ci_low": 0.8198154052612361,
-          "ci_high": 0.8601262565894034,
+          "mean": 0.8400647740688107,
+          "std": 0.044244909201836956,
+          "ci_low": 0.8191726658542947,
+          "ci_high": 0.8581133537643479,
           "n_seeds": 20
         },
         "slca": {
-          "mean": 0.6853182012108283,
-          "std": 0.009189597866309268,
-          "ci_low": 0.6812013455473406,
-          "ci_high": 0.6892985898676247,
+          "mean": 0.6852131405437336,
+          "std": 0.009201125102245944,
+          "ci_low": 0.6810760880489669,
+          "ci_high": 0.6891874504880106,
           "n_seeds": 20
         },
         "carbon": {
-          "mean": 2191.176316499172,
-          "std": 125.48630330567781,
-          "ci_low": 2136.2668349328173,
-          "ci_high": 2247.1313631902976,
+          "mean": 2192.1858168551366,
+          "std": 125.37750203626332,
+          "ci_low": 2137.001926209914,
+          "ci_high": 2247.547029783135,
           "n_seeds": 20
         },
         "equity": {
-          "mean": 0.6296606665132283,
-          "std": 0.009356158836834664,
-          "ci_low": 0.6255809528173117,
-          "ci_high": 0.6338132973807794,
+          "mean": 0.6296053159351274,
+          "std": 0.009357791499811459,
+          "ci_low": 0.6255324171905463,
+          "ci_high": 0.6337424191695584,
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 2.130042319994472,
-          "std": 1.8834917090123093,
-          "ci_low": 1.515407857531179,
-          "ci_high": 3.2533972543785312,
+          "mean": 4.4381213899921725,
+          "std": 2.556281842316279,
+          "ci_low": 3.461921011931654,
+          "ci_high": 5.757056897224245,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -756,31 +924,59 @@
           "n_seeds": 20
         },
         "context_active_fraction": {
-          "mean": 0.6192708333333333,
-          "std": 0.062212639933661655,
-          "ci_low": 0.5921875,
-          "ci_high": 0.647048611111111,
+          "mean": 0.617361111111111,
+          "std": 0.07895469917367133,
+          "ci_low": 0.5855902777777777,
+          "ci_high": 0.6552083333333334,
           "n_seeds": 20
         },
         "context_honor_rate": {
-          "mean": 0.672261839983244,
-          "std": 0.06754061168972582,
-          "ci_low": 0.6445854061936216,
-          "ci_high": 0.7047871270107177,
+          "mean": 0.6801015308793518,
+          "std": 0.081960323211288,
+          "ci_low": 0.639953140702244,
+          "ci_high": 0.7124450316925321,
           "n_seeds": 20
         },
         "context_active_steps": {
-          "mean": 178.35,
-          "std": 17.917240300894555,
-          "ci_low": 170.55,
-          "ci_high": 186.3,
+          "mean": 177.8,
+          "std": 22.738953362017348,
+          "ci_low": 168.65,
+          "ci_high": 188.7,
           "n_seeds": 20
         },
         "context_honored_steps": {
-          "mean": 119.15,
-          "std": 10.422451726921071,
-          "ci_low": 114.75,
-          "ci_high": 124.0,
+          "mean": 119.45,
+          "std": 10.161077698748299,
+          "ci_low": 115.25,
+          "ci_high": 124.25,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.0864218202669694,
+          "std": 0.02908156385607434,
+          "ci_low": 0.07359552272667523,
+          "ci_high": 0.09895909895983918,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7872340759303249,
+          "std": 0.06082917787290783,
+          "ci_low": 0.7580078960897492,
+          "ci_high": 0.8113342063307613,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.12634410380270572,
+          "std": 0.04360737887768434,
+          "ci_low": 0.10941988505218406,
+          "ci_high": 0.1475836742783589,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 169.3,
+          "std": 4.302324952859791,
+          "ci_low": 167.3,
+          "ci_high": 171.1,
           "n_seeds": 20
         }
       },
@@ -828,10 +1024,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 4.634732669364894,
-          "std": 0.21325848525370003,
-          "ci_low": 4.559539131606795,
-          "ci_high": 4.752692793166456,
+          "mean": 4.855639288305409,
+          "std": 0.4769722019385572,
+          "ci_low": 4.729182557651821,
+          "ci_high": 5.265248750545724,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -889,6 +1085,34 @@
           "ci_low": 28.75,
           "ci_high": 35.2,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.11783123883425861,
+          "std": 0.04868727119057612,
+          "ci_low": 0.09790696199047041,
+          "ci_high": 0.14068991087597463,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7360753386813944,
+          "std": 0.0680740955349627,
+          "ci_low": 0.7034233524962593,
+          "ci_high": 0.7633746138205839,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.14609342248434692,
+          "std": 0.04084611371297893,
+          "ci_low": 0.1305975261427213,
+          "ci_high": 0.1667899765912757,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 169.3,
+          "std": 4.302324952859791,
+          "ci_low": 167.3,
+          "ci_high": 171.1,
+          "n_seeds": 20
         }
       },
       "agribrain_cold_start": {
@@ -935,10 +1159,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 8.381659712095926,
-          "std": 5.475302696681935,
-          "ci_low": 6.622478520182719,
-          "ci_high": 11.730629915724238,
+          "mean": 11.05432296204122,
+          "std": 5.028343116777813,
+          "ci_low": 9.255015912785844,
+          "ci_high": 13.786105587404535,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -996,6 +1220,34 @@
           "ci_low": 32.25,
           "ci_high": 38.45,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.12487318628901803,
+          "std": 0.039701030068674335,
+          "ci_low": 0.10620738671876451,
+          "ci_high": 0.14159340354636066,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7234024837563473,
+          "std": 0.05897683120167151,
+          "ci_low": 0.6952023244382969,
+          "ci_high": 0.747759297839687,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.15172432995463464,
+          "std": 0.03642694047458028,
+          "ci_low": 0.13767536944076256,
+          "ci_high": 0.17004242499325734,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 171.05,
+          "std": 3.9808918598726084,
+          "ci_low": 169.35,
+          "ci_high": 172.75,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_10": {
@@ -1042,10 +1294,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 16.12880795599065,
-          "std": 9.35596183409389,
-          "ci_low": 12.495094749397127,
-          "ci_high": 20.869951329597438,
+          "mean": 11.542701624663701,
+          "std": 5.1619094775953585,
+          "ci_low": 9.591330395280904,
+          "ci_high": 14.368785238388956,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -1103,6 +1355,34 @@
           "ci_low": 33.1,
           "ci_high": 39.35,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.12340569545220233,
+          "std": 0.04017995791906994,
+          "ci_low": 0.1046204256095107,
+          "ci_high": 0.14015011472988062,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7248699745931629,
+          "std": 0.05950088559542973,
+          "ci_low": 0.6966942172338799,
+          "ci_high": 0.7493034483790867,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.15172432995463464,
+          "std": 0.03642694047458028,
+          "ci_low": 0.13767536944076256,
+          "ci_high": 0.17004242499325734,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 171.05,
+          "std": 3.9808918598726084,
+          "ci_low": 169.35,
+          "ci_high": 172.75,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_25": {
@@ -1149,10 +1429,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 9.330937942367099,
-          "std": 2.5510761136826967,
-          "ci_low": 8.123358909126575,
-          "ci_high": 10.369922625313594,
+          "mean": 11.377304339031173,
+          "std": 4.880056881415329,
+          "ci_low": 9.654249881435202,
+          "ci_high": 14.182364092899434,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -1210,6 +1490,34 @@
           "ci_low": 33.25,
           "ci_high": 39.65,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.12310807640458328,
+          "std": 0.04014498609450939,
+          "ci_low": 0.10428862879053032,
+          "ci_high": 0.13988810634727003,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7248802373189429,
+          "std": 0.0592936656247319,
+          "ci_low": 0.696540636688999,
+          "ci_high": 0.7491159848384172,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.15201168627647377,
+          "std": 0.03624855608207292,
+          "ci_low": 0.13790497616042016,
+          "ci_high": 0.17017832074178688,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 171.05,
+          "std": 3.9808918598726084,
+          "ci_low": 169.35,
+          "ci_high": 172.75,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_50": {
@@ -1256,10 +1564,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 7.502461221075566,
-          "std": 3.1323822760864575,
-          "ci_low": 6.326526613977479,
-          "ci_high": 9.184954478739899,
+          "mean": 10.38465391587427,
+          "std": 3.4989531122134285,
+          "ci_low": 9.279600719272283,
+          "ci_high": 12.753600216636848,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -1317,6 +1625,34 @@
           "ci_low": 33.25,
           "ci_high": 39.9,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.12369471279324278,
+          "std": 0.0401851887585479,
+          "ci_low": 0.10495062912627148,
+          "ci_high": 0.14054869071040546,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7245809572521226,
+          "std": 0.05924419747890987,
+          "ci_low": 0.6964239457259017,
+          "ci_high": 0.7489206167544435,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.15172432995463464,
+          "std": 0.03642694047458028,
+          "ci_low": 0.13767536944076256,
+          "ci_high": 0.17004242499325734,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 171.05,
+          "std": 3.9808918598726084,
+          "ci_low": 169.35,
+          "ci_high": 172.75,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_10_static": {
@@ -1363,10 +1699,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 13.197444381916688,
-          "std": 7.584399449900272,
-          "ci_low": 10.180809697388774,
-          "ci_high": 17.09233424731661,
+          "mean": 11.48453049584835,
+          "std": 3.5562302336075775,
+          "ci_low": 10.047972239968354,
+          "ci_high": 13.15586972153795,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -1424,6 +1760,34 @@
           "ci_low": 29.35,
           "ci_high": 35.45,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.11780895270439953,
+          "std": 0.048431126196682425,
+          "ci_low": 0.09793081565562098,
+          "ci_high": 0.14038784944811847,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7349119827558052,
+          "std": 0.07023806542633763,
+          "ci_low": 0.7015479379936813,
+          "ci_high": 0.7633068241475855,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.14727906453979533,
+          "std": 0.042847724478327284,
+          "ci_low": 0.13075331199475615,
+          "ci_high": 0.16880317193418426,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 169.3,
+          "std": 4.302324952859791,
+          "ci_low": 167.3,
+          "ci_high": 171.1,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_25_static": {
@@ -1470,10 +1834,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 15.352224664174074,
-          "std": 12.189252588815538,
-          "ci_low": 10.779009319779826,
-          "ci_high": 21.820431287852777,
+          "mean": 12.414402359556536,
+          "std": 5.288411751078058,
+          "ci_low": 10.303847468063662,
+          "ci_high": 15.039934564817836,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -1531,6 +1895,34 @@
           "ci_low": 29.45,
           "ci_high": 34.85,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.1178159562411856,
+          "std": 0.047875958116788304,
+          "ci_low": 0.09813970663094308,
+          "ci_high": 0.1399625890833922,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7351956768934376,
+          "std": 0.06952676709972255,
+          "ci_low": 0.7022038621169159,
+          "ci_high": 0.7633089646266513,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.14698836686537672,
+          "std": 0.04256305524338175,
+          "ci_low": 0.13061233932717872,
+          "ci_high": 0.16830461937071373,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 169.3,
+          "std": 4.302324952859791,
+          "ci_low": 167.3,
+          "ci_high": 171.1,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_50_static": {
@@ -1577,10 +1969,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 27.24701820584919,
-          "std": 17.46078788120585,
-          "ci_low": 19.61377022850185,
-          "ci_high": 34.84291785374221,
+          "mean": 10.926298396467852,
+          "std": 3.314974584216715,
+          "ci_low": 9.605976124733484,
+          "ci_high": 12.524802913893092,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -1638,6 +2030,34 @@
           "ci_low": 26.85,
           "ci_high": 34.05,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.11899960366699669,
+          "std": 0.04779486121751957,
+          "ci_low": 0.09935665351493221,
+          "ci_high": 0.14120897952381756,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7340120294676266,
+          "std": 0.06937777881937623,
+          "ci_low": 0.701182987280852,
+          "ci_high": 0.7621601795156004,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.14698836686537672,
+          "std": 0.04256305524338175,
+          "ci_low": 0.13061233932717872,
+          "ci_high": 0.16830461937071373,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 169.3,
+          "std": 4.302324952859791,
+          "ci_low": 167.3,
+          "ci_high": 171.1,
+          "n_seeds": 20
         }
       },
       "agribrain_no_bonus": {
@@ -1684,10 +2104,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 11.927349349166938,
-          "std": 9.144659979568367,
-          "ci_low": 8.554670234681378,
-          "ci_high": 16.681430323622244,
+          "mean": 10.54451168367652,
+          "std": 4.542924087543677,
+          "ci_low": 9.027505533005732,
+          "ci_high": 13.378693264753544,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -1745,6 +2165,34 @@
           "ci_low": 27.8,
           "ci_high": 34.2,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.1397758999555066,
+          "std": 0.05389657190680857,
+          "ci_low": 0.11709957861949274,
+          "ci_high": 0.16406341852644346,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7105680400875714,
+          "std": 0.07437079141366011,
+          "ci_low": 0.6744946886494333,
+          "ci_high": 0.7400408260779137,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.14965605995692216,
+          "std": 0.0393814178315378,
+          "ci_low": 0.13470364908686558,
+          "ci_high": 0.16950387796964272,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 169.3,
+          "std": 4.302324952859791,
+          "ci_low": 167.3,
+          "ci_high": 171.1,
+          "n_seeds": 20
         }
       },
       "agribrain_theta_pert_10": {
@@ -1791,10 +2239,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 26.734604200464673,
-          "std": 15.858303247979164,
-          "ci_low": 20.30006752995025,
-          "ci_high": 34.51293957376017,
+          "mean": 12.853261804411886,
+          "std": 6.4515438252242765,
+          "ci_low": 10.559100038967555,
+          "ci_high": 16.437073616357402,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -1852,6 +2300,34 @@
           "ci_low": 30.5,
           "ci_high": 36.2,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.11997659756528271,
+          "std": 0.05248320896782852,
+          "ci_low": 0.09893941091542156,
+          "ci_high": 0.14454390932373556,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7306507727124617,
+          "std": 0.07668927413751483,
+          "ci_low": 0.6920806391605056,
+          "ci_high": 0.7601403596814594,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.14937262972225548,
+          "std": 0.04280192853506244,
+          "ci_low": 0.13288294934657996,
+          "ci_high": 0.1709387132635528,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 169.3,
+          "std": 4.302324952859791,
+          "ci_low": 167.3,
+          "ci_high": 171.1,
+          "n_seeds": 20
         }
       },
       "agribrain_theta_pert_25": {
@@ -1898,10 +2374,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 18.610785572915727,
-          "std": 14.585557099781166,
-          "ci_low": 13.11145040606634,
-          "ci_high": 26.440769913720928,
+          "mean": 11.12779157119803,
+          "std": 4.0371116714534425,
+          "ci_low": 9.696146362426743,
+          "ci_high": 13.401886304295516,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -1959,6 +2435,34 @@
           "ci_low": 28.563215387295077,
           "ci_high": 35.8,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.1311639601998208,
+          "std": 0.056548224377349215,
+          "ci_low": 0.10532722516834285,
+          "ci_high": 0.1546964804738488,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.722874173587387,
+          "std": 0.09678432296406543,
+          "ci_low": 0.6773178151808852,
+          "ci_high": 0.7617449695218278,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.1459618662127921,
+          "std": 0.05172171040621072,
+          "ci_low": 0.12585713524434264,
+          "ci_high": 0.1714008339762914,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 169.3,
+          "std": 4.302324952859791,
+          "ci_low": 167.3,
+          "ci_high": 171.1,
+          "n_seeds": 20
         }
       },
       "agribrain_theta_pert_50": {
@@ -2005,10 +2509,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 6.328904710648607,
-          "std": 0.9282144604630999,
-          "ci_low": 5.987496289728637,
-          "ci_high": 6.825891096850435,
+          "mean": 11.341920974518873,
+          "std": 3.7536919930931942,
+          "ci_low": 9.851048203502174,
+          "ci_high": 13.167993876693442,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -2066,6 +2570,34 @@
           "ci_low": 28.8,
           "ci_high": 36.95,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.1244484640873204,
+          "std": 0.06278946418623226,
+          "ci_low": 0.09773644360920422,
+          "ci_high": 0.15234959405872192,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7345340416104722,
+          "std": 0.09848601949268229,
+          "ci_low": 0.6901877375830867,
+          "ci_high": 0.776990167995248,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.14101749430220722,
+          "std": 0.05289197096044002,
+          "ci_low": 0.11839518105588401,
+          "ci_high": 0.16468155022813694,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 169.3,
+          "std": 4.302324952859791,
+          "ci_low": 167.3,
+          "ci_high": 171.1,
+          "n_seeds": 20
         }
       }
     },
@@ -2114,10 +2646,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.0825082664960064,
-          "std": 0.006667286562786138,
-          "ci_low": 0.07988778652492622,
-          "ci_high": 0.08588011335263461,
+          "mean": 0.08453114100524949,
+          "std": 0.0031379274870730455,
+          "ci_low": 0.08321892160817829,
+          "ci_high": 0.08596940395144799,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -2174,6 +2706,34 @@
           "std": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 1.0,
+          "std": 0.0,
+          "ci_low": 1.0,
+          "ci_high": 1.0,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.0,
+          "std": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.0,
+          "std": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 200.4,
+          "std": 4.953786430600335,
+          "ci_low": 198.2,
+          "ci_high": 202.55,
           "n_seeds": 20
         }
       },
@@ -2221,10 +2781,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.15895327726159142,
-          "std": 0.012462619915165046,
-          "ci_low": 0.15440520622175377,
-          "ci_high": 0.16568728352284365,
+          "mean": 0.16382431567762978,
+          "std": 0.006256313918742211,
+          "ci_low": 0.16130367613208713,
+          "ci_high": 0.16686125272953584,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -2281,6 +2841,34 @@
           "std": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.19282079817771325,
+          "std": 0.048657152801543396,
+          "ci_low": 0.17194705110071093,
+          "ci_high": 0.21488058524598508,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7117204555163288,
+          "std": 0.06068632354307581,
+          "ci_low": 0.6858011109735311,
+          "ci_high": 0.7387178543648922,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.09545874630595788,
+          "std": 0.0408152915323309,
+          "ci_low": 0.07817652647489633,
+          "ci_high": 0.11396096561414953,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 197.35,
+          "std": 4.693346354148605,
+          "ci_low": 195.2,
+          "ci_high": 199.35,
           "n_seeds": 20
         }
       },
@@ -2328,10 +2916,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.16039320026821868,
-          "std": 0.012432358818106878,
-          "ci_low": 0.15595181552462228,
-          "ci_high": 0.16713503216419143,
+          "mean": 0.16584098719047485,
+          "std": 0.006016603994357201,
+          "ci_low": 0.16331123397113495,
+          "ci_high": 0.1686626356260501,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -2388,6 +2976,34 @@
           "std": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.162365223770668,
+          "std": 0.04541056346961675,
+          "ci_low": 0.14193907458474433,
+          "ci_high": 0.182156679973588,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.762241840693396,
+          "std": 0.07021602704949934,
+          "ci_low": 0.732359970544323,
+          "ci_high": 0.7938044158898614,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.0753929355359361,
+          "std": 0.039076391899688,
+          "ci_low": 0.05890851836797923,
+          "ci_high": 0.093262047038066,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 199.75,
+          "std": 4.678407848830625,
+          "ci_low": 197.8,
+          "ci_high": 202.0,
           "n_seeds": 20
         }
       },
@@ -2435,10 +3051,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.15982573240762574,
-          "std": 0.012166913393998441,
-          "ci_low": 0.15543294462409382,
-          "ci_high": 0.1663996365239761,
+          "mean": 0.16394825037827507,
+          "std": 0.0054194193813768094,
+          "ci_low": 0.16174936057571754,
+          "ci_high": 0.16655465443290784,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -2496,6 +3112,34 @@
           "ci_low": 0.0,
           "ci_high": 0.0,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.335145267513065,
+          "std": 0.07172472186259814,
+          "ci_low": 0.30067540753775807,
+          "ci_high": 0.3641615336159038,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6069037655026597,
+          "std": 0.07976136222039719,
+          "ci_low": 0.5737471575619625,
+          "ci_high": 0.643868658421347,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.0579509669842753,
+          "std": 0.027634320182492775,
+          "ci_low": 0.0466597933559268,
+          "ci_high": 0.07118030750739292,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 200.9,
+          "std": 4.3,
+          "ci_low": 199.05,
+          "ci_high": 202.89838233233795,
+          "n_seeds": 20
         }
       },
       "agribrain": {
@@ -2542,10 +3186,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 12.919447089209118,
-          "std": 4.340154377929691,
-          "ci_low": 11.134146147469606,
-          "ci_high": 15.014419029246508,
+          "mean": 11.683692169188161,
+          "std": 4.927999936296571,
+          "ci_low": 9.9466615060427,
+          "ci_high": 14.581260031632759,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -2603,6 +3247,34 @@
           "ci_low": 16.85,
           "ci_high": 20.35,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.12242483573258685,
+          "std": 0.045019311702006466,
+          "ci_low": 0.10456133064840249,
+          "ci_high": 0.14430945510550938,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.8087407983078195,
+          "std": 0.07172310150773392,
+          "ci_low": 0.7746329950683737,
+          "ci_high": 0.8378197811357369,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.06883436595959351,
+          "std": 0.03539626255810443,
+          "ci_low": 0.05371013668665459,
+          "ci_high": 0.0846945070459042,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 198.6,
+          "std": 7.2759879054324985,
+          "ci_low": 195.6,
+          "ci_high": 202.0,
+          "n_seeds": 20
         }
       },
       "no_context": {
@@ -2649,10 +3321,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.16122835610682765,
-          "std": 0.01111778038879298,
-          "ci_low": 0.15700457020085176,
-          "ci_high": 0.16704988205488827,
+          "mean": 0.16635933716315776,
+          "std": 0.0056740157188048135,
+          "ci_low": 0.16388293501039514,
+          "ci_high": 0.1689143595373289,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -2709,57 +3381,85 @@
           "std": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.16972226613049007,
+          "std": 0.049597401434064915,
+          "ci_low": 0.14799993877126622,
+          "ci_high": 0.1911907067508345,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7406850818837747,
+          "std": 0.09003460323473127,
+          "ci_low": 0.7011414751801741,
+          "ci_high": 0.7787011435765393,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.08959265198573527,
+          "std": 0.05290179272511615,
+          "ci_low": 0.06880034811434571,
+          "ci_high": 0.11529664780638375,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 200.1,
+          "std": 4.988987873306569,
+          "ci_low": 198.0,
+          "ci_high": 202.3,
           "n_seeds": 20
         }
       },
       "mcp_only": {
         "ari": {
-          "mean": 0.5720419123234796,
-          "std": 0.01041979234757961,
-          "ci_low": 0.5677266274283028,
-          "ci_high": 0.5767311547092354,
+          "mean": 0.5720324102198189,
+          "std": 0.01037486582459953,
+          "ci_low": 0.5677460813001551,
+          "ci_high": 0.5767115997736936,
           "n_seeds": 20
         },
         "waste": {
-          "mean": 0.04034395933200325,
-          "std": 0.005236257200179002,
-          "ci_low": 0.0380884190935887,
-          "ci_high": 0.042603205996619695,
+          "mean": 0.04034783953686649,
+          "std": 0.005231177819305134,
+          "ci_low": 0.03809915559848667,
+          "ci_high": 0.042609199265406336,
           "n_seeds": 20
         },
         "rle": {
-          "mean": 0.845275497586887,
-          "std": 0.0759059871682214,
-          "ci_low": 0.8104652314735405,
-          "ci_high": 0.8761962223812035,
+          "mean": 0.8450121694125757,
+          "std": 0.07540760539481817,
+          "ci_low": 0.8100337954587933,
+          "ci_high": 0.8758374681416801,
           "n_seeds": 20
         },
         "slca": {
-          "mean": 0.6634922697893364,
-          "std": 0.009809255489773856,
-          "ci_low": 0.65931850274726,
-          "ci_high": 0.6677999184424563,
+          "mean": 0.6634838475051354,
+          "std": 0.009741726718013974,
+          "ci_low": 0.6593391123715286,
+          "ci_high": 0.6677376083704258,
           "n_seeds": 20
         },
         "carbon": {
-          "mean": 2058.0169638021275,
-          "std": 146.2937669799964,
-          "ci_low": 1995.632332298688,
-          "ci_high": 2122.287604601008,
+          "mean": 2058.5181295547113,
+          "std": 145.64422665377194,
+          "ci_low": 1996.4286586631613,
+          "ci_high": 2122.6903565670505,
           "n_seeds": 20
         },
         "equity": {
-          "mean": 0.6093354638958648,
-          "std": 0.011712738450442376,
-          "ci_low": 0.6042271357234751,
-          "ci_high": 0.6143789466524467,
+          "mean": 0.6093349012471121,
+          "std": 0.011632546565595666,
+          "ci_low": 0.604274588612647,
+          "ci_high": 0.6143669275012237,
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 2.175926414606187,
-          "std": 1.3877934699087853,
-          "ci_low": 1.709064680593842,
-          "ci_high": 3.0008416242060023,
+          "mean": 9.11841740574649,
+          "std": 6.067247787716932,
+          "ci_low": 6.952429605213149,
+          "ci_high": 12.492450470017827,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -2791,31 +3491,59 @@
           "n_seeds": 20
         },
         "context_active_fraction": {
-          "mean": 0.6112847222222222,
-          "std": 0.03553688406773768,
-          "ci_low": 0.5923338505101359,
-          "ci_high": 0.6239583333333334,
+          "mean": 0.6027777777777777,
+          "std": 0.05072772879930465,
+          "ci_low": 0.5802083333333334,
+          "ci_high": 0.6239583333333333,
           "n_seeds": 20
         },
         "context_honor_rate": {
-          "mean": 0.7254465329308488,
-          "std": 0.0736580550195369,
-          "ci_low": 0.6949854018108997,
-          "ci_high": 0.7591078889265067,
+          "mean": 0.7370067092503757,
+          "std": 0.07026266632566958,
+          "ci_low": 0.7061316376999255,
+          "ci_high": 0.7671540828761407,
           "n_seeds": 20
         },
         "context_active_steps": {
-          "mean": 176.05,
-          "std": 10.234622611508447,
-          "ci_low": 170.57461716013458,
+          "mean": 173.6,
+          "std": 14.60958589419974,
+          "ci_low": 167.1,
           "ci_high": 179.7,
           "n_seeds": 20
         },
         "context_honored_steps": {
-          "mean": 127.6,
-          "std": 13.81086528788113,
-          "ci_low": 121.4,
-          "ci_high": 133.4,
+          "mean": 127.7,
+          "std": 14.096453454681429,
+          "ci_low": 121.2,
+          "ci_high": 133.5,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.12044493235179295,
+          "std": 0.04055603938570407,
+          "ci_low": 0.1035656726322648,
+          "ci_high": 0.1384076695679093,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7956796583746761,
+          "std": 0.08449556444475434,
+          "ci_low": 0.7575352439930455,
+          "ci_high": 0.8300330313628831,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.08387540927353095,
+          "std": 0.052360744069902786,
+          "ci_low": 0.06412177206673786,
+          "ci_high": 0.11039849375496144,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 200.1,
+          "std": 4.988987873306569,
+          "ci_low": 198.0,
+          "ci_high": 202.3,
           "n_seeds": 20
         }
       },
@@ -2863,10 +3591,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 4.895724107660095,
-          "std": 0.2581134238913121,
-          "ci_low": 4.7870143149517,
-          "ci_high": 5.01168007335724,
+          "mean": 4.975820399866075,
+          "std": 0.42425997350134254,
+          "ci_low": 4.849816057078401,
+          "ci_high": 5.277965598104315,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -2924,6 +3652,34 @@
           "ci_low": 12.15,
           "ci_high": 15.3,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.15441457349484639,
+          "std": 0.04605255640516818,
+          "ci_low": 0.133913475964828,
+          "ci_high": 0.17378152514337292,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7580111516254266,
+          "std": 0.0876445462984046,
+          "ci_low": 0.7189195902201636,
+          "ci_high": 0.79442187436141,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.087574274879727,
+          "std": 0.05303861479228799,
+          "ci_low": 0.06702414629688885,
+          "ci_high": 0.11348518620084234,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 200.1,
+          "std": 4.988987873306569,
+          "ci_low": 198.0,
+          "ci_high": 202.3,
+          "n_seeds": 20
         }
       },
       "agribrain_cold_start": {
@@ -2970,10 +3726,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 7.6738315182511645,
-          "std": 3.529895782278672,
-          "ci_low": 6.3693636946409855,
-          "ci_high": 9.518921423890953,
+          "mean": 11.415785409028306,
+          "std": 3.6436530643362275,
+          "ci_low": 9.794182097572572,
+          "ci_high": 13.002452190826995,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -3031,6 +3787,34 @@
           "ci_low": 17.9,
           "ci_high": 21.2,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.12316534627941196,
+          "std": 0.04592878320259176,
+          "ci_low": 0.10452146055544961,
+          "ci_high": 0.14514980421612705,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.8072620463598932,
+          "std": 0.07214990013397954,
+          "ci_low": 0.7733624730034246,
+          "ci_high": 0.8368012196455376,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.06957260736069489,
+          "std": 0.03551829413231538,
+          "ci_low": 0.05454812565119179,
+          "ci_high": 0.08548611643123022,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 198.6,
+          "std": 7.2759879054324985,
+          "ci_low": 195.6,
+          "ci_high": 202.0,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_10": {
@@ -3077,10 +3861,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 12.680979870169216,
-          "std": 3.8955711202099206,
-          "ci_low": 11.038129766034315,
-          "ci_high": 14.395047074594977,
+          "mean": 12.989661783568508,
+          "std": 6.77522907464329,
+          "ci_low": 10.760987327584358,
+          "ci_high": 17.138069101273445,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -3138,6 +3922,34 @@
           "ci_low": 16.55,
           "ci_high": 19.95,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.1238743619388071,
+          "std": 0.045187235904793684,
+          "ci_low": 0.10572897243990254,
+          "ci_high": 0.14558163490391596,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.8060555059480228,
+          "std": 0.07113514437700909,
+          "ci_low": 0.772125691231268,
+          "ci_high": 0.8346511971586821,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.07007013211317013,
+          "std": 0.035418220579057365,
+          "ci_low": 0.05511680623432591,
+          "ci_high": 0.08602175387477097,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 198.6,
+          "std": 7.2759879054324985,
+          "ci_low": 195.6,
+          "ci_high": 202.0,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_25": {
@@ -3184,10 +3996,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 9.736941260537908,
-          "std": 4.449794370016553,
-          "ci_low": 8.269967945703838,
-          "ci_high": 12.438655865473509,
+          "mean": 11.574005289164942,
+          "std": 4.23339410221128,
+          "ci_low": 9.974506855021287,
+          "ci_high": 13.739529732996283,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -3245,6 +4057,34 @@
           "ci_low": 16.55,
           "ci_high": 20.2,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.12362875408990504,
+          "std": 0.046399477293127434,
+          "ci_low": 0.10450970967640831,
+          "ci_high": 0.14541001168361792,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.8067986385494,
+          "std": 0.07248676461596702,
+          "ci_low": 0.773287207544842,
+          "ci_high": 0.8367864837616682,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.06957260736069489,
+          "std": 0.03551829413231538,
+          "ci_low": 0.05454812565119179,
+          "ci_high": 0.08548611643123022,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 198.6,
+          "std": 7.2759879054324985,
+          "ci_low": 195.6,
+          "ci_high": 202.0,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_50": {
@@ -3291,10 +4131,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 10.521544151318569,
-          "std": 3.779955280800822,
-          "ci_low": 8.798387807053526,
-          "ci_high": 12.151962576507316,
+          "mean": 11.706338928504717,
+          "std": 3.906372793527258,
+          "ci_low": 10.319319589050501,
+          "ci_high": 13.841200960360911,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -3352,6 +4192,34 @@
           "ci_low": 16.7,
           "ci_high": 20.3,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.12391812774312534,
+          "std": 0.045080497512981446,
+          "ci_low": 0.10580836551064333,
+          "ci_high": 0.1457939327599822,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.8060117401437046,
+          "std": 0.0712161862017215,
+          "ci_low": 0.7718758118849203,
+          "ci_high": 0.8345303128834853,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.07007013211317013,
+          "std": 0.035418220579057365,
+          "ci_low": 0.05511680623432591,
+          "ci_high": 0.08602175387477097,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 198.6,
+          "std": 7.2759879054324985,
+          "ci_low": 195.6,
+          "ci_high": 202.0,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_10_static": {
@@ -3398,10 +4266,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 9.655671338340552,
-          "std": 4.409871585831667,
-          "ci_low": 7.900799520536416,
-          "ci_high": 11.803392030034232,
+          "mean": 12.059460285996062,
+          "std": 3.9703348267037772,
+          "ci_low": 10.496601856713644,
+          "ci_high": 14.040744305231653,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -3459,6 +4327,34 @@
           "ci_low": 15.15,
           "ci_high": 18.45,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.15538952564006486,
+          "std": 0.04789343885540751,
+          "ci_low": 0.13460204026093206,
+          "ci_high": 0.17574305648145355,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7555229888495156,
+          "std": 0.0899352398941666,
+          "ci_low": 0.7157935038927645,
+          "ci_high": 0.7933320256479338,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.08908748551041953,
+          "std": 0.05306235193927497,
+          "ci_low": 0.06825009659619102,
+          "ci_high": 0.11479007881450692,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 200.1,
+          "std": 4.988987873306569,
+          "ci_low": 198.0,
+          "ci_high": 202.3,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_25_static": {
@@ -3505,10 +4401,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 8.983686555358062,
-          "std": 4.845301652061933,
-          "ci_low": 7.270205893243297,
-          "ci_high": 11.69351546227824,
+          "mean": 10.853620598936685,
+          "std": 3.275449672618376,
+          "ci_low": 9.566757602505964,
+          "ci_high": 12.489290682112722,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -3566,6 +4462,34 @@
           "ci_low": 15.15,
           "ci_high": 18.3,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.1556370503925401,
+          "std": 0.047536119544116316,
+          "ci_low": 0.135081431606424,
+          "ci_high": 0.1759073200352201,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7552754640970404,
+          "std": 0.08964989668982684,
+          "ci_low": 0.7157426987554797,
+          "ci_high": 0.7929882363503062,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.08908748551041953,
+          "std": 0.05306235193927497,
+          "ci_low": 0.06825009659619102,
+          "ci_high": 0.11479007881450692,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 200.1,
+          "std": 4.988987873306569,
+          "ci_low": 198.0,
+          "ci_high": 202.3,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_50_static": {
@@ -3612,10 +4536,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 17.802461638429023,
-          "std": 9.033462477618688,
-          "ci_low": 13.82089127332507,
-          "ci_high": 21.581896823607664,
+          "mean": 11.730496281153238,
+          "std": 2.9655643596380634,
+          "ci_low": 10.487413825911604,
+          "ci_high": 13.084972583705278,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -3673,6 +4597,34 @@
           "ci_low": 14.05,
           "ci_high": 17.75,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.15588830667394712,
+          "std": 0.04843451733519183,
+          "ci_low": 0.13495738041013086,
+          "ci_high": 0.17650328078777208,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7550242078156334,
+          "std": 0.09041056227824466,
+          "ci_low": 0.7151584680793714,
+          "ci_high": 0.7929738615938959,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.08908748551041953,
+          "std": 0.05306235193927497,
+          "ci_low": 0.06825009659619102,
+          "ci_high": 0.11479007881450692,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 200.1,
+          "std": 4.988987873306569,
+          "ci_low": 198.0,
+          "ci_high": 202.3,
+          "n_seeds": 20
         }
       },
       "agribrain_no_bonus": {
@@ -3719,10 +4671,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 22.213641197676125,
-          "std": 8.629681068680256,
-          "ci_low": 18.429449512767142,
-          "ci_high": 26.119670188539676,
+          "mean": 12.495527891345168,
+          "std": 4.555143255981925,
+          "ci_low": 10.966272997652197,
+          "ci_high": 15.18409717528182,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -3780,6 +4732,34 @@
           "ci_low": 15.55,
           "ci_high": 18.95,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.17919599020236995,
+          "std": 0.05115772501072316,
+          "ci_low": 0.15682346296454405,
+          "ci_high": 0.2007730075879338,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7324639325934986,
+          "std": 0.08891031153611677,
+          "ci_low": 0.6938552413204769,
+          "ci_high": 0.7702865108842942,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.08834007720413152,
+          "std": 0.05285207445989855,
+          "ci_low": 0.06755819337393257,
+          "ci_high": 0.11393715916867544,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 200.1,
+          "std": 4.988987873306569,
+          "ci_low": 198.0,
+          "ci_high": 202.3,
+          "n_seeds": 20
         }
       },
       "agribrain_theta_pert_10": {
@@ -3826,10 +4806,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 26.03037448295961,
-          "std": 15.143482965516885,
-          "ci_low": 19.531410730944955,
-          "ci_high": 32.899539862597386,
+          "mean": 12.764286278171415,
+          "std": 4.460361698533691,
+          "ci_low": 11.204334599533889,
+          "ci_high": 15.274762961378944,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -3887,6 +4867,34 @@
           "ci_low": 15.95,
           "ci_high": 19.4,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.15840153590258843,
+          "std": 0.04936575528473736,
+          "ci_low": 0.137059019103844,
+          "ci_high": 0.17930751711627327,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7520298472808058,
+          "std": 0.09178079186726658,
+          "ci_low": 0.7113516950600506,
+          "ci_high": 0.7905516097302725,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.0895686168166058,
+          "std": 0.053168233787369436,
+          "ci_low": 0.06859453989964888,
+          "ci_high": 0.11498972179234668,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 200.1,
+          "std": 4.988987873306569,
+          "ci_low": 198.0,
+          "ci_high": 202.3,
+          "n_seeds": 20
         }
       },
       "agribrain_theta_pert_25": {
@@ -3933,10 +4941,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 13.056639825259074,
-          "std": 4.824881370416535,
-          "ci_low": 11.024891188789061,
-          "ci_high": 15.257379092112886,
+          "mean": 11.7700014611829,
+          "std": 3.513314284467142,
+          "ci_low": 10.373275066906697,
+          "ci_high": 13.55256814539539,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -3994,6 +5002,34 @@
           "ci_low": 15.65,
           "ci_high": 19.15,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.1690539344821936,
+          "std": 0.06099257821813465,
+          "ci_low": 0.14284364904285946,
+          "ci_high": 0.19612760548318817,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7427900365917054,
+          "std": 0.09724579401823684,
+          "ci_low": 0.7000121695557342,
+          "ci_high": 0.7835826347535295,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.08815602892610098,
+          "std": 0.05581264678747218,
+          "ci_low": 0.0664028822519663,
+          "ci_high": 0.1153163543583248,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 200.1,
+          "std": 4.988987873306569,
+          "ci_low": 198.0,
+          "ci_high": 202.3,
+          "n_seeds": 20
         }
       },
       "agribrain_theta_pert_50": {
@@ -4040,10 +5076,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 9.93527862099452,
-          "std": 3.5073444794396087,
-          "ci_low": 8.561901375139987,
-          "ci_high": 11.718103626047146,
+          "mean": 13.633026703367554,
+          "std": 3.832779710157559,
+          "ci_low": 12.120975856495127,
+          "ci_high": 15.458539149566711,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -4101,6 +5137,34 @@
           "ci_low": 15.95,
           "ci_high": 19.4,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.16315071906877915,
+          "std": 0.06645040617452974,
+          "ci_low": 0.1346231823247017,
+          "ci_high": 0.19237130671569516,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.754448877968005,
+          "std": 0.09767683795792996,
+          "ci_low": 0.708422366185937,
+          "ci_high": 0.7935349844585486,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.08240040296321602,
+          "std": 0.051981051180007995,
+          "ci_low": 0.06300639046193868,
+          "ci_high": 0.10904862471047126,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 200.1,
+          "std": 4.988987873306569,
+          "ci_low": 198.0,
+          "ci_high": 202.3,
+          "n_seeds": 20
         }
       }
     },
@@ -4149,10 +5213,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.08115073691846594,
-          "std": 0.005536995325841224,
-          "ci_low": 0.07911289325860225,
-          "ci_high": 0.08402157390378673,
+          "mean": 0.08455118190290199,
+          "std": 0.003311176157564326,
+          "ci_low": 0.08315127442823708,
+          "ci_high": 0.08606816043198263,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -4209,6 +5273,34 @@
           "std": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 1.0,
+          "std": 0.0,
+          "ci_low": 1.0,
+          "ci_high": 1.0,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.0,
+          "std": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.0,
+          "std": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 188.35,
+          "std": 3.8765319552404054,
+          "ci_low": 186.45,
+          "ci_high": 189.9,
           "n_seeds": 20
         }
       },
@@ -4256,10 +5348,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.1211100397793214,
-          "std": 0.007315353398681196,
-          "ci_low": 0.11848810420421127,
-          "ci_high": 0.12510388176400336,
+          "mean": 0.12595929478670265,
+          "std": 0.004390079455252577,
+          "ci_low": 0.1241392048474363,
+          "ci_high": 0.12802452746293888,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -4316,6 +5408,34 @@
           "std": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.46970013851093634,
+          "std": 0.031144726669989537,
+          "ci_low": 0.45430458615737485,
+          "ci_high": 0.48175460680629845,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.526390990628296,
+          "std": 0.029060409633039398,
+          "ci_low": 0.5152576035271585,
+          "ci_high": 0.5407246464100354,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.0039088708607677315,
+          "std": 0.006157487454004864,
+          "ci_low": 0.0018077410729473958,
+          "ci_high": 0.0073352499492761476,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 189.95,
+          "std": 5.417333292312741,
+          "ci_low": 187.45,
+          "ci_high": 192.2,
           "n_seeds": 20
         }
       },
@@ -4363,10 +5483,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.12080465643925384,
-          "std": 0.006238469640458555,
-          "ci_low": 0.11868426830914988,
-          "ci_high": 0.12451978381440654,
+          "mean": 0.12717045756289738,
+          "std": 0.004966324456909863,
+          "ci_low": 0.12505981518835257,
+          "ci_high": 0.12948096924215297,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -4423,6 +5543,34 @@
           "std": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.3332068631071136,
+          "std": 0.026417888151212477,
+          "ci_low": 0.32233334167595384,
+          "ci_high": 0.3456643987088895,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6620335190966085,
+          "std": 0.0270131856046688,
+          "ci_low": 0.6494625187681455,
+          "ci_high": 0.6732333386136471,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.004759617796278049,
+          "std": 0.004408613844178321,
+          "ci_low": 0.003136335750491572,
+          "ci_high": 0.006906169903888645,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 190.0,
+          "std": 3.6193922141707713,
+          "ci_low": 188.45,
+          "ci_high": 191.5872192497248,
           "n_seeds": 20
         }
       },
@@ -4470,10 +5618,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.1211438094388642,
-          "std": 0.007941557639222397,
-          "ci_low": 0.11830607227657816,
-          "ci_high": 0.12556693948782208,
+          "mean": 0.1269182675362875,
+          "std": 0.004972876588166271,
+          "ci_low": 0.12483580128306093,
+          "ci_high": 0.12926874546349928,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -4531,6 +5679,34 @@
           "ci_low": 0.0,
           "ci_high": 0.0,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.31147312430028756,
+          "std": 0.033225282868393595,
+          "ci_low": 0.2994535465688992,
+          "ci_high": 0.3301988853880868,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6864094345619547,
+          "std": 0.032905131532503615,
+          "ci_low": 0.6683938309245018,
+          "ci_high": 0.698532911689271,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.0021174411377577747,
+          "std": 0.003082358501924558,
+          "ci_low": 0.0010432807908095111,
+          "ci_high": 0.003708648921090607,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 188.95,
+          "std": 5.6167161224331075,
+          "ci_low": 186.45,
+          "ci_high": 191.4,
+          "n_seeds": 20
         }
       },
       "agribrain": {
@@ -4577,10 +5753,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 8.359867240991054,
-          "std": 2.0076547746387168,
-          "ci_low": 7.496064984834678,
-          "ci_high": 9.260077343163097,
+          "mean": 12.28595296941219,
+          "std": 4.779215115911986,
+          "ci_low": 10.59165967806358,
+          "ci_high": 14.903777478331143,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -4638,6 +5814,34 @@
           "ci_low": 36.35,
           "ci_high": 42.15,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.2834056899413168,
+          "std": 0.02575037331074576,
+          "ci_low": 0.2725218546969069,
+          "ci_high": 0.29497338198252654,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.714484648733246,
+          "std": 0.027445622986911472,
+          "ci_low": 0.7022596556594887,
+          "ci_high": 0.7261577427801682,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.002109661325437156,
+          "std": 0.0030832750668107673,
+          "ci_low": 0.0010457713327822172,
+          "ci_high": 0.0036963942200188647,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 188.15,
+          "std": 2.8332843133014376,
+          "ci_low": 186.75,
+          "ci_high": 189.25,
+          "n_seeds": 20
         }
       },
       "no_context": {
@@ -4684,10 +5888,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.11896388500139843,
-          "std": 0.004097760676145105,
-          "ci_low": 0.11787709800195853,
-          "ci_high": 0.12257182276045081,
+          "mean": 0.12838336559879177,
+          "std": 0.0049064984595675815,
+          "ci_low": 0.12636357420118885,
+          "ci_high": 0.1307320995243493,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -4744,6 +5948,34 @@
           "std": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.2719325803893267,
+          "std": 0.028651687522384266,
+          "ci_low": 0.2589614584545593,
+          "ci_high": 0.2837922288217027,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7256881033460318,
+          "std": 0.029791888931314268,
+          "ci_low": 0.7131970916994346,
+          "ci_high": 0.7391019814969034,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.0023793162646414175,
+          "std": 0.003104508337280843,
+          "ci_low": 0.001081296920768677,
+          "ci_high": 0.00395090566185637,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 188.65,
+          "std": 4.292726406376255,
+          "ci_low": 186.7,
+          "ci_high": 190.45,
           "n_seeds": 20
         }
       },
@@ -4791,10 +6023,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 4.559032304516425,
-          "std": 5.180829921881663,
-          "ci_low": 2.8838403764522735,
-          "ci_high": 7.822393039652222,
+          "mean": 7.208000873086147,
+          "std": 3.6213166598565554,
+          "ci_low": 5.84221814439666,
+          "ci_high": 9.096460798167437,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -4826,31 +6058,59 @@
           "n_seeds": 20
         },
         "context_active_fraction": {
-          "mean": 0.51875,
-          "std": 0.033383931504783096,
-          "ci_low": 0.5048611111111112,
-          "ci_high": 0.5340277777777777,
+          "mean": 0.5192708333333333,
+          "std": 0.033331072695333475,
+          "ci_low": 0.5053819444444445,
+          "ci_high": 0.5343749999999999,
           "n_seeds": 20
         },
         "context_honor_rate": {
-          "mean": 0.637108749133567,
-          "std": 0.034027830287099714,
-          "ci_low": 0.6223896542691192,
-          "ci_high": 0.6516446273649613,
+          "mean": 0.637142762739009,
+          "std": 0.0340236992052361,
+          "ci_low": 0.6224214443046873,
+          "ci_high": 0.6516738618019776,
           "n_seeds": 20
         },
         "context_active_steps": {
-          "mean": 149.4,
-          "std": 9.614572273377533,
-          "ci_low": 145.4,
-          "ci_high": 153.75,
+          "mean": 149.55,
+          "std": 9.599348936256042,
+          "ci_low": 145.55,
+          "ci_high": 153.9,
           "n_seeds": 20
         },
         "context_honored_steps": {
-          "mean": 95.2,
-          "std": 8.219489035213806,
-          "ci_low": 91.85,
-          "ci_high": 99.05,
+          "mean": 95.3,
+          "std": 8.204267182387467,
+          "ci_low": 91.95,
+          "ci_high": 99.15,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.2919280074539893,
+          "std": 0.030937303838479535,
+          "ci_low": 0.27874667877608705,
+          "ci_high": 0.3057908358403505,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7051634424104015,
+          "std": 0.03284909504188709,
+          "ci_low": 0.6903292991030392,
+          "ci_high": 0.7189496724825464,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.0029085501356091595,
+          "std": 0.004237558188338413,
+          "ci_low": 0.0013399737938633502,
+          "ci_high": 0.005267194850149867,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 188.65,
+          "std": 4.292726406376255,
+          "ci_low": 186.7,
+          "ci_high": 190.45,
           "n_seeds": 20
         }
       },
@@ -4898,10 +6158,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 4.389171338940893,
-          "std": 0.0472647474749916,
-          "ci_low": 4.3712200668196655,
-          "ci_high": 4.414631524833686,
+          "mean": 4.6192211058547,
+          "std": 0.10940262826465924,
+          "ci_low": 4.576044433453619,
+          "ci_high": 4.673972012519285,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -4959,6 +6219,34 @@
           "ci_low": 33.2,
           "ci_high": 37.6,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.2998679061855961,
+          "std": 0.02951684870402037,
+          "ci_low": 0.2871877398969512,
+          "ci_high": 0.3127944891983702,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6977527775497625,
+          "std": 0.030648587358519944,
+          "ci_low": 0.6841871331479169,
+          "ci_high": 0.7108205212630058,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.0023793162646414175,
+          "std": 0.003104508337280843,
+          "ci_low": 0.001081296920768677,
+          "ci_high": 0.00395090566185637,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 188.65,
+          "std": 4.292726406376255,
+          "ci_low": 186.7,
+          "ci_high": 190.45,
+          "n_seeds": 20
         }
       },
       "agribrain_cold_start": {
@@ -5005,10 +6293,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 19.961874654351657,
-          "std": 11.26174276937222,
-          "ci_low": 15.035806866136019,
-          "ci_high": 25.00614890441568,
+          "mean": 12.457155794739567,
+          "std": 5.358918044563384,
+          "ci_low": 10.507768978945325,
+          "ci_high": 15.342829595779767,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -5066,6 +6354,34 @@
           "ci_low": 47.75,
           "ci_high": 51.8,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.27812088875045304,
+          "std": 0.02266191226960462,
+          "ci_low": 0.2686949526265036,
+          "ci_high": 0.2885638209441455,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7197694499241096,
+          "std": 0.024460803833399786,
+          "ci_low": 0.7085810856240088,
+          "ci_high": 0.7299557140191982,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.002109661325437156,
+          "std": 0.0030832750668107673,
+          "ci_low": 0.0010457713327822172,
+          "ci_high": 0.0036963942200188647,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 188.15,
+          "std": 2.8332843133014376,
+          "ci_low": 186.75,
+          "ci_high": 189.25,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_10": {
@@ -5112,10 +6428,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 10.134764034268704,
-          "std": 3.616494939752007,
-          "ci_low": 8.572134754647562,
-          "ci_high": 11.750069487263284,
+          "mean": 10.826363011761309,
+          "std": 3.1964188850917026,
+          "ci_low": 9.596585737610665,
+          "ci_high": 12.46472041709048,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -5173,6 +6489,34 @@
           "ci_low": 35.95,
           "ci_high": 41.9,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.2839348052828622,
+          "std": 0.025570598411908778,
+          "ci_low": 0.2730586866630991,
+          "ci_high": 0.2953192433813068,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7139555333917007,
+          "std": 0.02728687547882706,
+          "ci_low": 0.7019241437569674,
+          "ci_high": 0.7256719241093696,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.002109661325437156,
+          "std": 0.0030832750668107673,
+          "ci_low": 0.0010457713327822172,
+          "ci_high": 0.0036963942200188647,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 188.15,
+          "std": 2.8332843133014376,
+          "ci_low": 186.75,
+          "ci_high": 189.25,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_25": {
@@ -5219,10 +6563,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 16.18550772594366,
-          "std": 9.717442185221861,
-          "ci_low": 12.065045678258752,
-          "ci_high": 20.513340638091222,
+          "mean": 12.390767286382873,
+          "std": 5.312371258624559,
+          "ci_low": 10.487656867418053,
+          "ci_high": 15.35432168534981,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -5280,6 +6624,34 @@
           "ci_low": 36.05,
           "ci_high": 42.05,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.28393062794076573,
+          "std": 0.02585339012071068,
+          "ci_low": 0.2728258062546208,
+          "ci_high": 0.29537158461565577,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7139597107337972,
+          "std": 0.027602076542727942,
+          "ci_low": 0.7017708302455505,
+          "ci_high": 0.7257899120401983,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.002109661325437156,
+          "std": 0.0030832750668107673,
+          "ci_low": 0.0010457713327822172,
+          "ci_high": 0.0036963942200188647,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 188.15,
+          "std": 2.8332843133014376,
+          "ci_low": 186.75,
+          "ci_high": 189.25,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_50": {
@@ -5326,10 +6698,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 17.867700533598615,
-          "std": 13.642431277036001,
-          "ci_low": 12.259662314223746,
-          "ci_high": 23.967839538483542,
+          "mean": 11.930892010746497,
+          "std": 3.86222958697655,
+          "ci_low": 10.43316563792107,
+          "ci_high": 13.84642935929208,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -5387,6 +6759,34 @@
           "ci_low": 36.05,
           "ci_high": 41.35,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.283936183072887,
+          "std": 0.025854251986567576,
+          "ci_low": 0.27293969304464205,
+          "ci_high": 0.2954690258139823,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.713954155601676,
+          "std": 0.02760298327718706,
+          "ci_low": 0.7017681886861384,
+          "ci_high": 0.7257467615424652,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.002109661325437156,
+          "std": 0.0030832750668107673,
+          "ci_low": 0.0010457713327822172,
+          "ci_high": 0.0036963942200188647,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 188.15,
+          "std": 2.8332843133014376,
+          "ci_low": 186.75,
+          "ci_high": 189.25,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_10_static": {
@@ -5433,10 +6833,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 10.95186810392382,
-          "std": 7.622573481578467,
-          "ci_low": 8.236145984787994,
-          "ci_high": 14.916370340810069,
+          "mean": 11.356115696657476,
+          "std": 4.903017591827436,
+          "ci_low": 9.588159655895362,
+          "ci_high": 13.970659192631462,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -5494,6 +6894,34 @@
           "ci_low": 30.2,
           "ci_high": 34.45,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.2669028321040397,
+          "std": 0.026757032663906177,
+          "ci_low": 0.25494186373765637,
+          "ci_high": 0.27810287639607334,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7301886177603512,
+          "std": 0.028111524862035803,
+          "ci_low": 0.7184022398563732,
+          "ci_high": 0.7428409703782077,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.0029085501356091595,
+          "std": 0.004237558188338413,
+          "ci_low": 0.0013399737938633502,
+          "ci_high": 0.005267194850149867,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 188.65,
+          "std": 4.292726406376255,
+          "ci_low": 186.7,
+          "ci_high": 190.45,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_25_static": {
@@ -5540,10 +6968,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 15.351070445790862,
-          "std": 8.292749433693011,
-          "ci_low": 11.966961583640295,
-          "ci_high": 19.32453140122899,
+          "mean": 11.755021964038152,
+          "std": 4.5038092272685795,
+          "ci_low": 10.303556893187631,
+          "ci_high": 14.577232557451172,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -5601,6 +7029,34 @@
           "ci_low": 30.05,
           "ci_high": 34.25,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.26717457123447447,
+          "std": 0.026721954429412605,
+          "ci_low": 0.25514828061545375,
+          "ci_high": 0.27832033610312756,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7299168786299164,
+          "std": 0.028102577000163956,
+          "ci_low": 0.7181710981234597,
+          "ci_high": 0.7425235938907901,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.0029085501356091595,
+          "std": 0.004237558188338413,
+          "ci_low": 0.0013399737938633502,
+          "ci_high": 0.005267194850149867,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 188.65,
+          "std": 4.292726406376255,
+          "ci_low": 186.7,
+          "ci_high": 190.45,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_50_static": {
@@ -5647,10 +7103,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 16.42213022981499,
-          "std": 10.011627258606008,
-          "ci_low": 12.3507524130258,
-          "ci_high": 21.09662569663472,
+          "mean": 10.523228390067946,
+          "std": 6.160400230131649,
+          "ci_low": 8.783009414819357,
+          "ci_high": 15.568964604310954,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -5708,6 +7164,34 @@
           "ci_low": 27.0,
           "ci_high": 33.1,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.26744025232732377,
+          "std": 0.026870636088202195,
+          "ci_low": 0.2553207696594589,
+          "ci_high": 0.27877241941807546,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.729651197537067,
+          "std": 0.02826139054270559,
+          "ci_low": 0.7177551880278421,
+          "ci_high": 0.7424056299508716,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.0029085501356091595,
+          "std": 0.004237558188338413,
+          "ci_low": 0.0013399737938633502,
+          "ci_high": 0.005267194850149867,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 188.65,
+          "std": 4.292726406376255,
+          "ci_low": 186.7,
+          "ci_high": 190.45,
+          "n_seeds": 20
         }
       },
       "agribrain_no_bonus": {
@@ -5754,10 +7238,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 31.603319563146208,
-          "std": 21.576048012418244,
-          "ci_low": 23.328410798228003,
-          "ci_high": 42.484261368838546,
+          "mean": 12.779677146803202,
+          "std": 4.990503811765426,
+          "ci_low": 10.722705267846212,
+          "ci_high": 15.09493204932273,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -5815,6 +7299,34 @@
           "ci_low": 33.15,
           "ci_high": 37.3,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.2655902998919764,
+          "std": 0.026347373554410844,
+          "ci_low": 0.2540894980418162,
+          "ci_high": 0.2769230879349555,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7317699671767155,
+          "std": 0.02762041912813767,
+          "ci_low": 0.719884262749323,
+          "ci_high": 0.7437640852025862,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.002639732931308084,
+          "std": 0.0038874943064368416,
+          "ci_low": 0.0013234787828801955,
+          "ci_high": 0.0049706909630489625,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 188.65,
+          "std": 4.292726406376255,
+          "ci_low": 186.7,
+          "ci_high": 190.45,
+          "n_seeds": 20
         }
       },
       "agribrain_theta_pert_10": {
@@ -5861,10 +7373,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 14.835892545913037,
-          "std": 13.333210642201589,
-          "ci_low": 10.302937222594787,
-          "ci_high": 22.706883099491087,
+          "mean": 12.258760787436687,
+          "std": 5.619276129515784,
+          "ci_low": 9.969883911074024,
+          "ci_high": 15.006206483180812,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -5922,6 +7434,34 @@
           "ci_low": 34.9,
           "ci_high": 39.1,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.2634754915093146,
+          "std": 0.0271514868970593,
+          "ci_low": 0.2513823308724416,
+          "ci_high": 0.2748239442013946,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7338819158018847,
+          "std": 0.028319019673391774,
+          "ci_low": 0.7220623956955062,
+          "ci_high": 0.7465587842812981,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.0026425926888006485,
+          "std": 0.004244832140585222,
+          "ci_low": 0.0010884414350201947,
+          "ci_high": 0.00502673276770818,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 188.65,
+          "std": 4.292726406376255,
+          "ci_low": 186.7,
+          "ci_high": 190.45,
+          "n_seeds": 20
         }
       },
       "agribrain_theta_pert_25": {
@@ -5968,10 +7508,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 6.908641999568014,
-          "std": 1.4868900784284746,
-          "ci_low": 6.336628189391716,
-          "ci_high": 7.657776628700054,
+          "mean": 10.697062672746444,
+          "std": 3.082506025405887,
+          "ci_low": 9.452146922363823,
+          "ci_high": 12.219910669007835,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -6029,6 +7569,34 @@
           "ci_low": 33.9368701246394,
           "ci_high": 38.2,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.26503101497961307,
+          "std": 0.02758664751281089,
+          "ci_low": 0.2526832746092428,
+          "ci_high": 0.2764505081129602,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7323146905300393,
+          "std": 0.02776141674152334,
+          "ci_low": 0.7208792311713411,
+          "ci_high": 0.7448728697899278,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.002654294490347527,
+          "std": 0.0031252876378784606,
+          "ci_low": 0.0013477563094968343,
+          "ci_high": 0.004206543018869763,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 188.65,
+          "std": 4.292726406376255,
+          "ci_low": 186.7,
+          "ci_high": 190.45,
+          "n_seeds": 20
         }
       },
       "agribrain_theta_pert_50": {
@@ -6075,10 +7643,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 11.912626967225354,
-          "std": 7.484479713994416,
-          "ci_low": 9.202636177764262,
-          "ci_high": 15.8505550208882,
+          "mean": 11.108318028709618,
+          "std": 4.336890671639246,
+          "ci_low": 9.49057425176842,
+          "ci_high": 13.327504379853677,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -6136,6 +7704,34 @@
           "ci_low": 34.45,
           "ci_high": 39.6,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.2629346211247569,
+          "std": 0.028097098762893468,
+          "ci_low": 0.25064786099182257,
+          "ci_high": 0.2745620788590601,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7347016695397224,
+          "std": 0.028827447081144864,
+          "ci_low": 0.7227452640971361,
+          "ci_high": 0.7474849878847654,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.002363709335520569,
+          "std": 0.0038692411178529395,
+          "ci_low": 0.0010582908885116015,
+          "ci_high": 0.0047171421065596774,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 188.65,
+          "std": 4.292726406376255,
+          "ci_low": 186.7,
+          "ci_high": 190.45,
+          "n_seeds": 20
         }
       }
     },
@@ -6184,10 +7780,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.07943626058274983,
-          "std": 0.0011798766652883453,
-          "ci_low": 0.07890973667622322,
-          "ci_high": 0.0799390014386083,
+          "mean": 0.0866037342348136,
+          "std": 0.0034410943452714807,
+          "ci_low": 0.08516322722636052,
+          "ci_high": 0.08817663209948723,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -6244,6 +7840,34 @@
           "std": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 1.0,
+          "std": 0.0,
+          "ci_low": 1.0,
+          "ci_high": 1.0,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.0,
+          "std": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.0,
+          "std": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 67.55,
+          "std": 7.074425771749959,
+          "ci_low": 64.7,
+          "ci_high": 71.05,
           "n_seeds": 20
         }
       },
@@ -6291,10 +7915,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.1532666447423657,
-          "std": 0.0014156540712175112,
-          "ci_low": 0.15257130231873245,
-          "ci_high": 0.1538236685742548,
+          "mean": 0.16746740641085328,
+          "std": 0.006946317162928595,
+          "ci_low": 0.16471882396254267,
+          "ci_high": 0.1708956843175496,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -6351,6 +7975,34 @@
           "std": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.342074649815174,
+          "std": 0.08304603589808955,
+          "ci_low": 0.3004240297074294,
+          "ci_high": 0.3750086848226569,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.5644951259986626,
+          "std": 0.08533297063567304,
+          "ci_low": 0.5307392766048386,
+          "ci_high": 0.6073497927033507,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.09343022418616342,
+          "std": 0.046605835367283875,
+          "ci_low": 0.07422496765480872,
+          "ci_high": 0.1145258827389042,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 66.75,
+          "std": 6.370831970786861,
+          "ci_low": 64.0,
+          "ci_high": 69.6,
           "n_seeds": 20
         }
       },
@@ -6398,10 +8050,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.15462706360267478,
-          "std": 0.0014344017018644744,
-          "ci_low": 0.15398558133466964,
-          "ci_high": 0.15523904755703813,
+          "mean": 0.16902808670743577,
+          "std": 0.0063860929750108285,
+          "ci_low": 0.16633619182421172,
+          "ci_high": 0.17194409449030312,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -6458,6 +8110,34 @@
           "std": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.32275886756332417,
+          "std": 0.08221036975203254,
+          "ci_low": 0.28609960965028686,
+          "ci_high": 0.35822434024246885,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.5958687479920018,
+          "std": 0.09700047071424486,
+          "ci_low": 0.5545058494871279,
+          "ci_high": 0.6380501851207309,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.08137238444467403,
+          "std": 0.04381587977172109,
+          "ci_low": 0.06220025344017282,
+          "ci_high": 0.1004824879947619,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 64.95,
+          "std": 6.837214345038483,
+          "ci_low": 61.95,
+          "ci_high": 67.95,
           "n_seeds": 20
         }
       },
@@ -6505,10 +8185,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.15328680367221953,
-          "std": 0.0015298111721602213,
-          "ci_low": 0.1525918723903138,
-          "ci_high": 0.15393457985300504,
+          "mean": 0.1681697134497679,
+          "std": 0.006753790936628395,
+          "ci_low": 0.16535652582747248,
+          "ci_high": 0.17131835870851697,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -6566,6 +8246,34 @@
           "ci_low": 0.0,
           "ci_high": 0.0,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.5444394532005452,
+          "std": 0.10015779526980031,
+          "ci_low": 0.5010513702783372,
+          "ci_high": 0.589117022089996,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.40916584405316075,
+          "std": 0.10259384506984216,
+          "ci_low": 0.36499690392263856,
+          "ci_high": 0.45492550414148775,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.04639470274629402,
+          "std": 0.0298396847938318,
+          "ci_low": 0.03340287158722428,
+          "ci_high": 0.05970900668932303,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 67.7,
+          "std": 6.81248853210044,
+          "ci_low": 64.5,
+          "ci_high": 70.45,
+          "n_seeds": 20
         }
       },
       "agribrain": {
@@ -6612,10 +8320,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 11.350688066078066,
-          "std": 4.806376345327086,
-          "ci_low": 9.248020329495585,
-          "ci_high": 13.483922881358431,
+          "mean": 11.026826474052438,
+          "std": 4.4516896733436795,
+          "ci_low": 9.317581584097352,
+          "ci_high": 13.293950594605825,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -6673,6 +8381,34 @@
           "ci_low": 34.55,
           "ci_high": 39.1,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.23354446876147308,
+          "std": 0.061201246504819944,
+          "ci_low": 0.2085695258574718,
+          "ci_high": 0.2624671551090086,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6872328243933226,
+          "std": 0.09476611713875278,
+          "ci_low": 0.6365747262408135,
+          "ci_high": 0.7222658735413727,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.07922270684520441,
+          "std": 0.047904124356376206,
+          "ci_low": 0.059245377094787964,
+          "ci_high": 0.10148941802915422,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 64.3,
+          "std": 7.121095421351971,
+          "ci_low": 61.5,
+          "ci_high": 67.7,
+          "n_seeds": 20
         }
       },
       "no_context": {
@@ -6719,10 +8455,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.15517793379129013,
-          "std": 0.001496449722623821,
-          "ci_low": 0.15453207807122857,
-          "ci_high": 0.15585666256051975,
+          "mean": 0.16858133409793177,
+          "std": 0.0057553676486275735,
+          "ci_low": 0.16622906284135683,
+          "ci_high": 0.17136963100111086,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -6779,57 +8515,85 @@
           "std": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.34086982079498085,
+          "std": 0.08983577318315887,
+          "ci_low": 0.2932527230375688,
+          "ci_high": 0.373882585399243,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.5609191892204659,
+          "std": 0.10623838296843273,
+          "ci_low": 0.5180760203392014,
+          "ci_high": 0.6127630643865494,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.09821098998455331,
+          "std": 0.04849192296991321,
+          "ci_low": 0.07842743383739773,
+          "ci_high": 0.12084765336684374,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 68.2,
+          "std": 8.328265125462805,
+          "ci_low": 64.65,
+          "ci_high": 71.9,
           "n_seeds": 20
         }
       },
       "mcp_only": {
         "ari": {
-          "mean": 0.6521930863932938,
-          "std": 0.013194968189816752,
-          "ci_low": 0.6467072210820257,
-          "ci_high": 0.6582621022916586,
+          "mean": 0.6521443233073614,
+          "std": 0.013250990749944841,
+          "ci_low": 0.6466356289879537,
+          "ci_high": 0.6582334685155528,
           "n_seeds": 20
         },
         "waste": {
-          "mean": 0.029789300447603202,
-          "std": 0.004620711646931999,
-          "ci_low": 0.027775508835927318,
-          "ci_high": 0.03186694089078177,
+          "mean": 0.029805539613659088,
+          "std": 0.004627129594227376,
+          "ci_low": 0.027784731098403213,
+          "ci_high": 0.031883291681502376,
           "n_seeds": 20
         },
         "rle": {
-          "mean": 0.7456541114238762,
-          "std": 0.0897285120807409,
-          "ci_low": 0.7058556383207405,
-          "ci_high": 0.7846034252536146,
+          "mean": 0.7447866089116314,
+          "std": 0.0911108646483694,
+          "ci_low": 0.7046261146658996,
+          "ci_high": 0.7844629691325061,
           "n_seeds": 20
         },
         "slca": {
-          "mean": 0.7178959439046918,
-          "std": 0.013293731119190287,
-          "ci_low": 0.7123398311885858,
-          "ci_high": 0.7239080227782007,
+          "mean": 0.7178497491854723,
+          "std": 0.013355439289005946,
+          "ci_low": 0.7122663276171803,
+          "ci_high": 0.7238967441979365,
           "n_seeds": 20
         },
         "carbon": {
-          "mean": 2251.0337976144524,
-          "std": 157.9672620130811,
-          "ci_low": 2178.5615414080767,
-          "ci_high": 2316.4167060117697,
+          "mean": 2251.690839405248,
+          "std": 158.86297594100301,
+          "ci_low": 2178.8812180586906,
+          "ci_high": 2317.490304607824,
           "n_seeds": 20
         },
         "equity": {
-          "mean": 0.6532330244282217,
-          "std": 0.014797464206385,
-          "ci_low": 0.6472338189511279,
-          "ci_high": 0.660184230377403,
+          "mean": 0.6531698272935375,
+          "std": 0.01486006711733576,
+          "ci_low": 0.6471259103057814,
+          "ci_high": 0.6601473268417468,
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 8.23304976107061,
-          "std": 7.405587352801262,
-          "ci_low": 5.562992355693966,
-          "ci_high": 12.252490145593903,
+          "mean": 7.11744955082799,
+          "std": 4.423935489382184,
+          "ci_low": 5.652952332130628,
+          "ci_high": 9.824027964130277,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -6861,31 +8625,59 @@
           "n_seeds": 20
         },
         "context_active_fraction": {
-          "mean": 0.4333333333333333,
-          "std": 0.04110735718596873,
-          "ci_low": 0.4148133114272863,
-          "ci_high": 0.45121527777777776,
+          "mean": 0.4336805555555555,
+          "std": 0.04097957796494719,
+          "ci_low": 0.4149305555555555,
+          "ci_high": 0.4513888888888889,
           "n_seeds": 20
         },
         "context_honor_rate": {
-          "mean": 0.6036132892346475,
-          "std": 0.08486404134801029,
-          "ci_low": 0.5663265682099784,
-          "ci_high": 0.6402035782622946,
+          "mean": 0.6034663288871125,
+          "std": 0.09208428417324546,
+          "ci_low": 0.5629742531903201,
+          "ci_high": 0.6427110574181382,
           "n_seeds": 20
         },
         "context_active_steps": {
-          "mean": 124.8,
-          "std": 11.838918869558995,
-          "ci_low": 119.45277018395949,
-          "ci_high": 129.95,
+          "mean": 124.9,
+          "std": 11.802118453904791,
+          "ci_low": 119.5,
+          "ci_high": 130.0,
           "n_seeds": 20
         },
         "context_honored_steps": {
-          "mean": 75.3,
-          "std": 12.95414991421668,
-          "ci_low": 70.0,
-          "ci_high": 81.5,
+          "mean": 75.25,
+          "std": 13.266028041580494,
+          "ci_low": 69.9,
+          "ci_high": 81.7,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.24512544035143433,
+          "std": 0.08458474861447397,
+          "ci_low": 0.20701273302842305,
+          "ci_high": 0.2811598436224327,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6583466615953733,
+          "std": 0.11054159262363014,
+          "ci_low": 0.6086205131063058,
+          "ci_high": 0.7054917914950812,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.09652789805319233,
+          "std": 0.049474729938453074,
+          "ci_low": 0.0764992965139628,
+          "ci_high": 0.1193371879137319,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 68.2,
+          "std": 8.328265125462805,
+          "ci_low": 64.65,
+          "ci_high": 71.9,
           "n_seeds": 20
         }
       },
@@ -6933,10 +8725,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 4.687237624683703,
-          "std": 0.3832328760212378,
-          "ci_low": 4.534174657768796,
-          "ci_high": 4.875585557730391,
+          "mean": 4.638119396986442,
+          "std": 0.09544032329388492,
+          "ci_low": 4.596769836489815,
+          "ci_high": 4.6813011673492655,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -6994,6 +8786,34 @@
           "ci_low": 28.85,
           "ci_high": 34.55,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.2778173783155454,
+          "std": 0.09408174570007487,
+          "ci_low": 0.23326237061819113,
+          "ci_high": 0.3163660174218414,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.625347951458574,
+          "std": 0.12170549183699735,
+          "ci_low": 0.5724673375551186,
+          "ci_high": 0.6790067303417011,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.09683467022588062,
+          "std": 0.04931726268023316,
+          "ci_low": 0.07677407188766329,
+          "ci_high": 0.11991655863117676,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 68.2,
+          "std": 8.328265125462805,
+          "ci_low": 64.65,
+          "ci_high": 71.9,
+          "n_seeds": 20
         }
       },
       "agribrain_cold_start": {
@@ -7040,10 +8860,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 12.407620450620822,
-          "std": 7.948949387632799,
-          "ci_low": 9.628504269457757,
-          "ci_high": 16.96467373496855,
+          "mean": 10.984257037327755,
+          "std": 2.9951093996168527,
+          "ci_low": 9.729655025856374,
+          "ci_high": 12.361318627214693,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -7101,6 +8921,34 @@
           "ci_low": 41.0,
           "ci_high": 45.9,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.22113057993970195,
+          "std": 0.05799626393988689,
+          "ci_low": 0.19678913123160496,
+          "ci_high": 0.2478137844507216,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7003509385672064,
+          "std": 0.09348291910869153,
+          "ci_low": 0.6521969377278971,
+          "ci_high": 0.7358839856359165,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.07851848149309174,
+          "std": 0.047717374237757744,
+          "ci_low": 0.05878734461876805,
+          "ci_high": 0.10075679409459008,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 64.3,
+          "std": 7.121095421351971,
+          "ci_low": 61.5,
+          "ci_high": 67.7,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_10": {
@@ -7147,10 +8995,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 8.51104419311418,
-          "std": 2.423689665143864,
-          "ci_low": 7.563861015650249,
-          "ci_high": 9.743927011003715,
+          "mean": 11.156347497954915,
+          "std": 3.2077974640200093,
+          "ci_low": 9.798995946556548,
+          "ci_high": 12.613065972970766,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -7208,6 +9056,34 @@
           "ci_low": 33.9,
           "ci_high": 38.05,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.24060723267867923,
+          "std": 0.06052761107821859,
+          "ci_low": 0.21472198030262862,
+          "ci_high": 0.267960503456973,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6801700604761164,
+          "std": 0.09375965002760123,
+          "ci_low": 0.631747877936526,
+          "ci_high": 0.7153982670109352,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.07922270684520441,
+          "std": 0.047904124356376206,
+          "ci_low": 0.059245377094787964,
+          "ci_high": 0.10148941802915422,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 64.3,
+          "std": 7.121095421351971,
+          "ci_low": 61.5,
+          "ci_high": 67.7,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_25": {
@@ -7254,10 +9130,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 20.73067713443177,
-          "std": 15.024445487907816,
-          "ci_low": 14.489964074515957,
-          "ci_high": 27.490378133332243,
+          "mean": 10.968187650077095,
+          "std": 3.8901936727625066,
+          "ci_low": 9.53076467074227,
+          "ci_high": 13.054164114881928,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -7315,6 +9191,34 @@
           "ci_low": 34.0,
           "ci_high": 38.15,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.24060723267867923,
+          "std": 0.06052761107821859,
+          "ci_low": 0.21472198030262862,
+          "ci_high": 0.267960503456973,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6801700604761164,
+          "std": 0.09375965002760123,
+          "ci_low": 0.631747877936526,
+          "ci_high": 0.7153982670109352,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.07922270684520441,
+          "std": 0.047904124356376206,
+          "ci_low": 0.059245377094787964,
+          "ci_high": 0.10148941802915422,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 64.3,
+          "std": 7.121095421351971,
+          "ci_low": 61.5,
+          "ci_high": 67.7,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_50": {
@@ -7361,10 +9265,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 14.627358120520109,
-          "std": 9.931994544745177,
-          "ci_low": 10.791976571366392,
-          "ci_high": 19.825998260819983,
+          "mean": 10.379261576680518,
+          "std": 3.8854888406160697,
+          "ci_low": 9.01587227182895,
+          "ci_high": 12.590421106202069,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -7422,6 +9326,34 @@
           "ci_low": 34.15,
           "ci_high": 38.65,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.24044767001911657,
+          "std": 0.06063044925539019,
+          "ci_low": 0.21453007482964756,
+          "ci_high": 0.2680915400873533,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6803296231356791,
+          "std": 0.09488175906051864,
+          "ci_low": 0.6313914482771217,
+          "ci_high": 0.7161156618999645,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.07922270684520441,
+          "std": 0.047904124356376206,
+          "ci_low": 0.059245377094787964,
+          "ci_high": 0.10148941802915422,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 64.3,
+          "std": 7.121095421351971,
+          "ci_low": 61.5,
+          "ci_high": 67.7,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_10_static": {
@@ -7468,10 +9400,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 7.626962984391463,
-          "std": 2.1022821239656335,
-          "ci_low": 6.853557042978816,
-          "ci_high": 8.784044945309848,
+          "mean": 11.080104498655095,
+          "std": 3.968123854338855,
+          "ci_low": 9.517293479045149,
+          "ci_high": 13.124528771274795,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -7529,6 +9461,34 @@
           "ci_low": 26.6,
           "ci_high": 32.35,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.28308333612012343,
+          "std": 0.09424311436792049,
+          "ci_low": 0.23737191832206878,
+          "ci_high": 0.32037550494262307,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6194409680129704,
+          "std": 0.11970654204033665,
+          "ci_low": 0.5679555510892241,
+          "ci_high": 0.6730999289585573,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.09747569586690626,
+          "std": 0.04896974089402635,
+          "ci_low": 0.07755819096313274,
+          "ci_high": 0.12042990265323145,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 68.2,
+          "std": 8.328265125462805,
+          "ci_low": 64.65,
+          "ci_high": 71.9,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_25_static": {
@@ -7575,10 +9535,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 7.685715665381091,
-          "std": 1.8605814528523197,
-          "ci_low": 6.896117789348066,
-          "ci_high": 8.547247474144337,
+          "mean": 11.409828012498718,
+          "std": 4.2724885824279735,
+          "ci_low": 9.803869444307145,
+          "ci_high": 13.6425517992763,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -7636,6 +9596,34 @@
           "ci_low": 26.4,
           "ci_high": 31.65,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.2845641980677119,
+          "std": 0.09183077816520087,
+          "ci_low": 0.2405022862866226,
+          "ci_high": 0.3213109303606098,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6166075279971176,
+          "std": 0.11668548013890648,
+          "ci_low": 0.5661871204004107,
+          "ci_high": 0.6684784665574453,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.0988282739351706,
+          "std": 0.04873020027480891,
+          "ci_low": 0.07881649536069837,
+          "ci_high": 0.12144006818005301,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 68.2,
+          "std": 8.328265125462805,
+          "ci_low": 64.65,
+          "ci_high": 71.9,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_50_static": {
@@ -7682,10 +9670,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 13.98211067361343,
-          "std": 9.335679499347208,
-          "ci_low": 10.485545632554125,
-          "ci_high": 18.8369113322767,
+          "mean": 10.738439270547437,
+          "std": 3.5411489334866095,
+          "ci_low": 9.450035173873873,
+          "ci_high": 12.654982088488937,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -7743,6 +9731,34 @@
           "ci_low": 24.85,
           "ci_high": 31.15,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.28796242571171604,
+          "std": 0.09355713551410681,
+          "ci_low": 0.24152873837488792,
+          "ci_high": 0.3247164167214469,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6152661037734906,
+          "std": 0.11941476797935245,
+          "ci_low": 0.5648065460452715,
+          "ci_high": 0.6691284761319295,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.09677147051479358,
+          "std": 0.04925163922274374,
+          "ci_low": 0.07690976459834316,
+          "ci_high": 0.1198675051598548,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 68.2,
+          "std": 8.328265125462805,
+          "ci_low": 64.65,
+          "ci_high": 71.9,
+          "n_seeds": 20
         }
       },
       "agribrain_no_bonus": {
@@ -7789,10 +9805,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 17.466404377207958,
-          "std": 9.065283381098286,
-          "ci_low": 13.72370687458552,
-          "ci_high": 21.676464407175505,
+          "mean": 11.159771337487552,
+          "std": 3.6320957401563114,
+          "ci_low": 9.790536192308654,
+          "ci_high": 13.011731872340516,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -7850,6 +9866,34 @@
           "ci_low": 28.25,
           "ci_high": 34.05,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.3100216151022349,
+          "std": 0.09579351459412458,
+          "ci_low": 0.2631077574506864,
+          "ci_high": 0.34777279228124974,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.596444815359832,
+          "std": 0.113464384937559,
+          "ci_low": 0.5488347262875181,
+          "ci_high": 0.6480038834330718,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.09353356953793304,
+          "std": 0.04491482700565334,
+          "ci_low": 0.07521851903649274,
+          "ci_high": 0.11454871308007882,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 68.2,
+          "std": 8.328265125462805,
+          "ci_low": 64.65,
+          "ci_high": 71.9,
+          "n_seeds": 20
         }
       },
       "agribrain_theta_pert_10": {
@@ -7896,10 +9940,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 10.710607731743949,
-          "std": 7.313728441453736,
-          "ci_low": 8.279033219536513,
-          "ci_high": 15.343430011508545,
+          "mean": 11.264145233952958,
+          "std": 3.507730076222569,
+          "ci_low": 9.861610662328372,
+          "ci_high": 12.960706583855107,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -7957,6 +10001,34 @@
           "ci_low": 29.85,
           "ci_high": 35.85,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.2763696454939634,
+          "std": 0.09936832961503919,
+          "ci_low": 0.22942062858260956,
+          "ci_high": 0.31615859764602067,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6301102341430227,
+          "std": 0.12234736842755553,
+          "ci_low": 0.5783539811293078,
+          "ci_high": 0.6855512746850777,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.09352012036301384,
+          "std": 0.047752150968149144,
+          "ci_low": 0.07454952891247678,
+          "ci_high": 0.116290177420938,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 68.2,
+          "std": 8.328265125462805,
+          "ci_low": 64.65,
+          "ci_high": 71.9,
+          "n_seeds": 20
         }
       },
       "agribrain_theta_pert_25": {
@@ -8003,10 +10075,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 8.292365880495506,
-          "std": 4.063670816589535,
-          "ci_low": 6.8924653237957285,
-          "ci_high": 10.581418154306528,
+          "mean": 12.807046924879412,
+          "std": 5.537601765610068,
+          "ci_low": 10.791725316959592,
+          "ci_high": 15.886927190772237,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -8064,6 +10136,34 @@
           "ci_low": 28.05,
           "ci_high": 34.2,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.29423166089811426,
+          "std": 0.10243212488890868,
+          "ci_low": 0.24434119264377324,
+          "ci_high": 0.33452848364406396,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6194214160194418,
+          "std": 0.12088571085673064,
+          "ci_low": 0.5700940547292368,
+          "ci_high": 0.6761684776208531,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.08634692308244388,
+          "std": 0.045980917162657564,
+          "ci_low": 0.06790797237175376,
+          "ci_high": 0.1080361391004776,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 68.2,
+          "std": 8.328265125462805,
+          "ci_low": 64.65,
+          "ci_high": 71.9,
+          "n_seeds": 20
         }
       },
       "agribrain_theta_pert_50": {
@@ -8110,10 +10210,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 9.509529180569292,
-          "std": 4.410599863911456,
-          "ci_low": 7.735447151535192,
-          "ci_high": 11.514329732881796,
+          "mean": 12.739518318913825,
+          "std": 5.769593733296258,
+          "ci_low": 10.560925892982064,
+          "ci_high": 15.731903522524023,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -8171,6 +10271,34 @@
           "ci_low": 29.45,
           "ci_high": 35.95,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.2880755413716159,
+          "std": 0.10974491338494416,
+          "ci_low": 0.23832303886750436,
+          "ci_high": 0.3344632057869578,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6140952303967969,
+          "std": 0.13347017927584973,
+          "ci_low": 0.5539938466032766,
+          "ci_high": 0.6707911561269759,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.09782922823158718,
+          "std": 0.06416284665071374,
+          "ci_low": 0.07270493298420858,
+          "ci_high": 0.12934781657196393,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 68.2,
+          "std": 8.328265125462805,
+          "ci_low": 64.65,
+          "ci_high": 71.9,
+          "n_seeds": 20
         }
       }
     },
@@ -8219,10 +10347,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.07638143344795227,
-          "std": 0.0011890804423498097,
-          "ci_low": 0.07587117399534045,
-          "ci_high": 0.07691373614827583,
+          "mean": 0.08363612262958971,
+          "std": 0.0036044813235424594,
+          "ci_low": 0.08197931046882945,
+          "ci_high": 0.08515239489413505,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -8279,6 +10407,34 @@
           "std": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 1.0,
+          "std": 0.0,
+          "ci_low": 1.0,
+          "ci_high": 1.0,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.0,
+          "std": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.0,
+          "std": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 30.65,
+          "std": 5.9939552884551945,
+          "ci_low": 28.2,
+          "ci_high": 33.6,
           "n_seeds": 20
         }
       },
@@ -8326,10 +10482,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.14749494172671498,
-          "std": 0.0015283752150244303,
-          "ci_low": 0.14681043951671857,
-          "ci_high": 0.14815444875534797,
+          "mean": 0.16257470973262875,
+          "std": 0.007118276127750432,
+          "ci_low": 0.15945710587422862,
+          "ci_high": 0.16566161140256414,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -8386,6 +10542,34 @@
           "std": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.3558876488710697,
+          "std": 0.08355185475998977,
+          "ci_low": 0.3195983909518131,
+          "ci_high": 0.39176179297720637,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.5724441870464644,
+          "std": 0.08817163440568512,
+          "ci_low": 0.537870460129695,
+          "ci_high": 0.6167617391528079,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.07166816408246579,
+          "std": 0.05780932726419699,
+          "ci_low": 0.04928718500752648,
+          "ci_high": 0.1031444946819698,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 30.6,
+          "std": 5.2,
+          "ci_low": 28.5,
+          "ci_high": 33.05,
           "n_seeds": 20
         }
       },
@@ -8433,10 +10617,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.14910070029954012,
-          "std": 0.0015306417665694619,
-          "ci_low": 0.14834255656119694,
-          "ci_high": 0.14970440731445744,
+          "mean": 0.16348214380236134,
+          "std": 0.007229755202968031,
+          "ci_low": 0.1602145616240504,
+          "ci_high": 0.16660330639476154,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -8493,6 +10677,34 @@
           "std": 0.0,
           "ci_low": 0.0,
           "ci_high": 0.0,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.3685737170397857,
+          "std": 0.1214017416947916,
+          "ci_low": 0.312949977894297,
+          "ci_high": 0.42077686569934564,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.5470255044097079,
+          "std": 0.10823895988495819,
+          "ci_low": 0.49923250893312676,
+          "ci_high": 0.5955996043790609,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.08440077855050643,
+          "std": 0.061198996244143405,
+          "ci_low": 0.05990329115818212,
+          "ci_high": 0.11433858322965226,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 32.15,
+          "std": 4.840196277011915,
+          "ci_low": 29.971601727898403,
+          "ci_high": 34.2,
           "n_seeds": 20
         }
       },
@@ -8540,10 +10752,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.14797458530261393,
-          "std": 0.001549119235448013,
-          "ci_low": 0.14727557461599508,
-          "ci_high": 0.14864450580079402,
+          "mean": 0.16206355212489143,
+          "std": 0.007111223039411354,
+          "ci_low": 0.15902597791799536,
+          "ci_high": 0.16528900717442013,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -8601,6 +10813,34 @@
           "ci_low": 0.0,
           "ci_high": 0.0,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.5472305501821167,
+          "std": 0.10534504589687252,
+          "ci_low": 0.4963447963473407,
+          "ci_high": 0.5891477172031172,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.4016431441443641,
+          "std": 0.0919567807611282,
+          "ci_low": 0.3639986215864342,
+          "ci_high": 0.44613157029739053,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.05112630567351929,
+          "std": 0.048659266079789536,
+          "ci_low": 0.03208981636383076,
+          "ci_high": 0.07566479463977861,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 31.9,
+          "std": 5.252618394667558,
+          "ci_low": 29.75,
+          "ci_high": 34.4,
+          "n_seeds": 20
         }
       },
       "agribrain": {
@@ -8647,10 +10887,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 15.690562813122392,
-          "std": 8.31013441189901,
-          "ci_low": 12.304139492605264,
-          "ci_high": 19.53670774590333,
+          "mean": 12.98358083537702,
+          "std": 6.161799283704984,
+          "ci_low": 10.748643204273545,
+          "ci_high": 16.438574437931074,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -8708,6 +10948,34 @@
           "ci_low": 40.0,
           "ci_high": 46.55,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.2158881151045675,
+          "std": 0.08859715034232987,
+          "ci_low": 0.17686724530067796,
+          "ci_high": 0.25472023642223246,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6845220417433017,
+          "std": 0.09330271100000667,
+          "ci_low": 0.6482176030736037,
+          "ci_high": 0.730495745176794,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.09958984315213086,
+          "std": 0.06306171594038325,
+          "ci_low": 0.07224939299167675,
+          "ci_high": 0.12740358410044153,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 30.9,
+          "std": 4.4821869662029945,
+          "ci_low": 28.95,
+          "ci_high": 32.85,
+          "n_seeds": 20
         }
       },
       "no_context": {
@@ -8754,10 +11022,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 0.1499418790141741,
-          "std": 0.0013595934322496875,
-          "ci_low": 0.1492499462086624,
-          "ci_high": 0.15047742729201763,
+          "mean": 0.16408473521652114,
+          "std": 0.005983309493786812,
+          "ci_low": 0.16140935136779547,
+          "ci_high": 0.16669433543630585,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -8815,56 +11083,84 @@
           "ci_low": 0.0,
           "ci_high": 0.0,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.3489305063036768,
+          "std": 0.12957991526125795,
+          "ci_low": 0.29688965770719294,
+          "ci_high": 0.4129584702580186,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.5685690166589191,
+          "std": 0.12176133900874599,
+          "ci_low": 0.5152032120540054,
+          "ci_high": 0.6210185139579725,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.08250047703740404,
+          "std": 0.05923701079526378,
+          "ci_low": 0.05879452626222816,
+          "ci_high": 0.11156615261115492,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 30.9,
+          "std": 4.023679907746142,
+          "ci_low": 29.2,
+          "ci_high": 32.7,
+          "n_seeds": 20
         }
       },
       "mcp_only": {
         "ari": {
-          "mean": 0.6705211240812142,
-          "std": 0.01439186048100944,
-          "ci_low": 0.6641412125277124,
-          "ci_high": 0.6766960291603238,
+          "mean": 0.6705311768929353,
+          "std": 0.014424230341695338,
+          "ci_low": 0.6641256589481614,
+          "ci_high": 0.6767156293248018,
           "n_seeds": 20
         },
         "waste": {
-          "mean": 0.02725236207507244,
-          "std": 0.00592580984387814,
-          "ci_low": 0.024841732261170802,
-          "ci_high": 0.03003799128036275,
+          "mean": 0.027251942042270976,
+          "std": 0.005927984445583715,
+          "ci_low": 0.02484328687854448,
+          "ci_high": 0.030041359532811302,
           "n_seeds": 20
         },
         "rle": {
-          "mean": 0.7420571629870952,
-          "std": 0.09269402663616891,
-          "ci_low": 0.7023586962790591,
-          "ci_high": 0.7832210286563791,
+          "mean": 0.7420199667530978,
+          "std": 0.09148049861025373,
+          "ci_low": 0.7025555328148251,
+          "ci_high": 0.7822946398278857,
           "n_seeds": 20
         },
         "slca": {
-          "mean": 0.7298813027362872,
-          "std": 0.01271544672128427,
-          "ci_low": 0.7243280936563453,
-          "ci_high": 0.7354727769073304,
+          "mean": 0.7298943379039978,
+          "std": 0.01275655990820732,
+          "ci_low": 0.724340641499259,
+          "ci_high": 0.7355090166974821,
           "n_seeds": 20
         },
         "carbon": {
-          "mean": 2176.9012346579348,
-          "std": 150.95808751075984,
-          "ci_low": 2111.1741841566395,
-          "ci_high": 2243.7047159706844,
+          "mean": 2176.800981315645,
+          "std": 151.50185953599228,
+          "ci_low": 2110.7650285027153,
+          "ci_high": 2243.7118628987096,
           "n_seeds": 20
         },
         "equity": {
-          "mean": 0.6633999493603928,
-          "std": 0.014659960090725345,
-          "ci_low": 0.6572228291143632,
-          "ci_high": 0.6700161523258803,
+          "mean": 0.6634450339572274,
+          "std": 0.014710347044899612,
+          "ci_low": 0.6572658523357425,
+          "ci_high": 0.6700835999892208,
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 7.582790473679779,
-          "std": 6.318574450959549,
-          "ci_low": 5.4221709326313094,
-          "ci_high": 11.232385353697603,
+          "mean": 7.001372564506406,
+          "std": 3.442919142436051,
+          "ci_low": 5.650423837438719,
+          "ci_high": 8.71573735583383,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -8903,10 +11199,10 @@
           "n_seeds": 20
         },
         "context_honor_rate": {
-          "mean": 0.6091264990809557,
-          "std": 0.0979886477388384,
-          "ci_low": 0.565243389296782,
-          "ci_high": 0.6500396375545004,
+          "mean": 0.608158085649876,
+          "std": 0.09779370001647175,
+          "ci_low": 0.5642553302153893,
+          "ci_high": 0.6492424409452318,
           "n_seeds": 20
         },
         "context_active_steps": {
@@ -8917,10 +11213,38 @@
           "n_seeds": 20
         },
         "context_honored_steps": {
-          "mean": 66.65,
-          "std": 13.004902921590764,
-          "ci_low": 60.85,
-          "ci_high": 72.25,
+          "mean": 66.55,
+          "std": 13.021040665015988,
+          "ci_low": 60.8,
+          "ci_high": 72.2,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.2559298416698708,
+          "std": 0.09843361251967536,
+          "ci_low": 0.21554393992763432,
+          "ci_high": 0.3026685735693781,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6563499190147732,
+          "std": 0.10810850597748353,
+          "ci_low": 0.6075504484474384,
+          "ci_high": 0.7030887330425042,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.08772023931535597,
+          "std": 0.05926599161834159,
+          "ci_low": 0.06544931829131138,
+          "ci_high": 0.11817260020950585,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 30.9,
+          "std": 4.023679907746142,
+          "ci_low": 29.2,
+          "ci_high": 32.7,
           "n_seeds": 20
         }
       },
@@ -8968,10 +11292,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 4.30434211254275,
-          "std": 0.0771078784831529,
-          "ci_low": 4.2827880233892275,
-          "ci_high": 4.362970815581174,
+          "mean": 4.749025189569997,
+          "std": 0.31219608222264805,
+          "ci_low": 4.639576248171477,
+          "ci_high": 4.923061931673844,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -9029,6 +11353,34 @@
           "ci_low": 33.4,
           "ci_high": 39.3,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.2789394544085319,
+          "std": 0.12489775287915596,
+          "ci_low": 0.23131611442934585,
+          "ci_high": 0.34207025292920357,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6415145121839109,
+          "std": 0.12347842129745619,
+          "ci_low": 0.5861591578620052,
+          "ci_high": 0.6940621618383211,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.07954603340755717,
+          "std": 0.062405130529699385,
+          "ci_low": 0.055574518041170425,
+          "ci_high": 0.11130647972758867,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 30.9,
+          "std": 4.023679907746142,
+          "ci_low": 29.2,
+          "ci_high": 32.7,
+          "n_seeds": 20
         }
       },
       "agribrain_cold_start": {
@@ -9075,10 +11427,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 19.726049312238402,
-          "std": 14.025007427100759,
-          "ci_low": 14.360493413842475,
-          "ci_high": 26.749984676624383,
+          "mean": 11.266783401838943,
+          "std": 3.2300792831825498,
+          "ci_low": 9.9819697346021,
+          "ci_high": 12.83545487808531,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -9136,6 +11488,34 @@
           "ci_low": 47.95,
           "ci_high": 54.05,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.19677437601313388,
+          "std": 0.08094590172330501,
+          "ci_low": 0.1613400830515039,
+          "ci_high": 0.23266846784027884,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.7066323456734053,
+          "std": 0.0849678059593334,
+          "ci_low": 0.6734895456335387,
+          "ci_high": 0.749715449384763,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.09659327831346075,
+          "std": 0.06125732057768757,
+          "ci_low": 0.07175474973948581,
+          "ci_high": 0.12527913953686048,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 30.9,
+          "std": 4.4821869662029945,
+          "ci_low": 28.95,
+          "ci_high": 32.85,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_10": {
@@ -9182,10 +11562,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 11.54331480259619,
-          "std": 6.710570902271685,
-          "ci_low": 9.185050150049145,
-          "ci_high": 15.353242331752972,
+          "mean": 10.845271168849042,
+          "std": 5.0769494559062425,
+          "ci_low": 9.13236988160092,
+          "ci_high": 14.00156006976808,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -9243,6 +11623,34 @@
           "ci_low": 39.4,
           "ci_high": 46.05,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.21878306961242525,
+          "std": 0.09063731188520134,
+          "ci_low": 0.17970029957126604,
+          "ci_high": 0.2589116851508669,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6803112977617597,
+          "std": 0.09088900821398674,
+          "ci_low": 0.644102492684112,
+          "ci_high": 0.7236602458338828,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.10090563262581506,
+          "std": 0.06121761363837063,
+          "ci_low": 0.07479187359469393,
+          "ci_high": 0.1283746681663452,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 30.9,
+          "std": 4.4821869662029945,
+          "ci_low": 28.95,
+          "ci_high": 32.85,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_25": {
@@ -9289,10 +11697,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 13.92785502337372,
-          "std": 12.6651813662529,
-          "ci_low": 10.11872161144331,
-          "ci_high": 23.167908760063888,
+          "mean": 10.063641516090785,
+          "std": 4.659964384536534,
+          "ci_low": 8.530897061571688,
+          "ci_high": 12.965346850647121,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -9350,6 +11758,34 @@
           "ci_low": 39.2,
           "ci_high": 45.95,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.2203959728382317,
+          "std": 0.09217007432735647,
+          "ci_low": 0.18034759657734908,
+          "ci_high": 0.26125388636760427,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6786983945359533,
+          "std": 0.09178031714040986,
+          "ci_low": 0.6418772047103861,
+          "ci_high": 0.722711352433468,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.10090563262581506,
+          "std": 0.06121761363837063,
+          "ci_low": 0.07479187359469393,
+          "ci_high": 0.1283746681663452,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 30.9,
+          "std": 4.4821869662029945,
+          "ci_low": 28.95,
+          "ci_high": 32.85,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_50": {
@@ -9396,10 +11832,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 12.391510294886151,
-          "std": 10.004846131451428,
-          "ci_low": 8.678531745214356,
-          "ci_high": 17.88615421707422,
+          "mean": 10.728955644703495,
+          "std": 5.396208166191366,
+          "ci_low": 9.020240369090056,
+          "ci_high": 14.294591093923586,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -9457,6 +11893,34 @@
           "ci_low": 39.42866788747489,
           "ci_high": 46.65,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.21878306961242525,
+          "std": 0.09063731188520134,
+          "ci_low": 0.17970029957126604,
+          "ci_high": 0.2589116851508669,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6789599464104084,
+          "std": 0.08993830843699588,
+          "ci_low": 0.643538109335546,
+          "ci_high": 0.7221635329850827,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.10225698397716643,
+          "std": 0.06046211367928034,
+          "ci_low": 0.07615248107034589,
+          "ci_high": 0.1294662419212645,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 30.9,
+          "std": 4.4821869662029945,
+          "ci_low": 28.95,
+          "ci_high": 32.85,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_10_static": {
@@ -9503,10 +11967,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 13.925511270645078,
-          "std": 9.18367416938453,
-          "ci_low": 10.427189312838715,
-          "ci_high": 18.627522686057574,
+          "mean": 9.112491030423877,
+          "std": 3.486987407507591,
+          "ci_low": 7.84067688992683,
+          "ci_high": 10.948060871580353,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -9564,6 +12028,34 @@
           "ci_low": 30.2,
           "ci_high": 36.3,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.29395103067740797,
+          "std": 0.1273668985475375,
+          "ci_low": 0.2443161747268569,
+          "ci_high": 0.35811249671378037,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.621985992285188,
+          "std": 0.12746025666776584,
+          "ci_low": 0.565220709372659,
+          "ci_high": 0.6776640930915059,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.08406297703740404,
+          "std": 0.06309667127484865,
+          "ci_low": 0.05969747543558488,
+          "ci_high": 0.11627090056832175,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 30.9,
+          "std": 4.023679907746142,
+          "ci_low": 29.2,
+          "ci_high": 32.7,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_25_static": {
@@ -9610,10 +12102,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 15.473796761539736,
-          "std": 6.4971697489321825,
-          "ci_low": 12.766299559157174,
-          "ci_high": 18.49101968932741,
+          "mean": 9.430989011808482,
+          "std": 3.92089282384374,
+          "ci_low": 8.005512369547812,
+          "ci_high": 11.584193782031914,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -9671,6 +12163,34 @@
           "ci_low": 30.1,
           "ci_high": 35.8,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.292196930536211,
+          "std": 0.12535360574681914,
+          "ci_low": 0.24480781756249742,
+          "ci_high": 0.35702432833360015,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.623740092426385,
+          "std": 0.12466397766589607,
+          "ci_low": 0.5664751766209131,
+          "ci_high": 0.676555949204083,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.08406297703740404,
+          "std": 0.06309667127484865,
+          "ci_low": 0.05969747543558488,
+          "ci_high": 0.11627090056832175,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 30.9,
+          "std": 4.023679907746142,
+          "ci_low": 29.2,
+          "ci_high": 32.7,
+          "n_seeds": 20
         }
       },
       "agribrain_pert_50_static": {
@@ -9717,10 +12237,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 8.366519992139526,
-          "std": 3.9458562973414124,
-          "ci_low": 6.933351794195109,
-          "ci_high": 10.442477501093144,
+          "mean": 9.01291483621915,
+          "std": 3.6136915778638925,
+          "ci_low": 7.843159070566475,
+          "ci_high": 11.324173251093239,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -9778,6 +12298,34 @@
           "ci_low": 28.25,
           "ci_high": 35.2,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.29277379914457297,
+          "std": 0.13368440231018422,
+          "ci_low": 0.24162124291372405,
+          "ci_high": 0.3610407782687353,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6218118724666717,
+          "std": 0.13124947904411918,
+          "ci_low": 0.562755159799222,
+          "ci_high": 0.677697169290459,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.08541432838875537,
+          "std": 0.06272783742275193,
+          "ci_low": 0.061099058261947,
+          "ci_high": 0.11713120622403764,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 30.9,
+          "std": 4.023679907746142,
+          "ci_low": 29.2,
+          "ci_high": 32.7,
+          "n_seeds": 20
         }
       },
       "agribrain_no_bonus": {
@@ -9824,10 +12372,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 9.382868542322992,
-          "std": 5.775907495000579,
-          "ci_low": 7.413379400003919,
-          "ci_high": 12.8062616705319,
+          "mean": 10.083536338061094,
+          "std": 4.531827388243648,
+          "ci_low": 8.419466812252168,
+          "ci_high": 12.450512467091183,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -9885,6 +12433,34 @@
           "ci_low": 33.2,
           "ci_high": 38.95,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.3048654216926054,
+          "std": 0.11869223980000619,
+          "ci_low": 0.2571335919106182,
+          "ci_high": 0.36243137199062664,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6140733933846859,
+          "std": 0.11911905159958477,
+          "ci_low": 0.5624549410003477,
+          "ci_high": 0.6672483546990403,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.08106118492270868,
+          "std": 0.061553205384150406,
+          "ci_low": 0.05753385446289941,
+          "ci_high": 0.1127420612731111,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 30.9,
+          "std": 4.023679907746142,
+          "ci_low": 29.2,
+          "ci_high": 32.7,
+          "n_seeds": 20
         }
       },
       "agribrain_theta_pert_10": {
@@ -9931,10 +12507,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 9.575293815093271,
-          "std": 5.159469803750185,
-          "ci_low": 7.8100279993018775,
-          "ci_high": 12.600806326647138,
+          "mean": 8.567311801986458,
+          "std": 2.4152804058562007,
+          "ci_low": 7.654461911559718,
+          "ci_high": 9.767154154593257,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -9992,6 +12568,34 @@
           "ci_low": 35.1,
           "ci_high": 40.6,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.269730559987944,
+          "std": 0.12904468312543907,
+          "ci_low": 0.21977260390154896,
+          "ci_high": 0.3340776870300966,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6520261361330348,
+          "std": 0.12757905212491963,
+          "ci_low": 0.5950019040850026,
+          "ci_high": 0.7069216687025792,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.0782433038790212,
+          "std": 0.06249494016313426,
+          "ci_low": 0.05491690096344527,
+          "ci_high": 0.1105960446270673,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 30.9,
+          "std": 4.023679907746142,
+          "ci_low": 29.2,
+          "ci_high": 32.7,
+          "n_seeds": 20
         }
       },
       "agribrain_theta_pert_25": {
@@ -10038,10 +12642,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 9.456553079993075,
-          "std": 4.508787421311251,
-          "ci_low": 7.9388423702393744,
-          "ci_high": 12.14494546474533,
+          "mean": 7.9578113333102225,
+          "std": 2.514100825187708,
+          "ci_low": 7.120023998864182,
+          "ci_high": 9.44016211253076,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -10099,6 +12703,34 @@
           "ci_low": 33.65,
           "ci_high": 40.1,
           "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.29495486307515023,
+          "std": 0.13627491310100717,
+          "ci_low": 0.23489343810808277,
+          "ci_high": 0.3545080649396171,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6299544434726327,
+          "std": 0.1316795770295419,
+          "ci_low": 0.5784570504603004,
+          "ci_high": 0.6947064655756141,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.07509069345221722,
+          "std": 0.06221841202958842,
+          "ci_low": 0.05238673474285466,
+          "ci_high": 0.1086077147107851,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 30.9,
+          "std": 4.023679907746142,
+          "ci_low": 29.2,
+          "ci_high": 32.7,
+          "n_seeds": 20
         }
       },
       "agribrain_theta_pert_50": {
@@ -10145,10 +12777,10 @@
           "n_seeds": 20
         },
         "mean_decision_latency_ms": {
-          "mean": 13.406303878097484,
-          "std": 7.930226455211353,
-          "ci_low": 10.1053931069427,
-          "ci_high": 17.035553913537672,
+          "mean": 8.320582861455883,
+          "std": 2.132921684614192,
+          "ci_low": 7.55279416788813,
+          "ci_high": 9.488505053556528,
           "n_seeds": 20
         },
         "constraint_violation_rate": {
@@ -10205,6 +12837,34 @@
           "std": 9.0292579983075,
           "ci_low": 33.95,
           "ci_high": 41.9,
+          "n_seeds": 20
+        },
+        "downstream_violation_rate": {
+          "mean": 0.26530050997755245,
+          "std": 0.11815563320062995,
+          "ci_low": 0.21207096092887848,
+          "ci_high": 0.31583485594277894,
+          "n_seeds": 20
+        },
+        "redistribute_violation_rate": {
+          "mean": 0.6578434380044685,
+          "std": 0.1225344637168689,
+          "ci_low": 0.6086935516015185,
+          "ci_high": 0.7170362626818355,
+          "n_seeds": 20
+        },
+        "contained_violation_rate": {
+          "mean": 0.07685605201797903,
+          "std": 0.05433976534928618,
+          "ci_low": 0.05345903043482166,
+          "ci_high": 0.10158860183090528,
+          "n_seeds": 20
+        },
+        "violation_event_count": {
+          "mean": 30.9,
+          "std": 4.023679907746142,
+          "ci_low": 29.2,
+          "ci_high": 32.7,
           "n_seeds": 20
         }
       }
