@@ -1,12 +1,12 @@
 {
-  "git_commit": "1f5fda2c03641730080500d850437f3c8f424283",
+  "git_commit": "b088a55c64ffd488fed07d6f3a5083e00f512ca0",
   "git_dirty": false,
-  "artifact_count": 224,
+  "artifact_count": 215,
   "artifacts": [
     {
       "file": "artifact_manifest.json",
       "bytes": 41830,
-      "sha256": "cba965b31c3e13550a09344327816b4c7cb9609712d057287b9714b1e5b776cf"
+      "sha256": "fee70cdbacfc21859f3a790ecbafe9ac0f8f658112124285aab34081b49350d0"
     },
     {
       "file": "benchmark_seeds/seed_1337.json",
@@ -1022,51 +1022,6 @@
       "file": "mcp_protocol_overproduction.json",
       "bytes": 175185,
       "sha256": "d062de50764208e90eea6952a5e78ad1f9564611eaf7519be828a6c257994d81"
-    },
-    {
-      "file": "preview/fig10_latency_quality_frontier.png",
-      "bytes": 334600,
-      "sha256": "2da9dcb7beffe6d48bc696efc12b5a4d9e77f2c8bc6aeb22859df19f29bc2969"
-    },
-    {
-      "file": "preview/fig2_heatwave.png",
-      "bytes": 984261,
-      "sha256": "99a1651433b8e293bdbb608e6a11e856699b807a0b56c8aa9ac676d27dad1e84"
-    },
-    {
-      "file": "preview/fig3_overproduction.png",
-      "bytes": 932900,
-      "sha256": "613455a33e672fecde65f3a7989f59fe9c9cdf3cb839f25307dac049bff229ea"
-    },
-    {
-      "file": "preview/fig4_cyber.png",
-      "bytes": 520902,
-      "sha256": "39107aadcb417fbd4a07d28076e5cba53c3bf86ad3c50a03f2b0d804f9d3a399"
-    },
-    {
-      "file": "preview/fig5_pricing.png",
-      "bytes": 821901,
-      "sha256": "dd420fd4d4f0090d3c8ee7c49cc701830437be8c67282a2765ff05dbd660ffc2"
-    },
-    {
-      "file": "preview/fig6_cross.png",
-      "bytes": 420108,
-      "sha256": "d2b57fbec096c8af94e54619e12cf47883a8afb47c6417ca5dae549ee7e2b115"
-    },
-    {
-      "file": "preview/fig7_ablation.png",
-      "bytes": 301501,
-      "sha256": "54b9fb338452061726aae4848e238b91c1546e94ad4e5ba5b90e1c7e8dd6d6ec"
-    },
-    {
-      "file": "preview/fig8_green_ai.png",
-      "bytes": 327213,
-      "sha256": "709de480244c9aea9bf3c2bdac710e7f9ccd5ad75b95249fb8a753f60404d27f"
-    },
-    {
-      "file": "preview/fig9_robustness.png",
-      "bytes": 392414,
-      "sha256": "0175af567205cf3699a9726e647a5ede054b5a82fd7c406a51b0f97e42986fbe"
     },
     {
       "file": "single_seed42_data.pkl",
