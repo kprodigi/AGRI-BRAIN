@@ -337,22 +337,13 @@ def _send_tx(w3, acct, tx_fn, chain_cfg: dict) -> Optional[str]:
     return tx_hash.hex() if tx_hash is not None else None
 
 
-def _fee_params(w3) -> tuple[int, int]:
-    """Use dynamic EIP-1559 fees when available; fallback to conservative defaults."""
-    try:
-        latest = w3.eth.get_block("latest")
-        base_fee = int(latest.get("baseFeePerGas") or 0)
-    except Exception:
-        base_fee = 0
-    try:
-        priority = int(w3.eth.max_priority_fee)
-    except Exception:
-        priority = int(w3.to_wei("1", "gwei"))
-    if base_fee > 0:
-        max_fee = int(base_fee * 2 + priority)
-    else:
-        max_fee = int(w3.to_wei("2", "gwei"))
-    return max_fee, priority
+# Fee-params resolution lives in eth.py with structured WARN logging
+# on RPC-level failures. The pre-2026-05 duplicate copy below used
+# bare ``except Exception`` and silent fallback -- the exact regression
+# the chain/README.md change-log called out as fixed. Re-import the
+# canonical implementation so a future fix in one place is not
+# silently shadowed by a stale duplicate.
+from .eth import _fee_params  # noqa: F401  (re-exported for callers)
 
 
 # ---------------------------------------------------------------------------

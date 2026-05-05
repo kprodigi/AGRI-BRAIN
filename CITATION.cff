@@ -23,19 +23,10 @@ date-released: "2026-05-04"
 license: MIT
 repository-code: "https://github.com/kprodigi/AGRI-BRAIN"
 
-# DOI placeholder. To register a DOI for this release:
-#   1. Tag the commit:
-#        git tag -a v1.2.0 -m "AGRI-BRAIN v1.2.0"
-#        git push origin v1.2.0
-#   2. Mint a Zenodo DOI by importing the GitHub repo at
-#      https://zenodo.org/account/settings/github/ (one-time setup)
-#      and publish the v1.2.0 release on GitHub. Zenodo will
-#      auto-create a versioned DOI of the form
-#        10.5281/zenodo.<NNNNNNN>
-#   3. Replace the empty `doi:` value below with the minted DOI.
-#   4. The README citation block reads from this file via cff-cli;
-#      no other file needs editing.
-doi: ""
+# DOI deliberately omitted from this file. Cite via version + commit
+# SHA + repository URL. If a Zenodo DOI is minted in a later release
+# cycle, add the canonical ``identifiers:`` block (CFF 1.2 schema)
+# rather than re-introducing a top-level ``doi:`` field.
 keywords:
   - multi-agent systems
   - agri-food supply chain

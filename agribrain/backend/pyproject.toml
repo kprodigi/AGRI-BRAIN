@@ -1,7 +1,13 @@
 [project]
 name = 'agri-brain-backend'
 version = '1.2.0'
-requires-python = ">=3.10"
+# Tightened from >=3.10 to >=3.11,<3.13 in 2026-05: the canonical
+# requirements-lock.txt was generated under 3.11.15 and CI only
+# proves 3.11. A Python 3.10 user would resolve a different pin set
+# than the lockfile and silently end up off-canon. The upper bound
+# excludes 3.13+ until those interpreters are added to the CI matrix
+# and the lockfile is re-verified against them.
+requires-python = ">=3.11,<3.13"
 license = {text = "MIT"}
 authors = [
     {name = "Nahid Sarker"},

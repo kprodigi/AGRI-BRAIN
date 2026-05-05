@@ -1211,10 +1211,21 @@ def _fig4_cyber_inner(data):
 
         # Service is a product of two means; bootstrap the delta SE.
         # Seed per-mode so the bar errors are reproducible across
-        # regenerations of the same data.
-        n_boot = 500
+        # regenerations of the same data. Use blake2b instead of the
+        # built-in ``hash()``: Python's hash is randomised by
+        # PYTHONHASHSEED on each interpreter start, so the rendered
+        # error caps drifted run-to-run. blake2b matches the
+        # deterministic-seed convention aggregate_seeds.py uses for
+        # the same reason. n_boot bumped from 500 to 2000 to bring
+        # this fallback closer to the aggregator's 10000-resample
+        # canonical CIs while keeping the figure render fast.
+        import hashlib as _hashlib_f4
+        n_boot = 2000
+        _seed_bytes_f4 = _hashlib_f4.blake2b(
+            f"{mode}::service_se".encode("utf-8"), digest_size=4,
+        ).digest()
         boot_rng = np.random.default_rng(
-            abs(hash((mode, "service_se"))) % (2**32)
+            int.from_bytes(_seed_bytes_f4, "big"),
         )
         a_pm = actions_arr[pm]; w_pm = waste_arr_n[pm]
         a_dm = actions_arr[dm]; w_dm = waste_arr_n[dm]
@@ -1680,10 +1691,20 @@ def _load_per_seed_summary() -> dict | None:
                 arr = np.asarray(vals, dtype=float)
                 m = float(np.mean(arr))
                 s = float(np.std(arr, ddof=1)) if len(arr) > 1 else 0.0
-                # Percentile bootstrap CI on the mean (1000 resamples is
-                # sufficient for figure-level error bars; the canonical
-                # 10000-resample CI lives in benchmark_summary.json).
-                rng = np.random.default_rng(abs(hash((sc, mode, met))) % (2**32))
+                # Percentile bootstrap CI on the mean (1000 resamples
+                # is sufficient for figure-level error bars; the
+                # canonical 10000-resample CI lives in
+                # benchmark_summary.json). Use blake2b for
+                # deterministic seeding -- Python's built-in hash() is
+                # PYTHONHASHSEED-randomised by default which makes the
+                # rendered error caps drift run-to-run.
+                import hashlib as _hashlib_pseed
+                _seed_bytes_pseed = _hashlib_pseed.blake2b(
+                    f"{sc}::{mode}::{met}".encode("utf-8"), digest_size=4,
+                ).digest()
+                rng = np.random.default_rng(
+                    int.from_bytes(_seed_bytes_pseed, "big"),
+                )
                 if len(arr) > 1:
                     boots = [float(np.mean(rng.choice(arr, len(arr), replace=True)))
                              for _ in range(1000)]
@@ -2582,7 +2603,19 @@ def fig9_fault_degradation():
         for i, sc in enumerate(scenarios_in_sig):
             for j, (cmp_key, _) in enumerate(_BASELINES):
                 ari = sig_data[sc].get(cmp_key, {}).get("ari", {}) or {}
-                if "cohens_d" in ari:
+                # Prefer the canonical ``cohens_d_pooled`` key (the
+                # explicit name documented in STATISTICAL_METHODS.md
+                # §2.3); fall back to the legacy ``cohens_d`` alias
+                # for older benchmark snapshots produced before the
+                # aggregator started emitting both names. Defensive
+                # only: aggregate_seeds.py currently writes both keys
+                # with identical values (line 895), so this read order
+                # is byte-stable on every current snapshot. Future
+                # aggregator changes that drop the alias would not
+                # silently break panel A.
+                if "cohens_d_pooled" in ari:
+                    d_mat[i, j] = float(ari["cohens_d_pooled"])
+                elif "cohens_d" in ari:
                     d_mat[i, j] = float(ari["cohens_d"])
                 if "p_value_adj" in ari:
                     p_mat[i, j] = float(ari["p_value_adj"])
@@ -2645,7 +2678,7 @@ def fig9_fault_degradation():
         # Slim colorbar on the right edge — gives the gradient an
         # explicit scale for readers who want exact magnitudes.
         cbar = fig.colorbar(im, ax=ax, fraction=0.045, pad=0.03)
-        cbar.set_label("Cohen's d (ARI)",
+        cbar.set_label("Cohen's d (pooled, ARI)",
                        fontsize=_F9_ANNOT, fontweight="bold")
         cbar.ax.tick_params(labelsize=_F9_TICK - 2)
         for lbl in cbar.ax.get_yticklabels():

@@ -46,14 +46,6 @@ def _read_citation_version() -> str:
     return match.group(1).strip()
 
 
-def _read_citation_doi() -> str:
-    text = _CITATION.read_text(encoding="utf-8")
-    match = re.search(r"^\s*doi\s*:\s*['\"]([^'\"]*)['\"]\s*(#.*)?$", text, re.MULTILINE)
-    if match is None:
-        return ""
-    return match.group(1).strip()
-
-
 def test_citation_version_matches_pyproject():
     cff = _read_citation_version()
     pyp = _read_pyproject_version()
@@ -64,23 +56,52 @@ def test_citation_version_matches_pyproject():
     )
 
 
-def test_citation_doi_is_string_field():
-    """DOI field must exist as a string (possibly empty until minted)."""
+def test_citation_omits_doi_field():
+    """DOI is intentionally absent from CITATION.cff (post-2026-05 rule).
+
+    Citation pattern is: version + git_commit + repository-code, no DOI.
+    Re-introducing a top-level ``doi:`` field would silently land an
+    empty / placeholder DOI in downstream tools that read CFF
+    machine-readably (Zenodo, GitHub citation widget, BibTeX
+    converters). If a Zenodo DOI is minted later, the canonical
+    CFF 1.2 path is the ``identifiers:`` block, not a top-level
+    ``doi:`` -- this guard catches accidental re-introduction of
+    either.
+    """
     text = _CITATION.read_text(encoding="utf-8")
-    assert re.search(r"^\s*doi\s*:", text, re.MULTILINE), (
-        "CITATION.cff is missing the doi: field. "
-        "It should at minimum be `doi: \"\"` until a Zenodo DOI is minted."
+    # Match a top-level ``doi:`` key (no leading whitespace beyond the
+    # YAML root) so a future ``identifiers: - type: doi`` block under
+    # a list element would not falsely fire this guard.
+    assert not re.search(r"^doi\s*:", text, re.MULTILINE), (
+        "CITATION.cff has a top-level `doi:` field. The post-2026-05 "
+        "rule keeps this file DOI-free; cite via version + commit SHA + "
+        "repository URL. If a DOI must be added in a later release, "
+        "use the CFF 1.2 ``identifiers:`` block instead of the legacy "
+        "top-level key."
     )
 
 
-def test_citation_doi_format_when_set():
-    """If a DOI is set, it must be a Zenodo-form 10.5281/zenodo.<digits> string."""
-    doi = _read_citation_doi()
-    if not doi:
-        pytest.skip("DOI not yet minted (intentional pre-release placeholder)")
-    assert re.fullmatch(r"10\.\d{4,9}/[\w.\-]+", doi), (
-        f"DOI {doi!r} does not look like a registered DOI. "
-        "Expected form: 10.5281/zenodo.<id>"
+def test_readme_omits_doi_in_bibtex():
+    """README BibTeX block must not carry a ``doi = {...}`` line.
+
+    Same rationale as test_citation_omits_doi_field: a stale or
+    placeholder DOI in the headline citation block is worse than no
+    DOI, because copy-pasters propagate it without re-checking.
+    """
+    text = _README.read_text(encoding="utf-8")
+    if "@software{" not in text and "@misc{" not in text:
+        pytest.skip("README has no BibTeX block (intentional)")
+    bib_block = re.search(
+        r"@(?:software|misc)\{[^}]*?\}",
+        text,
+        flags=re.DOTALL,
+    )
+    if bib_block is None:
+        pytest.skip("README BibTeX block could not be parsed")
+    assert "doi" not in bib_block.group(0).lower(), (
+        "README BibTeX block contains a ``doi`` field. The post-2026-05 "
+        "rule keeps the citation BibTeX DOI-free; cite via version + "
+        "commit SHA + repository URL only."
     )
 
 

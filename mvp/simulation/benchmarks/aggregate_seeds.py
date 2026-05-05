@@ -1233,12 +1233,40 @@ def main():
     out_dir = _SCRIPT_DIR / "results"
     out_dir.mkdir(exist_ok=True)
     bca_stats = _bca_fallback_stats_snapshot()
+    # Provenance pin (post-2026-05): record the seed count and the
+    # source-code commit alongside the bootstrap parameters. A
+    # reviewer reading benchmark_summary.json should see at a glance
+    # which version of the simulator produced which numbers, without
+    # cross-referencing artifact_manifest.json. Resolution order
+    # matches build_artifact_manifest.py:
+    #   1. AGRIBRAIN_GIT_COMMIT env var (HPC pipelines export this so
+    #      the stamp survives slurm contexts where git is not in PATH);
+    #   2. ``git rev-parse HEAD`` subprocess (local-dev path);
+    #   3. None (last resort; verify_manifest.py --strict-commit on
+    #      the artifact manifest still gates the artifact set, so a
+    #      None here is informational rather than a hard failure).
+    import os as _os_meta
+    import subprocess as _subprocess_meta
+    _git_commit_meta: str | None = (
+        _os_meta.environ.get("AGRIBRAIN_GIT_COMMIT", "").strip() or None
+    )
+    if _git_commit_meta is None:
+        try:
+            _git_root_meta = str(_SCRIPT_DIR.parent.parent.parent)
+            _git_commit_meta = _subprocess_meta.check_output(
+                ["git", "rev-parse", "HEAD"], cwd=_git_root_meta,
+                stderr=_subprocess_meta.PIPE,
+            ).decode("utf-8").strip() or None
+        except Exception:
+            _git_commit_meta = None
     payload_summary = {
         "_meta": {
             "n_boot": 10_000,
             "n_perm": 10_000,
             "bootstrap_alpha": 0.05,
             "seeds_loaded": sorted(all_data),
+            "n_seeds": len(all_data),
+            "git_commit": _git_commit_meta,
             # BCa percentile-fallback diagnostics. n=20 seeds is below
             # the recommended floor for BCa stability (Efron &
             # Tibshirani 1993 recommend n >= 30); the fallback fires
@@ -1262,6 +1290,8 @@ def main():
         )
     payload_significance = {
         "_meta": {
+            "n_seeds": len(all_data),
+            "git_commit": _git_commit_meta,
             "primary_h1_family": "agribrain_vs_no_context on ARI, 5 scenarios",
             "primary_h1_correction": "holm_bonferroni",
             "secondary_correction": "by_fdr",

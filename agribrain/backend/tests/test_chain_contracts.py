@@ -37,6 +37,21 @@ class _DummyEth:
     def wait_for_transaction_receipt(self, _txh):
         return {"status": self._status, "transactionHash": _DummyHash()}
 
+    # 2026-05: get_block + max_priority_fee added so the dummy mimics
+    # the surface that ``eth._fee_params`` reads. The pre-2026-05
+    # ``contracts._fee_params`` duplicate caught bare Exception so an
+    # AttributeError on a missing dummy method silently fell back to
+    # the 2 gwei default; the deduped canonical implementation in
+    # eth.py narrows the catch to (Web3Exception, OSError, ValueError),
+    # which is the right production posture but exposed the dummy's
+    # missing methods.
+    def get_block(self, _which):
+        return {"baseFeePerGas": 1_000_000_000}  # 1 gwei
+
+    @property
+    def max_priority_fee(self):
+        return 1_000_000_000  # 1 gwei
+
 
 class _DummyW3:
     def __init__(self, status):

@@ -1622,10 +1622,29 @@ def run_all(seed: int = SEED) -> dict:
                     print(f"    Protocol: {proto_summary['total_interactions']} real MCP interactions, "
                           f"methods={proto_summary['methods']}")
 
-            # Export per-scenario context-alignment summary. Headline JSON is
-            # for agribrain (what fig9 panel (a) reads); cold_start and
-            # sensitivity modes write their own files suffixed by mode so
-            # §4.7 can plot them alongside without name collisions.
+            # Export per-scenario context-alignment summary.
+            #
+            # Two consumer classes:
+            #   1. The headline ``context_alignment_{scenario}.json``
+            #      (agribrain only) is read by ``_fig9_load_alignment_from_files``
+            #      as a fallback when ``benchmark_summary.json`` is
+            #      missing. Production fig 9 reads from
+            #      ``benchmark_summary.json`` via
+            #      ``_fig9_load_alignment_from_summary`` so the file is
+            #      a fallback / single-seed-render evidence artifact.
+            #   2. The per-mode ``context_alignment_{scenario}_{mode}.json``
+            #      files (cold_start / pert_* / theta_pert_* / no_bonus /
+            #      mcp_only / pirag_only) are EVIDENCE ARTIFACTS for the
+            #      §4.7 ablation table -- no figure pipeline consumes
+            #      them automatically, but they let a reviewer verify
+            #      per-mode honor / influence rates against the
+            #      benchmark_summary aggregations. They are tracked in
+            #      ``artifact_manifest.json`` so a missing-or-tampered
+            #      file is caught by ``verify_manifest.py``.
+            # The 2026-05 audit briefly classified these per-mode files
+            # as "dead writes". They are not -- they are reproducibility
+            # evidence -- but the comment had to be hardened because the
+            # original wording over-promised that §4.7 plotted them.
             if mode in _CONTEXT_ENABLED_MODES and mode != "no_context":
                 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
                 if mode == "agribrain":

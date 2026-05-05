@@ -209,10 +209,14 @@ class AgentCoordinator:
         #     on inconsistent context.
         # All three are False by default and only set True for the
         # subset of modes that go through ``_compute_step_context``
-        # (agribrain / mcp_only / pirag_only / no_pinn / no_slca).
-        # Modes that skip the context channel (static / hybrid_rl /
-        # no_context) have all three permanently False, which is the
-        # structural-zero baseline panel C of fig 4 plots them at.
+        # -- i.e. modes in ``_CONTEXT_MODES`` (agribrain / mcp_only /
+        # pirag_only / agribrain_cold_start / agribrain_pert_*{,_static}
+        # / agribrain_no_bonus / agribrain_theta_pert_*). Modes that
+        # skip the context channel (static / hybrid_rl / no_pinn /
+        # no_slca / no_context) have all three permanently False,
+        # which is the structural-zero baseline panel C of fig 4
+        # plots them at. The pre-2026-05 comment incorrectly listed
+        # no_pinn / no_slca as context-active; they are not.
         self._step_cooperative_veto: bool = False
         self._step_fault_recovery: bool = False
         self._step_physics_gate: bool = False
@@ -976,11 +980,14 @@ class AgentCoordinator:
                 and self._step_context_modifier is not None
                 and self._context_evaluator is not None):
             # The counterfactual hardcodes mode="agribrain" because all
-            # four context-enabled modes (agribrain, no_context, mcp_only,
-            # pirag_only) share the same base-logit branch in
-            # select_action. This assertion guards against a future
-            # context-enabled mode that lands in a different branch,
-            # which would silently make the CF apples-to-oranges.
+            # context-enabled modes in _CONTEXT_MODES share the same
+            # base-logit branch in select_action. (no_context is NOT in
+            # the set -- it bypasses _compute_step_context entirely and
+            # never sets _step_context_modifier, so the guarded branch
+            # below is unreachable for it.) The assertion below guards
+            # against a future context-enabled mode that lands in a
+            # different branch, which would silently make the CF
+            # apples-to-oranges.
             assert self._step_mode in _CONTEXT_MODES, (
                 f"counterfactual invariant violated: context_modifier is "
                 f"set for non-context mode {self._step_mode!r}"

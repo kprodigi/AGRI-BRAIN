@@ -62,9 +62,26 @@ def load_settings() -> RuntimeSettings:
     env = os.getenv("APP_ENV", "dev").strip().lower()
     default_cors = "*" if env == "dev" else "http://localhost:5173"
     api_key = os.getenv("APP_API_KEY", "")
+    cors_origins = _csv("CORS_ORIGINS", default_cors)
+    # Production hardening: refuse to start when ``APP_ENV=prod`` is
+    # combined with a wildcard CORS allowlist. The MIME-typed
+    # ``allow_credentials`` auto-flip in app.py mitigates the
+    # credentials-exfil risk of ``Access-Control-Allow-Origin: *``,
+    # but the wildcard remains a real footgun in prod (any origin can
+    # read response bodies that the browser would otherwise scope to
+    # the configured domain). Operators who genuinely need wildcard
+    # origins in prod should set ``ALLOW_PROD_WILDCARD_CORS=1``
+    # explicitly so the choice is auditable rather than implicit.
+    if env == "prod" and cors_origins == ["*"]:
+        if not _bool("ALLOW_PROD_WILDCARD_CORS", False):
+            raise RuntimeError(
+                "Refusing to start: APP_ENV=prod with CORS_ORIGINS=*. "
+                "Set CORS_ORIGINS to an explicit allowlist, or set "
+                "ALLOW_PROD_WILDCARD_CORS=1 to acknowledge the choice."
+            )
     return RuntimeSettings(
         env=env,
-        cors_origins=_csv("CORS_ORIGINS", default_cors),
+        cors_origins=cors_origins,
         require_api_key=_bool("REQUIRE_API_KEY", env != "dev"),
         api_key=api_key,
         allow_local_without_api_key=_bool("ALLOW_LOCAL_WITHOUT_API_KEY", env == "dev"),

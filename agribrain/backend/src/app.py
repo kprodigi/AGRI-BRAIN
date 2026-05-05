@@ -1158,8 +1158,20 @@ def _finalize_decision_side_effects(memo: Dict[str, Any]) -> Dict[str, Any]:
     memo["tx"] = tx
     memo["tx_hash"] = tx
 
-    # append to in-memory log
-    state.setdefault("log", []).append(memo)
+    # append to in-memory log, capped at MAX_DECISION_LOG entries.
+    # Pre-2026-05 the log was unbounded, so a long-running deployment
+    # with the policy-watcher firing every 15s on chronically-elevated
+    # waste would accumulate ~5,760 memos/day with no upper limit.
+    # /decisions caps its read at the last 500 anyway; keeping a
+    # rolling 2,000-entry window in memory matches that contract with
+    # 4x headroom for /last-decision and audit-style queries.
+    _MAX_DECISION_LOG = 2000
+    _log_buf = state.setdefault("log", [])
+    _log_buf.append(memo)
+    if len(_log_buf) > _MAX_DECISION_LOG:
+        # Drop the oldest entries in-place so existing references to
+        # state["log"] (a single list object) remain valid.
+        del _log_buf[: len(_log_buf) - _MAX_DECISION_LOG]
 
     # mirror last decision into case.STATE so /case/last_decision stays current
     try:

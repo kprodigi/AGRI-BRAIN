@@ -56,13 +56,9 @@ git push origin main
 git push origin "$TAG"
 ```
 
-## 4. Create the GitHub release (Zenodo trigger)
+## 4. Create the GitHub release
 
-If this is the first release on this account, do the one-time Zenodo
-setup at <https://zenodo.org/account/settings/github/> first; flip the
-AGRI-BRAIN repo's switch to "On".
-
-Then on GitHub:
+On GitHub:
 
 1. Open <https://github.com/kprodigi/AGRI-BRAIN/releases/new>
 2. Pick the tag created in step 3.
@@ -70,21 +66,7 @@ Then on GitHub:
 4. Paste the relevant section of the changelog into the body.
 5. Publish.
 
-Zenodo creates a DOI of the form `10.5281/zenodo.<NNNNNNN>`.
-
-## 5. Record the DOI
-
-Replace the empty placeholder in `CITATION.cff`:
-
-```yaml
-doi: "10.5281/zenodo.<NNNNNNN>"
-```
-
-Commit on `main` with message `Record Zenodo DOI for v1.2.0` and push.
-The `tests/test_metadata_consistency.py::test_citation_doi_format_when_set`
-guard now activates and validates the format.
-
-## 6. Update the artifact manifest
+## 5. Update the artifact manifest
 
 After the next HPC run, the artifact manifest under
 `mvp/simulation/results/artifact_manifest.json` will pick up the new
@@ -97,16 +79,27 @@ python -c "import json; m=json.load(open('mvp/simulation/results/artifact_manife
            print('manifest commit:', m['git_commit'])"
 ```
 
+## Citation policy
+
+This repository deliberately does **not** carry a DOI in
+`CITATION.cff` or in the README BibTeX block. Cite via the
+``version`` field in `CITATION.cff` plus the ``git_commit`` recorded
+in `mvp/simulation/results/artifact_manifest.json` plus the
+repository URL. The
+``tests/test_metadata_consistency.py::test_citation_omits_doi_field``
+guard rejects re-introduction of a top-level ``doi:`` key, and
+``test_readme_omits_doi_in_bibtex`` rejects a ``doi`` field in the
+README citation block. If a future release does need a DOI, prefer
+the CFF 1.2 ``identifiers:`` block over the legacy top-level
+``doi:`` key.
+
 ## Rollback
 
-If the tag is wrong, delete it locally and remotely (within minutes
-of pushing; Zenodo has not minted yet):
+If the tag is wrong, delete it locally and remotely:
 
 ```bash
 git tag -d v1.2.0
 git push origin :refs/tags/v1.2.0
 ```
 
-If Zenodo has already minted a DOI, do **not** rewrite history -- mint a
-new patch tag (`v1.2.1`) instead and let the broken DOI become the
-"superseded" version on Zenodo.
+Then re-cut the tag at the corrected commit and push.

@@ -1,6 +1,12 @@
 // frontend/src/mvp/api.js
 // -------------------------------------------------------------
-// Smart, single API base with automatic 8111/8100 fallback
+// Single API base. The 8111/8100 port-swap retry path was removed
+// in 2026-05: the backend never bound 8111 anywhere, so on a real
+// network failure the retry doubled the user-visible latency
+// (every failed request triggered a second one to a port that was
+// also unreachable) and persistently mutated localStorage to a
+// dead URL. The original API base resolution chain is preserved:
+// window.API_BASE > localStorage > http://127.0.0.1:8100 default.
 // -------------------------------------------------------------
 import { getApiKey } from "@/lib/utils";
 
@@ -19,21 +25,9 @@ export function memoPdfUrl() {
     return `${API}/report/pdf`;
 }
 
-// Toggle port 8111 <-> 8100 if the current base is unreachable
-function togglePort(base) {
-    try {
-        const u = new URL(base);
-        if (u.port === '8111') u.port = '8100';
-        else if (u.port === '8100') u.port = '8111';
-        else u.port = '8111';
-        return u.toString().replace(/\/$/, '');
-    } catch {
-        return base;
-    }
-}
-
 // -------------------------------------------------------------
-// JSON helper with retry-on-port-swap
+// JSON helper. Surfaces the original error directly on failure
+// rather than silently retrying against a non-existent port.
 // -------------------------------------------------------------
 function _headers() {
     const h = { 'Content-Type': 'application/json' };
@@ -43,36 +37,14 @@ function _headers() {
 }
 
 async function j(method, path, body) {
-    const url1 = `${API}${path}`;
-    try {
-        const res = await fetch(url1, {
-            method,
-            headers: _headers(),
-            body: body ? JSON.stringify(body) : undefined,
-        });
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        return await res.json();
-    } catch (e) {
-        // network/CORS/port issue? try the alternate port once
-        const alt = togglePort(API);
-        if (alt !== API) {
-            try {
-                const url2 = `${alt}${path}`;
-                const res2 = await fetch(url2, {
-                    method,
-                    headers: _headers(),
-                    body: body ? JSON.stringify(body) : undefined,
-                });
-                if (!res2.ok) throw new Error(`${res2.status} ${res2.statusText}`);
-                // Success on alt — persist it
-                setApiBase(alt);
-                return await res2.json();
-            } catch {
-                throw e;
-            }
-        }
-        throw e;
-    }
+    const url = `${API}${path}`;
+    const res = await fetch(url, {
+        method,
+        headers: _headers(),
+        body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    return await res.json();
 }
 
 // -------------------------------------------------------------
