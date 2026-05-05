@@ -69,4 +69,32 @@ describe("AgentRegistry", function () {
     expect(recB.id).to.equal(idB);
     expect(recB.role).to.equal("recovery");
   });
+
+  describe("lowercase role rule", function () {
+    it("rejects uppercase role on ownerRegister with RoleNotLowercase", async function () {
+      // adminRole is keyed by string; uppercase / lowercase variants
+      // are distinct mapping keys. Enforcing all-lowercase at the
+      // registration site eliminates the case-mismatch privilege gap
+      // (e.g., owner sets adminRole["Cooperative"] but agents are
+      // registered with role "cooperative" — or vice versa).
+      const id = ethers.id("agent:Cooperative:alice");
+      await expect(
+        registry.connect(owner).ownerRegister(alice.address, id, "Cooperative", "meta:v1")
+      ).to.be.revertedWithCustomError(registry, "RoleNotLowercase");
+    });
+
+    it("rejects uppercase role on setAdminRole", async function () {
+      await expect(
+        registry.connect(owner).setAdminRole("Distributor", true)
+      ).to.be.revertedWithCustomError(registry, "RoleNotLowercase");
+    });
+
+    it("accepts lowercase roles with non-letter characters", async function () {
+      // Role strings can carry domain suffixes (digits, hyphens) so
+      // the lowercase check must only reject A..Z, not punctuation.
+      await expect(
+        registry.connect(owner).setAdminRole("cooperative-region-1", true)
+      ).to.emit(registry, "AdminRoleUpdated").withArgs("cooperative-region-1", true);
+    });
+  });
 });

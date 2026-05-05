@@ -164,4 +164,25 @@ describe("PolicyStore", function () {
     const [, , vals] = await store.getPolicyMatrix(key);
     expect(vals.map((v) => Number(v))).to.deep.equal([10, 20, 30, 40, 50, 60]);
   });
+
+  it("registerMatrixKey rejects matrices over MAX_MATRIX_CELLS=256", async function () {
+    // 17 * 17 = 289 cells, above the 256 cap. The cap exists to
+    // prevent gas-DoS via setPolicyMatrix's per-cell loop. Paper's
+    // largest matrix is THETA at (3, 6) = 18 cells, so 256 leaves
+    // generous headroom while keeping the loop bounded.
+    const key = ethers.id("OVERSIZE_MATRIX");
+    await expect(
+      store.connect(owner).registerMatrixKey(key, 17, 17, 1000)
+    ).to.be.revertedWith("matrix too large");
+  });
+
+  it("registerMatrixKey accepts matrices exactly at MAX_MATRIX_CELLS=256", async function () {
+    // 16 * 16 = 256 cells, at the cap. Boundary inclusivity guard.
+    const key = ethers.id("BOUNDARY_MATRIX");
+    await expect(
+      store.connect(owner).registerMatrixKey(key, 16, 16, 1000)
+    )
+      .to.emit(store, "MatrixKeyRegistered")
+      .withArgs(key, 16, 16, 1000);
+  });
 });

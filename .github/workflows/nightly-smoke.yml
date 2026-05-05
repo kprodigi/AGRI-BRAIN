@@ -50,33 +50,72 @@ jobs:
           BENCHMARK_WRITE_COMPAT: "true"
         run: |
           python mvp/simulation/benchmarks/run_benchmark_suite.py
-      - name: Print smoke summary
+      - name: Print smoke summary + baseline comparison
         # Human-readable digest of the nightly run that lands in the
         # job log so a maintainer doesn't have to download artifacts to
-        # see whether numbers regressed.
+        # see whether numbers regressed. Compares against the committed
+        # baseline ``mvp/simulation/nightly_baseline.json`` if present;
+        # an out-of-band metric (ARI / Waste / RLE / SLCA off by >5%)
+        # fails the workflow so a regression actually pages someone
+        # rather than silently lurking in an artifact upload.
         run: |
           python - <<'PY'
           import json, os, sys
           path = "mvp/simulation/results/benchmark_summary.json"
+          baseline_path = "mvp/simulation/nightly_baseline.json"
           if not os.path.exists(path):
               print(f"::warning::{path} not produced by the smoke run")
               sys.exit(0)
           with open(path) as f:
               data = json.load(f)
           summary = data.get("summary", data)
+
+          baseline = None
+          if os.path.exists(baseline_path):
+              with open(baseline_path) as f:
+                  baseline = json.load(f)
+              print(f"Comparing against baseline at {baseline_path}")
+          else:
+              print(f"::notice::No baseline at {baseline_path}; comparison skipped.")
+
           print("\n=== Nightly smoke summary (agribrain) ===")
+          tolerance = 0.05  # 5% bands per metric
+          out_of_band = []
           for sc in ("baseline", "heatwave", "overproduction",
                      "cyber_outage", "adaptive_pricing"):
               row = summary.get(sc, {}).get("agribrain", {})
               if not row:
                   print(f"  {sc:>18s}: <missing>")
                   continue
-              ari   = row.get("ari", {}).get("mean", float("nan"))
-              waste = row.get("waste", {}).get("mean", float("nan"))
-              rle   = row.get("rle", {}).get("mean", float("nan"))
-              slca  = row.get("slca", {}).get("mean", float("nan"))
-              print(f"  {sc:>18s}: ARI={ari:.3f}  Waste={waste:.3f}  "
-                    f"RLE={rle:.3f}  SLCA={slca:.3f}")
+              metrics = {}
+              for key in ("ari", "waste", "rle", "slca"):
+                  metrics[key] = row.get(key, {}).get("mean", float("nan"))
+              line = (
+                  f"  {sc:>18s}: ARI={metrics['ari']:.3f}  "
+                  f"Waste={metrics['waste']:.3f}  RLE={metrics['rle']:.3f}  "
+                  f"SLCA={metrics['slca']:.3f}"
+              )
+              if baseline is not None:
+                  base_row = (baseline.get("summary") or baseline).get(sc, {}).get("agribrain", {})
+                  for key, current in metrics.items():
+                      ref = base_row.get(key, {}).get("mean") if isinstance(base_row.get(key), dict) else base_row.get(key)
+                      if ref is None or current != current:  # NaN check
+                          continue
+                      if abs(ref) < 1e-9:
+                          continue
+                      drift = abs(current - ref) / abs(ref)
+                      if drift > tolerance:
+                          out_of_band.append(
+                              f"{sc}.{key}: current={current:.3f} baseline={ref:.3f} "
+                              f"drift={100*drift:.1f}% > {100*tolerance:.0f}%"
+                          )
+              print(line)
+          if out_of_band:
+              print()
+              print("::error::Nightly smoke metrics out of baseline band (5%):")
+              for msg in out_of_band:
+                  print(f"  - {msg}")
+              sys.exit(1)
           print()
           PY
       - name: Upload benchmark artifact

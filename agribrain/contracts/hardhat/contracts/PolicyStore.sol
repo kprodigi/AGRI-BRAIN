@@ -122,6 +122,15 @@ contract PolicyStore {
         emit KeyRegistered(key, minValue, maxValue);
     }
 
+    /// @dev Hard upper bound on matrix cell count to prevent gas-DoS via
+    /// pathologically-large matrices. The paper's largest matrix is THETA
+    /// at (3, 6) = 18 cells; THETA_CONTEXT is (3, 5) = 15. The 256-cell
+    /// cap leaves >10x headroom for future expansion while making
+    /// setPolicyMatrix's per-cell loop bounded by a small constant. A
+    /// matrix above this cap is rejected at registration time so a
+    /// caller cannot register a key that would later DoS setPolicyMatrix.
+    uint256 internal constant MAX_MATRIX_CELLS = 256;
+
     function _registerMatrix(
         bytes32 key,
         uint256 expectedRows,
@@ -129,6 +138,7 @@ contract PolicyStore {
         uint256 maxAbsMilli
     ) internal {
         require(expectedRows > 0 && expectedCols > 0, "shape>0");
+        require(expectedRows * expectedCols <= MAX_MATRIX_CELLS, "matrix too large");
         if (!matrixBounds[key].registered) {
             registeredMatrixKeys.push(key);
         }

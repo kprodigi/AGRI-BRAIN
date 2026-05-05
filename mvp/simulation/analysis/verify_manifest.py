@@ -83,6 +83,21 @@ def main() -> int:
         default=str(MANIFEST_PATH),
         help="Path to artifact_manifest.json (default: %(default)s).",
     )
+    parser.add_argument(
+        "--require-tracked",
+        action="store_true",
+        help=(
+            "When combined with --allow-missing, hard-fail on any "
+            "missing artifact that matches the git-tracked allowlist "
+            "(see TRACKED_PATTERNS below). Untracked / gitignored "
+            "artifacts (mcp_interop_*, traces_*, learning_trajectory_*, "
+            "context_alignment_*, benchmark_seeds/*) still soft-warn. "
+            "This tightens the CI gate so a tracked-figure deletion "
+            "cannot pass while gitignored artifacts (which are not in "
+            "a fresh CI checkout) still warn cleanly. Recommended for "
+            "the artifact-validation CI job."
+        ),
+    )
     args = parser.parse_args()
 
     manifest_path = Path(args.manifest)
@@ -114,6 +129,33 @@ def main() -> int:
     #    is intentionally not pinned by SHA.
     SKIP = {"artifact_manifest.json", "validation_report.json"}
 
+    # File-name patterns that ARE tracked by git (the allowlist in
+    # .gitignore under ``mvp/simulation/results/``). When --require-tracked
+    # is set together with --allow-missing, a missing artifact that
+    # matches one of these patterns is a hard failure rather than a
+    # warning. Keep this list in lockstep with the .gitignore allowlist
+    # (see top-level .gitignore around line 82).
+    import fnmatch as _fnmatch_v
+    _TRACKED_PATTERNS = (
+        "fig*.png", "fig*.pdf",
+        "table*.csv",
+        "benchmark_summary.json", "benchmark_significance.json",
+        "stress_summary.json", "stress_degradation.csv",
+        "feature_heatmap_data.json",
+    )
+
+    def _is_tracked(name: str) -> bool:
+        """Return True if ``name`` matches a tracked file pattern.
+
+        ``name`` is the manifest's relative POSIX path (e.g.
+        ``"fig9_robustness.png"`` or
+        ``"benchmark_seeds/seed_42.json"``); the patterns target the
+        BASENAME so subdirectory paths (benchmark_seeds/*) correctly
+        return False.
+        """
+        base = name.split("/")[-1]
+        return any(_fnmatch_v.fnmatch(base, p) for p in _TRACKED_PATTERNS)
+
     errors = 0
     checked = 0
     skipped = 0
@@ -130,6 +172,17 @@ def main() -> int:
             continue
         path = manifest_path.parent / name
         if not path.exists():
+            # Tracked artifacts MUST exist on a fresh checkout (they
+            # are in the .gitignore allowlist). Untracked artifacts
+            # (mcp_interop_*, traces_*, etc.) only exist after a sim
+            # run; --allow-missing is for them.
+            if args.require_tracked and _is_tracked(name):
+                print(
+                    f"FAIL: missing tracked artifact (require-tracked): "
+                    f"{name}"
+                )
+                errors += 1
+                continue
             if args.allow_missing:
                 print(f"WARN: missing artifact (allow-missing): {path.name}")
                 missing_warnings += 1

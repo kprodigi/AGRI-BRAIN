@@ -32,6 +32,8 @@ contract AgentRegistry {
     error AlreadyRegistered();
     error EmptyRole();
 
+    error RoleNotLowercase();
+
     constructor() {
         owner = msg.sender;
         adminRole["cooperative"] = true;
@@ -42,8 +44,26 @@ contract AgentRegistry {
         _;
     }
 
+    /// @dev Reject role strings that contain any uppercase ASCII letter.
+    /// adminRole is keyed by string, so without normalisation
+    /// ``adminRole["Cooperative"]`` and ``adminRole["cooperative"]`` are
+    /// distinct keys -- a typo by the owner could create a silent
+    /// privilege gap. This guard enforces all role keys to be lowercase
+    /// at the registration site so the mapping has a single canonical
+    /// key per role. Non-letter characters and digits are passed
+    /// through unchanged so role strings can still carry domain
+    /// suffixes (e.g. "cooperative-region-1").
+    function _requireLowercaseRole(string memory role) internal pure {
+        bytes memory b = bytes(role);
+        for (uint256 i = 0; i < b.length; i++) {
+            // ASCII A..Z is 0x41..0x5A.
+            if (b[i] >= 0x41 && b[i] <= 0x5A) revert RoleNotLowercase();
+        }
+    }
+
     /// @notice Owner can extend or revoke admin authority on a role.
     function setAdminRole(string calldata role, bool allowed) external onlyOwner {
+        _requireLowercaseRole(role);
         adminRole[role] = allowed;
         emit AdminRoleUpdated(role, allowed);
     }
@@ -81,6 +101,7 @@ contract AgentRegistry {
         string calldata meta
     ) internal {
         if (bytes(role).length == 0) revert EmptyRole();
+        _requireLowercaseRole(role);
         if (agents[account].id != bytes32(0)) revert AlreadyRegistered();
         agents[account] = Agent({id: id, role: role, meta: meta, active: true});
         emit Registered(account, id, role, meta);

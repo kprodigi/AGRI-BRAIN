@@ -98,6 +98,32 @@ describe("AgriDAO", function () {
     await expect(dao.connect(outsider).setExecutionDelay(60)).to.be.revertedWith("not owner");
   });
 
+  it("emits ParamChanged on every governance setter", async function () {
+    // Off-chain indexers / monitors must be able to observe quorum
+    // and timing changes; pre-2026-05 the setters were silent so a
+    // malicious owner could shrink quorum to 1 with no on-chain
+    // event-log breadcrumb.
+    const oldQuorum = await dao.QUORUM_THRESHOLD();
+    await expect(dao.connect(owner).setQuorumThreshold(7))
+      .to.emit(dao, "ParamChanged")
+      .withArgs(ethers.id("QUORUM_THRESHOLD"), oldQuorum, 7);
+
+    const oldPeriod = await dao.VOTING_PERIOD();
+    await expect(dao.connect(owner).setVotingPeriod(9000))
+      .to.emit(dao, "ParamChanged")
+      .withArgs(ethers.id("VOTING_PERIOD"), oldPeriod, 9000);
+
+    const oldDelay = await dao.EXECUTION_DELAY();
+    await expect(dao.connect(owner).setExecutionDelay(180))
+      .to.emit(dao, "ParamChanged")
+      .withArgs(ethers.id("EXECUTION_DELAY"), oldDelay, 180);
+
+    const oldVDelay = await dao.VOTING_DELAY();
+    await expect(dao.connect(owner).setVotingDelay(60))
+      .to.emit(dao, "ParamChanged")
+      .withArgs(ethers.id("VOTING_DELAY"), oldVDelay, 60);
+  });
+
   it("reverts vote after voting period ends", async function () {
     await dao.connect(agent1).propose("late vote", ethers.id("late"), 1);
     const period = await dao.VOTING_PERIOD();

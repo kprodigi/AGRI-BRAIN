@@ -106,27 +106,30 @@ jobs:
           STRICT_VALIDATION: "1"
         run: |
           python mvp/simulation/validation/validate_results.py
-      - name: Verify artifact manifest (strict commit, allow-missing in CI)
+      - name: Verify artifact manifest (strict commit + tracked allowlist)
         # On CI we don't have the gitignored artifacts (mcp_interop_*,
-        # traces_*); --allow-missing turns those into warnings instead of
-        # errors so the strict git_commit pin and the SHA-256s of the
-        # tracked artifacts still gate. The HPC delivery pipeline must
-        # invoke verify_manifest WITHOUT --allow-missing to ensure every
-        # promised artifact is present.
+        # traces_*); --allow-missing turns those into warnings. But
+        # the 2026-05 audit flagged that --allow-missing alone makes
+        # the gate too lax: a deleted tracked figure also passed as a
+        # warning. --require-tracked tightens the gate so any missing
+        # *tracked* artifact (fig*.png, fig*.pdf, table*.csv,
+        # benchmark_*.json, etc.) is a hard failure, while gitignored
+        # artifacts still soft-warn. The HPC delivery pipeline runs
+        # without either flag to ensure every promised artifact is
+        # present.
         run: |
-          python mvp/simulation/analysis/verify_manifest.py --strict-commit --allow-missing
+          python mvp/simulation/analysis/verify_manifest.py \
+              --strict-commit --allow-missing --require-tracked
       - name: Deterministic-mode regression check
         env:
           DETERMINISTIC_MODE: "true"
-          # Allow the guard to skip cleanly when a baseline snapshot is not
-          # committed yet (e.g. first run on a new branch). Set this env var
-          # to 0 in protected branches to make missing snapshots a hard
-          # failure -- otherwise the only failure path the guard reports
-          # (drift) still gates the build deterministically. The previous
-          # `|| echo "..."` broad mask suppressed every failure mode
-          # including drift; this scoped opt-in only suppresses the
-          # missing-baseline branch.
-          ALLOW_MISSING_BASELINE: "1"
+          # Branch-conditional ALLOW_MISSING_BASELINE: PR / feature
+          # branches may legitimately predate the baseline snapshot
+          # commit, so a missing baseline soft-skips. On main, the
+          # baseline must exist or the build fails -- this prevents a
+          # silent regression from landing because the guard self-
+          # disabled on a missing snapshot.
+          ALLOW_MISSING_BASELINE: ${{ github.ref == 'refs/heads/main' && '0' || '1' }}
         run: |
           python mvp/simulation/validation/run_regression_guard.py
 
@@ -160,20 +163,37 @@ jobs:
               agribrain/backend/requirements-lock.txt | head -20
             cat /tmp/freeze.lock.bare
           } > /tmp/freeze.lock.full
-      - name: Compare with committed lockfile (warn-only)
+      - name: Compare with committed lockfile (warn on branches, fail on tags)
         run: |
-          # Strip the header from both sides so the comparison is purely
-          # the version pins.
-          grep -v '^#' agribrain/backend/requirements-lock.txt | sort > /tmp/committed.lock
+          # Strip the header AND env-marker conditions on both sides so the
+          # comparison is purely the version pins. ``pywin32==311 ; sys_platform == "win32"``
+          # appears in the committed file as the env-marker form but the
+          # Linux freeze emits it without the marker (or omits it entirely).
+          grep -v '^#' agribrain/backend/requirements-lock.txt \
+              | sed 's/[[:space:]]*;[[:space:]].*$//' \
+              | sort > /tmp/committed.lock
           grep -v '^#' /tmp/freeze.lock.bare | sort > /tmp/fresh.lock
           if diff -u /tmp/committed.lock /tmp/fresh.lock > /tmp/lock.diff; then
             echo "Lockfile is current."
           else
-            echo "::warning::Committed lockfile drifted from a fresh 3.11 freeze."
-            echo "::group::diff (committed vs fresh)"
-            cat /tmp/lock.diff
-            echo "::endgroup::"
-            echo "Refresh procedure: docs/RELEASE.md step 2."
+            # On version tags (refs/tags/v*) drift is a hard failure: a
+            # tagged release must ship a lockfile that resolves
+            # bit-identically. On branch / PR pushes the drift is a
+            # warning so transitive-dep updates do not red the build
+            # outside of release procedure.
+            ref="${GITHUB_REF:-}"
+            if [[ "$ref" == refs/tags/v* ]]; then
+              echo "::error::Lockfile drifted from a fresh 3.11 freeze on a tagged release ($ref)."
+              cat /tmp/lock.diff
+              echo "Refresh procedure: docs/RELEASE.md step 2, then re-tag."
+              exit 1
+            else
+              echo "::warning::Committed lockfile drifted from a fresh 3.11 freeze."
+              echo "::group::diff (committed vs fresh)"
+              cat /tmp/lock.diff
+              echo "::endgroup::"
+              echo "Refresh procedure: docs/RELEASE.md step 2."
+            fi
           fi
       - name: Upload refreshed lockfile (Python 3.11)
         uses: actions/upload-artifact@v4
@@ -262,3 +282,62 @@ jobs:
           slither-args: --exclude-informational --exclude-low
           fail-on: medium
           slither-version: 0.11.4
+
+  # Supply-chain CVE audits. Advisory by design: a new CVE in a
+  # transitive dep should not red the build (we cannot patch upstream
+  # in real time), but a maintainer pulling up CI logs should see it.
+  # Tightening to fail-on-high is the natural next step once the
+  # repo is on a regular dep-bump cadence.
+  python-audit:
+    name: pip-audit (advisory)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pip-audit
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+      - name: Audit lockfile (advisory)
+        run: |
+          # --requirement points at the canonical lockfile; --strict
+          # would treat any vulnerability as a build failure but is
+          # too noisy for a research repo on a non-emergency cadence.
+          # Continue-on-error keeps the workflow green; the report is
+          # visible in the job log for the maintainer.
+          pip-audit --requirement agribrain/backend/requirements-lock.txt \
+              --strict 2>&1 | tee /tmp/pip-audit.log || true
+          echo "::group::pip-audit summary"
+          tail -50 /tmp/pip-audit.log
+          echo "::endgroup::"
+        continue-on-error: true
+
+  frontend-audit:
+    name: npm audit (advisory)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: agribrain/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: npm audit (production deps only, advisory)
+        run: |
+          # --omit=dev limits the surface to runtime deps; dev-only
+          # vulnerabilities (eslint plugins, vitest etc.) do not ship
+          # to users and are reported separately if needed.
+          # Continue-on-error keeps the workflow green; report visible
+          # in the job log.
+          npm audit --omit=dev --audit-level=high 2>&1 | tee /tmp/npm-audit.log || true
+          echo "::group::npm audit summary"
+          tail -50 /tmp/npm-audit.log
+          echo "::endgroup::"
+        continue-on-error: true

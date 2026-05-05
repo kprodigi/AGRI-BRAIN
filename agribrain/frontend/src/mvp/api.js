@@ -5,12 +5,37 @@
 // network failure the retry doubled the user-visible latency
 // (every failed request triggered a second one to a port that was
 // also unreachable) and persistently mutated localStorage to a
-// dead URL. The original API base resolution chain is preserved:
-// window.API_BASE > localStorage > http://127.0.0.1:8100 default.
+// dead URL.
+//
+// API base resolution order (first non-empty wins):
+//   1. ``window.API_BASE``      -- runtime override injected by
+//                                  the host page (index.html /
+//                                  reverse proxy).
+//   2. ``localStorage.API_BASE`` -- per-browser pin set via the
+//                                   admin panel snippet.
+//   3. ``import.meta.env.VITE_API_BASE`` -- build-time pin from
+//                                            .env / .env.production
+//                                            (added 2026-05 so a
+//                                            production build can
+//                                            point at a non-localhost
+//                                            backend without editing
+//                                            index.html or relying
+//                                            on localStorage).
+//   4. ``http://127.0.0.1:8100`` -- final dev default.
 // -------------------------------------------------------------
 import { getApiKey } from "@/lib/utils";
 
-let API = (window.API_BASE || localStorage.getItem('API_BASE') || 'http://127.0.0.1:8100').replace(/\/$/, '');
+const _VITE_API_BASE =
+    (typeof import.meta !== 'undefined' && import.meta.env
+        ? import.meta.env.VITE_API_BASE
+        : '') || '';
+
+let API = (
+    window.API_BASE
+    || localStorage.getItem('API_BASE')
+    || _VITE_API_BASE
+    || 'http://127.0.0.1:8100'
+).replace(/\/$/, '');
 
 export function getApiBase() {
     return API;

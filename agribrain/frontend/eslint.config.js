@@ -38,7 +38,6 @@ export default [
       "src/components/ui/**/*.jsx",
       "src/main.jsx",
       "src/hooks/useTheme.jsx",
-      "src/ui/components/UiPrimitives.jsx",
     ],
     rules: {
       "react-refresh/only-export-components": "off",

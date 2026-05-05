@@ -121,6 +121,14 @@ contract AgriDAO is _LocalReentrancyGuard {
     event Finalized(uint256 indexed id, ProposalState newState);
     event Queued(uint256 indexed id);
     event Executed(uint256 indexed id);
+    /// @notice Emitted when the owner changes a governance parameter.
+    /// Off-chain indexers / monitors should subscribe to this event to
+    /// detect quorum / voting-period / execution-delay / voting-delay
+    /// changes; pre-2026-05 these setters were silent so a malicious
+    /// owner could shrink quorum to 1 without leaving an on-chain
+    /// trail in the event log. ``key`` is the keccak256 of the
+    /// parameter name (e.g. ``keccak256("QUORUM_THRESHOLD")``).
+    event ParamChanged(bytes32 indexed key, uint256 oldValue, uint256 newValue);
 
     // -----------------------------------------------------------------
     // Modifiers
@@ -153,19 +161,27 @@ contract AgriDAO is _LocalReentrancyGuard {
     // -----------------------------------------------------------------
 
     function setQuorumThreshold(uint256 _quorum) external onlyOwner {
+        uint256 old = QUORUM_THRESHOLD;
         QUORUM_THRESHOLD = _quorum;
+        emit ParamChanged(keccak256("QUORUM_THRESHOLD"), old, _quorum);
     }
 
     function setVotingPeriod(uint256 _period) external onlyOwner {
+        uint256 old = VOTING_PERIOD;
         VOTING_PERIOD = _period;
+        emit ParamChanged(keccak256("VOTING_PERIOD"), old, _period);
     }
 
     function setExecutionDelay(uint256 _delay) external onlyOwner {
+        uint256 old = EXECUTION_DELAY;
         EXECUTION_DELAY = _delay;
+        emit ParamChanged(keccak256("EXECUTION_DELAY"), old, _delay);
     }
 
     function setVotingDelay(uint256 _delay) external onlyOwner {
+        uint256 old = VOTING_DELAY;
         VOTING_DELAY = _delay;
+        emit ParamChanged(keccak256("VOTING_DELAY"), old, _delay);
     }
 
     // -----------------------------------------------------------------
