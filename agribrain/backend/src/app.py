@@ -4,7 +4,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any, Literal
+from typing import Dict, Any
 import uuid
 
 import inspect
@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.responses import RedirectResponse, FileResponse, HTMLResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 # PiRAG / MCP routers
 from pirag.api.routes.rag import router as rag_router
@@ -725,7 +725,25 @@ class DecideIn(BaseModel):
     role: str
     step: int | None = None          # optional row index (None → last row)
     deterministic: bool = True       # argmax when True, sample when False
-    mode: Literal["static", "hybrid_rl", "no_pinn", "no_slca", "agribrain", "no_context", "mcp_only", "pirag_only"] = "agribrain"
+    # Mode is validated at request time against ``action_selection.VALID_MODES``
+    # (the single source of truth used by the simulator). The previous
+    # ``Literal[...]`` only listed the 8 canonical modes -- the §4.7
+    # ablation modes (cold_start, pert_*, theta_pert_*, no_bonus) returned
+    # 422 from REST even though the simulator runs them happily, which
+    # broke the "REST mirrors simulator" claim a paper reviewer would
+    # expect. Validating against VALID_MODES instead keeps the two paths
+    # in lock-step automatically.
+    mode: str = "agribrain"
+
+    @field_validator("mode")
+    @classmethod
+    def _mode_in_valid_modes(cls, v: str) -> str:
+        from src.models.action_selection import VALID_MODES
+        if v not in VALID_MODES:
+            raise ValueError(
+                f"mode={v!r} is not one of {sorted(VALID_MODES)!r}"
+            )
+        return v
 
 
 @API.post("/decide")
@@ -742,14 +760,25 @@ def decide(d: DecideIn):
     row = df.iloc[idx]
 
     # ---- state vector s_t = [rho, I, Y_hat, T, tau] ----------------------
+    # The fallbacks for ``inv`` and ``y_hat`` use the simulator's
+    # canonical baseline constants (``INV_BASELINE``=12000 units,
+    # ``BASELINE_DEMAND``=20 units/step) rather than 100.0. The pre-
+    # 2026-05 hardcoded 100.0 made phi_1 = 100/15000 = 0.007 vs the
+    # simulator's ~0.83 for the same row, which produced a different
+    # action distribution from REST vs the published benchmark.
+    from src.models.action_selection import (
+        BASELINE_DEMAND as _BASELINE_DEMAND,
+        INV_BASELINE as _INV_BASELINE,
+    )
+
     rho = float(row.get("spoilage_risk", 1.0 - row["shelf_left"]))
-    inv = float(row.get("inventory_units", 100.0))
+    inv = float(row.get("inventory_units", _INV_BASELINE))
     temp = float(row["tempC"])
 
     # Demand and supply forecasts both routed through the MCP tools so
     # this endpoint shares the simulator's forecasting code path.
     demand_fc = _demand_forecast(df.iloc[: idx + 1], horizon=1)
-    y_hat = float(demand_fc["forecast"][0]) if demand_fc["forecast"] else 100.0
+    y_hat = float(demand_fc["forecast"][0]) if demand_fc["forecast"] else _BASELINE_DEMAND
     demand_std = float(demand_fc.get("std", 0.0) or 0.0)
     try:
         from pirag.mcp.tools.yield_query import query_yield

@@ -1058,7 +1058,16 @@ def select_action(
         # in test_metric_variants.py.
         amp = slca_amp_coeff if slca_amp_coeff is not None else 0.40
         slca_amplification = 1.0 + amp * min(abs(context_modifier[1]), 1.0)
-        slca_boost = (SLCA_BONUS + SLCA_RHO_BONUS * rho) * (slca_amplification - 1.0)
+        # Use the locally-computed _slca_bonus / _slca_rho_bonus rather
+        # than the module-level constants. These locals carry both
+        # (a) the agribrain_no_bonus zero-out (lines 983-985 above), and
+        # (b) any RewardShapingLearner deltas (lines 974-975). The pre-
+        # 2026-05 code used SLCA_BONUS / SLCA_RHO_BONUS directly, which
+        # silently re-injected the bonus on agribrain_no_bonus when a
+        # context modifier was present -- breaking the §4.7 ablation
+        # that is supposed to prove the ARI win comes from the context
+        # layer rather than the SLCA shaping.
+        slca_boost = (_slca_bonus + _slca_rho_bonus * rho) * (slca_amplification - 1.0)
         logits = logits + context_modifier + slca_boost
 
     # Apply per-(mode, seed) policy temperature. T = 1 reproduces the

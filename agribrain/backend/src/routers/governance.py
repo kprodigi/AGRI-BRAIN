@@ -248,9 +248,19 @@ class PolicyStoreGetRequest(BaseModel):
     key: str
 
 class AgentRegisterRequest(BaseModel):
+    # ``account`` is the on-chain address of the agent being registered.
+    # The Solidity contract's sponsorRegister / ownerRegister paths
+    # both take this as the first arg; without it the wrapper had no
+    # way to admit anyone other than the calling EOA. Added 2026-05
+    # alongside the AgentRegistry ABI fix that aligned the backend
+    # wrapper with the actual on-chain function signatures.
+    account: str
     agent_id: str
     role: str
     meta: str = ""
+    # method = "sponsorRegister" (production) or "ownerRegister"
+    # (bootstrap-only, reverts unless caller is contract owner).
+    method: str = "sponsorRegister"
 
 class AgentActiveRequest(BaseModel):
     active: bool
@@ -354,10 +364,16 @@ def contract_policy_store_get(req: PolicyStoreGetRequest):
 
 @router.post("/contracts/agent-registry/register")
 def contract_agent_register(req: AgentRegisterRequest):
-    """Register an agent on-chain."""
+    """Register an agent on-chain via sponsor or owner path.
+
+    See ``agent_register`` for the sponsor/owner semantics.
+    """
     from src.chain.contracts import agent_register
     _try_autoload()
-    txh = agent_register(req.agent_id, req.role, req.meta, CHAIN)
+    txh = agent_register(
+        req.account, req.agent_id, req.role, req.meta, CHAIN,
+        method=req.method,
+    )
     return {"ok": txh is not None, "tx_hash": txh}
 
 @router.post("/contracts/agent-registry/set-active")

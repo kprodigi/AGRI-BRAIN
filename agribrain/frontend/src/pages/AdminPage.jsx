@@ -117,7 +117,21 @@ function PolicyTab() {
 
 // ===================== Blockchain Tab =====================
 function BlockchainTab() {
-  const [form, setForm] = useState({ rpc: "http://127.0.0.1:8545", chain_id: 31337, private_key: "", addresses_json: "" });
+  // The chain private key is intentionally NOT exposed via the UI form.
+  // It is supplied only via the CHAIN_PRIVKEY environment variable on the
+  // backend host so the secret never enters browser memory / devtools
+  // history / extension keylogger surfaces. The backend's
+  // /governance/chain endpoint (routers/governance.py) explicitly drops
+  // any private_key field in inbound POST payloads as 2026-04 hardening,
+  // and the GET response returns only a redacted ``private_key_set``
+  // boolean -- never the key value -- so this form has no source from
+  // which to populate or send a key.
+  const [form, setForm] = useState({ rpc: "http://127.0.0.1:8545", chain_id: 31337, addresses_json: "" });
+  // ``cfg`` mirrors the GET /governance/chain response so the read-only
+  // ``private_key_set`` boolean (and any other server-derived flags)
+  // can render alongside the editable form fields without ever leaking
+  // a secret value into ``form``.
+  const [cfg, setCfg] = useState(null);
   const [autoSync, setAutoSync] = useState(true);
   const [status, setStatus] = useState({ chainIdDec: null, blockNumber: null, _live_block: null, decisionLoggerOk: null, lastTx: null, lastReceiptStatus: null, error: null });
   const [saving, setSaving] = useState(false);
@@ -126,7 +140,8 @@ function BlockchainTab() {
     (async () => {
       try {
         const c = await jget("/governance/chain");
-        setForm({ rpc: c.rpc ?? "http://127.0.0.1:8545", chain_id: c.chain_id ?? 31337, private_key: c.private_key ?? "", addresses_json: c.addresses_json ?? "" });
+        setCfg(c);
+        setForm({ rpc: c.rpc ?? "http://127.0.0.1:8545", chain_id: c.chain_id ?? 31337, addresses_json: c.addresses_json ?? "" });
       } catch {}
     })();
   }, []);
@@ -230,8 +245,12 @@ function BlockchainTab() {
               <Input value={form.chain_id} onChange={(e) => setForm((s) => ({ ...s, chain_id: e.target.value }))} className="font-mono text-sm" />
             </div>
             <div>
-              <Label className="text-sm mb-1.5 block">Private Key (optional)</Label>
-              <Input type="password" value={form.private_key} onChange={(e) => setForm((s) => ({ ...s, private_key: e.target.value }))} className="font-mono text-sm" />
+              <Label className="text-sm mb-1.5 block">Private Key</Label>
+              <div className="text-sm text-muted-foreground py-2">
+                Set via <code className="font-mono text-xs">CHAIN_PRIVKEY</code> environment
+                variable on the backend host. {/* Never render the key value or accept input. */}
+                Status: <strong>{cfg?.private_key_set ? "configured" : "not configured"}</strong>.
+              </div>
             </div>
             <div>
               <Label className="text-sm mb-1.5 block">Addresses (JSON)</Label>

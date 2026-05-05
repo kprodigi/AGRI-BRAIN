@@ -182,10 +182,16 @@ function PolicyTab() {
 
 /* ---------------------- Blockchain with auto status + LIVE head ---------------------- */
 function ChainTab({ active }) {
+    // Private key is provisioned via the CHAIN_PRIVKEY env var on the
+    // backend; the form does not collect or transmit it. See
+    // pages/AdminPage.jsx for the same hardening on the canonical Admin
+    // route. The backend's /governance/chain endpoint drops any
+    // private_key field in inbound payloads (routers/governance.py
+    // 2026-04 hardening) and never returns the key value in GET
+    // responses -- only ``private_key_set`` boolean.
     const [form, setForm] = useState({
         rpc: "http://127.0.0.1:8545",
         chain_id: 31337,
-        private_key: "",
         addresses_json: "",
     });
     const [msg, setMsg] = useState("");
@@ -209,7 +215,6 @@ function ChainTab({ active }) {
                 setForm({
                     rpc: c.rpc ?? "http://127.0.0.1:8545",
                     chain_id: c.chain_id ?? 31337,
-                    private_key: c.private_key ?? "",
                     addresses_json: c.addresses_json ?? "",
                 });
             } catch { /* defaults ok */ }
@@ -315,7 +320,10 @@ function ChainTab({ active }) {
             <div className="grid md:grid-cols-2 gap-4">
                 <Text label="RPC" value={form.rpc} onChange={set("rpc")} />
                 <Text label="Chain ID (saved)" value={form.chain_id} onChange={set("chain_id")} />
-                <Text label="Private Key (optional)" value={form.private_key} onChange={set("private_key")} />
+                <div className="text-sm text-gray-600 py-2">
+                    <div className="font-semibold">Private Key</div>
+                    <div>Set via <code>CHAIN_PRIVKEY</code> env var on backend host (never collected in browser).</div>
+                </div>
                 <TextArea label="Addresses (JSON)" value={form.addresses_json} onChange={set("addresses_json")} rows={5} />
             </div>
 

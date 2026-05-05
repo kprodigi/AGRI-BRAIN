@@ -217,13 +217,32 @@ POLICY_STORE_ABI = [
 ]
 
 AGENT_REGISTRY_ABI = [
+    # ownerRegister: bootstrap path used during deployment. Only the
+    # deployer address (contract owner) can call it. Solidity signature:
+    #   function ownerRegister(address account, bytes32 id, string role, string meta)
     {
         "inputs": [
+            {"internalType": "address", "name": "account", "type": "address"},
             {"internalType": "bytes32", "name": "id", "type": "bytes32"},
             {"internalType": "string", "name": "role", "type": "string"},
             {"internalType": "string", "name": "meta", "type": "string"},
         ],
-        "name": "register",
+        "name": "ownerRegister",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
+    # sponsorRegister: production path. An existing active agent with
+    # an admin role admits a new agent. Solidity signature:
+    #   function sponsorRegister(address account, bytes32 id, string role, string meta)
+    {
+        "inputs": [
+            {"internalType": "address", "name": "account", "type": "address"},
+            {"internalType": "bytes32", "name": "id", "type": "bytes32"},
+            {"internalType": "string", "name": "role", "type": "string"},
+            {"internalType": "string", "name": "meta", "type": "string"},
+        ],
+        "name": "sponsorRegister",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function",
@@ -531,14 +550,51 @@ def policy_store_get_matrix(
 # AgentRegistry
 # ---------------------------------------------------------------------------
 
-def agent_register(agent_id: str, role: str, meta: str, chain_cfg: dict) -> Optional[str]:
-    """Register an agent on-chain. Returns tx hash or None."""
+def agent_register(
+    account: str,
+    agent_id: str,
+    role: str,
+    meta: str,
+    chain_cfg: dict,
+    *,
+    method: str = "sponsorRegister",
+) -> Optional[str]:
+    """Register an agent on-chain. Returns tx hash or None.
+
+    The Solidity contract exposes two registration paths:
+
+    - ``sponsorRegister(address, bytes32, string, string)`` — production
+      path; the calling EOA must already be a registered agent with an
+      admin-tier role (``adminRole[role] == True``). This is the
+      default and what app integrations should use post-bootstrap.
+    - ``ownerRegister(address, bytes32, string, string)`` — bootstrap
+      path; only the contract owner (the deployer EOA stored on
+      construction) can call it. Used during initial cooperative
+      seeding before any sponsor with admin role exists. Pass
+      ``method="ownerRegister"`` to invoke this path.
+
+    The previous version of this wrapper called a ``register(bytes32,
+    string, string)`` 3-arg function that does not exist on the
+    deployed AgentRegistry.sol -- any chain submission would have
+    reverted with "function selector not found". Fixed in 2026-05.
+    """
+    # Validate the method first so a typo fails loudly even when the
+    # chain is not configured (i.e. _get_contract would return None
+    # for an unrelated reason). This makes the contract guarantee
+    # uniform across "chain configured" and "chain not configured"
+    # call paths.
+    if method not in ("sponsorRegister", "ownerRegister"):
+        raise ValueError(
+            f"agent_register: method must be 'sponsorRegister' or "
+            f"'ownerRegister', got {method!r}"
+        )
     result = _get_contract(chain_cfg, "AgentRegistry")
     if result is None:
         return None
     w3, acct, contract = result
     id_bytes = Web3.keccak(text=agent_id)
-    return _send_tx(w3, acct, contract.functions.register(id_bytes, role, meta), chain_cfg)
+    fn = getattr(contract.functions, method)
+    return _send_tx(w3, acct, fn(account, id_bytes, role, meta), chain_cfg)
 
 
 def agent_set_active(active: bool, chain_cfg: dict) -> Optional[str]:

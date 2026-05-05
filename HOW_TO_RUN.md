@@ -345,7 +345,7 @@ curl http://127.0.0.1:8100/audit/memo.pdf -o memo.pdf
 ### Simulation results (via backend)
 
 ```bash
-# Start simulation in background (5 scenarios x 8 modes, typically 4-15 min)
+# Start simulation in background (5 scenarios × 19 modes, typically 60-90 min in deterministic mode)
 curl -X POST http://127.0.0.1:8100/results/generate
 
 # Poll progress
@@ -451,8 +451,9 @@ done
 
 ## 6. Run standalone simulation and generate figures
 
-The standalone simulation runs all 5 scenarios x 8 modes (40 episodes)
-and produces publication-quality results. The state vector phi(s) is
+The standalone simulation runs all 5 scenarios × 19 modes (95 episodes
+single-seed: 8 canonical modes + 11 §4.7 sensitivity ablations) and
+produces publication-quality results. The state vector phi(s) is
 10-dimensional: six perception features (freshness, inventory pressure,
 demand point forecast, thermal stress, spoilage urgency, interaction),
 three forecast-channel features (supply point, supply uncertainty,
@@ -479,7 +480,7 @@ Results are saved to `mvp/simulation/results/`:
 | File                   | Description                                       |
 |------------------------|---------------------------------------------------|
 | `table1_summary.csv`     | Per-scenario metrics (3 methods x 5 scenarios)              |
-| `table2_ablation.csv`    | Full ablation study (8 modes x 5 scenarios) |
+| `table2_ablation.csv`    | Full ablation study (19 modes x 5 scenarios — 8 canonical + 11 §4.7 sensitivity ablations) |
 | `benchmark_summary.json` | Multi-seed benchmark means/std/CI                           |
 | `benchmark_significance.json` | Permutation-test p-values and effect sizes            |
 | `stress_summary.json`    | Stress-suite per-scenario robustness output                 |
@@ -489,13 +490,13 @@ Results are saved to `mvp/simulation/results/`:
 | `mcp_protocol_*.json`    | Genuine MCP JSON-RPC interaction logs                       |
 | `fig2_heatwave.png/pdf`  | Heatwave scenario: env exposure, spoilage trajectory, AgriBrain action probs, per-step (1-waste)*SLCA policy-quality factor (2x2) |
 | `fig3_overproduction.png/pdf` | Overproduction & reverse logistics: inventory vs demand, waste reduction, RLE trajectory, SLCA components (2x2) |
-| `fig4_cyber.png/pdf`     | Cyber outage: ARI per step, action distribution shift, cumulative anomaly defenses triggered (cooperative veto + physics gate + fault recovery) (1x3) |
+| `fig4_cyber.png/pdf`     | Cyber outage: ARI per step (a), action distribution shift pre/during outage (b), behavior shift = per-method reroute rate with 95% Wald-binomial CIs (c), outage impact = per-method ΔARI/ΔWaste/ΔService with Welch-style + bootstrap CIs (d). Causality reads top-down + left-right. (2x2, redesigned 2026-05.) |
 | `fig5_pricing.png/pdf`   | Adaptive pricing: demand + Bollinger triggers, routing distribution, price equity, per-step reward comparison across modes (2x2) |
 | `fig6_cross.png/pdf`     | Cross-scenario performance comparison: ARI / RLE / Waste / SLCA grouped bars across the 4 stress scenarios x 3 methods (2x2) |
-| `fig7_ablation.png/pdf`  | Ablation study: ARI / Waste / RLE grouped bars across 4 stress scenarios x 8 modes (1x3) |
+| `fig7_ablation.png/pdf`  | Ablation study: ARI / Waste / RLE grouped bars across 4 stress scenarios × 8 canonical modes (1x3) |
 | `fig8_green_ai.png/pdf`  | Green AI and carbon footprint: cumulative CO2 trajectory + total carbon bar chart (1x2) |
-| `fig9_robustness.png/pdf` | Performance gain over baselines + context honor: Cohen's d heatmap, ARI improvement vs baselines, 3-mode honor-rate per scenario (1x3) |
-| `fig10_latency_quality_frontier.png/pdf` | Latency vs ARI frontier: lightweight methods + context-aware methods with broken x-axis (1x2) |
+| `fig9_robustness.png/pdf` | Performance gain over baselines and context channel: (a) Cohen's d heatmap (5 scenarios × 5 baselines), (b) % ARI improvement forest plot with min-max range whiskers, (c) **context-influence rate** per scenario for {AgriBrain, MCP only, piRAG only} with paired-bootstrap CIs (1x3). The legacy honor-rate metric is retained alongside in `benchmark_summary.json` for the supplementary methods table. |
+| `fig10_latency_quality_frontier.png/pdf` | Latency vs ARI frontier: (a) lightweight methods, (b) context-aware methods with broken x-axis + overhead arrow, (c) **paired ΔARI vs No Context** bars per scenario (added 2026-05) with Wilcoxon signed-rank 95% CI whiskers from `benchmark_significance.json`. (1x3.) |
 
 Each figure is also saved as PDF for LaTeX inclusion.
 

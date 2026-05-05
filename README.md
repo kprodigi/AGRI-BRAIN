@@ -204,7 +204,7 @@ curl http://localhost:8100/health                # {"ok":true}
 
 ```bash
 cd mvp/simulation
-python generate_results.py    # 5 scenarios x 8 modes (40 episodes)
+python generate_results.py    # 5 scenarios × 19 modes (95 episodes: 8 canonical + 11 §4.7 ablations)
 python generate_figures.py    # publication figures (Fig. 2-10, PNG + PDF)
 ```
 
@@ -421,7 +421,7 @@ AGRI-BRAIN/
 | Task | Time |
 |------|------|
 | Quick smoke test (`DETERMINISTIC_MODE=true`, 1 seed) | ~5 min |
-| Single full run (5 scenarios x 8 modes) | ~15 min |
+| Single full run (5 scenarios × 19 modes — 8 canonical + 11 §4.7 ablations) | ~80 min (deterministic) |
 | Full 20-seed benchmark pipeline | ~90 min (local) / 3-5 h (HPC array) |
 | Complete reproduction including stress tests | ~2 h (local) / 6-10 h (HPC end-to-end) |
 
@@ -447,14 +447,14 @@ The system uses IoT sensor telemetry from fresh spinach cold-chain storage, incl
 If you use AGRI-BRAIN in your research, please cite:
 
 ```bibtex
-@software{sarker2025agribrain,
+@software{sarker2026agribrain,
   title   = {{AGRI-BRAIN}: Autonomous Governance and Circular Reverse-Logistics
              Intelligence in Agri-Food Supply Chains via Blockchain-Regulated
              AI Agents},
   author  = {Sarker, Nahid and Kazi, Monzure-Khoda},
-  year    = {2025},
+  year    = {2026},
   url     = {https://github.com/kprodigi/AGRI-BRAIN},
-  version = {1.1.0},
+  version = {1.2.0},
   license = {MIT}
 }
 ```

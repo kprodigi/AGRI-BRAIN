@@ -1841,38 +1841,35 @@ def _bar_xticklabels(ax, scenarios_plot):
 
 def _trace_based_yerr(data: dict, scenarios: list[str], mode: str,
                        metric: str) -> np.ndarray | None:
-    """Last-resort error bars derived from each episode's per-step
-    trace, when neither benchmark_summary.json nor benchmark_seeds/
-    are available (e.g., the figure is rendered from a single
-    ``run_all`` invocation in the ``data`` arg). Uses the std of the
-    metric's trace divided by sqrt(N) as a within-episode mean
-    standard error. This is a conservative fallback — the bootstrap
-    CI from a 20-seed HPC run is the canonical error source — but
-    it produces plot-scale error caps that read sensibly.
+    """Last-resort error-bar source when neither benchmark_summary.json
+    bootstrap CIs nor benchmark_seeds/ per-seed std arrays are present
+    (e.g. a single ``run_all(seed=...)`` invocation rendered from cwd).
+
+    2026-05 audit fix: pre-2026-05 this function returned ``sem *
+    sqrt(N) * 0.5`` -- the function's *own* docstring derided
+    "synthetic 5-percent-of-value bars" upstream and then inherited
+    the same sin with a different magic number. ``sem * sqrt(N)``
+    cancels the SEM denominator and devolves to plain within-episode
+    standard deviation; the trailing ``* 0.5`` is statistically
+    meaningless (it is neither a CI multiplier nor a confidence
+    coverage probability).
+
+    The right answer when no real uncertainty source is available is
+    "no error bars" -- which is what this function now returns. Code
+    paths that consume None render the bars without caps. The
+    bar-drawing call sites (fig 6 / 7 / 8 / 9 panel C) already gate
+    capsize/error_kw on ``yerr is not None`` so this is byte-stable
+    on the canonical HPC render (which always has bootstrap CIs from
+    aggregate_seeds.py) and only changes behaviour on the local-only
+    single-seed fallback path, where invisible error bars are now
+    honest about the absence of a multi-seed uncertainty estimate.
+
+    Reviewers running ``DETERMINISTIC_MODE=true python
+    generate_figures.py`` see fig 6/7/8 bars without caps and a clean
+    figure; reviewers running the canonical 20-seed HPC pipeline see
+    full bootstrap CI caps. No middle ground with a fudged magnitude.
     """
-    trace_field = {
-        "ari": "ari_trace", "waste": "waste_trace",
-        "slca": "slca_trace", "carbon": "carbon_trace",
-    }.get(metric)
-    if trace_field is None:
-        return None
-    errs = []
-    for sc in scenarios:
-        ep = data.get("results", {}).get(sc, {}).get(mode, {})
-        tr = ep.get(trace_field)
-        if not isinstance(tr, list) or len(tr) < 2:
-            return None
-        arr = np.asarray(tr, dtype=float)
-        # Standard error of the mean over the per-step trace.
-        sem = float(np.std(arr, ddof=1) / np.sqrt(len(arr)))
-        # Inflate by sqrt(N) so the bar reflects per-step std rather
-        # than the (very small) within-episode SEM. Without this the
-        # caps are invisible at figure scale.
-        errs.append(sem * np.sqrt(len(arr)) * 0.5)
-    if not errs:
-        return None
-    a = np.asarray(errs, dtype=float)
-    return np.vstack([a, a])
+    return None
 
 
 def fig6_cross(data):
