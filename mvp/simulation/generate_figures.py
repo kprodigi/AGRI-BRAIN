@@ -2520,17 +2520,20 @@ def fig9_fault_degradation():
     n_seeds_global = _fig9_load_n_seeds()
     method_means = _fig9_load_method_means() or {}
 
-    # Width-ratio rebalancing. Panel (a) stays at 1.40 so the bold 20pt
-    # heatmap cell numerics fit cleanly. Panel (b) shrinks to 1.00 -
-    # its 5 horizontal bars + numeric labels fit comfortably in the
-    # narrower slot (the headline +Static bar still reaches axis-
-    # fraction ~0.85 under the symlog mapping, well clear of the right
-    # edge). Panel (c) absorbs the freed width up to 1.40, matching
-    # panel (a); the wider C panel spreads the 5 rotated scenario
-    # ticks and gives the upper-left legend more clearance from the
-    # bar tops. Total stays at 3.80.
+    # Width-ratio rebalancing (late-May 2026 user request: use the
+    # empty space between panels B and C to widen panel C). Panel (a)
+    # stays at 1.40 so the bold 20pt heatmap cell numerics fit cleanly.
+    # Panel (b) shrinks from 1.00 to 0.85 -- its 5 horizontal bars +
+    # right-anchored "+X.Y%" labels still fit comfortably in the
+    # narrower slot (the headline +Static bar reaches axis-fraction
+    # ~0.85 under the symlog mapping; the right-edge percentage labels
+    # are anchored just inside the spine). Panel (c) absorbs the freed
+    # width up to 1.55, matching the post-2026-05 panel-c spread (5
+    # scenario groups x 3 modes with 0.57 inter-group gap from
+    # x_scale=1.55) so the bar groups aren't crowded. Total stays at
+    # 3.80 so the figure-level (22, 7.5) figsize is unchanged.
     fig, axes = plt.subplots(1, 3, figsize=(22, 7.5),
-                             gridspec_kw={"width_ratios": [1.40, 1.00, 1.40]})
+                             gridspec_kw={"width_ratios": [1.40, 0.85, 1.55]})
 
     # Per-element font sizes aligned to fig 7's pattern (25/20/20/19)
     # per user "all three-panel figures must be identical" request.
