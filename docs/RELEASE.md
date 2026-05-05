@@ -93,25 +93,6 @@ README citation block. If a future release does need a DOI, prefer
 the CFF 1.2 ``identifiers:`` block over the legacy top-level
 ``doi:`` key.
 
-## Branch protection (one-time setup)
-
-Install the GitHub branch-protection rules that gate `main` on the
-required CI checks:
-
-```bash
-GH_TOKEN="<PAT with repo admin>" bash hpc/set_branch_protection.sh
-```
-
-The PAT needs `Administration: Read and write` on this repository
-(fine-grained) or `repo` scope (classic). After install, every push
-to `main` requires the following status checks to pass before merge:
-`artifact-validation`, `slow-tests (ubuntu / py3.11)`,
-`backend-tests` on Ubuntu / Windows / macOS Python 3.11,
-`python-lint (ruff)`, `contract-tests`, `contract-analysis`,
-`frontend-build`. The script also disallows force-pushes and
-deletions, and requires linear history. This is a one-time action
-unless the CI workflow's status-check names change.
-
 ## Post-HPC commit (refresh regression baseline)
 
 The `mvp/simulation/baseline_snapshot.json` regression baseline
