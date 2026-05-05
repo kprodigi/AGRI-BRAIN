@@ -742,12 +742,35 @@ def main():
         seeds = SEEDS
     print(f"Configured seed count: {len(seeds)}")
 
-    # Load seed results
+    # Load seed results.
+    #
+    # Per-seed JSON envelope (post-2026-05, written by run_single_seed.py):
+    #     {"seed": int,
+    #      "scenarios": {sc: {mode: {metric: value}}},
+    #      "traces":    {sc: {mode: {trace_field: [floats]}}}}
+    #
+    # Legacy flat format (pre-2026-05): scenarios at the top level
+    # directly:
+    #     {sc: {mode: {metric: value}}}
+    #
+    # Detect the envelope by the presence of a top-level "scenarios"
+    # key whose value is a dict; unwrap if so. The aggregator's per-
+    # cell access pattern (``all_data[s][sc][mode][met]``) is the
+    # legacy flat shape, so we normalise on load. Without this fix
+    # every metric is silently filtered out (the .get(sc, {}) check
+    # returns empty), the BCa loop never runs (calls=0), and every
+    # summary cell ends up {} -- the failure mode that surfaced on
+    # HPC RUN_TAG 485c769_20260505_0349.
     all_data = {}
     for seed in seeds:
         f = seed_dir / f"seed_{seed}.json"
         if f.exists():
-            all_data[seed] = json.loads(f.read_text())
+            payload = json.loads(f.read_text())
+            scenarios_block = payload.get("scenarios")
+            if isinstance(scenarios_block, dict):
+                all_data[seed] = scenarios_block
+            else:
+                all_data[seed] = payload
             print(f"Loaded seed {seed}")
         else:
             print(f"WARNING: {f} not found, skipping")
