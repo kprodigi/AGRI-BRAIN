@@ -3094,20 +3094,33 @@ def fig10_latency_quality_frontier(data):
     # horizontal jitter that visually separates the cluster.
     # Underlying data is unjittered; the overhead annotation below is
     # computed from the true AgriBrain latency vs the No Context ref.
-    # Spacing widened from ±0.10 to ±0.30 ms because the markers are
-    # rendered at s=260 (~0.12 ms wide on this axis range), so the
-    # narrower spacing left MCP Only's marker visually buried under
-    # AgriBrain's triangle when the two modes' actual latencies
-    # happened to coincide. ±0.30 ms guarantees clear separation
-    # between the three context-aware markers regardless of the
-    # underlying latency means.
-    _ctx_jitter = {"agribrain": -0.30, "mcp_only": 0.0, "pirag_only": +0.30}
-    for mode, x, y, yerr in ctx_pts:
+    # Spacing widened from ±0.30 to ±0.55 ms in 2026-05: the three
+    # context-aware modes have nearly-identical cross-scenario ARI means
+    # (~0.605-0.615, a ~0.009 spread on a ~0.04-tall y-range) so the
+    # markers stack visually unless the x-jitter is wide enough to read
+    # at the figure's render scale. The earlier ±0.30 ms left MCP Only's
+    # orange X buried inside AgriBrain's larger teal triangle whenever
+    # the two modes' true latencies were within ~1 ms of each other.
+    # ±0.55 ms keeps all three markers cleanly separable while staying
+    # well inside the right sub-axis xlim of (5.0, ctx_lat_max + 0.4).
+    _ctx_jitter = {"agribrain": -0.55, "mcp_only": 0.0, "pirag_only": +0.55}
+    # Render order matters: zorder=5 is applied to all three but
+    # matplotlib still resolves ties in *call order*, so iterate in an
+    # order that puts MCP Only ON TOP of both the AgriBrain triangle
+    # and the piRAG diamond. The X glyph is a thin-stroke marker (no
+    # interior fill) and gets visually clipped by the white edges of
+    # neighbouring filled markers when drawn underneath them.
+    _draw_order = {"agribrain": 0, "pirag_only": 1, "mcp_only": 2}
+    ordered_ctx_pts = sorted(ctx_pts, key=lambda p: _draw_order.get(p[0], 99))
+    for mode, x, y, yerr in ordered_ctx_pts:
         x_plot = x + _ctx_jitter.get(mode, 0.0)
+        # Bump zorder explicitly for mcp_only as a belt-and-braces guard
+        # so it lands on top even if a future edit reorders the loop.
+        _z = 6 if mode == "mcp_only" else 5
         h = ax_b_right.scatter(
             x_plot, y, s=260,
             color=COLORS[mode], marker=MARKERS[mode],
-            edgecolor="white", linewidth=1.4, alpha=0.95, zorder=5,
+            edgecolor="white", linewidth=1.4, alpha=0.95, zorder=_z,
             label=MODE_LABELS[mode],
         )
         handles_b.append(h)
@@ -3116,7 +3129,7 @@ def fig10_latency_quality_frontier(data):
                 [x_plot], [y],
                 yerr=np.array([[yerr[0]], [yerr[1]]]),
                 fmt="none", ecolor=COLORS[mode],
-                elinewidth=1.8, capsize=4, alpha=0.9, zorder=4,
+                elinewidth=1.8, capsize=4, alpha=0.9, zorder=_z - 1,
             )
 
     # Hide the inner spines so the broken-axis read as a single panel.
@@ -3178,17 +3191,29 @@ def fig10_latency_quality_frontier(data):
     ax_b_left.set_ylim(bar_lo - 0.03, bar_hi + 0.03)
 
     # X-axis split: left sub-axis 0.0-0.5 ms (covers No Context ~0.18 ms),
-    # right sub-axis 5.0-cluster_max + 0.4 ms (covers AgriBrain / MCP /
-    # piRAG Only at ~5.75-5.95 ms). Suppresses the 0.5-5.0 empty zone.
+    # right sub-axis adaptive to the context-aware latency cluster.
+    # The earlier hardcoded right xlim of 5.0 ms came from a stale
+    # multi-seed-baseline assumption that context-aware modes sat at
+    # ~5.85 ms; in single-seed deterministic mode they collapse to
+    # ~3-4 ms, which dropped every context marker into the suppressed
+    # zone and produced an empty panel. Adaptive bounds: ~0.5 ms of
+    # left margin around the leftmost jittered marker, ~0.4 ms of
+    # right margin around the rightmost. Floor the lower bound at
+    # 1.0 ms so the broken axis still reads as a break (not as two
+    # touching sub-axes) when the cluster sits near the No Context ref.
     ax_b_left.set_xlim(0.0, 0.5)
-    ctx_lat_max = max(p[1] + _ctx_jitter.get(p[0], 0.0) for p in ctx_pts)
-    ax_b_right.set_xlim(5.0, ctx_lat_max + 0.4)
+    ctx_lat_lo = min(p[1] + _ctx_jitter.get(p[0], 0.0) for p in ctx_pts)
+    ctx_lat_hi = max(p[1] + _ctx_jitter.get(p[0], 0.0) for p in ctx_pts)
+    right_x_lo = max(1.0, ctx_lat_lo - 0.5)
+    ax_b_right.set_xlim(right_x_lo, ctx_lat_hi + 0.4)
 
     # Tick layout: left sub-axis gets {0.0, 0.5}, right sub-axis gets
-    # {5, 6} or similar based on the data range.
+    # ~3 evenly spaced ticks across the visible cluster range so the
+    # tick labels remain readable regardless of where the cluster sits.
     from matplotlib.ticker import FixedLocator as _FixedLocator
+    from matplotlib.ticker import MaxNLocator as _MaxNLocator
     ax_b_left.xaxis.set_major_locator(_FixedLocator([0.0, 0.5]))
-    ax_b_right.xaxis.set_major_locator(_FixedLocator([5.0, 6.0]))
+    ax_b_right.xaxis.set_major_locator(_MaxNLocator(nbins=3))
 
     # Y-label only on the left sub-axis. X-label and title placed
     # via fig-level helpers so they read as a single panel rather
