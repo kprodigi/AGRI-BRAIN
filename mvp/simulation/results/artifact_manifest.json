@@ -1,12 +1,12 @@
 {
-  "git_commit": "b088a55c64ffd488fed07d6f3a5083e00f512ca0",
+  "git_commit": "5724212d939da56b7708347f6edb28fa2bdd65ec",
   "git_dirty": false,
   "artifact_count": 215,
   "artifacts": [
     {
       "file": "artifact_manifest.json",
-      "bytes": 41830,
-      "sha256": "fee70cdbacfc21859f3a790ecbafe9ac0f8f658112124285aab34081b49350d0"
+      "bytes": 40309,
+      "sha256": "2f6260855e56005f15e649b58e3f055ea83e3fe644ecfa948ada491044eafc27"
     },
     {
       "file": "benchmark_seeds/seed_1337.json",
