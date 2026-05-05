@@ -93,6 +93,55 @@ README citation block. If a future release does need a DOI, prefer
 the CFF 1.2 ``identifiers:`` block over the legacy top-level
 ``doi:`` key.
 
+## Branch protection (one-time setup)
+
+Install the GitHub branch-protection rules that gate `main` on the
+required CI checks:
+
+```bash
+GH_TOKEN="<PAT with repo admin>" bash hpc/set_branch_protection.sh
+```
+
+The PAT needs `Administration: Read and write` on this repository
+(fine-grained) or `repo` scope (classic). After install, every push
+to `main` requires the following status checks to pass before merge:
+`artifact-validation`, `slow-tests (ubuntu / py3.11)`,
+`backend-tests` on Ubuntu / Windows / macOS Python 3.11,
+`python-lint (ruff)`, `contract-tests`, `contract-analysis`,
+`frontend-build`. The script also disallows force-pushes and
+deletions, and requires linear history. This is a one-time action
+unless the CI workflow's status-check names change.
+
+## Post-HPC commit (refresh regression baseline)
+
+The `mvp/simulation/baseline_snapshot.json` regression baseline
+captures the deterministic-mode digest of `table1_summary.csv` and
+`table2_ablation.csv`. The `artifact-validation` CI job hard-fails
+on `main` when the snapshot disagrees with the committed tables.
+After every HPC run that lands new tables, refresh the snapshot:
+
+```bash
+git pull origin main      # pull HPC's table1/table2 update
+DETERMINISTIC_MODE=true REGRESSION_GUARD_INIT=true \
+    python mvp/simulation/validation/run_regression_guard.py
+git add mvp/simulation/baseline_snapshot.json
+git commit -m "Refresh regression baseline after HPC run <RUN_TAG>"
+git push origin main
+```
+
+The same applies to `mvp/simulation/nightly_baseline.json` (the
+nightly-smoke-pipeline baseline) -- copy the new
+`benchmark_summary.json` to `nightly_baseline.json` after every HPC
+run that lands new stochastic-mode summaries:
+
+```bash
+cp mvp/simulation/results/benchmark_summary.json \
+   mvp/simulation/nightly_baseline.json
+git add mvp/simulation/nightly_baseline.json
+git commit -m "Refresh nightly-smoke baseline after HPC run <RUN_TAG>"
+git push origin main
+```
+
 ## Rollback
 
 If the tag is wrong, delete it locally and remotely:
