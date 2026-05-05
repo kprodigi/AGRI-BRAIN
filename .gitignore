@@ -36,6 +36,12 @@ dist/
 # Hardhat build artifacts
 **/hardhat/artifacts/
 **/hardhat/cache/
+# Stale top-level Hardhat build dir (pre-2026-05). Removed from the
+# tree because the canonical Hardhat artifacts location is
+# agribrain/contracts/hardhat/artifacts/ (covered by the rule above).
+# Listed here so a future ``npx hardhat compile`` from the wrong cwd
+# cannot resurrect the duplicate.
+agribrain/build/
 
 # Environment and secrets
 .env
