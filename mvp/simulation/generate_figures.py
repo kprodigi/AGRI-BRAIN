@@ -2897,7 +2897,7 @@ def fig9_fault_degradation():
     # explicit re-apply ensures the rendered y-axis title actually
     # lands at _F9_AXIS=20 to match the x-axis tick labels.
     _restyle(ax, "(c) Context Influence Rate",
-             ylabel="Influence rate (% of context-active steps)")
+             ylabel="Influence Rate (%)")
     ax.yaxis.label.set_size(_F9_AXIS)
     ax.yaxis.label.set_weight("bold")
 
