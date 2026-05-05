@@ -3261,14 +3261,20 @@ def fig10_latency_quality_frontier(data):
     # tight_layout BEFORE the fig.text title/xlabel placements so
     # bbox.y0/y1 read the post-layout panel positions and the
     # labels land in their final coordinates instead of pre-layout
-    # ones. rect_top widened from 0.985 to 0.94 (late-May 2026 user
-    # request: increase the gap between the figure-level title and
-    # the panel titles) so there is ~6% of figure-height clearance
-    # between the suptitle baseline and the top edge of the panel
-    # axes. The +0.005 offsets below still position the panel-B
-    # title just outside the axes box, mirroring how ax.set_title
-    # with pad=14 places the panel-A title relative to its axes.
-    fig.tight_layout(rect=[0, 0, 1, 0.94], w_pad=1.6)
+    # ones. rect_top widened from 0.94 to 0.86 (late-May 2026 user
+    # request: "increase the gap between the main title and the 3
+    # panels - to make the figure similar to other 3 panel plots
+    # like fig 7"). With the broken-axis subgridspec inside panel
+    # (b), tight_layout emits a "Axes that are not compatible with
+    # tight_layout" warning and silently falls back to a partial
+    # layout that does not always honour rect_top -- so the
+    # subplots_adjust(top=...) below is the *forcing* mechanism that
+    # actually carves out the suptitle-to-panel gap. The two calls
+    # are belt-and-braces: tight_layout handles inter-panel padding
+    # and panel-internal label positioning, subplots_adjust nails
+    # the top margin numerically.
+    fig.tight_layout(rect=[0, 0, 1, 0.86], w_pad=1.6)
+    fig.subplots_adjust(top=0.86)
 
     # Compute the geometric center of the broken pair in figure
     # coordinates - both labels and title use this so they appear
