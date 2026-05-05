@@ -58,6 +58,14 @@ def main() -> None:
             continue
         if "__pycache__" in p.parts:
             continue
+        # Skip transient local-only directories that should never end
+        # up in the published manifest:
+        #   - ``preview/``: downsized PNG previews generated for
+        #     UI/IDE display; gitignored, never committed, and would
+        #     cause spurious manifest-mismatch errors when CI tries
+        #     to verify against a fresh checkout that lacks them.
+        if p.relative_to(RESULTS_DIR).parts and p.relative_to(RESULTS_DIR).parts[0] == "preview":
+            continue
         # Manifest path is the relative POSIX path so the JSON is
         # platform-stable (Windows backslashes never reach the
         # serialized output). The verify_manifest.py reader joins

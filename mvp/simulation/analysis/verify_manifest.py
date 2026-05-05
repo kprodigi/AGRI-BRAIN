@@ -145,16 +145,21 @@ def main() -> int:
     )
 
     def _is_tracked(name: str) -> bool:
-        """Return True if ``name`` matches a tracked file pattern.
+        """Return True if ``name`` is a tracked file at top-level.
 
         ``name`` is the manifest's relative POSIX path (e.g.
         ``"fig9_robustness.png"`` or
-        ``"benchmark_seeds/seed_42.json"``); the patterns target the
-        BASENAME so subdirectory paths (benchmark_seeds/*) correctly
-        return False.
+        ``"benchmark_seeds/seed_42.json"``). The .gitignore allowlist
+        targets ONLY top-level files in ``mvp/simulation/results/`` --
+        ``benchmark_seeds/seed_42.json`` and ``preview/fig9.png`` are
+        gitignored even though their basenames (``seed_42.json``,
+        ``fig9.png``) might match a tracked pattern. Hence the
+        top-level guard: a path with any '/' separator is NOT
+        tracked, regardless of basename.
         """
-        base = name.split("/")[-1]
-        return any(_fnmatch_v.fnmatch(base, p) for p in _TRACKED_PATTERNS)
+        if "/" in name:
+            return False
+        return any(_fnmatch_v.fnmatch(name, p) for p in _TRACKED_PATTERNS)
 
     errors = 0
     checked = 0
