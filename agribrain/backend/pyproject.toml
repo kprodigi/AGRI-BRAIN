@@ -1,13 +1,17 @@
 [project]
 name = 'agri-brain-backend'
 version = '1.2.0'
-# Tightened from >=3.10 to >=3.11,<3.13 in 2026-05: the canonical
-# requirements-lock.txt was generated under 3.11.15 and CI only
-# proves 3.11. A Python 3.10 user would resolve a different pin set
-# than the lockfile and silently end up off-canon. The upper bound
-# excludes 3.13+ until those interpreters are added to the CI matrix
-# and the lockfile is re-verified against them.
-requires-python = ">=3.11,<3.13"
+# Tightened from >=3.10 to >=3.11 in 2026-05: the canonical
+# requirements-lock.txt was generated under 3.11.15. A Python 3.10
+# user would resolve a different pin set than the lockfile and
+# silently end up off-canon. No upper bound: the lockfile header
+# (agribrain/backend/requirements-lock.txt) explicitly notes the
+# exact pin set was verified to resolve on Python 3.13.13 as a
+# two-Python comparison run during the 2026-05 forensic pass, and
+# the SDSMT HPC cluster's default interpreter is 3.13. Adding a
+# 3.13 row to the CI matrix would be a strict tightening on top
+# of this.
+requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
     {name = "Nahid Sarker"},
