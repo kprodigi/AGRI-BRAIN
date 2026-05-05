@@ -1,12 +1,12 @@
 {
-  "git_commit": "5c9ac075080315d1461e1307c4b430e19b7927a3",
+  "git_commit": "c086012dad2f7403982ba1edc50b4238adca0a4a",
   "git_dirty": false,
   "artifact_count": 224,
   "artifacts": [
     {
       "file": "artifact_manifest.json",
-      "bytes": 41836,
-      "sha256": "7654922a130766fb9e24325e6f91fbf383bb0a161d58f9093bbb8c6518d0138f"
+      "bytes": 41830,
+      "sha256": "a421f332e57b125a292c7211938ed99fbc594512592b406b519a9341444a1a04"
     },
     {
       "file": "benchmark_seeds/seed_1337.json",
@@ -385,8 +385,8 @@
     },
     {
       "file": "decision_ledger/agribrain__baseline.jsonl",
-      "bytes": 10519,
-      "sha256": "838647ff5950706e4b97259e32faf847451377188487775ba85ea5859aa7ec7f"
+      "bytes": 32688,
+      "sha256": "5144a2db0e0cf8e02e1033e68b9e93c13f384001ba501a14464f840e2561abf5"
     },
     {
       "file": "decision_ledger/agribrain__cyber_outage.jsonl",
@@ -396,7 +396,7 @@
     {
       "file": "decision_ledger/agribrain__heatwave.jsonl",
       "bytes": 32755,
-      "sha256": "b726a0a41d5b4ab32952d91892ddc90b45252eb9ea83edf5864596bec43a63da"
+      "sha256": "7a4fd593d7786a39b687f1a89866b8a3b9c760f2e71c19eadbdd0897b724c0a6"
     },
     {
       "file": "decision_ledger/agribrain__overproduction.jsonl",
