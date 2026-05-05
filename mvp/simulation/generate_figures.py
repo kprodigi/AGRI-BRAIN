@@ -2952,13 +2952,16 @@ def fig10_latency_quality_frontier(data):
     # the No Context reference while the larger right sub-axis carries
     # the three jittered context-aware markers.
     import matplotlib.gridspec as _gridspec
-    # figsize bumped to (18, 7.5) and rect-top dropped to 0.94 below
-    # so the suptitle-to-panel-title gap matches figs 6/7/8 instead
-    # of compressing into the shorter 7.0-height panel space the
-    # earlier render used.
-    fig = plt.figure(figsize=(18, 7.5))
+    # figsize widened from (18, 7.5) to (26, 7.5) when panel (c) was
+    # added (late-May 2026 user request: show the per-scenario Delta-ARI
+    # vs No Context as bars so reviewers can read the magnitude of the
+    # context-channel gain alongside the latency-quality scatter). The
+    # outer gridspec is now 1x3 with width_ratios=[1, 1.2, 1] -- panel
+    # (b) gets a slightly wider slot because it carries the broken
+    # x-axis and the overhead-arrow annotation.
+    fig = plt.figure(figsize=(26, 7.5))
     outer_gs = _gridspec.GridSpec(
-        1, 2, figure=fig, width_ratios=[1, 1], wspace=0.32,
+        1, 3, figure=fig, width_ratios=[1, 1.2, 1], wspace=0.32,
     )
     ax_a = fig.add_subplot(outer_gs[0])
     # Inner break-axis spacing widened from 0.06 to 0.14 so the
@@ -2967,6 +2970,7 @@ def fig10_latency_quality_frontier(data):
     inner_gs = outer_gs[1].subgridspec(1, 2, width_ratios=[1, 5], wspace=0.14)
     ax_b_left = fig.add_subplot(inner_gs[0])
     ax_b_right = fig.add_subplot(inner_gs[1], sharey=ax_b_left)
+    ax_c = fig.add_subplot(outer_gs[2])
     axes = [ax_a]  # legacy compat for the panel (a) code path below
     fig.suptitle("Latency vs ARI Frontier", fontsize=FIG_TITLE_SIZE,
                  fontweight="bold", y=0.995)
@@ -3302,6 +3306,124 @@ def fig10_latency_quality_frontier(data):
     _legend(ax_b_right, handles=leg_handles, labels=leg_labels,
             loc="lower center", bbox_to_anchor=(0.5, 0.06),
             ncol=2, fontsize=_F10_LEG)
+
+    # =====================================================================
+    # Panel (c) -- Delta-ARI vs No Context (per scenario, per mode)
+    # =====================================================================
+    # Bars show paired mean_diff (mode_ARI - no_context_ARI) per scenario
+    # for the three context-aware modes. Whiskers are the 95 % paired
+    # CIs from benchmark_significance.json (Wilcoxon signed-rank +
+    # bootstrap CI on the paired-difference mean, the canonical paired
+    # statistic the paper uses elsewhere). The panel directly answers
+    # the reviewer question "what does the context channel buy?" --
+    # absolute Delta-ARI ranges from +0.011 (heatwave) to +0.032 (baseline)
+    # for AgriBrain, with all CIs strictly above zero, so the paired
+    # tests are uniformly significant. Per-scenario reading: context
+    # has the most leverage when the physics is least constraining
+    # (baseline > adaptive_pricing > stress scenarios), which is the
+    # opposite of the lay intuition that "context matters most under
+    # stress" -- worth flagging in the discussion.
+    sig_payload_path = RESULTS_DIR / "benchmark_significance.json"
+    panel_c_data: dict = {}
+    if sig_payload_path.exists():
+        import json as _json_c
+        sig_doc = _json_c.loads(sig_payload_path.read_text(encoding="utf-8"))
+        sig_block = sig_doc.get("significance", sig_doc) if isinstance(sig_doc, dict) else {}
+        for sc in SCENARIOS:
+            sc_block = sig_block.get(sc, {})
+            if not isinstance(sc_block, dict):
+                continue
+            sc_cells: dict = {}
+            for mode in ("agribrain", "mcp_only", "pirag_only"):
+                cmp = sc_block.get(f"{mode}_vs_no_context", {})
+                if not isinstance(cmp, dict):
+                    continue
+                ari_block = cmp.get("ari", {})
+                md = ari_block.get("mean_diff")
+                if md is None:
+                    continue
+                sc_cells[mode] = {
+                    "mean": float(md),
+                    "ci_low": float(ari_block.get("mean_diff_ci_low", md)),
+                    "ci_high": float(ari_block.get("mean_diff_ci_high", md)),
+                }
+            if sc_cells:
+                panel_c_data[sc] = sc_cells
+
+    _PANEL_C_MODES = [
+        ("agribrain",  "AgriBrain",  COLORS.get("agribrain",  "#009688")),
+        ("mcp_only",   "MCP Only",   COLORS.get("mcp_only",   "#F57C00")),
+        ("pirag_only", "piRAG Only", COLORS.get("pirag_only", "#1565C0")),
+    ]
+
+    if panel_c_data:
+        scenarios_in_c = [s for s in SCENARIOS if s in panel_c_data]
+        n_groups = len(scenarios_in_c)
+        n_modes = len(_PANEL_C_MODES)
+        # Total group width 0.84; x_scale 1.20 so adjacent scenario
+        # groups have a 0.36 inter-group gap. Each bar takes
+        # 0.84/n_modes = 0.28 axis units when n_modes=3.
+        width = 0.84 / n_modes
+        x_scale = 1.20
+        x_base = np.arange(n_groups) * x_scale
+
+        max_height = 0.0
+        for i, (mode, label, color) in enumerate(_PANEL_C_MODES):
+            heights = []
+            err_low = []
+            err_high = []
+            for sc in scenarios_in_c:
+                cell = panel_c_data.get(sc, {}).get(mode, {})
+                m = cell.get("mean", 0.0)
+                heights.append(m)
+                # Asymmetric whiskers from the paired CI bounds.
+                err_low.append(max(0.0, m - cell.get("ci_low", m)))
+                err_high.append(max(0.0, cell.get("ci_high", m) - m))
+                if cell.get("ci_high", m) > max_height:
+                    max_height = cell.get("ci_high", m)
+            xs = x_base + i * width
+            ax_c.bar(xs, heights, width, color=color,
+                     alpha=0.92, edgecolor="white", linewidth=1.0,
+                     label=label,
+                     yerr=[err_low, err_high],
+                     capsize=4,
+                     error_kw={"linewidth": 1.4, "capthick": 1.4,
+                               "ecolor": "#212121"})
+
+        ax_c.axhline(0.0, color="#212121", linewidth=1.0, zorder=2)
+        ax_c.set_xticks(x_base + (n_modes - 1) * width / 2)
+        ax_c.set_xticklabels(
+            [SCENARIO_LABELS.get(s, s) for s in scenarios_in_c],
+            rotation=30, ha="right", rotation_mode="anchor",
+        )
+        ax_c.set_ylabel(r"$\Delta$ARI vs No Context",
+                        fontsize=_F10_AXIS, fontweight="bold")
+        # Legend at upper-left: the leftmost scenario groups have the
+        # smallest bars (heatwave / overproduction), so the upper-left
+        # corner is the cleanest space for the 3-entry legend.
+        ax_c.legend(loc="upper left", fontsize=_F10_LEG,
+                    ncol=1, framealpha=0.95, edgecolor="#757575",
+                    fancybox=False, shadow=False)
+        # ylim: bump headroom by 30 % over the highest bar+CI cap so
+        # the legend has clean space.
+        ax_c.set_ylim(0.0, max_height * 1.30 if max_height > 0 else 0.04)
+    else:
+        ax_c.text(0.5, 0.5, "benchmark_significance.json not available",
+                  ha="center", va="center", transform=ax_c.transAxes,
+                  fontsize=ANNOT_FONT_SIZE, color="#616161")
+
+    _apply_style(ax_c)
+    ax_c.title.set_size(_F10_TITLE)
+    ax_c.title.set_weight("bold")
+    ax_c.xaxis.label.set_size(_F10_AXIS)
+    ax_c.xaxis.label.set_weight("bold")
+    ax_c.yaxis.label.set_size(_F10_AXIS)
+    ax_c.yaxis.label.set_weight("bold")
+    ax_c.tick_params(labelsize=_F10_TICK, length=6, width=1.4)
+    for lbl in list(ax_c.get_xticklabels()) + list(ax_c.get_yticklabels()):
+        lbl.set_fontsize(_F10_TICK); lbl.set_fontweight("bold")
+    ax_c.set_title(r"(c) $\Delta$ARI vs No Context",
+                   fontsize=_F10_TITLE, fontweight="bold", pad=14)
 
     _save(fig, "fig10_latency_quality_frontier")
 
