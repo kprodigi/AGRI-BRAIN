@@ -1,12 +1,12 @@
 {
-  "git_commit": "ff5a38d7bac9d94a8b30833d4b117daf96d669c0",
+  "git_commit": "5c9ac075080315d1461e1307c4b430e19b7927a3",
   "git_dirty": false,
   "artifact_count": 224,
   "artifacts": [
     {
       "file": "artifact_manifest.json",
-      "bytes": 52519,
-      "sha256": "8f15d543af9048cb567a0b6aeb473996f989e9eaae777ead74ded562416e9801"
+      "bytes": 41836,
+      "sha256": "7654922a130766fb9e24325e6f91fbf383bb0a161d58f9093bbb8c6518d0138f"
     },
     {
       "file": "benchmark_seeds/seed_1337.json",
@@ -385,8 +385,8 @@
     },
     {
       "file": "decision_ledger/agribrain__baseline.jsonl",
-      "bytes": 180701,
-      "sha256": "5405ce4bde920e4546957521da7f1756e1f3e3307fd205d10fc7088d1c2978f8"
+      "bytes": 10519,
+      "sha256": "838647ff5950706e4b97259e32faf847451377188487775ba85ea5859aa7ec7f"
     },
     {
       "file": "decision_ledger/agribrain__cyber_outage.jsonl",
@@ -395,8 +395,8 @@
     },
     {
       "file": "decision_ledger/agribrain__heatwave.jsonl",
-      "bytes": 180856,
-      "sha256": "453135a85a595d202130911ae2fa50b55cd8966bd8f7a7a2beac03a14898bb9d"
+      "bytes": 32755,
+      "sha256": "b726a0a41d5b4ab32952d91892ddc90b45252eb9ea83edf5864596bec43a63da"
     },
     {
       "file": "decision_ledger/agribrain__overproduction.jsonl",
@@ -685,8 +685,8 @@
     },
     {
       "file": "decision_ledger/hybrid_rl__baseline.jsonl",
-      "bytes": 168556,
-      "sha256": "15f5c4858676e28ab1f054278df3fb1bbb52b2c271481b53cd49e9e428820686"
+      "bytes": 28923,
+      "sha256": "703e6c1a86fcd6de65ba79a9eb5b5133f11d16527354e583414798bcf40e99f8"
     },
     {
       "file": "decision_ledger/hybrid_rl__cyber_outage.jsonl",
@@ -695,8 +695,8 @@
     },
     {
       "file": "decision_ledger/hybrid_rl__heatwave.jsonl",
-      "bytes": 169541,
-      "sha256": "76162d365b7f9240a66bee7370ca586931e7be2d739150300cb9fa81b54dc41a"
+      "bytes": 28981,
+      "sha256": "b7e772e2ac8f7619615ec860a7a8a7752a4b76db0ab8f0cd9de2144f691382ff"
     },
     {
       "file": "decision_ledger/hybrid_rl__overproduction.jsonl",
@@ -835,8 +835,8 @@
     },
     {
       "file": "decision_ledger/static__baseline.jsonl",
-      "bytes": 153501,
-      "sha256": "f0e44a927399044e57af23079ccc26988d2dd8fa04d77e31f279bedeb66058c8"
+      "bytes": 26377,
+      "sha256": "5547e76a036f85f817d0d539104a846745993f811da5a270077740319a127893"
     },
     {
       "file": "decision_ledger/static__cyber_outage.jsonl",
@@ -845,8 +845,8 @@
     },
     {
       "file": "decision_ledger/static__heatwave.jsonl",
-      "bytes": 152096,
-      "sha256": "c097e764e66acce66141ee87b764aa6d5ec218fff50b273721f3735ca595baab"
+      "bytes": 26442,
+      "sha256": "9b7dc197d7600a608660ab8e4f7186a554a69fad2a54a7dc60da14bc591d2f86"
     },
     {
       "file": "decision_ledger/static__overproduction.jsonl",
