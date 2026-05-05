@@ -1642,6 +1642,14 @@ def run_all(seed: int = SEED) -> dict:
                         "context_active_fraction": episode["context_active_fraction"],
                         "context_honored_steps": episode["context_honored_steps"],
                         "context_honor_rate": episode["context_honor_rate"],
+                        # 2026-05: paper headline switched from honor_rate to
+                        # influence_rate (fig 9 panel c). Both rates emit on
+                        # the same active-step denominator so a downstream
+                        # reader can quote either off the same JSON.
+                        "context_influenced_steps":
+                            episode.get("context_influenced_steps", 0),
+                        "context_influence_rate":
+                            episode.get("context_influence_rate", 0.0),
                         "context_active_per_recommendation":
                             episode["context_active_per_recommendation"],
                         "context_ignored_per_recommendation":

@@ -669,7 +669,7 @@ def _fig2_heatwave_inner(hw, ab, hours):
             _mode_plot(ax, hours, rolling, mode)
     ax.set_xlabel("Hours")
     ax.set_ylabel("ARI")
-    ax.set_title("(d) ARI During Heatwave")
+    ax.set_title("(d) Adaptive Resilience Index")
     ax.set_ylim(0, 1.0)
     _apply_style(ax)
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave")
@@ -911,14 +911,16 @@ def _fig3_overproduction_inner(op, ab, hours):
 # Figure 4: Cyber Outage (1x3)
 # ---------------------------------------------------------------------------
 def fig4_cyber(data):
-    """1x4: ARI over time, action distribution shift, reroute rate per method, KPI delta.
+    """2x2: ARI over time, action distribution shift, reroute rate per method, KPI delta.
 
-    The 2026-05 redesign expanded panel C from a single panel into two
-    full panels (C and D) after a 2-row gridspec attempt produced
-    legend/bar overlap. Each panel now has its own full-height
-    real-estate; the causality chain still reads left-to-right
-    (B = behavior detail; C = behavior magnitude per method;
-    D = KPI consequence per method).
+    Layout history: started 1-row (panel C single-pane action distribution)
+    then briefly went to a 2-row gridspec (legend/bar overlap), then 1x4
+    (visual mismatch with 2x2 figs 2/3/5), and as of late-May 2026 to a
+    2x2 grid that matches figs 2/3/5. The causality chain reads top-down
+    AND left-right: top row = stimulus (ARI trace) + observed behavior
+    (action distribution shift); bottom row = behavior magnitude per
+    method (reroute rate) + KPI consequence per method (Δ ARI / Waste /
+    Service). Each panel keeps its previous individual contents.
 
     Per-figure font-size bump for fig 4 (post-2026-05 user request:
     "make this 4-panel figure match the other 4-panel figures style,
@@ -983,12 +985,16 @@ def _fig4_cyber_inner(data):
     ab = cy["agribrain"]
     hours = np.array(ab["hours"])
 
-    # 1x4 grid. figsize matches the 4-panel-figure pattern: figs 2,
-    # 3, 5 are 2x2 at (18, 13). For the 1x4 layout we hold the per-
-    # panel area roughly constant (panel area ~ 9 x 6.5 in); the
-    # resulting (28, 6.5) is wider but shorter and has equivalent
-    # text density per panel.
-    fig, axes = plt.subplots(1, 4, figsize=(28, 6.5))
+    # 2x2 grid matching figs 2 / 3 / 5: (18, 13) figsize. The earlier
+    # 1x4 layout (28 x 6.5) was visually inconsistent with the rest of
+    # the 4-panel figures in the publication set; the 2x2 reads as a
+    # natural causality grid (top row = stimulus + observed behavior,
+    # bottom row = magnitude + outcome) and matches the reader's
+    # left-to-right + top-to-bottom scan order in the other figures.
+    fig, axes2d = plt.subplots(2, 2, figsize=(18, 13))
+    # Flatten for legacy indexing (axes[0..3] corresponds to (a..d)
+    # in row-major order: top-left, top-right, bottom-left, bottom-right).
+    axes = axes2d.flatten()
     fig.suptitle("Cyber Outage Scenario", y=0.995)
 
     # --- (a) ARI over time with outage shading ---
@@ -2112,11 +2118,16 @@ def fig8_green_ai(data):
 
     fig, axes = plt.subplots(1, 2, figsize=(18, 7.5))
 
-    # Bumped per-element font sizes to match figs 6/7.
-    _F8_TITLE = SUBPLOT_TITLE_SIZE + 4   # 23
-    _F8_AXIS  = AXIS_LABEL_SIZE + 3      # 20
-    _F8_TICK  = TICK_FONT_SIZE + 3       # 18
-    _F8_LEG   = LEGEND_FONT_SIZE + 3     # 18
+    # Per-element font sizes (late-May 2026 user request: trim fig 8 +
+    # fig 10 by one point each so the panel content is not as visually
+    # heavy as figs 6/7's 4-bump stack). Bump cascade kept proportional
+    # to the originals (+3 / +2 / +2 / +2 = -1 from the previous
+    # +4 / +3 / +3 / +3 stack) so titles still read as the dominant
+    # element and ticks/legend stay readable on the (18, 7.5) figsize.
+    _F8_TITLE = SUBPLOT_TITLE_SIZE + 3   # 22
+    _F8_AXIS  = AXIS_LABEL_SIZE + 2      # 19
+    _F8_TICK  = TICK_FONT_SIZE + 2       # 17
+    _F8_LEG   = LEGEND_FONT_SIZE + 2     # 17
 
     hw = data["results"]["heatwave"]
     hours = np.array(hw["agribrain"]["hours"])
@@ -2808,11 +2819,18 @@ def fig9_fault_degradation():
         scenarios_in_matrix = [s for s in SCENARIOS if s in honor_matrix]
         n_groups = len(scenarios_in_matrix)
         n_modes = len(_PANEL_C_MODES)
-        # Match fig 7's bar layout: total group width 0.98, x_scale
-        # 1.10 so adjacent groups have a 0.12 inter-group gap. Each
-        # bar takes 0.98/n_modes = 0.327 axis units when n_modes=3.
+        # Bar layout. Total group width 0.98; x_scale was 1.10
+        # (matched fig 7's 8-mode groups) but late-May 2026 the user
+        # asked for more breathing room between scenarios on this
+        # panel: the panel width is generous and the legend in the
+        # upper-left was sitting against the leftmost bar group with
+        # no horizontal margin. Bumped x_scale to 1.55 so adjacent
+        # groups have a 0.57 inter-group gap (was 0.12), which spreads
+        # the 5 scenarios across more of the panel and reads as a
+        # less-cramped grouped-bar comparison. Each bar still takes
+        # 0.98/n_modes = 0.327 axis units when n_modes=3.
         width = 0.98 / n_modes
-        x_scale = 1.10
+        x_scale = 1.55
         x_base = np.arange(n_groups) * x_scale
 
         for i, (mode, label, color) in enumerate(_PANEL_C_MODES):
@@ -2954,13 +2972,13 @@ def fig10_latency_quality_frontier(data):
                  fontweight="bold", y=0.995)
 
     # Per-element font sizes matched to fig 8 (the other 1x2 paper
-    # figure) per user request. Same +4 / +3 / +3 / +3 bumps over
-    # the canonical sizes that fig 8 uses, so figs 8 and 10 render
-    # at identical text scale across panels.
-    _F10_TITLE = SUBPLOT_TITLE_SIZE + 4   # 23
-    _F10_AXIS  = AXIS_LABEL_SIZE + 3      # 20
-    _F10_TICK  = TICK_FONT_SIZE + 3       # 18
-    _F10_LEG   = LEGEND_FONT_SIZE + 3     # 18
+    # figure). Late-May 2026 user request: trim fig 8 + fig 10 by one
+    # point each so panel content is not as visually heavy as figs 6/7.
+    # Bump cascade is +3 / +2 / +2 / +2 (was +4 / +3 / +3 / +3).
+    _F10_TITLE = SUBPLOT_TITLE_SIZE + 3   # 22
+    _F10_AXIS  = AXIS_LABEL_SIZE + 2      # 19
+    _F10_TICK  = TICK_FONT_SIZE + 2       # 17
+    _F10_LEG   = LEGEND_FONT_SIZE + 2     # 17
 
     bench = _load_benchmark_ci() or {}
 
@@ -3236,14 +3254,14 @@ def fig10_latency_quality_frontier(data):
     # tight_layout BEFORE the fig.text title/xlabel placements so
     # bbox.y0/y1 read the post-layout panel positions and the
     # labels land in their final coordinates instead of pre-layout
-    # ones. rect_top dropped from 0.91 to 0.985 to match fig 8's
-    # suptitle-to-panel spacing per user request - this pulls the
-    # panels up close to the suptitle so the gap is the same as
-    # the canonical fig 8 / fig 6 / fig 7 layout. The +0.005
-    # offsets below position the panel-B title and x-label just
-    # outside the axes box, mirroring how ax.set_title with pad=14
-    # places the panel-A title relative to its axes.
-    fig.tight_layout(rect=[0, 0, 1, 0.985], w_pad=1.6)
+    # ones. rect_top widened from 0.985 to 0.94 (late-May 2026 user
+    # request: increase the gap between the figure-level title and
+    # the panel titles) so there is ~6% of figure-height clearance
+    # between the suptitle baseline and the top edge of the panel
+    # axes. The +0.005 offsets below still position the panel-B
+    # title just outside the axes box, mirroring how ax.set_title
+    # with pad=14 places the panel-A title relative to its axes.
+    fig.tight_layout(rect=[0, 0, 1, 0.94], w_pad=1.6)
 
     # Compute the geometric center of the broken pair in figure
     # coordinates - both labels and title use this so they appear

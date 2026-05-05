@@ -988,13 +988,16 @@ def test_panel_c_plots_defensive_reroutes_under_risk():
         "retail_dispatch * (1 - waste); the documented composition "
         "has regressed."
     )
-    # 1x4 layout: four-axes subplots call.
-    assert "plt.subplots(1, 4" in src, (
-        "fig 4 is no longer the 1x4 layout introduced in 2026-05; "
-        "the Outage -> Behavior -> Outcome causality split across "
-        "panels B/C/D has regressed."
+    # 2x2 layout: matches figs 2 / 3 / 5. The earlier 1x4 (28 x 6.5)
+    # was visually inconsistent with the rest of the 4-panel paper
+    # figures; late-May 2026 the layout was rebalanced to 2x2 (18 x 13)
+    # with the same four panels in row-major order: (a) ARI / (b)
+    # action distribution / (c) behavior shift / (d) outage impact.
+    assert "plt.subplots(2, 2, figsize=(18, 13))" in src, (
+        "fig 4 is no longer the canonical 2x2 layout; the layout was "
+        "rebalanced from 1x4 to match figs 2/3/5 in late-May 2026."
     )
-    # Title pins for the 1x4 layout:
+    # Title pins for the 2x2 layout:
     #   * (c) "Behavior Shift" -- per-method reroute rate pre/during outage
     #   * (d) "Outage Impact"  -- per-method delta-ARI/Waste/Service
     # A maintainer who refactors the rendering without updating the
