@@ -70,6 +70,31 @@ def test_serialise_trace_handles_all_three_shapes():
         {"C": 0.7, "L": 0.5, "R": 0.6, "P": 0.55},
     ]
 
+    # (b') list[dict[str, mixed]] -- the actual schema slca_component_trace
+    # ships: {C, L, R, P, composite} are floats but ``action_family`` is a
+    # string ("cold_chain" / "local_redistribute" / "recovery"). The dict
+    # dispatch must preserve the string verbatim; rounding only the
+    # numeric leaves. Locked in as a regression test after the writer
+    # smoke caught a ValueError("could not convert string to float:
+    # 'cold_chain'") on the first attempt at this dispatch.
+    out = fn([
+        {"C": 0.9082, "L": 0.82, "R": 0.78, "P": 0.78,
+         "composite": 0.8265, "action_family": "local_redistribute"},
+        {"C": 0.7000, "L": 0.50, "R": 0.60, "P": 0.55,
+         "composite": 0.6125, "action_family": "cold_chain"},
+    ])
+    assert out == [
+        {"C": 0.9082, "L": 0.82, "R": 0.78, "P": 0.78,
+         "composite": 0.8265, "action_family": "local_redistribute"},
+        {"C": 0.7,    "L": 0.5,  "R": 0.6,  "P": 0.55,
+         "composite": 0.6125, "action_family": "cold_chain"},
+    ]
+    # bool stays True/False rather than collapsing to 1/0 even though
+    # bool is an int subclass.
+    assert fn([{"flag": True, "x": 0.123456}]) == [
+        {"flag": True, "x": 0.1235},
+    ]
+
     # (c) list[list[float]] -- prob_trace style.
     assert fn([[0.30, 0.50, 0.20], [0.40, 0.40, 0.20]]) == [
         [0.3, 0.5, 0.2],

@@ -102,23 +102,37 @@ def _serialise_trace(arr):
 
       (a) ``list[float]`` / ``list[int]`` -- the common case
           (ari_trace, waste_trace, action_trace, hours, etc.).
-      (b) ``list[dict[str, float]]`` -- slca_component_trace
-          carries one ``{"C", "L", "R", "P"}`` mapping per step.
+      (b) ``list[dict[str, Any]]`` -- slca_component_trace
+          carries one ``{C, L, R, P, composite, action_family}``
+          mapping per step. The ``action_family`` value is a
+          string ("cold_chain" / "local_redistribute" / "recovery")
+          and must be preserved verbatim; only numeric leaves
+          (``int``, ``float``) round to 4 decimals. ``bool`` is
+          excluded from the numeric branch even though it is an
+          ``int`` subclass, so future Boolean-valued dict fields
+          stay True/False rather than collapsing to 1/0.
       (c) ``list[list[float]]`` (or ``np.ndarray`` of shape
           ``(n_steps, k)``) -- prob_trace carries the per-step
           action probability vector across {cold_chain,
           local_redistribute, recovery}.
 
-    All numeric leaves round to 4 decimals (well below the
-    per-step measurement noise floor; keeps the per-seed JSON in
-    the ~120 KB range across the full 16-field set). Non-numeric
-    leaves like int actions survive verbatim because
-    ``round(float(int), 4) == int`` after JSON serialisation.
-
-    Anything else (unknown shape) raises a TypeError up the stack
-    so a future ragged trace cannot silently produce garbage; the
-    seed-array task fails fast and we extend the dispatch.
+    Numeric leaves round to 4 decimals (well below the per-step
+    measurement noise floor; keeps the per-seed JSON in the
+    ~120 KB range across the full 16-field set). Anything else
+    (unknown shape) raises a TypeError up the stack so a future
+    ragged trace cannot silently produce garbage; the seed-array
+    task fails fast and we extend the dispatch.
     """
+
+    def _round_leaf(v):
+        # Preserve non-numeric values (strings, None, bool) verbatim.
+        # bool intentionally excluded from the numeric branch even
+        # though ``isinstance(True, int)`` is True -- a future
+        # Boolean dict field should stay True/False, not 1/0.
+        if isinstance(v, bool) or not isinstance(v, (int, float)):
+            return v
+        return round(float(v), 4)
+
     if hasattr(arr, "tolist"):
         arr = arr.tolist()
     if not arr:
@@ -126,17 +140,17 @@ def _serialise_trace(arr):
     first = arr[0]
     if isinstance(first, dict):
         return [
-            {k: round(float(v), 4) for k, v in entry.items()}
+            {k: _round_leaf(v) for k, v in entry.items()}
             for entry in arr
         ]
     if isinstance(first, (list, tuple)) or hasattr(first, "tolist"):
         return [
-            [round(float(x), 4) for x in (
+            [_round_leaf(x) for x in (
                 entry.tolist() if hasattr(entry, "tolist") else entry
             )]
             for entry in arr
         ]
-    return [round(float(x), 4) for x in arr]
+    return [_round_leaf(x) for x in arr]
 
 
 def main() -> None:
