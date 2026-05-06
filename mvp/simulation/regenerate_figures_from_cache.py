@@ -90,7 +90,7 @@ def main() -> int:
 
     log("Importing simulator...")
     from generate_results import (  # type: ignore
-        DATA_CSV, MODES, Policy, SCENARIOS,
+        DATA_CSV, Policy,
         apply_scenario, run_episode, pd,
     )
 

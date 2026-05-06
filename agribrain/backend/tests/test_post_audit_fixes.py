@@ -928,14 +928,22 @@ def test_panel_c_plots_defensive_reroutes_under_risk():
     layout introduced in 2026-05.
 
     Design history (newest first):
-      * **2026-05 redesign (current):** fig 4 is a 1x4 layout. Panel
-        C = per-method reroute rate (mean(action != cold_chain))
-        under pre vs during outage -- the *behavior change* signal.
-        Panel D = grouped deltaARI / deltaWaste / deltaService bars
-        per method -- the *outcome* signal. Together panels B + C +
-        D make the cyber-resilience causality argument explicit
-        ("outage forced behavior change; behavior change drove KPI
-        delta").
+      * **2026-05 panel-D rework:** panel D now plots ABSOLUTE
+        during-outage levels (ari_during / waste_during /
+        service_during) instead of pre-vs-during deltas. The earlier
+        delta construction inverted the Service ranking on a
+        saturation artefact (a system already near-ceiling pre-outage
+        had little headroom and looked worse than a system that
+        started lower and shifted further). Levels are unambiguous:
+        AgriBrain holds the highest ARI / lowest Waste / highest
+        Service during the outage on every seed.
+      * 2026-05 redesign: fig 4 is a 1x4 layout. Panel C = per-method
+        reroute rate (mean(action != cold_chain)) under pre vs during
+        outage -- the *behavior change* signal. Panel D plotted
+        deltaARI / deltaWaste / deltaService bars (the *outcome*
+        signal). Together panels B + C + D make the cyber-resilience
+        causality argument explicit ("outage forced behavior change;
+        behavior change drove KPI shift").
       * 2026-05 (intermediate): a 2-row gridspec inside the third
         column. Replaced because legends and bars overlapped within
         the cramped sub-panel real estate.
@@ -966,7 +974,7 @@ def test_panel_c_plots_defensive_reroutes_under_risk():
         "shift signal has regressed."
     )
     assert 'ep["ari_trace"]' in src, (
-        "fig 4 panel D no longer reads ari_trace; the deltaARI "
+        "fig 4 panel D no longer reads ari_trace; the during-window ARI "
         "computation has regressed."
     )
     # The pre/during-outage split is the load-bearing comparison.
@@ -975,15 +983,21 @@ def test_panel_c_plots_defensive_reroutes_under_risk():
         "fig 4 panels C/D lost the pre/during-outage masks; the "
         "behavior-shift comparison cannot run without them."
     )
-    # Three KPI deltas pin the outcome story.
-    for delta in ("delta_ari", "delta_waste", "delta_service"):
-        assert delta in src, (
-            f"fig 4 panel D lost the {delta} computation; the KPI-"
-            f"delta panel cannot render without it."
+    # Three KPI level lists pin the panel-D outcome story (renamed
+    # 2026-05 from delta_* to *_during when the panel switched to
+    # absolute during-outage levels; see the design-history docstring
+    # above for the saturation-artefact rationale).
+    for kpi_var in ("ari_during", "waste_during", "service_during"):
+        assert kpi_var in src, (
+            f"fig 4 panel D lost the {kpi_var} computation; the KPI-"
+            f"level panel cannot render without it."
         )
-    # Service-level definition lives in the panel-C/D shared block
-    # and must be the documented "retail-dispatch * sellable" form.
-    assert "actions_arr[pm] != 2" in src and "(1.0 - waste_pre)" in src, (
+    # Service-level definition lives in the panel-D during-window
+    # block and must be the documented "retail-dispatch * sellable"
+    # form. Renamed 2026-05 from pre-window (waste_pre / actions_arr[pm])
+    # to during-window (waste_dur / actions_arr[dm]) when the panel
+    # switched to absolute levels.
+    assert "actions_arr[dm] != 2" in src and "(1.0 - waste_dur)" in src, (
         "fig 4 service-level definition no longer matches "
         "retail_dispatch * (1 - waste); the documented composition "
         "has regressed."
@@ -998,15 +1012,19 @@ def test_panel_c_plots_defensive_reroutes_under_risk():
         "rebalanced from 1x4 to match figs 2/3/5 in late-May 2026."
     )
     # Title pins for the 2x2 layout:
-    #   * (c) "Behavior Shift" -- per-method reroute rate pre/during outage
-    #   * (d) "Outage Impact"  -- per-method delta-ARI/Waste/Service
+    #   * (c) "Behavior Shift"           -- per-method reroute rate pre/during outage
+    #   * (d) "Outage-Window Levels"     -- per-method ARI / Waste / Service during outage
+    # Panel D was retitled 2026-05 from "Outage Impact" when the
+    # panel switched from pre/during deltas to absolute during-window
+    # levels (see the panel-D KPI assertion above).
     # A maintainer who refactors the rendering without updating the
     # headings gets a failing test.
     assert '"(c) Behavior Shift"' in src, (
         "Panel C title 'Behavior Shift' is missing from generate_figures.py."
     )
-    assert '"(d) Outage Impact"' in src, (
-        "Panel D title 'Outage Impact' is missing from generate_figures.py."
+    assert '"(d) Outage-Window Levels"' in src, (
+        "Panel D title 'Outage-Window Levels' is missing from "
+        "generate_figures.py."
     )
 
 
