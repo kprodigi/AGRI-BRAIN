@@ -871,7 +871,20 @@ def _fig3_overproduction_inner(op, ab, hours):
     # "Overproduction" window label at the top.
     _legend(ax, loc="center left")
 
-    # --- (d) SLCA component grouped bars with std error bars ---
+    # --- (d) SLCA component grouped bars (deterministic decomposition) ---
+    # 2026-05 honesty fix: error bars dropped. Pre-2026-05 the bars
+    # carried np.std over the time-step samples of one seed's
+    # slca_component_trace as their "uncertainty", which read as
+    # cross-method dispersion but was actually within-trajectory
+    # step variability of a single seed. The 20-seed
+    # benchmark_summary.json carries an aggregate ``slca`` mean per
+    # mode but does not yet decompose into the four C/L/R/P channels,
+    # so we cannot source proper cross-seed CIs without an aggregator
+    # change. Plotting the means alone is the honest interim:
+    # readers see the per-channel composition without a misleading
+    # CI cap. Once the aggregator emits per-channel summary fields
+    # (slca_carbon, slca_labor, slca_resilience, slca_price_transp),
+    # this panel can re-add proper 20-seed bootstrap CI bars.
     ax = axes[1, 1]
     components = ["C", "L", "R", "P"]
     comp_labels = ["Carbon", "Labor", "Resilience", "Price Transp."]
@@ -881,12 +894,9 @@ def _fig3_overproduction_inner(op, ab, hours):
         ep = op[mode]
         vals = [np.mean([s[comp] for s in ep["slca_component_trace"]])
                 for comp in components]
-        stds = [np.std([s[comp] for s in ep["slca_component_trace"]])
-                for comp in components]
         ax.bar(x + i * width, vals, width, color=COLORS[mode],
                label=MODE_LABELS[mode], alpha=0.92, edgecolor="white",
-               linewidth=0.8, yerr=stds, capsize=4,
-               error_kw={"linewidth": 1.0, "capthick": 1.0})
+               linewidth=0.8)
     ax.set_xticks(x + width)
     ax.set_xticklabels(comp_labels)
     ax.set_ylabel("Score")
@@ -1025,6 +1035,15 @@ def _fig4_cyber_inner(data):
     _legend(ax, loc="upper right")
 
     # --- (b) Action distribution pre/during outage ---
+    # 2026-05 multi-seed upgrade: when per-seed action_trace dumps
+    # are on disk under benchmark_seeds/seed_*.json, compute the
+    # action-share bars and SEs as MEANS / cross-seed SE across
+    # seeds (the canonical 20-seed posture). Falls back to the
+    # single-seed Wald-binomial computation when traces aren't
+    # available (local development; non-HPC runs). The Wald form
+    # was misleading as the panel's only error bar because it
+    # plotted within-trajectory step-count CIs that read as
+    # cross-seed uncertainty.
     ax = axes[1]
     # Wrap multi-word tick labels onto two lines so the wider fig 4
     # font stack does not overlap adjacent ticks.
@@ -1037,14 +1056,34 @@ def _fig4_cyber_inner(data):
 
     pre_counts = np.zeros(3)
     during_counts = np.zeros(3)
-    actions = np.array(ab["action_trace"])
-    n_pre = max(np.sum(pre_mask), 1)
-    n_during = max(np.sum(during_mask), 1)
-    for a in range(3):
-        pre_counts[a] = np.sum((actions == a) & pre_mask) / n_pre
-        during_counts[a] = np.sum((actions == a) & during_mask) / n_during
-    pre_se = np.sqrt(pre_counts * (1 - pre_counts) / n_pre)
-    during_se = np.sqrt(during_counts * (1 - during_counts) / n_during)
+    pre_se = np.zeros(3)
+    during_se = np.zeros(3)
+    _b_inputs = _per_seed_window_inputs(
+        "cyber_outage", "agribrain", np.asarray(hours, dtype=float),
+    )
+    if _b_inputs is not None:
+        # Multi-seed: per-seed action share, mean + cross-seed SE.
+        n_seeds_b = _b_inputs["n_seeds"]
+        a_pre_b = _b_inputs["action_pre"]   # (n_seeds, n_pre_steps)
+        a_dur_b = _b_inputs["action_dur"]
+        for a in range(3):
+            pre_per_seed = (a_pre_b == a).mean(axis=1)
+            dur_per_seed = (a_dur_b == a).mean(axis=1)
+            pre_counts[a] = float(pre_per_seed.mean())
+            during_counts[a] = float(dur_per_seed.mean())
+            pre_se[a] = float(pre_per_seed.std(ddof=1) / np.sqrt(n_seeds_b))
+            during_se[a] = float(dur_per_seed.std(ddof=1) / np.sqrt(n_seeds_b))
+    else:
+        # Single-seed Wald-binomial fallback. Honest as a within-
+        # trajectory step-count CI; not a cross-seed SE.
+        actions = np.array(ab["action_trace"])
+        n_pre = max(np.sum(pre_mask), 1)
+        n_during = max(np.sum(during_mask), 1)
+        for a in range(3):
+            pre_counts[a] = np.sum((actions == a) & pre_mask) / n_pre
+            during_counts[a] = np.sum((actions == a) & during_mask) / n_during
+        pre_se = np.sqrt(pre_counts * (1 - pre_counts) / n_pre)
+        during_se = np.sqrt(during_counts * (1 - during_counts) / n_during)
 
     ax.bar(bar_x - width / 2, pre_counts, width, color="#1565C0",
            alpha=0.92, label="Pre-outage", edgecolor="white", linewidth=0.8,
@@ -1139,6 +1178,55 @@ def _fig4_cyber_inner(data):
     service_during_se: list[float] = []
 
     for mode in modes_ordered_c:
+        # 2026-05 multi-seed upgrade: when per-seed action / ari /
+        # waste traces are on disk, compute the panel-C reroute
+        # proportions and the panel-D during-outage levels as MEANS
+        # across seeds with cross-seed SE error bars (the canonical
+        # 20-seed posture matching figs 6/7/8/9/10). Falls back to
+        # the single-seed step-level SE / Wald-binomial form when
+        # multi-seed traces aren't available (local development;
+        # non-HPC runs). The fallback is honest as a within-trajectory
+        # CI but reads as cross-method uncertainty -- which is why the
+        # multi-seed path is preferred.
+        _ms = _per_seed_window_inputs(
+            "cyber_outage", mode, np.asarray(hours, dtype=float),
+        )
+        if _ms is not None:
+            n_seeds_cd = _ms["n_seeds"]
+            # Panel-C reroute proportions: per-seed (action != 0)
+            # share, mean and cross-seed SE.
+            rp_per_seed = (_ms["action_pre"] != 0).mean(axis=1)
+            rd_per_seed = (_ms["action_dur"] != 0).mean(axis=1)
+            reroute_pre.append(float(rp_per_seed.mean()))
+            reroute_during.append(float(rd_per_seed.mean()))
+            reroute_pre_se.append(
+                float(rp_per_seed.std(ddof=1) / np.sqrt(n_seeds_cd))
+            )
+            reroute_during_se.append(
+                float(rd_per_seed.std(ddof=1) / np.sqrt(n_seeds_cd))
+            )
+
+            # Panel-D during-window levels per seed.
+            ari_per_seed = _ms["ari_dur"].mean(axis=1)
+            waste_per_seed = _ms["waste_dur"].mean(axis=1)
+            not_recovery_per_seed = (_ms["action_dur"] != 2).mean(axis=1)
+            svc_per_seed = not_recovery_per_seed * (1.0 - waste_per_seed)
+
+            ari_during.append(float(ari_per_seed.mean()))
+            waste_during.append(float(waste_per_seed.mean()))
+            service_during.append(float(svc_per_seed.mean()))
+            ari_during_se.append(
+                float(ari_per_seed.std(ddof=1) / np.sqrt(n_seeds_cd))
+            )
+            waste_during_se.append(
+                float(waste_per_seed.std(ddof=1) / np.sqrt(n_seeds_cd))
+            )
+            service_during_se.append(
+                float(svc_per_seed.std(ddof=1) / np.sqrt(n_seeds_cd))
+            )
+            continue
+
+        # ---- Single-seed fallback path ----
         ep = cy[mode]
         actions_arr = np.asarray(ep["action_trace"], dtype=int)
         ari_arr = np.asarray(ep["ari_trace"], dtype=float)
@@ -1151,7 +1239,7 @@ def _fig4_cyber_inner(data):
         # If the episode dump did not emit a per-step waste trace
         # (older runs), fall back to the episode-level waste scalar
         # broadcast across all steps. This keeps the plot honest --
-        # the delta will be zero for those modes -- rather than
+        # the metric will be zero for those modes -- rather than
         # crashing with a shape error.
         if waste_arr.size >= n:
             waste_arr_n = waste_arr[:n]
@@ -1777,6 +1865,48 @@ def _load_per_seed_traces(scenario: str, mode: str,
     if not arrs:
         return None
     return np.vstack(arrs)
+
+
+def _per_seed_window_inputs(scenario: str, mode: str, hours: np.ndarray,
+                             pre_threshold: float = 24.0):
+    """Per-seed windowed action/ARI/waste arrays for fig 4 panels B/C/D.
+
+    Loads the per-seed action / ari / waste traces for one
+    (scenario, mode) cell, slices them into the pre and during
+    windows defined by ``pre_threshold`` (h=24 for cyber_outage),
+    and returns a small dict of (n_seeds, n_window_steps) arrays
+    the figure code can mean / bootstrap over seeds.
+
+    Returns None when any of the three traces is missing or when
+    fewer than 2 seeds are available -- in that case the caller
+    falls back to its single-seed step-level computation. The
+    fallback path is what local development hits (where only
+    seed_42.json / seed_1337.json with heatwave-only traces exist);
+    on HPC where all 5 scenarios x 20 seeds are dumped this helper
+    returns the full multi-seed envelope.
+    """
+    a = _load_per_seed_traces(scenario, mode, "action_trace")
+    ari = _load_per_seed_traces(scenario, mode, "ari_trace")
+    waste = _load_per_seed_traces(scenario, mode, "waste_trace")
+    if a is None or ari is None or waste is None:
+        return None
+    if a.shape[0] < 2:
+        return None
+    if a.shape[0] != ari.shape[0] or a.shape[0] != waste.shape[0]:
+        return None
+    n = min(a.shape[1], ari.shape[1], waste.shape[1], hours.shape[0])
+    h = hours[:n]
+    pm = h < pre_threshold
+    dm = h >= pre_threshold
+    return {
+        "n_seeds": int(a.shape[0]),
+        "action_pre": a[:, :n][:, pm].astype(int),
+        "action_dur": a[:, :n][:, dm].astype(int),
+        "ari_pre":   ari[:, :n][:, pm],
+        "ari_dur":   ari[:, :n][:, dm],
+        "waste_pre": waste[:, :n][:, pm],
+        "waste_dur": waste[:, :n][:, dm],
+    }
 
 
 # Bold error bar styling so tight 20-seed CIs remain visible at figure scale.
@@ -2513,18 +2643,25 @@ def fig9_fault_degradation():
     Three panels, each keyed on benchmark_significance.json and built to
     carry visual variance proportional to the strength of the result:
 
-      (a) Effect-size heatmap. Cohen's d for ARI, agribrain vs each of
-          5 baselines, per scenario. Log-colored so the 36× spread
-          (d ≈ 2 to d ≈ 76 across the 25 comparisons) reads as a clear
-          gradient. Cell text = numeric d and significance star.
-      (b) % ARI improvement forest plot. Same 25 comparisons recoded
-          as 100·(mean_diff)/baseline_mean, with 95% bootstrap CI bars
-          and multiplicity-adjusted p-value stars. The relative scale
-          makes "+63 % vs static" and "+2 % vs MCP-only" instantly
-          interpretable, where the absolute ΔARI hid the magnitude.
-      (c) Context honor rate. Fraction of context-active decisions
-          where the policy followed the dominant context recommendation.
-          Source: context_alignment_{scenario}.json.
+      (a) Effect-size heatmap. Cohen's d_pooled for ARI, agribrain
+          vs each of 5 baselines, per scenario. Log-colored so the
+          ~22x spread on the current run (d in 0.0 to ~22.4 across
+          the 25 comparisons) reads as a clear gradient. Cells with
+          d below the LogNorm floor of 0.2 are marked "n.s." so a
+          reader can distinguish "no effect" cells from
+          "below-floor" cells. Cell text = numeric d.
+      (b) % ARI improvement bar plot. Same 25 comparisons rolled up
+          to one bar per baseline (mean across scenarios) recoded as
+          100*(mean_diff)/baseline_mean. Whiskers show the
+          across-scenario range; the headline magnitude on the
+          current run is ~+36.7% vs Static down to ~+1.2% vs MCP
+          only. The relative scale makes the cross-baseline
+          gradient instantly interpretable.
+      (c) Context-active influence rate. Fraction of context-active
+          decisions where the modifier flipped the agent's argmax
+          (i.e. context actually changed the chosen action).
+          Source: benchmark_summary.json[context_influence_rate],
+          20-seed bootstrap mean with BCa CI.
     """
     sig_data = _fig9_load_significance()
     align_rows = _fig9_load_alignment()
@@ -2617,20 +2754,41 @@ def fig9_fault_degradation():
                 if "p_value_adj" in ari:
                     p_mat[i, j] = float(ari["p_value_adj"])
 
-        # Sequential green colormap, log-normalised because the d range
-        # spans 36×: a linear scale would crush the small-effect end and
-        # wash out the gradient.
+        # Sequential green colormap, log-normalised because the
+        # canonical 20-seed cohens_d_pooled range spans roughly two
+        # decades (0.0-22.4 on the current run) and a linear scale
+        # would crush the small-effect end. Pre-2026-05 the floor
+        # was hard-coded at vmin=1.5, which clipped 11/25 cells
+        # (every "vs No Context / vs piRAG only / vs MCP only" cell
+        # plus the literal d=0.0 for heatwave/vs MCP only) to the
+        # same lightest green and hid the small-effect tail. Floor
+        # the LogNorm vmin at the smallest positive d (or 0.2 if
+        # that is itself smaller) so cells in [0.2, 1.5] now read
+        # as distinguishable shades. Cells whose d rounds to 0.0
+        # are still clipped to the floor (LogNorm requires vmin > 0)
+        # and annotated as "n.s." in the cell-text loop below so
+        # the reader knows they are non-significant rather than
+        # below-floor.
         finite = d_mat[np.isfinite(d_mat)]
-        d_min = max(float(finite.min()), 1.5) if finite.size else 1.5
-        d_max = float(finite.max()) if finite.size else 80.0
+        if finite.size:
+            positive = finite[finite > 0.0]
+            d_min = max(float(positive.min()) if positive.size else 0.2, 0.2)
+            d_max = max(float(finite.max()), d_min * 2)
+        else:
+            d_min, d_max = 0.2, 80.0
         from matplotlib.colors import LogNorm
         norm = LogNorm(vmin=d_min, vmax=d_max)
         im = ax.imshow(d_mat, cmap="Greens", norm=norm,
                        aspect="auto", interpolation="nearest")
 
-        # Cell annotation: numeric Cohen's d, with a halo so the text is
-        # legible across the full gradient (white on saturated cells, dark
-        # on pale ones).
+        # Cell annotation: numeric Cohen's d, with a halo so the
+        # text is legible across the full gradient (white on
+        # saturated cells, dark on pale ones). Cells whose d rounds
+        # to 0.0 (i.e. effectively no effect, like a single
+        # below-floor cell that LogNorm clipped to vmin) are
+        # annotated as "0.0" without a halo and accompanied by a
+        # small "n.s." badge below so a reader can distinguish
+        # "no effect" cells from "below the colormap floor" cells.
         from matplotlib import patheffects as _pe
         for i in range(n_rows):
             for j in range(n_cols):
@@ -2639,13 +2797,16 @@ def fig9_fault_degradation():
                     continue
                 # Pick text color that contrasts: white on saturated
                 # cells (upper third of log range), dark on pale cells.
-                cell_frac = (np.log(d) - np.log(d_min)) / (np.log(d_max) - np.log(d_min))
+                # Use d_min as a floor inside the log so a literal
+                # d=0.0 cell (which LogNorm clips to vmin) doesn't
+                # produce log(0) -> -inf.
+                d_for_color = max(d, d_min)
+                cell_frac = (
+                    (np.log(d_for_color) - np.log(d_min))
+                    / max(np.log(d_max) - np.log(d_min), 1e-9)
+                )
                 txt_color = "white" if cell_frac > 0.55 else "#1B5E20"
                 halo = "black" if txt_color == "white" else "white"
-                # Cell text shows just the numeric Cohen's d. Significance
-                # is reported in the headline below ("25/25 p<0.05") and
-                # in panel (b)'s star annotations; repeating it here mixes
-                # an effect-size encoding with a p-value encoding.
                 # Cell text reduced from _F9_TICK=20 to _F9_TICK-4=16
                 # alongside the panel-A width bump - even at the new
                 # 1.40 width ratio, 20pt bold three-character strings
@@ -2657,6 +2818,13 @@ def fig9_fault_degradation():
                             fontsize=_F9_TICK - 4, fontweight="bold",
                             color=txt_color)
                 t.set_path_effects([_pe.withStroke(linewidth=1.6, foreground=halo)])
+                # Add an "n.s." badge for d below 0.2 (the LogNorm
+                # floor) so a reader doesn't read a clipped cell
+                # as a small but real effect.
+                if d < 0.2:
+                    ax.text(j, i + 0.30, "n.s.", ha="center", va="center",
+                            fontsize=_F9_TICK - 8, fontweight="bold",
+                            color="#616161")
 
         ax.set_xticks(np.arange(n_cols))
         # Rotation bumped from 20° to 30° per "no overlapping"
@@ -2693,8 +2861,11 @@ def fig9_fault_degradation():
     # rolled up to one bar per baseline (mean across 5 scenarios, with
     # whiskers showing the scenario range) tells the same story in 5
     # visual elements instead of 25, and the declining gradient from
-    # `vs static` (≈+75 %) down to `vs MCP only` (≈+2.7 %) is instantly
-    # legible.
+    # `vs static` (~+36.7 % on the current run) down to `vs MCP only`
+    # (~+1.2 %) is instantly legible. The "+75 %" headline that
+    # earlier comments referenced is from a pre-2026-04 baseline run;
+    # the panel autoscales via max_hi so the symlog x-range tracks
+    # whatever the current data is.
     ax = axes[1]
     _BASELINES_BAR = [
         ("agribrain_vs_static",     "static",     "vs Static",       "#616161"),
@@ -3327,8 +3498,12 @@ def fig10_latency_quality_frontier(data):
     # are belt-and-braces: tight_layout handles inter-panel padding
     # and panel-internal label positioning, subplots_adjust nails
     # the top margin numerically.
-    fig.tight_layout(rect=[0, 0, 1, 0.86], w_pad=1.6)
-    fig.subplots_adjust(top=0.86)
+    # rect_bottom bumped from 0 to 0.04 in 2026-05 to reserve space
+    # for the panel-A/B error-bar-semantics footnote added below
+    # (otherwise the footnote overlaps the panel-B x-label which
+    # sits at bbox.y0 - 0.08).
+    fig.tight_layout(rect=[0, 0.04, 1, 0.86], w_pad=1.6)
+    fig.subplots_adjust(top=0.86, bottom=0.16)
 
     # Compute the geometric center of the broken pair in figure
     # coordinates - both labels and title use this so they appear
@@ -3345,6 +3520,23 @@ def fig10_latency_quality_frontier(data):
              "Mean Decision Latency (ms)",
              ha="center", va="top",
              fontsize=_F10_AXIS, fontweight="bold")
+    # Footnote clarifying the panel A/B error-bar semantics. Panel
+    # marker positions are 20-seed bootstrap means from
+    # benchmark_summary.json; the +/-SE whiskers reflect
+    # cross-SCENARIO heterogeneity (sd / sqrt(5)) rather than
+    # cross-seed noise (the within-scenario bootstrap CI is
+    # ~0.001-0.005 ARI on n=20 and would not render visibly at this
+    # y-axis scale). A casual reader could otherwise misread the
+    # whiskers as seed-noise CIs; this footnote makes the convention
+    # explicit. Panel (c) uses paired-bootstrap mean_diff CIs from
+    # benchmark_significance.json and is unaffected.
+    fig.text(0.5, 0.012,
+             "Panels (a)/(b): markers are 20-seed bootstrap means; "
+             "error bars = ±SE across 5 scenarios "
+             "(scenario heterogeneity, not seed noise).",
+             ha="center", va="bottom",
+             fontsize=_F10_LEG - 3, fontweight="normal",
+             color="#424242", style="italic")
     # Panel (b) title centered over the broken pair. Offset reduced
     # from +0.025 to +0.005 alongside the rect_top bump to 0.985
     # so the title sits just above the panel's top spine, matching
