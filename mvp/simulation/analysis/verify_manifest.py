@@ -135,10 +135,19 @@ def main() -> int:
     # matches one of these patterns is a hard failure rather than a
     # warning. Keep this list in lockstep with the .gitignore allowlist
     # (see top-level .gitignore around line 82).
+    #
+    # IMPORTANT: glob patterns must NOT over-match. The pre-2026-05
+    # ``table*.csv`` glob matched both the canonical
+    # ``table1_summary.csv`` (tracked) and the single-seed companion
+    # ``table1_summary_seed42.csv`` (gitignored, HPC-side only),
+    # causing CI's --require-tracked to hard-fail on missing
+    # ``table1_summary_seed42.csv`` even though that file is not
+    # in the .gitignore allowlist. Listing the table files
+    # explicitly removes the ambiguity.
     import fnmatch as _fnmatch_v
     _TRACKED_PATTERNS = (
         "fig*.png", "fig*.pdf",
-        "table*.csv",
+        "table1_summary.csv", "table2_ablation.csv",
         "benchmark_summary.json", "benchmark_significance.json",
         "stress_summary.json", "stress_degradation.csv",
         "feature_heatmap_data.json",

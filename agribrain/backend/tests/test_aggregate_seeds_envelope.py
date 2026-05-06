@@ -305,6 +305,37 @@ def test_git_commit_tier3_parses_detached_head(tmp_path: Path):
     assert sha == expected_sha
 
 
+def test_verify_manifest_tracked_patterns_match_gitignore_allowlist():
+    """The _TRACKED_PATTERNS list in verify_manifest.py must list ONLY
+    the file basenames that are explicitly allowlisted in .gitignore
+    under ``mvp/simulation/results/``. A glob that over-matches
+    (e.g. ``table*.csv`` matching both ``table1_summary.csv`` and
+    the gitignored ``table1_summary_seed42.csv``) makes
+    --require-tracked hard-fail on CI because the seed42 companion
+    files are HPC-side-only and never committed.
+    """
+    src = (_SIM_DIR / "analysis" / "verify_manifest.py").read_text(
+        encoding="utf-8"
+    )
+    # Required exact-match entries for the table files (no globs).
+    assert '"table1_summary.csv"' in src, (
+        "Tracked-patterns list missing exact 'table1_summary.csv'."
+    )
+    assert '"table2_ablation.csv"' in src, (
+        "Tracked-patterns list missing exact 'table2_ablation.csv'."
+    )
+    # The over-matching glob must NOT be present.
+    assert '"table*.csv"' not in src, (
+        "Tracked-patterns list contains the over-matching 'table*.csv' "
+        "glob. This matches the gitignored 'table1_summary_seed42.csv' "
+        "/ 'table2_ablation_seed42.csv' companion files (which are "
+        "HPC-side single-seed outputs, not in the .gitignore "
+        "allowlist), causing CI --require-tracked to hard-fail on "
+        "missing-tracked when those files are absent from a fresh "
+        "clone."
+    )
+
+
 def test_git_commit_tier3_handles_packed_refs(tmp_path: Path):
     """When the ref file is missing but exists in packed-refs."""
     git_dir = tmp_path / ".git"
