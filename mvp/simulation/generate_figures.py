@@ -2917,19 +2917,21 @@ def fig9_fault_degradation():
         ax.set_yticklabels([v["label"] for _, v in order])
         ax.invert_yaxis()  # weakest baseline (largest gain) on top
 
-        # Symlog so the +1..+15 % cluster has visual room and the +75 %
-        # static bar doesn't dominate. Tick layout is the load-bearing
-        # readability piece: the previous {0,5,50,100} set put 50% and
-        # 100% visually adjacent in the compressed log region (the data
-        # tops out around +75% so the gap between log(50) and log(100)
-        # is ~0.30 dec, which collides at the bold 20pt tick fontsize).
-        # Switch linthresh from 2.0 to 5.0 so the linear region absorbs
-        # the small-bar cluster cleanly and the log region begins where
-        # the big bars actually live; tick set drops to {0, 5, 25, 75}
-        # which gives clearly separated labels across the whole axis
-        # without losing fidelity at either end. xlim caps at 80 since
-        # the headline +75% vs Static bar is the largest data point and
-        # padding to 110% wasted half the panel.
+        # Symlog so the +1..+15 % cluster has visual room and the
+        # headline static bar doesn't dominate. Tick layout is the
+        # load-bearing readability piece: the previous {0,5,50,100}
+        # set put 50% and 100% visually adjacent in the compressed
+        # log region (a pre-2026-04 baseline reached +75 %, so the
+        # gap between log(50) and log(100) was ~0.30 dec and collided
+        # at the bold 20pt tick fontsize). Switch linthresh from 2.0
+        # to 5.0 so the linear region absorbs the small-bar cluster
+        # cleanly and the log region begins where the big bars
+        # actually live; tick set drops to {0, 5, 25, 75} which gives
+        # clearly separated labels across the whole axis without
+        # losing fidelity at either end. xlim caps at 80 with the
+        # max_hi*1.10 guard so the panel auto-grows if the data
+        # climbs back toward +75 %; the current run tops at +36.7 %
+        # so the cap is the floor.
         ax.set_xscale("symlog", linthresh=5.0, linscale=1.0)
         ax.set_xlim(0, max(max_hi * 1.10, 80.0))
         from matplotlib.ticker import FixedLocator, FuncFormatter, NullLocator

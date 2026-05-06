@@ -50,9 +50,17 @@ except ImportError:
 TRACE_MODES = ("static", "hybrid_rl", "agribrain")
 
 #: Trace fields to dump. ``ari_trace`` is consumed by fig 2 panel (d)
-#: for the seed-CI ribbon. Add other fields here if a future panel
-#: needs seed-stacked per-step uncertainty.
-TRACE_FIELDS = ("ari_trace",)
+#: for the seed-CI ribbon. ``action_trace`` and ``waste_trace`` were
+#: added in 2026-05 so fig 4 panels B/C/D can compute per-seed
+#: pre/during-outage means + cross-seed SE (the multi-seed honesty
+#: pass landed in commit a4157dc). Without these two extra fields the
+#: ``_per_seed_window_inputs`` helper in generate_figures.py returns
+#: None for every cell and the panels silently fall back to the
+#: single-seed Wald-binomial / step-level SE form, which would make
+#: the multi-seed pass a no-op on HPC. Adding more modes is cheap
+#: (each field adds ~3 KB of JSON per seed at 4-decimal precision)
+#: but deliberately limited here so the per-seed JSONs stay tractable.
+TRACE_FIELDS = ("ari_trace", "action_trace", "waste_trace")
 
 
 def main() -> None:
