@@ -43,13 +43,45 @@ def test_run_single_seed_declares_canonical_trace_modes():
     )
 
 
-def test_run_single_seed_declares_ari_trace_field():
-    """fig 2 panel (d) consumes ari_trace; pin the dumped field set."""
+def test_run_single_seed_declares_canonical_trace_fields():
+    """Pin the per-step fields each seed envelope must dump.
+
+    Pre-2026-05 the contract was the single field ``ari_trace`` for
+    fig 2 panel D's seed-CI ribbon. Extended in 2026-05 to cover
+    every per-step field the figure code reads, so a completed
+    HPC run produces a self-contained cache the
+    ``regenerate_figures_from_cache.py`` script can re-render every
+    figure from without rerunning the simulator. The full set is
+    enumerated in TRACE_FIELDS at the top of run_single_seed.py and
+    documented inline there.
+    """
     text = (_BENCHMARKS_DIR / "run_single_seed.py").read_text(encoding="utf-8")
-    assert 'TRACE_FIELDS = ("ari_trace",)' in text, (
-        "TRACE_FIELDS no longer dumps ari_trace; fig 2 panel d ribbon "
-        "will fall back to single-seed line on every run."
+    required_fields = (
+        "ari_trace",
+        "waste_trace",
+        "rho_trace",
+        "action_trace",
+        "prob_trace",
+        "carbon_trace",
+        "hours",
+        "batch_effective_rho_trace",
+        "effective_rho_trace",
+        "temp_trace",
+        "rh_trace",
+        "inventory_trace",
+        "demand_trace",
+        "slca_component_trace",
+        "equity_trace",
+        "reward_trace",
     )
+    for field in required_fields:
+        assert f'"{field}"' in text, (
+            f"TRACE_FIELDS no longer dumps {field}; the "
+            f"regenerate_figures_from_cache.py path will lose its "
+            f"ability to re-render any panel that consumes that "
+            f"per-step trace. See run_single_seed.py docstring for "
+            f"the field-by-figure mapping."
+        )
 
 
 def test_run_single_seed_envelope_shape(tmp_path: Path, monkeypatch):
