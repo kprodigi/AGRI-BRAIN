@@ -2646,10 +2646,8 @@ def fig9_fault_degradation():
       (a) Effect-size heatmap. Cohen's d_pooled for ARI, agribrain
           vs each of 5 baselines, per scenario. Log-colored so the
           ~22x spread on the current run (d in 0.0 to ~22.4 across
-          the 25 comparisons) reads as a clear gradient. Cells with
-          d below the LogNorm floor of 0.2 are marked "n.s." so a
-          reader can distinguish "no effect" cells from
-          "below-floor" cells. Cell text = numeric d.
+          the 25 comparisons) reads as a clear gradient. Cell text
+          = numeric d.
       (b) % ARI improvement bar plot. Same 25 comparisons rolled up
           to one bar per baseline (mean across scenarios) recoded as
           100*(mean_diff)/baseline_mean. Whiskers show the
@@ -2766,9 +2764,7 @@ def fig9_fault_degradation():
         # that is itself smaller) so cells in [0.2, 1.5] now read
         # as distinguishable shades. Cells whose d rounds to 0.0
         # are still clipped to the floor (LogNorm requires vmin > 0)
-        # and annotated as "n.s." in the cell-text loop below so
-        # the reader knows they are non-significant rather than
-        # below-floor.
+        # but their numeric "0.0" cell text remains visible.
         finite = d_mat[np.isfinite(d_mat)]
         if finite.size:
             positive = finite[finite > 0.0]
@@ -2783,12 +2779,7 @@ def fig9_fault_degradation():
 
         # Cell annotation: numeric Cohen's d, with a halo so the
         # text is legible across the full gradient (white on
-        # saturated cells, dark on pale ones). Cells whose d rounds
-        # to 0.0 (i.e. effectively no effect, like a single
-        # below-floor cell that LogNorm clipped to vmin) are
-        # annotated as "0.0" without a halo and accompanied by a
-        # small "n.s." badge below so a reader can distinguish
-        # "no effect" cells from "below the colormap floor" cells.
+        # saturated cells, dark on pale ones).
         from matplotlib import patheffects as _pe
         for i in range(n_rows):
             for j in range(n_cols):
@@ -2818,13 +2809,6 @@ def fig9_fault_degradation():
                             fontsize=_F9_TICK - 4, fontweight="bold",
                             color=txt_color)
                 t.set_path_effects([_pe.withStroke(linewidth=1.6, foreground=halo)])
-                # Add an "n.s." badge for d below 0.2 (the LogNorm
-                # floor) so a reader doesn't read a clipped cell
-                # as a small but real effect.
-                if d < 0.2:
-                    ax.text(j, i + 0.30, "n.s.", ha="center", va="center",
-                            fontsize=_F9_TICK - 8, fontweight="bold",
-                            color="#616161")
 
         ax.set_xticks(np.arange(n_cols))
         # Rotation bumped from 20° to 30° per "no overlapping"
@@ -3498,12 +3482,8 @@ def fig10_latency_quality_frontier(data):
     # are belt-and-braces: tight_layout handles inter-panel padding
     # and panel-internal label positioning, subplots_adjust nails
     # the top margin numerically.
-    # rect_bottom bumped from 0 to 0.04 in 2026-05 to reserve space
-    # for the panel-A/B error-bar-semantics footnote added below
-    # (otherwise the footnote overlaps the panel-B x-label which
-    # sits at bbox.y0 - 0.08).
-    fig.tight_layout(rect=[0, 0.04, 1, 0.86], w_pad=1.6)
-    fig.subplots_adjust(top=0.86, bottom=0.16)
+    fig.tight_layout(rect=[0, 0, 1, 0.86], w_pad=1.6)
+    fig.subplots_adjust(top=0.86)
 
     # Compute the geometric center of the broken pair in figure
     # coordinates - both labels and title use this so they appear
@@ -3520,23 +3500,6 @@ def fig10_latency_quality_frontier(data):
              "Mean Decision Latency (ms)",
              ha="center", va="top",
              fontsize=_F10_AXIS, fontweight="bold")
-    # Footnote clarifying the panel A/B error-bar semantics. Panel
-    # marker positions are 20-seed bootstrap means from
-    # benchmark_summary.json; the +/-SE whiskers reflect
-    # cross-SCENARIO heterogeneity (sd / sqrt(5)) rather than
-    # cross-seed noise (the within-scenario bootstrap CI is
-    # ~0.001-0.005 ARI on n=20 and would not render visibly at this
-    # y-axis scale). A casual reader could otherwise misread the
-    # whiskers as seed-noise CIs; this footnote makes the convention
-    # explicit. Panel (c) uses paired-bootstrap mean_diff CIs from
-    # benchmark_significance.json and is unaffected.
-    fig.text(0.5, 0.012,
-             "Panels (a)/(b): markers are 20-seed bootstrap means; "
-             "error bars = ±SE across 5 scenarios "
-             "(scenario heterogeneity, not seed noise).",
-             ha="center", va="bottom",
-             fontsize=_F10_LEG - 3, fontweight="normal",
-             color="#424242", style="italic")
     # Panel (b) title centered over the broken pair. Offset reduced
     # from +0.025 to +0.005 alongside the rect_top bump to 0.985
     # so the title sits just above the panel's top spine, matching
