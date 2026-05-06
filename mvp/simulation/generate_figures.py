@@ -625,47 +625,29 @@ def _fig2_heatwave_inner(hw, ab, hours):
     # (1 - rho) factor pulls every mode downward through the heatwave
     # window in line with the cumulative thermal-damage physics.
     #
-    # 2026-05 seed-CI ribbon: when per-seed JSONs are present (HPC
-    # 20-seed run output dumped by run_single_seed.py with traces
-    # enabled), render the seed-mean line plus a 95% percentile-
-    # bootstrap CI ribbon per mode. Falls back to the single-seed
-    # smoothed line when traces aren't available (local single-seed
-    # development; legacy benchmark snapshots that pre-date the
-    # trace dump). The fallback is silent on the figure (no missing-
-    # data placeholder) because the line itself is meaningful at
-    # single-seed; the ribbon just isn't shown.
+    # When per-seed JSONs are present (HPC 20-seed run with traces
+    # enabled), use the seed-MEAN as the plotted line so the figure
+    # reflects the canonical multi-seed posture. Otherwise fall back
+    # to the single-seed line. Per-step CI ribbons were removed in
+    # 2026-05 per user direction -- the cross-method ARI gap is
+    # cleanly readable from the styled lines alone (consistent
+    # color/marker/linestyle via _mode_plot), and the canonical
+    # uncertainty story for ARI lives in the bootstrap CIs of the
+    # cross-method paired tests in benchmark_significance.json.
     ax = axes[1, 1]
     window = 12
+    kernel = np.ones(window) / window
     for mode in ["static", "hybrid_rl", "agribrain"]:
         ep = hw[mode]
-        # Always plot the per-seed-mean (or single-seed) line so the
-        # panel reads identically with or without per-seed data.
         per_seed = _load_per_seed_traces("heatwave", mode, "ari_trace")
         if per_seed is not None and per_seed.shape[0] >= 2:
-            # Stacked seeds: render seed-mean as the line, 2.5/97.5
-            # percentile band as the ribbon. Smoothing is applied to
-            # the per-seed mean so the ribbon edges don't jitter
-            # against a smoothed line.
             n = min(per_seed.shape[1], hours.shape[0])
             seed_mean = per_seed[:, :n].mean(axis=0)
-            seed_lo = np.percentile(per_seed[:, :n], 2.5, axis=0)
-            seed_hi = np.percentile(per_seed[:, :n], 97.5, axis=0)
-            kernel = np.ones(window) / window
             mean_smooth = np.convolve(seed_mean, kernel, mode="same")
-            lo_smooth = np.convolve(seed_lo, kernel, mode="same")
-            hi_smooth = np.convolve(seed_hi, kernel, mode="same")
-            x = hours[:n]
-            color = COLORS.get(mode, "#444444")
-            ax.fill_between(x, lo_smooth, hi_smooth,
-                            color=color, alpha=0.18, linewidth=0,
-                            zorder=2)
-            _mode_plot(ax, x, mean_smooth, mode)
+            _mode_plot(ax, hours[:n], mean_smooth, mode)
         else:
-            # No per-seed traces: render the single-seed line (the
-            # legacy behaviour). The ribbon emerges automatically on
-            # the next HPC run.
             ari = np.array(ep["ari_trace"])
-            rolling = np.convolve(ari, np.ones(window) / window, mode="same")
+            rolling = np.convolve(ari, kernel, mode="same")
             _mode_plot(ax, hours, rolling, mode)
     ax.set_xlabel("Hours")
     ax.set_ylabel("ARI")
