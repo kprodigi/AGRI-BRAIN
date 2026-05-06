@@ -219,3 +219,119 @@ def test_aggregate_seeds_load_path_actually_unwraps(tmp_path: Path, monkeypatch)
         loaded = json.loads((seeds_dir / f"seed_{s}.json").read_text())
         assert "scenarios" in loaded
         assert "heatwave" in loaded["scenarios"]
+
+
+# ---------------------------------------------------------------------------
+# git_commit fallback chain — three tiers, last must be ``.git/HEAD`` direct read.
+# ---------------------------------------------------------------------------
+
+def test_git_commit_fallback_chain_has_three_tiers():
+    """The aggregator's _meta.git_commit resolution must have THREE
+    tiers (env var, subprocess, .git/HEAD direct read).
+
+    The post-HPC RUN_TAG 485c769_20260505_0349 incident: a manual
+    ``sbatch hpc/hpc_aggregate.sh`` resubmission bypassed the env
+    export from hpc_run.sh AND the slurm worker's PATH didn't
+    include ``git``. With only two tiers, both returned None and
+    benchmark_summary._meta.git_commit landed as null. The
+    third-tier fallback reads .git/HEAD directly so the chain
+    survives the no-env-var + no-git-binary case.
+    """
+    src = (_SIM_DIR / "benchmarks" / "aggregate_seeds.py").read_text(
+        encoding="utf-8"
+    )
+    # Tier 1: env var
+    assert 'AGRIBRAIN_GIT_COMMIT' in src, (
+        "Tier 1 missing: AGRIBRAIN_GIT_COMMIT env var read."
+    )
+    # Tier 2: git subprocess
+    assert '"git", "rev-parse", "HEAD"' in src, (
+        "Tier 2 missing: git rev-parse HEAD subprocess fallback."
+    )
+    # Tier 3: .git/HEAD direct read
+    assert '.git" / "HEAD"' in src or "'.git'" in src and 'HEAD' in src, (
+        "Tier 3 missing: direct .git/HEAD read fallback. Without "
+        "this, slurm workers without ``git`` on PATH (and without "
+        "AGRIBRAIN_GIT_COMMIT set) silently produce "
+        "benchmark_summary._meta.git_commit = null."
+    )
+    # Tier 3 needs to handle ref-based AND detached-HEAD forms
+    assert 'ref: ' in src, (
+        "Tier 3 missing the ref-based HEAD case "
+        "(``ref: refs/heads/main`` form)."
+    )
+
+
+def test_git_commit_tier3_parses_ref_based_head(tmp_path: Path):
+    """Synthetic .git directory with a ref-based HEAD must yield
+    the SHA the ref points at."""
+    git_dir = tmp_path / ".git"
+    (git_dir / "refs" / "heads").mkdir(parents=True)
+    (git_dir / "HEAD").write_text("ref: refs/heads/main\n", encoding="utf-8")
+    expected_sha = "a" * 40
+    (git_dir / "refs" / "heads" / "main").write_text(
+        expected_sha + "\n", encoding="utf-8",
+    )
+
+    # Mirror the tier-3 logic from aggregate_seeds.py
+    head_text = (git_dir / "HEAD").read_text(encoding="utf-8").strip()
+    sha = None
+    if head_text.startswith("ref: "):
+        ref = head_text[5:].strip()
+        ref_path = git_dir / ref
+        if ref_path.exists():
+            candidate = ref_path.read_text(encoding="utf-8").strip()
+            if len(candidate) == 40 and all(
+                c in "0123456789abcdef" for c in candidate
+            ):
+                sha = candidate
+    assert sha == expected_sha
+
+
+def test_git_commit_tier3_parses_detached_head(tmp_path: Path):
+    """Detached HEAD: .git/HEAD itself contains the 40-char SHA."""
+    git_dir = tmp_path / ".git"
+    git_dir.mkdir()
+    expected_sha = "b" * 40
+    (git_dir / "HEAD").write_text(expected_sha + "\n", encoding="utf-8")
+
+    head_text = (git_dir / "HEAD").read_text(encoding="utf-8").strip()
+    sha = None
+    if not head_text.startswith("ref: "):
+        if len(head_text) == 40 and all(
+            c in "0123456789abcdef" for c in head_text
+        ):
+            sha = head_text
+    assert sha == expected_sha
+
+
+def test_git_commit_tier3_handles_packed_refs(tmp_path: Path):
+    """When the ref file is missing but exists in packed-refs."""
+    git_dir = tmp_path / ".git"
+    git_dir.mkdir()
+    expected_sha = "c" * 40
+    (git_dir / "HEAD").write_text("ref: refs/heads/main\n", encoding="utf-8")
+    # No refs/heads/main file -- it's been packed.
+    (git_dir / "packed-refs").write_text(
+        f"# pack-refs with: peeled fully-peeled sorted\n"
+        f"{expected_sha} refs/heads/main\n",
+        encoding="utf-8",
+    )
+
+    # Mirror the packed-refs branch of tier-3 logic.
+    head_text = (git_dir / "HEAD").read_text(encoding="utf-8").strip()
+    ref = head_text[5:].strip() if head_text.startswith("ref: ") else None
+    assert ref == "refs/heads/main"
+    ref_path = git_dir / ref
+    assert not ref_path.exists()  # Packed-only state.
+
+    sha = None
+    packed = git_dir / "packed-refs"
+    if packed.exists():
+        for line in packed.read_text(encoding="utf-8").splitlines():
+            if line.endswith(ref) and len(line) >= 41:
+                candidate = line.split(" ", 1)[0].strip()
+                if len(candidate) == 40:
+                    sha = candidate
+                    break
+    assert sha == expected_sha

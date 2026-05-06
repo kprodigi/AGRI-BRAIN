@@ -1260,26 +1260,75 @@ def main():
     # source-code commit alongside the bootstrap parameters. A
     # reviewer reading benchmark_summary.json should see at a glance
     # which version of the simulator produced which numbers, without
-    # cross-referencing artifact_manifest.json. Resolution order
-    # matches build_artifact_manifest.py:
-    #   1. AGRIBRAIN_GIT_COMMIT env var (HPC pipelines export this so
-    #      the stamp survives slurm contexts where git is not in PATH);
-    #   2. ``git rev-parse HEAD`` subprocess (local-dev path);
-    #   3. None (last resort; verify_manifest.py --strict-commit on
+    # cross-referencing artifact_manifest.json.
+    #
+    # Resolution order (each tier falls through to the next on failure):
+    #   1. AGRIBRAIN_GIT_COMMIT env var (HPC pipelines export this via
+    #      sbatch --export so the stamp survives slurm contexts where
+    #      git is not in PATH).
+    #   2. ``git rev-parse HEAD`` subprocess (local-dev path; requires
+    #      the ``git`` binary on PATH).
+    #   3. Direct read of ``.git/HEAD`` (slurm-compute-node path; works
+    #      even when ``git`` is not installed on the worker, as long
+    #      as the repo's ``.git`` directory is on the shared filesystem
+    #      that the worker can see). Handles both detached-HEAD and
+    #      ref-based forms.
+    #   4. None (last resort; verify_manifest.py --strict-commit on
     #      the artifact manifest still gates the artifact set, so a
     #      None here is informational rather than a hard failure).
+    #
+    # The post-HPC RUN_TAG 485c769_20260505_0349 incident: a manual
+    # ``sbatch hpc/hpc_aggregate.sh`` resubmission bypassed the env
+    # export from ``hpc_run.sh`` and the slurm worker's PATH didn't
+    # include ``git`` -- tiers 1 and 2 both returned None, ``_meta.git_commit``
+    # ended up null. Tier 3 added so this fallback chain reaches a
+    # real SHA on every realistic HPC + local invocation path.
     import os as _os_meta
     import subprocess as _subprocess_meta
     _git_commit_meta: str | None = (
         _os_meta.environ.get("AGRIBRAIN_GIT_COMMIT", "").strip() or None
     )
+    _git_root_meta_path = _SCRIPT_DIR.parent.parent.parent
     if _git_commit_meta is None:
         try:
-            _git_root_meta = str(_SCRIPT_DIR.parent.parent.parent)
             _git_commit_meta = _subprocess_meta.check_output(
-                ["git", "rev-parse", "HEAD"], cwd=_git_root_meta,
+                ["git", "rev-parse", "HEAD"],
+                cwd=str(_git_root_meta_path),
                 stderr=_subprocess_meta.PIPE,
             ).decode("utf-8").strip() or None
+        except Exception:
+            _git_commit_meta = None
+    if _git_commit_meta is None:
+        # Tier 3: read .git/HEAD directly. Handles slurm workers
+        # without git on PATH.
+        try:
+            _head_path = _git_root_meta_path / ".git" / "HEAD"
+            _head_text = _head_path.read_text(encoding="utf-8").strip()
+            if _head_text.startswith("ref: "):
+                _ref = _head_text[5:].strip()  # e.g. "refs/heads/main"
+                _ref_path = _git_root_meta_path / ".git" / _ref
+                if _ref_path.exists():
+                    _sha = _ref_path.read_text(encoding="utf-8").strip()
+                    if len(_sha) == 40 and all(
+                        c in "0123456789abcdef" for c in _sha
+                    ):
+                        _git_commit_meta = _sha
+                else:
+                    # Packed refs fallback: ref might be in
+                    # ``.git/packed-refs`` instead of an unpacked file.
+                    _packed = _git_root_meta_path / ".git" / "packed-refs"
+                    if _packed.exists():
+                        for _line in _packed.read_text(encoding="utf-8").splitlines():
+                            if _line.endswith(_ref) and len(_line) >= 41:
+                                _candidate = _line.split(" ", 1)[0].strip()
+                                if len(_candidate) == 40:
+                                    _git_commit_meta = _candidate
+                                    break
+            elif len(_head_text) == 40 and all(
+                c in "0123456789abcdef" for c in _head_text
+            ):
+                # Detached HEAD: HEAD itself contains the SHA.
+                _git_commit_meta = _head_text
         except Exception:
             _git_commit_meta = None
     payload_summary = {
