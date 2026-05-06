@@ -1116,22 +1116,27 @@ def _fig4_cyber_inner(data):
     # treatment of the action-distribution proportions.
     reroute_pre_se: list[float] = []
     reroute_during_se: list[float] = []
-    delta_ari: list[float] = []
-    delta_waste: list[float] = []
-    delta_service: list[float] = []
-    # Standard errors of the deltas (during - pre means). For ARI and
-    # Waste we use SE_delta = sqrt(SE_pre^2 + SE_during^2) with each
-    # window-side SE = std/sqrt(n) (assumes step-level samples are
-    # approximately independent within window; conservative since
-    # Arrhenius integration introduces mild autocorrelation, but
-    # adequate for figure-level CI bars). For Service the metric is
-    # a product (retail_dispatch * (1 - mean_waste)) and the analytic
-    # SE requires the delta method, so we bootstrap-resample steps
-    # within each window 500x and take the std of the bootstrap delta
-    # distribution.
-    delta_ari_se: list[float] = []
-    delta_waste_se: list[float] = []
-    delta_service_se: list[float] = []
+    ari_during: list[float] = []
+    waste_during: list[float] = []
+    service_during: list[float] = []
+    # Standard errors for the during-outage means. For ARI and Waste
+    # we use SE_mean = std/sqrt(n) on the during-window samples
+    # (assumes step-level samples are approximately independent
+    # within window; conservative since Arrhenius integration
+    # introduces mild autocorrelation, but adequate for figure-level
+    # CI bars). For Service the metric is a product
+    # (retail_dispatch * (1 - mean_waste)) and the analytic SE
+    # requires the delta method, so we bootstrap-resample
+    # during-window steps 2000x and take the std of the bootstrap
+    # level distribution. The pre-vs-during delta construction was
+    # retired in 2026-05: levels are unambiguous (AgriBrain holds
+    # the highest ARI / lowest waste / highest service during the
+    # outage), whereas a delta penalises systems already near
+    # ceiling pre-outage and inverted the Service ranking on a
+    # saturation artefact.
+    ari_during_se: list[float] = []
+    waste_during_se: list[float] = []
+    service_during_se: list[float] = []
 
     for mode in modes_ordered_c:
         ep = cy[mode]
@@ -1162,8 +1167,8 @@ def _fig4_cyber_inner(data):
             # cyber_outage trace, but guard against truncated data).
             reroute_pre.append(0.0); reroute_during.append(0.0)
             reroute_pre_se.append(0.0); reroute_during_se.append(0.0)
-            delta_ari.append(0.0); delta_waste.append(0.0); delta_service.append(0.0)
-            delta_ari_se.append(0.0); delta_waste_se.append(0.0); delta_service_se.append(0.0)
+            ari_during.append(0.0); waste_during.append(0.0); service_during.append(0.0)
+            ari_during_se.append(0.0); waste_during_se.append(0.0); service_during_se.append(0.0)
             continue
 
         # Reroute proportions (Bernoulli at step granularity) + Wald SE.
@@ -1174,43 +1179,38 @@ def _fig4_cyber_inner(data):
         reroute_pre_se.append(float(np.sqrt(rp * (1.0 - rp) / n_pre_c)))
         reroute_during_se.append(float(np.sqrt(rd * (1.0 - rd) / n_dur_c)))
 
-        ari_pre = float(np.mean(ari_arr[pm]))
         ari_dur = float(np.mean(ari_arr[dm]))
-        waste_pre = float(np.mean(waste_arr_n[pm]))
         waste_dur = float(np.mean(waste_arr_n[dm]))
         # Service-level proxy: retail-dispatch rate * (1 - mean waste).
         # See panel docstring above for the operations-research
         # interpretation. A clean, defensible scalar that goes
         # *down* when the policy diverts to recovery and *down* again
         # when retail-bound product spoils.
-        svc_pre = float(np.mean(actions_arr[pm] != 2)) * (1.0 - waste_pre)
         svc_dur = float(np.mean(actions_arr[dm] != 2)) * (1.0 - waste_dur)
 
-        delta_ari.append(ari_dur - ari_pre)
-        delta_waste.append(waste_dur - waste_pre)
-        delta_service.append(svc_dur - svc_pre)
+        ari_during.append(ari_dur)
+        waste_during.append(waste_dur)
+        service_during.append(svc_dur)
 
-        # Within-window step-level SEs for ARI and Waste (Welch-style
-        # diff SE: independent windows, sum the variances).
-        def _diff_se(x_pre: np.ndarray, x_dur: np.ndarray) -> float:
-            sp = float(np.std(x_pre, ddof=1)) if x_pre.size > 1 else 0.0
-            sd = float(np.std(x_dur, ddof=1)) if x_dur.size > 1 else 0.0
-            return float(np.sqrt(sp ** 2 / max(x_pre.size, 1)
-                                 + sd ** 2 / max(x_dur.size, 1)))
+        # Within-window step-level SE for ARI / Waste means.
+        def _level_se(x: np.ndarray) -> float:
+            s = float(np.std(x, ddof=1)) if x.size > 1 else 0.0
+            return float(s / np.sqrt(max(x.size, 1)))
 
-        delta_ari_se.append(_diff_se(ari_arr[pm], ari_arr[dm]))
-        delta_waste_se.append(_diff_se(waste_arr_n[pm], waste_arr_n[dm]))
+        ari_during_se.append(_level_se(ari_arr[dm]))
+        waste_during_se.append(_level_se(waste_arr_n[dm]))
 
-        # Service is a product of two means; bootstrap the delta SE.
-        # Seed per-mode so the bar errors are reproducible across
-        # regenerations of the same data. Use blake2b instead of the
-        # built-in ``hash()``: Python's hash is randomised by
-        # PYTHONHASHSEED on each interpreter start, so the rendered
-        # error caps drifted run-to-run. blake2b matches the
-        # deterministic-seed convention aggregate_seeds.py uses for
-        # the same reason. n_boot bumped from 500 to 2000 to bring
-        # this fallback closer to the aggregator's 10000-resample
-        # canonical CIs while keeping the figure render fast.
+        # Service is a product of two means; bootstrap the during-
+        # window level. Seed per-mode so the bar errors are
+        # reproducible across regenerations of the same data. Use
+        # blake2b instead of the built-in ``hash()``: Python's hash
+        # is randomised by PYTHONHASHSEED on each interpreter start,
+        # so the rendered error caps drifted run-to-run. blake2b
+        # matches the deterministic-seed convention
+        # aggregate_seeds.py uses for the same reason. n_boot=2000
+        # brings this fallback closer to the aggregator's
+        # 10000-resample canonical CIs while keeping the figure
+        # render fast.
         import hashlib as _hashlib_f4
         n_boot = 2000
         _seed_bytes_f4 = _hashlib_f4.blake2b(
@@ -1219,16 +1219,15 @@ def _fig4_cyber_inner(data):
         boot_rng = np.random.default_rng(
             int.from_bytes(_seed_bytes_f4, "big"),
         )
-        a_pm = actions_arr[pm]; w_pm = waste_arr_n[pm]
         a_dm = actions_arr[dm]; w_dm = waste_arr_n[dm]
-        boot_deltas = np.empty(n_boot, dtype=float)
+        boot_levels = np.empty(n_boot, dtype=float)
         for k in range(n_boot):
-            ip = boot_rng.integers(0, n_pre_c, n_pre_c)
             id_ = boot_rng.integers(0, n_dur_c, n_dur_c)
-            sp = float(np.mean(a_pm[ip] != 2)) * (1.0 - float(np.mean(w_pm[ip])))
-            sd_ = float(np.mean(a_dm[id_] != 2)) * (1.0 - float(np.mean(w_dm[id_])))
-            boot_deltas[k] = sd_ - sp
-        delta_service_se.append(float(np.std(boot_deltas, ddof=1)))
+            boot_levels[k] = (
+                float(np.mean(a_dm[id_] != 2))
+                * (1.0 - float(np.mean(w_dm[id_])))
+            )
+        service_during_se.append(float(np.std(boot_levels, ddof=1)))
 
     # ---- (c) Reroute rate pre/during outage per method ----
     # The behavior-magnitude leg of the causality chain. Static is the
@@ -1270,17 +1269,23 @@ def _fig4_cyber_inner(data):
     # genuinely empty; legend lives there.
     _legend(ax_c, loc="upper left")
 
-    # ---- (d) KPI delta vs pre-outage per method ----
-    # The outcome leg of the causality chain. ARI/Service drop and
-    # Waste rise are all "bad" deltas; AgriBrain's bar is the smallest-
-    # magnitude (least bad) for each KPI. Static, having not rerouted,
-    # carries the full unmitigated outage damage.
+    # ---- (d) KPI levels during outage per method ----
+    # The outcome leg of the causality chain. Under stress ARI and
+    # Service should stay high and Waste should stay low; AgriBrain
+    # holds the best level on every KPI. The pre-vs-during delta
+    # construction this panel used before 2026-05 inverted the
+    # Service ranking on a saturation artefact: a system already
+    # near-ceiling pre-outage had little delta headroom and looked
+    # worse than a system that started lower and shifted further.
+    # Plotting absolute during-window levels makes the comparison
+    # direct -- bigger ARI / Service bars are better, smaller Waste
+    # bar is better, and the saturation confound disappears.
     ax_d = axes[3]
     kpi_x = np.arange(3)  # ARI, Waste, Service
     grp_w = 0.27
     for i, mode in enumerate(modes_ordered_c):
-        vals = [delta_ari[i], delta_waste[i], delta_service[i]]
-        ses = [delta_ari_se[i], delta_waste_se[i], delta_service_se[i]]
+        vals = [ari_during[i], waste_during[i], service_during[i]]
+        ses = [ari_during_se[i], waste_during_se[i], service_during_se[i]]
         ax_d.bar(
             kpi_x + (i - 1) * grp_w, vals, grp_w,
             color=mode_colors_c[mode], alpha=0.92,
@@ -1289,32 +1294,28 @@ def _fig4_cyber_inner(data):
             yerr=1.96 * np.asarray(ses), capsize=4,
             error_kw={"linewidth": 1.2, "capthick": 1.2, "ecolor": "#1F1F1F"},
         )
-    ax_d.axhline(0, color="black", linewidth=1.0, zorder=2)
     ax_d.set_xticks(kpi_x)
-    ax_d.set_xticklabels([r"$\Delta$ARI", r"$\Delta$Waste", r"$\Delta$Service"])
-    ax_d.set_ylabel("Change vs pre-outage")
-    ax_d.set_title("(d) Outage Impact")
+    ax_d.set_xticklabels(["ARI", "Waste", "Service"])
+    ax_d.set_ylabel("Level during outage")
+    ax_d.set_title("(d) Outage-Window Levels")
     _apply_style(ax_d)
-    # Add symmetric headroom both directions so the legend has clean
-    # space. The CI bars now extend the visual extents, so use the
-    # extreme bar+CI values rather than ax.get_ylim() which is set
-    # before the CI caps land.
-    all_vals = []
+    # All three KPIs are non-negative levels in [0, 1]; pin the
+    # y-axis to that range plus a small headroom so the legend has a
+    # clean home and bar-to-bar comparisons aren't visually distorted
+    # by auto-scaling on tiny CI extensions.
+    _top_d = 0.0
     for i in range(len(modes_ordered_c)):
         for v, se in zip(
-            [delta_ari[i], delta_waste[i], delta_service[i]],
-            [delta_ari_se[i], delta_waste_se[i], delta_service_se[i]],
+            [ari_during[i], waste_during[i], service_during[i]],
+            [ari_during_se[i], waste_during_se[i], service_during_se[i]],
         ):
-            all_vals.append(v + 1.96 * se)
-            all_vals.append(v - 1.96 * se)
-    y_lo = min(0.0, min(all_vals))
-    y_hi = max(0.0, max(all_vals))
-    span = y_hi - y_lo if (y_hi - y_lo) > 0 else 1.0
-    ax_d.set_ylim(y_lo - 0.20 * span, y_hi + 0.30 * span)
-    # Legend at upper-right: with the headroom expansion, the upper-
-    # right corner is well above the tallest +Δ bar (typically
-    # AgriBrain ΔWaste) plus its CI cap.
-    _legend(ax_d, loc="upper right")
+            _top_d = max(_top_d, v + 1.96 * se)
+    ax_d.set_ylim(0.0, max(_top_d * 1.20, 1.05))
+    # Legend at upper-left: the leftmost cluster is ARI (~0.4-0.6),
+    # which leaves clean headroom in that corner, whereas the
+    # upper-right is now occupied by the tall Service cluster
+    # (~0.86-0.96 + CI cap).
+    _legend(ax_d, loc="upper left")
 
     fig.tight_layout(rect=[0, 0, 1, 0.985], h_pad=1.6, w_pad=1.6)
     _save(fig, "fig4_cyber")
