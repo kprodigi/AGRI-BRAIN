@@ -49,18 +49,50 @@ except ImportError:
 #: deliberately limited here so the per-seed JSONs stay tractable.
 TRACE_MODES = ("static", "hybrid_rl", "agribrain")
 
-#: Trace fields to dump. ``ari_trace`` is consumed by fig 2 panel (d)
-#: for the seed-CI ribbon. ``action_trace`` and ``waste_trace`` were
-#: added in 2026-05 so fig 4 panels B/C/D can compute per-seed
-#: pre/during-outage means + cross-seed SE (the multi-seed honesty
-#: pass landed in commit a4157dc). Without these two extra fields the
-#: ``_per_seed_window_inputs`` helper in generate_figures.py returns
-#: None for every cell and the panels silently fall back to the
-#: single-seed Wald-binomial / step-level SE form, which would make
-#: the multi-seed pass a no-op on HPC. Adding more modes is cheap
-#: (each field adds ~3 KB of JSON per seed at 4-decimal precision)
-#: but deliberately limited here so the per-seed JSONs stay tractable.
-TRACE_FIELDS = ("ari_trace", "action_trace", "waste_trace")
+#: Trace fields to dump. The 2026-05 extension covers every per-step
+#: field the figure code reads from `data["results"][sc][mode]`, so a
+#: completed HPC run produces a self-contained cache that
+#: ``regenerate_figures_from_cache.py`` can re-render every figure
+#: from without running the simulator again. Field-by-field rationale:
+#:
+#:  ari_trace                   fig 2 panel D, fig 4 panel A/D
+#:  waste_trace                 fig 3 panel B, fig 4 panel D
+#:  rho_trace                   fig 2 panel B (fallback), fig 3 panel C
+#:  action_trace                fig 3 panel C, fig 4 panel B/C/D, fig 5 panel B
+#:  prob_trace                  fig 2 panel B (fallback), fig 2 panel C
+#:  carbon_trace                fig 8 panel A
+#:  hours                       every per-step plot (x-axis index)
+#:  batch_effective_rho_trace   fig 2 panel B
+#:  effective_rho_trace         fig 2 panel B (fallback)
+#:  temp_trace                  fig 2 panel A
+#:  rh_trace                    fig 2 panel A
+#:  inventory_trace             fig 3 panel A
+#:  demand_trace                fig 3 panel A, fig 5 panel A
+#:  slca_component_trace        fig 3 panel D (list[dict[str,float]] -- handled below)
+#:  equity_trace                fig 5 panel C
+#:  reward_trace                fig 5 panel D
+#:
+#: Total per-seed envelope at 4-decimal precision, 3 trace modes,
+#: 5 scenarios: ~120 KB. 20 seeds: ~2.4 MB total. Negligible relative
+#: to the simulator's runtime.
+TRACE_FIELDS = (
+    "ari_trace",
+    "waste_trace",
+    "rho_trace",
+    "action_trace",
+    "prob_trace",
+    "carbon_trace",
+    "hours",
+    "batch_effective_rho_trace",
+    "effective_rho_trace",
+    "temp_trace",
+    "rh_trace",
+    "inventory_trace",
+    "demand_trace",
+    "slca_component_trace",
+    "equity_trace",
+    "reward_trace",
+)
 
 
 def main() -> None:
@@ -188,7 +220,23 @@ def main() -> None:
                 arr = ep[field]
                 if hasattr(arr, "tolist"):
                     arr = arr.tolist()
-                cell[field] = [round(float(x), 4) for x in arr]
+                if not arr:
+                    cell[field] = []
+                    continue
+                # Two trace shapes are supported:
+                #   (a) list[float]            -- the common case
+                #   (b) list[dict[str,float]]  -- slca_component_trace
+                # Round every numeric leaf to 4 decimals; non-numeric
+                # leaves (e.g. the action_trace's ints) are preserved
+                # as ints since round(float(int), 4) == int.
+                first = arr[0]
+                if isinstance(first, dict):
+                    cell[field] = [
+                        {k: round(float(v), 4) for k, v in entry.items()}
+                        for entry in arr
+                    ]
+                else:
+                    cell[field] = [round(float(x), 4) for x in arr]
             if cell:
                 sc_traces[mode] = cell
         if sc_traces:

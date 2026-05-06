@@ -1,22 +1,44 @@
 #!/usr/bin/env python3
-"""Re-render figures from existing on-disk artifacts (no simulator run).
+"""Re-render every figure from on-disk artifacts (no simulator run).
 
 Use this when the figure source code has changed but the underlying
 simulation data hasn't -- e.g. a styling tweak after an HPC run, where
 the canonical re-render path (``python generate_figures.py``) would
 otherwise trigger a fresh ~80-minute ``run_all()`` simulation.
 
-Synthesises ``data`` from ``benchmark_summary.json`` (multi-seed
-bootstrap means → per-(scenario, mode) scalar metrics) and runs a
-single deterministic episode per (scenario, mode) for the per-step
-trace fields the figure code reads (``ari_trace``, ``waste_trace``,
-``rho_trace``, ``carbon_trace``, ``action_trace``, ``prob_trace``,
-``hours``). The seed-CI ribbon path in fig 2 / fig 4 picks up the
-multi-seed traces from ``benchmark_seeds/<RUN_TAG>/`` automatically
-via ``_load_per_seed_traces`` -- no per-seed loading needed here.
+Two on-disk caches drive every panel:
 
-Total runtime: ~3-5 minutes per scenario × mode combination, so
-~5-15 minutes for the canonical paper-trio rendering set.
+  1. ``benchmark_summary.json`` -- 20-seed bootstrap means / stds /
+     CI bounds per (scenario, mode, metric). Fig 6 / 7 / 8 panel B /
+     fig 9 panels A & B / fig 10 read these directly.
+
+  2. ``benchmark_seeds/<RUN_TAG>/seed_*.json`` -- per-seed envelope
+     ``{seed, scenarios, traces}``. Per-step ``traces[sc][mode][field]``
+     arrays drive every line plot, distribution shift, and
+     window-aggregated panel:
+
+       fig 2 panels A / B / C / D
+       fig 3 panels A / B / C / D
+       fig 4 panels A / B / C / D
+       fig 5 panels A / B / C / D
+       fig 8 panel A
+
+     This script picks one canonical seed (default 42, falls back to
+     the smallest seed on disk) as the "single-seed representative"
+     for ``ab[X_trace]`` reads inside the figure code; the figure
+     code's own ``_load_per_seed_traces`` helper still consumes the
+     full multi-seed envelope where it needs cross-seed CIs (fig 2
+     panel D mean line, fig 4 panels B/C/D bars).
+
+The HPC seed runner (``run_single_seed.py``) was extended in 2026-05
+to dump every per-step field the figure code reads, so a completed
+HPC run produces a self-contained cache. If the cache is partial
+(an older run that only dumped ari_trace, say), this script will
+emit "FAIL: fig N: KeyError <field>" for the figures whose required
+trace is missing -- the rest still re-render.
+
+Total runtime: a few seconds per figure (read JSON + matplotlib),
+~30-60 s for all nine figures.
 
 Usage::
 
@@ -30,29 +52,42 @@ the previous render). Re-stamp the artifact manifest afterwards::
 from __future__ import annotations
 
 import json
-import os
 import sys
 import time
 from pathlib import Path
-
-import numpy as np
 
 
 _SIM_DIR = Path(__file__).resolve().parent
 if str(_SIM_DIR) not in sys.path:
     sys.path.insert(0, str(_SIM_DIR))
 
+_RESULTS_DIR = _SIM_DIR / "results"
+_SEEDS_DIR = _RESULTS_DIR / "benchmark_seeds"
 
-def _scalars_from_summary(summary_path: Path) -> dict:
-    """Build a ``data['results'][sc][mode] = {metric: value}`` dict from
-    benchmark_summary.json's bootstrap means. fig8 panel b and fig10
-    read these directly; the per-step trace fields are added below.
+#: Seed treated as the "single-seed representative" for figure code
+#: that reads ``ab["X_trace"]`` directly (most line plots).
+#: Falls back to the smallest available seed if 42 isn't on disk.
+_PREFERRED_SINGLE_SEED = 42
+
+
+def _load_summary_scalars() -> dict:
+    """Build ``{scenario: {mode: {metric: scalar}}}`` from the
+    20-seed bootstrap means in benchmark_summary.json. Per-cell std /
+    ci_low / ci_high blocks collapse to their ``mean`` value because
+    the figure code's scalar reads expect plain floats.
     """
+    summary_path = _RESULTS_DIR / "benchmark_summary.json"
+    if not summary_path.exists():
+        raise FileNotFoundError(
+            f"{summary_path} not found. Run the HPC aggregator "
+            f"first; without 20-seed scalars fig 6 / 7 / 8 panel B / "
+            f"fig 9 / fig 10 cannot render."
+        )
     payload = json.loads(summary_path.read_text(encoding="utf-8"))
     summary = payload.get("summary", payload)
-    out: dict = {"results": {}}
+    out: dict = {}
     for sc, modes in summary.items():
-        out["results"][sc] = {}
+        out[sc] = {}
         for mode, metrics in modes.items():
             ep: dict = {}
             for k, v in metrics.items():
@@ -60,8 +95,63 @@ def _scalars_from_summary(summary_path: Path) -> dict:
                     ep[k] = v["mean"]
                 else:
                     ep[k] = v
-            out["results"][sc][mode] = ep
+            out[sc][mode] = ep
     return out
+
+
+def _load_seed_traces() -> dict[int, dict]:
+    """Walk benchmark_seeds/ (flat or RUN_TAG sub-folder layout) and
+    load every per-seed envelope's ``traces`` block. Returns
+    ``{seed: {scenario: {mode: {field: list}}}}``. Missing
+    ``traces`` keys (older envelopes that pre-date the trace dump)
+    are skipped.
+    """
+    if not _SEEDS_DIR.exists():
+        return {}
+    seed_files = list(_SEEDS_DIR.glob("seed_*.json"))
+    if not seed_files:
+        for sub in _SEEDS_DIR.iterdir():
+            if sub.is_dir():
+                seed_files.extend(sub.glob("seed_*.json"))
+    out: dict[int, dict] = {}
+    for sp in seed_files:
+        try:
+            obj = json.loads(sp.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if not isinstance(obj, dict):
+            continue
+        seed = obj.get("seed")
+        traces = obj.get("traces")
+        if not isinstance(seed, int) or not isinstance(traces, dict):
+            continue
+        out[seed] = traces
+    return out
+
+
+def _build_data_dict(scalars: dict, seed_traces: dict[int, dict],
+                     single_seed: int) -> dict:
+    """Build the ``data["results"]`` dict figure code expects.
+
+    For each (scenario, mode) cell, merges the 20-seed scalar metrics
+    (from benchmark_summary.json) with the chosen single-seed's
+    per-step traces (from benchmark_seeds/seed_<single_seed>.json).
+    The figure code then reads the merged dict the same way it reads
+    a fresh ``run_all()`` payload -- single-seed line plots come from
+    the trace fields, scalar bars / scatter markers come from the
+    20-seed bootstrap means.
+    """
+    seed_block = seed_traces.get(single_seed, {})
+    data: dict = {"results": {}}
+    for sc, modes in scalars.items():
+        data["results"][sc] = {}
+        for mode, ep_scalars in modes.items():
+            ep = dict(ep_scalars)  # copy so we can extend in place
+            traces_for_cell = seed_block.get(sc, {}).get(mode, {})
+            for field, seq in traces_for_cell.items():
+                ep[field] = seq
+            data["results"][sc][mode] = ep
+    return data
 
 
 def main() -> int:
@@ -70,88 +160,82 @@ def main() -> int:
     def log(msg: str) -> None:
         print(f"[{time.time() - t0:6.1f}s] {msg}", flush=True)
 
-    # Force deterministic mode for reproducibility of the per-step traces
-    # this helper synthesises. The seed-CI ribbon (when traces exist) and
-    # the bootstrap CIs in figures (which read from benchmark_summary
-    # directly) are unaffected by this -- they come from the canonical
-    # 20-seed stochastic HPC run.
-    os.environ["DETERMINISTIC_MODE"] = "true"
+    log("Loading 20-seed scalars from benchmark_summary.json...")
+    try:
+        scalars = _load_summary_scalars()
+    except FileNotFoundError as exc:
+        print(f"ERROR: {exc}")
+        return 1
 
-    log("Loading benchmark_summary.json scalars...")
-    summary_path = _SIM_DIR / "results" / "benchmark_summary.json"
-    if not summary_path.exists():
+    log("Loading per-seed traces from benchmark_seeds/...")
+    seed_traces = _load_seed_traces()
+    if not seed_traces:
         print(
-            f"ERROR: {summary_path} not found. Run the HPC aggregator "
-            f"first or fall back to ``python generate_figures.py`` "
-            f"(which runs the full simulator)."
+            "ERROR: no per-seed JSONs found under "
+            f"{_SEEDS_DIR}. Run the HPC seed array first; without "
+            "per-step traces, fig 2 / 3 / 4 / 5 / 8A cannot render."
         )
         return 1
-    data = _scalars_from_summary(summary_path)
 
-    log("Importing simulator...")
-    from generate_results import (  # type: ignore
-        DATA_CSV, Policy,
-        apply_scenario, run_episode, pd,
+    if _PREFERRED_SINGLE_SEED in seed_traces:
+        single_seed = _PREFERRED_SINGLE_SEED
+    else:
+        single_seed = min(seed_traces.keys())
+        log(
+            f"Note: seed {_PREFERRED_SINGLE_SEED} not on disk; "
+            f"using smallest available seed {single_seed} as the "
+            f"single-seed representative."
+        )
+    log(
+        f"Cached seeds available: {sorted(seed_traces.keys())} "
+        f"({len(seed_traces)} total). Single-seed representative: "
+        f"seed {single_seed}."
     )
 
-    # Required (scenario, mode) combinations for the per-step traces
-    # the figure code expects. Other figures (fig 6 / 7 / 8 panel b /
-    # fig 9 / fig 10) read scalars only and use the data dict above.
-    targets = {
-        "heatwave": ["static", "hybrid_rl", "agribrain"],
-        "overproduction": ["static", "hybrid_rl", "agribrain"],
-        "cyber_outage": ["static", "hybrid_rl", "agribrain"],
-        "adaptive_pricing": ["static", "hybrid_rl", "agribrain"],
-    }
-
-    df_base = pd.read_csv(DATA_CSV, parse_dates=["timestamp"])
-    policy = Policy()
-
-    # Trace fields figure code reads from the episode dict.
-    TRACE_FIELDS = (
-        "ari_trace", "waste_trace", "rho_trace", "carbon_trace",
-        "action_trace", "prob_trace", "hours",
-        "batch_effective_rho_trace", "effective_rho_trace",
-        "temp_trace",
-    )
-
-    for sc, modes in targets.items():
-        log(f"apply_scenario({sc})...")
-        df_scen = apply_scenario(df_base, sc, policy, np.random.default_rng(47))
-        for mode in modes:
-            log(f"  run_episode {sc} x {mode}...")
-            rng = np.random.default_rng(42)
-            ep = run_episode(df_scen, mode, policy, rng, sc, seed=42)
-            target = data["results"][sc].setdefault(mode, {})
-            for k, v in ep.items():
-                if k.endswith("_trace") or k in TRACE_FIELDS or k not in target:
-                    target[k] = v
+    data = _build_data_dict(scalars, seed_traces, single_seed)
 
     log("Rendering figures...")
     import generate_figures as gf  # type: ignore
 
     figs = [
-        ("fig2_heatwave", lambda: gf.fig2_heatwave(data)),
-        ("fig3_overproduction", lambda: gf.fig3_overproduction(data)),
-        ("fig4_cyber", lambda: gf.fig4_cyber(data)),
-        ("fig5_pricing", lambda: gf.fig5_pricing(data)),
-        ("fig6_cross", lambda: gf.fig6_cross(data)),
-        ("fig7_ablation", lambda: gf.fig7_ablation(data)),
-        ("fig8_green_ai", lambda: gf.fig8_green_ai(data)),
-        ("fig9_fault_degradation", lambda: gf.fig9_fault_degradation()),
+        ("fig2_heatwave",                lambda: gf.fig2_heatwave(data)),
+        ("fig3_overproduction",          lambda: gf.fig3_overproduction(data)),
+        ("fig4_cyber",                   lambda: gf.fig4_cyber(data)),
+        ("fig5_pricing",                 lambda: gf.fig5_pricing(data)),
+        ("fig6_cross",                   lambda: gf.fig6_cross(data)),
+        ("fig7_ablation",                lambda: gf.fig7_ablation(data)),
+        ("fig8_green_ai",                lambda: gf.fig8_green_ai(data)),
+        ("fig9_fault_degradation",       lambda: gf.fig9_fault_degradation()),
         ("fig10_latency_quality_frontier",
             lambda: gf.fig10_latency_quality_frontier(data)),
     ]
+    failures: list[tuple[str, str]] = []
     for name, fn in figs:
         log(f"  {name}...")
         try:
             fn()
         except Exception as exc:  # noqa: BLE001 - log + continue
-            print(f"  FAIL: {name}: {exc}")
+            print(f"  FAIL: {name}: {type(exc).__name__}: {exc}")
+            failures.append((name, str(exc)))
+
+    if failures:
+        print()
+        print("=" * 60)
+        print(
+            f"WARNING: {len(failures)} figure(s) failed to render. "
+            "Most likely cause: required trace fields are missing "
+            "from the per-seed JSONs. The HPC seed runner "
+            "(run_single_seed.py) writes the canonical TRACE_FIELDS "
+            "set; if you see KeyError on a particular trace, the "
+            "cached HPC run was produced before that field was added."
+        )
+        for name, msg in failures:
+            print(f"  {name}: {msg}")
+        print("=" * 60)
 
     log("DONE. Refresh the artifact manifest:")
     log("  python mvp/simulation/analysis/build_artifact_manifest.py")
-    return 0
+    return 0 if not failures else 2
 
 
 if __name__ == "__main__":

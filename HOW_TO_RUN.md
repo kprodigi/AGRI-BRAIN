@@ -473,6 +473,47 @@ python generate_results.py
 python generate_figures.py
 ```
 
+### 6a. Re-render figures from cached results (no simulator run)
+
+Once a 20-seed HPC run has completed and the per-seed JSONs +
+`benchmark_summary.json` + `benchmark_significance.json` are on
+disk, you can re-render every figure without re-running the
+simulator. Use this whenever you want to tweak a figure's styling
+(line weights, colors, axis ranges) without paying the ~80-minute
+`run_all()` cost:
+
+```bash
+cd AGRI-BRAIN
+python mvp/simulation/regenerate_figures_from_cache.py
+python mvp/simulation/analysis/build_artifact_manifest.py
+```
+
+The script reads:
+
+  * `mvp/simulation/results/benchmark_summary.json` — 20-seed
+    bootstrap means / CIs for every scalar metric (drives fig 6 /
+    fig 7 / fig 8 panel B / fig 9 / fig 10).
+  * `mvp/simulation/results/benchmark_seeds/seed_*.json` — per-seed
+    envelope `{seed, scenarios, traces}`. Per-step `traces` arrays
+    drive every line plot and window-aggregated panel
+    (fig 2 / 3 / 4 / 5 / 8 panel A). The figure code's own
+    `_load_per_seed_traces` helper still consumes the full
+    multi-seed envelope where it needs cross-seed CIs (fig 2 panel
+    D mean line, fig 4 panels B/C/D bars).
+
+By default the script picks seed 42 as the "single-seed
+representative" for the line-plot panels; if seed 42 isn't on disk
+it falls back to the smallest available seed. Total runtime:
+seconds, not hours.
+
+**Trace-fields contract.** `mvp/simulation/benchmarks/run_single_seed.py`
+defines `TRACE_FIELDS` — the per-step fields each seed dumps. As
+of 2026-05 it covers every field the figure code reads, so a
+fresh HPC run produces a self-contained cache. If you re-render
+against an older HPC run that pre-dates a particular trace field,
+the affected figure will fail with a `KeyError` and the script
+will report which trace was missing; the rest still re-render.
+
 ### Output files
 
 Results are saved to `mvp/simulation/results/`:
