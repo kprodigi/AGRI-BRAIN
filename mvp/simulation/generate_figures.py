@@ -3022,30 +3022,54 @@ def fig10_latency_quality_frontier(data):
     def _collect(modes):
         """Collect (mode, mean_latency_ms, mean_ari, yerr) per mode.
 
-        Point positions use the canonical single-seed per-episode ARI from
-        ``data["results"]`` so the figure preserves the y-axis scale of
-        the published render (which was rendered from
-        ``run_all(seed=42)`` output, single-seed values).
+        Point positions prefer the 20-seed bootstrap means from
+        ``benchmark_summary.json`` (the canonical multi-seed posture
+        the rest of the manuscript reports), and fall back to the
+        single-seed ``data["results"]`` payload only when the
+        benchmark summary isn't available. Pre-2026-05 the figure used
+        single-seed values for all marker positions, which (a) buried
+        the Static marker against panel A's left spine because its
+        single-seed latency landed below the 0.08 ms xlim floor, and
+        (b) collapsed AgriBrain (~3.9 ms single-seed) onto piRAG Only
+        (~3.6 ms single-seed) inside panel B even with the +/-0.55 ms
+        jitter. The 20-seed means separate the three context-aware
+        modes by ~3-7 ms (piRAG ~3.6 / MCP ~10.8 / AgriBrain ~13.9),
+        which makes the panel-B jitter unnecessary and lets panel A
+        show all five lightweight markers cleanly.
 
         Error bars use the standard error of the across-scenario mean:
         sd(per_scenario_ari) / sqrt(n_scenarios). The within-scenario
         bootstrap CIs reported in benchmark_summary.json are too tight
         (~0.001-0.005 ARI on n=20 seeds) to render visibly in panel (a)'s
-        wide y-range, so we use cross-scenario variability instead — this
+        wide y-range, so we use cross-scenario variability instead -- this
         is the statistically appropriate uncertainty for the
         *cross-scenario mean* the figure plots and is consistent with the
-        symmetric ±SE convention reported elsewhere in the manuscript.
+        symmetric +/-SE convention reported elsewhere in the manuscript.
         """
         pts = []
         for mode in modes:
             scenario_aris = []
             scenario_lats = []
             for s in SCENARIOS:
-                rec = data["results"].get(s, {}).get(mode, {})
-                if "ari" not in rec:
-                    continue
-                scenario_aris.append(float(rec["ari"]))
-                scenario_lats.append(float(rec.get("mean_decision_latency_ms", 0.0)))
+                # Prefer the 20-seed bootstrap mean from
+                # benchmark_summary.json; fall back to single-seed.
+                sm_rec = bench.get(s, {}).get(mode, {}) if bench else {}
+                ari_block = sm_rec.get("ari")
+                lat_block = sm_rec.get("mean_decision_latency_ms")
+                if isinstance(ari_block, dict) and "mean" in ari_block:
+                    ari_val = float(ari_block["mean"])
+                else:
+                    ss_rec = data["results"].get(s, {}).get(mode, {})
+                    if "ari" not in ss_rec:
+                        continue
+                    ari_val = float(ss_rec["ari"])
+                if isinstance(lat_block, dict) and "mean" in lat_block:
+                    lat_val = float(lat_block["mean"])
+                else:
+                    ss_rec = data["results"].get(s, {}).get(mode, {})
+                    lat_val = float(ss_rec.get("mean_decision_latency_ms", 0.0))
+                scenario_aris.append(ari_val)
+                scenario_lats.append(lat_val)
             if not scenario_aris:
                 continue
             ari_arr = np.array(scenario_aris, dtype=float)
@@ -3077,11 +3101,17 @@ def fig10_latency_quality_frontier(data):
     ax.set_xlabel("Mean Decision Latency (ms)", fontsize=_F10_AXIS,
                   fontweight="bold")
     ax.set_ylabel("Mean ARI", fontsize=_F10_AXIS, fontweight="bold")
-    # X-axis upper bound dropped from 0.20 to 0.175 per user request -
-    # the rightmost lightweight cluster (No Context, No PINN) sits
-    # near 0.16-0.17 ms so 0.175 still leaves a small right margin
-    # without the wasted 0.18-0.20 white space the earlier limit had.
-    ax.set_xlim(0.08, 0.175)
+    # X-axis range covers the lightweight cluster: Static lands at
+    # ~0.080 ms (20-seed mean), the rightmost cluster (No Context,
+    # No PINN) at ~0.148 ms. Lower bound dropped from 0.08 to 0.06
+    # in 2026-05 because the previous floor sat AT Static's marker
+    # center (0.080 ms), which clipped the s=220 marker against the
+    # left spine and made it look as though Static was missing from
+    # the panel. 0.06 leaves ~0.020 ms of margin around the marker.
+    # Upper bound 0.175 (dropped from the original 0.20 in an earlier
+    # tweak) still leaves a small right margin without the wasted
+    # 0.18-0.20 white space.
+    ax.set_xlim(0.06, 0.175)
     pts_with_err_a = [(p[2], p[3]) for p in fast_pts]
     bar_lo_a = min(y - e[0] for y, e in pts_with_err_a)
     bar_hi_a = max(y + e[1] for y, e in pts_with_err_a)
@@ -3142,20 +3172,17 @@ def fig10_latency_quality_frontier(data):
                 elinewidth=1.6, capsize=4, alpha=0.55, zorder=3,
             )
 
-    # Plot the three context-aware modes on the RIGHT sub-axis with
-    # horizontal jitter that visually separates the cluster.
-    # Underlying data is unjittered; the overhead annotation below is
-    # computed from the true AgriBrain latency vs the No Context ref.
-    # Spacing widened from ±0.30 to ±0.55 ms in 2026-05: the three
-    # context-aware modes have nearly-identical cross-scenario ARI means
-    # (~0.605-0.615, a ~0.009 spread on a ~0.04-tall y-range) so the
-    # markers stack visually unless the x-jitter is wide enough to read
-    # at the figure's render scale. The earlier ±0.30 ms left MCP Only's
-    # orange X buried inside AgriBrain's larger teal triangle whenever
-    # the two modes' true latencies were within ~1 ms of each other.
-    # ±0.55 ms keeps all three markers cleanly separable while staying
-    # well inside the right sub-axis xlim of (5.0, ctx_lat_max + 0.4).
-    _ctx_jitter = {"agribrain": -0.55, "mcp_only": 0.0, "pirag_only": +0.55}
+    # Plot the three context-aware modes on the RIGHT sub-axis at
+    # their TRUE 20-seed mean latencies (no jitter). With the 2026-05
+    # switch from single-seed to 20-seed marker positions, the three
+    # modes naturally separate by ~3-7 ms on the x-axis
+    # (piRAG ~3.6 / MCP ~10.8 / AgriBrain ~13.9), so the +/-0.55 ms
+    # jitter the earlier render needed (because AgriBrain's seed-42
+    # latency collapsed onto piRAG Only's at ~3.5 ms) is now visual
+    # noise that misrepresents the data. Keeping the dict for the
+    # overhead-annotation code path below; the values are zero so
+    # x_plot == x_actual.
+    _ctx_jitter = {"agribrain": 0.0, "mcp_only": 0.0, "pirag_only": 0.0}
     # Render order matters: zorder=5 is applied to all three but
     # matplotlib still resolves ties in *call order*, so iterate in an
     # order that puts MCP Only ON TOP of both the AgriBrain triangle
