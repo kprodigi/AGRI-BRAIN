@@ -151,6 +151,15 @@ def main() -> int:
         "benchmark_summary.json", "benchmark_significance.json",
         "stress_summary.json", "stress_degradation.csv",
         "feature_heatmap_data.json",
+        # Paper-evidence artefacts (CLAIMS_TO_EVIDENCE.md C1/C5/C6) added
+        # to the gitignore allowlist in 2026-05 so reviewers cloning the
+        # repo can verify the cited evidence without downloading the HPC
+        # tar.gz archive.
+        "paper_benchmark_table.json",
+        "stress_passfail.csv",
+        "external_validity_summary.json",
+        "external_validity_summary.csv",
+        "external_validity_deltas.csv",
     )
 
     def _is_tracked(name: str) -> bool:

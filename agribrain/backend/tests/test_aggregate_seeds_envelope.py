@@ -334,6 +334,22 @@ def test_verify_manifest_tracked_patterns_match_gitignore_allowlist():
         "missing-tracked when those files are absent from a fresh "
         "clone."
     )
+    # Paper-evidence artefacts pinned to the allowlist in 2026-05 so
+    # CLAIMS_TO_EVIDENCE.md C1/C5/C6 verify against the repo without
+    # the HPC tar.gz archive.
+    paper_evidence = [
+        '"paper_benchmark_table.json"',
+        '"stress_passfail.csv"',
+        '"external_validity_summary.json"',
+        '"external_validity_summary.csv"',
+        '"external_validity_deltas.csv"',
+    ]
+    for pat in paper_evidence:
+        assert pat in src, (
+            f"Paper-evidence file {pat} missing from _TRACKED_PATTERNS. "
+            f"CLAIMS_TO_EVIDENCE.md cites this file as required evidence "
+            f"and the .gitignore allowlist makes it tracked."
+        )
 
 
 def test_git_commit_tier3_handles_packed_refs(tmp_path: Path):

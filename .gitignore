@@ -96,3 +96,15 @@ mvp/simulation/results/*
 !mvp/simulation/results/artifact_manifest.json
 !mvp/simulation/results/fig*.png
 !mvp/simulation/results/fig*.pdf
+# Paper-evidence artefacts produced by hpc_aggregate.sh stages 4, 6, 8.
+# CLAIMS_TO_EVIDENCE.md C1/C5/C6 explicitly reference these as the
+# canonical evidence for cross-method ranking, stress robustness, and
+# within-trace temporal stability. Pre-2026-05 they were in the manifest
+# but not the gitignore allowlist, so they only existed in the HPC
+# tar.gz archive and a reviewer cloning the repo could not verify the
+# claims without first downloading the archive.
+!mvp/simulation/results/paper_benchmark_table.json
+!mvp/simulation/results/stress_passfail.csv
+!mvp/simulation/results/external_validity_summary.json
+!mvp/simulation/results/external_validity_summary.csv
+!mvp/simulation/results/external_validity_deltas.csv
