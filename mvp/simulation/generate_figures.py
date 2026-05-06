@@ -272,6 +272,16 @@ def _apply_style(ax):
         lbl.set_fontweight("bold")
     for lbl in ax.get_yticklabels():
         lbl.set_fontweight("bold")
+    # Bold the scientific-notation offset text (e.g. the "1e3" tag that
+    # matplotlib draws above the y-axis when ticklabel_format scilimits
+    # are active). Today only fig 3 panel A triggers this -- inventory
+    # values run into the tens of thousands -- but bolding it in the
+    # shared style helper keeps every future panel consistent without a
+    # per-callsite reminder.
+    ax.xaxis.get_offset_text().set_fontweight("bold")
+    ax.xaxis.get_offset_text().set_fontsize(TICK_FONT_SIZE)
+    ax.yaxis.get_offset_text().set_fontweight("bold")
+    ax.yaxis.get_offset_text().set_fontsize(TICK_FONT_SIZE)
     if ax.xaxis.label.get_text():
         ax.xaxis.label.set_size(AXIS_LABEL_SIZE)
         ax.xaxis.label.set_weight("bold")
