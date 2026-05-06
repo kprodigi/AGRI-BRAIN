@@ -118,6 +118,45 @@ def main() -> None:
         )
     except Exception:
         git_available = False
+    # Tier 3 fallback (post-2026-05): direct read of ``.git/HEAD``.
+    # On HPC slurm workers ``git`` is often not on PATH; the env-var
+    # path may also be missing if a manual sbatch bypasses the
+    # orchestrator's --export propagation. Reading .git/HEAD directly
+    # uses only the shared filesystem and the Python stdlib, so the
+    # manifest gets a real SHA even on a stripped-down compute node.
+    # Mirrors the same fallback added to aggregate_seeds.py in
+    # commit 8154d67. If the read succeeds, head_sha is set and
+    # git_available stays its tier-2 value (unchanged), so the
+    # downstream env-var-equality check still functions correctly.
+    if not head_sha:
+        try:
+            head_path = RESULTS_DIR.parent.parent.parent / ".git" / "HEAD"
+            head_text = head_path.read_text(encoding="utf-8").strip()
+            if head_text.startswith("ref: "):
+                ref = head_text[5:].strip()
+                ref_path = RESULTS_DIR.parent.parent.parent / ".git" / ref
+                if ref_path.exists():
+                    candidate = ref_path.read_text(encoding="utf-8").strip()
+                    if len(candidate) == 40 and all(
+                        c in "0123456789abcdef" for c in candidate
+                    ):
+                        head_sha = candidate
+                else:
+                    # Packed refs fallback.
+                    packed = RESULTS_DIR.parent.parent.parent / ".git" / "packed-refs"
+                    if packed.exists():
+                        for line in packed.read_text(encoding="utf-8").splitlines():
+                            if line.endswith(ref) and len(line) >= 41:
+                                candidate = line.split(" ", 1)[0].strip()
+                                if len(candidate) == 40:
+                                    head_sha = candidate
+                                    break
+            elif len(head_text) == 40 and all(
+                c in "0123456789abcdef" for c in head_text
+            ):
+                head_sha = head_text
+        except Exception:
+            pass
     try:
         if git_available:
             # Decode without .strip(): a whole-output strip eats
