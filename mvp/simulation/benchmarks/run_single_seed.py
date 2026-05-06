@@ -95,6 +95,50 @@ TRACE_FIELDS = (
 )
 
 
+def _serialise_trace(arr):
+    """JSON-friendly per-step trace, dispatching by element shape.
+
+    Three trace shapes appear in the simulator's episode dict:
+
+      (a) ``list[float]`` / ``list[int]`` -- the common case
+          (ari_trace, waste_trace, action_trace, hours, etc.).
+      (b) ``list[dict[str, float]]`` -- slca_component_trace
+          carries one ``{"C", "L", "R", "P"}`` mapping per step.
+      (c) ``list[list[float]]`` (or ``np.ndarray`` of shape
+          ``(n_steps, k)``) -- prob_trace carries the per-step
+          action probability vector across {cold_chain,
+          local_redistribute, recovery}.
+
+    All numeric leaves round to 4 decimals (well below the
+    per-step measurement noise floor; keeps the per-seed JSON in
+    the ~120 KB range across the full 16-field set). Non-numeric
+    leaves like int actions survive verbatim because
+    ``round(float(int), 4) == int`` after JSON serialisation.
+
+    Anything else (unknown shape) raises a TypeError up the stack
+    so a future ragged trace cannot silently produce garbage; the
+    seed-array task fails fast and we extend the dispatch.
+    """
+    if hasattr(arr, "tolist"):
+        arr = arr.tolist()
+    if not arr:
+        return []
+    first = arr[0]
+    if isinstance(first, dict):
+        return [
+            {k: round(float(v), 4) for k, v in entry.items()}
+            for entry in arr
+        ]
+    if isinstance(first, (list, tuple)) or hasattr(first, "tolist"):
+        return [
+            [round(float(x), 4) for x in (
+                entry.tolist() if hasattr(entry, "tolist") else entry
+            )]
+            for entry in arr
+        ]
+    return [round(float(x), 4) for x in arr]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("seed", type=int, help="Seed for this run")
@@ -217,26 +261,7 @@ def main() -> None:
             for field in TRACE_FIELDS:
                 if field not in ep:
                     continue
-                arr = ep[field]
-                if hasattr(arr, "tolist"):
-                    arr = arr.tolist()
-                if not arr:
-                    cell[field] = []
-                    continue
-                # Two trace shapes are supported:
-                #   (a) list[float]            -- the common case
-                #   (b) list[dict[str,float]]  -- slca_component_trace
-                # Round every numeric leaf to 4 decimals; non-numeric
-                # leaves (e.g. the action_trace's ints) are preserved
-                # as ints since round(float(int), 4) == int.
-                first = arr[0]
-                if isinstance(first, dict):
-                    cell[field] = [
-                        {k: round(float(v), 4) for k, v in entry.items()}
-                        for entry in arr
-                    ]
-                else:
-                    cell[field] = [round(float(x), 4) for x in arr]
+                cell[field] = _serialise_trace(ep[field])
             if cell:
                 sc_traces[mode] = cell
         if sc_traces:

@@ -33,6 +33,66 @@ if str(_SIM_DIR) not in sys.path:
     sys.path.insert(0, str(_SIM_DIR))
 
 
+def test_serialise_trace_handles_all_three_shapes():
+    """Pin the per-step trace serialisation contract.
+
+    The HPC seed runner's trace-dump dispatch must handle:
+
+      (a) list[float]            -- the common case (ari_trace,
+                                    waste_trace, action_trace, etc.).
+      (b) list[dict[str, float]] -- slca_component_trace.
+      (c) list[list[float]]      -- prob_trace
+                                    (per-step action-probability vector).
+
+    The 2026-05 TRACE_FIELDS extension blew up an HPC run when prob_trace
+    (a list[list[float]]) hit the list[float] fallback and float(<list>)
+    raised TypeError. This test exercises all three shapes plus the
+    numpy-array path so a similar regression cannot reach an HPC run
+    again.
+    """
+    sys.path.insert(0, str(_BENCHMARKS_DIR))
+    import importlib
+    rss = importlib.import_module("run_single_seed")
+    fn = rss._serialise_trace
+
+    # (a) list[float] / list[int] -- ari_trace style.
+    assert fn([0.123456, 0.789012]) == [0.1235, 0.7890]
+    assert fn([0, 1, 2, 0]) == [0, 1, 2, 0]
+    # numpy 1D ndarray.
+    assert fn(np.array([0.5, 1.5, 2.5])) == [0.5, 1.5, 2.5]
+
+    # (b) list[dict[str, float]] -- slca_component_trace style.
+    assert fn([
+        {"C": 0.700001, "L": 0.500009, "R": 0.6, "P": 0.55},
+        {"C": 0.7,      "L": 0.5,      "R": 0.6, "P": 0.55},
+    ]) == [
+        {"C": 0.7, "L": 0.5, "R": 0.6, "P": 0.55},
+        {"C": 0.7, "L": 0.5, "R": 0.6, "P": 0.55},
+    ]
+
+    # (c) list[list[float]] -- prob_trace style.
+    assert fn([[0.30, 0.50, 0.20], [0.40, 0.40, 0.20]]) == [
+        [0.3, 0.5, 0.2],
+        [0.4, 0.4, 0.2],
+    ]
+    # numpy 2D ndarray (the actual shape run_episode produces for prob_trace).
+    assert fn(np.array([[0.3, 0.5, 0.2], [0.4, 0.4, 0.2]])) == [
+        [0.3, 0.5, 0.2],
+        [0.4, 0.4, 0.2],
+    ]
+
+    # Empty trace serialises to []; doesn't crash on arr[0].
+    assert fn([]) == []
+    assert fn(np.array([])) == []
+
+    # Output is JSON-serialisable end-to-end (matches what
+    # run_single_seed.py emits at out_file.write_text(json.dumps(...))).
+    payload = {"slca": fn([{"C": 0.7, "L": 0.5, "R": 0.6, "P": 0.55}]),
+               "prob": fn([[0.3, 0.5, 0.2]]),
+               "ari":  fn([0.5])}
+    json.dumps(payload)  # raises if any leaf is not JSON-friendly
+
+
 def test_run_single_seed_declares_canonical_trace_modes():
     """The canonical paper trio is the documented contract."""
     text = (_BENCHMARKS_DIR / "run_single_seed.py").read_text(encoding="utf-8")
