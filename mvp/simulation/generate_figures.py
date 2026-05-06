@@ -2531,20 +2531,24 @@ def fig9_fault_degradation():
     n_seeds_global = _fig9_load_n_seeds()
     method_means = _fig9_load_method_means() or {}
 
-    # Width-ratio rebalancing (late-May 2026 user request: use the
-    # empty space between panels B and C to widen panel C). Panel (a)
-    # stays at 1.40 so the bold 20pt heatmap cell numerics fit cleanly.
-    # Panel (b) shrinks from 1.00 to 0.85 -- its 5 horizontal bars +
-    # right-anchored "+X.Y%" labels still fit comfortably in the
-    # narrower slot (the headline +Static bar reaches axis-fraction
-    # ~0.85 under the symlog mapping; the right-edge percentage labels
-    # are anchored just inside the spine). Panel (c) absorbs the freed
-    # width up to 1.55, matching the post-2026-05 panel-c spread (5
-    # scenario groups x 3 modes with 0.57 inter-group gap from
-    # x_scale=1.55) so the bar groups aren't crowded. Total stays at
-    # 3.80 so the figure-level (22, 7.5) figsize is unchanged.
-    fig, axes = plt.subplots(1, 3, figsize=(22, 7.5),
-                             gridspec_kw={"width_ratios": [1.40, 0.85, 1.55]})
+    # Width-ratio rebalancing (2026-05 follow-up user request: extend
+    # panel (b) to fill the visible whitespace between panels B and C
+    # WITHOUT shrinking panels A or C). The earlier rebalance narrowed
+    # panel (b) to 0.85 because the headline +Static bar reached ~+75 %
+    # under the symlog mapping; current data tops at +36.7 %, which
+    # made panel (b)'s bars fill only the left half of the slot and
+    # opened a visible gap before panel (c). The fix bumps figsize.width
+    # from 22 to 24 and routes the new 2 inches entirely into panel
+    # (b)'s ratio (0.85 -> 1.20) so panels A (1.40) and C (1.55) keep
+    # their physical widths to within ~0.01 in:
+    #   A: 22 * 1.40/3.80 = 8.11 in -> 24 * 1.40/4.15 = 8.10 in
+    #   B: 22 * 0.85/3.80 = 4.92 in -> 24 * 1.20/4.15 = 6.94 in (+2.0)
+    #   C: 22 * 1.55/3.80 = 8.97 in -> 24 * 1.55/4.15 = 8.96 in
+    # If the data ever climbs back toward +75 % the panel won't need a
+    # second rebalance -- the symlog xlim already auto-grows up to 80 %
+    # via the max_hi guard in the panel-(b) block.
+    fig, axes = plt.subplots(1, 3, figsize=(24, 7.5),
+                             gridspec_kw={"width_ratios": [1.40, 1.20, 1.55]})
 
     # Per-element font sizes aligned to fig 7's pattern (25/20/20/19)
     # per user "all three-panel figures must be identical" request.
