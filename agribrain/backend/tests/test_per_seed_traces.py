@@ -110,12 +110,37 @@ def test_serialise_trace_handles_all_three_shapes():
     assert fn([]) == []
     assert fn(np.array([])) == []
 
+    # (e) The pernicious case: list[np.float64] / list[np.ndarray].
+    # Numpy scalars HAVE a .tolist() method (returning the underlying
+    # Python scalar, NOT an iterable), so a naive
+    # ``hasattr(first, "tolist")`` dispatch misroutes these into the
+    # nested-list branch and crashes when it tries to iterate a float.
+    # Two HPC runs (jobs 10852464 and 10853393) burned ~50 h of
+    # compute on this before the dispatch was made universal.
+    assert fn([np.float64(0.5), np.float64(1.5)]) == [0.5, 1.5]
+    assert fn([np.int64(3), np.int64(7)]) == [3, 7]
+    # list[np.ndarray] must serialise as list[list[float]].
+    out = fn([np.array([0.3, 0.5, 0.2]), np.array([0.4, 0.4, 0.2])])
+    assert out == [[0.3, 0.5, 0.2], [0.4, 0.4, 0.2]], out
+
     # Output is JSON-serialisable end-to-end (matches what
     # run_single_seed.py emits at out_file.write_text(json.dumps(...))).
     payload = {"slca": fn([{"C": 0.7, "L": 0.5, "R": 0.6, "P": 0.55}]),
                "prob": fn([[0.3, 0.5, 0.2]]),
                "ari":  fn([0.5])}
     json.dumps(payload)  # raises if any leaf is not JSON-friendly
+
+
+def test_run_single_seed_self_test_trace_dispatch_passes():
+    """The ``_self_test_trace_dispatch`` fail-fast guard added at the
+    top of run_single_seed.py main() must run cleanly on import. If
+    this test starts failing, the dispatch has regressed and any
+    HPC seed task would crash at startup -- which is what we want.
+    """
+    sys.path.insert(0, str(_BENCHMARKS_DIR))
+    import importlib
+    rss = importlib.import_module("run_single_seed")
+    rss._self_test_trace_dispatch()  # raises if any case fails
 
 
 def test_run_single_seed_declares_canonical_trace_modes():
