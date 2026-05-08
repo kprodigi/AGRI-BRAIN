@@ -2418,7 +2418,7 @@ def fig7_ablation(data):
     # to AXIS_LABEL_SIZE = 17 by _apply_style further below. The
     # re-apply line after _apply_style fixes that override AND
     # cements the new 20pt match.
-    _F7_TITLE = SUBPLOT_TITLE_SIZE + 6   # 25
+    _F7_TITLE = SUBPLOT_TITLE_SIZE + 6   # 25 (panel title per user request)
     _F7_AXIS  = TICK_FONT_SIZE + 5       # 20 (matches _F7_TICK)
     _F7_TICK  = TICK_FONT_SIZE + 5       # 20
     _F7_LEG   = LEGEND_FONT_SIZE + 4     # 19
@@ -2467,6 +2467,12 @@ def fig7_ablation(data):
         # labels above.
         ax.yaxis.label.set_size(_F7_AXIS)
         ax.yaxis.label.set_weight("bold")
+        # Re-apply the larger title size for the same reason -- without
+        # this, _apply_style.title.set_size(SUBPLOT_TITLE_SIZE) silently
+        # overrides the _F7_TITLE set above and the panel title falls
+        # back to 19pt regardless of what _F7_TITLE is set to.
+        ax.title.set_size(_F7_TITLE)
+        ax.title.set_weight("bold")
 
     # All eight modes in a single row, sitting tight under the bars.
     handles, labels = axes[0].get_legend_handles_labels()
@@ -2479,7 +2485,7 @@ def fig7_ablation(data):
     for text in leg.get_texts():
         text.set_fontweight("bold")
     # Bumped suptitle size so it scales with the larger panel typography.
-    fig.suptitle("Ablation Study", y=0.995, fontsize=FIG_TITLE_SIZE,
+    fig.suptitle("Ablation Study", y=0.995, fontsize=27,
                  fontweight="bold")
     fig.tight_layout(rect=[0, 0.08, 1, 0.985], w_pad=1.4)
     _save(fig, "fig7_ablation")
@@ -2955,7 +2961,7 @@ def fig9_fault_degradation():
     # _F9_ANNOT is unchanged from the previous +4 bump - it sits
     # between the legend and the tick label sizes and reads cleanly
     # at the same point size used elsewhere.
-    _F9_TITLE = SUBPLOT_TITLE_SIZE + 6    # 25 (matches _F7_TITLE)
+    _F9_TITLE = SUBPLOT_TITLE_SIZE + 6    # 25 (panel title per user request, matches _F7_TITLE)
     _F9_AXIS  = TICK_FONT_SIZE + 5        # 20 (matches _F7_AXIS, equals _F9_TICK)
     _F9_TICK  = TICK_FONT_SIZE + 5        # 20 (matches _F7_TICK)
     _F9_LEG   = LEGEND_FONT_SIZE + 4      # 19 (matches _F7_LEG)
@@ -2971,6 +2977,12 @@ def fig9_fault_degradation():
         ax_.tick_params(labelsize=_F9_TICK, length=6, width=1.4)
         for lbl in list(ax_.get_xticklabels()) + list(ax_.get_yticklabels()):
             lbl.set_fontsize(_F9_TICK); lbl.set_fontweight("bold")
+        # Re-apply the larger title size after _apply_style -- otherwise
+        # _apply_style.title.set_size(SUBPLOT_TITLE_SIZE=19) silently
+        # overrides the _F9_TITLE set above (same render-path bug as
+        # the fig 9 y-axis label re-apply below).
+        ax_.title.set_size(_F9_TITLE)
+        ax_.title.set_weight("bold")
 
     # =================================================================
     # Panel (a) — Cohen's d heatmap (scenario × baseline)
@@ -3492,7 +3504,7 @@ def fig9_fault_degradation():
     ax.yaxis.label.set_weight("bold")
 
     fig.suptitle("Performance Gain over Baselines and Context Influence",
-                 y=0.995, fontsize=FIG_TITLE_SIZE, fontweight="bold")
+                 y=0.995, fontsize=27, fontweight="bold")
     # Layout spacing tightened post-2026-04 per user "there must be
     # no overlapping" mandate:
     #   - rect bottom raised from 0.02 to 0.06 so the rotated x-tick
