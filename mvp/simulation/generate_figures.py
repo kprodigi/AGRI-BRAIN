@@ -871,32 +871,66 @@ def _fig3_overproduction_inner(op, ab, hours):
     # "Overproduction" window label at the top.
     _legend(ax, loc="center left")
 
-    # --- (d) SLCA component grouped bars (deterministic decomposition) ---
-    # 2026-05 honesty fix: error bars dropped. Pre-2026-05 the bars
-    # carried np.std over the time-step samples of one seed's
-    # slca_component_trace as their "uncertainty", which read as
-    # cross-method dispersion but was actually within-trajectory
-    # step variability of a single seed. The 20-seed
-    # benchmark_summary.json carries an aggregate ``slca`` mean per
-    # mode but does not yet decompose into the four C/L/R/P channels,
-    # so we cannot source proper cross-seed CIs without an aggregator
-    # change. Plotting the means alone is the honest interim:
-    # readers see the per-channel composition without a misleading
-    # CI cap. Once the aggregator emits per-channel summary fields
-    # (slca_carbon, slca_labor, slca_resilience, slca_price_transp),
-    # this panel can re-add proper 20-seed bootstrap CI bars.
+    # --- (d) SLCA component grouped bars with honest cross-seed SE ---
+    # Two-tier rendering:
+    #
+    #   1. When per-seed JSONs are on disk under
+    #      ``benchmark_seeds/<RUN_TAG>/seed_*.json`` (the canonical
+    #      HPC posture, post-2026-05 ``TRACE_FIELDS`` extension that
+    #      dumps slca_component_trace per seed), bar height =
+    #      cross-seed mean of the per-seed cross-step C/L/R/P means
+    #      and error bars = +/- 1.96 * SE = 1.96 * std(per_seed) /
+    #      sqrt(n_seeds). This is the apples-to-apples cross-seed
+    #      uncertainty for the four-pillar decomposition the
+    #      benchmark_summary's aggregate ``slca`` scalar does not
+    #      decompose into.
+    #
+    #   2. Single-seed fallback (local development; older HPC runs
+    #      that pre-date the TRACE_FIELDS extension): plot means with
+    #      NO error bars rather than a misleading within-trajectory
+    #      step-std. This was the 2026-05 honesty fix; the per-seed
+    #      branch above is the genuinely-multi-seed extension.
+    #
+    # See also _load_per_seed_slca_components which walks the seed
+    # JSONs and collapses the per-step list[dict] into one
+    # cross-step mean per component per seed.
     ax = axes[1, 1]
     components = ["C", "L", "R", "P"]
     comp_labels = ["Carbon", "Labor", "Resilience", "Price Transp."]
     x = np.arange(len(components))
     width = 0.26
+    _slca_per_seed = {
+        m: _load_per_seed_slca_components("overproduction", m)
+        for m in ("static", "hybrid_rl", "agribrain")
+    }
+    _has_multi_seed = all(_slca_per_seed[m] is not None
+                          for m in ("static", "hybrid_rl", "agribrain"))
     for i, mode in enumerate(["static", "hybrid_rl", "agribrain"]):
-        ep = op[mode]
-        vals = [np.mean([s[comp] for s in ep["slca_component_trace"]])
-                for comp in components]
-        ax.bar(x + i * width, vals, width, color=COLORS[mode],
-               label=MODE_LABELS[mode], alpha=0.92, edgecolor="white",
-               linewidth=0.8)
+        if _has_multi_seed:
+            per_seed = _slca_per_seed[mode]  # type: ignore[index]
+            vals = [float(per_seed[c].mean()) for c in components]
+            # Cross-seed SE; 1.96*SE matches the +/- 95% convention
+            # the rest of the figure suite uses (consistent with
+            # fig 4 panel D's SE error bars).
+            ses = [
+                float(per_seed[c].std(ddof=1) / np.sqrt(per_seed[c].size))
+                for c in components
+            ]
+            ax.bar(
+                x + i * width, vals, width, color=COLORS[mode],
+                label=MODE_LABELS[mode], alpha=0.92, edgecolor="white",
+                linewidth=0.8,
+                yerr=[1.96 * s for s in ses], capsize=4,
+                error_kw={"linewidth": 1.0, "capthick": 1.0},
+            )
+        else:
+            # Single-seed fallback: plot means alone (no fake CI bars).
+            ep = op[mode]
+            vals = [np.mean([s[comp] for s in ep["slca_component_trace"]])
+                    for comp in components]
+            ax.bar(x + i * width, vals, width, color=COLORS[mode],
+                   label=MODE_LABELS[mode], alpha=0.92, edgecolor="white",
+                   linewidth=0.8)
     ax.set_xticks(x + width)
     ax.set_xticklabels(comp_labels)
     ax.set_ylabel("Score")
@@ -1907,6 +1941,75 @@ def _per_seed_window_inputs(scenario: str, mode: str, hours: np.ndarray,
         "waste_pre": waste[:, :n][:, pm],
         "waste_dur": waste[:, :n][:, dm],
     }
+
+
+def _load_per_seed_slca_components(scenario: str, mode: str
+                                    ) -> dict[str, np.ndarray] | None:
+    """Per-seed mean of each SLCA component {C, L, R, P} for one
+    (scenario, mode) cell.
+
+    Walks ``RESULTS_DIR/benchmark_seeds/`` (flat or RUN_TAG-tagged
+    layout) and pulls the per-step ``slca_component_trace`` from each
+    seed's envelope. For each seed, the per-step list of dicts
+    ``[{"C": ..., "L": ..., "R": ..., "P": ..., "composite": ...}, ...]``
+    is collapsed to one mean-per-component, giving a per-seed scalar
+    per component. Across-seed mean and SE on those scalars is the
+    apples-to-apples cross-seed uncertainty for the SLCA-decomposition
+    bar chart in fig 3 panel D.
+
+    Returns
+    -------
+    dict mapping component letter ("C"/"L"/"R"/"P") to a (n_seeds,)
+    numpy array of cross-step means, or None if per-seed JSONs are
+    absent OR carry a pre-2026-05 envelope without
+    ``slca_component_trace`` (in which case the figure code falls
+    back to plotting means without error bars).
+
+    The 2026-05 ``TRACE_FIELDS`` extension dumps slca_component_trace
+    per seed, so this helper returns proper cross-seed arrays on any
+    fresh HPC run; older runs (only ari_trace) yield None.
+    """
+    import json
+    seeds_root = RESULTS_DIR / "benchmark_seeds"
+    if not seeds_root.exists():
+        return None
+    seed_files = list(seeds_root.glob("seed_*.json"))
+    if not seed_files:
+        for sub in seeds_root.iterdir():
+            if sub.is_dir():
+                seed_files.extend(sub.glob("seed_*.json"))
+    if not seed_files:
+        return None
+
+    components = ("C", "L", "R", "P")
+    per_seed: dict[str, list[float]] = {c: [] for c in components}
+
+    for sp in seed_files:
+        try:
+            obj = json.loads(sp.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        traces = obj.get("traces") if isinstance(obj, dict) else None
+        if not isinstance(traces, dict):
+            continue
+        cell = traces.get(scenario, {}).get(mode, {})
+        seq = cell.get("slca_component_trace")
+        if not isinstance(seq, list) or not seq:
+            continue
+        # Older flat list[float] shape (pre-2026-05) -- skip rather
+        # than try to interpret.
+        if not isinstance(seq[0], dict):
+            continue
+        for c in components:
+            vals = [float(s[c]) for s in seq if c in s]
+            if vals:
+                per_seed[c].append(float(np.mean(vals)))
+
+    # Need at least 2 seeds for a meaningful cross-seed SE.
+    if any(len(per_seed[c]) < 2 for c in components):
+        return None
+
+    return {c: np.asarray(per_seed[c], dtype=float) for c in components}
 
 
 # Bold error bar styling so tight 20-seed CIs remain visible at figure scale.
