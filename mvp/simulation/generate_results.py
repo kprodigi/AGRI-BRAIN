@@ -1096,7 +1096,27 @@ def run_episode(
         prob_trace.append(probs.tolist())
         reward_trace.append(reward)
         carbon_trace.append(carbon)
-        slca_component_trace.append(slca_result)
+        # 2026-05 trace honesty: ``slca_result`` from ``slca_score`` is the
+        # RAW (unattenuated) composite computed from the four pillars.
+        # The headline ``slca`` scalar (and ``slca_trace[t]`` below) uses
+        # the THERMAL-STRESS / SURPLUS-ATTENUATED form
+        # ``slca_c = slca_raw * slca_quality``. The two diverge whenever
+        # ``slca_quality < 1`` (heatwave, overproduction). To make this
+        # explicit and verifiable from the trace alone, we extend each
+        # entry with two extra keys:
+        #   ``slca_quality``         -- the attenuation factor (0..1)
+        #   ``composite_attenuated`` -- the per-step contribution to the
+        #                               headline scalar
+        # Identity that now holds:
+        #   slca_episode == mean(s["composite_attenuated"]
+        #                         for s in slca_component_trace)
+        # Identity that still holds (raw decomposition, fig 3 panel D):
+        #   composite == w_c*C + w_l*L + w_r*R + w_p*P
+        slca_component_trace.append({
+            **slca_result,
+            "slca_quality": round(float(slca_quality), 4),
+            "composite_attenuated": round(float(slca_c), 4),
+        })
         # Read the coordinator's per-step anomaly-defense flags.
         # ``getattr`` defaults guard against runs that swap in a
         # coordinator without these attributes (e.g. older pickled
@@ -1519,11 +1539,22 @@ def run_all(seed: int = SEED) -> dict:
             )
             kw: dict = {"initial_theta": (_THETA_CTX + noise).astype(float)}
             if mode_name.endswith("_static"):
-                # Explicitly disable learning for the static sensitivity
-                # variants. Other context learner kwargs (cap, etc.)
-                # default to whatever ContextMatrixLearner picks.
+                # Static sensitivity variants. Pre-2026-05 only the
+                # ContextMatrixLearner (THETA_CONTEXT) was frozen, so the
+                # PolicyDeltaLearner (THETA_delta) and RewardShapingLearner
+                # (SLCA_BONUS / SLCA_RHO_BONUS / NO_SLCA_OFFSET deltas)
+                # kept REINFORCing inside the episode. That let the
+                # policy partly compensate for the perturbed THETA_CONTEXT
+                # prior, defeating the experimental intent ("test prior
+                # sensitivity without learning recovery"). The new
+                # ``_freeze_all_learners`` sentinel propagates the freeze
+                # to ALL three learners via the coordinator (see
+                # AgentCoordinator.__init__ for the sniffing logic).
+                # The legacy ``learning_rate=0.0`` and ``freeze=True``
+                # keys remain for back-compat with ContextMatrixLearner.
                 kw["learning_rate"] = 0.0
                 kw["freeze"] = True
+                kw["_freeze_all_learners"] = True
             return kw
         return None
 

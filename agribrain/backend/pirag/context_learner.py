@@ -382,6 +382,7 @@ class PolicyDeltaLearner:
         grad_clip: float = 0.5,
         magnitude_cap_fraction: float = 0.25,
         sign_constrained: bool = True,
+        freeze: bool = False,
     ) -> None:
         if initial_theta.shape != (3, 10):
             raise ValueError(
@@ -398,6 +399,16 @@ class PolicyDeltaLearner:
         self.grad_clip = float(grad_clip)
         self.cap_fraction = float(magnitude_cap_fraction)
         self.sign_constrained = bool(sign_constrained)
+        # 2026-05 freeze plumbing. When True, ``update`` is a no-op so
+        # the static sensitivity modes (agribrain_pert_*_static) hold
+        # theta_delta fixed at zero. Symmetric with
+        # ``ContextMatrixLearner.freeze`` (line 111). Pre-2026-05 only
+        # ContextMatrixLearner respected freeze, so the "_static" modes
+        # froze THETA_CONTEXT but allowed PolicyDeltaLearner and
+        # RewardShapingLearner to keep updating -- which let the policy
+        # adapt around the perturbed prior, partly defeating the
+        # "no learning recovery" intent of the experiment.
+        self.freeze = bool(freeze)
 
         self._sign_mask = np.sign(self.initial_theta)
         self._magnitude_bound = np.abs(self.initial_theta) * self.cap_fraction
@@ -435,6 +446,16 @@ class PolicyDeltaLearner:
             raise ValueError(f"phi must be shape (10,), got {phi.shape}")
         if probs.shape != (3,):
             raise ValueError(f"probs must be shape (3,), got {probs.shape}")
+
+        # Frozen learner: no-op update so the static sensitivity modes
+        # (agribrain_pert_*_static) hold theta_delta at zero across the
+        # entire run. Symmetric with ContextMatrixLearner.update (line
+        # 181). Pre-2026-05 only ContextMatrixLearner had this guard,
+        # so PolicyDeltaLearner kept REINFORCing inside _static modes
+        # and the policy could compensate for the perturbed THETA_CONTEXT
+        # prior -- partly defeating the experimental intent.
+        if self.freeze or self.lr == 0.0:
+            return
 
         self.n_updates += 1
         self.reward_baseline = (
@@ -599,6 +620,7 @@ class RewardShapingLearner:
         grad_clip: float = 0.5,
         magnitude_cap_fraction: float = 0.25,
         sign_constrained: bool = True,
+        freeze: bool = False,
     ) -> None:
         for name, vec in (
             ("initial_slca_bonus", initial_slca_bonus),
@@ -623,6 +645,13 @@ class RewardShapingLearner:
         self.grad_clip = float(grad_clip)
         self.cap_fraction = float(magnitude_cap_fraction)
         self.sign_constrained = bool(sign_constrained)
+        # 2026-05 freeze plumbing. Symmetric with ContextMatrixLearner
+        # and PolicyDeltaLearner; see those classes for rationale. When
+        # True, ``update`` is a no-op AND the per-call shrinkage in
+        # ``_apply_shrinkage_and_rails`` is skipped via the early return
+        # in ``update``, so all three reward-shaping deltas hold at zero
+        # across the entire run.
+        self.freeze = bool(freeze)
 
         self._sign_bonus = np.sign(self.initial_slca_bonus)
         self._sign_rho = np.sign(self.initial_slca_rho)
@@ -677,9 +706,18 @@ class RewardShapingLearner:
         Shrinkage is applied to every delta on every call so inactive
         vectors drift back toward zero; gradients are applied only to
         the vectors active in ``mode``.
+
+        Frozen learner (``freeze=True`` or ``lr == 0``): no-op so the
+        static sensitivity modes (agribrain_pert_*_static) keep all
+        three reward-shaping deltas at zero across the entire run. The
+        early return is BEFORE shrinkage too, so frozen deltas don't
+        decay either; the perturbation is the only source of variation.
         """
         if probs.shape != (3,):
             raise ValueError(f"probs must be shape (3,), got {probs.shape}")
+
+        if self.freeze or self.lr == 0.0:
+            return
 
         self.n_updates += 1
         self.reward_baseline = (

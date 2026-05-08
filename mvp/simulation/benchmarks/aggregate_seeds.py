@@ -188,16 +188,37 @@ def bootstrap_ci(vals, n_boot=10_000, alpha=0.05, cell_key=("global",)):
     for both bias and skew using the bootstrap distribution and a
     jackknife acceleration estimate. cell_key seeds the resampler so
     adjacent cells have independent Monte Carlo error.
+
+    2026-05: zero-variance inputs are short-circuited BEFORE calling
+    BCa. Such cells (deterministic-by-construction quantities like
+    context_active_steps with a hardcoded schedule, or null-mean rates
+    like context_honor_rate on static) cannot have a BCa CI -- z0 is
+    mathematically undefined when every bootstrap replicate equals
+    theta_hat. Pre-2026-05 these were silently routed through the
+    percentile fallback and counted as "BCa fallback rate", which
+    inflated the headline 8.3 % stat with cells where BCa was never
+    going to apply. The honest rate is the rate of cases where BCa
+    was attempted on variance > 0 input AND the machinery still
+    couldn't recover z0 -- which is ~0.
     """
     arr = np.array(vals, dtype=float)
     if len(arr) < 2:
         return float(np.mean(arr)) if len(arr) else 0.0, float(np.mean(arr)) if len(arr) else 0.0
+
+    theta_hat = float(np.mean(arr))
+    # Zero-variance short-circuit: BCa is mathematically undefined.
+    # Emit (theta_hat, theta_hat) and increment the deterministic
+    # counter so the _meta block can report the cell as "ci_method =
+    # deterministic" rather than as a BCa fallback.
+    if float(np.std(arr, ddof=1)) == 0.0:
+        _BCA_STATS["deterministic_cells"] += 1
+        return theta_hat, theta_hat
+
     rng = np.random.default_rng(_cell_seed("bootstrap_ci", cell_key))
     boots = np.array([
         float(np.mean(rng.choice(arr, len(arr), replace=True)))
         for _ in range(n_boot)
     ])
-    theta_hat = float(np.mean(arr))
 
     # Jackknife acceleration on the data
     n = len(arr)
@@ -217,6 +238,25 @@ def bootstrap_mean_diff_ci(a, b, n_boot=10_000, alpha=0.05, paired=True, cell_ke
     x, y = np.array(a, dtype=float), np.array(b, dtype=float)
     if len(x) == 0 or len(y) == 0:
         return 0.0, 0.0
+
+    # Zero-variance short-circuit. For paired diffs the relevant
+    # quantity is the variance of (x - y); for unpaired the variances
+    # of x and y separately. Either way, if all the seed-level
+    # estimates that go into the bootstrap are constant, BCa is
+    # mathematically undefined. Same reasoning as bootstrap_ci above.
+    if paired and x.shape == y.shape:
+        diff = x - y
+        if float(np.std(diff, ddof=1)) == 0.0:
+            _BCA_STATS["deterministic_cells"] += 1
+            theta_hat = float(np.mean(diff))
+            return theta_hat, theta_hat
+    else:
+        if (float(np.std(x, ddof=1)) == 0.0
+                and float(np.std(y, ddof=1)) == 0.0):
+            _BCA_STATS["deterministic_cells"] += 1
+            theta_hat = float(np.mean(x) - np.mean(y))
+            return theta_hat, theta_hat
+
     rng = np.random.default_rng(_cell_seed("bootstrap_diff_ci", cell_key))
     boots = []
     if paired and x.shape == y.shape:
@@ -255,10 +295,31 @@ def bootstrap_mean_diff_ci(a, b, n_boot=10_000, alpha=0.05, paired=True, cell_ke
 # floor for BCa stability (Efron & Tibshirani recommend n>=30); the
 # fallback is silent without these counters which is exactly the
 # silent-fallback pattern the post-2026-04 audit flagged.
+# 2026-05 honest-counter restructure. Pre-2026-05 the counter set
+# conflated two semantically-different events:
+#   1. "BCa is mathematically undefined for this cell" -- the input
+#      array has zero across-seed variance (deterministic-by-construction
+#      cells like context_active_steps=72 every seed, or null-mean cells
+#      like context_honor_rate on static). 218 of the 218 reported
+#      "fallbacks" on the d33b8de run were actually this.
+#   2. "BCa attempted on real-variance data but the bias-correction
+#      machinery couldn't recover z0" -- a true statistical fallback
+#      that should be rare and is the only thing the methods section
+#      should report as a "BCa fallback rate".
+# The 8.3 % "fallback rate" on the d33b8de run was 100 % case-1
+# events, none case-2. Splitting the counter:
+#   bca_calls           = cells where BCa was actually attempted
+#                          (input variance > 0)
+#   bca_fallbacks       = cells where BCa failed despite variance > 0
+#                          (the "true" fallback rate, target ~0)
+#   deterministic_cells = cells skipped because variance is 0
+#                          (mathematically can't have a BCa CI; emits
+#                          ci_method="deterministic" instead of "bca")
 _BCA_STATS = {
-    "calls": 0,
-    "fallback_p0_degenerate": 0,  # all boots == theta_hat (ill-defined z0)
+    "bca_calls": 0,
+    "bca_fallbacks": 0,
     "fallback_scipy_unavailable": 0,
+    "deterministic_cells": 0,
 }
 
 
@@ -281,12 +342,21 @@ def _bca_ci_from_boots(boots: np.ndarray, theta_hat: float,
     the post-2026-04 audit flag.
     """
     from math import erf, sqrt
-    _BCA_STATS["calls"] += 1
+    _BCA_STATS["bca_calls"] += 1
     if len(boots) < 2:
         return float(theta_hat), float(theta_hat)
     p0 = float(np.mean(boots < theta_hat))
     if p0 <= 0.0 or p0 >= 1.0:
-        _BCA_STATS["fallback_p0_degenerate"] += 1
+        # 2026-05: this is the "true" BCa fallback (target ~0). The
+        # callers (bootstrap_ci / bootstrap_mean_diff_ci) already
+        # short-circuit on zero-variance input, so by the time we get
+        # here the bootstrap distribution should have non-trivial
+        # spread. Hitting p0 in {0, 1} despite that means the data has
+        # an extreme distribution shape (e.g. heavy one-sided point
+        # mass with a thin continuous tail) where BCa's bias-correction
+        # heuristic still degenerates. Falling back to plain percentile
+        # is the standard defensive move.
+        _BCA_STATS["bca_fallbacks"] += 1
         return (float(np.quantile(boots, alpha / 2)),
                 float(np.quantile(boots, 1 - alpha / 2)))
     try:
@@ -314,30 +384,74 @@ def _bca_ci_from_boots(boots: np.ndarray, theta_hat: float,
 
 
 def _bca_fallback_stats_snapshot() -> dict:
-    """Return the current fallback stats as a JSON-friendly dict.
+    """Return the current bootstrap-CI stats as a JSON-friendly dict.
 
-    Computes the fallback rate explicitly so the methods section can
-    quote one number rather than a ratio that downstream consumers
-    have to compute. Reset between aggregator runs.
+    Three counters, three different stories the methods section may
+    want to report (2026-05 honest restructure):
+
+      bca_calls           -- cells where BCa was attempted (input had
+                              non-zero across-seed variance).
+      bca_fallbacks       -- cells where BCa was attempted but
+                              degenerated to plain percentile despite
+                              variance > 0. This is the "true" BCa
+                              fallback rate; target ~0.
+      fallback_scipy_unavailable
+                          -- scipy.special.ndtri import failed; should
+                              be 0 in the production env.
+      deterministic_cells -- cells short-circuited because their input
+                              array had zero variance (BCa is
+                              mathematically undefined). These cells
+                              emit a deterministic ci_method marker
+                              and a [mean, mean] CI; they were always
+                              going to be deterministic, not a
+                              statistical "fallback".
+
+    Headline rate is now ``bca_fallback_rate = bca_fallbacks /
+    max(bca_calls, 1)`` -- this is the only honest number the methods
+    section should quote. Pre-2026-05 the headline rate conflated
+    bca_fallbacks + deterministic_cells into one stat (the d33b8de
+    8.3 % was 100 % deterministic, 0 % true BCa fallback).
     """
-    calls = _BCA_STATS["calls"]
-    p0_deg = _BCA_STATS["fallback_p0_degenerate"]
+    bca_calls = _BCA_STATS["bca_calls"]
+    bca_fallbacks = _BCA_STATS["bca_fallbacks"]
     scipy_unavail = _BCA_STATS["fallback_scipy_unavailable"]
-    total_fallback = p0_deg + scipy_unavail
-    return {
-        "calls": calls,
-        "fallback_p0_degenerate": p0_deg,
+    deterministic = _BCA_STATS["deterministic_cells"]
+    total_fallback = bca_fallbacks + scipy_unavail
+    snapshot = {
+        "bca_calls": bca_calls,
+        "bca_fallbacks": bca_fallbacks,
         "fallback_scipy_unavailable": scipy_unavail,
-        "fallback_total": total_fallback,
-        "fallback_rate": float(total_fallback / calls) if calls else 0.0,
+        "deterministic_cells": deterministic,
+        # The "true" BCa fallback rate (denominator excludes
+        # deterministic cells where BCa was never going to apply).
+        "bca_fallback_rate": (
+            float(total_fallback / bca_calls) if bca_calls else 0.0
+        ),
+        # Back-compat aliases so the previous _meta consumers
+        # (validation scripts, the export_paper_evidence.py meta
+        # propagation, methods footnotes) don't crash on key absence.
+        # The "fallback_rate" here matches the pre-2026-05 semantics
+        # (fraction of all bootstrap_ci calls where the percentile
+        # path was taken, INCLUDING deterministic-by-construction
+        # cells) so downstream readers get the same number. New
+        # consumers should prefer "bca_fallback_rate".
+        "calls": bca_calls + deterministic,
+        "fallback_p0_degenerate": bca_fallbacks + deterministic,
+        "fallback_total": total_fallback + deterministic,
+        "fallback_rate": (
+            float((total_fallback + deterministic) / (bca_calls + deterministic))
+            if (bca_calls + deterministic) else 0.0
+        ),
     }
+    return snapshot
 
 
 def _reset_bca_fallback_stats() -> None:
-    """Reset fallback counters to zero (called at aggregator start)."""
-    _BCA_STATS["calls"] = 0
-    _BCA_STATS["fallback_p0_degenerate"] = 0
+    """Reset bootstrap-CI counters to zero (called at aggregator start)."""
+    _BCA_STATS["bca_calls"] = 0
+    _BCA_STATS["bca_fallbacks"] = 0
     _BCA_STATS["fallback_scipy_unavailable"] = 0
+    _BCA_STATS["deterministic_cells"] = 0
 
 
 def wilcoxon_signed_rank_pvalue(a, b, cell_key=("global",)):
@@ -570,7 +684,7 @@ def _bca_quantiles(boots: np.ndarray, theta_hat: float,
     fallback_rate value.
     """
     from math import erf, sqrt
-    _BCA_STATS["calls"] += 1
+    _BCA_STATS["bca_calls"] += 1
     n_boot = len(boots)
     if n_boot < 2:
         return float(theta_hat), float(theta_hat)
@@ -578,8 +692,13 @@ def _bca_quantiles(boots: np.ndarray, theta_hat: float,
     # Bias correction z0
     p0 = float(np.mean(boots < theta_hat))
     if p0 <= 0.0 or p0 >= 1.0:
-        # All bootstrap values on one side of theta_hat -> percentile fallback
-        _BCA_STATS["fallback_p0_degenerate"] += 1
+        # All bootstrap values on one side of theta_hat -> percentile fallback.
+        # 2026-05: callers that wrap this function should already have
+        # short-circuited on zero-variance input, so reaching this branch
+        # means the bootstrap distribution had non-trivial spread but
+        # BCa's z0 still degenerated -- the "true" BCa fallback,
+        # tracked under bca_fallbacks. Target ~0.
+        _BCA_STATS["bca_fallbacks"] += 1
         return (float(np.quantile(boots, alpha / 2)),
                 float(np.quantile(boots, 1 - alpha / 2)))
 

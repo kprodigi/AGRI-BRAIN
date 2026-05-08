@@ -148,6 +148,21 @@ class AgentCoordinator:
         self._context_learner_overrides: Dict[str, Any] = dict(
             context_learner_overrides or {}
         )
+        # 2026-05 honest "_static" mode plumbing. Pre-2026-05 the
+        # overrides dict was forwarded verbatim to ContextMatrixLearner,
+        # which was the only learner that respected freeze=True. The
+        # static sensitivity modes (agribrain_pert_*_static) therefore
+        # froze THETA_CONTEXT but allowed PolicyDeltaLearner and
+        # RewardShapingLearner to keep updating, which let the policy
+        # adapt around the perturbed prior. The new sentinel key
+        # ``_freeze_all_learners`` (sniffed out before forwarding to
+        # ContextMatrixLearner so it doesn't reach an unknown kwarg)
+        # propagates the freeze to all three learners. The existing
+        # ``freeze`` key inside the overrides dict remains the
+        # ContextMatrixLearner-specific switch for back-compat.
+        self._freeze_all_learners: bool = bool(
+            self._context_learner_overrides.pop("_freeze_all_learners", False)
+        )
 
         # Context infrastructure (lazy init, guarded by try/except)
         self._registry = None
@@ -305,7 +320,13 @@ class AgentCoordinator:
             from ..models.action_selection import THETA as _INITIAL_THETA
             for _role_name in ("farm", "processor", "cooperative",
                                 "distributor", "recovery"):
-                self._theta_learners[_role_name] = _PDL(initial_theta=_INITIAL_THETA)
+                self._theta_learners[_role_name] = _PDL(
+                    initial_theta=_INITIAL_THETA,
+                    # 2026-05: respect the all-learners freeze sentinel
+                    # so the agribrain_pert_*_static modes hold
+                    # theta_delta at zero across the entire run.
+                    freeze=self._freeze_all_learners,
+                )
             # Default to the farm-stage learner; ``step`` will set this
             # to the active role's instance per timestep.
             self._theta_learner = self._theta_learners["farm"]
@@ -328,6 +349,10 @@ class AgentCoordinator:
                 initial_slca_bonus=_INITIAL_SLCA_BONUS,
                 initial_slca_rho_bonus=_INITIAL_SLCA_RHO_BONUS,
                 initial_no_slca_offset=_INITIAL_NO_SLCA_OFFSET,
+                # 2026-05: respect the all-learners freeze sentinel so
+                # the agribrain_pert_*_static modes hold all three
+                # reward-shaping deltas at zero across the entire run.
+                freeze=self._freeze_all_learners,
             )
         except ImportError:
             self._reward_shaping_learner = None
