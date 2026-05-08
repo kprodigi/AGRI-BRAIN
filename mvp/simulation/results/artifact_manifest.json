@@ -1,12 +1,12 @@
 {
-  "git_commit": "ba154c6c3f61f199de6203319050d57e19aed7aa",
+  "git_commit": "adcc89c88992690088300fa550c5eb5cf26c9fe0",
   "git_dirty": false,
   "artifact_count": 282,
   "artifacts": [
     {
       "file": "artifact_manifest.json",
       "bytes": 51269,
-      "sha256": "ced2587a81c86d459465584719c2417b4379b50d12a6e430411b056c6c1e6a81"
+      "sha256": "19277bf259892018e57ca0dc523f8ab482d81466cad357e29f83d580c2e1efbe"
     },
     {
       "file": "benchmark_context_significance.json",
@@ -1180,18 +1180,18 @@
     },
     {
       "file": "fig10_latency_quality_frontier.pdf",
-      "bytes": 31410,
-      "sha256": "c66e1d76d8d07e2ff51305c75dfbaa6b95fbe660098101c94c7ee1386a514e27"
+      "bytes": 31395,
+      "sha256": "205b7f97a189e468be5495664d75779a67e54f2b2c18c987abf1c2eb67a50a3b"
     },
     {
       "file": "fig10_latency_quality_frontier.png",
-      "bytes": 2212665,
-      "sha256": "7a6e5cd6800b69a6015797532b635cd77db10256930f85a585ff360ff0002e2d"
+      "bytes": 2190792,
+      "sha256": "6edaf11d8ac811a2ec59c8bf470285896a05a038bd256d54a55b4879ec7f7fb0"
     },
     {
       "file": "fig2_heatwave.pdf",
       "bytes": 57092,
-      "sha256": "faf157947d9e61cd925e82225c1dc85fdb29b126f068cd3c1a634e9c51cc7548"
+      "sha256": "180ef75bbf5028a48b528de3f733d8008870879838e8dec305d8aba1242f351b"
     },
     {
       "file": "fig2_heatwave.png",
@@ -1201,7 +1201,7 @@
     {
       "file": "fig3_overproduction.pdf",
       "bytes": 45210,
-      "sha256": "dfd4edbf2e98848ca2c546db1a81a40d5884970cb58d7712811ed39d46fb274b"
+      "sha256": "ef8ccbaab9f86f2758841e26614f6fbd0d607c01e23b8acf771dbbe42643d812"
     },
     {
       "file": "fig3_overproduction.png",
@@ -1211,7 +1211,7 @@
     {
       "file": "fig4_cyber.pdf",
       "bytes": 32439,
-      "sha256": "bb6d47e9aa86b0ea9ab0c3f64f35bab7739d8e321a949617059a6e8727166076"
+      "sha256": "cd61f2c5c44f74ea54adaabe8d9e431210082d3b98edb0a25075b84625bd6d98"
     },
     {
       "file": "fig4_cyber.png",
@@ -1221,7 +1221,7 @@
     {
       "file": "fig5_pricing.pdf",
       "bytes": 45644,
-      "sha256": "e2581e5c9d3a130f9e65b408167c3c9fd282565f02eb119e2a41a3ee8cbc9fc3"
+      "sha256": "249aafbd85b651fee9f9b0c7d0b3b8ed82af0c32ad2dff91aadebd6c02ae396e"
     },
     {
       "file": "fig5_pricing.png",
@@ -1231,7 +1231,7 @@
     {
       "file": "fig6_cross.pdf",
       "bytes": 18702,
-      "sha256": "99e1fe046c3618751668a0bd7ea1e6ad63b928eca6e51d5fbbea9f288677d3af"
+      "sha256": "ae1a7e39ac9a2d8bbd30880fcb42bc984c56e2a38f1031b0084be098e94676ca"
     },
     {
       "file": "fig6_cross.png",
@@ -1240,18 +1240,18 @@
     },
     {
       "file": "fig7_ablation.pdf",
-      "bytes": 21713,
-      "sha256": "a95af2f8003802db7fe0ed09a2989eddb34c65a948b4dae8b297063a2c2c9a7a"
+      "bytes": 21696,
+      "sha256": "5d1c406b3da771a66bf4cdaa5592011d943c37e3b38599bc917c8b0ce0a410dd"
     },
     {
       "file": "fig7_ablation.png",
-      "bytes": 1613467,
-      "sha256": "1f2386488141c58c888dd637a2ebf243bf93d5986e7283e8ca51cae8f130b814"
+      "bytes": 1642200,
+      "sha256": "95d6bd329f7838ee5e68d48555aa4c0834c290306bf1554f8ca82b3d732163c8"
     },
     {
       "file": "fig8_green_ai.pdf",
       "bytes": 33634,
-      "sha256": "1377e8c9286a925073cc308992574b3b0a7b3f294e325b19123b4b670cc7719b"
+      "sha256": "13463f96880ca93571eaf287619bef69b627735fc2fa44ac6969dd46d769bb07"
     },
     {
       "file": "fig8_green_ai.png",
@@ -1260,13 +1260,13 @@
     },
     {
       "file": "fig9_robustness.pdf",
-      "bytes": 115694,
-      "sha256": "3540d60bf2e15a06f4a30c10666fc79087f00976c3b3d83e76b014bf3cb45ff4"
+      "bytes": 114193,
+      "sha256": "439af6fbdb96aec72dfe8161e39c2b3cea75295e0fd562adf197b5b7e8625121"
     },
     {
       "file": "fig9_robustness.png",
-      "bytes": 3163647,
-      "sha256": "91737fd6ac351973f938735decf33a8f7bfe2317a87dc9302fc223f2f8195910"
+      "bytes": 3243124,
+      "sha256": "0be07f7aea09a9efcccb61d8728d8d282e62bb5b13a7edce636c0271ca9ef522"
     },
     {
       "file": "learning_trajectory_agribrain.json",
