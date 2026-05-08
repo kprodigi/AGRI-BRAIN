@@ -3629,7 +3629,7 @@ def fig10_latency_quality_frontier(data):
     # figure). Late-May 2026 user request: trim fig 8 + fig 10 by one
     # point each so panel content is not as visually heavy as figs 6/7.
     # Bump cascade is +3 / +2 / +2 / +2 (was +4 / +3 / +3 / +3).
-    _F10_TITLE = SUBPLOT_TITLE_SIZE + 3   # 22
+    _F10_TITLE = SUBPLOT_TITLE_SIZE + 1   # 20 (panel title -2 per user request)
     _F10_AXIS  = AXIS_LABEL_SIZE + 2      # 19
     _F10_TICK  = TICK_FONT_SIZE + 2       # 17
     _F10_LEG   = LEGEND_FONT_SIZE + 2     # 17
