@@ -26,11 +26,15 @@
       2024
     ],
     "n_seeds": 20,
-    "git_commit": "d33b8de586827e0d10447e96053e615a64bbdaea",
+    "git_commit": null,
     "bca_fallback_stats": {
+      "bca_calls": 2407,
+      "bca_fallbacks": 0,
+      "fallback_scipy_unavailable": 0,
+      "deterministic_cells": 218,
+      "bca_fallback_rate": 0.0,
       "calls": 2625,
       "fallback_p0_degenerate": 218,
-      "fallback_scipy_unavailable": 0,
       "fallback_total": 218,
       "fallback_rate": 0.08304761904761905
     }

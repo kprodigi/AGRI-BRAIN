@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "git_commit": "d33b8de586827e0d10447e96053e615a64bbdaea",
+    "git_commit": null,
     "n_seeds": 20,
     "seeds_loaded": [
       7,
@@ -28,13 +28,17 @@
     "n_boot": 10000,
     "n_perm": 10000,
     "bca_fallback_stats": {
+      "bca_calls": 2407,
+      "bca_fallbacks": 0,
+      "fallback_scipy_unavailable": 0,
+      "deterministic_cells": 218,
+      "bca_fallback_rate": 0.0,
       "calls": 2625,
       "fallback_p0_degenerate": 218,
-      "fallback_scipy_unavailable": 0,
       "fallback_total": 218,
       "fallback_rate": 0.08304761904761905
     },
-    "generated_at": "2026-05-08T09:03:26+00:00",
+    "generated_at": "2026-05-08T09:15:27+00:00",
     "source_artifacts": [
       "mvp/simulation/results/benchmark_summary.json",
       "mvp/simulation/results/benchmark_significance.json"

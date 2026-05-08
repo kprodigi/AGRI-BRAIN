@@ -1,12 +1,12 @@
 {
-  "git_commit": "f37083314fef4749a5419bc8aa7854f456084f85",
+  "git_commit": "2ecb2cf2601cff019030165057ddc2c0dc5d5d56",
   "git_dirty": false,
   "artifact_count": 282,
   "artifacts": [
     {
       "file": "artifact_manifest.json",
       "bytes": 51268,
-      "sha256": "1ba6cdc3ccc04ba27d5a94b32677810bd67fad8c7b94ec35d07d65af3c9353e2"
+      "sha256": "545826280993e052a522e5914b9099120b8a1f1eb2cff0ed5ee778cdfec1d86b"
     },
     {
       "file": "benchmark_context_significance.json",
@@ -320,13 +320,13 @@
     },
     {
       "file": "benchmark_significance.json",
-      "bytes": 293543,
-      "sha256": "a41aa1cc01b9bd79ffa8fbfd851a0313b4acd3837ba777f169aa6b55d0471a7d"
+      "bytes": 293505,
+      "sha256": "41f06a0add9f8188a83b2f63cc4771e0ff468f63a923b149955184bf3cee74c8"
     },
     {
       "file": "benchmark_summary.json",
-      "bytes": 426146,
-      "sha256": "c46d40993e9cda87f90baa55d72eca27cc0d13ae5d7eae96fcde2fb86e10e5d8"
+      "bytes": 426225,
+      "sha256": "108c04f0964369b0ad6dddfad0dc35a1959b7cc993c6edd539f619479b755aaa"
     },
     {
       "file": "context_alignment_adaptive_pricing.json",
@@ -1345,8 +1345,8 @@
     },
     {
       "file": "paper_benchmark_table.json",
-      "bytes": 718360,
-      "sha256": "5420e8ffec65c6e4b649d380949cd2b56ee2b7d9e8b285c9643edcb2f2d4f664"
+      "bytes": 718439,
+      "sha256": "ac18fd32e956a54b6435e0e3558c13e602612e662dc5c31b7a9bf8f829595425"
     },
     {
       "file": "stress_degradation.csv",
@@ -1370,8 +1370,8 @@
     },
     {
       "file": "table1_summary_seed42.csv",
-      "bytes": 1497,
-      "sha256": "b42c7ff227620b3246fd353b7963b780dfdd85fc7430e9900acb72b808d38663"
+      "bytes": 4387,
+      "sha256": "b9937d17af376514653d933178545e13754562e2e276156312411795ea366617"
     },
     {
       "file": "table2_ablation.csv",
@@ -1380,8 +1380,8 @@
     },
     {
       "file": "table2_ablation_seed42.csv",
-      "bytes": 7611,
-      "sha256": "e06f266708056619e39e7ac50a594a75ea35bcc453125f2a0f1c2d676da4524d"
+      "bytes": 19582,
+      "sha256": "6b77d8f526c8d90fb4b81fcd13fe81d8a784bdaa16cfd7f0f623040e141de841"
     },
     {
       "file": "traces_adaptive_pricing.json",

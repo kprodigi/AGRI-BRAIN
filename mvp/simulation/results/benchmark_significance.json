@@ -1,7 +1,7 @@
 {
   "_meta": {
     "n_seeds": 20,
-    "git_commit": "d33b8de586827e0d10447e96053e615a64bbdaea",
+    "git_commit": null,
     "primary_h1_family": "agribrain_vs_no_context on ARI, 5 scenarios",
     "primary_h1_correction": "holm_bonferroni",
     "secondary_correction": "by_fdr",
