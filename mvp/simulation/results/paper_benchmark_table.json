@@ -1,4 +1,46 @@
 {
+  "_meta": {
+    "git_commit": "d33b8de586827e0d10447e96053e615a64bbdaea",
+    "n_seeds": 20,
+    "seeds_loaded": [
+      7,
+      42,
+      99,
+      101,
+      202,
+      303,
+      404,
+      505,
+      606,
+      707,
+      808,
+      909,
+      1010,
+      1111,
+      1212,
+      1313,
+      1337,
+      1414,
+      1515,
+      2024
+    ],
+    "bootstrap_alpha": 0.05,
+    "n_boot": 10000,
+    "n_perm": 10000,
+    "bca_fallback_stats": {
+      "calls": 2625,
+      "fallback_p0_degenerate": 218,
+      "fallback_scipy_unavailable": 0,
+      "fallback_total": 218,
+      "fallback_rate": 0.08304761904761905
+    },
+    "generated_at": "2026-05-08T08:16:24+00:00",
+    "source_artifacts": [
+      "mvp/simulation/results/benchmark_summary.json",
+      "mvp/simulation/results/benchmark_significance.json"
+    ],
+    "significance_correction_meta": {}
+  },
   "benchmark": {
     "heatwave": {
       "static": {

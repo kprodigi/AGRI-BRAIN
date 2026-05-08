@@ -1,12 +1,12 @@
 {
-  "git_commit": "d33b8de586827e0d10447e96053e615a64bbdaea",
+  "git_commit": "a4700a21bce063a53b336a1a3c02345b96614035",
   "git_dirty": false,
   "artifact_count": 282,
   "artifacts": [
     {
       "file": "artifact_manifest.json",
-      "bytes": 47464,
-      "sha256": "18ddaac5f2ba457e54ba55deb3826da5a07a0bc536a7fbe05c7d4be9affe8505"
+      "bytes": 51268,
+      "sha256": "a861b461647b0563e3b42cc3a9c2d88a4a2be8cd963c941aa8daa0ec204cd2fe"
     },
     {
       "file": "benchmark_context_significance.json",
@@ -1345,8 +1345,8 @@
     },
     {
       "file": "paper_benchmark_table.json",
-      "bytes": 717499,
-      "sha256": "267606d5c25bcbf7bf1e8ed35ac38f7e8dfcb992d953ec7a18f5515c44cd2c9f"
+      "bytes": 718360,
+      "sha256": "ecadf8d5e78c597a897b043a5410541b8fb5b608f5f6cefcd649ab081832f7d5"
     },
     {
       "file": "stress_degradation.csv",
@@ -1410,8 +1410,8 @@
     },
     {
       "file": "validation_report.json",
-      "bytes": 388,
-      "sha256": "7f450332dc99610005a37fd3f6cf9abb68e309a21bb7bebea582bc2f2ce3ade7"
+      "bytes": 160,
+      "sha256": "da8cfe4d577c7aeb55734501d2a1d6aacf007201f84412d36209776e83f806c9"
     }
   ]
 }
