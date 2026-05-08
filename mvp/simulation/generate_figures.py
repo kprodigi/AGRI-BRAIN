@@ -135,10 +135,20 @@ plt.rcParams.update({
     # has it (Windows authoring) or Liberation Sans (Linux render).
     "font.family": "sans-serif",
     "font.sans-serif": ["Arial", "Liberation Sans", "DejaVu Sans", "sans-serif"],
-    "mathtext.fontset": "custom",
-    "mathtext.rm": "Arial",
-    "mathtext.it": "Arial:italic",
-    "mathtext.bf": "Arial:bold",
+    # Mathtext (LaTeX-style ``$\Delta$ARI`` etc.) needs its own
+    # font configuration. Pre-2026-05 we set ``mathtext.fontset =
+    # "custom"`` plus ``mathtext.rm/it/bf = "Arial"``, which is a
+    # LITERAL font-name lookup -- it ignores the
+    # ``font.family``/``font.sans-serif`` priority list and warns
+    # on every host without Arial (HPC fig 8 stdout is full of
+    # ``findfont: Font family ['Arial'] not found`` plus a
+    # cascading 'cursive' fallback warning). Switch to the
+    # ``dejavusans`` fontset which matplotlib ships with its wheel
+    # -- no external font required, no warnings on any host.
+    # Visual delta vs Arial mathtext is invisible at 800 DPI for
+    # the simple expressions we render (Greek letters, sub/super
+    # scripts).
+    "mathtext.fontset": "dejavusans",
     "font.size": BODY_FONT_SIZE,
     "axes.labelsize": AXIS_LABEL_SIZE,
     "axes.labelweight": "bold",
