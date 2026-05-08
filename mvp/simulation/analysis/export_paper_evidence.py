@@ -472,11 +472,66 @@ def export_latex_benchmark_table() -> None:
                 print(f"  {scenario:<18s} {comp_key:<30s} "
                       f"{p_str} {d_str} {md_str}")
 
-    # Save as JSON for downstream LaTeX generation
+    # Save as JSON for downstream LaTeX generation. The 2026-05 audit
+    # caught that this file shipped without a top-level ``_meta`` block,
+    # so a reviewer reading the paper-evidence export couldn't see the
+    # commit / seed-count it was aggregated from without cross-
+    # referencing benchmark_summary.json + artifact_manifest.json.
+    # Propagate the upstream ``_meta`` (git_commit, n_seeds,
+    # seeds_loaded, bootstrap_alpha, n_boot, bca_fallback_stats) and
+    # add ``generated_at`` + a ``source_artifacts`` list so this file
+    # self-attributes its provenance.
+    from datetime import datetime, timezone
     out_path = RESULTS_DIR / "paper_benchmark_table.json"
-    export = {"benchmark": bench, "significance": sig}
+    upstream_meta = (
+        bench_payload.get("_meta", {})
+        if isinstance(bench_payload, dict) else {}
+    )
+    sig_meta = (
+        sig_payload.get("_meta", {})
+        if isinstance(sig_payload, dict) else {}
+    )
+    export = {
+        "_meta": {
+            "git_commit": upstream_meta.get("git_commit"),
+            "n_seeds": upstream_meta.get("n_seeds"),
+            "seeds_loaded": upstream_meta.get("seeds_loaded"),
+            "bootstrap_alpha": upstream_meta.get("bootstrap_alpha"),
+            "n_boot": upstream_meta.get("n_boot"),
+            "n_perm": upstream_meta.get("n_perm"),
+            "bca_fallback_stats": upstream_meta.get("bca_fallback_stats"),
+            "generated_at": datetime.now(timezone.utc).isoformat(
+                timespec="seconds"
+            ),
+            "source_artifacts": [
+                "mvp/simulation/results/benchmark_summary.json",
+                "mvp/simulation/results/benchmark_significance.json",
+            ],
+            # Significance correction families are documented in
+            # benchmark_significance.json's _meta. Carrying through the
+            # primary keys here so a downstream LaTeX generator does
+            # not have to open both files to learn which correction
+            # family each p_value_adj belongs to.
+            "significance_correction_meta": {
+                k: sig_meta.get(k)
+                for k in (
+                    "primary_h1_holm_adjusted",
+                    "channel_decomposition_holm_adjusted",
+                    "extended_h1_holm_adjusted",
+                    "by_fdr_within_scenario",
+                )
+                if k in sig_meta
+            },
+        },
+        "benchmark": bench,
+        "significance": sig,
+    }
     out_path.write_text(json.dumps(export, indent=2), encoding="utf-8")
     print(f"\n  Saved combined export: {out_path}")
+    _commit = export["_meta"]["git_commit"]
+    _nseeds = export["_meta"]["n_seeds"]
+    print(f"  Stamped _meta: git_commit={_commit!s:.16}... "
+          f"n_seeds={_nseeds} generated_at={export['_meta']['generated_at']}")
 
 
 if __name__ == "__main__":

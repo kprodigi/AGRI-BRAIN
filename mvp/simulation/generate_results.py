@@ -504,6 +504,29 @@ def run_episode(
     CONTEXT_SIGNAL_THRESHOLDS = (0.05, 0.10, 0.15, 0.20)
     context_active_steps = 0
     context_honored_steps = 0
+    # 2026-05 apples-to-apples cross-mode denominator. Counts steps
+    # where the context layer actually executed and emitted a non-empty
+    # modifier vector (i.e. ``coordinator._step_context_modifier`` is
+    # populated and non-empty). This is BEFORE the
+    # CONTEXT_SIGNAL_THRESHOLD gate, BEFORE the retrieval guard, and
+    # BEFORE the cooperative-overlay window check -- so it counts
+    # "did the mode's context channel run on this step" regardless of
+    # whether downstream gates zeroed the signal.
+    #
+    # Why we need it: the headline ``context_active_steps`` is
+    # post-guard, so retrieval-dependent modes (agribrain, pirag_only)
+    # report fewer active steps than guard-free modes (mcp_only) on
+    # scenarios where the primary retrieval cannot pass the
+    # cooperative-governance retrieval guard (heatwave + baseline).
+    # The pre-2026-05 metric set therefore couldn't surface the fact
+    # that all three modes DISPATCH context on every step -- only the
+    # post-guard signal magnitudes differ. ``context_dispatch_attempt_steps``
+    # makes this explicit; ``context_dispatch_influence_rate`` below
+    # divides the influenced-step count by THIS denominator instead
+    # of context_active_steps, giving a cross-mode-comparable
+    # "fraction of episode steps where context flipped the action"
+    # without the asymmetric activation-regime confound.
+    context_dispatch_attempt_steps = 0
     # Companion counter for the 2026-05 ``context_influence_rate`` metric
     # (fig 9 panel c). A step is "context-influenced" when the modifier
     # changed the chosen action vs the pre-modifier base argmax, i.e.
@@ -726,6 +749,19 @@ def run_episode(
         if _step_modifier is not None:
             _mod = np.asarray(_step_modifier)
             if _mod.size:
+                # 2026-05 apples-to-apples dispatch counter. Increments
+                # BEFORE any threshold / guard / window check, so it
+                # counts "the context layer ran on this step" regardless
+                # of whether the modifier signal subsequently survived
+                # the CONTEXT_SIGNAL_THRESHOLD gate. The retrieval guard
+                # in pirag/context_to_logits.py:216 zeroes the modifier
+                # for retrieval-dependent modes outside the cooperative
+                # overlay window (h 12-30); that zero modifier still
+                # enters this branch with _mod.size > 0, so the dispatch
+                # counter still increments. mcp_only -- which has no
+                # retrieval guard -- naturally has the same dispatch
+                # count, just with more non-zero modifiers.
+                context_dispatch_attempt_steps += 1
                 _max_abs = float(np.max(np.abs(_mod)))
                 _rec = int(np.argmax(_mod))
                 _honored_this_step = _rec == int(action_idx)
@@ -1175,6 +1211,18 @@ def run_episode(
         "violation_event_count": int(violation_event_count_local),
         "context_active_steps": int(context_active_steps),
         "context_active_fraction": float(context_active_steps / max(n, 1)),
+        # 2026-05 apples-to-apples cross-mode dispatch counter. See the
+        # initialisation comment in the per-step loop for the full
+        # rationale. ``dispatch_attempts`` counts every step where the
+        # context layer ran (modifier vector emitted), regardless of
+        # whether the signal then survived the CONTEXT_SIGNAL_THRESHOLD
+        # gate. Equals 0 for context-disabled modes (static, hybrid_rl,
+        # no_context) and equals n_steps for every context-enabled mode
+        # on the canonical 72-hour episodes (288 steps).
+        "context_dispatch_attempt_steps": int(context_dispatch_attempt_steps),
+        "context_dispatch_attempt_fraction": float(
+            context_dispatch_attempt_steps / max(n, 1)
+        ),
         "context_honored_steps": int(context_honored_steps),
         "context_honor_rate": (
             float(context_honored_steps / context_active_steps)
@@ -1189,6 +1237,20 @@ def run_episode(
         "context_influence_rate": (
             float(context_influenced_steps / context_active_steps)
             if context_active_steps else 0.0
+        ),
+        # 2026-05 cross-mode-comparable influence rate: same numerator
+        # as context_influence_rate but normalised by
+        # ``context_dispatch_attempt_steps`` instead of
+        # ``context_active_steps``. Reads as "fraction of episode steps
+        # where context flipped the chosen action", apples-to-apples
+        # across all context-enabled modes regardless of whether their
+        # primary-stage retrieval cleared the cooperative-window guard.
+        # On heatwave for d33b8de this resolves the asymmetry in
+        # context_active_steps (72 for agribrain/pirag_only vs ~168 for
+        # mcp_only) by using a 288-step denominator for all three.
+        "context_dispatch_influence_rate": (
+            float(context_influenced_steps / context_dispatch_attempt_steps)
+            if context_dispatch_attempt_steps else 0.0
         ),
         "context_active_per_recommendation": dict(context_active_per_recommendation),
         "context_ignored_per_recommendation": dict(context_ignored_per_recommendation),
@@ -1659,6 +1721,16 @@ def run_all(seed: int = SEED) -> dict:
                         "mode": mode,
                         "context_active_steps": episode["context_active_steps"],
                         "context_active_fraction": episode["context_active_fraction"],
+                        # 2026-05 apples-to-apples cross-mode dispatch
+                        # counter (n_steps for any context-enabled mode;
+                        # zero for static / hybrid_rl / no_context).
+                        # Carried through here so the supp-methods
+                        # alignment table has the same denominator the
+                        # benchmark JSON uses.
+                        "context_dispatch_attempt_steps":
+                            episode.get("context_dispatch_attempt_steps", 0),
+                        "context_dispatch_attempt_fraction":
+                            episode.get("context_dispatch_attempt_fraction", 0.0),
                         "context_honored_steps": episode["context_honored_steps"],
                         "context_honor_rate": episode["context_honor_rate"],
                         # 2026-05: paper headline switched from honor_rate to
@@ -1669,6 +1741,14 @@ def run_all(seed: int = SEED) -> dict:
                             episode.get("context_influenced_steps", 0),
                         "context_influence_rate":
                             episode.get("context_influence_rate", 0.0),
+                        # Apples-to-apples cross-mode influence rate
+                        # (numerator unchanged, denominator switched from
+                        # context_active_steps to
+                        # context_dispatch_attempt_steps). Use this when
+                        # comparing influence across modes whose
+                        # activation regimes differ (heatwave + baseline).
+                        "context_dispatch_influence_rate":
+                            episode.get("context_dispatch_influence_rate", 0.0),
                         "context_active_per_recommendation":
                             episode["context_active_per_recommendation"],
                         "context_ignored_per_recommendation":

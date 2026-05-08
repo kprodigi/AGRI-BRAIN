@@ -341,12 +341,27 @@ def main() -> None:
             for extra in (
                 "operational_violation_rate", "regulatory_violation_rate",
                 "context_active_steps", "context_active_fraction",
+                # 2026-05 apples-to-apples cross-mode dispatch
+                # counters. Always-equal-to-n_steps for context-
+                # enabled modes (288 on canonical 72-hr episodes) and
+                # zero for static / hybrid_rl / no_context. Used as
+                # the denominator for context_dispatch_influence_rate.
+                "context_dispatch_attempt_steps",
+                "context_dispatch_attempt_fraction",
                 "context_honored_steps", "context_honor_rate",
                 # 2026-05 fig9-c headline: context-influence rate
                 # (% of context-active steps where the modifier
                 # changed the chosen action). Honor rate is retained
                 # above as a supplementary-methods companion.
                 "context_influenced_steps", "context_influence_rate",
+                # 2026-05 cross-mode-comparable influence rate
+                # (numerator unchanged, denominator switched to
+                # context_dispatch_attempt_steps). Resolves the
+                # heatwave activation-regime confound between
+                # agribrain (72-step retrieval-gated) and mcp_only
+                # (~168-step retrieval-free) by sharing the
+                # 288-step dispatch denominator.
+                "context_dispatch_influence_rate",
                 # Outcome-side violation disposition: cross-method-honest
                 # policy-quality score on the env-driven violation event
                 # set. See resilience.compute_violation_disposition for
