@@ -49,18 +49,48 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import font_manager as _font_manager
 
-# Make Arial the default everywhere matplotlib resolves a font, including
-# for the embedded math text. On Windows the four canonical Arial faces
-# live under C:\Windows\Fonts; we register them explicitly so matplotlib
-# does not silently fall back to DejaVu Sans (which produces a slightly
-# heavier glyph set than expected from a "set Arial" fix).
+# 2026-05 cross-platform font handling. Pre-2026-05 the config did:
+#   - register Arial from Windows-only paths (C:\Windows\Fonts\arial*.ttf)
+#   - set font.family = "Arial"
+# This was Windows-correct and HPC-noisy: on a Linux render host with no
+# Arial installed, every text element triggered a "findfont: Font
+# family 'Arial' not found" warning (hundreds of warnings per figure
+# render, flooding the console). Matplotlib still rendered the figure
+# correctly because the font.sans-serif fallback chain caught the
+# request, but the noise was unprofessional and the resulting glyphs
+# were DejaVu Sans (slightly different metrics from Arial).
+#
+# Cross-platform fix:
+#   1. Register Arial from Windows paths when available (Windows hosts).
+#   2. Register Liberation Sans from common Linux font paths when
+#      available -- Liberation Sans was designed by Red Hat with
+#      metric-compatibility to Arial, so labels lay out the same.
+#   3. Set font.family = "sans-serif" (the family GROUP, not the name)
+#      and let font.sans-serif's priority list do the resolution.
+#      Matplotlib walks the list, picks the first available, and
+#      resolves silently -- no warning storm.
+#   4. The mathtext.* keys downstream still set Arial-by-name; if Arial
+#      isn't present matplotlib falls back to STIX (the canonical
+#      math fallback) without warning. Acceptable cost for inline math.
 _ARIAL_FONT_FILES = (
+    # Windows
     r"C:\Windows\Fonts\arial.ttf",
     r"C:\Windows\Fonts\arialbd.ttf",
     r"C:\Windows\Fonts\ariali.ttf",
     r"C:\Windows\Fonts\arialbi.ttf",
 )
-for _font_path in _ARIAL_FONT_FILES:
+_LIBERATION_FONT_FILES = (
+    # Linux Liberation Sans (Arial-compatible metrics)
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Italic.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-BoldItalic.ttf",
+    "/usr/share/fonts/liberation-sans/LiberationSans-Regular.ttf",
+    "/usr/share/fonts/liberation-sans/LiberationSans-Bold.ttf",
+    "/usr/share/fonts/liberation-sans/LiberationSans-Italic.ttf",
+    "/usr/share/fonts/liberation-sans/LiberationSans-BoldItalic.ttf",
+)
+for _font_path in _ARIAL_FONT_FILES + _LIBERATION_FONT_FILES:
     if Path(_font_path).exists():
         try:
             _font_manager.fontManager.addfont(_font_path)
@@ -94,7 +124,16 @@ LEGEND_FONT_SIZE = 15      # legend entries (bold)
 ANNOT_FONT_SIZE = 14       # in-plot annotations like "Heatwave" bbox
 
 plt.rcParams.update({
-    "font.family": "Arial",
+    # Use the family-group ("sans-serif") and let the priority list
+    # below do the resolution. Pre-2026-05 this was hardcoded to
+    # "Arial", which made matplotlib's font lookup fail loudly on
+    # any host without Arial (the HPC render flooded stdout with
+    # ~hundreds of "Font family 'Arial' not found" warnings before
+    # silently falling back to DejaVu Sans). Setting the family
+    # GROUP picks the first-available sans-serif from the list
+    # without warnings, while still preferring Arial when the host
+    # has it (Windows authoring) or Liberation Sans (Linux render).
+    "font.family": "sans-serif",
     "font.sans-serif": ["Arial", "Liberation Sans", "DejaVu Sans", "sans-serif"],
     "mathtext.fontset": "custom",
     "mathtext.rm": "Arial",
