@@ -1,12 +1,12 @@
 {
-  "git_commit": "41bf026ef1e55ce4f9e28378df1f853cb56328c6",
+  "git_commit": "ba154c6c3f61f199de6203319050d57e19aed7aa",
   "git_dirty": false,
   "artifact_count": 282,
   "artifacts": [
     {
       "file": "artifact_manifest.json",
       "bytes": 51269,
-      "sha256": "018b1030c23aaf40d0cd454133b45a8dd760108c52e35b1ba79f038e70b85702"
+      "sha256": "ced2587a81c86d459465584719c2417b4379b50d12a6e430411b056c6c1e6a81"
     },
     {
       "file": "benchmark_context_significance.json",
@@ -1181,7 +1181,7 @@
     {
       "file": "fig10_latency_quality_frontier.pdf",
       "bytes": 31410,
-      "sha256": "832e5711b2ea94ffd9b072c5f33ec09b417dea7055f9b5866d7e8c15c79277a2"
+      "sha256": "c66e1d76d8d07e2ff51305c75dfbaa6b95fbe660098101c94c7ee1386a514e27"
     },
     {
       "file": "fig10_latency_quality_frontier.png",
@@ -1191,7 +1191,7 @@
     {
       "file": "fig2_heatwave.pdf",
       "bytes": 57092,
-      "sha256": "7a5361d6327f89b3fe2271e80361b9d9eae11b9df3d1915048f6a83aeee9f5ac"
+      "sha256": "faf157947d9e61cd925e82225c1dc85fdb29b126f068cd3c1a634e9c51cc7548"
     },
     {
       "file": "fig2_heatwave.png",
@@ -1201,7 +1201,7 @@
     {
       "file": "fig3_overproduction.pdf",
       "bytes": 45210,
-      "sha256": "9914b6de69e7fee01238a58ba078f4fa209867f9e8c4003e06ff94c5a4d0f10d"
+      "sha256": "dfd4edbf2e98848ca2c546db1a81a40d5884970cb58d7712811ed39d46fb274b"
     },
     {
       "file": "fig3_overproduction.png",
@@ -1211,7 +1211,7 @@
     {
       "file": "fig4_cyber.pdf",
       "bytes": 32439,
-      "sha256": "f838fc790486e8e6a3bad65fa0ccd6c341ae00642d5b008207ce15f9a351345b"
+      "sha256": "bb6d47e9aa86b0ea9ab0c3f64f35bab7739d8e321a949617059a6e8727166076"
     },
     {
       "file": "fig4_cyber.png",
@@ -1221,7 +1221,7 @@
     {
       "file": "fig5_pricing.pdf",
       "bytes": 45644,
-      "sha256": "ed88e7e90bef957ad40d64d8797f6188312f37042d0a206d41df829645e753cf"
+      "sha256": "e2581e5c9d3a130f9e65b408167c3c9fd282565f02eb119e2a41a3ee8cbc9fc3"
     },
     {
       "file": "fig5_pricing.png",
@@ -1231,7 +1231,7 @@
     {
       "file": "fig6_cross.pdf",
       "bytes": 18702,
-      "sha256": "989dcd3cda41f6cb03ad502b186121ff69516d1b8ce263319399707f2f917749"
+      "sha256": "99e1fe046c3618751668a0bd7ea1e6ad63b928eca6e51d5fbbea9f288677d3af"
     },
     {
       "file": "fig6_cross.png",
@@ -1241,7 +1241,7 @@
     {
       "file": "fig7_ablation.pdf",
       "bytes": 21713,
-      "sha256": "e6135fdb71499f6c4741d46ac81d89b330c67ba1e3f6cfa608cadab6e1e08468"
+      "sha256": "a95af2f8003802db7fe0ed09a2989eddb34c65a948b4dae8b297063a2c2c9a7a"
     },
     {
       "file": "fig7_ablation.png",
@@ -1251,7 +1251,7 @@
     {
       "file": "fig8_green_ai.pdf",
       "bytes": 33634,
-      "sha256": "13ad28ad1b88b25d91bbbb98a817b1ee4e7c463a3cdcb98f94f3d044bc23aeeb"
+      "sha256": "1377e8c9286a925073cc308992574b3b0a7b3f294e325b19123b4b670cc7719b"
     },
     {
       "file": "fig8_green_ai.png",
@@ -1261,7 +1261,7 @@
     {
       "file": "fig9_robustness.pdf",
       "bytes": 115694,
-      "sha256": "b73acdb121ca1819a0d33989719c08257c2036120c7c15f1ea7907966bd08866"
+      "sha256": "3540d60bf2e15a06f4a30c10666fc79087f00976c3b3d83e76b014bf3cb45ff4"
     },
     {
       "file": "fig9_robustness.png",
