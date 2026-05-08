@@ -2769,24 +2769,26 @@ def fig9_fault_degradation():
     n_seeds_global = _fig9_load_n_seeds()
     method_means = _fig9_load_method_means() or {}
 
-    # Width-ratio rebalancing (2026-05 follow-up user request: extend
-    # panel (b) to fill the visible whitespace between panels B and C
-    # WITHOUT shrinking panels A or C). The earlier rebalance narrowed
-    # panel (b) to 0.85 because the headline +Static bar reached ~+75 %
-    # under the symlog mapping; current data tops at +36.7 %, which
-    # made panel (b)'s bars fill only the left half of the slot and
-    # opened a visible gap before panel (c). The fix bumps figsize.width
-    # from 22 to 24 and routes the new 2 inches entirely into panel
-    # (b)'s ratio (0.85 -> 1.20) so panels A (1.40) and C (1.55) keep
-    # their physical widths to within ~0.01 in:
-    #   A: 22 * 1.40/3.80 = 8.11 in -> 24 * 1.40/4.15 = 8.10 in
-    #   B: 22 * 0.85/3.80 = 4.92 in -> 24 * 1.20/4.15 = 6.94 in (+2.0)
-    #   C: 22 * 1.55/3.80 = 8.97 in -> 24 * 1.55/4.15 = 8.96 in
-    # If the data ever climbs back toward +75 % the panel won't need a
-    # second rebalance -- the symlog xlim already auto-grows up to 80 %
-    # via the max_hi guard in the panel-(b) block.
-    fig, axes = plt.subplots(1, 3, figsize=(24, 7.5),
-                             gridspec_kw={"width_ratios": [1.40, 1.20, 1.55]})
+    # Width-ratio rebalancing (2026-05 third pass: shrink the visible
+    # whitespace BETWEEN panels B and C by extending panel C leftward.
+    # Pre-2026-05-pass3 the layout was figsize=(24, 7.5),
+    # width_ratios=[1.40, 1.20, 1.55] -> A=8.10, B=6.94, C=8.96 in.
+    # The +36.7% headline in panel B sits at axis-fraction ~0.46 under
+    # the symlog mapping with xlim=80, leaving ~half of panel B empty
+    # to its right. That residual whitespace plus the standard wspace
+    # gap before panel C opened a visible vertical "no-data" gutter.
+    # Fix: grow figsize.width 24 -> 26 and route both extra inches
+    # into panel C's ratio (1.55 -> 1.85). Panels A and B keep their
+    # physical widths to within ~0.1 in:
+    #   A: 24 * 1.40/4.15 = 8.10 in -> 26 * 1.40/4.45 = 8.18 in (+0.08)
+    #   B: 24 * 1.20/4.15 = 6.94 in -> 26 * 1.20/4.45 = 7.01 in (+0.07)
+    #   C: 24 * 1.55/4.15 = 8.96 in -> 26 * 1.85/4.45 = 10.81 in (+1.85)
+    # Net: panel C gains 1.85 in of canvas, which (a) closes the
+    # B-to-C gutter the user flagged and (b) stretches the existing
+    # bars / inter-group gap proportionally so the 5-scenario x
+    # 3-mode grouped-bar comparison reads more clearly.
+    fig, axes = plt.subplots(1, 3, figsize=(26, 7.5),
+                             gridspec_kw={"width_ratios": [1.40, 1.20, 1.85]})
 
     # Per-element font sizes aligned to fig 7's pattern (25/20/20/19)
     # per user "all three-panel figures must be identical" request.
@@ -3109,17 +3111,18 @@ def fig9_fault_degradation():
         scenarios_in_matrix = [s for s in SCENARIOS if s in honor_matrix]
         n_groups = len(scenarios_in_matrix)
         n_modes = len(_PANEL_C_MODES)
-        # Bar layout. Total group width 0.98; x_scale was 1.10
-        # (matched fig 7's 8-mode groups) but late-May 2026 the user
-        # asked for more breathing room between scenarios on this
-        # panel: the panel width is generous and the legend in the
-        # upper-left was sitting against the leftmost bar group with
-        # no horizontal margin. Bumped x_scale to 1.55 so adjacent
-        # groups have a 0.57 inter-group gap (was 0.12), which spreads
-        # the 5 scenarios across more of the panel and reads as a
-        # less-cramped grouped-bar comparison. Each bar still takes
-        # 0.98/n_modes = 0.327 axis units when n_modes=3.
-        width = 0.98 / n_modes
+        # Bar layout (2026-05 third-pass: panel C now sits at canvas
+        # width ~10.8 in after the figsize 24->26 / width_ratio
+        # 1.55->1.85 rebalance, so the bars need a proportional bump
+        # to keep the visual density readers expect from a grouped-bar
+        # plot). Total group width bumped 0.98 -> 1.20 (each bar
+        # 0.40 axis units, was 0.327); x_scale stays at 1.55 so the
+        # inter-group gap shrinks from 0.57 to 0.35, which keeps the
+        # scenario-level visual separation intact while filling the
+        # widened panel. The legend in the upper-left still has clean
+        # headroom above the leftmost (heatwave) MCP-only bar (~22%
+        # height vs the legend's ~85% lower edge).
+        width = 1.20 / n_modes
         x_scale = 1.55
         x_base = np.arange(n_groups) * x_scale
 
