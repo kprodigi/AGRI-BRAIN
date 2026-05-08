@@ -2051,6 +2051,114 @@ def _load_per_seed_slca_components(scenario: str, mode: str
     return {c: np.asarray(per_seed[c], dtype=float) for c in components}
 
 
+def _load_per_seed_decision_quality(
+    scenarios: list[str],
+    modes: list[str],
+    no_context_mode: str = "no_context",
+    default_n_steps: float = 288.0,
+) -> dict[str, dict[str, np.ndarray]] | None:
+    """Per-seed values of ``decision_quality`` for fig 9 panel C error bars.
+
+    For each (scenario, mode) cell, decision_quality is the per-seed ratio
+
+        DQ_seed = (ari_mode_seed - ari_no_context_seed)
+                   / (context_influenced_steps_seed / n_steps_seed)
+
+    where ``n_steps_seed`` comes from
+    ``context_dispatch_attempt_steps`` when present in the per-seed
+    envelope (post-2026-05 instrumentation), and falls back to the
+    canonical 288 (= 72 h × 4 steps/h) otherwise.
+
+    Critically, the numerator pairs ``ari_mode`` and ``ari_no_context``
+    **within the same seed**, so the cross-seed std reflects the true
+    seed-to-seed spread of the mode's per-intervention quality. Computing
+    SE from ``benchmark_summary.json`` cell stds via naive error
+    propagation would over-state uncertainty by ignoring the
+    within-seed correlation between modes (they share the same seeded
+    environment). Per-seed pairing is the right primitive.
+
+    Walks ``RESULTS_DIR/benchmark_seeds/`` (flat layout or
+    ``<RUN_TAG>/seed_*.json`` tagged layout — same convention as
+    ``_load_per_seed_summary`` and ``_load_per_seed_slca_components``).
+
+    Returns
+    -------
+    dict[scenario][mode] -> ``np.ndarray`` of per-seed quality values
+    (length == number of seeds whose JSON envelope carried both
+    ``ari`` and ``context_influenced_steps`` for that cell **and** the
+    matching no-context cell). Returns ``None`` if fewer than 2 seeds
+    contribute usable values for *any* (scenario, mode) — caller should
+    suppress error caps in that case rather than render uneven ones.
+    """
+    import json
+    seeds_root = RESULTS_DIR / "benchmark_seeds"
+    if not seeds_root.exists():
+        return None
+    seed_files = list(seeds_root.glob("seed_*.json"))
+    if not seed_files:
+        for sub in seeds_root.iterdir():
+            if sub.is_dir():
+                seed_files.extend(sub.glob("seed_*.json"))
+    if not seed_files:
+        return None
+
+    # per_seed_dq[scenario][mode] = list[per-seed quality values]
+    per_seed_dq: dict[str, dict[str, list[float]]] = {
+        sc: {mode: [] for mode in modes} for sc in scenarios
+    }
+
+    for sp in seed_files:
+        try:
+            obj = json.loads(sp.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        scen_data = obj.get("scenarios") if isinstance(obj, dict) else None
+        if not isinstance(scen_data, dict):
+            continue
+        for sc in scenarios:
+            sc_block = scen_data.get(sc, {})
+            if not isinstance(sc_block, dict):
+                continue
+            no_ctx = sc_block.get(no_context_mode, {})
+            no_ctx_ari = no_ctx.get("ari") if isinstance(no_ctx, dict) else None
+            if not isinstance(no_ctx_ari, (int, float)):
+                continue
+            for mode in modes:
+                m_block = sc_block.get(mode, {})
+                if not isinstance(m_block, dict):
+                    continue
+                m_ari = m_block.get("ari")
+                infl = m_block.get("context_influenced_steps")
+                if not (isinstance(m_ari, (int, float))
+                        and isinstance(infl, (int, float))):
+                    continue
+                # Prefer per-seed dispatch attempts when emitted; fall
+                # back to canonical 288 otherwise.
+                disp = m_block.get("context_dispatch_attempt_steps")
+                n_steps = (float(disp)
+                           if isinstance(disp, (int, float)) and disp > 0
+                           else default_n_steps)
+                infl_frac = float(infl) / n_steps
+                if infl_frac <= 0.0:
+                    continue
+                dq = (float(m_ari) - float(no_ctx_ari)) / infl_frac
+                per_seed_dq[sc][mode].append(dq)
+
+    # Need ≥2 seeds in every (scenario, mode) cell to render meaningful
+    # error caps -- if any cell is short, return None and let the
+    # caller render bare bars (the canonical behaviour pre-error-bars).
+    for sc, mode_block in per_seed_dq.items():
+        for mode in modes:
+            if len(mode_block.get(mode, [])) < 2:
+                return None
+
+    return {
+        sc: {mode: np.asarray(per_seed_dq[sc][mode], dtype=float)
+             for mode in modes}
+        for sc in scenarios
+    }
+
+
 # Bold error bar styling so tight 20-seed CIs remain visible at figure scale.
 _ERR_KW = {"linewidth": 1.8, "capthick": 1.8, "ecolor": "#1F1F1F", "alpha": 0.9}
 _ERR_CAPSIZE = 5
@@ -3170,47 +3278,88 @@ def fig9_fault_degradation():
         ("pirag_only",  "piRAG only",   COLORS.get("pirag_only",  "#1565C0")),
         ("mcp_only",    "MCP only",     COLORS.get("mcp_only",    "#E65100")),
     ]
+    _PANEL_C_MODE_KEYS = [m for m, _, _ in _PANEL_C_MODES]
+
+    # Per-seed bootstrap of decision_quality (preferred path). When
+    # ``benchmark_seeds/seed_*.json`` carries paired ari + influence
+    # rows for every (scenario, mode) cell **plus** the no_context
+    # baseline, this returns the per-seed quality vector for each
+    # cell. We use the cross-seed std/sqrt(n) as the SE -- a 95% normal
+    # CI of ±1.96 SE is what the error caps below render. Returns None
+    # locally where the seed bundle is partial; in that case the panel
+    # falls back to bare-mean bars (the pre-error-bar behaviour).
+    per_seed_dq = _load_per_seed_decision_quality(
+        list(SCENARIOS), _PANEL_C_MODE_KEYS,
+    )
     quality_matrix: dict = {}
-    if bench:
+    quality_se: dict = {}
+    if per_seed_dq is not None:
         for sc in SCENARIOS:
-            sc_block = bench.get(sc, {})
-            no_ctx = sc_block.get("no_context", {})
-            no_ctx_ari_block = no_ctx.get("ari", {})
-            no_ctx_ari = (no_ctx_ari_block.get("mean")
-                          if isinstance(no_ctx_ari_block, dict)
-                          else no_ctx_ari_block)
-            if not isinstance(no_ctx_ari, (int, float)):
-                continue
+            sc_block = per_seed_dq.get(sc, {})
             sc_quality: dict = {}
-            for mode, _, _ in _PANEL_C_MODES:
-                m_block = sc_block.get(mode, {})
-                m_ari_block = m_block.get("ari", {})
-                m_ari = (m_ari_block.get("mean")
-                          if isinstance(m_ari_block, dict)
-                          else m_ari_block)
-                infl_block = m_block.get("context_influenced_steps", {})
-                infl = (infl_block.get("mean")
-                         if isinstance(infl_block, dict)
-                         else infl_block)
-                if not (isinstance(m_ari, (int, float))
-                        and isinstance(infl, (int, float))):
+            sc_se: dict = {}
+            for mode in _PANEL_C_MODE_KEYS:
+                arr = sc_block.get(mode)
+                if arr is None or arr.size < 2:
                     continue
-                # Episode length: the canonical 72 h scenario at 4
-                # steps per hour = 288 steps. If a future run uses a
-                # different cadence, ``context_dispatch_attempt_steps``
-                # (post-2026-05 instrumentation) carries the actual
-                # n_steps per cell -- prefer it when present.
-                disp_block = m_block.get("context_dispatch_attempt_steps", {})
-                disp = (disp_block.get("mean")
-                         if isinstance(disp_block, dict)
-                         else disp_block)
-                n_steps = float(disp) if isinstance(disp, (int, float)) and disp > 0 else 288.0
-                infl_frac = float(infl) / n_steps
-                if infl_frac <= 0.0:
-                    continue
-                sc_quality[mode] = (float(m_ari) - float(no_ctx_ari)) / infl_frac
+                sc_quality[mode] = float(np.mean(arr))
+                # Cross-seed SE on the mean. ddof=1 (sample std) since
+                # 20 seeds is a sample of the seed-noise distribution,
+                # not the whole population.
+                sc_se[mode] = float(np.std(arr, ddof=1) / np.sqrt(arr.size))
             if sc_quality:
                 quality_matrix[sc] = sc_quality
+                quality_se[sc] = sc_se
+    else:
+        # Summary-only fallback: read mean ari + mean influenced_steps
+        # from benchmark_summary.json. Yields point estimates without
+        # error bars (the caller below detects the absence of
+        # ``quality_se`` per-cell entries and skips ``yerr=``).
+        if bench:
+            for sc in SCENARIOS:
+                sc_block = bench.get(sc, {})
+                no_ctx = sc_block.get("no_context", {})
+                no_ctx_ari_block = no_ctx.get("ari", {})
+                no_ctx_ari = (no_ctx_ari_block.get("mean")
+                              if isinstance(no_ctx_ari_block, dict)
+                              else no_ctx_ari_block)
+                if not isinstance(no_ctx_ari, (int, float)):
+                    continue
+                sc_quality: dict = {}
+                for mode in _PANEL_C_MODE_KEYS:
+                    m_block = sc_block.get(mode, {})
+                    m_ari_block = m_block.get("ari", {})
+                    m_ari = (m_ari_block.get("mean")
+                              if isinstance(m_ari_block, dict)
+                              else m_ari_block)
+                    infl_block = m_block.get("context_influenced_steps", {})
+                    infl = (infl_block.get("mean")
+                             if isinstance(infl_block, dict)
+                             else infl_block)
+                    if not (isinstance(m_ari, (int, float))
+                            and isinstance(infl, (int, float))):
+                        continue
+                    # Episode length: the canonical 72 h scenario at
+                    # 4 steps per hour = 288 steps. If a future run
+                    # uses a different cadence,
+                    # ``context_dispatch_attempt_steps`` (post-2026-05
+                    # instrumentation) carries the actual n_steps per
+                    # cell -- prefer it when present.
+                    disp_block = m_block.get("context_dispatch_attempt_steps", {})
+                    disp = (disp_block.get("mean")
+                             if isinstance(disp_block, dict)
+                             else disp_block)
+                    n_steps = (float(disp)
+                               if isinstance(disp, (int, float)) and disp > 0
+                               else 288.0)
+                    infl_frac = float(infl) / n_steps
+                    if infl_frac <= 0.0:
+                        continue
+                    sc_quality[mode] = (
+                        (float(m_ari) - float(no_ctx_ari)) / infl_frac
+                    )
+                if sc_quality:
+                    quality_matrix[sc] = sc_quality
 
     if quality_matrix:
         scenarios_in_matrix = [s for s in SCENARIOS if s in quality_matrix]
@@ -3222,22 +3371,30 @@ def fig9_fault_degradation():
 
         for i, (mode, label, color) in enumerate(_PANEL_C_MODES):
             heights = []
+            yerrs: list[float] = []
             for sc in scenarios_in_matrix:
                 heights.append(quality_matrix[sc].get(mode, 0.0))
+                # 95% normal CI half-width = 1.96 SE; suppress the cap
+                # for any cell with no per-seed SE.
+                se = quality_se.get(sc, {}).get(mode)
+                yerrs.append(1.96 * float(se) if isinstance(se, (int, float)) else 0.0)
             xs = x_base + i * width
-            # No error bars on this panel: the quality metric is a
-            # ratio of two means (ΔARI / influence_fraction) whose
-            # CI requires either delta-method propagation or a
-            # bootstrap from per-seed values. The methods table
-            # carries the exact bootstrap CIs for any reviewer who
-            # wants them; this panel's job is to convey the rank
-            # ordering (AgriBrain > piRAG-only > MCP-only on every
-            # scenario), which the bare means already do
-            # unambiguously. Each bar = ΔARI per context-induced
-            # decision change ("intervention").
-            ax.bar(xs, heights, width, color=color,
-                   alpha=0.92, edgecolor="white", linewidth=0.7,
-                   label=label)
+            # Each bar = ΔARI per context-induced decision change
+            # ("intervention"). Error caps render the cross-seed 95%
+            # normal CI on the mean; cells with <2 contributing seeds
+            # render zero-width caps (height-only bar, no whiskers)
+            # rather than fabricated error.
+            yerr_arr = np.asarray(yerrs, dtype=float)
+            ax.bar(
+                xs, heights, width,
+                yerr=(yerr_arr if np.any(yerr_arr > 0.0) else None),
+                color=color, alpha=0.92, edgecolor="white", linewidth=0.7,
+                label=label,
+                error_kw=({"linewidth": 1.4, "capthick": 1.4,
+                           "ecolor": "#1F1F1F", "alpha": 0.9,
+                           "capsize": 4}
+                          if np.any(yerr_arr > 0.0) else None),
+            )
 
         ax.set_xticks(x_base + (n_modes - 1) * width / 2)
         ax.set_xticklabels(
@@ -3246,18 +3403,22 @@ def fig9_fault_degradation():
         )
         # ylim chosen to leave headroom above the tallest bar
         # (typically Overproduction agribrain ~0.45 on the d33b8de
-        # run) for the legend at upper-left. 0.55 gives ~20% headroom
-        # above the canonical max.
-        max_q = max(
-            (q for sc_q in quality_matrix.values() for q in sc_q.values()),
-            default=0.5,
-        )
-        ax.set_ylim(0.0, max(max_q * 1.30, 0.5))
+        # run) **plus** the upper error cap. Compute the largest
+        # bar+yerr across cells so error caps never collide with the
+        # legend in upper-right.
+        max_top = 0.0
+        for sc, sc_q in quality_matrix.items():
+            for mode, q in sc_q.items():
+                cap = quality_se.get(sc, {}).get(mode)
+                top = q + (1.96 * float(cap) if isinstance(cap, (int, float)) else 0.0)
+                if top > max_top:
+                    max_top = top
+        ax.set_ylim(0.0, max(max_top * 1.30, 0.5))
         # 2026-05 legend placement: upper-right. The rightmost
         # scenario (Baseline) has its tallest bar (AgriBrain) at
-        # ~0.28 in axes data, ~0.48 axes-fraction with the current
-        # ylim ~0.58, so the upper third of the panel is clear
-        # headroom on the right side as well as the left.
+        # ~0.28 in axes data; with the ylim now stretched to
+        # ~1.30 × (max bar + error cap), the upper third of the
+        # panel remains clear headroom on the right side.
         ax.legend(loc="upper right", fontsize=_F9_LEG,
                   ncol=1, framealpha=0.95, edgecolor="#757575",
                   fancybox=False, shadow=False)
@@ -3286,15 +3447,37 @@ def fig9_fault_degradation():
     #     adjacent panels cannot collide. The 22-inch figure width
     #     absorbs this generously - each panel still has 6+ inches
     #     of plotting area.
-    # 2026-05 fourth-pass tightening. ``w_pad`` here is the actual
-    # inter-panel padding controller (in font-size units); any
-    # ``wspace`` set on the gridspec is OVERRIDDEN by tight_layout's
-    # spacing pass. Default is ~1.08; pre-fix this was 2.5 (more
-    # than 2x the default) which left a visible whitespace gutter
-    # between panels B and C even after the 26-inch / panel-C 1.85
-    # rebalance. Drop to 1.0 to close the gutter without making
-    # tick labels of adjacent panels overlap their neighbours.
+    # 2026-05 sixth-pass tightening. ``subplots_adjust(wspace=)``
+    # applies the same value to ALL inter-axes gaps, so any value
+    # tight enough to close the B->C gap also crashes panel B's
+    # left y-tick strip ("vs Static / vs Hybrid RL / ...") into
+    # panel A's heatmap right edge. Switch to per-axis ``set_position``
+    # so we can keep the A->B gap loose (panel B has long left
+    # tick-labels that need clearance) while pulling panel C
+    # leftward independently.
+    #
+    # Procedure:
+    #   1. Run tight_layout normally to get a sane base layout.
+    #   2. Measure the gap between panel B's right edge and panel C's
+    #      left edge in figure-fraction coordinates.
+    #   3. If that gap exceeds the target (panel A->B's gap is the
+    #      visual reference, mirrored on the right side), shift panel
+    #      C's left edge leftward by the excess and grow C's width
+    #      to fill, so the panel stays the same size.
     fig.tight_layout(rect=[0, 0.06, 1, 0.985], w_pad=1.0)
+    bbox_a = axes[0].get_position()
+    bbox_b = axes[1].get_position()
+    bbox_c = axes[2].get_position()
+    target_gap = (bbox_b.x0 - bbox_a.x1)  # mirror A->B gap onto B->C
+    actual_gap = bbox_c.x0 - bbox_b.x1
+    if actual_gap > target_gap > 0:
+        shift = actual_gap - target_gap
+        axes[2].set_position([
+            bbox_c.x0 - shift,
+            bbox_c.y0,
+            bbox_c.width + shift,
+            bbox_c.height,
+        ])
     _save(fig, "fig9_robustness")
 
 
