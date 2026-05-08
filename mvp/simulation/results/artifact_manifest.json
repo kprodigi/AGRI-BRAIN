@@ -1,12 +1,12 @@
 {
-  "git_commit": "2ecb2cf2601cff019030165057ddc2c0dc5d5d56",
+  "git_commit": "af4a80303040cc955772b9a61baf662dff2b2867",
   "git_dirty": false,
   "artifact_count": 282,
   "artifacts": [
     {
       "file": "artifact_manifest.json",
-      "bytes": 51268,
-      "sha256": "545826280993e052a522e5914b9099120b8a1f1eb2cff0ed5ee778cdfec1d86b"
+      "bytes": 51269,
+      "sha256": "d19a417fdf572ca0dd447b859a3d7e27c9879b7ab22a5500e77f9570dc84dc93"
     },
     {
       "file": "benchmark_context_significance.json",
@@ -320,13 +320,13 @@
     },
     {
       "file": "benchmark_significance.json",
-      "bytes": 293505,
-      "sha256": "41f06a0add9f8188a83b2f63cc4771e0ff468f63a923b149955184bf3cee74c8"
+      "bytes": 293543,
+      "sha256": "a41aa1cc01b9bd79ffa8fbfd851a0313b4acd3837ba777f169aa6b55d0471a7d"
     },
     {
       "file": "benchmark_summary.json",
-      "bytes": 426225,
-      "sha256": "108c04f0964369b0ad6dddfad0dc35a1959b7cc993c6edd539f619479b755aaa"
+      "bytes": 426263,
+      "sha256": "d7576be3bd532fd85b99b8bf2e8206814e956998f067b7f0607b1234d902678b"
     },
     {
       "file": "context_alignment_adaptive_pricing.json",
@@ -1345,8 +1345,8 @@
     },
     {
       "file": "paper_benchmark_table.json",
-      "bytes": 718439,
-      "sha256": "ac18fd32e956a54b6435e0e3558c13e602612e662dc5c31b7a9bf8f829595425"
+      "bytes": 718477,
+      "sha256": "f360304e9375a7b8e8e30263d1e6b31d856a1b3839e9c9acde00432e0d30989f"
     },
     {
       "file": "stress_degradation.csv",

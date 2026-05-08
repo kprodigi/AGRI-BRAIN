@@ -26,7 +26,7 @@
       2024
     ],
     "n_seeds": 20,
-    "git_commit": null,
+    "git_commit": "d33b8de586827e0d10447e96053e615a64bbdaea",
     "bca_fallback_stats": {
       "bca_calls": 2407,
       "bca_fallbacks": 0,
