@@ -3561,76 +3561,48 @@ def fig10_latency_quality_frontier(data):
             lw=2.0, linestyle="--", alpha=0.75, zorder=2,
         )
         fig.add_artist(con)
-        # Overhead annotation. 2026-05 changes:
+        # Overhead annotation. 2026-05 design rules:
         #
-        #   (a) Position moved from data coords near the AgriBrain
-        #       marker (which collided with the piRAG and MCP markers
-        #       at this dpi) to AXES-RELATIVE coords in the upper-left
-        #       corner of the right sub-axis, where there's no data.
+        #   (a) Position: AXES-RELATIVE upper-left of the right
+        #       sub-axis, not data-coords near the AgriBrain marker.
+        #       The data-coord version collided with piRAG / MCP
+        #       markers at publication dpi.
         #
-        #   (b) Content enriched. The pre-2026-05 caption "+13.7 ms |
-        #       +0.020 ARI" reported the cross-scenario AVERAGE for
-        #       both quantities, which undersold a uniformly-large
-        #       per-scenario effect. The new caption shows:
-        #         - mean delta-ARI (+0.020 -- the cross-scenario
-        #           number, the pre-fix headline)
-        #         - per-scenario delta-ARI range (+0.012 to +0.032 --
-        #           shows that the smallest per-scenario gain on
-        #           heatwave is still meaningful)
-        #         - Cohen's d range (0.96-2.01 across scenarios -- all
-        #           large effect by Cohen's convention; >0.8 is
-        #           "large")
-        #         - Significance (every comparison passes Holm-
-        #           Bonferroni at alpha=0.05)
-        #
-        # Per-scenario range is pulled from benchmark_significance.json
-        # to make the annotation self-documenting against the canonical
-        # multi-scenario significance source.
+        #   (b) Content: two compact lines.
+        #         line 1: "Context overhead"
+        #         line 2: "+X.X ms  |  +0.0XX ARI (d=N.N-N.N)"
+        #       The Cohen's d range alone tells reviewers the effect
+        #       is uniformly large (d>0.8 = large by Cohen convention).
+        #       Pre-2026-05 the line was just "+X.X ms | +0.020 ARI"
+        #       which made a uniformly-large effect read as a
+        #       small one. The 5-line variant the audit produced was
+        #       too cluttered for an in-figure annotation; per-scenario
+        #       range and significance live in panel (c) and the
+        #       methods table respectively.
         import json as _json_b
         sig_payload_path = RESULTS_DIR / "benchmark_significance.json"
-        delta_min = delta_max = agri_ari - ref[2]
         d_min = d_max = float("nan")
-        n_sig = 0
-        n_total = 0
         try:
             sig_doc = _json_b.loads(sig_payload_path.read_text(encoding="utf-8"))
             sig_block = sig_doc.get("significance", sig_doc)
-            deltas, ds = [], []
+            ds = []
             for sc, blk in sig_block.items():
                 ari_blk = blk.get("agribrain_vs_no_context", {}).get("ari", {})
-                if "mean_diff" in ari_blk:
-                    deltas.append(float(ari_blk["mean_diff"]))
                 if "cohens_d_pooled" in ari_blk:
                     ds.append(float(ari_blk["cohens_d_pooled"]))
-                p_adj = ari_blk.get("p_value_adj_holm", ari_blk.get("p_value_adj"))
-                if isinstance(p_adj, (int, float)):
-                    n_total += 1
-                    if p_adj < 0.05:
-                        n_sig += 1
-            if deltas:
-                delta_min, delta_max = min(deltas), max(deltas)
             if ds:
                 d_min, d_max = min(ds), max(ds)
         except Exception:
             pass
-        ann_lines = [
-            f"Context overhead",
-            f"+{agri_lat - ref[1]:.1f} ms  |  {agri_ari - ref[2]:+.3f} ARI (mean)",
-        ]
-        if delta_min != delta_max:
-            ann_lines.append(
-                f"per-scenario: {delta_min:+.3f} to {delta_max:+.3f} ARI"
-            )
+        # Compact 2-line annotation.
+        line2 = (
+            f"+{agri_lat - ref[1]:.1f} ms  |  {agri_ari - ref[2]:+.3f} ARI"
+        )
         if d_min == d_min and d_max == d_max:  # NaN guard
-            ann_lines.append(f"Cohen's d = {d_min:.2f} to {d_max:.2f} (large)")
-        if n_total > 0:
-            ann_lines.append(
-                f"{n_sig}/{n_total} scenarios sig. (Holm, p<0.05)"
-            )
-        # Anchor at top-left of the right sub-axis (axes-relative
-        # coords). Stays clear of every marker in the cluster.
+            line2 += f"  (d={d_min:.1f}-{d_max:.1f})"
+        ann_text = "Context overhead\n" + line2
         ax_b_right.text(
-            0.02, 0.98, "\n".join(ann_lines),
+            0.02, 0.98, ann_text,
             transform=ax_b_right.transAxes,
             ha="left", va="top",
             fontsize=ANNOT_FONT_SIZE, fontweight="bold",
