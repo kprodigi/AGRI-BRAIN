@@ -3601,10 +3601,18 @@ def fig10_latency_quality_frontier(data):
         if d_min == d_min and d_max == d_max:  # NaN guard
             line2 += f"  (d={d_min:.1f}-{d_max:.1f})"
         ann_text = "Context overhead\n" + line2
+        # Position: anchor the box's BOTTOM just above the dashed
+        # connecting line. The dashed line goes from No Context on
+        # the left sub-axis (~0.18 ms, 0.596 ARI) to AgriBrain on the
+        # right sub-axis (~5.7 ms, 0.616 ARI). On the right sub-axis
+        # in axes-relative coords, the line peaks around y_axes ~0.75
+        # at the right edge. Anchoring the box bottom at y_axes=0.78
+        # places it cleanly just above the line without floating to
+        # the top of the panel.
         ax_b_right.text(
-            0.02, 0.98, ann_text,
+            0.02, 0.78, ann_text,
             transform=ax_b_right.transAxes,
-            ha="left", va="top",
+            ha="left", va="bottom",
             fontsize=ANNOT_FONT_SIZE, fontweight="bold",
             color=COLORS["agribrain"],
             bbox=dict(boxstyle="round,pad=0.35", facecolor="white",
