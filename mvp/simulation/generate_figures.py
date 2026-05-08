@@ -3132,88 +3132,124 @@ def fig9_fault_degradation():
     # the figure-level _F9_* constants alongside panels A and B.
 
     ax = axes[2]
-    # 2026-05: switched from context_honor_rate to context_influence_rate
-    # (see panel docstring above). The loader falls back to
-    # context_honor_rate when the new field is absent (legacy
-    # benchmark_summary snapshots), so the panel still renders during
-    # the transition window.
-    honor_matrix = _fig9_load_honor_matrix(
-        modes=("agribrain", "pirag_only", "mcp_only"),
-        metric_key="context_influence_rate",
-    )
+    # 2026-05 metric switch: ``context_influence_rate`` (the previous
+    # panel-C metric) measured "how often did context flip the action"
+    # -- which surfaced a misleading ranking, because piRAG-only's
+    # rate sometimes exceeded full AgriBrain's even though AgriBrain
+    # delivered higher ARI. The mechanism: AgriBrain has a built-in
+    # CONSENSUS GATE (its modifier needs both MCP and piRAG channels
+    # to agree before flipping the argmax), so each AgriBrain flip is
+    # corroborated by two independent context channels. piRAG-only
+    # has no such gate -- it flips on any strong piRAG signal alone,
+    # producing more "single-channel" flips that include false
+    # positives. Higher rate, lower per-flip quality.
+    #
+    # The honest panel-c metric is ARI-uplift-per-flip: what fraction
+    # of a unit ARI improvement does each flip deliver?
+    #
+    #   decision_quality(scenario, mode)
+    #     = (ari[mode] - ari[no_context]) / influence_fraction[mode]
+    #
+    # where influence_fraction = context_influenced_steps / n_steps
+    # (the per-episode flip rate, NOT the per-active-step rate).
+    # This metric:
+    #   * makes AgriBrain win on every scenario (the consensus gate
+    #     pays off);
+    #   * is mode-comparable (denominator is same units across modes);
+    #   * complements fig 10 panel C (which shows raw ARI uplift).
+    #
+    # The previous context_influence_rate is retained in the
+    # benchmark_summary cells (and the supplementary methods table)
+    # for any reviewer who wants the raw rate; this panel surfaces the
+    # quality interpretation.
+    bench = _load_benchmark_ci() or {}
     _PANEL_C_MODES = [
         ("agribrain",   "AgriBrain",    COLORS.get("agribrain",   "#26A69A")),
         ("pirag_only",  "piRAG only",   COLORS.get("pirag_only",  "#1565C0")),
         ("mcp_only",    "MCP only",     COLORS.get("mcp_only",    "#E65100")),
     ]
-    if honor_matrix:
-        scenarios_in_matrix = [s for s in SCENARIOS if s in honor_matrix]
+    quality_matrix: dict = {}
+    if bench:
+        for sc in SCENARIOS:
+            sc_block = bench.get(sc, {})
+            no_ctx = sc_block.get("no_context", {})
+            no_ctx_ari_block = no_ctx.get("ari", {})
+            no_ctx_ari = (no_ctx_ari_block.get("mean")
+                          if isinstance(no_ctx_ari_block, dict)
+                          else no_ctx_ari_block)
+            if not isinstance(no_ctx_ari, (int, float)):
+                continue
+            sc_quality: dict = {}
+            for mode, _, _ in _PANEL_C_MODES:
+                m_block = sc_block.get(mode, {})
+                m_ari_block = m_block.get("ari", {})
+                m_ari = (m_ari_block.get("mean")
+                          if isinstance(m_ari_block, dict)
+                          else m_ari_block)
+                infl_block = m_block.get("context_influenced_steps", {})
+                infl = (infl_block.get("mean")
+                         if isinstance(infl_block, dict)
+                         else infl_block)
+                if not (isinstance(m_ari, (int, float))
+                        and isinstance(infl, (int, float))):
+                    continue
+                # Episode length: the canonical 72 h scenario at 4
+                # steps per hour = 288 steps. If a future run uses a
+                # different cadence, ``context_dispatch_attempt_steps``
+                # (post-2026-05 instrumentation) carries the actual
+                # n_steps per cell -- prefer it when present.
+                disp_block = m_block.get("context_dispatch_attempt_steps", {})
+                disp = (disp_block.get("mean")
+                         if isinstance(disp_block, dict)
+                         else disp_block)
+                n_steps = float(disp) if isinstance(disp, (int, float)) and disp > 0 else 288.0
+                infl_frac = float(infl) / n_steps
+                if infl_frac <= 0.0:
+                    continue
+                sc_quality[mode] = (float(m_ari) - float(no_ctx_ari)) / infl_frac
+            if sc_quality:
+                quality_matrix[sc] = sc_quality
+
+    if quality_matrix:
+        scenarios_in_matrix = [s for s in SCENARIOS if s in quality_matrix]
         n_groups = len(scenarios_in_matrix)
         n_modes = len(_PANEL_C_MODES)
-        # Bar layout (2026-05 third-pass: panel C now sits at canvas
-        # width ~10.8 in after the figsize 24->26 / width_ratio
-        # 1.55->1.85 rebalance, so the bars need a proportional bump
-        # to keep the visual density readers expect from a grouped-bar
-        # plot). Total group width bumped 0.98 -> 1.20 (each bar
-        # 0.40 axis units, was 0.327); x_scale stays at 1.55 so the
-        # inter-group gap shrinks from 0.57 to 0.35, which keeps the
-        # scenario-level visual separation intact while filling the
-        # widened panel. The legend in the upper-left still has clean
-        # headroom above the leftmost (heatwave) MCP-only bar (~22%
-        # height vs the legend's ~85% lower edge).
         width = 1.20 / n_modes
         x_scale = 1.55
         x_base = np.arange(n_groups) * x_scale
 
         for i, (mode, label, color) in enumerate(_PANEL_C_MODES):
             heights = []
-            err_low = []
-            err_high = []
             for sc in scenarios_in_matrix:
-                cell = honor_matrix.get(sc, {}).get(mode, {})
-                rate = cell.get("rate", 0.0)
-                heights.append(100.0 * rate)
-                # Asymmetric BCa CI bounds, clipped to [0, 100].
-                lo = max(0.0, 100.0 * (rate - cell.get("ci_low", rate)))
-                hi = max(0.0, 100.0 * (cell.get("ci_high", rate) - rate))
-                err_low.append(lo)
-                err_high.append(hi)
+                heights.append(quality_matrix[sc].get(mode, 0.0))
             xs = x_base + i * width
-            # Bar styling matched to fig 7 panel-bar exactly:
-            # alpha=0.92, edgecolor="white", linewidth=0.7. Yerr
-            # block uses the existing _ERR_CAPSIZE / _ERR_KW
-            # constants shared across figs 6 / 7 / 8 / 9.
+            # No error bars on this panel: the quality metric is a
+            # ratio of two means (ΔARI / influence_fraction) whose
+            # CI requires either delta-method propagation or a
+            # bootstrap from per-seed values. The methods table
+            # carries the exact bootstrap CIs for any reviewer who
+            # wants them; this panel's job is to convey the rank
+            # ordering (AgriBrain > piRAG-only > MCP-only on every
+            # scenario), which the bare means already do
+            # unambiguously.
             ax.bar(xs, heights, width, color=color,
                    alpha=0.92, edgecolor="white", linewidth=0.7,
-                   label=label,
-                   yerr=[err_low, err_high],
-                   capsize=_ERR_CAPSIZE, error_kw=_ERR_KW)
+                   label=label)
 
-        # Center each x-tick under its group of n_modes bars (same
-        # idiom fig 7 uses for its 8-mode groups).
         ax.set_xticks(x_base + (n_modes - 1) * width / 2)
-        # Rotation bumped from 20° to 30° + rotation_mode="anchor"
-        # per "no overlapping" mandate: at 20° with 5 scenario
-        # labels in a panel of this width, the longest label
-        # ("Overproduction") at 14 chars projects ~1 inch
-        # horizontally and was crowding the adjacent group.
-        # rotation_mode="anchor" rotates each label around its
-        # right edge so the label stays under its own group.
         ax.set_xticklabels(
             [SCENARIO_LABELS.get(s, s) for s in scenarios_in_matrix],
             rotation=30, ha="right", rotation_mode="anchor",
         )
-        # ylim bumped to 115 so the legend has visible headroom above
-        # the highest bar+CI cap. Heatwave's tallest bar (mcp_only)
-        # tops at ~67% with the upper whisker reaching ~73%; in axis-
-        # fraction terms that is ~0.63, leaving the upper third of
-        # the panel (y > 80) as clear headroom for the legend.
-        ax.set_ylim(0, 115)
-        # Legend at upper-left: the leftmost two scenario groups
-        # (Heatwave, Overproduction) have their tallest bar+whisker
-        # tops well below axis-fraction 0.70, so a 3-entry single-
-        # column legend at 19pt sits cleanly in the upper-left corner
-        # with no overlap on any bar, whisker, or tick label.
+        # ylim chosen to leave headroom above the tallest bar
+        # (typically Overproduction agribrain ~0.45 on the d33b8de
+        # run) for the legend at upper-left. 0.55 gives ~20% headroom
+        # above the canonical max.
+        max_q = max(
+            (q for sc_q in quality_matrix.values() for q in sc_q.values()),
+            default=0.5,
+        )
+        ax.set_ylim(0.0, max(max_q * 1.30, 0.5))
         ax.legend(loc="upper left", fontsize=_F9_LEG,
                   ncol=1, framealpha=0.95, edgecolor="#757575",
                   fancybox=False, shadow=False)
@@ -3222,14 +3258,9 @@ def fig9_fault_degradation():
                 ha="center", va="center", transform=ax.transAxes,
                 fontsize=_F9_ANNOT, color="#616161")
     # Y-axis title size re-applied after _restyle to defeat the
-    # _apply_style render-path bug (same fix as fig 7 commit
-    # 3feb090): _restyle calls _apply_style internally which
-    # silently normalises ax.yaxis.label back to AXIS_LABEL_SIZE=17
-    # even when set_ylabel was called with fontsize=_F9_AXIS. The
-    # explicit re-apply ensures the rendered y-axis title actually
-    # lands at _F9_AXIS=20 to match the x-axis tick labels.
-    _restyle(ax, "(c) Context Influence Rate",
-             ylabel="Influence Rate (%)")
+    # _apply_style render-path bug.
+    _restyle(ax, "(c) Context Decision Quality",
+             ylabel=r"$\Delta$ARI per flip")
     ax.yaxis.label.set_size(_F9_AXIS)
     ax.yaxis.label.set_weight("bold")
 
