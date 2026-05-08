@@ -3247,7 +3247,15 @@ def fig9_fault_degradation():
     #     adjacent panels cannot collide. The 22-inch figure width
     #     absorbs this generously - each panel still has 6+ inches
     #     of plotting area.
-    fig.tight_layout(rect=[0, 0.06, 1, 0.985], w_pad=2.5)
+    # 2026-05 fourth-pass tightening. ``w_pad`` here is the actual
+    # inter-panel padding controller (in font-size units); any
+    # ``wspace`` set on the gridspec is OVERRIDDEN by tight_layout's
+    # spacing pass. Default is ~1.08; pre-fix this was 2.5 (more
+    # than 2x the default) which left a visible whitespace gutter
+    # between panels B and C even after the 26-inch / panel-C 1.85
+    # rebalance. Drop to 1.0 to close the gutter without making
+    # tick labels of adjacent panels overlap their neighbours.
+    fig.tight_layout(rect=[0, 0.06, 1, 0.985], w_pad=1.0)
     _save(fig, "fig9_robustness")
 
 
