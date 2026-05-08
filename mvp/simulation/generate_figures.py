@@ -3311,55 +3311,103 @@ def fig9_fault_degradation():
                 quality_matrix[sc] = sc_quality
                 quality_se[sc] = sc_se
     else:
-        # Summary-only fallback: read mean ari + mean influenced_steps
-        # from benchmark_summary.json. Yields point estimates without
-        # error bars (the caller below detects the absence of
-        # ``quality_se`` per-cell entries and skips ``yerr=``).
+        # Summary-only fallback: when the per-seed JSON bundle is
+        # incomplete (typical for local renders that work off a
+        # committed ``benchmark_summary.json`` snapshot), propagate
+        # SE analytically via the delta method on cell-level stds.
+        #
+        # For DQ = (μ_A - μ_B) / (μ_I / N) where
+        #   A = ari[mode],    σ²_μ_A = σ²_A / n
+        #   B = ari[no_context], σ²_μ_B = σ²_B / n
+        #   I = context_influenced_steps[mode], σ²_μ_I = σ²_I / n
+        # the linearised SE on the mean ratio is
+        #
+        #   SE(DQ) ≈ |DQ| * sqrt[ (σ²_μ_A + σ²_μ_B) / (μ_A - μ_B)²
+        #                          + σ²_μ_I / μ_I² ]
+        #
+        # This treats A and B as INDEPENDENT across seeds, which
+        # over-states the numerator variance because the same seed
+        # pool runs every mode. The over-statement makes the CI
+        # conservative (wider than the true paired-seed CI), which
+        # is the safe direction for figure-level error bars. The
+        # true paired-seed bootstrap is what
+        # ``_load_per_seed_decision_quality`` returns when the seed
+        # bundle is complete; this fallback exists so the figure
+        # carries error caps even when only the aggregator's
+        # summary file is available.
         if bench:
+            n_steps_canonical = 288.0
             for sc in SCENARIOS:
                 sc_block = bench.get(sc, {})
                 no_ctx = sc_block.get("no_context", {})
                 no_ctx_ari_block = no_ctx.get("ari", {})
-                no_ctx_ari = (no_ctx_ari_block.get("mean")
-                              if isinstance(no_ctx_ari_block, dict)
-                              else no_ctx_ari_block)
-                if not isinstance(no_ctx_ari, (int, float)):
+                if not isinstance(no_ctx_ari_block, dict):
+                    continue
+                mu_B = no_ctx_ari_block.get("mean")
+                std_B = no_ctx_ari_block.get("std", 0.0)
+                n_B = no_ctx_ari_block.get("n_seeds", 1)
+                if not isinstance(mu_B, (int, float)):
                     continue
                 sc_quality: dict = {}
+                sc_se: dict = {}
                 for mode in _PANEL_C_MODE_KEYS:
                     m_block = sc_block.get(mode, {})
                     m_ari_block = m_block.get("ari", {})
-                    m_ari = (m_ari_block.get("mean")
-                              if isinstance(m_ari_block, dict)
-                              else m_ari_block)
-                    infl_block = m_block.get("context_influenced_steps", {})
-                    infl = (infl_block.get("mean")
-                             if isinstance(infl_block, dict)
-                             else infl_block)
-                    if not (isinstance(m_ari, (int, float))
-                            and isinstance(infl, (int, float))):
+                    if not isinstance(m_ari_block, dict):
                         continue
-                    # Episode length: the canonical 72 h scenario at
-                    # 4 steps per hour = 288 steps. If a future run
-                    # uses a different cadence,
+                    mu_A = m_ari_block.get("mean")
+                    std_A = m_ari_block.get("std", 0.0)
+                    n_A = m_ari_block.get("n_seeds", 1)
+                    infl_block = m_block.get("context_influenced_steps", {})
+                    if not isinstance(infl_block, dict):
+                        continue
+                    mu_I = infl_block.get("mean")
+                    std_I = infl_block.get("std", 0.0)
+                    n_I = infl_block.get("n_seeds", 1)
+                    if not (isinstance(mu_A, (int, float))
+                            and isinstance(mu_I, (int, float))):
+                        continue
+                    # Episode length: prefer per-cell
                     # ``context_dispatch_attempt_steps`` (post-2026-05
-                    # instrumentation) carries the actual n_steps per
-                    # cell -- prefer it when present.
+                    # instrumentation) when present; canonical 72 h
+                    # × 4 steps/h = 288 fallback otherwise.
                     disp_block = m_block.get("context_dispatch_attempt_steps", {})
                     disp = (disp_block.get("mean")
                              if isinstance(disp_block, dict)
                              else disp_block)
                     n_steps = (float(disp)
                                if isinstance(disp, (int, float)) and disp > 0
-                               else 288.0)
-                    infl_frac = float(infl) / n_steps
+                               else n_steps_canonical)
+                    infl_frac = float(mu_I) / n_steps
                     if infl_frac <= 0.0:
                         continue
-                    sc_quality[mode] = (
-                        (float(m_ari) - float(no_ctx_ari)) / infl_frac
-                    )
+                    delta_ari = float(mu_A) - float(mu_B)
+                    dq = delta_ari / infl_frac
+                    sc_quality[mode] = dq
+                    # Delta-method SE. Guard against zero denominators
+                    # (delta_ari near 0 or mu_I near 0) by reverting
+                    # to a zero SE in those cells -- the bar still
+                    # renders without an error cap rather than
+                    # propagating a nonsense Inf into the layout.
+                    try:
+                        var_diff = (
+                            (float(std_A) ** 2) / max(int(n_A), 1)
+                            + (float(std_B) ** 2) / max(int(n_B), 1)
+                        )
+                        var_infl_mean = (float(std_I) ** 2) / max(int(n_I), 1)
+                        if abs(delta_ari) > 1e-9 and float(mu_I) > 1e-9:
+                            rel_var = (
+                                var_diff / (delta_ari ** 2)
+                                + var_infl_mean / (float(mu_I) ** 2)
+                            )
+                            sc_se[mode] = float(abs(dq) * np.sqrt(max(rel_var, 0.0)))
+                        else:
+                            sc_se[mode] = 0.0
+                    except (TypeError, ValueError):
+                        sc_se[mode] = 0.0
                 if sc_quality:
                     quality_matrix[sc] = sc_quality
+                    quality_se[sc] = sc_se
 
     if quality_matrix:
         scenarios_in_matrix = [s for s in SCENARIOS if s in quality_matrix]
