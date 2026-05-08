@@ -34,7 +34,7 @@
       "fallback_total": 218,
       "fallback_rate": 0.08304761904761905
     },
-    "generated_at": "2026-05-08T08:16:24+00:00",
+    "generated_at": "2026-05-08T09:03:26+00:00",
     "source_artifacts": [
       "mvp/simulation/results/benchmark_summary.json",
       "mvp/simulation/results/benchmark_significance.json"
