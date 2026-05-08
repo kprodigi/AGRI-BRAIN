@@ -3447,31 +3447,30 @@ def fig9_fault_degradation():
     #     adjacent panels cannot collide. The 22-inch figure width
     #     absorbs this generously - each panel still has 6+ inches
     #     of plotting area.
-    # 2026-05 sixth-pass tightening. ``subplots_adjust(wspace=)``
-    # applies the same value to ALL inter-axes gaps, so any value
-    # tight enough to close the B->C gap also crashes panel B's
-    # left y-tick strip ("vs Static / vs Hybrid RL / ...") into
-    # panel A's heatmap right edge. Switch to per-axis ``set_position``
-    # so we can keep the A->B gap loose (panel B has long left
-    # tick-labels that need clearance) while pulling panel C
-    # leftward independently.
+    # 2026-05 seventh-pass tightening. The mirror-shim from pass-6
+    # was too conservative: tight_layout(w_pad=1.0) produced
+    # gap_AB ≈ 0.135 and gap_BC ≈ 0.119 (figure-fraction), so the
+    # ``actual_gap > target_gap`` guard prevented any shift even
+    # though the B->C gap remained visually large. The A->B gap is
+    # *intrinsically* wide because panel A carries a colorbar whose
+    # rotated title "Cohen's d (pooled, ARI)" plus panel B's long
+    # left y-tick labels both eat into that gap. Panel B's right
+    # side is far slimmer (just the "+xx.x%" value labels), so B->C
+    # can be much tighter without any text collision.
     #
-    # Procedure:
-    #   1. Run tight_layout normally to get a sane base layout.
-    #   2. Measure the gap between panel B's right edge and panel C's
-    #      left edge in figure-fraction coordinates.
-    #   3. If that gap exceeds the target (panel A->B's gap is the
-    #      visual reference, mirrored on the right side), shift panel
-    #      C's left edge leftward by the excess and grow C's width
-    #      to fill, so the panel stays the same size.
+    # Strategy: target a fixed B->C gap of 0.05 figure-fraction
+    # (~1.3" on the 26" figure) -- enough clearance for panel C's
+    # left y-tick labels (~0.020) and rotated y-axis title (~0.015)
+    # while still keeping panel B's right-anchored value labels
+    # clear. Panel C is shifted leftward and widened to fill so its
+    # right edge stays at the figure margin.
     fig.tight_layout(rect=[0, 0.06, 1, 0.985], w_pad=1.0)
-    bbox_a = axes[0].get_position()
     bbox_b = axes[1].get_position()
     bbox_c = axes[2].get_position()
-    target_gap = (bbox_b.x0 - bbox_a.x1)  # mirror A->B gap onto B->C
+    target_bc_gap = 0.05
     actual_gap = bbox_c.x0 - bbox_b.x1
-    if actual_gap > target_gap > 0:
-        shift = actual_gap - target_gap
+    if actual_gap > target_bc_gap:
+        shift = actual_gap - target_bc_gap
         axes[2].set_position([
             bbox_c.x0 - shift,
             bbox_c.y0,
