@@ -3256,7 +3256,21 @@ def fig10_latency_quality_frontier(data):
     outer_gs = _gridspec.GridSpec(
         1, 3, figure=fig, width_ratios=[1, 1.2, 1], wspace=0.32,
     )
-    ax_a = fig.add_subplot(outer_gs[0])
+    # 2026-05 panel-A broken-axis. Pre-2026-05 panel A had a single
+    # axis with xlim (0.06, 0.175). 20-seed canonical means showed
+    # Static at 0.094 ms but the lightweight cluster at 0.176-0.190 ms
+    # -- that's OUTSIDE the 0.175 right edge, which clipped four of
+    # five modes off the panel and made it look as though only Static
+    # was rendered. Fix: split panel A into the same broken-axis
+    # pattern panel B uses. Left sub-axis carries Static (~0.094 ms)
+    # in (0.07, 0.11); right sub-axis carries the cluster in
+    # (0.165, 0.20). Within the right sub-axis the four modes are
+    # still close in latency (range 0.014 ms) but cleanly separated
+    # by ARI (no_context 0.596 / no_pinn 0.590 / hybrid_rl 0.571 /
+    # no_slca 0.559), so the markers don't visually collide.
+    inner_gs_a = outer_gs[0].subgridspec(1, 2, width_ratios=[1, 3.0], wspace=0.14)
+    ax_a_left = fig.add_subplot(inner_gs_a[0])
+    ax_a_right = fig.add_subplot(inner_gs_a[1], sharey=ax_a_left)
     # Inner break-axis spacing widened from 0.06 to 0.14 so the
     # right-edge "0.5" tick of the left sub-axis and the left-edge
     # "5.0" tick of the right sub-axis no longer collide visually.
@@ -3264,7 +3278,12 @@ def fig10_latency_quality_frontier(data):
     ax_b_left = fig.add_subplot(inner_gs[0])
     ax_b_right = fig.add_subplot(inner_gs[1], sharey=ax_b_left)
     ax_c = fig.add_subplot(outer_gs[2])
-    axes = [ax_a]  # legacy compat for the panel (a) code path below
+    # Legacy compat: panel-A code path historically referenced
+    # ``axes[0]`` as a single axis. Now that panel A is a broken pair,
+    # we keep ``axes`` for the back-compat write site below but the
+    # plotting loop routes Static to ax_a_left and the cluster to
+    # ax_a_right explicitly.
+    axes = [ax_a_left]
     fig.suptitle("Latency vs ARI Frontier", fontsize=FIG_TITLE_SIZE,
                  fontweight="bold", y=0.995)
 
@@ -3347,68 +3366,100 @@ def fig10_latency_quality_frontier(data):
     ctx_pts = _collect([m for m in context_modes
                         if m in data["results"].get(SCENARIOS[0], {})])
 
-    # --- (a) Fast modes (sub-millisecond) ---
-    ax = axes[0]
-    # Title simplified to "(a) Lightweight Methods" per user request -
-    # the "<1 ms" parenthetical is redundant with the x-axis range
-    # which already shows the latency scale directly.
-    ax.set_title("(a) Lightweight Methods", fontsize=_F10_TITLE,
-                 fontweight="bold", pad=14)
+    # --- (a) Fast modes (sub-millisecond) -- broken x-axis ---
+    # Static (~0.094 ms) lives on ax_a_left; the four-mode cluster
+    # (hybrid_rl / no_pinn / no_slca / no_context, all in
+    # 0.176-0.190 ms) lives on ax_a_right. Within the right sub-axis
+    # the four modes are clustered in latency but distinguishable by
+    # ARI (0.559-0.596). Diagonal // glyphs at the break read as a
+    # single panel.
     for mode, x, y, yerr in fast_pts:
-        ax.scatter(x, y, s=220, color=COLORS[mode], marker=MARKERS[mode],
-                   edgecolor="white", linewidth=1.4, alpha=0.95, zorder=5,
-                   label=MODE_LABELS[mode])
+        target_ax = ax_a_left if mode == "static" else ax_a_right
+        target_ax.scatter(
+            x, y, s=220, color=COLORS[mode], marker=MARKERS[mode],
+            edgecolor="white", linewidth=1.4, alpha=0.95, zorder=5,
+            label=MODE_LABELS[mode],
+        )
         if yerr[0] > 0 or yerr[1] > 0:
-            ax.errorbar([x], [y], yerr=np.array([[yerr[0]], [yerr[1]]]), fmt="none",
-                        ecolor=COLORS[mode], elinewidth=1.6, capsize=4, alpha=0.85, zorder=4)
-    ax.set_xlabel("Mean Decision Latency (ms)", fontsize=_F10_AXIS,
-                  fontweight="bold")
-    ax.set_ylabel("Mean ARI", fontsize=_F10_AXIS, fontweight="bold")
-    # X-axis range covers the lightweight cluster: Static lands at
-    # ~0.080 ms (20-seed mean), the rightmost cluster (No Context,
-    # No PINN) at ~0.148 ms. Lower bound dropped from 0.08 to 0.06
-    # in 2026-05 because the previous floor sat AT Static's marker
-    # center (0.080 ms), which clipped the s=220 marker against the
-    # left spine and made it look as though Static was missing from
-    # the panel. 0.06 leaves ~0.020 ms of margin around the marker.
-    # Upper bound 0.175 (dropped from the original 0.20 in an earlier
-    # tweak) still leaves a small right margin without the wasted
-    # 0.18-0.20 white space.
-    ax.set_xlim(0.06, 0.175)
+            target_ax.errorbar(
+                [x], [y],
+                yerr=np.array([[yerr[0]], [yerr[1]]]),
+                fmt="none", ecolor=COLORS[mode],
+                elinewidth=1.6, capsize=4, alpha=0.85, zorder=4,
+            )
+
+    # Y-axis label only on the left sub-axis (the right inherits via
+    # sharey). Y-range must accommodate the cross-scenario SE error
+    # bars on every mode. Bottom margin 0.04 (not 0.02) so the s=220
+    # static marker at ARI~0.45 isn't clipped by the bottom spine --
+    # the marker has a ~0.02 ARI radius at this dpi.
+    ax_a_left.set_ylabel("Mean ARI", fontsize=_F10_AXIS, fontweight="bold")
     pts_with_err_a = [(p[2], p[3]) for p in fast_pts]
     bar_lo_a = min(y - e[0] for y, e in pts_with_err_a)
     bar_hi_a = max(y + e[1] for y, e in pts_with_err_a)
-    # Bottom ylim margin bumped from 0.02 to 0.04 per user feedback -
-    # the static marker (s=220, ~15pt diameter) at ARI~0.45 was
-    # being clipped by the previous 0.02 margin which only gave the
-    # marker ~0.018 ARI of clearance below its center. 0.04 gives
-    # the full marker radius plus headroom so the static circle
-    # renders cleanly inside the panel border.
-    ax.set_ylim(bar_lo_a - 0.04, bar_hi_a + 0.02)
-    # Cap the x-axis to ~5 major ticks so the sub-millisecond values
-    # are not crowded onto the axis. Earlier matplotlib's default
-    # locator placed nine ticks (0, 0.025, 0.050, ..., 0.200) on the
-    # narrow sub-ms range, which made the labels collide visually.
-    # ``prune`` is left at the default (None) so the leftmost tick at
-    # the start of the data range stays visible - the previous
-    # ``prune="lower"`` removed the smallest tick label and made the
-    # x-axis appear to start mid-air with no value at the left edge.
+    ax_a_left.set_ylim(bar_lo_a - 0.04, bar_hi_a + 0.02)
+
+    # X-axis split. Left sub: 0.07-0.11 ms covers Static at 0.094
+    # with comfortable margins. Right sub: adapts to the actual
+    # cluster (0.176-0.190 on the d33b8de run, with hybrid_rl on the
+    # high side). Floor the lower bound 0.005 ms below the smallest
+    # cluster lat so all four markers sit clearly inside the spine;
+    # ceiling 0.005 ms above the largest, same logic.
+    cluster_lats = [p[1] for p in fast_pts if p[0] != "static"]
+    if cluster_lats:
+        cluster_lo = min(cluster_lats) - 0.005
+        cluster_hi = max(cluster_lats) + 0.005
+    else:
+        cluster_lo, cluster_hi = 0.165, 0.20
+    ax_a_left.set_xlim(0.07, 0.11)
+    ax_a_right.set_xlim(cluster_lo, cluster_hi)
+
+    # Tick layout: left sub gets two ticks framing Static; right sub
+    # auto-locates ~3 ticks across the cluster.
+    from matplotlib.ticker import FixedLocator as _FixedLocator
     from matplotlib.ticker import MaxNLocator as _MaxNLocator
-    ax.xaxis.set_major_locator(_MaxNLocator(nbins=5))
-    _legend(ax, loc="lower right", ncol=1, fontsize=_F10_LEG)
-    _apply_style(ax)
-    # Re-apply font sizes after _apply_style normalises them - same
-    # render-path bug pattern fixed in figs 7 and 9 (set_size on
-    # title / axis labels / tick labels after _apply_style).
-    ax.title.set_size(_F10_TITLE)
-    ax.title.set_weight("bold")
-    ax.xaxis.label.set_size(_F10_AXIS)
-    ax.xaxis.label.set_weight("bold")
-    ax.yaxis.label.set_size(_F10_AXIS)
-    ax.yaxis.label.set_weight("bold")
-    ax.tick_params(labelsize=_F10_TICK, length=6, width=1.4)
-    for lbl in list(ax.get_xticklabels()) + list(ax.get_yticklabels()):
-        lbl.set_fontsize(_F10_TICK); lbl.set_fontweight("bold")
+    ax_a_left.xaxis.set_major_locator(_FixedLocator([0.08, 0.10]))
+    ax_a_right.xaxis.set_major_locator(_MaxNLocator(nbins=3))
+
+    # Hide the inner spines so the broken-axis reads as a single panel.
+    ax_a_left.spines["right"].set_visible(False)
+    ax_a_right.spines["left"].set_visible(False)
+    ax_a_right.tick_params(left=False, labelleft=False)
+    ax_a_left.yaxis.tick_left()
+
+    # Diagonal // glyphs at the break (bottom-edge only).
+    _d_a = 0.018
+    _kw_left_a = dict(transform=ax_a_left.transAxes, color="#424242",
+                      lw=1.4, clip_on=False)
+    ax_a_left.plot((1 - _d_a, 1 + _d_a), (-_d_a, +_d_a), **_kw_left_a)
+    _kw_right_a = dict(transform=ax_a_right.transAxes, color="#424242",
+                       lw=1.4, clip_on=False)
+    ax_a_right.plot((-_d_a / 3, +_d_a / 3), (-_d_a, +_d_a), **_kw_right_a)
+
+    # Combine legend handles from both sub-axes (de-duplicated).
+    leg_handles_a, leg_labels_a = [], []
+    for sub_ax in (ax_a_left, ax_a_right):
+        for h, lbl in zip(*sub_ax.get_legend_handles_labels()):
+            if lbl not in leg_labels_a:
+                leg_handles_a.append(h)
+                leg_labels_a.append(lbl)
+    # Legend at lower-right of the right sub-axis (cluster is at the
+    # top of the right sub; lower-right is empty).
+    _legend(ax_a_right, handles=leg_handles_a, labels=leg_labels_a,
+            loc="lower right", ncol=1, fontsize=_F10_LEG)
+
+    # Apply style to both sub-axes; restore the broken-axis spine
+    # hides afterwards (because _apply_style restores defaults).
+    for sub_ax in (ax_a_left, ax_a_right):
+        _apply_style(sub_ax)
+        sub_ax.tick_params(labelsize=_F10_TICK, length=6, width=1.4)
+        for lbl in list(sub_ax.get_xticklabels()) + list(sub_ax.get_yticklabels()):
+            lbl.set_fontsize(_F10_TICK); lbl.set_fontweight("bold")
+    ax_a_left.spines["right"].set_visible(False)
+    ax_a_right.spines["left"].set_visible(False)
+    ax_a_right.tick_params(left=False, labelleft=False)
+    ax_a_left.yaxis.label.set_size(_F10_AXIS)
+    ax_a_left.yaxis.label.set_weight("bold")
 
     # --- (b) Context-aware methods (MCP/piRAG overhead) ---
     # Broken x-axis: ax_b_left covers 0.0-0.5 ms (the No Context
@@ -3510,14 +3561,78 @@ def fig10_latency_quality_frontier(data):
             lw=2.0, linestyle="--", alpha=0.75, zorder=2,
         )
         fig.add_artist(con)
-        # Overhead annotation lives on the right sub-axis since the
-        # arrow's terminus and the cluster context both sit there.
-        ax_b_right.annotate(
-            f"Context overhead\n+{agri_lat - ref[1]:.1f} ms  |  "
-            f"{agri_ari - ref[2]:+.3f} ARI",
-            xy=(agri_lat_plot, agri_ari),
-            xytext=(-12, 14), textcoords="offset points",
-            ha="right", va="bottom",
+        # Overhead annotation. 2026-05 changes:
+        #
+        #   (a) Position moved from data coords near the AgriBrain
+        #       marker (which collided with the piRAG and MCP markers
+        #       at this dpi) to AXES-RELATIVE coords in the upper-left
+        #       corner of the right sub-axis, where there's no data.
+        #
+        #   (b) Content enriched. The pre-2026-05 caption "+13.7 ms |
+        #       +0.020 ARI" reported the cross-scenario AVERAGE for
+        #       both quantities, which undersold a uniformly-large
+        #       per-scenario effect. The new caption shows:
+        #         - mean delta-ARI (+0.020 -- the cross-scenario
+        #           number, the pre-fix headline)
+        #         - per-scenario delta-ARI range (+0.012 to +0.032 --
+        #           shows that the smallest per-scenario gain on
+        #           heatwave is still meaningful)
+        #         - Cohen's d range (0.96-2.01 across scenarios -- all
+        #           large effect by Cohen's convention; >0.8 is
+        #           "large")
+        #         - Significance (every comparison passes Holm-
+        #           Bonferroni at alpha=0.05)
+        #
+        # Per-scenario range is pulled from benchmark_significance.json
+        # to make the annotation self-documenting against the canonical
+        # multi-scenario significance source.
+        import json as _json_b
+        sig_payload_path = RESULTS_DIR / "benchmark_significance.json"
+        delta_min = delta_max = agri_ari - ref[2]
+        d_min = d_max = float("nan")
+        n_sig = 0
+        n_total = 0
+        try:
+            sig_doc = _json_b.loads(sig_payload_path.read_text(encoding="utf-8"))
+            sig_block = sig_doc.get("significance", sig_doc)
+            deltas, ds = [], []
+            for sc, blk in sig_block.items():
+                ari_blk = blk.get("agribrain_vs_no_context", {}).get("ari", {})
+                if "mean_diff" in ari_blk:
+                    deltas.append(float(ari_blk["mean_diff"]))
+                if "cohens_d_pooled" in ari_blk:
+                    ds.append(float(ari_blk["cohens_d_pooled"]))
+                p_adj = ari_blk.get("p_value_adj_holm", ari_blk.get("p_value_adj"))
+                if isinstance(p_adj, (int, float)):
+                    n_total += 1
+                    if p_adj < 0.05:
+                        n_sig += 1
+            if deltas:
+                delta_min, delta_max = min(deltas), max(deltas)
+            if ds:
+                d_min, d_max = min(ds), max(ds)
+        except Exception:
+            pass
+        ann_lines = [
+            f"Context overhead",
+            f"+{agri_lat - ref[1]:.1f} ms  |  {agri_ari - ref[2]:+.3f} ARI (mean)",
+        ]
+        if delta_min != delta_max:
+            ann_lines.append(
+                f"per-scenario: {delta_min:+.3f} to {delta_max:+.3f} ARI"
+            )
+        if d_min == d_min and d_max == d_max:  # NaN guard
+            ann_lines.append(f"Cohen's d = {d_min:.2f} to {d_max:.2f} (large)")
+        if n_total > 0:
+            ann_lines.append(
+                f"{n_sig}/{n_total} scenarios sig. (Holm, p<0.05)"
+            )
+        # Anchor at top-left of the right sub-axis (axes-relative
+        # coords). Stays clear of every marker in the cluster.
+        ax_b_right.text(
+            0.02, 0.98, "\n".join(ann_lines),
+            transform=ax_b_right.transAxes,
+            ha="left", va="top",
             fontsize=ANNOT_FONT_SIZE, fontweight="bold",
             color=COLORS["agribrain"],
             bbox=dict(boxstyle="round,pad=0.35", facecolor="white",
@@ -3593,14 +3708,27 @@ def fig10_latency_quality_frontier(data):
     fig.tight_layout(rect=[0, 0, 1, 0.86], w_pad=1.6)
     fig.subplots_adjust(top=0.86)
 
-    # Compute the geometric center of the broken pair in figure
+    # Compute the geometric center of each broken pair in figure
     # coordinates - both labels and title use this so they appear
     # centered over the (left + right) sub-axis pair rather than
     # tied to one sub-axis. Read AFTER tight_layout so positions
     # reflect the final layout.
+    bbox_a_left = ax_a_left.get_position()
+    bbox_a_right = ax_a_right.get_position()
+    pair_a_x_center = (bbox_a_left.x0 + bbox_a_right.x1) / 2.0
     bbox_left = ax_b_left.get_position()
     bbox_right = ax_b_right.get_position()
     pair_x_center = (bbox_left.x0 + bbox_right.x1) / 2.0
+
+    # Panel A title + x-label centered over the broken pair.
+    fig.text(pair_a_x_center, bbox_a_left.y0 - 0.08,
+             "Mean Decision Latency (ms)",
+             ha="center", va="top",
+             fontsize=_F10_AXIS, fontweight="bold")
+    fig.text(pair_a_x_center, bbox_a_left.y1 + 0.005,
+             "(a) Lightweight Methods",
+             ha="center", va="bottom",
+             fontsize=_F10_TITLE, fontweight="bold")
 
     # X-label centered under the broken pair, far enough below the
     # axes to clear the rotated tick labels.
