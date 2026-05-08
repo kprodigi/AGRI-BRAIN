@@ -3133,26 +3133,28 @@ def fig9_fault_degradation():
 
     ax = axes[2]
     # 2026-05 metric switch: ``context_influence_rate`` (the previous
-    # panel-C metric) measured "how often did context flip the action"
-    # -- which surfaced a misleading ranking, because piRAG-only's
-    # rate sometimes exceeded full AgriBrain's even though AgriBrain
-    # delivered higher ARI. The mechanism: AgriBrain has a built-in
-    # CONSENSUS GATE (its modifier needs both MCP and piRAG channels
-    # to agree before flipping the argmax), so each AgriBrain flip is
+    # panel-C metric) measured "how often does the context-modifier
+    # change the chosen action" -- which surfaced a misleading
+    # ranking, because piRAG-only's rate sometimes exceeded full
+    # AgriBrain's even though AgriBrain delivered higher ARI. The
+    # mechanism: AgriBrain has a built-in CONSENSUS GATE (its
+    # modifier needs both MCP and piRAG channels to agree before it
+    # changes the argmax), so each AgriBrain intervention is
     # corroborated by two independent context channels. piRAG-only
-    # has no such gate -- it flips on any strong piRAG signal alone,
-    # producing more "single-channel" flips that include false
-    # positives. Higher rate, lower per-flip quality.
+    # has no such gate -- it intervenes on any strong piRAG signal
+    # alone, producing more "single-channel" interventions that
+    # include false positives. Higher rate, lower per-intervention
+    # quality.
     #
-    # The honest panel-c metric is ARI-uplift-per-flip: what fraction
-    # of a unit ARI improvement does each flip deliver?
+    # The honest panel-c metric is ARI-uplift per context-induced
+    # decision change ("intervention"): what fraction of a unit ARI
+    # improvement does each intervention deliver?
     #
     #   decision_quality(scenario, mode)
     #     = (ari[mode] - ari[no_context]) / influence_fraction[mode]
     #
     # where influence_fraction = context_influenced_steps / n_steps
-    # (the per-episode flip rate, NOT the per-active-step rate).
-    # This metric:
+    # (the per-episode intervention rate). This metric:
     #   * makes AgriBrain win on every scenario (the consensus gate
     #     pays off);
     #   * is mode-comparable (denominator is same units across modes);
@@ -3231,7 +3233,8 @@ def fig9_fault_degradation():
             # wants them; this panel's job is to convey the rank
             # ordering (AgriBrain > piRAG-only > MCP-only on every
             # scenario), which the bare means already do
-            # unambiguously.
+            # unambiguously. Each bar = ΔARI per context-induced
+            # decision change ("intervention").
             ax.bar(xs, heights, width, color=color,
                    alpha=0.92, edgecolor="white", linewidth=0.7,
                    label=label)
@@ -3250,7 +3253,12 @@ def fig9_fault_degradation():
             default=0.5,
         )
         ax.set_ylim(0.0, max(max_q * 1.30, 0.5))
-        ax.legend(loc="upper left", fontsize=_F9_LEG,
+        # 2026-05 legend placement: upper-right. The rightmost
+        # scenario (Baseline) has its tallest bar (AgriBrain) at
+        # ~0.28 in axes data, ~0.48 axes-fraction with the current
+        # ylim ~0.58, so the upper third of the panel is clear
+        # headroom on the right side as well as the left.
+        ax.legend(loc="upper right", fontsize=_F9_LEG,
                   ncol=1, framealpha=0.95, edgecolor="#757575",
                   fancybox=False, shadow=False)
     else:
@@ -3260,7 +3268,7 @@ def fig9_fault_degradation():
     # Y-axis title size re-applied after _restyle to defeat the
     # _apply_style render-path bug.
     _restyle(ax, "(c) Context Decision Quality",
-             ylabel=r"$\Delta$ARI per flip")
+             ylabel=r"$\Delta$ARI per intervention")
     ax.yaxis.label.set_size(_F9_AXIS)
     ax.yaxis.label.set_weight("bold")
 
