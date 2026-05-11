@@ -81,19 +81,25 @@ async function main() {
     // 8. Seed the canonical THETA / THETA_CONTEXT matrices on PolicyStore
     //    so a verifier can read them straight off-chain without waiting
     //    for the first DAO proposal. Values are milli-scaled (multiply
-    //    floats by 1000) and the row-major layout matches the paper:
-    //    THETA is (3, 6) over (cold_chain, local_redistribute, recovery)
-    //    x (1-rho, inv, y_hat, thermal, rho, rho*inv); THETA_CONTEXT is
-    //    (3, 5) over the same actions x (psi_0..psi_4). Re-seeding via
-    //    setPolicyMatrix is idempotent and bumps the on-chain version
-    //    counter so a verifier can detect overwrites.
+    //    floats by 1000) and the row-major layout matches the canonical
+    //    Python THETA in agribrain/backend/src/models/action_selection.py:
+    //    THETA is (3, 10) over (cold_chain, local_redistribute, recovery)
+    //    x (fresh, inv_p, dem_pt, therm, spoil, inter, sup_pt, sup_unc,
+    //    dem_unc, price); THETA_CONTEXT is (3, 5) over the same actions
+    //    x (psi_0..psi_4). Re-seeding via setPolicyMatrix is idempotent
+    //    and bumps the on-chain version counter so a verifier can detect
+    //    overwrites. (Pre-2026-05 the on-chain THETA was registered as
+    //    (3, 6) -- the supply/demand-uncertainty + price columns were
+    //    missing, leaving 40 percent of the policy invisible to any
+    //    on-chain audit. Fixed by extending both the registration shape
+    //    in PolicyStore.sol and this seed payload to the full 30 cells.)
     const THETA_MILLI = [
-        // cold_chain row
-        500, -300, 400, -500, -2000, -1000,
+        // cold_chain row:  fresh  inv_p  dem_pt  therm  spoil  inter  sup_pt  sup_unc  dem_unc  price
+                              500,  -300,    400,  -500, -2000, -1000,   -400,     400,     300,   300,
         // local_redistribute row
-        0, 500, -200, 500, 2000, 1500,
+                                0,   500,   -200,   500,  2000,  1500,    800,      50,    -200,  -300,
         // recovery row
-        -500, -300, -200, 300, 1500, -300,
+                             -500,  -300,   -200,   300,  1500,  -300,    150,    -300,    -300,   -50,
     ];
     const THETA_CONTEXT_MILLI = [
         // cold_chain row
@@ -105,8 +111,8 @@ async function main() {
     ];
     const thetaKey = hre.ethers.id('THETA');
     const thetaCtxKey = hre.ethers.id('THETA_CONTEXT');
-    await policyStore.contract.setPolicyMatrix(thetaKey, 3, 6, THETA_MILLI);
-    console.log('PolicyStore.THETA seeded (3x6, milli-scaled)');
+    await policyStore.contract.setPolicyMatrix(thetaKey, 3, 10, THETA_MILLI);
+    console.log('PolicyStore.THETA seeded (3x10, milli-scaled)');
     await policyStore.contract.setPolicyMatrix(thetaCtxKey, 3, 5, THETA_CONTEXT_MILLI);
     console.log('PolicyStore.THETA_CONTEXT seeded (3x5, milli-scaled)');
 

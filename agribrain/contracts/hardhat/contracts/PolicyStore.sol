@@ -16,7 +16,7 @@ pragma solidity ^0.8.28;
 ///           Controls reward trade-off between SLCA and waste reduction.
 ///
 ///         Matrix keys (int256[], mapped via ``policyMatrix``):
-///         - keccak256("THETA"):           base policy weights, 3x6, milli-scaled.
+///         - keccak256("THETA"):           base policy weights, 3x10, milli-scaled.
 ///         - keccak256("THETA_CONTEXT"):   context weight matrix, 3x5, milli-scaled.
 ///         Each cell is stored as int256 (signed) scaled by 1000, so the
 ///         range +/-2.000 the paper uses for Theta entries is representable
@@ -109,7 +109,7 @@ contract PolicyStore {
         // cold-chain spoilage = -2.00, Theta_context cold-chain
         // compliance = -0.80) sit comfortably inside that envelope and
         // any proposal that drifts past +/-5.0 is gated.
-        _registerMatrix(keccak256("THETA"), 3, 6, 5000);
+        _registerMatrix(keccak256("THETA"), 3, 10, 5000);
         _registerMatrix(keccak256("THETA_CONTEXT"), 3, 5, 5000);
     }
 
@@ -124,7 +124,7 @@ contract PolicyStore {
 
     /// @dev Hard upper bound on matrix cell count to prevent gas-DoS via
     /// pathologically-large matrices. The paper's largest matrix is THETA
-    /// at (3, 6) = 18 cells; THETA_CONTEXT is (3, 5) = 15. The 256-cell
+    /// at (3, 10) = 30 cells; THETA_CONTEXT is (3, 5) = 15. The 256-cell
     /// cap leaves >10x headroom for future expansion while making
     /// setPolicyMatrix's per-cell loop bounded by a small constant. A
     /// matrix above this cap is rejected at registration time so a
