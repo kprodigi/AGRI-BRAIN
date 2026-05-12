@@ -2951,7 +2951,7 @@ def fig9_fault_degradation():
     # bars / inter-group gap proportionally so the 5-scenario x
     # 3-mode grouped-bar comparison reads more clearly.
     fig, axes = plt.subplots(1, 3, figsize=(26, 7.5),
-                             gridspec_kw={"width_ratios": [1.40, 1.20, 1.85]})
+                             gridspec_kw={"width_ratios": [1.40, 1.20, 1.40]})
 
     # Per-element font sizes aligned to fig 7's pattern (25/20/20/19)
     # per user "all three-panel figures must be identical" request.
@@ -3471,6 +3471,10 @@ def fig9_fault_degradation():
             [SCENARIO_LABELS.get(s, s) for s in scenarios_in_matrix],
             rotation=30, ha="right", rotation_mode="anchor",
         )
+        # Tighten the gap between the bar baseline and the rotated
+        # scenario labels: default pad ~3.5 leaves a visible whitespace
+        # band that grew prominent at the latest global font scale.
+        ax.tick_params(axis="x", pad=1)
         # ylim chosen to leave headroom above the tallest bar
         # (typically Overproduction agribrain ~0.45 on the d33b8de
         # run) **plus** the upper error cap. Compute the largest
@@ -3535,17 +3539,24 @@ def fig9_fault_degradation():
     # clear. Panel C is shifted leftward and widened to fill so its
     # right edge stays at the figure margin.
     fig.tight_layout(rect=[0, 0.06, 1, 0.985], w_pad=1.0)
-    bbox_b = axes[1].get_position()
-    bbox_c = axes[2].get_position()
-    target_bc_gap = 0.05
-    actual_gap = bbox_c.x0 - bbox_b.x1
-    if actual_gap > target_bc_gap:
-        shift = actual_gap - target_bc_gap
+    # 2026-05 ninth-pass: per-axis shim restored with a 2.0 in target
+    # (= 2/26 = 0.0769 fig-fraction) on the 26-inch canvas. The natural
+    # tight_layout gap with [1.40, 1.20, 1.40] width_ratios is
+    # ~0.136 fig-fraction (~3.5 in) which reads as too much whitespace
+    # between panel B's "+xx.x%" labels and panel C's y-axis. Shift
+    # panel C leftward to the 2-inch target and grow its width so the
+    # right edge stays at the figure margin.
+    _bbox_b = axes[1].get_position()
+    _bbox_c = axes[2].get_position()
+    _target_bc_gap = 2.0 / 26.0  # 2 in on a 26 in canvas
+    _actual_gap = _bbox_c.x0 - _bbox_b.x1
+    if _actual_gap > _target_bc_gap:
+        _shift = _actual_gap - _target_bc_gap
         axes[2].set_position([
-            bbox_c.x0 - shift,
-            bbox_c.y0,
-            bbox_c.width + shift,
-            bbox_c.height,
+            _bbox_c.x0 - _shift,
+            _bbox_c.y0,
+            _bbox_c.width + _shift,
+            _bbox_c.height,
         ])
     _save(fig, "fig9_robustness")
 
