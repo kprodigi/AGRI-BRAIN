@@ -1622,14 +1622,14 @@ def _fig5_pricing_inner(ap, ab, hours):
     ax.set_ylim(0, 1.15)
     _apply_style(ax)
     # Shrunk legend: ncol=3 with tightened column/handle spacing so the
-    # bbox stays within the x=0..70 plot range. Anchored with
-    # ``loc="lower center"`` at axes-y=0.89 (~ data y=1.024) so the
-    # legend BOTTOM sits just above the y=1 routing-fraction line and
-    # the legend extends upward into the axes' 0.15 headroom band
-    # (y = 1.0..1.15), staying entirely inside the panel and clearly
-    # below the subplot title above.
-    _legend(ax, loc="lower center", ncol=3,
-            bbox_to_anchor=(0.5, 0.89),
+    # bbox stays within the x=0..70 plot range. Anchored at axes-y=0.945
+    # with ``loc="center"`` so the legend CENTER sits at the midpoint
+    # of the headroom band between the y=1 routing-fraction line
+    # (axes y ~= 0.870) and the subplot title baseline (axes y ~= 1.02
+    # at the default 10 pt title pad), giving equal vertical gaps to
+    # the data above y=1 and to the title above the panel.
+    _legend(ax, loc="center", ncol=3,
+            bbox_to_anchor=(0.5, 0.945),
             columnspacing=0.8, handlelength=1.4,
             handletextpad=0.4, borderpad=0.35)
 
