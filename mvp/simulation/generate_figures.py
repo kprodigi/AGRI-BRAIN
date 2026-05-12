@@ -115,13 +115,13 @@ from src.models.resilience import RLE_THRESHOLD, compute_effective_rho, HIERARCH
 #
 # If a figure is shrunk to column width and labels start overlapping, the
 # figsize is too small, not the font. Increase figsize, not decrease font.
-BODY_FONT_SIZE = 16        # paragraph-equivalent body text in figures (+1 global bump)
-TICK_FONT_SIZE = 16        # x/y tick numbers (+1 global bump)
-AXIS_LABEL_SIZE = 18       # x/y axis labels (bold) (+1 global bump)
-SUBPLOT_TITLE_SIZE = 20    # (a) Panel-title style (bold) (+1 global bump)
-FIG_TITLE_SIZE = 24        # fig.suptitle (bold) (+1 global bump)
-LEGEND_FONT_SIZE = 16      # legend entries (bold) (+1 global bump)
-ANNOT_FONT_SIZE = 15       # in-plot annotations like "Heatwave" bbox (+1 global bump)
+BODY_FONT_SIZE = 17        # paragraph-equivalent body text in figures (+2 global cumulative)
+TICK_FONT_SIZE = 17        # x/y tick numbers (+2 global cumulative)
+AXIS_LABEL_SIZE = 19       # x/y axis labels (bold) (+2 global cumulative)
+SUBPLOT_TITLE_SIZE = 21    # (a) Panel-title style (bold) (+2 global cumulative)
+FIG_TITLE_SIZE = 25        # fig.suptitle (bold) (+2 global cumulative)
+LEGEND_FONT_SIZE = 17      # legend entries (bold) (+2 global cumulative)
+ANNOT_FONT_SIZE = 16       # in-plot annotations like "Heatwave" bbox (+2 global cumulative)
 
 plt.rcParams.update({
     # Use the family-group ("sans-serif") and let the priority list
@@ -2485,7 +2485,7 @@ def fig7_ablation(data):
     for text in leg.get_texts():
         text.set_fontweight("bold")
     # Bumped suptitle size so it scales with the larger panel typography.
-    fig.suptitle("Ablation Study", y=0.995, fontsize=28,
+    fig.suptitle("Ablation Study", y=0.995, fontsize=29,
                  fontweight="bold")
     fig.tight_layout(rect=[0, 0.08, 1, 0.985], w_pad=1.4)
     _save(fig, "fig7_ablation")
@@ -3504,7 +3504,7 @@ def fig9_fault_degradation():
     ax.yaxis.label.set_weight("bold")
 
     fig.suptitle("Performance Gain over Baselines and Context Influence",
-                 y=0.995, fontsize=28, fontweight="bold")
+                 y=0.995, fontsize=29, fontweight="bold")
     # Layout spacing tightened post-2026-04 per user "there must be
     # no overlapping" mandate:
     #   - rect bottom raised from 0.02 to 0.06 so the rotated x-tick
