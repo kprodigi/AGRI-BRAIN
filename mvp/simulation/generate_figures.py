@@ -890,11 +890,14 @@ def _fig3_overproduction_inner(op, ab, hours):
         threshold_hour = hours[threshold_idx]
         ax.axvline(threshold_hour, color="#616161", linestyle="--",
                    linewidth=1.2, alpha=0.8)
+        # Place the "first rho > 0.1 at h~XX" label at y = 0.1 in data
+        # coordinates (per user request). Axes y-fraction = 0.125 because
+        # ylim is (-0.05, 1.15) so (0.1 - (-0.05)) / 1.2 = 0.125.
         ax.annotate(
             f"first \u03c1 > {RLE_THRESHOLD} at h\u2248{threshold_hour:.0f}",
-            xy=(threshold_hour, 0.06), xycoords=("data", "axes fraction"),
+            xy=(threshold_hour, 0.125), xycoords=("data", "axes fraction"),
             xytext=(6, 0), textcoords="offset points",
-            ha="left", va="bottom", fontsize=ANNOT_FONT_SIZE - 1,
+            ha="left", va="center", fontsize=ANNOT_FONT_SIZE - 1,
             fontweight="bold", color="#424242",
             bbox=dict(boxstyle="round,pad=0.20", facecolor="white",
                       alpha=0.90, edgecolor="#9E9E9E", linewidth=0.8),
@@ -905,13 +908,12 @@ def _fig3_overproduction_inner(op, ab, hours):
     ax.set_title("(c) Reverse Logistics Efficiency")
     ax.set_ylim(-0.05, 1.15)
     _apply_style(ax)
-    # Center the "Overproduction" label inside the window (xpos=45) so
-    # it sits well inside the red shading rather than hugging the right
-    # edge - the upper-left corner is now occupied by the threshold-
-    # onset guide rather than the legend, so we no longer need to push
-    # the label rightward.
+    # Center the "Overproduction" label at y = 0.4 in data coordinates
+    # (per user request). Axes y-fraction = 0.375 because ylim is
+    # (-0.05, 1.15) so (0.4 - (-0.05)) / 1.2 = 0.375. xpos keeps the
+    # label horizontally centered inside the red shading.
     _annotate_window(ax, 12, 60, WINDOW_COLOR, "Overproduction",
-                     ypos=0.99, xpos=45)
+                     ypos=0.375, xpos=45, va="center")
     # Legend at "center left": pre-h32 the panel is empty (RLE is
     # undefined until any at-risk batch enters the rolling window), so
     # the left half is clear headroom for the legend; vertical-center
