@@ -108,3 +108,14 @@ mvp/simulation/results/*
 !mvp/simulation/results/external_validity_summary.json
 !mvp/simulation/results/external_validity_summary.csv
 !mvp/simulation/results/external_validity_deltas.csv
+# 2026-05 Path A: per-seed scalar envelopes (~50 KB x 20 seeds = 1 MB),
+# per-seed decision ledger trees (~700 KB x 20 seeds = 14 MB), and the
+# cross-seed channel-attribution aggregate (~80 KB). Allowlisted so a
+# fresh clone can re-run the §5.8 / Table S1 channel-attribution
+# aggregator and the BCa bootstrap on benchmark_summary.json without
+# re-running the 50-h HPC benchmark.
+!mvp/simulation/results/benchmark_seeds/
+!mvp/simulation/results/benchmark_seeds/**
+!mvp/simulation/results/decision_ledger_per_seed/
+!mvp/simulation/results/decision_ledger_per_seed/**
+!mvp/simulation/results/decision_ledger_aggregate.json
