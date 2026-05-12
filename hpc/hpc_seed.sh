@@ -74,7 +74,29 @@ SEED="${SEEDS[$SLURM_ARRAY_TASK_ID]}"
 OUT_DIR="mvp/simulation/results/benchmark_seeds/${RUN_TAG}"
 mkdir -p "$OUT_DIR"
 
-echo "[seed=${SEED} tag=${RUN_TAG}] starting at $(date), output -> ${OUT_DIR}/seed_${SEED}.json"
+# 2026-05 Path A extension: route the per-step DecisionLedger JSONL files
+# to a SEED-SPECIFIC subdirectory so the 20 SLURM array tasks no longer
+# race-overwrite each other on the shared
+# mvp/simulation/results/decision_ledger/ default path. Without this
+# env-var override every task wrote 40 jsonl files (8 modes x 5 scenarios)
+# to the same default dir and only the seed that finished last survived,
+# which is why the canonical d33b8de run's ledger archive holds 1-seed
+# data instead of 20-seed data and why section 5.8's per-channel
+# attribution claim had to fall back to a single representative timestep.
+#
+# After this change each seed task writes its full per-step ledger to
+# mvp/simulation/results/benchmark_seeds/${RUN_TAG}/decision_ledger_${SEED}/,
+# hpc/hpc_aggregate.sh rolls these into one archive, and
+# mvp/simulation/benchmarks/aggregate_decision_ledgers.py computes the
+# cross-seed per-channel logit-contribution statistics that the
+# manuscript supplementary Table S1 reports.
+LEDGER_DIR="$OUT_DIR/decision_ledger_${SEED}"
+mkdir -p "$LEDGER_DIR"
+export DECISION_LEDGER_DIR="$LEDGER_DIR"
+
+echo "[seed=${SEED} tag=${RUN_TAG}] starting at $(date)"
+echo "  metric envelope -> ${OUT_DIR}/seed_${SEED}.json"
+echo "  decision ledger -> ${LEDGER_DIR}/"
 
 # Pre-flight invariants check. Costs <1 s and avoids 2-6 h of wasted
 # compute producing numbers from a stale code path.

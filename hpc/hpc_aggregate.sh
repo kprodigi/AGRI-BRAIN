@@ -163,6 +163,44 @@ for f in "$SEEDS_DIR"/seed_*.json; do
 done
 python mvp/simulation/benchmarks/aggregate_seeds.py
 
+# Stage 5.5: consolidate the per-seed DecisionLedger directories produced
+# by hpc/hpc_seed.sh's per-task ``DECISION_LEDGER_DIR`` override. Each seed
+# task wrote its full per-step ledger to
+#   ${SEEDS_DIR}/decision_ledger_${SEED}/{mode}__{scenario}.jsonl
+# Mirror these into
+#   ${RESULTS_DIR}/decision_ledger_per_seed/seed_${SEED}/{mode}__{scenario}.jsonl
+# so the cross-seed channel-attribution aggregator
+# (mvp/simulation/benchmarks/aggregate_decision_ledgers.py) can walk a
+# single canonical layout regardless of the SLURM array task IDs that
+# produced them. Pre-2026-05 the canonical ``decision_ledger/`` directory
+# at $RESULTS_DIR/decision_ledger held only the LAST-seed-to-finish data
+# because the 20 SLURM array tasks shared one default output dir; the
+# per-seed isolation in hpc_seed.sh combined with this stage restores
+# 20-seed coverage and makes the manuscript Section 5.8 / Table S1
+# per-channel statistics reproducible.
+echo ""
+echo "=== Stage 5.5: consolidate per-seed decision ledgers ==="
+mkdir -p "$RESULTS_DIR/decision_ledger_per_seed"
+LEDGER_COUNT=0
+for ledger_src in "$SEEDS_DIR"/decision_ledger_*/; do
+    [ -d "$ledger_src" ] || continue
+    seed_num="$(basename "$ledger_src" | sed 's/^decision_ledger_//')"
+    seed_dst="$RESULTS_DIR/decision_ledger_per_seed/seed_${seed_num}"
+    mkdir -p "$seed_dst"
+    cp -f "$ledger_src"*.jsonl "$seed_dst/" 2>/dev/null || true
+    LEDGER_COUNT=$((LEDGER_COUNT + 1))
+done
+echo "  consolidated ${LEDGER_COUNT} per-seed ledger directories"
+# Run the cross-seed channel-attribution aggregator. Output goes to
+# results/decision_ledger_aggregate.json which the manuscript supplementary
+# table S1 cites.
+if [ "$LEDGER_COUNT" -gt 0 ]; then
+    python mvp/simulation/benchmarks/aggregate_decision_ledgers.py \
+        --ledger-root "$RESULTS_DIR/decision_ledger_per_seed" \
+        --output "$RESULTS_DIR/decision_ledger_aggregate.json" \
+        || echo "  WARN: decision-ledger aggregator failed (non-fatal)"
+fi
+
 # Stage 6: stress suite (5 scenarios, 4 stressors, ~55 episodes; ~1 h on HPC).
 echo ""
 echo "=== Stage 6: stress suite ==="
@@ -220,6 +258,7 @@ for f in \
     mvp/simulation/results/stress_passfail.csv \
     mvp/simulation/results/feature_heatmap_data.json \
     mvp/simulation/results/explainability_metrics.json \
+    mvp/simulation/results/decision_ledger_aggregate.json \
     mvp/simulation/results/artifact_manifest.json
 do
     [ -f "$f" ] && archive_files+=("$f")
@@ -230,6 +269,13 @@ done
 # verify_anchored_root can be re-run from the tarball alone.
 [ -d mvp/simulation/results/decision_ledger ] && \
     archive_files+=("mvp/simulation/results/decision_ledger")
+
+# 2026-05 Path A: the per-seed ledger tree consolidated above so the
+# cross-seed channel-attribution aggregator's inputs survive in the
+# tarball alongside the aggregator's output. ~14 MB total at 20 seeds
+# x 5 scenarios x 8 modes x 288 records.
+[ -d mvp/simulation/results/decision_ledger_per_seed ] && \
+    archive_files+=("mvp/simulation/results/decision_ledger_per_seed")
 
 shopt -s nullglob
 for f in mvp/simulation/results/fig*.png mvp/simulation/results/fig*.pdf; do
