@@ -1621,7 +1621,15 @@ def _fig5_pricing_inner(ap, ab, hours):
     ax.set_title("(b) Routing Distribution Over Time")
     ax.set_ylim(0, 1.15)
     _apply_style(ax)
-    _legend(ax, loc="upper center", ncol=3)
+    # Shrunk legend: ncol=3 with tightened column/handle spacing so the
+    # bbox stays within the x=0..70 plot range. Anchored at axes-y=0.99
+    # (top edge of panel, ~ data y=1.14) so the legend sits in the
+    # 0.15 headroom above the y=1 routing-fraction line and never
+    # overlaps the stacked bars.
+    _legend(ax, loc="upper center", ncol=3,
+            bbox_to_anchor=(0.5, 0.99),
+            columnspacing=0.8, handlelength=1.4,
+            handletextpad=0.4, borderpad=0.35)
 
     # --- (c) Equity index ---
     # Auto-scale across the three modes; the previous fixed y-range
