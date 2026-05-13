@@ -245,7 +245,7 @@ Make sure the backend is running and data is loaded before using the dashboard.
 | `/decisions` | Decisions | Decision timeline with action badges, filters by role and action type, search, decision analytics sidebar with pie chart, CSV export, PDF report. Each decision card has an expandable Explainability Panel showing: causal BECAUSE/WITHOUT reasoning with highlighted keywords, 5-axis context feature radar chart (compliance, forecast urgency, retrieval confidence, regulatory pressure, recovery saturation) with logit adjustment bars, categorized keyword tags (thresholds, regulations, required actions), and Merkle-rooted provenance chain with SHA-256 evidence hashes |
 | `/map` | Map | Leaflet map centered on South Dakota with 4 supply chain nodes (farm, processor, cooperative, recovery) and route overlays showing cold chain, redistribution, and recovery paths |
 | `/analytics` | Analytics | Executive summary with 5 hero metrics, Table 1 (cross-scenario) and Table 2 (ablation study), grouped bar charts, radar chart, method comparison, scenario deep-dive gallery with figures, carbon footprint analysis, full simulation runner |
-| `/mcp-pirag` | MCP/piRAG | MCP protocol overview, context feature visualization, knowledge base browser, protocol traces, causal reasoning panel |
+| `/mcp-pirag` | MCP/piRAG | MCP protocol overview, context feature visualization, knowledge base browser, protocol traces, causal reasoning panel, **H3 Mechanism tab (§5.8)** — cross-seed per-channel logit-contribution stats from `decision_ledger_aggregate.json` with the supplementary Table S1 rendered live (MCP vs piRAG median Δlogit per scenario, super-additivity fraction, per-feature mean absolute contribution) |
 | `/demo` | Demo | Interactive system demo with live pipeline walkthrough and agent decision theater |
 | `/admin` | Admin Panel | Seven tabs: Policy (routing/carbon/SLCA parameters), Blockchain (RPC status, config), Audit (searchable log table with expandable rows), Scenarios (5 scenario cards with intensity slider), Quick Decision (role selector + instant decision), Runtime config, MCP Explorer (tool browser with 14 statically registered tools, live resource monitor with 5s auto-refresh, prompt template browser with parameter forms, live tool invocation with presets for compliance/piRAG/explain, piRAG knowledge base search with physics-informed retrieval, JSON-RPC protocol interaction log) |
 
@@ -253,10 +253,25 @@ Make sure the backend is running and data is loaded before using the dashboard.
 
 - **Explainability Panel**: Each decision card on the Decisions page has a "Show explanation" button that reveals causal reasoning (BECAUSE/WITHOUT), a 5-axis context feature radar chart (ψ_0..ψ_4, the institutional context vector), categorized keyword tags from piRAG retrieval, and a Merkle-rooted provenance chain.
 - **MCP Explorer**: The Admin panel's MCP tab provides an interactive tool browser, live resource monitor, prompt template expander, tool invocation console with presets, piRAG knowledge base search, and a JSON-RPC protocol interaction log.
+- **H3 Mechanism panel (§5.8)**: `/mcp-pirag` → "H3 Mechanism" tab renders the cross-seed channel-attribution Table S1 directly from `decision_ledger_aggregate.json`. Use this as the centrepiece of a research demo — it shows the per-channel decomposition (MCP-derived vs piRAG-derived ψ-features) is *complementary, not redundant*, and quantifies the super-additivity fraction (the ~20 % of decisions where the integrated condition exceeds the better single channel by > 0.005 ARI-equivalent logit shift).
+- **Showcase banner**: A dismissable hero banner on the Operations dashboard surfaces the three canonical paper claims (H1 integration superiority, H2 communication robustness, H3 component complementarity) with their effect sizes and links into the supporting frontend pages. Dismissal is persisted to `localStorage.ops.showcaseBanner.dismissed` so a returning operator does not see it on every reload.
 - **Dark mode**: Toggle via the sun/moon icon in the header. Persists in localStorage.
 - **WebSocket**: Real-time connection indicator ("Live" badge) in the header. Auto-reconnects.
 - **Notifications**: Bell icon in header shows decision events from the WebSocket stream.
 - **Responsive**: Sidebar collapses on mobile with bottom navigation.
+
+### Showcase demo flow (for visiting academics or industry guests)
+
+Five-minute walkthrough that takes a guest from headline claims to verifiable evidence:
+
+1. **`/` (Ops dashboard)** — the showcase banner is the first thing visible. It quotes the three hypotheses with their effect sizes from the canonical 20-seed run.
+2. **`/mcp-pirag` → "H3 Mechanism (§5.8)"** — click the headline link from the banner. The panel loads `decision_ledger_aggregate.json` live and renders the supplementary Table S1 plus the pooled-perturbed pooled stats (n = 23,040 agribrain-mode decisions). This is the freshest paper-grade evidence.
+3. **`/demo` (interactive pipeline)** — walk through the 12-phase decision pipeline (IoT → PINN spoilage → LSTM forecast → agent dispatch → MCP tools → piRAG retrieval → ψ vector → Θ_context × ψ logit modifier → policy → action → SLCA → causal explanation → Merkle root → on-chain anchor).
+4. **`/decisions`** — expand any decision card's Explainability Panel. Show the BECAUSE/WITHOUT counterfactual, the ψ radar, and the Merkle root. Copy the Merkle root and demonstrate that it can be verified independently against the on-chain `ProvenanceRegistry.sol` anchor.
+5. **`/analytics`** — full benchmark tables (Table 1 cross-scenario, Table 2 ablation), per-scenario deep-dive figure gallery, paired ΔARI Wilcoxon-CI whiskers. This is the corroborating quantitative evidence.
+6. **`/admin` → "Blockchain"** — surface the deployed contract addresses, the policy-anchor history, and the DAO governance flow (`propose` → `vote` → `queue` → `execute`) that update Θ_context on-chain.
+
+The full sequence runs from a fresh terminal in under 10 minutes assuming the backend is already serving on `:8100` and the frontend on `:5173`.
 
 ---
 

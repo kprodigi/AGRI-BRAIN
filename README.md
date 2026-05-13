@@ -6,6 +6,30 @@ multi-agent coordination, MCP-mediated tool interoperability, physics-informed
 RAG knowledge retrieval, and regime-aware contextual policy with online
 REINFORCE learning for sustainable food logistics.
 
+## Headline Results (canonical 20-seed benchmark)
+
+Evaluated on 5 perturbation scenarios × 8 routing modes × 20 stochastic seeds
+× 288 hourly steps = 230,400 decisions per HPC re-run. Source:
+`mvp/simulation/results/benchmark_summary.json` plus
+`paper_benchmark_table.json` (BCa-bootstrap CIs, Holm-Bonferroni FWER control,
+paired permutation tests).
+
+| Hypothesis | Effect | Significance |
+|---|---|---|
+| **H1 — Integration superiority.** AGRI-BRAIN ARI beats no-context across all 5 scenarios. | ΔARI **+0.019 to +0.035** | Cohen's d_z **3.34–7.40**, p_adj < 0.001 |
+| **H2 — Communication robustness.** Performance degrades < 1 % under sensor noise, missing data, telemetry delay, and MCP tool fault. | \|ΔARI\| ≤ **0.007** all stressors | Pre-registered ≤ 0.01 threshold met |
+| **H3 — Component complementarity.** MCP and piRAG channels carry different ψ-features and integrate super-additively. | **20.1 %** of decisions show joint Δz > max single channel by > 0.005 (n = 23,040 perturbed-scenario agribrain decisions) | Cross-seed per-channel decomposition: MCP median Δlogit 0.000, piRAG median Δlogit 0.150; both > 0 in their inter-quartile upper half |
+
+§5.8 mechanism evidence (Path A, 2026-05): the new per-seed isolation of the
+`DecisionLedger` JSONL audit trail means every step of every (scenario, mode,
+seed) cell is preserved without race-overwrite by the parallel SLURM array
+tasks. The cross-seed aggregator
+(`mvp/simulation/benchmarks/aggregate_decision_ledgers.py`) computes
+Θ_context[a, :] · (ψ · channel_mask) for every decision and exports
+`mvp/simulation/results/decision_ledger_aggregate.json`. The frontend
+`McpPiragPage` "H3 Mechanism" tab renders this as a live per-scenario Table
+S1 plus the headline pooled-perturbed stats.
+
 ## Frontend Screenshots
 
 | Operations Dashboard | Quality Monitoring | Supply Chain Map |

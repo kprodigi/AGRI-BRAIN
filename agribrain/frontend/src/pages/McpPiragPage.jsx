@@ -22,8 +22,14 @@ import {
 import {
   Brain, Wrench, BookOpen, Search, Zap, Shield, Hash, GitBranch,
   Copy, Play, Loader2, ScrollText, ArrowRight, Layers, Network,
-  CheckCircle2, AlertTriangle, Database,
+  CheckCircle2, AlertTriangle, Database, Sparkles,
 } from "lucide-react";
+// Lazy-load the heavier H3-mechanism panel (§5.8 evidence): it fetches the
+// 150 KB decision_ledger_aggregate.json on mount and renders three charts;
+// keeping it lazy avoids inflating the initial McpPiragPage bundle.
+const ChannelAttributionPanel = React.lazy(() =>
+  import("@/components/explainability/ChannelAttributionPanel.jsx"),
+);
 
 const API = getApiBase();
 
@@ -1201,6 +1207,7 @@ export default function McpPiragPage() {
         <TabsList className="w-full justify-start flex-wrap">
           <TabsTrigger value="overview" className="flex items-center gap-1.5"><Network className="w-3.5 h-3.5" /> Overview</TabsTrigger>
           <TabsTrigger value="features" className="flex items-center gap-1.5"><Layers className="w-3.5 h-3.5" /> Context Features</TabsTrigger>
+          <TabsTrigger value="h3" className="flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> H3 Mechanism (§5.8)</TabsTrigger>
           <TabsTrigger value="knowledge" className="flex items-center gap-1.5"><BookOpen className="w-3.5 h-3.5" /> Knowledge Base</TabsTrigger>
           <TabsTrigger value="protocol" className="flex items-center gap-1.5"><Zap className="w-3.5 h-3.5" /> Protocol</TabsTrigger>
           <TabsTrigger value="causal" className="flex items-center gap-1.5"><Brain className="w-3.5 h-3.5" /> Causal Reasoning</TabsTrigger>
@@ -1209,6 +1216,11 @@ export default function McpPiragPage() {
         <div className="mt-6">
           <TabsContent value="overview"><OverviewTab tools={tools} ablationData={ablationData} benchSummary={benchSummary} /></TabsContent>
           <TabsContent value="features"><ContextFeaturesTab latestExplainability={latestExplainability} /></TabsContent>
+          <TabsContent value="h3">
+            <React.Suspense fallback={<Skeleton className="h-96 rounded-lg" />}>
+              <ChannelAttributionPanel />
+            </React.Suspense>
+          </TabsContent>
           <TabsContent value="knowledge"><KnowledgeBaseTab /></TabsContent>
           <TabsContent value="protocol"><ProtocolTab tools={tools} decisions={decisions} /></TabsContent>
           <TabsContent value="causal"><CausalReasoningTab latestExplainability={latestExplainability} latestMemo={latestMemo} /></TabsContent>

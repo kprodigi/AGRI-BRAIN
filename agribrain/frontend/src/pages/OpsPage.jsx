@@ -11,10 +11,123 @@ import {
 } from "recharts";
 import {
   Thermometer, Activity, Recycle, BarChart3, AlertTriangle, TrendingUp,
-  TrendingDown, RefreshCw,
+  TrendingDown, RefreshCw, Sparkles, X, ArrowRight,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const API = getApiBase();
+
+// --------------------------------------------------------------------
+// Showcase headline banner. Surfaces the canonical 20-seed paper claims
+// to a first-time guest landing on the ops dashboard. Numbers are pinned
+// against the manuscript's Table 7 / §5.8 — they should match
+// mvp/simulation/results/paper_benchmark_table.json and
+// mvp/simulation/results/decision_ledger_aggregate.json. Update the
+// HEADLINE_CLAIMS list below whenever a new canonical HPC re-run lands.
+//
+// The banner is dismissable. State persists in localStorage under
+// `ops.showcaseBanner.dismissed` so returning operators don't see it,
+// but a guest opening a fresh browser will.
+// --------------------------------------------------------------------
+const HEADLINE_CLAIMS = [
+  {
+    label: "Integration superiority (H1)",
+    value: "+0.019 to +0.035",
+    unit: "ΔARI vs no-context",
+    detail: "All 5 scenarios, Cohen's dz 3.34–7.40, p_adj < 0.001",
+  },
+  {
+    label: "Component complementarity (H3)",
+    value: "20.1%",
+    unit: "super-additive integration",
+    detail: "n = 23,040 decisions; joint > max single by > 0.005 ARI-eq",
+  },
+  {
+    label: "Provenance integrity",
+    value: "100%",
+    unit: "verifiable Merkle roots",
+    detail: "On-chain anchor via ProvenanceRegistry.sol",
+  },
+];
+
+function ShowcaseBanner() {
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem("ops.showcaseBanner.dismissed") === "1"; }
+    catch { return false; }
+  });
+  if (dismissed) return null;
+  const dismiss = () => {
+    setDismissed(true);
+    try { localStorage.setItem("ops.showcaseBanner.dismissed", "1"); } catch {}
+  };
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="relative rounded-xl border border-teal-500/30 bg-gradient-to-br from-teal-500/8 via-blue-500/5 to-purple-500/8 p-4 sm:p-5"
+    >
+      <button
+        onClick={dismiss}
+        aria-label="Dismiss showcase banner"
+        className="absolute top-2 right-2 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition"
+      >
+        <X className="w-4 h-4" />
+      </button>
+      <div className="flex items-start gap-3">
+        <div className="rounded-lg p-2 bg-teal-500/15">
+          <Sparkles className="w-5 h-5 text-teal-600" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-sm sm:text-base font-semibold">
+              AGRI-BRAIN — adaptive supply-chain intelligence, evidence-anchored.
+            </h2>
+            <span className="text-[10px] uppercase tracking-wider rounded-full px-2 py-0.5 bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/20">
+              canonical 20-seed run
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+            5 perturbation scenarios × 8 routing modes × 20 stochastic seeds × 288 hourly steps =
+            230,400 evaluated decisions. Three hypotheses established:
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+            {HEADLINE_CLAIMS.map((c) => (
+              <div key={c.label} className="rounded-lg border border-border/50 bg-background/60 p-3">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  {c.label}
+                </div>
+                <div className="text-lg sm:text-xl font-bold tabular-nums mt-0.5">
+                  {c.value}{" "}
+                  <span className="text-xs font-normal text-muted-foreground">{c.unit}</span>
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-1 leading-tight">
+                  {c.detail}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            <Link to="/mcp-pirag" className="inline-flex items-center gap-1 text-xs font-medium text-teal-700 dark:text-teal-300 hover:underline">
+              See H3 mechanism evidence
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+            <span className="text-muted-foreground/50 text-xs">·</span>
+            <Link to="/demo" className="inline-flex items-center gap-1 text-xs font-medium text-teal-700 dark:text-teal-300 hover:underline">
+              Walkthrough demo
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+            <span className="text-muted-foreground/50 text-xs">·</span>
+            <Link to="/analytics" className="inline-flex items-center gap-1 text-xs font-medium text-teal-700 dark:text-teal-300 hover:underline">
+              Cross-scenario benchmark
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 // Animated counter component
 function AnimatedCounter({ value, decimals = 0, duration = 1.2, prefix = "", suffix = "" }) {
@@ -239,6 +352,9 @@ export default function OpsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Showcase headline — paper claims at a glance (dismissable; see ShowcaseBanner) */}
+      <ShowcaseBanner />
+
       {/* KPI Bento Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
