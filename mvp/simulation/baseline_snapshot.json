@@ -160,7 +160,7 @@
     },
     "heatwave|mcp_only": {
       "ARI": 0.5484,
-      "RLE": 0.8421,
+      "RLE": 0.8434,
       "Waste": 0.0299,
       "SLCA": 0.6854
     },
@@ -195,22 +195,22 @@
       "SLCA": 0.6849
     },
     "heatwave|agribrain_pert_10_static": {
-      "ARI": 0.5465,
-      "RLE": 0.8182,
-      "Waste": 0.0319,
-      "SLCA": 0.6833
+      "ARI": 0.5458,
+      "RLE": 0.8191,
+      "Waste": 0.0322,
+      "SLCA": 0.6826
     },
     "heatwave|agribrain_pert_25_static": {
-      "ARI": 0.5464,
-      "RLE": 0.8182,
-      "Waste": 0.0319,
-      "SLCA": 0.6832
+      "ARI": 0.5455,
+      "RLE": 0.8191,
+      "Waste": 0.0322,
+      "SLCA": 0.6824
     },
     "heatwave|agribrain_pert_50_static": {
-      "ARI": 0.5456,
-      "RLE": 0.8182,
-      "Waste": 0.0321,
-      "SLCA": 0.6825
+      "ARI": 0.5448,
+      "RLE": 0.8191,
+      "Waste": 0.0324,
+      "SLCA": 0.6818
     },
     "heatwave|agribrain_no_bonus": {
       "ARI": 0.5416,
@@ -274,7 +274,7 @@
     },
     "overproduction|mcp_only": {
       "ARI": 0.5721,
-      "RLE": 0.8454,
+      "RLE": 0.8451,
       "Waste": 0.0403,
       "SLCA": 0.6636
     },
@@ -309,22 +309,22 @@
       "SLCA": 0.6658
     },
     "overproduction|agribrain_pert_10_static": {
-      "ARI": 0.5663,
-      "RLE": 0.8234,
-      "Waste": 0.0429,
-      "SLCA": 0.6583
+      "ARI": 0.5649,
+      "RLE": 0.8196,
+      "Waste": 0.0434,
+      "SLCA": 0.657
     },
     "overproduction|agribrain_pert_25_static": {
-      "ARI": 0.5663,
-      "RLE": 0.8234,
-      "Waste": 0.0429,
-      "SLCA": 0.6582
+      "ARI": 0.5649,
+      "RLE": 0.8196,
+      "Waste": 0.0434,
+      "SLCA": 0.657
     },
     "overproduction|agribrain_pert_50_static": {
-      "ARI": 0.5659,
-      "RLE": 0.8234,
-      "Waste": 0.043,
-      "SLCA": 0.6579
+      "ARI": 0.5645,
+      "RLE": 0.8196,
+      "Waste": 0.0435,
+      "SLCA": 0.6567
     },
     "overproduction|agribrain_no_bonus": {
       "ARI": 0.562,
@@ -423,22 +423,22 @@
       "SLCA": 0.6902
     },
     "cyber_outage|agribrain_pert_10_static": {
-      "ARI": 0.6027,
-      "RLE": 0.7408,
-      "Waste": 0.0382,
-      "SLCA": 0.688
-    },
-    "cyber_outage|agribrain_pert_25_static": {
-      "ARI": 0.6026,
-      "RLE": 0.7408,
-      "Waste": 0.0382,
-      "SLCA": 0.688
-    },
-    "cyber_outage|agribrain_pert_50_static": {
-      "ARI": 0.6019,
+      "ARI": 0.6017,
       "RLE": 0.7408,
       "Waste": 0.0384,
-      "SLCA": 0.6873
+      "SLCA": 0.6871
+    },
+    "cyber_outage|agribrain_pert_25_static": {
+      "ARI": 0.6018,
+      "RLE": 0.7408,
+      "Waste": 0.0384,
+      "SLCA": 0.6872
+    },
+    "cyber_outage|agribrain_pert_50_static": {
+      "ARI": 0.6011,
+      "RLE": 0.7408,
+      "Waste": 0.0385,
+      "SLCA": 0.6866
     },
     "cyber_outage|agribrain_no_bonus": {
       "ARI": 0.6038,
@@ -501,10 +501,10 @@
       "SLCA": 0.7034
     },
     "adaptive_pricing|mcp_only": {
-      "ARI": 0.6522,
-      "RLE": 0.7446,
+      "ARI": 0.6523,
+      "RLE": 0.7444,
       "Waste": 0.0298,
-      "SLCA": 0.7179
+      "SLCA": 0.718
     },
     "adaptive_pricing|pirag_only": {
       "ARI": 0.6509,
@@ -537,22 +537,22 @@
       "SLCA": 0.7251
     },
     "adaptive_pricing|agribrain_pert_10_static": {
-      "ARI": 0.6487,
-      "RLE": 0.7296,
-      "Waste": 0.0309,
-      "SLCA": 0.7146
+      "ARI": 0.6454,
+      "RLE": 0.7149,
+      "Waste": 0.0318,
+      "SLCA": 0.7115
     },
     "adaptive_pricing|agribrain_pert_25_static": {
-      "ARI": 0.6485,
-      "RLE": 0.7296,
-      "Waste": 0.031,
-      "SLCA": 0.7144
+      "ARI": 0.6451,
+      "RLE": 0.7149,
+      "Waste": 0.0319,
+      "SLCA": 0.7113
     },
     "adaptive_pricing|agribrain_pert_50_static": {
-      "ARI": 0.6479,
-      "RLE": 0.7296,
-      "Waste": 0.0312,
-      "SLCA": 0.7139
+      "ARI": 0.6446,
+      "RLE": 0.7149,
+      "Waste": 0.032,
+      "SLCA": 0.7109
     },
     "adaptive_pricing|agribrain_no_bonus": {
       "ARI": 0.6445,
@@ -616,7 +616,7 @@
     },
     "baseline|mcp_only": {
       "ARI": 0.6705,
-      "RLE": 0.7433,
+      "RLE": 0.7428,
       "Waste": 0.0273,
       "SLCA": 0.7299
     },
@@ -651,22 +651,22 @@
       "SLCA": 0.7414
     },
     "baseline|agribrain_pert_10_static": {
-      "ARI": 0.667,
-      "RLE": 0.7288,
-      "Waste": 0.0283,
-      "SLCA": 0.7265
+      "ARI": 0.6623,
+      "RLE": 0.7129,
+      "Waste": 0.0294,
+      "SLCA": 0.7222
     },
     "baseline|agribrain_pert_25_static": {
-      "ARI": 0.6668,
-      "RLE": 0.7288,
-      "Waste": 0.0283,
-      "SLCA": 0.7264
+      "ARI": 0.662,
+      "RLE": 0.7129,
+      "Waste": 0.0294,
+      "SLCA": 0.7219
     },
     "baseline|agribrain_pert_50_static": {
-      "ARI": 0.6665,
-      "RLE": 0.7288,
-      "Waste": 0.0284,
-      "SLCA": 0.7261
+      "ARI": 0.6617,
+      "RLE": 0.7129,
+      "Waste": 0.0295,
+      "SLCA": 0.7217
     },
     "baseline|agribrain_no_bonus": {
       "ARI": 0.6631,

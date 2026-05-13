@@ -20450,8 +20450,8 @@
     },
     {
       "file": "paper_benchmark_table.json",
-      "bytes": 718477,
-      "sha256": "f360304e9375a7b8e8e30263d1e6b31d856a1b3839e9c9acde00432e0d30989f"
+      "bytes": 718484,
+      "sha256": "5a21b2e0d21a9468bd473a787c06fc36de930cf30499dfe3ccf2605f3a5b953b"
     },
     {
       "file": "stress_degradation.csv",
