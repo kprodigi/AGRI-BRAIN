@@ -101,13 +101,21 @@ async function main() {
         // recovery row
                              -500,  -300,   -200,   300,  1500,  -300,    150,    -300,    -300,   -50,
     ];
+    // Values mirror the Python source-of-truth at
+    //   agribrain/backend/pirag/context_to_logits.py::THETA_CONTEXT
+    // Each cell is round(THETA_CONTEXT[row, col] * 1000). The pre-2026-05
+    // values on this line were ~2x off (a pre-recalibration draft that
+    // never got synced to deploy.js when context_to_logits.py was halved
+    // to land within the +/-1 modifier clamp). An on-chain auditor reading
+    // PolicyStore.getPolicyMatrix("THETA_CONTEXT") would otherwise see
+    // double the magnitudes the running policy actually applies.
     const THETA_CONTEXT_MILLI = [
-        // cold_chain row
-        -800, -600, -150, -300, 250,
+        // cold_chain row:        psi0  psi1  psi2  psi3 psi4
+                                  -400, -300, -100, -150, 120,
         // local_redistribute row
-        500, 400, 200, 250, 100,
+                                   300,  250,  150,  180,  80,
         // recovery row
-        300, 200, -50, 50, -350,
+                                   150,  100,  -50,   50, -200,
     ];
     const thetaKey = hre.ethers.id('THETA');
     const thetaCtxKey = hre.ethers.id('THETA_CONTEXT');

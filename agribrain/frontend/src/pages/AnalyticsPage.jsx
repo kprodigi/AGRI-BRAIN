@@ -164,7 +164,12 @@ const SCENARIOS = [
       "Composting/bioenergy channels activated autonomously",
     ],
   },
-  { id: "cyber", name: "Cyber Outage", figure: "fig4_cyber.png", icon: ShieldAlert, color: "#7570B3",
+  // Canonical scenario ids match the backend (agribrain/backend/src/routers/scenarios.py)
+  // and every other frontend surface (DemoPage / AdminPage / McpPiragPage / Theater).
+  // Pre-2026-05 these used the short "cyber" / "pricing" forms which silently misrouted
+  // the lightbox lookup and the deep-link state because table1 / benchmark_significance
+  // emit the full "cyber_outage" / "adaptive_pricing" keys.
+  { id: "cyber_outage", name: "Cyber Outage", figure: "fig4_cyber.png", icon: ShieldAlert, color: "#7570B3",
     findings: [
       "System maintained operations through processor outage",
       "Autonomous rerouting avoided majority of potential spoilage",
@@ -172,7 +177,7 @@ const SCENARIOS = [
       "Blockchain audit trail preserved transaction integrity",
     ],
   },
-  { id: "pricing", name: "Adaptive Pricing", figure: "fig5_pricing.png", icon: DollarSign, color: "#0072B2",
+  { id: "adaptive_pricing", name: "Adaptive Pricing", figure: "fig5_pricing.png", icon: DollarSign, color: "#0072B2",
     findings: [
       "Highest ARI and SLCA scores across all scenarios",
       "Equity-aware redistribution prevented price exploitation",
@@ -632,7 +637,7 @@ export default function AnalyticsPage() {
         {benchSignificance && (
           <Card className="mb-6 border-primary/20">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Statistical Significance (5-Seed Stochastic Benchmark)</CardTitle>
+              <CardTitle className="text-base">Statistical Significance ({benchSummary?._meta?.n_seeds ?? 20}-Seed Stochastic Benchmark)</CardTitle>
               <CardDescription>Permutation test p-values and Cohen's d effect sizes for AGRI-BRAIN vs. baselines</CardDescription>
             </CardHeader>
             <CardContent>

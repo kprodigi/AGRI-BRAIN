@@ -165,6 +165,24 @@ Security/runtime flags:
 | `MCP_RATE_LIMITS`    | `transport` (default) / `enabled` / `disabled` | Per-tool token-bucket policy from `pirag/configs/policy.yaml`. `transport` (default): enforced only at the public MCP HTTP/JSON-RPC boundary so the simulator's in-process registry calls bypass the bucket. `enabled` / `on` / `true`: enforce on every tool invocation including the simulator hot path. `disabled` / `off` / `false`: skip enforcement entirely. |
 | `STRICT_VALIDATION`  | `1`           | `mvp/simulation/validation/validate_results.py` exits non-zero on missing tables or range violations. Set to `0` to downgrade to advisory-only for local debugging. |
 | `STRICT_SMOKE`       | `1`           | `mvp/simulation/tests/test_stochastic_quick.py` exits non-zero on `BROKEN` / `NEEDS TUNING` verdicts. Set to `0` to make the smoke test advisory-only. |
+
+Experiment toggles (HPC pipeline-set; read by `agribrain/backend/src/generate_results.py` and the coordinator):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FAILURE_INJECTION` | `false` | When `true`, the coordinator injects an MCP tool fault every 11 hours and the per-step `fault_recovery_trace` records each one. Required for fig 4 panel C ("Cumulative Anomaly Defenses Triggered") to carry non-zero defense events. Exported by `hpc/hpc_seed.sh`. |
+| `PHYSICS_CONSISTENCY_GATE` | `false` | When `true`, `compute_context_modifier` zeroes the modifier whenever the retrieved-context `physics_consistency_score` falls below 0.03 and the `physics_gate_trace` records each firing. Pairs with `FAILURE_INJECTION` to populate fig 4 panel C's three-defense story. Exported by `hpc/hpc_seed.sh`. |
+
+Reproducibility provenance (HPC pipeline-set; read by the artifact manifest builder and per-seed ledger emitter):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `RUN_TAG` | (unset) | HPC run identifier in the form `<commit>_<YYYYMMDD>_<HHMM>`. `hpc/hpc_run.sh` exports it via `sbatch --export` and `hpc/hpc_seed.sh` uses it to scope the per-seed JSON output directory under `mvp/simulation/results/benchmark_seeds/${RUN_TAG}/`. |
+| `DECISION_LEDGER_DIR` | `mvp/simulation/results/decision_ledger/` | Per-seed override for the JSONL audit-trail destination. The 2026-05 Path A hardening exports `mvp/simulation/results/benchmark_seeds/${RUN_TAG}/decision_ledger_${SEED}/` from `hpc/hpc_seed.sh` so the 20 parallel SLURM array tasks do not race-overwrite each other on the default shared path. Without this isolation the cross-seed `decision_ledger_aggregate.json` reduces to a single-seed anecdote. |
+| `AGRIBRAIN_GIT_COMMIT` | (auto from `git rev-parse HEAD`) | Override stamped into `artifact_manifest.json` and `paper_benchmark_table.json::_meta.git_commit`. The HPC pipeline exports this on the login node (where `git` is in PATH) and propagates it via `sbatch --export` so the slurm worker — which may not have `git` available — still records the correct commit. Cross-checked against `git rev-parse HEAD` when both are available; mismatch is rejected by `build_artifact_manifest.py`. |
+| `AGRIBRAIN_ALLOW_DIRTY` | `0` | When `1` (or `true`/`yes`), `build_artifact_manifest.py` accepts a dirty working tree and appends `+dirty` to the recorded commit. Default behaviour rejects a dirty tree so a published artifact cannot silently claim "matches commit X" while modulo-uncommitted-changes. |
+| `CHAIN_PRIVKEY` | (unset) | EVM private key (no `0x` prefix needed) used by the backend chain bridge to sign on-chain transactions for the DAO governance flow. Surfaced into the in-process `CHAIN["private_key"]` config on every `_try_autoload` call in `agribrain/backend/src/routers/governance.py` so an operator can export the key mid-run without restarting. The `/governance/contracts/dao/*` routes return `ok=false` (silent no-op) when this is unset. |
+| `CHAIN_RPC` | `http://127.0.0.1:8545` | EVM JSON-RPC endpoint the chain bridge connects to. The default targets a local Hardhat node; for testnet (Sepolia/Polygon Amoy/Base Sepolia) point at the provider URL. |
 | `ALLOW_MISSING_BASELINE` | `0` outside CI | When `1`, `run_regression_guard.py` treats a missing `baseline_snapshot.json` as a SKIP rather than a failure. CI sets this to `1` so the drift gate fires only on real drift, never on first-run-on-a-fresh-branch. |
 | `CHAIN_REQUIRE_PRIVKEY` | `true` | Require `CHAIN_PRIVKEY` to be set before chain-anchoring code paths run. The signing key is **only** loaded from this env var; `POST /chain/config` no longer accepts it in the request body (rejected with 422). |
 | `CHAIN_BEST_EFFORT`  | `false` in prod | When `false`, on-chain submission failures raise; when `true`, they log at WARN and `submit_onchain` returns `None`. Production must keep this `false` so operators do not silently believe an anchor happened when it did not. |

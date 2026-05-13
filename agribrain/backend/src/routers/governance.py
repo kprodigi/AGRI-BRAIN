@@ -62,7 +62,32 @@ def _auto_paths():
 
 
 def _try_autoload():
-    """If auto is enabled, read addresses JSON when it changes."""
+    """If auto is enabled, read addresses JSON when it changes.
+
+    Side effect: also surfaces the ``CHAIN_PRIVKEY`` env var into
+    ``CHAIN["private_key"]`` so that downstream chain bridge functions
+    (``src.chain.contracts._get_contract`` -> ``eth.Account.from_key``)
+    can sign transactions. The env-var read happens unconditionally so a
+    user who exports CHAIN_PRIVKEY mid-process picks up the new key on
+    the next governance call without restarting the backend.
+
+    Pre-2026-05 the env-var was documented in the route docstring and in
+    ``.env.example`` but never actually plumbed into the in-process
+    ``CHAIN`` dict; the bridge then silently returned ``None`` from
+    ``_get_contract``, the DAO router returned ``ok=false`` with no
+    surfaced error, and a live demo of propose -> vote -> queue ->
+    execute would degenerate to a series of mysterious 200 OK no-ops.
+    Surfaced here so the bridge actually has a signer to work with when
+    the operator has set the env-var; if it is unset, the bridge still
+    returns None and the routers' existing ``ok=false`` path covers the
+    no-signer case visibly.
+    """
+    # Always pull CHAIN_PRIVKEY from env on every call -- this is cheap and
+    # lets an operator export the key after the backend started without
+    # forcing a restart.
+    _env_key = os.environ.get("CHAIN_PRIVKEY", "")
+    if _env_key:
+        CHAIN["private_key"] = _env_key
     if not CHAIN.get("auto", True):
         return
     for p in _auto_paths():
