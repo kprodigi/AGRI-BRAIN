@@ -441,8 +441,11 @@ export default function AnalyticsPage() {
       <section>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-lg font-semibold">Cross-Scenario Performance</h3>
-            <p className="text-sm text-muted-foreground italic">Comparison of eight ablation variants across five stress scenarios (288 timesteps each). Context ablation modes share the same RNG seed to isolate MCP/piRAG contribution.</p>
+            <h3 className="text-lg font-semibold">
+              <span className="text-xs font-medium tracking-wider uppercase text-muted-foreground mr-2">Table&nbsp;1</span>
+              Cross-Scenario Performance
+            </h3>
+            <p className="text-sm text-muted-foreground italic">Comparison of eight ablation variants across five stress scenarios (288 timesteps each). Context ablation modes share the same RNG seed to isolate MCP/piRAG contribution. Mirrors manuscript Table&nbsp;1 / <code>table1_summary.csv</code>.</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => exportTableCSV(table1, "table1_summary.csv")}>
@@ -492,8 +495,11 @@ export default function AnalyticsPage() {
 
         <div className="flex items-center justify-between mt-8 mb-4">
           <div>
-            <h3 className="text-lg font-semibold">Ablation Study</h3>
-            <p className="text-sm text-muted-foreground italic">Component contribution analysis showing marginal impact of each module.</p>
+            <h3 className="text-lg font-semibold">
+              <span className="text-xs font-medium tracking-wider uppercase text-muted-foreground mr-2">Table&nbsp;2</span>
+              Ablation Study
+            </h3>
+            <p className="text-sm text-muted-foreground italic">Component contribution analysis showing marginal impact of each module across the eight canonical modes plus §4.7 sensitivity perturbations (with-learning + static). Mirrors manuscript Table&nbsp;2 / <code>table2_ablation.csv</code>.</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => exportTableCSV(table2, "table2_ablation.csv")}>
