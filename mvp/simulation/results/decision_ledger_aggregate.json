@@ -1,0 +1,5392 @@
+{
+  "_meta": {
+    "n_seeds": 20,
+    "seeds": [
+      7,
+      42,
+      99,
+      101,
+      202,
+      303,
+      404,
+      505,
+      606,
+      707,
+      808,
+      909,
+      1010,
+      1111,
+      1212,
+      1313,
+      1337,
+      1414,
+      1515,
+      2024
+    ],
+    "ledger_root": "/mmfs1/home/SDSMT.LOCAL/101198337/AgriBrain/mvp/simulation/results/decision_ledger_per_seed",
+    "generated_at": "2026-05-12T23:43:46.900306Z",
+    "git_commit": "unknown",
+    "n_scenarios": 5,
+    "scenarios": [
+      "adaptive_pricing",
+      "baseline",
+      "cyber_outage",
+      "heatwave",
+      "overproduction"
+    ],
+    "n_modes": 19,
+    "modes": [
+      "agribrain",
+      "agribrain_cold_start",
+      "agribrain_no_bonus",
+      "agribrain_pert_10",
+      "agribrain_pert_10_static",
+      "agribrain_pert_25",
+      "agribrain_pert_25_static",
+      "agribrain_pert_50",
+      "agribrain_pert_50_static",
+      "agribrain_theta_pert_10",
+      "agribrain_theta_pert_25",
+      "agribrain_theta_pert_50",
+      "hybrid_rl",
+      "mcp_only",
+      "no_context",
+      "no_pinn",
+      "no_slca",
+      "pirag_only",
+      "static"
+    ]
+  },
+  "by_scenario_mode": {
+    "adaptive_pricing": {
+      "agribrain": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.15,
+          "mean": 0.023573090277777778,
+          "n_negative": 828,
+          "n_positive": 2590
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.15,
+          "mean": 0.07067616950757576,
+          "n_negative": 2080,
+          "n_positive": 3542
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.025906138420560994,
+          "n_negative": 521,
+          "n_positive": 819
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.07087673611111112
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0009192708333333334
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12611887784090908
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.040390625
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.004419444444444445
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1065,
+          "fraction_joint_dominates": 0.18489583333333334,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_cold_start": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.15,
+          "mean": 0.025434027777777778,
+          "n_negative": 800,
+          "n_positive": 2618
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.15,
+          "mean": 0.08189318339646463,
+          "n_negative": 1990,
+          "n_positive": 3639
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0659498112431054,
+          "n_negative": 465,
+          "n_positive": 875
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.07066840277777776
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0009218750000000001
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12698693339646464
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.041173611111111105
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0044444444444444444
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1261,
+          "fraction_joint_dominates": 0.2189236111111111,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_no_bonus": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.075,
+          "mean": 0.00811145833333333,
+          "n_negative": 1005,
+          "n_positive": 1918
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.15,
+          "mean": 0.044723958333333334,
+          "n_negative": 2540,
+          "n_positive": 3087
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.010803733169744685,
+          "n_negative": 597,
+          "n_positive": 704
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.07553819444444444
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0009253472222222223
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12211805555555555
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.040435763888888886
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0029916666666666663
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1030,
+          "fraction_joint_dominates": 0.17881944444444445,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_pert_10": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.15,
+          "mean": 0.02240798611111111,
+          "n_negative": 845,
+          "n_positive": 2573
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.15,
+          "mean": 0.06775603061868686,
+          "n_negative": 2123,
+          "n_positive": 3493
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.02447638311486188,
+          "n_negative": 533,
+          "n_positive": 807
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.07100694444444444
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0009218750000000001
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.1256067250631313
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0401875
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0044444444444444444
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1067,
+          "fraction_joint_dominates": 0.18524305555555556,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_pert_10_static": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.075,
+          "mean": 0.00886927083333333,
+          "n_negative": 1055,
+          "n_positive": 2328
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.15,
+          "mean": 0.043147569444444436,
+          "n_negative": 2518,
+          "n_positive": 3103
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.004034227791890431,
+          "n_negative": 639,
+          "n_positive": 662
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.07540798611111112
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0009244791666666667
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12210069444444444
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.04009201388888888
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.004512500000000001
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 340,
+          "fraction_joint_dominates": 0.059027777777777776,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_pert_25": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.15,
+          "mean": 0.022481770833333328,
+          "n_negative": 844,
+          "n_positive": 2574
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.15,
+          "mean": 0.06801471117424242,
+          "n_negative": 2121,
+          "n_positive": 3496
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.02149862162682711,
+          "n_negative": 525,
+          "n_positive": 815
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.07101128472222222
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0009218750000000001
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12564144728535354
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.040220486111111106
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0044444444444444444
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 956,
+          "fraction_joint_dominates": 0.16597222222222222,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_pert_25_static": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.075,
+          "mean": 0.0073468749999999975,
+          "n_negative": 1011,
+          "n_positive": 1912
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.15,
+          "mean": 0.04258680555555555,
+          "n_negative": 2523,
+          "n_positive": 3097
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.002938013377943777,
+          "n_negative": 641,
+          "n_positive": 660
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.07546440972222221
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0009262152777777778
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12203993055555556
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.04004340277777777
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0029944444444444454
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 314,
+          "fraction_joint_dominates": 0.05451388888888889,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_pert_50": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.15,
+          "mean": 0.02222569444444444,
+          "n_negative": 848,
+          "n_positive": 2570
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.15,
+          "mean": 0.06814318339646463,
+          "n_negative": 2122,
+          "n_positive": 3499
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.026850256152386995,
+          "n_negative": 526,
+          "n_positive": 814
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.07103298611111111
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0009218750000000001
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.1257022111742424
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.04030555555555555
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0044444444444444444
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 961,
+          "fraction_joint_dominates": 0.16684027777777777,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_pert_50_static": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.075,
+          "mean": 0.007165451388888886,
+          "n_negative": 1016,
+          "n_positive": 1907
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.15,
+          "mean": 0.041362847222222214,
+          "n_negative": 2538,
+          "n_positive": 3087
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0027190750293220765,
+          "n_negative": 666,
+          "n_positive": 635
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.07555121527777776
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0009253472222222223
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12199652777777778
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.04007812499999999
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0029944444444444454
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 240,
+          "fraction_joint_dominates": 0.041666666666666664,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_theta_pert_10": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.075,
+          "mean": 0.012196874999999998,
+          "n_negative": 944,
+          "n_positive": 1979
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.15,
+          "mean": 0.05382638888888888,
+          "n_negative": 2386,
+          "n_positive": 3242
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.015447846968379414,
+          "n_negative": 573,
+          "n_positive": 728
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.07484809027777778
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0009175347222222223
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12340277777777776
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.04066666666666666
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.002976388888888889
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1038,
+          "fraction_joint_dominates": 0.18020833333333333,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_theta_pert_25": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.075,
+          "mean": 0.009778472222222221,
+          "n_negative": 982,
+          "n_positive": 2007
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.15,
+          "mean": 0.04734201388888889,
+          "n_negative": 2478,
+          "n_positive": 3150
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.010559616380674644,
+          "n_negative": 612,
+          "n_positive": 689
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.07530381944444445
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0009253472222222224
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12280381944444443
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.04045833333333333
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0029625
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1039,
+          "fraction_joint_dominates": 0.18038194444444444,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_theta_pert_50": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.075,
+          "mean": 0.012603125,
+          "n_negative": 933,
+          "n_positive": 1990
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.15,
+          "mean": 0.05484895833333332,
+          "n_negative": 2357,
+          "n_positive": 3269
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.014548032084496334,
+          "n_negative": 570,
+          "n_positive": 731
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.07472222222222222
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0009184027777777778
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12374131944444444
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.04062152777777777
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0027819444444444445
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1025,
+          "fraction_joint_dominates": 0.1779513888888889,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "hybrid_rl": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      },
+      "mcp_only": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.15,
+          "mean": 0.02052829861111111,
+          "n_negative": 819,
+          "n_positive": 2104
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.15418865402842308,
+          "mean": 0.030257786860987214,
+          "n_negative": 888,
+          "n_positive": 2291
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0737282986111111
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0009131944444444444
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0029111111111111113
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 2197,
+          "fraction_joint_dominates": 0.3814236111111111,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.00017361111111111112
+      },
+      "no_context": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      },
+      "no_pinn": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      },
+      "no_slca": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      },
+      "pirag_only": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.15,
+          "mean": 0.05333854166666666,
+          "n_negative": 2357,
+          "n_positive": 3272
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.01190424850147056,
+          "n_negative": 625,
+          "n_positive": 671
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.1236892361111111
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.039163194444444445
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 870,
+          "fraction_joint_dominates": 0.15104166666666666,
+          "median_joint_minus_max_single": -0.1
+        },
+        "governance_override_rate": 0.0
+      },
+      "static": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      }
+    },
+    "baseline": {
+      "agribrain": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.075,
+          "mean": 0.02125364583333333,
+          "n_negative": 642,
+          "n_positive": 1990
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.1099565972222222,
+          "n_negative": 1715,
+          "n_positive": 3723
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.03140991867592736,
+          "n_negative": 510,
+          "n_positive": 930
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.06065104166666666
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0002769097222222223
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12755208333333334
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.08073784722222221
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.002197222222222223
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1161,
+          "fraction_joint_dominates": 0.2015625,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.00017361111111111112
+      },
+      "agribrain_cold_start": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.15,
+          "mean": 0.02392899305555556,
+          "n_negative": 601,
+          "n_positive": 2031
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.05,
+          "q75": 0.32999999999999996,
+          "mean": 0.12407465277777775,
+          "n_negative": 1594,
+          "n_positive": 3851
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.08512937661253338,
+          "n_negative": 415,
+          "n_positive": 1025
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.06041666666666667
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0002769097222222223
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12868055555555552
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.08166145833333333
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0022041666666666668
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1376,
+          "fraction_joint_dominates": 0.2388888888888889,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_no_bonus": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.032,
+          "mean": 0.007731076388888886,
+          "n_negative": 944,
+          "n_positive": 2035
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.0696128472222222,
+          "n_negative": 2288,
+          "n_positive": 3160
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.011212818655447805,
+          "n_negative": 639,
+          "n_positive": 801
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0640625
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0004019097222222223
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12269965277777778
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.08012499999999999
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0040930555555555555
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1143,
+          "fraction_joint_dominates": 0.1984375,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_pert_10": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.075,
+          "mean": 0.020248437499999994,
+          "n_negative": 659,
+          "n_positive": 1973
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.10700347222222223,
+          "n_negative": 1755,
+          "n_positive": 3675
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.02991885200518877,
+          "n_negative": 516,
+          "n_positive": 924
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.06076388888888889
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0002769097222222223
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12702256944444443
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.08048437499999998
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0022041666666666668
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1164,
+          "fraction_joint_dominates": 0.20208333333333334,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_pert_10_static": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.032,
+          "mean": 0.006213020833333331,
+          "n_negative": 949,
+          "n_positive": 1964
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.06566840277777777,
+          "n_negative": 2303,
+          "n_positive": 3132
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.002440641203620723,
+          "n_negative": 702,
+          "n_positive": 738
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.06415364583333333
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0004045138888888889
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12225694444444445
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.07959201388888888
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0038875000000000003
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 340,
+          "fraction_joint_dominates": 0.059027777777777776,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_pert_25": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.075,
+          "mean": 0.020369965277777777,
+          "n_negative": 657,
+          "n_positive": 1975
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.10680208333333333,
+          "n_negative": 1757,
+          "n_positive": 3673
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.030005524912285593,
+          "n_negative": 518,
+          "n_positive": 922
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.060746527777777774
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0002769097222222223
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.1270052083333333
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.08047395833333333
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0022041666666666668
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1059,
+          "fraction_joint_dominates": 0.18385416666666668,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_pert_25_static": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.032,
+          "mean": 0.00598611111111111,
+          "n_negative": 972,
+          "n_positive": 2007
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.06480555555555555,
+          "n_negative": 2311,
+          "n_positive": 3123
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.00164253336616814,
+          "n_negative": 716,
+          "n_positive": 724
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.06417534722222222
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0004045138888888889
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12217013888888889
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.07952777777777777
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.004083333333333334
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 347,
+          "fraction_joint_dominates": 0.06024305555555556,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_pert_50": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.075,
+          "mean": 0.020456770833333332,
+          "n_negative": 656,
+          "n_positive": 1976
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.10783680555555554,
+          "n_negative": 1749,
+          "n_positive": 3685
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.03262059703452254,
+          "n_negative": 510,
+          "n_positive": 930
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.06076388888888889
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0002769097222222223
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.1271440972222222
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.08060590277777777
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0022041666666666668
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1015,
+          "fraction_joint_dominates": 0.1762152777777778,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_pert_50_static": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.032,
+          "mean": 0.005868055555555553,
+          "n_negative": 973,
+          "n_positive": 2006
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.0641875,
+          "n_negative": 2316,
+          "n_positive": 3116
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0012226269104614205,
+          "n_negative": 721,
+          "n_positive": 719
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.06420572916666667
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.00040538194444444443
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12209201388888889
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.07945659722222222
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.004083333333333334
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 260,
+          "fraction_joint_dominates": 0.04513888888888889,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_theta_pert_10": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.048,
+          "mean": 0.01210364583333333,
+          "n_negative": 875,
+          "n_positive": 2104
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.0828142361111111,
+          "n_negative": 2101,
+          "n_positive": 3342
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0179193339824685,
+          "n_negative": 606,
+          "n_positive": 834
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0633810763888889
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.00040104166666666673
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12419270833333332
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.08049652777777777
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.004054166666666668
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1149,
+          "fraction_joint_dominates": 0.19947916666666668,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_theta_pert_25": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.048,
+          "mean": 0.009105729166666666,
+          "n_negative": 917,
+          "n_positive": 1998
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.07589409722222222,
+          "n_negative": 2209,
+          "n_positive": 3251
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0141133413522098,
+          "n_negative": 624,
+          "n_positive": 816
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.06395833333333333
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0004071180555555556
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12366319444444443
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.08059895833333332
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0038305555555555554
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1141,
+          "fraction_joint_dominates": 0.19809027777777777,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_theta_pert_50": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.048,
+          "mean": 0.012845138888888889,
+          "n_negative": 843,
+          "n_positive": 2072
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.08599652777777776,
+          "n_negative": 2071,
+          "n_positive": 3385
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.018472579312869296,
+          "n_negative": 604,
+          "n_positive": 836
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.06354600694444444
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0004019097222222223
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12486111111111112
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.08090972222222222
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.003931944444444445
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1156,
+          "fraction_joint_dominates": 0.20069444444444445,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "hybrid_rl": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      },
+      "mcp_only": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.075,
+          "mean": 0.01865503472222222,
+          "n_negative": 770,
+          "n_positive": 2209
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.07081960395277484,
+          "mean": 0.02670734221839858,
+          "n_negative": 844,
+          "n_positive": 2596
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.06240885416666666
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0003940972222222223
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.004001388888888889
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 2221,
+          "fraction_joint_dominates": 0.38559027777777777,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.00017361111111111112
+      },
+      "no_context": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      },
+      "no_pinn": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      },
+      "no_slca": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      },
+      "pirag_only": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.08092534722222222,
+          "n_negative": 2098,
+          "n_positive": 3360
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.012320660122490255,
+          "n_negative": 674,
+          "n_positive": 766
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12443576388888888
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.07838194444444443
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 974,
+          "fraction_joint_dominates": 0.16909722222222223,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "static": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      }
+    },
+    "cyber_outage": {
+      "agribrain": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.15,
+          "mean": 0.04280381944444444,
+          "n_negative": 881,
+          "n_positive": 2133
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.12065277777777779,
+          "n_negative": 1822,
+          "n_positive": 3812
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.022693030960546073,
+          "n_negative": 569,
+          "n_positive": 839
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.13070746527777777
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.008797743055555557
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.13167534722222224
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.12008854166666666
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1134,
+          "fraction_joint_dominates": 0.196875,
+          "median_joint_minus_max_single": -0.2
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_cold_start": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.15,
+          "mean": 0.04711805555555555,
+          "n_negative": 810,
+          "n_positive": 2204
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.32999999999999996,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.14126562499999998,
+          "n_negative": 1626,
+          "n_positive": 4018
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.09305816549606957,
+          "n_negative": 412,
+          "n_positive": 996
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.1300911458333333
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.008797743055555557
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.1335329861111111
+          },
+          "psi3_regulatory": {
+            "median": 0.18,
+            "mean_abs": 0.1213611111111111
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1352,
+          "fraction_joint_dominates": 0.23472222222222222,
+          "median_joint_minus_max_single": -0.2
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_no_bonus": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.15,
+          "mean": 0.040349826388888885,
+          "n_negative": 931,
+          "n_positive": 2057
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.1168611111111111,
+          "n_negative": 1884,
+          "n_positive": 3754
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.010315841956598277,
+          "n_negative": 650,
+          "n_positive": 750
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.13154513888888889
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.008894965277777778
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.13104166666666667
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.1215486111111111
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1124,
+          "fraction_joint_dominates": 0.1951388888888889,
+          "median_joint_minus_max_single": -0.2
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_pert_10": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.15,
+          "mean": 0.0424609375,
+          "n_negative": 886,
+          "n_positive": 2128
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.11951909722222222,
+          "n_negative": 1834,
+          "n_positive": 3796
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.022015106420367466,
+          "n_negative": 575,
+          "n_positive": 833
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.13071180555555556
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.008797743055555557
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.131484375
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.11996180555555554
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1127,
+          "fraction_joint_dominates": 0.19565972222222222,
+          "median_joint_minus_max_single": -0.2
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_pert_10_static": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.15,
+          "mean": 0.03835329861111111,
+          "n_negative": 963,
+          "n_positive": 2025
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.11068229166666667,
+          "n_negative": 1937,
+          "n_positive": 3697
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.001787935582291882,
+          "n_negative": 703,
+          "n_positive": 697
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.1317708333333333
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.008894965277777778
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.13049479166666667
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.12112499999999997
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 349,
+          "fraction_joint_dominates": 0.06059027777777778,
+          "median_joint_minus_max_single": -0.2
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_pert_25": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.15,
+          "mean": 0.04233940972222222,
+          "n_negative": 888,
+          "n_positive": 2126
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.11977777777777777,
+          "n_negative": 1832,
+          "n_positive": 3799
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.024713084138164386,
+          "n_negative": 566,
+          "n_positive": 842
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.13072916666666667
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.008797743055555557
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.13151909722222221
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.11999479166666664
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1086,
+          "fraction_joint_dominates": 0.18854166666666666,
+          "median_joint_minus_max_single": -0.2
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_pert_25_static": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.15,
+          "mean": 0.03858333333333334,
+          "n_negative": 959,
+          "n_positive": 2029
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.11097048611111113,
+          "n_negative": 1933,
+          "n_positive": 3699
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0019954677503110163,
+          "n_negative": 683,
+          "n_positive": 717
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.13172309027777776
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.008894965277777778
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.13049479166666667
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.12110069444444442
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 350,
+          "fraction_joint_dominates": 0.06076388888888889,
+          "median_joint_minus_max_single": -0.2
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_pert_50": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.15,
+          "mean": 0.04227864583333333,
+          "n_negative": 889,
+          "n_positive": 2125
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.11892881944444444,
+          "n_negative": 1841,
+          "n_positive": 3791
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.023154358476244717,
+          "n_negative": 581,
+          "n_positive": 827
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.1307378472222222
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.008797743055555557
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.13145833333333332
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.11997048611111108
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1018,
+          "fraction_joint_dominates": 0.17673611111111112,
+          "median_joint_minus_max_single": -0.2
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_pert_50_static": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.15,
+          "mean": 0.037783854166666665,
+          "n_negative": 971,
+          "n_positive": 2017
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.10914409722222221,
+          "n_negative": 1950,
+          "n_positive": 3680
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0002609074972506156,
+          "n_negative": 709,
+          "n_positive": 691
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.1318359375
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.008895833333333334
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.1303125
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.12096701388888886
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 239,
+          "fraction_joint_dominates": 0.041493055555555554,
+          "median_joint_minus_max_single": -0.22350780439089277
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_theta_pert_10": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.15,
+          "mean": 0.041990451388888884,
+          "n_negative": 904,
+          "n_positive": 2084
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.12214756944444444,
+          "n_negative": 1821,
+          "n_positive": 3817
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.015886026250671256,
+          "n_negative": 609,
+          "n_positive": 791
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.13131076388888888
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.008894965277777778
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.1316145833333333
+          },
+          "psi3_regulatory": {
+            "median": 0.05,
+            "mean_abs": 0.12178298611111107
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1126,
+          "fraction_joint_dominates": 0.1954861111111111,
+          "median_joint_minus_max_single": -0.2
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_theta_pert_25": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.15,
+          "mean": 0.04146614583333333,
+          "n_negative": 914,
+          "n_positive": 2074
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.12009027777777778,
+          "n_negative": 1849,
+          "n_positive": 3795
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.013886156282634324,
+          "n_negative": 629,
+          "n_positive": 771
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.1314019097222222
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.008894097222222223
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.13145833333333334
+          },
+          "psi3_regulatory": {
+            "median": 0.05,
+            "mean_abs": 0.12180902777777776
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1135,
+          "fraction_joint_dominates": 0.1970486111111111,
+          "median_joint_minus_max_single": -0.2
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_theta_pert_50": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.15,
+          "mean": 0.042464409722222214,
+          "n_negative": 898,
+          "n_positive": 2090
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.12377951388888889,
+          "n_negative": 1803,
+          "n_positive": 3836
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.01745598416154433,
+          "n_negative": 600,
+          "n_positive": 800
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.1312890625
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.008894097222222223
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.131796875
+          },
+          "psi3_regulatory": {
+            "median": 0.05,
+            "mean_abs": 0.1218784722222222
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1126,
+          "fraction_joint_dominates": 0.1954861111111111,
+          "median_joint_minus_max_single": -0.2
+        },
+        "governance_override_rate": 0.0
+      },
+      "hybrid_rl": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      },
+      "mcp_only": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.15,
+          "mean": 0.032505208333333334,
+          "n_negative": 1010,
+          "n_positive": 1978
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.1856996751669044,
+          "mean": 0.04711102329124254,
+          "n_negative": 1033,
+          "n_positive": 1988
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.13248263888888887
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.008935763888888889
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 2202,
+          "fraction_joint_dominates": 0.38229166666666664,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      },
+      "no_context": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      },
+      "no_pinn": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      },
+      "no_slca": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      },
+      "pirag_only": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.1,
+          "q75": 0.32999999999999996,
+          "mean": 0.08756770833333333,
+          "n_negative": 1986,
+          "n_positive": 3653
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.010972122977895165,
+          "n_negative": 680,
+          "n_positive": 720
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.13016493055555556
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0788784722222222
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 950,
+          "fraction_joint_dominates": 0.16493055555555555,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.0
+      },
+      "static": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      }
+    },
+    "heatwave": {
+      "agribrain": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.032,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.09796128472222224,
+          "n_negative": 891,
+          "n_positive": 3259
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.05,
+          "q75": 0.32999999999999996,
+          "mean": 0.1402222222222222,
+          "n_negative": 1472,
+          "n_positive": 3799
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.014703669106868657,
+          "n_negative": 652,
+          "n_positive": 788
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.1415017361111111
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0241796875
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.1261892361111111
+          },
+          "psi3_regulatory": {
+            "median": 0.05,
+            "mean_abs": 0.11250520833333333
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.007804166666666667
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1186,
+          "fraction_joint_dominates": 0.20590277777777777,
+          "median_joint_minus_max_single": -0.19
+        },
+        "governance_override_rate": 0.008333333333333333
+      },
+      "agribrain_cold_start": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.032,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.0937220486111111,
+          "n_negative": 966,
+          "n_positive": 3312
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.05,
+          "q75": 0.32999999999999996,
+          "mean": 0.13646006944444444,
+          "n_negative": 1530,
+          "n_positive": 3746
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.007130345895627084,
+          "n_negative": 730,
+          "n_positive": 710
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.14172743055555553
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.024184895833333334
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12564236111111113
+          },
+          "psi3_regulatory": {
+            "median": 0.05,
+            "mean_abs": 0.11246701388888888
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.007816666666666668
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1008,
+          "fraction_joint_dominates": 0.175,
+          "median_joint_minus_max_single": -0.19
+        },
+        "governance_override_rate": 0.007291666666666667
+      },
+      "agribrain_no_bonus": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.032,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.08812274305555555,
+          "n_negative": 1137,
+          "n_positive": 3314
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.05,
+          "q75": 0.32999999999999996,
+          "mean": 0.12297916666666665,
+          "n_negative": 1679,
+          "n_positive": 3590
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0007818001741685103,
+          "n_negative": 734,
+          "n_positive": 703
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.14305555555555555
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.024578993055555557
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12436631944444443
+          },
+          "psi3_regulatory": {
+            "median": 0.05,
+            "mean_abs": 0.11265798611111111
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.011533333333333333
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 512,
+          "fraction_joint_dominates": 0.08888888888888889,
+          "median_joint_minus_max_single": -0.2
+        },
+        "governance_override_rate": 0.0036458333333333334
+      },
+      "agribrain_pert_10": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.032,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.09550937500000001,
+          "n_negative": 941,
+          "n_positive": 3337
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.05,
+          "q75": 0.32999999999999996,
+          "mean": 0.13817187499999997,
+          "n_negative": 1513,
+          "n_positive": 3763
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.012667881195360968,
+          "n_negative": 657,
+          "n_positive": 783
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.14146267361111112
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.02418142361111111
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12578993055555554
+          },
+          "psi3_regulatory": {
+            "median": 0.05,
+            "mean_abs": 0.11255555555555555
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.007816666666666668
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1164,
+          "fraction_joint_dominates": 0.20208333333333334,
+          "median_joint_minus_max_single": -0.19
+        },
+        "governance_override_rate": 0.007291666666666667
+      },
+      "agribrain_pert_10_static": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.016,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.09602604166666667,
+          "n_negative": 1009,
+          "n_positive": 3250
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.05,
+          "q75": 0.32999999999999996,
+          "mean": 0.13322222222222221,
+          "n_negative": 1563,
+          "n_positive": 3713
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0026986382622879996,
+          "n_negative": 713,
+          "n_positive": 727
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.1420269097222222
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.024464409722222222
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12544270833333332
+          },
+          "psi3_regulatory": {
+            "median": 0.05,
+            "mean_abs": 0.11324826388888888
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.006972222222222224
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 344,
+          "fraction_joint_dominates": 0.059722222222222225,
+          "median_joint_minus_max_single": -0.2
+        },
+        "governance_override_rate": 0.014409722222222223
+      },
+      "agribrain_pert_25": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.032,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.09566562500000002,
+          "n_negative": 938,
+          "n_positive": 3340
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.05,
+          "q75": 0.32999999999999996,
+          "mean": 0.13890624999999998,
+          "n_negative": 1504,
+          "n_positive": 3769
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.013558659109446097,
+          "n_negative": 639,
+          "n_positive": 801
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.14141059027777778
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.02418142361111111
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12581597222222224
+          },
+          "psi3_regulatory": {
+            "median": 0.05,
+            "mean_abs": 0.11253472222222222
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.007816666666666668
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1122,
+          "fraction_joint_dominates": 0.19479166666666667,
+          "median_joint_minus_max_single": -0.19
+        },
+        "governance_override_rate": 0.007291666666666667
+      },
+      "agribrain_pert_25_static": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.032,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.09606631944444446,
+          "n_negative": 1067,
+          "n_positive": 3384
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.05,
+          "q75": 0.32999999999999996,
+          "mean": 0.13260416666666666,
+          "n_negative": 1568,
+          "n_positive": 3706
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0015723749467454183,
+          "n_negative": 712,
+          "n_positive": 728
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.14206163194444443
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.024464409722222222
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.1253645833333333
+          },
+          "psi3_regulatory": {
+            "median": 0.05,
+            "mean_abs": 0.1131770833333333
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.01145
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 337,
+          "fraction_joint_dominates": 0.058506944444444445,
+          "median_joint_minus_max_single": -0.2
+        },
+        "governance_override_rate": 0.014409722222222223
+      },
+      "agribrain_pert_50": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.032,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.09541736111111111,
+          "n_negative": 942,
+          "n_positive": 3336
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.05,
+          "q75": 0.32999999999999996,
+          "mean": 0.138890625,
+          "n_negative": 1507,
+          "n_positive": 3771
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.024278831245684813,
+          "n_negative": 635,
+          "n_positive": 805
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.1415190972222222
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.024182291666666664
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.1258767361111111
+          },
+          "psi3_regulatory": {
+            "median": 0.05,
+            "mean_abs": 0.11263194444444442
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.007816666666666668
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 1098,
+          "fraction_joint_dominates": 0.190625,
+          "median_joint_minus_max_single": -0.19
+        },
+        "governance_override_rate": 0.007291666666666667
+      },
+      "agribrain_pert_50_static": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.032,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.0954109375,
+          "n_negative": 1078,
+          "n_positive": 3373
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.05,
+          "q75": 0.32999999999999996,
+          "mean": 0.13086284722222222,
+          "n_negative": 1587,
+          "n_positive": 3690
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.00037290307077774104,
+          "n_negative": 731,
+          "n_positive": 709
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.14217013888888885
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.024464409722222222
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.1252517361111111
+          },
+          "psi3_regulatory": {
+            "median": 0.05,
+            "mean_abs": 0.11314583333333332
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.01145
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 251,
+          "fraction_joint_dominates": 0.04357638888888889,
+          "median_joint_minus_max_single": -0.20568148801739808
+        },
+        "governance_override_rate": 0.014409722222222223
+      },
+      "agribrain_theta_pert_10": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.032,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.09719114583333331,
+          "n_negative": 1041,
+          "n_positive": 3410
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.05,
+          "q75": 0.32999999999999996,
+          "mean": 0.13582118055555553,
+          "n_negative": 1519,
+          "n_positive": 3746
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.006058328994576858,
+          "n_negative": 676,
+          "n_positive": 761
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.1418098958333333
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.024493055555555556
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12574652777777778
+          },
+          "psi3_regulatory": {
+            "median": 0.05,
+            "mean_abs": 0.11313020833333332
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.011572222222222223
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 517,
+          "fraction_joint_dominates": 0.08975694444444444,
+          "median_joint_minus_max_single": -0.19
+        },
+        "governance_override_rate": 0.015277777777777777
+      },
+      "agribrain_theta_pert_25": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.032,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.09298611111111109,
+          "n_negative": 1075,
+          "n_positive": 3376
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.05,
+          "q75": 0.32999999999999996,
+          "mean": 0.13059027777777776,
+          "n_negative": 1591,
+          "n_positive": 3690
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.004050573636354175,
+          "n_negative": 706,
+          "n_positive": 731
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.142578125
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.024494791666666668
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12544270833333332
+          },
+          "psi3_regulatory": {
+            "median": 0.05,
+            "mean_abs": 0.11322048611111109
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.011819444444444447
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 497,
+          "fraction_joint_dominates": 0.08628472222222222,
+          "median_joint_minus_max_single": -0.2
+        },
+        "governance_override_rate": 0.022743055555555555
+      },
+      "agribrain_theta_pert_50": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.032,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.0971234375,
+          "n_negative": 1000,
+          "n_positive": 3387
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.05,
+          "q75": 0.32999999999999996,
+          "mean": 0.13678125,
+          "n_negative": 1537,
+          "n_positive": 3767
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.005331616696170982,
+          "n_negative": 681,
+          "n_positive": 756
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.1421267361111111
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.024566840277777776
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12630208333333334
+          },
+          "psi3_regulatory": {
+            "median": 0.05,
+            "mean_abs": 0.11396875000000001
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.011398611111111113
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 489,
+          "fraction_joint_dominates": 0.08489583333333334,
+          "median_joint_minus_max_single": -0.2
+        },
+        "governance_override_rate": 0.029340277777777778
+      },
+      "hybrid_rl": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      },
+      "mcp_only": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.048,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.1161345486111111,
+          "n_negative": 875,
+          "n_positive": 3512
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.03536010724821637,
+          "q25": 0.0,
+          "q75": 0.35276808235849016,
+          "mean": 0.12541482380890243,
+          "n_negative": 924,
+          "n_positive": 3892
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.14071614583333333
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.02465451388888889
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.010104166666666668
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 2154,
+          "fraction_joint_dominates": 0.37395833333333334,
+          "median_joint_minus_max_single": 0.0008408757187851681
+        },
+        "governance_override_rate": 0.04982638888888889
+      },
+      "no_context": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      },
+      "no_pinn": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      },
+      "no_slca": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      },
+      "pirag_only": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.05,
+          "q75": 0.32999999999999996,
+          "mean": 0.12627604166666664,
+          "n_negative": 1590,
+          "n_positive": 3742
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.004402984377911764,
+          "n_negative": 737,
+          "n_positive": 700
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12577256944444445
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.09902777777777776
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 158,
+          "fraction_joint_dominates": 0.027430555555555555,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.015104166666666667
+      },
+      "static": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      }
+    },
+    "overproduction": {
+      "agribrain": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.032,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.0956810763888889,
+          "n_negative": 668,
+          "n_positive": 3201
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.32999999999999996,
+          "q25": 0.0,
+          "q75": 0.32999999999999996,
+          "mean": 0.17115625,
+          "n_negative": 1141,
+          "n_positive": 4251
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.017870430195948358,
+          "n_negative": 163,
+          "n_positive": 389
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.14128038194444442
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.009847222222222222
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.13316840277777778
+          },
+          "psi3_regulatory": {
+            "median": 0.18,
+            "mean_abs": 0.1304704861111111
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.004348611111111111
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 493,
+          "fraction_joint_dominates": 0.08559027777777778,
+          "median_joint_minus_max_single": -0.32999999999999996
+        },
+        "governance_override_rate": 0.008159722222222223
+      },
+      "agribrain_cold_start": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.032,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.09524652777777778,
+          "n_negative": 669,
+          "n_positive": 3200
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.32999999999999996,
+          "q25": 0.0,
+          "q75": 0.32999999999999996,
+          "mean": 0.17112152777777778,
+          "n_negative": 1142,
+          "n_positive": 4248
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0247554705005883,
+          "n_negative": 159,
+          "n_positive": 393
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.14132812499999997
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.009848958333333335
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.13311631944444444
+          },
+          "psi3_regulatory": {
+            "median": 0.18,
+            "mean_abs": 0.1304357638888889
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.004347222222222223
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 524,
+          "fraction_joint_dominates": 0.09097222222222222,
+          "median_joint_minus_max_single": -0.32999999999999996
+        },
+        "governance_override_rate": 0.007638888888888889
+      },
+      "agribrain_no_bonus": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.016,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.07449722222222221,
+          "n_negative": 903,
+          "n_positive": 3226
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.32999999999999996,
+          "q25": -0.05,
+          "q75": 0.32999999999999996,
+          "mean": 0.13654340277777777,
+          "n_negative": 1543,
+          "n_positive": 3802
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.011427362319594264,
+          "n_negative": 218,
+          "n_positive": 379
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.14167968749999998
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.010171006944444444
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12840277777777775
+          },
+          "psi3_regulatory": {
+            "median": 0.18,
+            "mean_abs": 0.12734201388888888
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.006747222222222223
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 504,
+          "fraction_joint_dominates": 0.0875,
+          "median_joint_minus_max_single": -0.32999999999999996
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_pert_10": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.032,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.09456510416666665,
+          "n_negative": 680,
+          "n_positive": 3189
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.32999999999999996,
+          "q25": 0.0,
+          "q75": 0.32999999999999996,
+          "mean": 0.16885763888888888,
+          "n_negative": 1164,
+          "n_positive": 4226
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.01700208666048345,
+          "n_negative": 172,
+          "n_positive": 380
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.14141059027777775
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.009848958333333333
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.13291666666666666
+          },
+          "psi3_regulatory": {
+            "median": 0.18,
+            "mean_abs": 0.13031597222222221
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.004347222222222223
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 491,
+          "fraction_joint_dominates": 0.08524305555555556,
+          "median_joint_minus_max_single": -0.32999999999999996
+        },
+        "governance_override_rate": 0.007638888888888889
+      },
+      "agribrain_pert_10_static": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.016,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.07876006944444444,
+          "n_negative": 835,
+          "n_positive": 3184
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.32999999999999996,
+          "q25": -0.05,
+          "q75": 0.32999999999999996,
+          "mean": 0.14396875,
+          "n_negative": 1450,
+          "n_positive": 3883
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.007283603133855094,
+          "n_negative": 225,
+          "n_positive": 372
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.14098524305555554
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.010141493055555556
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12899305555555557
+          },
+          "psi3_regulatory": {
+            "median": 0.18,
+            "mean_abs": 0.12744097222222223
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.005258333333333334
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 147,
+          "fraction_joint_dominates": 0.025520833333333333,
+          "median_joint_minus_max_single": -0.32999999999999996
+        },
+        "governance_override_rate": 0.00017361111111111112
+      },
+      "agribrain_pert_25": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.032,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.09469010416666666,
+          "n_negative": 677,
+          "n_positive": 3192
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.32999999999999996,
+          "q25": 0.0,
+          "q75": 0.32999999999999996,
+          "mean": 0.1693090277777778,
+          "n_negative": 1160,
+          "n_positive": 4231
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.01695933219655968,
+          "n_negative": 168,
+          "n_positive": 384
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.14140625
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.009849826388888889
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.13297743055555553
+          },
+          "psi3_regulatory": {
+            "median": 0.18,
+            "mean_abs": 0.13035937499999997
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.004347222222222223
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 455,
+          "fraction_joint_dominates": 0.07899305555555555,
+          "median_joint_minus_max_single": -0.32999999999999996
+        },
+        "governance_override_rate": 0.0078125
+      },
+      "agribrain_pert_25_static": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.016,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.07905902777777778,
+          "n_negative": 862,
+          "n_positive": 3267
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.32999999999999996,
+          "q25": -0.05,
+          "q75": 0.32999999999999996,
+          "mean": 0.14396875,
+          "n_negative": 1450,
+          "n_positive": 3883
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0067645546339209165,
+          "n_negative": 226,
+          "n_positive": 371
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.1409939236111111
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.010141493055555556
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12899305555555557
+          },
+          "psi3_regulatory": {
+            "median": 0.18,
+            "mean_abs": 0.12744097222222223
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.006715277777777779
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 132,
+          "fraction_joint_dominates": 0.022916666666666665,
+          "median_joint_minus_max_single": -0.32999999999999996
+        },
+        "governance_override_rate": 0.00017361111111111112
+      },
+      "agribrain_pert_50": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.032,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.09473784722222223,
+          "n_negative": 676,
+          "n_positive": 3193
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.32999999999999996,
+          "q25": 0.0,
+          "q75": 0.32999999999999996,
+          "mean": 0.16946180555555557,
+          "n_negative": 1158,
+          "n_positive": 4232
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.019155048877015014,
+          "n_negative": 161,
+          "n_positive": 391
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.1413845486111111
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.009849826388888889
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.13296875
+          },
+          "psi3_regulatory": {
+            "median": 0.18,
+            "mean_abs": 0.13034722222222223
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.004347222222222223
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 450,
+          "fraction_joint_dominates": 0.078125,
+          "median_joint_minus_max_single": -0.32999999999999996
+        },
+        "governance_override_rate": 0.007638888888888889
+      },
+      "agribrain_pert_50_static": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.016,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.07848350694444445,
+          "n_negative": 868,
+          "n_positive": 3261
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.32999999999999996,
+          "q25": -0.05,
+          "q75": 0.32999999999999996,
+          "mean": 0.14300520833333333,
+          "n_negative": 1459,
+          "n_positive": 3873
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.005717653408207463,
+          "n_negative": 232,
+          "n_positive": 365
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.1410720486111111
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.010144097222222223
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12889756944444444
+          },
+          "psi3_regulatory": {
+            "median": 0.18,
+            "mean_abs": 0.12737152777777774
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.006715277777777779
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 94,
+          "fraction_joint_dominates": 0.016319444444444445,
+          "median_joint_minus_max_single": -0.32999999999999996
+        },
+        "governance_override_rate": 0.00017361111111111112
+      },
+      "agribrain_theta_pert_10": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.016,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.08136579861111112,
+          "n_negative": 830,
+          "n_positive": 3235
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.32999999999999996,
+          "q25": 0.0,
+          "q75": 0.32999999999999996,
+          "mean": 0.14711111111111108,
+          "n_negative": 1417,
+          "n_positive": 3917
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.012932083182314758,
+          "n_negative": 207,
+          "n_positive": 390
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.14067274305555552
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.010131944444444445
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12930555555555553
+          },
+          "psi3_regulatory": {
+            "median": 0.18,
+            "mean_abs": 0.1276145833333333
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.006318055555555556
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 502,
+          "fraction_joint_dominates": 0.08715277777777777,
+          "median_joint_minus_max_single": -0.32999999999999996
+        },
+        "governance_override_rate": 0.0
+      },
+      "agribrain_theta_pert_25": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.016,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.078340625,
+          "n_negative": 873,
+          "n_positive": 3256
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.32999999999999996,
+          "q25": -0.05,
+          "q75": 0.32999999999999996,
+          "mean": 0.14284027777777777,
+          "n_negative": 1468,
+          "n_positive": 3876
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.011852033347918407,
+          "n_negative": 217,
+          "n_positive": 380
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.14137152777777778
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.01016840277777778
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12908854166666667
+          },
+          "psi3_regulatory": {
+            "median": 0.18,
+            "mean_abs": 0.12760590277777775
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.006762499999999999
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 485,
+          "fraction_joint_dominates": 0.0842013888888889,
+          "median_joint_minus_max_single": -0.32999999999999996
+        },
+        "governance_override_rate": 0.00034722222222222224
+      },
+      "agribrain_theta_pert_50": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.016,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.08043715277777777,
+          "n_negative": 822,
+          "n_positive": 3240
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.32999999999999996,
+          "q25": 0.0,
+          "q75": 0.32999999999999996,
+          "mean": 0.149734375,
+          "n_negative": 1404,
+          "n_positive": 3962
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.012177403430638879,
+          "n_negative": 209,
+          "n_positive": 388
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.14115885416666668
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.010186631944444444
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.13003472222222223
+          },
+          "psi3_regulatory": {
+            "median": 0.18,
+            "mean_abs": 0.12836284722222221
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.006633333333333333
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 478,
+          "fraction_joint_dominates": 0.08298611111111111,
+          "median_joint_minus_max_single": -0.32999999999999996
+        },
+        "governance_override_rate": 0.0012152777777777778
+      },
+      "hybrid_rl": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      },
+      "mcp_only": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.032,
+          "q25": 0.0,
+          "q75": 0.325,
+          "mean": 0.1015236111111111,
+          "n_negative": 648,
+          "n_positive": 3417
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.033755857477412415,
+          "q25": 0.0,
+          "q75": 0.2774714161009094,
+          "mean": 0.11254503017257665,
+          "n_negative": 665,
+          "n_positive": 3512
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.13860677083333334
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.010108506944444446
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.006176388888888889
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 2205,
+          "fraction_joint_dominates": 0.3828125,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0045138888888888885
+      },
+      "no_context": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      },
+      "no_pinn": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      },
+      "no_slca": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      },
+      "pirag_only": {
+        "n_records": 5760,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.15,
+          "q25": -0.05,
+          "q75": 0.32999999999999996,
+          "mean": 0.1137378472222222,
+          "n_negative": 1506,
+          "n_positive": 3957
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.005297860697801783,
+          "n_negative": 219,
+          "n_positive": 287
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.15,
+            "mean_abs": 0.12973090277777777
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.07909374999999999
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 307,
+          "fraction_joint_dominates": 0.05329861111111111,
+          "median_joint_minus_max_single": -0.15
+        },
+        "governance_override_rate": 0.00017361111111111112
+      },
+      "static": {
+        "n_records": 0,
+        "n_seeds": 20,
+        "mcp_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "pirag_channel_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "joint_logit_shift": {
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0,
+          "mean": 0.0,
+          "n_negative": 0,
+          "n_positive": 0
+        },
+        "feature_attribution": {
+          "psi0_compliance": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi1_forecast": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi2_retrieval": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi3_regulatory": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          },
+          "psi4_recovery_sat": {
+            "median": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "sub_additivity": {
+          "n_steps_joint_exceeds_max_single": 0,
+          "fraction_joint_dominates": 0.0,
+          "median_joint_minus_max_single": 0.0
+        },
+        "governance_override_rate": 0.0
+      }
+    }
+  }
+}
