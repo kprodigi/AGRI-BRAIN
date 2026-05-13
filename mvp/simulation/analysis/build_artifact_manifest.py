@@ -38,9 +38,79 @@ def _sha256(path: Path) -> str:
     return h.hexdigest()
 
 
+def _gitignored_set(repo_root: Path, results_dir: Path) -> set[str]:
+    """Return manifest-relative POSIX paths under ``results_dir`` that
+    git considers ignored.
+
+    The manifest builder must NOT include gitignored files: those files
+    do not exist on a fresh CI checkout, which forces the verifier to
+    treat them as "missing" -- a soft warning under ``--allow-missing``
+    but a noisy one (~190 lines of WARN spam per manifest verify) that
+    obscures real failures. Filtering them at manifest-construction
+    time keeps the published manifest as a clean inventory of artifacts
+    a fresh clone actually has on disk.
+
+    Implementation: shell out once to ``git check-ignore --stdin``
+    feeding it every candidate path, capturing the subset git reports
+    as ignored. If ``git`` is not on PATH (e.g. HPC slurm worker
+    without git in the venv), returns an empty set and the builder
+    falls back to its pre-2026-05 behaviour (include everything,
+    accept the 190 warns).
+    """
+    import shutil
+    import subprocess
+    if shutil.which("git") is None:
+        return set()
+    # Enumerate every file under results_dir as a manifest-relative
+    # POSIX path. Walking happens once and is reused below.
+    candidates: list[str] = []
+    for p in results_dir.rglob("*"):
+        if p.is_file():
+            candidates.append(p.relative_to(results_dir).as_posix())
+    if not candidates:
+        return set()
+    # Pass repo-relative paths to git check-ignore so it resolves them
+    # against .gitignore from the repo root rather than the cwd.
+    repo_rel_prefix = (
+        results_dir.resolve().relative_to(repo_root.resolve()).as_posix()
+    )
+    payload = "\n".join(
+        f"{repo_rel_prefix}/{c}" for c in candidates
+    ).encode("utf-8")
+    try:
+        proc = subprocess.run(
+            ["git", "check-ignore", "--stdin", "--no-index"],
+            input=payload,
+            capture_output=True,
+            cwd=str(repo_root),
+            check=False,
+        )
+    except OSError:
+        return set()
+    # check-ignore exits 0 when at least one match, 1 when no match,
+    # 128 on other errors. Treat 128 as "give up, include everything".
+    if proc.returncode == 128:
+        return set()
+    ignored_raw = proc.stdout.decode("utf-8", errors="replace").splitlines()
+    ignored = set()
+    for line in ignored_raw:
+        line = line.strip()
+        if not line:
+            continue
+        # Strip the repo-relative prefix to get back to manifest-relative.
+        if line.startswith(repo_rel_prefix + "/"):
+            ignored.add(line[len(repo_rel_prefix) + 1:])
+    return ignored
+
+
 def main() -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     include = []
+    # Resolve the repo root so the gitignore probe can run with cwd at
+    # the repo top rather than at results/ (where .gitignore is not
+    # the canonical authority for partial paths).
+    repo_root = RESULTS_DIR.parent.parent.parent
+    ignored_set = _gitignored_set(repo_root, RESULTS_DIR)
     # Recursive glob so the manifest also covers per-seed dumps
     # (benchmark_seeds/*/seed_*.json) and per-step audit-trail
     # ledgers (decision_ledger/*.jsonl). The earlier non-recursive
@@ -72,6 +142,12 @@ def main() -> None:
         # this against RESULTS_DIR using Path() which is
         # cross-platform.
         rel = p.relative_to(RESULTS_DIR).as_posix()
+        # Skip gitignored files: see _gitignored_set docstring above.
+        # The verifier already warns on these (--allow-missing); the
+        # manifest builder should not have included them in the first
+        # place.
+        if rel in ignored_set:
+            continue
         include.append(
             {
                 "file": rel,
