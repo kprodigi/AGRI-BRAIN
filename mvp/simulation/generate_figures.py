@@ -2326,9 +2326,14 @@ def fig7_ablation(data):
 
     # Single canonical RLE: EU-hierarchy + severity-weighted form
     # (resilience.compute_rle, post-2026-04 simplification).
-    metrics = [("ari", "Adaptive Resilience Index", "(a)"),
-               ("waste", "Waste Rate", "(b)"),
-               ("rle", "Reverse Logistics Efficiency", "(c)")]
+    # Panel titles are deliberately distinct from y-axis labels so the
+    # title carries the ablation interpretation while the y-axis names
+    # the metric.
+    metrics = [
+        ("ari",   "Adaptive Resilience Index",   "(a)", "ARI Across the Modes"),
+        ("waste", "Waste Rate",                  "(b)", "Spoilage Sensitivity Across the Stack"),
+        ("rle",   "Reverse Logistics Efficiency", "(c)", "Reroute Quality by Capability"),
+    ]
     stress_scenarios = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing"]
 
     n_modes = len(fig7_modes)
@@ -2364,7 +2369,7 @@ def fig7_ablation(data):
     _F7_TICK  = TICK_FONT_SIZE + 5       # 20
     _F7_LEG   = LEGEND_FONT_SIZE + 4     # 19
 
-    for ax, (metric, ylabel, panel) in zip(axes, metrics):
+    for ax, (metric, ylabel, panel, title) in zip(axes, metrics):
         x = np.arange(len(stress_scenarios)) * x_scale
 
         for i, mode in enumerate(fig7_modes):
@@ -2387,7 +2392,7 @@ def fig7_ablation(data):
         ax.set_xticks(x + (n_modes - 1) * width / 2)
         _bar_xticklabels(ax, stress_scenarios)
         ax.set_ylabel(ylabel, fontsize=_F7_AXIS, fontweight="bold")
-        ax.set_title(f"{panel} {ylabel}", fontsize=_F7_TITLE, fontweight="bold")
+        ax.set_title(f"{panel} {title}", fontsize=_F7_TITLE, fontweight="bold")
         _apply_style(ax)
         # Re-apply the larger tick label size after _apply_style.
         ax.tick_params(labelsize=_F7_TICK, length=6, width=1.4)
