@@ -739,12 +739,17 @@ def _fig3_overproduction_inner(op, ab, hours):
     _annotate_window(ax, 12, 60, WINDOW_COLOR, "Overproduction", xpos=40)
     h1, l1 = ax.get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()
-    # Explicit framealpha=1.0 so the legend stays opaque against the
-    # busier dual-axis Inventory/Demand background — matches the
-    # visual weight of panel (b)'s legend rather than rendering a
-    # see-through frame over the overlapping Demand line.
-    _legend(ax, handles=h1 + h2, labels=l1 + l2, loc="upper left",
-            framealpha=1.0)
+    # Explicit framealpha=1.0 + facecolor="white" so the legend frame
+    # is fully solid against the busier dual-axis Inventory/Demand
+    # background — matches the visual weight of panel (b)'s legend
+    # rather than rendering a translucent frame over the overlapping
+    # Demand line. framealpha alone leaves a faint transparency on
+    # some matplotlib backends; explicit facecolor pins it.
+    leg_a = _legend(ax, handles=h1 + h2, labels=l1 + l2, loc="upper left",
+                    framealpha=1.0, facecolor="white")
+    if leg_a is not None and leg_a.get_frame() is not None:
+        leg_a.get_frame().set_alpha(1.0)
+        leg_a.get_frame().set_facecolor("white")
 
     # --- (b) Waste rolling average ---
     ax = axes[0, 1]
@@ -2350,7 +2355,13 @@ def fig6_cross(data):
         ax.set_ylabel(ylabel, fontsize=_F6_AXIS, fontweight="bold")
         ax.set_title(f"{panel} {title}", fontsize=_F6_TITLE, fontweight="bold")
         _apply_style(ax)
-        # Re-apply larger tick label sizes after _apply_style normalises them.
+        # Re-apply larger tick / axis-label / title sizes after
+        # _apply_style normalises them to the figure-suite defaults.
+        # _apply_style.set_size(AXIS_LABEL_SIZE) and
+        # title.set_size(SUBPLOT_TITLE_SIZE) silently override the
+        # per-figure _F6_* bumps we set above, so we have to re-apply
+        # them after the shared styling pass. Same pattern fig 7
+        # uses (see _F7_AXIS re-apply ~line 2523).
         ax.tick_params(labelsize=_F6_TICK, length=6, width=1.4)
         for lbl in ax.get_xticklabels():
             lbl.set_fontsize(_F6_TICK)
@@ -2358,6 +2369,10 @@ def fig6_cross(data):
         for lbl in ax.get_yticklabels():
             lbl.set_fontsize(_F6_TICK)
             lbl.set_fontweight("bold")
+        ax.yaxis.label.set_size(_F6_AXIS)
+        ax.yaxis.label.set_weight("bold")
+        ax.title.set_size(_F6_TITLE)
+        ax.title.set_weight("bold")
 
     # Single legend at the bottom, shared across all subplots, kept tight
     # against the panels so there is no large empty band between them.
@@ -2432,7 +2447,7 @@ def fig7_ablation(data):
         ("ari",   "Adaptive Resilience Index",   "(a)", "ARI Across the Modes"),
         ("waste", "Waste Rate",                  "(b)", "Spoilage Sensitivity"),
         ("carbon_efficiency", "Carbon Efficiency",
-         "(c)", "Carbon Efficiency by Capability"),
+         "(c)", "Quality per Carbon Cost"),
     ]
     stress_scenarios = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing"]
 
@@ -3032,6 +3047,16 @@ def fig9_fault_degradation():
         ax_.tick_params(labelsize=_F9_TICK, length=6, width=1.4)
         for lbl in list(ax_.get_xticklabels()) + list(ax_.get_yticklabels()):
             lbl.set_fontsize(_F9_TICK); lbl.set_fontweight("bold")
+        # Re-apply axis-label sizes after _apply_style normalises them
+        # to AXIS_LABEL_SIZE. Without this the +1 bump (_F9_AXIS) is
+        # silently undone and rendered labels fall back to the canonical
+        # 17pt regardless of what _F9_AXIS is set to.
+        if ax_.xaxis.label.get_text():
+            ax_.xaxis.label.set_size(_F9_AXIS)
+            ax_.xaxis.label.set_weight("bold")
+        if ax_.yaxis.label.get_text():
+            ax_.yaxis.label.set_size(_F9_AXIS)
+            ax_.yaxis.label.set_weight("bold")
         # Re-apply the larger title size after _apply_style -- otherwise
         # _apply_style.title.set_size(SUBPLOT_TITLE_SIZE=19) silently
         # overrides the _F9_TITLE set above (same render-path bug as
