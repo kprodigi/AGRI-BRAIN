@@ -2232,13 +2232,19 @@ def fig6_cross(data):
 
     # Single canonical RLE: EU-hierarchy + severity-weighted form
     # (resilience.compute_rle, post-2026-04 simplification).
-    metrics = [("ari", "Adaptive Resilience Index", "(a)"),
-               ("rle", "Reverse Logistics Efficiency", "(b)"),
-               ("waste", "Waste Rate", "(c)"), ("slca", "SLCA Score", "(d)")]
+    # Panel titles are deliberately distinct from y-axis labels so the
+    # title carries the comparison/interpretation while the y-axis names
+    # the metric.
+    metrics = [
+        ("ari",   "Adaptive Resilience Index",   "(a)", "Cross-Scenario Resilience Ranking"),
+        ("rle",   "Reverse Logistics Efficiency", "(b)", "Defensive Routing Effectiveness"),
+        ("waste", "Waste Rate",                  "(c)", "Waste Across Stressors"),
+        ("slca",  "SLCA Score",                  "(d)", "Sustainability Composite by Method"),
+    ]
     methods = ["static", "hybrid_rl", "agribrain"]
     scenarios_plot = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing"]
 
-    for ax, (metric, ylabel, panel) in zip(axes.flat, metrics):
+    for ax, (metric, ylabel, panel, title) in zip(axes.flat, metrics):
         x = np.arange(len(scenarios_plot))
         width = 0.26
 
@@ -2264,7 +2270,7 @@ def fig6_cross(data):
         ax.set_xticks(x + width)
         _bar_xticklabels(ax, scenarios_plot)
         ax.set_ylabel(ylabel, fontsize=_F6_AXIS, fontweight="bold")
-        ax.set_title(f"{panel} {ylabel}", fontsize=_F6_TITLE, fontweight="bold")
+        ax.set_title(f"{panel} {title}", fontsize=_F6_TITLE, fontweight="bold")
         _apply_style(ax)
         # Re-apply larger tick label sizes after _apply_style normalises them.
         ax.tick_params(labelsize=_F6_TICK, length=6, width=1.4)
