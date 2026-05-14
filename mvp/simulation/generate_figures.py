@@ -569,14 +569,14 @@ def _fig2_heatwave_inner(hw, ab, hours):
         ax.axvline(h_atrisk, color="#424242", linestyle="--", linewidth=1.1,
                    alpha=0.65)
         ax.text(h_atrisk + 0.4, 0.05,
-                f"\u03c1>{RLE_THRESHOLD:.2f}\n@h{h_atrisk:.0f}",
+                f"\u03c1>{RLE_THRESHOLD:.2f}\n@hr{h_atrisk:.0f}",
                 fontsize=ANNOT_FONT_SIZE - 1, color="#212121",
                 fontweight="bold", va="bottom")
     if h_knee is not None:
         ax.axvline(h_knee, color="#424242", linestyle="--", linewidth=1.1,
                    alpha=0.65)
         ax.text(h_knee + 0.4, 0.05,
-                f"\u03c1>{RHO_RECOVERY_KNEE:.2f}\n@h{h_knee:.0f}",
+                f"\u03c1>{RHO_RECOVERY_KNEE:.2f}\n@hr{h_knee:.0f}",
                 fontsize=ANNOT_FONT_SIZE - 1, color="#212121",
                 fontweight="bold", va="bottom")
 
