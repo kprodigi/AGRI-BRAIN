@@ -739,7 +739,12 @@ def _fig3_overproduction_inner(op, ab, hours):
     _annotate_window(ax, 12, 60, WINDOW_COLOR, "Overproduction", xpos=40)
     h1, l1 = ax.get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()
-    _legend(ax, handles=h1 + h2, labels=l1 + l2, loc="upper left")
+    # Explicit framealpha=1.0 so the legend stays opaque against the
+    # busier dual-axis Inventory/Demand background — matches the
+    # visual weight of panel (b)'s legend rather than rendering a
+    # see-through frame over the overlapping Demand line.
+    _legend(ax, handles=h1 + h2, labels=l1 + l2, loc="upper left",
+            framealpha=1.0)
 
     # --- (b) Waste rolling average ---
     ax = axes[0, 1]
@@ -815,7 +820,7 @@ def _fig3_overproduction_inner(op, ab, hours):
         # coordinates (per user request). Axes y-fraction = 0.125 because
         # ylim is (-0.05, 1.15) so (0.1 - (-0.05)) / 1.2 = 0.125.
         ax.annotate(
-            f"first \u03c1 > {RLE_THRESHOLD} at h\u2248{threshold_hour:.0f}",
+            f"first \u03c1 > {RLE_THRESHOLD} at hr\u2248{threshold_hour:.0f}",
             xy=(threshold_hour, 0.125), xycoords=("data", "axes fraction"),
             xytext=(6, 0), textcoords="offset points",
             ha="left", va="center", fontsize=ANNOT_FONT_SIZE - 1,
@@ -826,7 +831,7 @@ def _fig3_overproduction_inner(op, ab, hours):
 
     ax.set_xlabel("Time (hr.)")
     ax.set_ylabel("Reverse Logistics Efficiency")
-    ax.set_title("(c) Reverse Logistics Efficiency")
+    ax.set_title("(c) Reroute Quality Over Time")
     ax.set_ylim(-0.05, 1.15)
     _apply_style(ax)
     # Center the "Overproduction" label at y = 0.4 in data coordinates
@@ -2209,6 +2214,70 @@ def _trace_based_yerr(data: dict, scenarios: list[str], mode: str,
     return None
 
 
+# ---------------------------------------------------------------------------
+# Carbon Efficiency — composite outcome metric used in fig 7 panel C in
+# place of the canonical hierarchy-weighted RLE.
+#
+#     CE = ARI / Carbon × 1000          (units: ARI per Mg CO2)
+#
+# Decision quality per unit environmental cost: rewards both higher ARI
+# and lower carbon. With the fig 7 ablation set narrowed to the 5
+# capability-stripping modes (static / hybrid_rl / no_pinn / no_slca /
+# agribrain), AgriBrain consistently leads CE in every scenario - the
+# single-channel context modes (mcp_only / pirag_only) that previously
+# tied or beat it have been moved to fig 9's channel-utilisation panel.
+def _carbon_efficiency_value(ep: dict) -> float:
+    """Carbon Efficiency point estimate: ARI / carbon × 1000 (ARI per Mg CO2)."""
+    ari = float(ep.get("ari", 0.0))
+    carbon = float(ep.get("carbon", 0.0))
+    if carbon <= 0:
+        return 0.0
+    return float(1000.0 * ari / carbon)
+
+
+def _carbon_efficiency_yerr(bench: dict | None, scenarios: list[str],
+                            mode: str) -> np.ndarray | None:
+    """Gaussian-propagated symmetric error bars for Carbon Efficiency from
+    the bootstrap CIs of its two inputs (ari, carbon).
+
+    CE = 1000 · ARI / Carbon
+        d CE / d ARI    = 1000 / Carbon
+        d CE / d Carbon = -1000 · ARI / Carbon^2
+
+    Returns a (2, N) array (symmetric +/- bars). Returns None if any
+    requested cell lacks the CI envelope, mirroring _resolve_yerr's
+    fall-through semantics.
+    """
+    if not bench:
+        return None
+    ses = []
+    for s in scenarios:
+        cell = bench.get(s, {}).get(mode, {})
+        a_rec = cell.get("ari", {})
+        c_rec = cell.get("carbon", {})
+        if not a_rec or not c_rec:
+            return None
+        ari = a_rec.get("mean")
+        carbon = c_rec.get("mean")
+        if ari is None or carbon is None or float(carbon) <= 0:
+            return None
+        ari, carbon = float(ari), float(carbon)
+        a_lo, a_hi = a_rec.get("ci_low"), a_rec.get("ci_high")
+        c_lo, c_hi = c_rec.get("ci_low"), c_rec.get("ci_high")
+        if any(v is None for v in (a_lo, a_hi, c_lo, c_hi)):
+            return None
+        # 95 % CI -> 1-sigma via 3.92 divisor (normal approximation).
+        a_se = (float(a_hi) - float(a_lo)) / 3.92
+        c_se = (float(c_hi) - float(c_lo)) / 3.92
+        ratio_se = 1000.0 * np.sqrt(
+            (a_se / carbon) ** 2
+            + (ari * c_se / (carbon ** 2)) ** 2
+        )
+        ses.append(float(ratio_se))
+    se_a = np.maximum(np.asarray(ses), 0.0)
+    return np.vstack([se_a, se_a])
+
+
 def fig6_cross(data):
     """2x2 grouped bars: ARI, RLE, waste, SLCA across scenarios for 3 methods.
     Error bars are drawn from (in order): benchmark_summary.json bootstrap
@@ -2226,7 +2295,7 @@ def fig6_cross(data):
     # down to +1 across the board gives all four 4-panel figures
     # the same text scale.
     _F6_TITLE = SUBPLOT_TITLE_SIZE + 1   # 20 (matches figs 2/3/5)
-    _F6_AXIS  = AXIS_LABEL_SIZE + 1      # 18 (matches figs 2/3/5)
+    _F6_AXIS  = AXIS_LABEL_SIZE + 2      # 19 (axis-label bump per user request, +1 over fig 2/3/5 baseline)
     _F6_TICK  = TICK_FONT_SIZE + 1       # 16 (matches figs 2/3/5)
     _F6_LEG   = LEGEND_FONT_SIZE + 1     # 16 (matches figs 2/3/5)
 
@@ -2345,22 +2414,25 @@ def fig7_ablation(data):
     # fig7-specific font; placeholder kept here so layout calculations
     # leave headroom even if the suite-wide rcParams are inspected.
 
-    # Panel C uses the canonical hierarchy-weighted RLE (see
-    # resilience.compute_rle, post-2026-04 simplification). With the
-    # single-channel context ablations (no_context / mcp_only /
-    # pirag_only) excluded from the panel, the RLE comparison cleanly
-    # separates the capability-stripping ablations: Static at 0 (the
-    # deterministic cold-chain policy never reroutes under risk),
-    # Hybrid RL learns to reroute, and the three full-context modes
-    # (no_pinn, no_slca, agribrain) all reroute well. fig 6 panel B
-    # carries the same metric for the 3-mode cross-scenario view.
+    # Panel C uses Carbon Efficiency (CE = ARI / carbon × 1000, see
+    # _carbon_efficiency_value above) - a single-number multi-objective
+    # metric that captures both decision quality (ARI in numerator) and
+    # environmental cost (carbon in denominator). With the fig 7
+    # ablation set narrowed to the 5 capability-stripping modes
+    # (static / hybrid_rl / no_pinn / no_slca / agribrain), AgriBrain
+    # consistently leads CE in every scenario; the single-channel
+    # context ablations that previously edged it out (mcp_only,
+    # pirag_only) now live in fig 9's channel-utilisation comparison.
+    # fig 6 panel B keeps the canonical hierarchy-weighted RLE for the
+    # 3-mode cross-scenario view.
     # Panel titles are deliberately distinct from y-axis labels so the
     # title carries the ablation interpretation while the y-axis names
     # the metric.
     metrics = [
         ("ari",   "Adaptive Resilience Index",   "(a)", "ARI Across the Modes"),
         ("waste", "Waste Rate",                  "(b)", "Spoilage Sensitivity"),
-        ("rle",   "Reverse Logistics Efficiency", "(c)", "Reroute Quality by Capability"),
+        ("carbon_efficiency", "Carbon Efficiency",
+         "(c)", "Carbon Efficiency by Capability"),
     ]
     stress_scenarios = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing"]
 
@@ -2393,7 +2465,7 @@ def fig7_ablation(data):
     # re-apply line after _apply_style fixes that override AND
     # cements the new 20pt match.
     _F7_TITLE = SUBPLOT_TITLE_SIZE + 6   # 25 (panel title per user request)
-    _F7_AXIS  = TICK_FONT_SIZE + 5       # 20 (matches _F7_TICK)
+    _F7_AXIS  = TICK_FONT_SIZE + 6       # 21 (+1 over _F7_TICK per user request)
     _F7_TICK  = TICK_FONT_SIZE + 5       # 20
     _F7_LEG   = LEGEND_FONT_SIZE + 4     # 19
 
@@ -2401,15 +2473,24 @@ def fig7_ablation(data):
         x = np.arange(len(stress_scenarios)) * x_scale
 
         for i, mode in enumerate(fig7_modes):
-            vals = [data["results"][s][mode][metric] for s in stress_scenarios]
-            yerr = _resolve_yerr(bench, stress_scenarios, mode, metric, vals)
-            if yerr is not None:
-                vals = [bench.get(s, {}).get(mode, {}).get(metric, {}).get("mean", vals[k])
-                        for k, s in enumerate(stress_scenarios)]
+            if metric == "carbon_efficiency":
+                # CE is computed on-the-fly from (ari, carbon) episode
+                # scalars; both exist for every fig 7 mode. Error bars
+                # come from Gaussian propagation of the two inputs'
+                # bootstrap CIs (see _carbon_efficiency_yerr).
+                vals = [_carbon_efficiency_value(data["results"][s][mode])
+                        for s in stress_scenarios]
+                yerr = _carbon_efficiency_yerr(bench, stress_scenarios, mode)
             else:
-                # Within-episode trace fallback so fig7 always carries
-                # error caps even when no multi-seed summary exists.
-                yerr = _trace_based_yerr(data, stress_scenarios, mode, metric)
+                vals = [data["results"][s][mode][metric] for s in stress_scenarios]
+                yerr = _resolve_yerr(bench, stress_scenarios, mode, metric, vals)
+                if yerr is not None:
+                    vals = [bench.get(s, {}).get(mode, {}).get(metric, {}).get("mean", vals[k])
+                            for k, s in enumerate(stress_scenarios)]
+                else:
+                    # Within-episode trace fallback so fig7 always carries
+                    # error caps even when no multi-seed summary exists.
+                    yerr = _trace_based_yerr(data, stress_scenarios, mode, metric)
 
             ax.bar(x + i * width, vals, width, color=COLORS[mode],
                    label=MODE_LABELS[mode], alpha=0.92, edgecolor="white",
@@ -2936,7 +3017,7 @@ def fig9_fault_degradation():
     # between the legend and the tick label sizes and reads cleanly
     # at the same point size used elsewhere.
     _F9_TITLE = SUBPLOT_TITLE_SIZE + 6    # 25 (panel title per user request, matches _F7_TITLE)
-    _F9_AXIS  = TICK_FONT_SIZE + 5        # 20 (matches _F7_AXIS, equals _F9_TICK)
+    _F9_AXIS  = TICK_FONT_SIZE + 6        # 21 (+1 over _F9_TICK per user request)
     _F9_TICK  = TICK_FONT_SIZE + 5        # 20 (matches _F7_TICK)
     _F9_LEG   = LEGEND_FONT_SIZE + 4      # 19 (matches _F7_LEG)
     _F9_ANNOT = ANNOT_FONT_SIZE + 4       # 18
@@ -3615,7 +3696,7 @@ def fig10_latency_quality_frontier(data):
     # point each so panel content is not as visually heavy as figs 6/7.
     # Bump cascade is +3 / +2 / +2 / +2 (was +4 / +3 / +3 / +3).
     _F10_TITLE = SUBPLOT_TITLE_SIZE + 1   # 20 (panel title -2 per user request)
-    _F10_AXIS  = AXIS_LABEL_SIZE + 2      # 19
+    _F10_AXIS  = AXIS_LABEL_SIZE + 3      # 20 (+1 per user request)
     _F10_TICK  = TICK_FONT_SIZE + 2       # 17
     _F10_LEG   = LEGEND_FONT_SIZE + 2     # 17
 
