@@ -2447,7 +2447,7 @@ def fig7_ablation(data):
         ("ari",   "Adaptive Resilience Index",   "(a)", "ARI Across the Modes"),
         ("waste", "Waste Rate",                  "(b)", "Spoilage Sensitivity"),
         ("carbon_efficiency", "Carbon Efficiency",
-         "(c)", "Quality per Carbon Cost"),
+         "(c)", "Carbon Efficiency Across Modes"),
     ]
     stress_scenarios = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing"]
 
