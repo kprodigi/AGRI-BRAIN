@@ -20,16 +20,6 @@ paired permutation tests).
 | **H2 — Communication robustness.** Performance degrades < 1 % under sensor noise, missing data, telemetry delay, and MCP tool fault. | \|ΔARI\| ≤ **0.007** all stressors | Pre-registered ≤ 0.01 threshold met |
 | **H3 — Component complementarity.** MCP and piRAG channels carry different ψ-features and integrate super-additively. | **20.1 %** of decisions show joint Δz > max single channel by > 0.005 (n = 23,040 perturbed-scenario agribrain decisions) | Cross-seed per-channel decomposition: MCP median Δlogit 0.000, piRAG median Δlogit 0.150; both > 0 in their inter-quartile upper half |
 
-§5.8 mechanism evidence (Path A, 2026-05): the new per-seed isolation of the
-`DecisionLedger` JSONL audit trail means every step of every (scenario, mode,
-seed) cell is preserved without race-overwrite by the parallel SLURM array
-tasks. The cross-seed aggregator
-(`mvp/simulation/benchmarks/aggregate_decision_ledgers.py`) computes
-Θ_context[a, :] · (ψ · channel_mask) for every decision and exports
-`mvp/simulation/results/decision_ledger_aggregate.json`. The frontend
-`McpPiragPage` "H3 Mechanism" tab renders this as a live per-scenario Table
-S1 plus the headline pooled-perturbed stats.
-
 ## Frontend Screenshots
 
 | Operations Dashboard | Quality Monitoring | Supply Chain Map |
