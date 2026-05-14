@@ -2444,7 +2444,7 @@ def fig7_ablation(data):
     # title carries the ablation interpretation while the y-axis names
     # the metric.
     metrics = [
-        ("ari",   "Adaptive Resilience Index",   "(a)", "ARI Across the Modes"),
+        ("ari",   "ARI",                         "(a)", "Adaptive Resilience Index Across Modes"),
         ("waste", "Waste Rate",                  "(b)", "Spoilage Sensitivity"),
         ("carbon_efficiency", "Carbon Efficiency",
          "(c)", "Carbon Efficiency Across Modes"),
