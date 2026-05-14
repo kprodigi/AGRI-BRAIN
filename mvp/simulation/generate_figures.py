@@ -547,7 +547,7 @@ def _fig2_heatwave_inner(hw, ab, hours):
     ax2 = ax.twinx()
     ax2.plot(hours, ab["rh_trace"], color="#1565C0", linewidth=2.2,
              alpha=0.85, label="RH")
-    ax.set_xlabel("Hours")
+    ax.set_xlabel("Time (hr.)")
     ax.set_ylabel("Temperature (\u00b0C)")
     ax2.set_ylabel("Relative Humidity (%)")
     ax.set_title("(a) Environmental Exposure")
@@ -558,7 +558,7 @@ def _fig2_heatwave_inner(hw, ab, hours):
     ax2.yaxis.label.set_weight("bold")
     for lbl in ax2.get_yticklabels():
         lbl.set_fontweight("bold")
-    ax2.set_ylim(40, 100)
+    ax2.set_ylim(60, 110)
     # "Heatwave" annotation moved downward (ypos=0.45 -> sits in the
     # lower band of the heatwave window so it does not overlap the
     # temperature peak line); legend anchored on the left side with its
@@ -614,8 +614,8 @@ def _fig2_heatwave_inner(hw, ab, hours):
     ax.axhline(RLE_THRESHOLD, color=WINDOW_COLOR, linestyle="--",
                linewidth=1.6, alpha=0.85,
                label="At-risk threshold")
-    ax.set_xlabel("Hours")
-    ax.set_ylabel("Spoilage Risk")
+    ax.set_xlabel("Time (hr.)")
+    ax.set_ylabel("Spoilage Risk (ρ)")
     ax.set_title("(b) Spoilage Risk Trajectory")
     ax.set_ylim(0, 1.0)
     _apply_style(ax)
@@ -659,7 +659,7 @@ def _fig2_heatwave_inner(hw, ab, hours):
                 fontsize=ANNOT_FONT_SIZE - 1, color="#212121",
                 fontweight="bold", va="bottom")
 
-    ax.set_xlabel("Hours")
+    ax.set_xlabel("Time (hr.)")
     ax.set_ylabel("Action Probability")
     ax.set_title("(c) AgriBrain Action Probabilities")
     ax.set_ylim(0, 1.0)
@@ -708,8 +708,8 @@ def _fig2_heatwave_inner(hw, ab, hours):
             ari = np.array(ep["ari_trace"])
             rolling = np.convolve(ari, kernel, mode="same")
             _mode_plot(ax, hours, rolling, mode)
-    ax.set_xlabel("Hours")
-    ax.set_ylabel("ARI")
+    ax.set_xlabel("Time (hr.)")
+    ax.set_ylabel("Adaptive Resilience Index")
     ax.set_title("(d) Adaptive Resilience Index")
     ax.set_ylim(0, 1.0)
     _apply_style(ax)
@@ -797,7 +797,7 @@ def _fig3_overproduction_inner(op, ab, hours):
     dem = np.array(ab["demand_trace"])
     ax.plot(hours, inv, color=COLORS["agribrain"], linewidth=2.0,
             label="Inventory")
-    ax.set_xlabel("Hours")
+    ax.set_xlabel("Time (hr.)")
     ax.set_ylabel("Inventory (units)")
     ax.ticklabel_format(axis="y", style="scientific", scilimits=(3, 3))
     ax2 = ax.twinx()
@@ -828,7 +828,7 @@ def _fig3_overproduction_inner(op, ab, hours):
         waste = np.array(ep["waste_trace"])
         rolling = np.convolve(waste, np.ones(window) / window, mode="same")
         _mode_plot(ax, hours, rolling, mode)
-    ax.set_xlabel("Hours")
+    ax.set_xlabel("Time (hr.)")
     ax.set_ylabel("Waste Rate")
     ax.set_title("(b) Waste Reduction Over Time")
     _apply_style(ax)
@@ -903,8 +903,8 @@ def _fig3_overproduction_inner(op, ab, hours):
                       alpha=0.90, edgecolor="#9E9E9E", linewidth=0.8),
         )
 
-    ax.set_xlabel("Hours")
-    ax.set_ylabel("RLE")
+    ax.set_xlabel("Time (hr.)")
+    ax.set_ylabel("Reverse Logistics Efficiency")
     ax.set_title("(c) Reverse Logistics Efficiency")
     ax.set_ylim(-0.05, 1.15)
     _apply_style(ax)
@@ -1098,8 +1098,8 @@ def _fig4_cyber_inner(data):
         ari = np.array(ep["ari_trace"])
         rolling = np.convolve(ari, np.ones(12) / 12, mode="same")
         _mode_plot(ax, hours, rolling, mode)
-    ax.set_xlabel("Hours")
-    ax.set_ylabel("ARI")
+    ax.set_xlabel("Time (hr.)")
+    ax.set_ylabel("Adaptive Resilience Index")
     ax.set_title("(a) Adaptive Resilience Index")
     _apply_style(ax)
     # Anchor the "Outage" badge at the bottom-center of the outage
@@ -1580,7 +1580,7 @@ def _fig5_pricing_inner(ap, ab, hours):
     ax.scatter(hours[triggers], demand[triggers], color=WINDOW_COLOR, s=42,
                zorder=5, label="Trigger", marker="v",
                edgecolor="white", linewidth=0.8)
-    ax.set_xlabel("Hours")
+    ax.set_xlabel("Time (hr.)")
     ax.set_ylabel("Demand (units/step)")
     ax.set_title("(a) Demand with Bollinger Triggers")
     _apply_style(ax)
@@ -1616,7 +1616,7 @@ def _fig5_pricing_inner(ap, ab, hours):
     ax.bar(bin_centers, rec_fracs, bar_w, bottom=cc_fracs + lr_fracs,
            color="#F57C00", alpha=0.92, label="Recovery", edgecolor="white",
            linewidth=0.8)
-    ax.set_xlabel("Hours")
+    ax.set_xlabel("Time (hr.)")
     ax.set_ylabel("Routing Fraction")
     ax.set_title("(b) Routing Distribution Over Time")
     ax.set_ylim(0, 1.15)
@@ -1646,7 +1646,7 @@ def _fig5_pricing_inner(ap, ab, hours):
         rolling = np.convolve(eq, np.ones(12) / 12, mode="same")
         _mode_plot(ax, hours, rolling, mode)
         eq_curves[mode] = rolling
-    ax.set_xlabel("Hours")
+    ax.set_xlabel("Time (hr.)")
     ax.set_ylabel("Equity Index")
     ax.set_title("(c) Price Equity Comparison")
     all_vals = np.concatenate(list(eq_curves.values())) if eq_curves else np.array([0.0, 1.0])
@@ -1692,7 +1692,7 @@ def _fig5_pricing_inner(ap, ab, hours):
         rolling = np.convolve(reward, np.ones(window) / window, mode="same")
         _mode_plot(ax, hours, rolling, mode)
 
-    ax.set_xlabel("Hours")
+    ax.set_xlabel("Time (hr.)")
     ax.set_ylabel("Reward")
     ax.set_title("(d) Per-step Reward Comparison")
     _apply_style(ax)
@@ -2311,7 +2311,8 @@ def fig6_cross(data):
 
     # Single canonical RLE: EU-hierarchy + severity-weighted form
     # (resilience.compute_rle, post-2026-04 simplification).
-    metrics = [("ari", "ARI", "(a)"), ("rle", "RLE", "(b)"),
+    metrics = [("ari", "Adaptive Resilience Index", "(a)"),
+               ("rle", "Reverse Logistics Efficiency", "(b)"),
                ("waste", "Waste Rate", "(c)"), ("slca", "SLCA Score", "(d)")]
     methods = ["static", "hybrid_rl", "agribrain"]
     scenarios_plot = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing"]
@@ -2398,8 +2399,9 @@ def fig7_ablation(data):
 
     # Single canonical RLE: EU-hierarchy + severity-weighted form
     # (resilience.compute_rle, post-2026-04 simplification).
-    metrics = [("ari", "ARI", "(a)"), ("waste", "Waste Rate", "(b)"),
-               ("rle", "RLE", "(c)")]
+    metrics = [("ari", "Adaptive Resilience Index", "(a)"),
+               ("waste", "Waste Rate", "(b)"),
+               ("rle", "Reverse Logistics Efficiency", "(c)")]
     stress_scenarios = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing"]
 
     n_modes = len(fig7_modes)
@@ -2558,7 +2560,7 @@ def fig8_green_ai(data):
         ep = hw[mode]
         cum_carbon = np.cumsum(ep["carbon_trace"])
         _mode_plot(ax, hours, cum_carbon, mode)
-    ax.set_xlabel("Hours", fontsize=_F8_AXIS, fontweight="bold")
+    ax.set_xlabel("Time (hr.)", fontsize=_F8_AXIS, fontweight="bold")
     ax.set_ylabel(r"Cumulative $\mathbf{CO_2}$ (kg)",
                   fontsize=_F8_AXIS, fontweight="bold")
     ax.set_title("(a) Cumulative Carbon \u2014 Heatwave",
@@ -3113,7 +3115,7 @@ def fig9_fault_degradation():
         # Slim colorbar on the right edge — gives the gradient an
         # explicit scale for readers who want exact magnitudes.
         cbar = fig.colorbar(im, ax=ax, fraction=0.045, pad=0.03)
-        cbar.set_label("Cohen's d (pooled, ARI)",
+        cbar.set_label("Cohen's d (pooled, Adaptive Resilience Index)",
                        fontsize=_F9_ANNOT, fontweight="bold")
         cbar.ax.tick_params(labelsize=_F9_TICK - 2)
         for lbl in cbar.ax.get_yticklabels():
@@ -3122,7 +3124,7 @@ def fig9_fault_degradation():
         ax.text(0.5, 0.5, "benchmark_significance.json not available",
                 ha="center", va="center", transform=ax.transAxes,
                 fontsize=_F9_ANNOT, color="#616161")
-    _restyle(ax, "(a) Effect Size — Cohen's d (ARI)")
+    _restyle(ax, "(a) Effect Size — Cohen's d (Adaptive Resilience Index)")
 
     # =================================================================
     # Panel (b) — Aggregated % ARI improvement per baseline
@@ -3229,7 +3231,7 @@ def fig9_fault_degradation():
         ax.text(0.5, 0.5, "benchmark_significance.json not available",
                 ha="center", va="center", transform=ax.transAxes,
                 fontsize=_F9_ANNOT, color="#616161")
-    _restyle(ax, "(b) % ARI Improvement vs Baselines")
+    _restyle(ax, "(b) % Adaptive Resilience Index Improvement vs Baselines")
 
     # =================================================================
     # Panel (c) — Context influence rate per scenario x mode
@@ -3754,7 +3756,8 @@ def fig10_latency_quality_frontier(data):
     # bars on every mode. Bottom margin 0.04 (not 0.02) so the s=220
     # static marker at ARI~0.45 isn't clipped by the bottom spine --
     # the marker has a ~0.02 ARI radius at this dpi.
-    ax_a_left.set_ylabel("Mean ARI", fontsize=_F10_AXIS, fontweight="bold")
+    ax_a_left.set_ylabel("Mean Adaptive Resilience Index",
+                          fontsize=_F10_AXIS, fontweight="bold")
     pts_with_err_a = [(p[2], p[3]) for p in fast_pts]
     bar_lo_a = min(y - e[0] for y, e in pts_with_err_a)
     bar_hi_a = max(y + e[1] for y, e in pts_with_err_a)
@@ -4016,7 +4019,8 @@ def fig10_latency_quality_frontier(data):
     # Y-label only on the left sub-axis. X-label and title placed
     # via fig-level helpers so they read as a single panel rather
     # than as two adjacent sub-axes.
-    ax_b_left.set_ylabel("Mean ARI", fontsize=_F10_AXIS, fontweight="bold")
+    ax_b_left.set_ylabel("Mean Adaptive Resilience Index",
+                          fontsize=_F10_AXIS, fontweight="bold")
 
     # Apply tick / label fonts on both sub-axes (matched to fig 8).
     for _ax in (ax_b_left, ax_b_right):
