@@ -3047,7 +3047,7 @@ def fig9_fault_degradation():
         # Slim colorbar on the right edge — gives the gradient an
         # explicit scale for readers who want exact magnitudes.
         cbar = fig.colorbar(im, ax=ax, fraction=0.045, pad=0.03)
-        cbar.set_label("Cohen's d (pooled, Adaptive Resilience Index)",
+        cbar.set_label("Cohen's d (pooled, ARI)",
                        fontsize=_F9_ANNOT, fontweight="bold")
         cbar.ax.tick_params(labelsize=_F9_TICK - 2)
         for lbl in cbar.ax.get_yticklabels():
@@ -3056,7 +3056,7 @@ def fig9_fault_degradation():
         ax.text(0.5, 0.5, "benchmark_significance.json not available",
                 ha="center", va="center", transform=ax.transAxes,
                 fontsize=_F9_ANNOT, color="#616161")
-    _restyle(ax, "(a) Effect Size — Cohen's d (Adaptive Resilience Index)")
+    _restyle(ax, "(a) Effect Size — Cohen's d (ARI)")
 
     # =================================================================
     # Panel (b) — Aggregated % ARI improvement per baseline
@@ -3163,7 +3163,7 @@ def fig9_fault_degradation():
         ax.text(0.5, 0.5, "benchmark_significance.json not available",
                 ha="center", va="center", transform=ax.transAxes,
                 fontsize=_F9_ANNOT, color="#616161")
-    _restyle(ax, "(b) % Adaptive Resilience Index Improvement vs Baselines")
+    _restyle(ax, "(b) % ARI Improvement vs Baselines")
 
     # =================================================================
     # Panel (c) — Context influence rate per scenario x mode
