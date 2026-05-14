@@ -2,30 +2,10 @@
 """
 AGRI-BRAIN Figure Generation
 ==============================
-Generates publication-quality figures (Figure 2 through Figure 10)
+Generates figures
 as PNG + PDF at 800 DPI. The shared style block below is the single
 source of truth for typography, palette, and layout so that every
 figure in the paper, poster, and slide deck matches exactly.
-
-Styling principles (aligned with Word-document manuscript body text):
-
-- **Font**: Arial for every text element. Fallbacks to Liberation Sans
-  (Linux metric-compatible) and DejaVu Sans (matplotlib default) so the
-  same code path renders identically on HPC and on local Windows.
-- **Size**: body text matches 11 pt Word body; axis labels 12 pt bold;
-  subplot titles 13 pt bold; figure super-title 16 pt bold; tick numbers
-  11 pt; legends 11 pt.
-- **Weight**: titles, axis labels, and annotation emphasis are bold. Body
-  text and tick labels remain regular so bold carries contrast.
-- **Contrast**: ColorBrewer-derived palette with deeper saturation than
-  the Material defaults so colors survive grayscale printing and
-  projection.
-- **No overlap**: window annotations use axes-fraction placement outside
-  the plotting area; long scenario names rotate -20 degrees; legends
-  prefer bottom-center placement or outside-right; tight_layout plus
-  explicit padding.
-- **Image quality**: 800 DPI PNG and vector PDF; explicit bbox_inches
-  tight with pad_inches=0.15 to avoid clipping bold labels.
 
 Standalone usage:
     cd mvp/simulation
@@ -49,29 +29,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import font_manager as _font_manager
 
-# 2026-05 cross-platform font handling. Pre-2026-05 the config did:
-#   - register Arial from Windows-only paths (C:\Windows\Fonts\arial*.ttf)
-#   - set font.family = "Arial"
-# This was Windows-correct and HPC-noisy: on a Linux render host with no
-# Arial installed, every text element triggered a "findfont: Font
-# family 'Arial' not found" warning (hundreds of warnings per figure
-# render, flooding the console). Matplotlib still rendered the figure
-# correctly because the font.sans-serif fallback chain caught the
-# request, but the noise was unprofessional and the resulting glyphs
-# were DejaVu Sans (slightly different metrics from Arial).
-#
-# Cross-platform fix:
-#   1. Register Arial from Windows paths when available (Windows hosts).
-#   2. Register Liberation Sans from common Linux font paths when
-#      available -- Liberation Sans was designed by Red Hat with
-#      metric-compatibility to Arial, so labels lay out the same.
-#   3. Set font.family = "sans-serif" (the family GROUP, not the name)
-#      and let font.sans-serif's priority list do the resolution.
-#      Matplotlib walks the list, picks the first available, and
-#      resolves silently -- no warning storm.
-#   4. The mathtext.* keys downstream still set Arial-by-name; if Arial
-#      isn't present matplotlib falls back to STIX (the canonical
-#      math fallback) without warning. Acceptable cost for inline math.
+
 _ARIAL_FONT_FILES = (
     # Windows
     r"C:\Windows\Fonts\arial.ttf",
@@ -106,15 +64,6 @@ from src.models.resilience import RLE_THRESHOLD, compute_effective_rho, HIERARCH
 # ---------------------------------------------------------------------------
 # Unified publication-quality style
 # ---------------------------------------------------------------------------
-# Figures are authored larger than Word's body text (11 pt Arial) so that
-# once the PNG/PDF is dropped into a two-column manuscript and reduced to
-# column width, every label, tick, legend entry, and title remains
-# unambiguously readable. The hierarchy below keeps the typographic ratio
-# that makes titles stand out from axis labels stand out from tick labels,
-# and every text element is bold by default.
-#
-# If a figure is shrunk to column width and labels start overlapping, the
-# figsize is too small, not the font. Increase figsize, not decrease font.
 BODY_FONT_SIZE = 18        # paragraph-equivalent body text in figures (+3 global cumulative)
 TICK_FONT_SIZE = 18        # x/y tick numbers (+3 global cumulative)
 AXIS_LABEL_SIZE = 20       # x/y axis labels (bold) (+3 global cumulative)
@@ -124,30 +73,9 @@ LEGEND_FONT_SIZE = 18      # legend entries (bold) (+3 global cumulative)
 ANNOT_FONT_SIZE = 17       # in-plot annotations like "Heatwave" bbox (+3 global cumulative)
 
 plt.rcParams.update({
-    # Use the family-group ("sans-serif") and let the priority list
-    # below do the resolution. Pre-2026-05 this was hardcoded to
-    # "Arial", which made matplotlib's font lookup fail loudly on
-    # any host without Arial (the HPC render flooded stdout with
-    # ~hundreds of "Font family 'Arial' not found" warnings before
-    # silently falling back to DejaVu Sans). Setting the family
-    # GROUP picks the first-available sans-serif from the list
-    # without warnings, while still preferring Arial when the host
-    # has it (Windows authoring) or Liberation Sans (Linux render).
+   
     "font.family": "sans-serif",
     "font.sans-serif": ["Arial", "Liberation Sans", "DejaVu Sans", "sans-serif"],
-    # Mathtext (LaTeX-style ``$\Delta$ARI`` etc.) needs its own
-    # font configuration. Pre-2026-05 we set ``mathtext.fontset =
-    # "custom"`` plus ``mathtext.rm/it/bf = "Arial"``, which is a
-    # LITERAL font-name lookup -- it ignores the
-    # ``font.family``/``font.sans-serif`` priority list and warns
-    # on every host without Arial (HPC fig 8 stdout is full of
-    # ``findfont: Font family ['Arial'] not found`` plus a
-    # cascading 'cursive' fallback warning). Switch to the
-    # ``dejavusans`` fontset which matplotlib ships with its wheel
-    # -- no external font required, no warnings on any host.
-    # Visual delta vs Arial mathtext is invisible at 800 DPI for
-    # the simple expressions we render (Greek letters, sub/super
-    # scripts).
     "mathtext.fontset": "dejavusans",
     "font.size": BODY_FONT_SIZE,
     "axes.labelsize": AXIS_LABEL_SIZE,
@@ -191,22 +119,15 @@ plt.rcParams.update({
 # ---------------------------------------------------------------------------
 # High-contrast, colorblind-safe 9-mode palette
 # ---------------------------------------------------------------------------
-# Chosen so (a) agribrain stays visually the hero in every comparison, and
-# (b) adjacent modes in every chart differ on both hue and value (not just
-# hue), so the figures survive greyscale print.
 COLORS = {
     "static":     "#4A4A4A",   # charcoal (baseline)
     "hybrid_rl":  "#D95F02",   # burnt orange
     "no_pinn":    "#C2185B",   # deep magenta
     "no_slca":    "#5E35B1",   # deep purple
-    "agribrain":  "#009688",   # teal (paper hero, unchanged)
+    "agribrain":  "#009688",   # teal 
     "no_context": "#2E7D32",   # forest green
     "mcp_only":   "#F57C00",   # vivid amber
     "pirag_only": "#1565C0",   # deep blue
-    # §4.7 ablation modes: teal shades so they read as "agribrain variants"
-    # without competing visually with the paper-hero teal. Cold start sits
-    # slightly cooler; perturbation modes walk toward warmer teals as noise
-    # magnitude grows, so readers can tell them apart in a crowded legend.
     "agribrain_cold_start": "#00695C",  # dark teal
     "agribrain_pert_10":    "#26A69A",  # light teal
     "agribrain_pert_25":    "#4DB6AC",  # lighter teal
@@ -558,7 +479,7 @@ def _fig2_heatwave_inner(hw, ab, hours):
     ax2.yaxis.label.set_weight("bold")
     for lbl in ax2.get_yticklabels():
         lbl.set_fontweight("bold")
-    ax2.set_ylim(60, 110)
+    ax2.set_ylim(30, 105)
     # "Heatwave" annotation moved downward (ypos=0.45 -> sits in the
     # lower band of the heatwave window so it does not overlap the
     # temperature peak line); legend anchored on the left side with its
@@ -710,7 +631,7 @@ def _fig2_heatwave_inner(hw, ab, hours):
             _mode_plot(ax, hours, rolling, mode)
     ax.set_xlabel("Time (hr.)")
     ax.set_ylabel("Adaptive Resilience Index")
-    ax.set_title("(d) Adaptive Resilience Index")
+    ax.set_title("(d) Adaptive Resilience Index Over Time")
     ax.set_ylim(0, 1.0)
     _apply_style(ax)
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave")
@@ -984,8 +905,8 @@ def _fig3_overproduction_inner(op, ab, hours):
                    linewidth=0.8)
     ax.set_xticks(x + width)
     ax.set_xticklabels(comp_labels)
-    ax.set_ylabel("Score")
-    ax.set_title("(d) SLCA Components")
+    ax.set_ylabel("SLCA Score")
+    ax.set_title("(d) Social Life Cycle Assessment Components")
     ax.set_ylim(0, 1.15)
     _apply_style(ax)
     _legend(ax, loc="upper right")
@@ -1100,7 +1021,7 @@ def _fig4_cyber_inner(data):
         _mode_plot(ax, hours, rolling, mode)
     ax.set_xlabel("Time (hr.)")
     ax.set_ylabel("Adaptive Resilience Index")
-    ax.set_title("(a) Adaptive Resilience Index")
+    ax.set_title("(a) Adaptive Resilience Index Over Time")
     _apply_style(ax)
     # Anchor the "Outage" badge at the bottom-center of the outage
     # window (h=48). The previous top-anchored placement (ypos=0.93)
