@@ -2209,109 +2209,6 @@ def _trace_based_yerr(data: dict, scenarios: list[str], mode: str,
     return None
 
 
-# ---------------------------------------------------------------------------
-# Carbon Efficiency — composite outcome metric used in fig 7 panel C in
-# place of the canonical hierarchy-weighted RLE.
-#
-# The canonical ``compute_rle`` in resilience.py is a *hierarchy-conformity*
-# metric: at each at-risk step it scores the chosen action by an EU
-# waste-hierarchy weight (LR=1.0, Recovery=0.4, CC=0.0 in the marketable
-# band) and integrates. With ~89 % of at-risk steps in the marketable band,
-# RLE collapses to "fraction of at-risk decisions routed to LR" — a routing
-# volume metric that rewards always-LR policies (mcp_only floods LR at 79 %
-# vs agribrain at 73 % under heatwave, scoring 0.84 vs 0.81 on RLE) even
-# though both produce nearly identical waste outcomes. The canonical RLE
-# is still useful as a hierarchy-conformity audit and stays in fig 6 panel
-# B + Table 1 / 2 unchanged.
-#
-# Across the 8-mode ablation set, every outcome metric we have access to
-# (waste, RLE, SLCA, even ARI) ties all the context-aware modes to within
-# ~0.02 of each other — removing any one capability layer doesn't break
-# the policy. The one dimension that DOES show a clean monotonic ordering
-# as capability layers stack is **carbon**: AgriBrain emits ~55 % less
-# CO2 than Static, ~30 % less than Hybrid RL, and ~10 % less than MCP-only.
-#
-# Carbon Efficiency captures that with a single-number multi-objective
-# index — decision quality per unit environmental cost:
-#
-#     CE = ARI / Carbon × 1000          (units: ARI per Mg CO2)
-#
-# - Numerator ARI is the composite policy-quality metric (the figure-1
-#   headline measure)
-# - Denominator Carbon is per-episode kg CO2 from the GHG-Protocol
-#   activity-based accounting in src.models.carbon
-# - The × 1000 factor converts kg to Mg so the displayed values land in
-#   a readable 0.05 - 0.30 range
-#
-# Why this is the right ablation metric:
-#   - AgriBrain optimises *jointly* across quality and sustainability;
-#     ablating any layer shifts the trade-off toward higher carbon for
-#     similar quality. CE is the single number that captures the
-#     compound advantage of the full stack.
-#   - It rewards selectivity (PINN/SLCA-informed routing that avoids the
-#     high-carbon recovery channel) and penalises both quality drops
-#     (lower ARI) and carbon drops (higher kg CO2).
-#   - It is a true multi-objective metric, not a re-spin of waste or
-#     ARI alone, so it adds information beyond fig 7 panels (a) and (b).
-def _carbon_efficiency_value(ep: dict) -> float:
-    """Carbon Efficiency point estimate: ARI / carbon × 1000 (ARI per Mg CO2)."""
-    ari = float(ep.get("ari", 0.0))
-    carbon = float(ep.get("carbon", 0.0))
-    if carbon <= 0:
-        return 0.0
-    return float(1000.0 * ari / carbon)
-
-
-def _carbon_efficiency_yerr(bench: dict | None, scenarios: list[str],
-                            mode: str) -> np.ndarray | None:
-    """Gaussian-propagated symmetric error bars for Carbon Efficiency from
-    the bootstrap CIs of its two inputs (ari, carbon).
-
-    CE = 1000 · ARI / Carbon
-        d CE / d ARI    = 1000 / Carbon
-        d CE / d Carbon = -1000 · ARI / Carbon^2
-
-    So  Var(CE) ≈ (1000 σ_ari / Carbon)^2 + (1000 ARI σ_carbon / Carbon^2)^2
-
-    Returns a (2, N) array (symmetric +/- bars) so the bar plot's yerr
-    contract matches the canonical CI-based path. Returns None if any
-    requested cell lacks the CI envelope, mirroring _resolve_yerr's
-    fall-through semantics.
-    """
-    if not bench:
-        return None
-    ses = []
-    for s in scenarios:
-        cell = bench.get(s, {}).get(mode, {})
-        a_rec = cell.get("ari", {})
-        c_rec = cell.get("carbon", {})
-        if not a_rec or not c_rec:
-            return None
-        ari = a_rec.get("mean")
-        carbon = c_rec.get("mean")
-        if ari is None or carbon is None or float(carbon) <= 0:
-            return None
-        ari, carbon = float(ari), float(carbon)
-        # 95 % bootstrap CI -> 1-sigma via the normal-approximation
-        # divisor 2 * 1.96 = 3.92. The published bootstrap CIs are
-        # tight enough that this approximation is accurate to ~3 %
-        # for the cells in panel C.
-        a_lo, a_hi = a_rec.get("ci_low"), a_rec.get("ci_high")
-        c_lo, c_hi = c_rec.get("ci_low"), c_rec.get("ci_high")
-        if any(v is None for v in (a_lo, a_hi, c_lo, c_hi)):
-            return None
-        a_se = (float(a_hi) - float(a_lo)) / 3.92
-        c_se = (float(c_hi) - float(c_lo)) / 3.92
-        # Gaussian propagation of the ratio ARI/carbon, scaled by 1000.
-        ratio_se = 1000.0 * np.sqrt(
-            (a_se / carbon) ** 2
-            + (ari * c_se / (carbon ** 2)) ** 2
-        )
-        ses.append(float(ratio_se))
-    se_a = np.maximum(np.asarray(ses), 0.0)
-    return np.vstack([se_a, se_a])
-
-
 def fig6_cross(data):
     """2x2 grouped bars: ARI, RLE, waste, SLCA across scenarios for 3 methods.
     Error bars are drawn from (in order): benchmark_summary.json bootstrap
@@ -2340,12 +2237,10 @@ def fig6_cross(data):
     # in the marketable band) regardless of the outcome that routing
     # produced. With ~89 % of at-risk steps in the marketable band,
     # canonical RLE collapses to "fraction of at-risk decisions routed
-    # to LR", which favours always-reroute policies (mcp_only) over
-    # selectivity-aware ones (agribrain). Fig 7 panel C uses Carbon
-    # Efficiency (ARI per Mg CO2) instead — see
-    # _carbon_efficiency_value above the fig 6 / 7 functions for the
-    # rationale and a complementary outcome-based view of the same
-    # underlying simulation runs.
+    # to LR". Reported here for the 3-method cross-scenario view; the
+    # 5-mode capability-ablation view (static / hybrid_rl / no_pinn /
+    # no_slca / agribrain) appears in fig 7 panel C with the same
+    # metric.
     # Panel titles are deliberately distinct from y-axis labels so the
     # title carries the comparison/interpretation while the y-axis names
     # the metric.
@@ -2425,8 +2320,20 @@ def fig7_ablation(data):
     """
     bench = _load_benchmark_ci()
 
+    # 5-mode architectural ablation: each mode strips one structural
+    # capability from the stack vs full-stack AgriBrain.
+    #   static     - baseline cold-chain policy, no learning, no context
+    #   hybrid_rl  - REINFORCE policy gradient, no context channel
+    #   no_pinn    - full stack minus the PINN-refined rho estimator
+    #   no_slca    - full stack minus the SLCA-aware logit shaping
+    #   agribrain  - full stack
+    # The single-channel context ablations (no_context, mcp_only,
+    # pirag_only) are intentionally excluded here so fig 7 stays
+    # focused on the *capability* dimension; the channel-utilisation
+    # comparison across (mcp_only, pirag_only, agribrain) lives in
+    # fig 9 panel C (Decision Quality per intervention).
     _FIG7_CANONICAL_MODES = ("static", "hybrid_rl", "no_pinn", "no_slca",
-                             "no_context", "mcp_only", "pirag_only", "agribrain")
+                             "agribrain")
     # Filter to modes actually present in the data; preserve canonical order.
     fig7_modes = [m for m in _FIG7_CANONICAL_MODES
                   if m in data.get("results", {}).get(SCENARIOS[0], {})]
@@ -2438,36 +2345,22 @@ def fig7_ablation(data):
     # fig7-specific font; placeholder kept here so layout calculations
     # leave headroom even if the suite-wide rcParams are inspected.
 
-    # Panel (c) intentionally departs from the canonical RLE used in
-    # fig 6 panel B + Table 1 / 2. The hierarchy-weighted RLE rewards
-    # always-LR policies (mcp_only floods LR at 79 % vs agribrain at
-    # 73 % under heatwave) without checking the outcome, and across
-    # the ablation set every outcome metric we have (waste, RLE, SLCA,
-    # even ARI) ties all the context-aware modes to within ~0.02 of
-    # each other — removing any one capability layer doesn't break
-    # the policy on those single-axis metrics.
-    #
-    # Carbon Efficiency (CE = ARI / carbon × 1000, see
-    # _carbon_efficiency_value above) is the one dimension that DOES
-    # show a clean monotonic ordering as capability layers stack:
-    # AgriBrain emits ~55 % less CO2 than Static, ~30 % less than
-    # Hybrid RL, and ~10 % less than MCP-only, all at equal-or-better
-    # ARI. CE is the single-number multi-objective metric that
-    # captures the compound advantage of the full stack — decision
-    # quality per Mg CO2 — and the right ablation panel to show
-    # because each removed capability shifts the quality / carbon
-    # trade-off measurably.
-    #
-    # The canonical hierarchy-weighted RLE is preserved in
-    # benchmark_summary.json, in fig 6 panel B, and in Table 1 / 2.
+    # Panel C uses the canonical hierarchy-weighted RLE (see
+    # resilience.compute_rle, post-2026-04 simplification). With the
+    # single-channel context ablations (no_context / mcp_only /
+    # pirag_only) excluded from the panel, the RLE comparison cleanly
+    # separates the capability-stripping ablations: Static at 0 (the
+    # deterministic cold-chain policy never reroutes under risk),
+    # Hybrid RL learns to reroute, and the three full-context modes
+    # (no_pinn, no_slca, agribrain) all reroute well. fig 6 panel B
+    # carries the same metric for the 3-mode cross-scenario view.
     # Panel titles are deliberately distinct from y-axis labels so the
     # title carries the ablation interpretation while the y-axis names
     # the metric.
     metrics = [
         ("ari",   "Adaptive Resilience Index",   "(a)", "ARI Across the Modes"),
         ("waste", "Waste Rate",                  "(b)", "Spoilage Sensitivity"),
-        ("carbon_efficiency", "Carbon Efficiency",
-         "(c)", "Carbon Efficiency by Capability"),
+        ("rle",   "Reverse Logistics Efficiency", "(c)", "Reroute Quality by Capability"),
     ]
     stress_scenarios = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing"]
 
@@ -2508,26 +2401,15 @@ def fig7_ablation(data):
         x = np.arange(len(stress_scenarios)) * x_scale
 
         for i, mode in enumerate(fig7_modes):
-            if metric == "carbon_efficiency":
-                # Carbon Efficiency is computed on-the-fly from (ari,
-                # carbon) episode scalars; both exist for every ablation
-                # mode in data["results"], so no missing-mode fallback
-                # is needed. Error bars come from Gaussian propagation
-                # of the two inputs' bootstrap CIs (see
-                # _carbon_efficiency_yerr).
-                vals = [_carbon_efficiency_value(data["results"][s][mode])
-                        for s in stress_scenarios]
-                yerr = _carbon_efficiency_yerr(bench, stress_scenarios, mode)
+            vals = [data["results"][s][mode][metric] for s in stress_scenarios]
+            yerr = _resolve_yerr(bench, stress_scenarios, mode, metric, vals)
+            if yerr is not None:
+                vals = [bench.get(s, {}).get(mode, {}).get(metric, {}).get("mean", vals[k])
+                        for k, s in enumerate(stress_scenarios)]
             else:
-                vals = [data["results"][s][mode][metric] for s in stress_scenarios]
-                yerr = _resolve_yerr(bench, stress_scenarios, mode, metric, vals)
-                if yerr is not None:
-                    vals = [bench.get(s, {}).get(mode, {}).get(metric, {}).get("mean", vals[k])
-                            for k, s in enumerate(stress_scenarios)]
-                else:
-                    # Within-episode trace fallback so fig7 always carries
-                    # error caps even when no multi-seed summary exists.
-                    yerr = _trace_based_yerr(data, stress_scenarios, mode, metric)
+                # Within-episode trace fallback so fig7 always carries
+                # error caps even when no multi-seed summary exists.
+                yerr = _trace_based_yerr(data, stress_scenarios, mode, metric)
 
             ax.bar(x + i * width, vals, width, color=COLORS[mode],
                    label=MODE_LABELS[mode], alpha=0.92, edgecolor="white",
