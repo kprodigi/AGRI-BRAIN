@@ -2465,8 +2465,8 @@ def fig7_ablation(data):
     # the metric.
     metrics = [
         ("ari",   "Adaptive Resilience Index",   "(a)", "ARI Across the Modes"),
-        ("waste", "Waste Rate",                  "(b)", "Spoilage Sensitivity Across the Stack"),
-        ("carbon_efficiency", "Carbon Efficiency (ARI per Mg CO₂)",
+        ("waste", "Waste Rate",                  "(b)", "Spoilage Sensitivity"),
+        ("carbon_efficiency", "Carbon Efficiency",
          "(c)", "Carbon Efficiency by Capability"),
     ]
     stress_scenarios = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing"]
