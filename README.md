@@ -6,7 +6,6 @@
 Explainable Perishable Supply Chains**
 
 [![CI](https://github.com/kprodigi/AGRI-BRAIN/actions/workflows/ci.yml/badge.svg)](https://github.com/kprodigi/AGRI-BRAIN/actions/workflows/ci.yml)
-[![Nightly validation](https://github.com/kprodigi/AGRI-BRAIN/actions/workflows/nightly-validation.yml/badge.svg)](https://github.com/kprodigi/AGRI-BRAIN/actions/workflows/nightly-validation.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
