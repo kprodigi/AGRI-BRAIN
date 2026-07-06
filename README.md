@@ -41,6 +41,28 @@ documented disruption scenarios (heatwave, overproduction surge, cyber
 outage, adaptive-pricing shock) plus an unperturbed baseline, against an
 8-mode architecture ablation.
 
+## Highlights
+
+- **Physics-informed spoilage perception** — Arrhenius–Baranyi kinetics with
+  a bounded (±0.08) neural residual trained under an ODE-residual penalty.
+- **MCP interoperability layer** — 14 statically registered tools + 5
+  runtime role-capability tools behind one JSON-RPC 2.0 surface with three
+  transports ([tool inventory](agribrain/backend/pirag/mcp/TOOL_INVENTORY.md)).
+- **Physics-informed retrieval (piRAG)** — hybrid BM25 + TF-IDF over a
+  20-document institutional corpus with thermal query expansion,
+  physics-aware reranking, and quality guards.
+- **Context-fused routing policy** — a 5D context vector shifts the softmax
+  logits through a sign-constrained, online-REINFORCE-learned modifier; a
+  deterministic governance override guards joint crisis evidence.
+- **Explainability by construction** — BECAUSE/WITHOUT causal narratives,
+  per-component attribution, counterfactuals, and Merkle-rooted provenance
+  from the same vector that drove the decision.
+- **Statistically defended benchmark** — 800-episode crossed design with
+  8 stochastic perturbation sources, paired permutation tests, BCa
+  bootstrap, and Holm–Bonferroni correction, validated end-to-end in CI.
+
+
+
 ## Key Results
 
 Evaluated on 5 perturbation scenarios × 8 routing modes × 20 stochastic
@@ -84,26 +106,6 @@ events), MCP-necessity doubling on its governed events (compliance ψ₀>0:
 [`channel_complementarity_test.json`](mvp/simulation/results/channel_complementarity_test.json).
 
 </details>
-
-## Highlights
-
-- **Physics-informed spoilage perception** — Arrhenius–Baranyi kinetics with
-  a bounded (±0.08) neural residual trained under an ODE-residual penalty.
-- **MCP interoperability layer** — 14 statically registered tools + 5
-  runtime role-capability tools behind one JSON-RPC 2.0 surface with three
-  transports ([tool inventory](agribrain/backend/pirag/mcp/TOOL_INVENTORY.md)).
-- **Physics-informed retrieval (piRAG)** — hybrid BM25 + TF-IDF over a
-  20-document institutional corpus with thermal query expansion,
-  physics-aware reranking, and quality guards.
-- **Context-fused routing policy** — a 5D context vector shifts the softmax
-  logits through a sign-constrained, online-REINFORCE-learned modifier; a
-  deterministic governance override guards joint crisis evidence.
-- **Explainability by construction** — BECAUSE/WITHOUT causal narratives,
-  per-component attribution, counterfactuals, and Merkle-rooted provenance
-  from the same vector that drove the decision.
-- **Statistically defended benchmark** — 800-episode crossed design with
-  8 stochastic perturbation sources, paired permutation tests, BCa
-  bootstrap, and Holm–Bonferroni correction, validated end-to-end in CI.
 
 ## Repository Structure
 
