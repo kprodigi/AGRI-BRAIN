@@ -1,0 +1,13 @@
+Food Waste Hierarchy Protocol for Perishable Produce
+
+Hierarchy Assessment: In accordance with EU Waste Framework Directive 2008/98/EC, food waste management follows a strict hierarchy prioritizing prevention, then redistribution, then recycling, then recovery, and finally disposal. For perishable produce, the spoilage risk threshold determines the appropriate diversion pathway.
+
+Redistribution Criteria: Produce with spoilage risk below 0.30 (rho less than 0.30) is eligible for redistribution to food banks and community organizations. Leafy greens such as spinach must be redistributed within 4 hours of the diversion decision to maintain food safety. The receiving organization must have cold storage capability at 2 to 5 degrees Celsius.
+
+Animal Feed Diversion: Produce with spoilage risk between 0.30 and 0.50 may be diverted to animal feed processing. Feed safety regulations require documentation of the original cold chain conditions and any temperature excursions. Processing must begin within 8 hours of diversion.
+
+Composting Pathway: Produce with spoilage risk between 0.50 and 0.80 should be directed to industrial composting facilities. Composting diverts organic waste from landfill while producing soil amendments. Facilities must comply with local composting regulations and maintain aerobic conditions at 55 degrees Celsius minimum for pathogen reduction.
+
+Anaerobic Digestion: Produce with spoilage risk above 0.80 is suitable only for anaerobic digestion or energy recovery. Anaerobic digestion produces biogas (methane for energy) and digestate (fertilizer). This pathway recovers both energy and nutrients from waste that cannot be used for human or animal consumption.
+
+Time Windows: For leafy greens, the decision window for redistribution closes rapidly. At ambient temperatures above 10 degrees Celsius, the effective shelf life for redistribution decreases by approximately 50 percent. All diversion decisions must be documented with the spoilage risk at decision time, ambient temperature, and the selected pathway.

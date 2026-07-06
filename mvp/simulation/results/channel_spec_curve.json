@@ -1,0 +1,256 @@
+{
+  "_meta": {
+    "generated_at": "2026-06-05T13:18:40.797054+00:00",
+    "ledger_root": "mvp/simulation/results/decision_ledger_h2",
+    "n_seeds": 20,
+    "defaults": {
+      "_CEIL": 0.005,
+      "_ADV": 0.8,
+      "active_atol": 1e-09,
+      "compliance_cutoff": 0.0
+    },
+    "headline_metrics": [
+      "complementarity_index",
+      "synergy_rate",
+      "phi_changed",
+      "context_decisive_given_active",
+      "mcp_necessary_given_compliance"
+    ]
+  },
+  "default": {
+    "complementarity_index": 0.7498744349573079,
+    "synergy_rate": 0.017864583333333333,
+    "phi_changed": 0.25899895352554886,
+    "context_decisive_given_active": 0.41968802698145025,
+    "mcp_necessary_given_compliance": 0.031762106426072544,
+    "context_decisive_rate": 0.10369791666666667,
+    "n_decisions": 19200,
+    "n_changed": 1991,
+    "n_active": 4744
+  },
+  "sweeps": {
+    "active_atol": [
+      {
+        "value": 1e-12,
+        "complementarity_index": 0.7499,
+        "synergy_rate": 0.0179,
+        "phi_changed": 0.259,
+        "context_decisive_given_active": 0.4197,
+        "mcp_necessary_given_compliance": 0.0318
+      },
+      {
+        "value": 1e-09,
+        "complementarity_index": 0.7499,
+        "synergy_rate": 0.0179,
+        "phi_changed": 0.259,
+        "context_decisive_given_active": 0.4197,
+        "mcp_necessary_given_compliance": 0.0318
+      },
+      {
+        "value": 1e-06,
+        "complementarity_index": 0.7499,
+        "synergy_rate": 0.0179,
+        "phi_changed": 0.259,
+        "context_decisive_given_active": 0.4197,
+        "mcp_necessary_given_compliance": 0.0318
+      },
+      {
+        "value": 0.0001,
+        "complementarity_index": 0.7499,
+        "synergy_rate": 0.0179,
+        "phi_changed": 0.259,
+        "context_decisive_given_active": 0.4197,
+        "mcp_necessary_given_compliance": 0.0318
+      },
+      {
+        "value": 0.001,
+        "complementarity_index": 0.7499,
+        "synergy_rate": 0.0179,
+        "phi_changed": 0.259,
+        "context_decisive_given_active": 0.4197,
+        "mcp_necessary_given_compliance": 0.0318
+      },
+      {
+        "value": 0.01,
+        "complementarity_index": 0.7499,
+        "synergy_rate": 0.0179,
+        "phi_changed": 0.259,
+        "context_decisive_given_active": 0.4197,
+        "mcp_necessary_given_compliance": 0.0318
+      }
+    ],
+    "_CEIL": [
+      {
+        "value": 0.001,
+        "complementarity_index": 0.7499,
+        "synergy_rate": 0.0179,
+        "phi_changed": 0.259,
+        "context_decisive_given_active": 0.4197,
+        "mcp_necessary_given_compliance": 0.0318
+      },
+      {
+        "value": 0.0025,
+        "complementarity_index": 0.7499,
+        "synergy_rate": 0.0179,
+        "phi_changed": 0.259,
+        "context_decisive_given_active": 0.4197,
+        "mcp_necessary_given_compliance": 0.0318
+      },
+      {
+        "value": 0.005,
+        "complementarity_index": 0.7499,
+        "synergy_rate": 0.0179,
+        "phi_changed": 0.259,
+        "context_decisive_given_active": 0.4197,
+        "mcp_necessary_given_compliance": 0.0318
+      },
+      {
+        "value": 0.01,
+        "complementarity_index": 0.7499,
+        "synergy_rate": 0.0179,
+        "phi_changed": 0.259,
+        "context_decisive_given_active": 0.4197,
+        "mcp_necessary_given_compliance": 0.0318
+      },
+      {
+        "value": 0.02,
+        "complementarity_index": 0.7499,
+        "synergy_rate": 0.0179,
+        "phi_changed": 0.259,
+        "context_decisive_given_active": 0.4197,
+        "mcp_necessary_given_compliance": 0.0318
+      }
+    ],
+    "_ADV": [
+      {
+        "value": 0.7,
+        "complementarity_index": 0.7499,
+        "synergy_rate": 0.0179,
+        "phi_changed": 0.259,
+        "context_decisive_given_active": 0.4197,
+        "mcp_necessary_given_compliance": 0.0318
+      },
+      {
+        "value": 0.75,
+        "complementarity_index": 0.7499,
+        "synergy_rate": 0.0179,
+        "phi_changed": 0.259,
+        "context_decisive_given_active": 0.4197,
+        "mcp_necessary_given_compliance": 0.0318
+      },
+      {
+        "value": 0.8,
+        "complementarity_index": 0.7499,
+        "synergy_rate": 0.0179,
+        "phi_changed": 0.259,
+        "context_decisive_given_active": 0.4197,
+        "mcp_necessary_given_compliance": 0.0318
+      },
+      {
+        "value": 0.85,
+        "complementarity_index": 0.7499,
+        "synergy_rate": 0.0179,
+        "phi_changed": 0.259,
+        "context_decisive_given_active": 0.4197,
+        "mcp_necessary_given_compliance": 0.0318
+      },
+      {
+        "value": 0.9,
+        "complementarity_index": 0.7499,
+        "synergy_rate": 0.0179,
+        "phi_changed": 0.259,
+        "context_decisive_given_active": 0.4197,
+        "mcp_necessary_given_compliance": 0.0318
+      }
+    ],
+    "compliance_cutoff": [
+      {
+        "value": 0.0,
+        "complementarity_index": 0.7499,
+        "synergy_rate": 0.0179,
+        "phi_changed": 0.259,
+        "context_decisive_given_active": 0.4197,
+        "mcp_necessary_given_compliance": 0.0318
+      },
+      {
+        "value": 0.1,
+        "complementarity_index": 0.7499,
+        "synergy_rate": 0.0179,
+        "phi_changed": 0.259,
+        "context_decisive_given_active": 0.4197,
+        "mcp_necessary_given_compliance": 0.0318
+      },
+      {
+        "value": 0.25,
+        "complementarity_index": 0.7499,
+        "synergy_rate": 0.0179,
+        "phi_changed": 0.259,
+        "context_decisive_given_active": 0.4197,
+        "mcp_necessary_given_compliance": 0.0318
+      },
+      {
+        "value": 0.5,
+        "complementarity_index": 0.7499,
+        "synergy_rate": 0.0179,
+        "phi_changed": 0.259,
+        "context_decisive_given_active": 0.4197,
+        "mcp_necessary_given_compliance": 0.006
+      }
+    ],
+    "bootstrap_B": [
+      {
+        "B": 1000,
+        "compl_ci_low": 0.7198,
+        "compl_ci_high": 0.7776
+      },
+      {
+        "B": 2000,
+        "compl_ci_low": 0.7222,
+        "compl_ci_high": 0.7762
+      },
+      {
+        "B": 5000,
+        "compl_ci_low": 0.7217,
+        "compl_ci_high": 0.7766
+      },
+      {
+        "B": 10000,
+        "compl_ci_low": 0.7219,
+        "compl_ci_high": 0.7764
+      }
+    ]
+  },
+  "stability_across_all_specs": {
+    "complementarity_index": {
+      "min": 0.7499,
+      "max": 0.7499,
+      "range": 0.0
+    },
+    "synergy_rate": {
+      "min": 0.0179,
+      "max": 0.0179,
+      "range": 0.0
+    },
+    "phi_changed": {
+      "min": 0.259,
+      "max": 0.259,
+      "range": 0.0
+    },
+    "context_decisive_given_active": {
+      "min": 0.4197,
+      "max": 0.4197,
+      "range": 0.0
+    },
+    "mcp_necessary_given_compliance": {
+      "min": 0.006,
+      "max": 0.0318,
+      "range": 0.0258
+    }
+  },
+  "conclusions_hold_everywhere": {
+    "complementarity_gt_0.5": true,
+    "synergy_gt_0": true,
+    "phi_gt_0": true,
+    "conditional_decisive_gt_0.30": true
+  }
+}

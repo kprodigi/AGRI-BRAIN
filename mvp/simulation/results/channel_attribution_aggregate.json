@@ -1,0 +1,838 @@
+{
+  "_meta": {
+    "generated_at": "2026-06-11T15:05:06.325013Z",
+    "git_commit": "dab47f10c0bc91343ae695ee11be964d990a992b",
+    "ledger_root": "mvp/simulation/results/decision_ledger_h2",
+    "n_seeds": 20,
+    "seeds": [
+      7,
+      42,
+      99,
+      101,
+      202,
+      303,
+      404,
+      505,
+      606,
+      707,
+      808,
+      909,
+      1010,
+      1111,
+      1212,
+      1313,
+      1337,
+      1414,
+      1515,
+      2024
+    ],
+    "governance_ceiling": 0.005,
+    "governance_advantage": 0.8,
+    "n_bootstrap": 2000,
+    "mcp_psi_indices": [
+      0,
+      1,
+      4
+    ],
+    "pirag_psi_indices": [
+      2,
+      3
+    ]
+  },
+  "by_scenario_mode": {
+    "adaptive_pricing": {
+      "agribrain": {
+        "n_instrumented_decisions": 5760,
+        "n_seeds": 20,
+        "context_decisive": {
+          "rate": 0.08611111111111111,
+          "ci_low": 0.06927083333333334,
+          "ci_high": 0.103125
+        },
+        "context_decisive_given_active": {
+          "rate": 0.3698732289336316,
+          "ci_low": 0.2966853086503317,
+          "ci_high": 0.4457638857344402
+        },
+        "n_context_active": 1341,
+        "mcp_necessary": {
+          "rate": 0.014409722222222223,
+          "ci_low": 0.010243055555555556,
+          "ci_high": 0.01892361111111111
+        },
+        "pirag_necessary": {
+          "rate": 0.059375,
+          "ci_low": 0.0465234375,
+          "ci_high": 0.07205295138888886
+        },
+        "mcp_necessary_given_compliance": {
+          "rate": 0.03166730255627623,
+          "ci_low": 0.022826801507603516,
+          "ci_high": 0.04112163768497626
+        },
+        "pirag_necessary_given_compliance": {
+          "rate": 0.05990080122090805,
+          "ci_low": 0.04582699816422365,
+          "ci_high": 0.07540000229721348
+        },
+        "synergy": {
+          "rate": 0.01423611111111111,
+          "ci_low": 0.010243055555555556,
+          "ci_high": 0.01875
+        },
+        "decision_movement_concentration": {
+          "gini": 0.814053247435073,
+          "share_carried_by_decisive": 0.4188603890340465,
+          "top_decile_share": 0.5729782586993999,
+          "mean_move": 0.039259634552588636,
+          "n": 5760
+        },
+        "n_context_changed": 496,
+        "attribution_counts": {
+          "mcp_sufficient_only": 1,
+          "pirag_sufficient_only": 260,
+          "redundant": 153,
+          "synergy": 82
+        },
+        "attribution_fraction": {
+          "mcp_sufficient_only": 0.0020161290322580645,
+          "pirag_sufficient_only": 0.5241935483870968,
+          "redundant": 0.3084677419354839,
+          "synergy": 0.16532258064516128
+        },
+        "attribution_fraction_ci": {
+          "mcp_sufficient_only": {
+            "rate": 0.0020161290322580645,
+            "ci_low": 0.0,
+            "ci_high": 0.0064105995717344735
+          },
+          "pirag_sufficient_only": {
+            "rate": 0.5241935483870968,
+            "ci_low": 0.46882122786340436,
+            "ci_high": 0.5792455599453532
+          },
+          "redundant": {
+            "rate": 0.3084677419354839,
+            "ci_low": 0.2708333333333333,
+            "ci_high": 0.3510444694649213
+          },
+          "synergy": {
+            "rate": 0.16532258064516128,
+            "ci_low": 0.11958507049727107,
+            "ci_high": 0.2099344546075323
+          }
+        },
+        "complementarity_index": 0.6915322580645161,
+        "activation": {
+          "n_applied_steps": 1341,
+          "p_mcp": 0.5846383296047726,
+          "p_pirag": 1.0,
+          "p_both": 0.5846383296047726,
+          "p_either": 1.0,
+          "jaccard": 0.5846383296047726,
+          "phi_correlation": 0.0
+        },
+        "directional_conflict": {
+          "n_both_active": 784,
+          "rate_channels_disagree": 0.0
+        },
+        "mcp_governance": {
+          "governance_override_rate": 0.0,
+          "n_governance_override": 0,
+          "compliance_active_rate": 0.45503472222222224,
+          "n_compliance_active": 2621,
+          "compliance_decisive_rate": 0.1186570011446013
+        },
+        "conditional_magnitude": {
+          "mcp_when_active": {
+            "median": 0.20101104744921325,
+            "q25": 0.1442992440379983,
+            "q75": 0.20476763145536864,
+            "mean": 0.19814770056565398,
+            "n": 784
+          },
+          "pirag_when_active": {
+            "median": 0.36454404623934766,
+            "q25": 0.25970000000000004,
+            "q75": 0.37100000000000005,
+            "mean": 0.333940678818083,
+            "n": 1341
+          }
+        },
+        "outcome_linkage": {
+          "reward": {
+            "decisive_mean": 0.7059310764546644,
+            "rest_mean": 0.7071363703568301,
+            "delta": -0.0012052939021657272,
+            "n_decisive": 496,
+            "n_rest": 5264
+          },
+          "waste": {
+            "decisive_mean": 0.02985078964650049,
+            "rest_mean": 0.02815998806502856,
+            "delta": 0.0016908015814719318,
+            "n_decisive": 496,
+            "n_rest": 5264
+          },
+          "slca": {
+            "decisive_mean": 0.7216870837419079,
+            "rest_mean": 0.7271687278971023,
+            "delta": -0.005481644155194365,
+            "n_decisive": 496,
+            "n_rest": 5264
+          },
+          "rho": {
+            "decisive_mean": 0.010091572283571817,
+            "rest_mean": 0.07071464253318784,
+            "delta": -0.060623070249616016,
+            "n_decisive": 496,
+            "n_rest": 5264
+          }
+        }
+      }
+    },
+    "baseline": {
+      "agribrain": {
+        "n_instrumented_decisions": 5760,
+        "n_seeds": 20,
+        "context_decisive": {
+          "rate": 0.10138888888888889,
+          "ci_low": 0.084375,
+          "ci_high": 0.1194487847222222
+        },
+        "context_decisive_given_active": {
+          "rate": 0.40555555555555556,
+          "ci_low": 0.3388715277777778,
+          "ci_high": 0.4757118055555554
+        },
+        "n_context_active": 1440,
+        "mcp_necessary": {
+          "rate": 0.016319444444444445,
+          "ci_low": 0.011805555555555555,
+          "ci_high": 0.021354166666666667
+        },
+        "pirag_necessary": {
+          "rate": 0.07690972222222223,
+          "ci_low": 0.0642361111111111,
+          "ci_high": 0.090625
+        },
+        "mcp_necessary_given_compliance": {
+          "rate": 0.03933054393305439,
+          "ci_low": 0.027894847557768908,
+          "ci_high": 0.05100033243441408
+        },
+        "pirag_necessary_given_compliance": {
+          "rate": 0.0899581589958159,
+          "ci_low": 0.07484041684171218,
+          "ci_high": 0.10539425109688463
+        },
+        "synergy": {
+          "rate": 0.016319444444444445,
+          "ci_low": 0.011805555555555555,
+          "ci_high": 0.02118489583333331
+        },
+        "decision_movement_concentration": {
+          "gini": 0.7997904756121721,
+          "share_carried_by_decisive": 0.47090876384638625,
+          "top_decile_share": 0.5424994395474655,
+          "mean_move": 0.04536916472834652,
+          "n": 5760
+        },
+        "n_context_changed": 584,
+        "attribution_counts": {
+          "mcp_sufficient_only": 0,
+          "pirag_sufficient_only": 349,
+          "redundant": 141,
+          "synergy": 94
+        },
+        "attribution_fraction": {
+          "mcp_sufficient_only": 0.0,
+          "pirag_sufficient_only": 0.5976027397260274,
+          "redundant": 0.24143835616438356,
+          "synergy": 0.16095890410958905
+        },
+        "attribution_fraction_ci": {
+          "mcp_sufficient_only": {
+            "rate": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0
+          },
+          "pirag_sufficient_only": {
+            "rate": 0.5976027397260274,
+            "ci_low": 0.558375387623694,
+            "ci_high": 0.6319264540869128
+          },
+          "redundant": {
+            "rate": 0.24143835616438356,
+            "ci_low": 0.20587863307211585,
+            "ci_high": 0.286235897083104
+          },
+          "synergy": {
+            "rate": 0.16095890410958905,
+            "ci_low": 0.11513647726596361,
+            "ci_high": 0.20408163265306123
+          }
+        },
+        "complementarity_index": 0.7585616438356164,
+        "activation": {
+          "n_applied_steps": 1440,
+          "p_mcp": 0.5506944444444445,
+          "p_pirag": 1.0,
+          "p_both": 0.5506944444444445,
+          "p_either": 1.0,
+          "jaccard": 0.5506944444444445,
+          "phi_correlation": 0.0
+        },
+        "directional_conflict": {
+          "n_both_active": 793,
+          "rate_channels_disagree": 0.0
+        },
+        "mcp_governance": {
+          "governance_override_rate": 0.00017361111111111112,
+          "n_governance_override": 1,
+          "compliance_active_rate": 0.4149305555555556,
+          "n_compliance_active": 2390,
+          "compliance_decisive_rate": 0.1489539748953975
+        },
+        "conditional_magnitude": {
+          "mcp_when_active": {
+            "median": 0.19541323672692637,
+            "q25": 0.14000822549519248,
+            "q75": 0.19980996359418862,
+            "mean": 0.18389401450765114,
+            "n": 793
+          },
+          "pirag_when_active": {
+            "median": 0.37100000000000005,
+            "q25": 0.25970000000000004,
+            "q75": 0.37100000000000005,
+            "mean": 0.3360862145080827,
+            "n": 1440
+          }
+        },
+        "outcome_linkage": {
+          "reward": {
+            "decisive_mean": 0.7173597466889794,
+            "rest_mean": 0.7271801010773498,
+            "delta": -0.009820354388370367,
+            "n_decisive": 584,
+            "n_rest": 5176
+          },
+          "waste": {
+            "decisive_mean": 0.026227197444514894,
+            "rest_mean": 0.023262342664449463,
+            "delta": 0.002964854780065432,
+            "n_decisive": 584,
+            "n_rest": 5176
+          },
+          "slca": {
+            "decisive_mean": 0.7311488726555994,
+            "rest_mean": 0.7440523622286451,
+            "delta": -0.012903489573045768,
+            "n_decisive": 584,
+            "n_rest": 5176
+          },
+          "rho": {
+            "decisive_mean": 0.00843510024445649,
+            "rest_mean": 0.06205238166639597,
+            "delta": -0.05361728142193948,
+            "n_decisive": 584,
+            "n_rest": 5176
+          }
+        }
+      }
+    },
+    "cyber_outage": {
+      "agribrain": {
+        "n_instrumented_decisions": 1920,
+        "n_seeds": 20,
+        "context_decisive": {
+          "rate": 0.3328125,
+          "ci_low": 0.2786458333333333,
+          "ci_high": 0.390625
+        },
+        "context_decisive_given_active": {
+          "rate": 0.4538352272727273,
+          "ci_low": 0.38192520908366373,
+          "ci_high": 0.5322489254648092
+        },
+        "n_context_active": 1408,
+        "mcp_necessary": {
+          "rate": 0.053125,
+          "ci_low": 0.03854166666666667,
+          "ci_high": 0.0703125
+        },
+        "pirag_necessary": {
+          "rate": 0.2453125,
+          "ci_low": 0.2015625,
+          "ci_high": 0.2947916666666667
+        },
+        "mcp_necessary_given_compliance": {
+          "rate": 0.09951219512195122,
+          "ci_low": 0.07162889593570806,
+          "ci_high": 0.12906656997395216
+        },
+        "pirag_necessary_given_compliance": {
+          "rate": 0.21658536585365853,
+          "ci_low": 0.16898095033066507,
+          "ci_high": 0.26879808411205114
+        },
+        "synergy": {
+          "rate": 0.05260416666666667,
+          "ci_low": 0.0375,
+          "ci_high": 0.0692838541666666
+        },
+        "decision_movement_concentration": {
+          "gini": 0.41013585815835113,
+          "share_carried_by_decisive": 0.5166562850348496,
+          "top_decile_share": 0.22493178669776498,
+          "mean_move": 0.12535926207628675,
+          "n": 1920
+        },
+        "n_context_changed": 639,
+        "attribution_counts": {
+          "mcp_sufficient_only": 1,
+          "pirag_sufficient_only": 370,
+          "redundant": 167,
+          "synergy": 101
+        },
+        "attribution_fraction": {
+          "mcp_sufficient_only": 0.001564945226917058,
+          "pirag_sufficient_only": 0.5790297339593115,
+          "redundant": 0.26134585289514867,
+          "synergy": 0.15805946791862285
+        },
+        "attribution_fraction_ci": {
+          "mcp_sufficient_only": {
+            "rate": 0.001564945226917058,
+            "ci_low": 0.0,
+            "ci_high": 0.004807885232744782
+          },
+          "pirag_sufficient_only": {
+            "rate": 0.5790297339593115,
+            "ci_low": 0.5487203675390028,
+            "ci_high": 0.60664151030889
+          },
+          "redundant": {
+            "rate": 0.26134585289514867,
+            "ci_low": 0.23190729881769642,
+            "ci_high": 0.2959349593495935
+          },
+          "synergy": {
+            "rate": 0.15805946791862285,
+            "ci_low": 0.12060793940914358,
+            "ci_high": 0.19752041295590433
+          }
+        },
+        "complementarity_index": 0.7386541471048513,
+        "activation": {
+          "n_applied_steps": 1408,
+          "p_mcp": 0.5355113636363636,
+          "p_pirag": 1.0,
+          "p_both": 0.5355113636363636,
+          "p_either": 1.0,
+          "jaccard": 0.5355113636363636,
+          "phi_correlation": 0.0
+        },
+        "directional_conflict": {
+          "n_both_active": 754,
+          "rate_channels_disagree": 0.0
+        },
+        "mcp_governance": {
+          "governance_override_rate": 0.0,
+          "n_governance_override": 0,
+          "compliance_active_rate": 0.5338541666666666,
+          "n_compliance_active": 1025,
+          "compliance_decisive_rate": 0.3804878048780488
+        },
+        "conditional_magnitude": {
+          "mcp_when_active": {
+            "median": 0.20527983742779488,
+            "q25": 0.14494783764924463,
+            "q75": 0.2058995758195792,
+            "mean": 0.19256801328486056,
+            "n": 754
+          },
+          "pirag_when_active": {
+            "median": 0.37100000000000005,
+            "q25": 0.25970000000000004,
+            "q75": 0.37100000000000005,
+            "mean": 0.33612105151679345,
+            "n": 1408
+          }
+        },
+        "outcome_linkage": {
+          "reward": {
+            "decisive_mean": 0.7182255886685126,
+            "rest_mean": 0.7138960335320603,
+            "delta": 0.004329555136452279,
+            "n_decisive": 639,
+            "n_rest": 1281
+          },
+          "waste": {
+            "decisive_mean": 0.027159763215980504,
+            "rest_mean": 0.027007279711694424,
+            "delta": 0.00015248350428608004,
+            "n_decisive": 639,
+            "n_rest": 1281
+          },
+          "slca": {
+            "decisive_mean": 0.7325616365652557,
+            "rest_mean": 0.7287837605187034,
+            "delta": 0.003777876046552331,
+            "n_decisive": 639,
+            "n_rest": 1281
+          },
+          "rho": {
+            "decisive_mean": 0.009219441408860983,
+            "rest_mean": 0.016724135071312526,
+            "delta": -0.007504693662451543,
+            "n_decisive": 639,
+            "n_rest": 1281
+          }
+        }
+      }
+    },
+    "heatwave": {
+      "agribrain": {
+        "n_instrumented_decisions": 5760,
+        "n_seeds": 20,
+        "context_decisive": {
+          "rate": 0.11510416666666666,
+          "ci_low": 0.09704861111111111,
+          "ci_high": 0.13524305555555555
+        },
+        "context_decisive_given_active": {
+          "rate": 0.46041666666666664,
+          "ci_low": 0.39305555555555555,
+          "ci_high": 0.5340277777777778
+        },
+        "n_context_active": 1440,
+        "mcp_necessary": {
+          "rate": 0.016319444444444445,
+          "ci_low": 0.011284722222222222,
+          "ci_high": 0.021875
+        },
+        "pirag_necessary": {
+          "rate": 0.08923611111111111,
+          "ci_low": 0.07342881944444445,
+          "ci_high": 0.10729166666666666
+        },
+        "mcp_necessary_given_compliance": {
+          "rate": 0.026965002868617326,
+          "ci_low": 0.018799049391154656,
+          "ci_high": 0.036772323416793755
+        },
+        "pirag_necessary_given_compliance": {
+          "rate": 0.07458405048766495,
+          "ci_low": 0.057928508571666454,
+          "ci_high": 0.09472801416848192
+        },
+        "synergy": {
+          "rate": 0.016319444444444445,
+          "ci_low": 0.011111111111111112,
+          "ci_high": 0.022052951388888867
+        },
+        "decision_movement_concentration": {
+          "gini": 0.7988840151864218,
+          "share_carried_by_decisive": 0.5119773986380046,
+          "top_decile_share": 0.5398034805018233,
+          "mean_move": 0.04490600404131469,
+          "n": 5760
+        },
+        "n_context_changed": 663,
+        "attribution_counts": {
+          "mcp_sufficient_only": 0,
+          "pirag_sufficient_only": 420,
+          "redundant": 149,
+          "synergy": 94
+        },
+        "attribution_fraction": {
+          "mcp_sufficient_only": 0.0,
+          "pirag_sufficient_only": 0.6334841628959276,
+          "redundant": 0.22473604826546004,
+          "synergy": 0.14177978883861236
+        },
+        "attribution_fraction_ci": {
+          "mcp_sufficient_only": {
+            "rate": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0
+          },
+          "pirag_sufficient_only": {
+            "rate": 0.6334841628959276,
+            "ci_low": 0.5819787096989149,
+            "ci_high": 0.6880121192403107
+          },
+          "redundant": {
+            "rate": 0.22473604826546004,
+            "ci_low": 0.18880582137161084,
+            "ci_high": 0.263949822187527
+          },
+          "synergy": {
+            "rate": 0.14177978883861236,
+            "ci_low": 0.10331493045699688,
+            "ci_high": 0.1794890510948905
+          }
+        },
+        "complementarity_index": 0.77526395173454,
+        "activation": {
+          "n_applied_steps": 1440,
+          "p_mcp": 0.5548611111111111,
+          "p_pirag": 1.0,
+          "p_both": 0.5548611111111111,
+          "p_either": 1.0,
+          "jaccard": 0.5548611111111111,
+          "phi_correlation": 0.0
+        },
+        "directional_conflict": {
+          "n_both_active": 799,
+          "rate_channels_disagree": 0.0
+        },
+        "mcp_governance": {
+          "governance_override_rate": 0.017361111111111112,
+          "n_governance_override": 100,
+          "compliance_active_rate": 0.6052083333333333,
+          "n_compliance_active": 3486,
+          "compliance_decisive_rate": 0.11732644865174986
+        },
+        "conditional_magnitude": {
+          "mcp_when_active": {
+            "median": 0.16314221781146476,
+            "q25": 0.1293910174379413,
+            "q75": 0.1793881328347628,
+            "mean": 0.16374666182041814,
+            "n": 799
+          },
+          "pirag_when_active": {
+            "median": 0.37100000000000005,
+            "q25": 0.25970000000000004,
+            "q75": 0.37100000000000005,
+            "mean": 0.33536625853133273,
+            "n": 1440
+          }
+        },
+        "outcome_linkage": {
+          "reward": {
+            "decisive_mean": 0.7149639165500867,
+            "rest_mean": 0.6418377532493452,
+            "delta": 0.07312616330074151,
+            "n_decisive": 663,
+            "n_rest": 5097
+          },
+          "waste": {
+            "decisive_mean": 0.02796850078925581,
+            "rest_mean": 0.03004225677539507,
+            "delta": -0.0020737559861392606,
+            "n_decisive": 663,
+            "n_rest": 5097
+          },
+          "slca": {
+            "decisive_mean": 0.729766665857607,
+            "rest_mean": 0.682465379699525,
+            "delta": 0.047301286158081934,
+            "n_decisive": 663,
+            "n_rest": 5097
+          },
+          "rho": {
+            "decisive_mean": 0.009871814299131176,
+            "rest_mean": 0.19994943907632295,
+            "delta": -0.19007762477719178,
+            "n_decisive": 663,
+            "n_rest": 5097
+          }
+        }
+      }
+    },
+    "overproduction": {
+      "agribrain": {
+        "n_instrumented_decisions": 5760,
+        "n_seeds": 20,
+        "context_decisive": {
+          "rate": 0.03211805555555555,
+          "ci_low": 0.027430555555555555,
+          "ci_high": 0.03732638888888889
+        },
+        "context_decisive_given_active": {
+          "rate": 0.3333333333333333,
+          "ci_low": 0.2821405677655678,
+          "ci_high": 0.38476500125533514
+        },
+        "n_context_active": 555,
+        "mcp_necessary": {
+          "rate": 0.0078125,
+          "ci_low": 0.005555555555555556,
+          "ci_high": 0.010763888888888889
+        },
+        "pirag_necessary": {
+          "rate": 0.025520833333333333,
+          "ci_low": 0.020481770833333333,
+          "ci_high": 0.03125
+        },
+        "mcp_necessary_given_compliance": {
+          "rate": 0.012077294685990338,
+          "ci_low": 0.00855603540672865,
+          "ci_high": 0.016021790079903384
+        },
+        "pirag_necessary_given_compliance": {
+          "rate": 0.02200751476113795,
+          "ci_low": 0.016724438976754807,
+          "ci_high": 0.02728768461646863
+        },
+        "synergy": {
+          "rate": 0.0078125,
+          "ci_low": 0.005555555555555556,
+          "ci_high": 0.010590277777777778
+        },
+        "decision_movement_concentration": {
+          "gini": 0.929191518006235,
+          "share_carried_by_decisive": 0.47311082760154693,
+          "top_decile_share": 1.0000000000000002,
+          "mean_move": 0.01657991183548642,
+          "n": 5760
+        },
+        "n_context_changed": 185,
+        "attribution_counts": {
+          "mcp_sufficient_only": 0,
+          "pirag_sufficient_only": 102,
+          "redundant": 38,
+          "synergy": 45
+        },
+        "attribution_fraction": {
+          "mcp_sufficient_only": 0.0,
+          "pirag_sufficient_only": 0.5513513513513514,
+          "redundant": 0.20540540540540542,
+          "synergy": 0.24324324324324326
+        },
+        "attribution_fraction_ci": {
+          "mcp_sufficient_only": {
+            "rate": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0
+          },
+          "pirag_sufficient_only": {
+            "rate": 0.5513513513513514,
+            "ci_low": 0.47364334749918274,
+            "ci_high": 0.625
+          },
+          "redundant": {
+            "rate": 0.20540540540540542,
+            "ci_low": 0.12919543657020904,
+            "ci_high": 0.28917202902519157
+          },
+          "synergy": {
+            "rate": 0.24324324324324326,
+            "ci_low": 0.18133474809833536,
+            "ci_high": 0.31020257628094405
+          }
+        },
+        "complementarity_index": 0.7945945945945946,
+        "activation": {
+          "n_applied_steps": 555,
+          "p_mcp": 0.6666666666666666,
+          "p_pirag": 1.0,
+          "p_both": 0.6666666666666666,
+          "p_either": 1.0,
+          "jaccard": 0.6666666666666666,
+          "phi_correlation": 0.0
+        },
+        "directional_conflict": {
+          "n_both_active": 370,
+          "rate_channels_disagree": 0.0
+        },
+        "mcp_governance": {
+          "governance_override_rate": 0.008333333333333333,
+          "n_governance_override": 48,
+          "compliance_active_rate": 0.646875,
+          "n_compliance_active": 3726,
+          "compliance_decisive_rate": 0.0322061191626409
+        },
+        "conditional_magnitude": {
+          "mcp_when_active": {
+            "median": 0.20401062250059848,
+            "q25": 0.14505824738794987,
+            "q75": 0.2685132158632387,
+            "mean": 0.2124022613476454,
+            "n": 370
+          },
+          "pirag_when_active": {
+            "median": 0.37100000000000005,
+            "q25": 0.25970000000000004,
+            "q75": 0.37100000000000005,
+            "mean": 0.32617021929671614,
+            "n": 555
+          }
+        },
+        "outcome_linkage": {
+          "reward": {
+            "decisive_mean": 0.7078243708966137,
+            "rest_mean": 0.6325225447254852,
+            "delta": 0.07530182617112846,
+            "n_decisive": 185,
+            "n_rest": 5575
+          },
+          "waste": {
+            "decisive_mean": 0.03065784566941551,
+            "rest_mean": 0.040851106795901114,
+            "delta": -0.010193261126485605,
+            "n_decisive": 185,
+            "n_rest": 5575
+          },
+          "slca": {
+            "decisive_mean": 0.723769339565172,
+            "rest_mean": 0.6644256529858745,
+            "delta": 0.05934368657929745,
+            "n_decisive": 185,
+            "n_rest": 5575
+          },
+          "rho": {
+            "decisive_mean": 0.007424783314717749,
+            "rest_mean": 0.10599399244476738,
+            "delta": -0.09856920913004963,
+            "n_decisive": 185,
+            "n_rest": 5575
+          }
+        }
+      }
+    }
+  },
+  "agribrain_perturbed_pooled": {
+    "scenarios": [
+      "heatwave",
+      "overproduction",
+      "cyber_outage",
+      "adaptive_pricing"
+    ],
+    "n_instrumented_decisions": 19200,
+    "n_context_changed": 1983,
+    "context_decisive_rate": 0.10328125,
+    "n_context_active": 4744,
+    "context_decisive_given_active_rate": 0.41800168634064083,
+    "mcp_necessary_rate": 0.016875,
+    "pirag_necessary_rate": 0.07677083333333333,
+    "n_compliance_active": 10858,
+    "mcp_necessary_given_compliance_rate": 0.02983974949346104,
+    "pirag_necessary_given_compliance_rate": 0.0664026524221772,
+    "synergy_rate": 0.016770833333333332,
+    "attribution_counts": {
+      "mcp_sufficient_only": 2,
+      "pirag_sufficient_only": 1152,
+      "redundant": 507,
+      "synergy": 322
+    },
+    "attribution_fraction": {
+      "mcp_sufficient_only": 0.0010085728693898135,
+      "pirag_sufficient_only": 0.5809379727685325,
+      "redundant": 0.2556732223903177,
+      "synergy": 0.16238023197175996
+    },
+    "complementarity_index": 0.7443267776096822,
+    "decision_movement_concentration": {
+      "gini": 0.8040042016901632,
+      "share_carried_by_decisive": 0.483179437442577,
+      "top_decile_share": 0.5527045132314403,
+      "mean_move": 0.0427595913364456,
+      "n": 19200
+    }
+  }
+}

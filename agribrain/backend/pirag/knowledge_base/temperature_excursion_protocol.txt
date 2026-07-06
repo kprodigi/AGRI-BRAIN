@@ -1,0 +1,34 @@
+TEMPERATURE EXCURSION RESPONSE PROTOCOL
+Document ID: KB-TEX-001
+Effective Date: 2025-09-01
+Regulatory Basis: FSMA Preventive Controls Rule (21 CFR Part 117)
+
+1. EXCURSION CLASSIFICATION
+
+When cold chain temperature exceeds the 8 degrees Celsius threshold, operators must
+classify the excursion severity within 15 minutes of detection:
+
+  - Minor: Temperature between 8-10 degrees Celsius sustained for less than 30 minutes.
+    Product may continue in cold chain after verification and documentation.
+  - Moderate: Temperature between 10-15 degrees Celsius, OR any excursion exceeding
+    30 minutes regardless of peak temperature. Product requires quality hold and
+    time-temperature integration analysis before release.
+  - Critical: Temperature exceeding 15 degrees Celsius, OR any excursion lasting more
+    than 2 hours. Product must be diverted from human consumption pathways immediately.
+
+2. REQUIRED ACTIONS
+
+Action 1: Initiate time-temperature integration (TTI) calculation using the cumulative
+thermal exposure model. Record sensor readings at 60-second intervals throughout the
+excursion window. Calculate degree-hours above baseline (4 degrees Celsius).
+
+Action 2: Notify the designated food safety officer and log the excursion in the HACCP
+deviation record within 30 minutes. For moderate and critical events, quarantine affected
+lots and suspend downstream distribution until corrective action review is complete.
+
+3. TTI DECISION THRESHOLDS
+
+If cumulative TTI exceeds 20 degree-hours, reclassify as critical regardless of peak
+temperature. Products with TTI below 10 degree-hours and peak below 10 degrees Celsius
+may be released with documentation per FSMA Section 117.150 corrective action requirements.
+All excursion records must be retained for a minimum of 2 years.

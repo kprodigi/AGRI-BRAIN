@@ -1,0 +1,51 @@
+/* 1) Color the top bar */
+.swagger-ui .topbar {
+    background: #0b3d2e !important;
+    /* deep green */
+}
+
+/* 2) Replace Swagger top-left wordmark with your logo */
+.swagger-ui .topbar .wrapper .link,
+.swagger-ui .topbar-wrapper .link {
+    background-image: url('/static/branding/logo.png') !important;
+    background-repeat: no-repeat !important;
+    background-position: left center !important;
+    background-size: 36px 36px !important;
+    padding-left: 46px !important;
+    /* make room for the logo */
+    height: 40px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+/* Hide any default img/text inside that link */
+.swagger-ui .topbar .wrapper .link img,
+.swagger-ui .topbar-wrapper .link img {
+    display: none !important;
+}
+
+/* 3) ALSO show the logo next to the big title (your screenshot zone) */
+.swagger-ui .info .main .title:before {
+    content: "" !important;
+    display: inline-block !important;
+    width: 36px !important;
+    height: 36px !important;
+    background-image: url('/static/branding/logo.png') !important;
+    background-size: contain !important;
+    background-repeat: no-repeat !important;
+    vertical-align: middle !important;
+    margin-right: 10px !important;
+}
+
+/* 4) Make sure the title area doesn’t push things around oddly */
+.swagger-ui .info .main .title {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+/* 5) Favicon link sometimes sticks—make the docs page still look branded */
+.swagger-ui .topbar .download-url-wrapper {
+    display: none !important;
+    /* optional tidy-up */
+}

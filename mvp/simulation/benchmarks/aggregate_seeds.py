@@ -1,0 +1,1679 @@
+#!/usr/bin/env python3
+"""Aggregate multi-seed benchmark results into canonical benchmark files.
+
+Reads ``results/benchmark_seeds/seed_*.json`` and writes
+
+- ``results/benchmark_summary.json``    , per-(scenario, mode, metric) means,
+  standard deviations, and 95 % bootstrap CIs.
+- ``results/benchmark_significance.json``, paired permutation p-values, effect
+  sizes, and multiplicity-adjusted p-values using two correction families:
+
+  1. Holm-Bonferroni across the five scenario-level primary H1 tests
+     (agribrain vs no_context, metric = ARI, one test per scenario). This
+     matches the primary-family multiplicity control documented in
+     docs/STATISTICAL_METHODS.md.
+     Reported as ``p_value_adj_holm`` on the five primary entries and as the
+     canonical ``p_value_adj`` on the same entries.
+  2. Benjamini-Hochberg FDR within each scenario across all (baseline, metric)
+     secondary comparisons. Reported as ``p_value_adj_bh`` on every entry and
+     as ``p_value_adj`` on every non-primary entry.
+
+Usage::
+
+    python aggregate_seeds.py
+"""
+import json
+import os
+import sys
+from pathlib import Path
+
+import numpy as np
+
+SEEDS = [42, 1337, 2024, 7, 99, 101, 202, 303, 404, 505,
+         606, 707, 808, 909, 1010, 1111, 1212, 1313, 1414, 1515]
+# Scenario and mode lists come from the simulator's canonical definitions
+# so any new mode added to generate_results (e.g. cold_start, pert_*) is
+# picked up automatically by this aggregator. Duplicated hardcoded lists
+# here were the bug that silently dropped the new §4.7 ablation modes
+# from the benchmark summary.
+_SIM_DIR = Path(__file__).resolve().parent.parent
+if str(_SIM_DIR) not in sys.path:
+    sys.path.insert(0, str(_SIM_DIR))
+from generate_results import SCENARIOS as _SIM_SCENARIOS, MODES as _SIM_MODES
+SCENARIOS = list(_SIM_SCENARIOS)
+MODES = list(_SIM_MODES)
+METRICS = ("ari", "waste", "rle", "slca", "carbon", "equity")
+# Extra metrics exposed by run_single_seed.py when they are present in the
+# per-seed dump. Aggregator does bootstrap CIs on these the same way as the
+# core METRICS; missing values (e.g. context_honor_rate for static) are
+# filtered out per-cell so aggregation does not crash.
+EXTRA_METRICS = (
+    # Required columns for the legacy table1/table2 CSV schema and for
+    # validate_results.py's DecisionLatencyMs / ConstraintViolationRate /
+    # ComplianceViolationRate bounds checks. Keeping them here means the
+    # CSV rewrite below populates the same columns the validator expects.
+    "mean_decision_latency_ms",
+    "constraint_violation_rate",
+    "compliance_violation_rate",
+    # §4.7 paper-evidence metrics.
+    "operational_violation_rate", "regulatory_violation_rate",
+    "context_active_fraction", "context_honor_rate",
+    "context_active_steps", "context_honored_steps",
+    # 2026-05 context-influence rate (fig 9 panel-c headline). Honor
+    # rate is retained alongside as a supplementary-methods companion;
+    # both rates are reported with the same bootstrap-CI machinery so
+    # a reviewer can read either off the same benchmark_summary cell.
+    "context_influence_rate", "context_influenced_steps",
+    # Outcome-side violation disposition: policy-quality score on the
+    # env-driven violation event set. See resilience.py
+    # compute_violation_disposition. The aggregator runs the same
+    # bootstrap CI machinery on these as for the headline metrics so the
+    # CSV picks up DownstreamViolationRate / ContainedViolationRate
+    # columns alongside ConstraintViolationRate.
+    "downstream_violation_rate", "redistribute_violation_rate",
+    "contained_violation_rate", "violation_event_count",
+)
+
+# Columns exposed in the stochastic CSV rewrites below. First element of
+# each tuple is the source key in benchmark_summary.json; second is the
+# human-facing display name (kept identical to the legacy single-seed CSV
+# so the paper's Tables 7 and 9 and the validate_results.py row["..."]
+# reads continue to work against the 20-seed CSV).
+# Implementation note: 2026-04 deep-audit fix (commit 1d9caf0).
+# Two coupled fixes were applied to make the per-mode constraint and
+# compliance columns symmetric across every mode:
+#
+#  (a) ``constraint_violation_steps`` in generate_results.py is now
+#      counted only on (temp_violation OR quality_violation) — both
+#      ambient-driven, so the metric is symmetric across every mode by
+#      construction. The new ``constraint_violation_rate_is_environmental``
+#      tag in the per-episode summary makes this framing explicit.
+#  (b) ``check_compliance`` is now invoked uniformly on every step
+#      regardless of mode (previously gated on _MCP_WASTE_MODES, which
+#      pinned compliance_violation_steps to zero on static/hybrid_rl).
+#      compliance_violation_rate / regulatory_violation_rate are now
+#      directly comparable across all 8 modes.
+#
+# Schema-side: the public ``ConstraintViolationRate`` CSV column maps
+# to ``operational_violation_rate`` (temp OR quality only — same value
+# as ``constraint_violation_rate`` after fix (a), kept as a separate
+# key for backward compat with downstream tooling). The
+# ``RegulatoryViolationRate`` column maps to ``regulatory_violation_rate``
+# which is now compliance-only and uniform across all modes.
+_TABLE1_COLUMNS = (
+    ("ari", "ARI"), ("rle", "RLE"), ("waste", "Waste"),
+    ("slca", "SLCA"), ("carbon", "Carbon"), ("equity", "Equity"),
+    ("mean_decision_latency_ms", "DecisionLatencyMs"),
+    ("operational_violation_rate", "ConstraintViolationRate"),
+    ("regulatory_violation_rate", "RegulatoryViolationRate"),
+    # Outcome-side disposition on the violation event set. Static lands
+    # near 1.0 by construction; AgriBrain is significantly lower because
+    # the Recovery knee + food-safety override divert at-risk batches.
+    ("downstream_violation_rate", "DownstreamViolationRate"),
+    ("contained_violation_rate", "ContainedViolationRate"),
+)
+_TABLE2_COLUMNS = (
+    ("ari", "ARI"), ("rle", "RLE"), ("waste", "Waste"), ("slca", "SLCA"),
+    ("mean_decision_latency_ms", "DecisionLatencyMs"),
+    ("operational_violation_rate", "ConstraintViolationRate"),
+    ("downstream_violation_rate", "DownstreamViolationRate"),
+    ("contained_violation_rate", "ContainedViolationRate"),
+)
+_TABLE1_ROW_METHODS = ("static", "hybrid_rl", "agribrain")
+BASELINES = ("mcp_only", "pirag_only", "no_context",
+             "hybrid_rl", "static")
+
+# Channel-decomposition family (C4 paper claim "MCP and piRAG context
+# channels each contribute to quality improvements"). The default
+# significance grid only computes ``agribrain_vs_<baseline>`` pairs,
+# which means C4 is only inferable by transitivity from
+# ``agribrain_vs_no_context`` significance and ``agribrain_vs_pirag_only``
+# / ``agribrain_vs_mcp_only`` (non-)significance — no direct test that
+# either single-channel ablation outperforms ``no_context`` per scenario.
+#
+# These two pairs close that gap by directly testing each channel
+# against the no-context floor on the same paired-seed design as the
+# primary H1 family. The Holm correction is applied within the
+# 2 contrasts x 5 scenarios = 10 tests of this family separately from
+# the primary H1 (5 tests) and the extended/full grids, so the
+# multiple-comparison adjustment for C4 is family-honest. The
+# canonical p_value_adj on every cell of this family is
+# ``p_value_adj_holm_channel``; cells also carry the per-scenario
+# BY-FDR (canonical secondary correction) and full-grid Holm so the
+# reader can choose any of three corrections without rerunning the
+# aggregator.
+_CHANNEL_DECOMPOSITION_PAIRS: tuple[tuple[str, str], ...] = (
+    ("mcp_only",   "no_context"),
+    ("pirag_only", "no_context"),
+)
+"""Cross-baseline pairs that test each context channel directly
+against the no-context floor (C4 paper claim)."""
+
+_SCRIPT_DIR = Path(__file__).resolve().parent.parent
+seed_dir = _SCRIPT_DIR / "results" / "benchmark_seeds"
+
+
+def _cell_seed(scope: str, cell_key: tuple) -> int:
+    """Deterministic but cell-keyed RNG seed.
+
+    Implementation note: 2025-04 cell-correlation fix +
+    2026-04 cross-process reproducibility fix.
+
+    Previous revisions used a constant seed (42, 24, 123) for every
+    bootstrap and permutation call, which made adjacent (scenario, mode,
+    metric) cells share the same resample sequence and therefore have
+    correlated bootstrap noise. The 2025-04 fix derived a 32-bit seed
+    from ``hash((scope, *cell_key))`` so each cell got independent
+    resampling. The 2026-04 fix replaced ``hash()`` with
+    ``hashlib.blake2b()``: Python's built-in ``hash()`` is
+    PYTHONHASHSEED-randomised by default for str / bytes / tuple
+    inputs, so two HPC runs in different Python processes (or the
+    same process with different PYTHONHASHSEED) produced different
+    bootstrap samples for the same cell - silently breaking the
+    "fully reproducible run-to-run" claim this docstring made. The
+    blake2b digest is purely deterministic and gives the same 32-bit
+    seed across processes / OSes / Python versions.
+    """
+    import hashlib
+    payload = "::".join((scope,) + tuple(str(p) for p in cell_key))
+    digest = hashlib.blake2b(payload.encode("utf-8"), digest_size=4).digest()
+    return int.from_bytes(digest, byteorder="big")
+
+
+def bootstrap_ci(vals, n_boot=10_000, alpha=0.05, cell_key=("global",)):
+    """BCa bootstrap CI for the mean with 10,000 resamples.
+
+    Bias-corrected and accelerated (Efron, 1987). The plain percentile
+    method is biased on n=20 with non-normal residuals; BCa adjusts
+    for both bias and skew using the bootstrap distribution and a
+    jackknife acceleration estimate. cell_key seeds the resampler so
+    adjacent cells have independent Monte Carlo error.
+
+    2026-05: zero-variance inputs are short-circuited BEFORE calling
+    BCa. Such cells (deterministic-by-construction quantities like
+    context_active_steps with a hardcoded schedule, or null-mean rates
+    like context_honor_rate on static) cannot have a BCa CI -- z0 is
+    mathematically undefined when every bootstrap replicate equals
+    theta_hat. Pre-2026-05 these were silently routed through the
+    percentile fallback and counted as "BCa fallback rate", which
+    inflated the headline 8.3 % stat with cells where BCa was never
+    going to apply. The honest rate is the rate of cases where BCa
+    was attempted on variance > 0 input AND the machinery still
+    couldn't recover z0 -- which is ~0.
+    """
+    arr = np.array(vals, dtype=float)
+    if len(arr) < 2:
+        return float(np.mean(arr)) if len(arr) else 0.0, float(np.mean(arr)) if len(arr) else 0.0
+
+    theta_hat = float(np.mean(arr))
+    # Zero-variance short-circuit: BCa is mathematically undefined.
+    # Emit (theta_hat, theta_hat) and increment the deterministic
+    # counter so the _meta block can report the cell as "ci_method =
+    # deterministic" rather than as a BCa fallback.
+    if float(np.std(arr, ddof=1)) == 0.0:
+        _BCA_STATS["deterministic_cells"] += 1
+        return theta_hat, theta_hat
+
+    rng = np.random.default_rng(_cell_seed("bootstrap_ci", cell_key))
+    boots = np.array([
+        float(np.mean(rng.choice(arr, len(arr), replace=True)))
+        for _ in range(n_boot)
+    ])
+
+    # Jackknife acceleration on the data
+    n = len(arr)
+    jacks = np.array([float(np.mean(np.delete(arr, i))) for i in range(n)])
+
+    return _bca_ci_from_boots(boots, theta_hat, jacks, alpha)
+
+
+def bootstrap_mean_diff_ci(a, b, n_boot=10_000, alpha=0.05, paired=True, cell_key=("global",)):
+    """BCa bootstrap CI for mean(a) - mean(b) with 10,000 resamples.
+
+    paired=True resamples a single index applied to both arms (correct
+    when a and b come from a matched-seed paired design). paired=False
+    independently resamples each arm (correct when the two arms have
+    independent seeds). BCa correction is applied (Efron 1987).
+    """
+    x, y = np.array(a, dtype=float), np.array(b, dtype=float)
+    if len(x) == 0 or len(y) == 0:
+        return 0.0, 0.0
+
+    # Zero-variance short-circuit. For paired diffs the relevant
+    # quantity is the variance of (x - y); for unpaired the variances
+    # of x and y separately. Either way, if all the seed-level
+    # estimates that go into the bootstrap are constant, BCa is
+    # mathematically undefined. Same reasoning as bootstrap_ci above.
+    if paired and x.shape == y.shape:
+        diff = x - y
+        if float(np.std(diff, ddof=1)) == 0.0:
+            _BCA_STATS["deterministic_cells"] += 1
+            theta_hat = float(np.mean(diff))
+            return theta_hat, theta_hat
+    else:
+        if (float(np.std(x, ddof=1)) == 0.0
+                and float(np.std(y, ddof=1)) == 0.0):
+            _BCA_STATS["deterministic_cells"] += 1
+            theta_hat = float(np.mean(x) - np.mean(y))
+            return theta_hat, theta_hat
+
+    rng = np.random.default_rng(_cell_seed("bootstrap_diff_ci", cell_key))
+    boots = []
+    if paired and x.shape == y.shape:
+        idx = np.arange(len(x))
+        for _ in range(n_boot):
+            sample_idx = rng.choice(idx, size=len(idx), replace=True)
+            boots.append(float(np.mean(x[sample_idx] - y[sample_idx])))
+        theta_hat = float(np.mean(x - y))
+        jacks = np.array([
+            float(np.mean(np.delete(x, i) - np.delete(y, i)))
+            for i in range(len(x))
+        ])
+    else:
+        idx_a = np.arange(len(x))
+        idx_b = np.arange(len(y))
+        for _ in range(n_boot):
+            mean_a = float(np.mean(x[rng.choice(idx_a, size=len(idx_a), replace=True)]))
+            mean_b = float(np.mean(y[rng.choice(idx_b, size=len(idx_b), replace=True)]))
+            boots.append(mean_a - mean_b)
+        theta_hat = float(np.mean(x) - np.mean(y))
+        jacks = np.empty(len(x) + len(y))
+        for i in range(len(x)):
+            jacks[i] = float(np.mean(np.delete(x, i)) - np.mean(y))
+        for j in range(len(y)):
+            jacks[len(x) + j] = float(np.mean(x) - np.mean(np.delete(y, j)))
+
+    return _bca_ci_from_boots(np.asarray(boots, dtype=float), theta_hat, jacks, alpha)
+
+
+# Module-level fallback counters. These are reset at the start of each
+# aggregator run by aggregate_main(), incremented by _bca_ci_from_boots
+# when the percentile fallback fires, and emitted into
+# benchmark_summary._meta.bca_fallback_stats so reviewers (and the
+# methods section) can quote the exact percentage of cells that fell
+# back from BCa to plain percentile. n=20 seeds is below the recommended
+# floor for BCa stability (Efron & Tibshirani recommend n>=30); the
+# fallback is silent without these counters which is exactly the
+# silent-fallback pattern the post-2026-04 audit flagged.
+# 2026-05 honest-counter restructure. Pre-2026-05 the counter set
+# conflated two semantically-different events:
+#   1. "BCa is mathematically undefined for this cell" -- the input
+#      array has zero across-seed variance (deterministic-by-construction
+#      cells like context_active_steps=72 every seed, or null-mean cells
+#      like context_honor_rate on static). 218 of the 218 reported
+#      "fallbacks" on the d33b8de run were actually this.
+#   2. "BCa attempted on real-variance data but the bias-correction
+#      machinery couldn't recover z0" -- a true statistical fallback
+#      that should be rare and is the only thing the methods section
+#      should report as a "BCa fallback rate".
+# The 8.3 % "fallback rate" on the d33b8de run was 100 % case-1
+# events, none case-2. Splitting the counter:
+#   bca_calls           = cells where BCa was actually attempted
+#                          (input variance > 0)
+#   bca_fallbacks       = cells where BCa failed despite variance > 0
+#                          (the "true" fallback rate, target ~0)
+#   deterministic_cells = cells skipped because variance is 0
+#                          (mathematically can't have a BCa CI; emits
+#                          ci_method="deterministic" instead of "bca")
+_BCA_STATS = {
+    "bca_calls": 0,
+    "bca_fallbacks": 0,
+    "fallback_scipy_unavailable": 0,
+    "deterministic_cells": 0,
+}
+
+
+def _bca_ci_from_boots(boots: np.ndarray, theta_hat: float,
+                        jacks: np.ndarray, alpha: float = 0.05):
+    """Compute BCa percentiles from a precomputed bootstrap distribution.
+
+    Falls back to the plain percentile method when the BCa correction
+    cannot be estimated. Two failure modes:
+      - ``fallback_p0_degenerate``: every bootstrap equals theta_hat
+        (e.g. RLE on static, where every replicate is 0.0). z0 is
+        undefined in this case.
+      - ``fallback_scipy_unavailable``: scipy.special.ndtri is missing
+        (rare; primary fix is to install scipy via the pyproject.toml
+        dependency).
+
+    Each fallback increments a module-level counter that is emitted
+    into the aggregator's _meta block so reviewers can see what
+    fraction of cells used percentile fallback. Silent fallback was
+    the post-2026-04 audit flag.
+    """
+    from math import erf, sqrt
+    _BCA_STATS["bca_calls"] += 1
+    if len(boots) < 2:
+        return float(theta_hat), float(theta_hat)
+    p0 = float(np.mean(boots < theta_hat))
+    if p0 <= 0.0 or p0 >= 1.0:
+        # 2026-05: this is the "true" BCa fallback (target ~0). The
+        # callers (bootstrap_ci / bootstrap_mean_diff_ci) already
+        # short-circuit on zero-variance input, so by the time we get
+        # here the bootstrap distribution should have non-trivial
+        # spread. Hitting p0 in {0, 1} despite that means the data has
+        # an extreme distribution shape (e.g. heavy one-sided point
+        # mass with a thin continuous tail) where BCa's bias-correction
+        # heuristic still degenerates. Falling back to plain percentile
+        # is the standard defensive move.
+        _BCA_STATS["bca_fallbacks"] += 1
+        return (float(np.quantile(boots, alpha / 2)),
+                float(np.quantile(boots, 1 - alpha / 2)))
+    try:
+        from scipy.special import ndtri  # type: ignore
+        z0 = float(ndtri(p0))
+        z_lo = float(ndtri(alpha / 2))
+        z_hi = float(ndtri(1.0 - alpha / 2))
+    except Exception:
+        _BCA_STATS["fallback_scipy_unavailable"] += 1
+        return (float(np.quantile(boots, alpha / 2)),
+                float(np.quantile(boots, 1 - alpha / 2)))
+
+    m = float(np.mean(jacks))
+    num = float(np.sum((m - jacks) ** 3))
+    den = 6.0 * (float(np.sum((m - jacks) ** 2)) ** 1.5) + 1e-12
+    a_acc = num / den
+
+    def _adj(z_q: float) -> float:
+        x = z0 + (z0 + z_q) / max(1.0 - a_acc * (z0 + z_q), 1e-12)
+        return 0.5 * (1.0 + erf(x / sqrt(2.0)))
+
+    p_lo = max(min(_adj(z_lo), 1.0 - 1e-9), 1e-9)
+    p_hi = max(min(_adj(z_hi), 1.0 - 1e-9), 1e-9)
+    return float(np.quantile(boots, p_lo)), float(np.quantile(boots, p_hi))
+
+
+def _bca_fallback_stats_snapshot() -> dict:
+    """Return the current bootstrap-CI stats as a JSON-friendly dict.
+
+    Three counters, three different stories the methods section may
+    want to report (2026-05 honest restructure):
+
+      bca_calls           -- cells where BCa was attempted (input had
+                              non-zero across-seed variance).
+      bca_fallbacks       -- cells where BCa was attempted but
+                              degenerated to plain percentile despite
+                              variance > 0. This is the "true" BCa
+                              fallback rate; target ~0.
+      fallback_scipy_unavailable
+                          -- scipy.special.ndtri import failed; should
+                              be 0 in the production env.
+      deterministic_cells -- cells short-circuited because their input
+                              array had zero variance (BCa is
+                              mathematically undefined). These cells
+                              emit a deterministic ci_method marker
+                              and a [mean, mean] CI; they were always
+                              going to be deterministic, not a
+                              statistical "fallback".
+
+    Headline rate is now ``bca_fallback_rate = bca_fallbacks /
+    max(bca_calls, 1)`` -- this is the only honest number the methods
+    section should quote. Pre-2026-05 the headline rate conflated
+    bca_fallbacks + deterministic_cells into one stat (the d33b8de
+    8.3 % was 100 % deterministic, 0 % true BCa fallback).
+    """
+    bca_calls = _BCA_STATS["bca_calls"]
+    bca_fallbacks = _BCA_STATS["bca_fallbacks"]
+    scipy_unavail = _BCA_STATS["fallback_scipy_unavailable"]
+    deterministic = _BCA_STATS["deterministic_cells"]
+    total_fallback = bca_fallbacks + scipy_unavail
+    snapshot = {
+        "bca_calls": bca_calls,
+        "bca_fallbacks": bca_fallbacks,
+        "fallback_scipy_unavailable": scipy_unavail,
+        "deterministic_cells": deterministic,
+        # The "true" BCa fallback rate (denominator excludes
+        # deterministic cells where BCa was never going to apply).
+        "bca_fallback_rate": (
+            float(total_fallback / bca_calls) if bca_calls else 0.0
+        ),
+        # Back-compat aliases so the previous _meta consumers
+        # (validation scripts, the export_paper_evidence.py meta
+        # propagation, methods footnotes) don't crash on key absence.
+        # The "fallback_rate" here matches the pre-2026-05 semantics
+        # (fraction of all bootstrap_ci calls where the percentile
+        # path was taken, INCLUDING deterministic-by-construction
+        # cells) so downstream readers get the same number. New
+        # consumers should prefer "bca_fallback_rate".
+        "calls": bca_calls + deterministic,
+        "fallback_p0_degenerate": bca_fallbacks + deterministic,
+        "fallback_total": total_fallback + deterministic,
+        "fallback_rate": (
+            float((total_fallback + deterministic) / (bca_calls + deterministic))
+            if (bca_calls + deterministic) else 0.0
+        ),
+    }
+    return snapshot
+
+
+def _reset_bca_fallback_stats() -> None:
+    """Reset bootstrap-CI counters to zero (called at aggregator start)."""
+    _BCA_STATS["bca_calls"] = 0
+    _BCA_STATS["bca_fallbacks"] = 0
+    _BCA_STATS["fallback_scipy_unavailable"] = 0
+    _BCA_STATS["deterministic_cells"] = 0
+
+
+def wilcoxon_signed_rank_pvalue(a, b, cell_key=("global",)):
+    """Two-sided Wilcoxon signed-rank p-value via SciPy with exact fallback.
+
+    Implementation note: 2025-04 distributional-assumption fix.
+    The previous test was a sign-flip permutation on |mean(d)|, which
+    requires d to be symmetric about 0 under H0. Under multiplicative
+    log-normal stochastic noise this assumption is questionable. The
+    Wilcoxon signed-rank test is valid under the weaker assumption that
+    d is symmetric in *rank* (which holds for many common distributions
+    of paired differences). When SciPy is unavailable, we fall back to
+    a sign-flip permutation labeled clearly as such.
+    """
+    x, y = np.array(a, dtype=float), np.array(b, dtype=float)
+    if x.shape != y.shape or len(x) == 0:
+        return 1.0
+    d = x - y
+    nz = d[d != 0]
+    if len(nz) < 2:
+        return 1.0
+    try:
+        from scipy.stats import wilcoxon
+        # zsplit handles ties; two-sided is the default.
+        res = wilcoxon(nz, zero_method="wilcox", alternative="two-sided", method="auto")
+        return float(res.pvalue)
+    except Exception:
+        # Fallback to sign-flip permutation; document the fallback in
+        # the per-comparison record so it is detectable downstream.
+        rng = np.random.default_rng(_cell_seed("wilcoxon_fallback", cell_key))
+        observed = abs(float(np.mean(d)))
+        ge = 0
+        n_perm = 10_000
+        for _ in range(n_perm):
+            signs = rng.choice([-1.0, 1.0], size=len(d))
+            if abs(float(np.mean(d * signs))) >= observed:
+                ge += 1
+        return float((ge + 1) / (n_perm + 1))
+
+
+def paired_permutation_pvalue(a, b, n_perm=10_000, cell_key=("global",)):
+    """Paired sign-flip permutation p-value (legacy alias).
+
+    Kept for backward compatibility. New code should call
+    `wilcoxon_signed_rank_pvalue` for paired comparisons because the
+    sign-flip null requires symmetry about zero, which is not
+    guaranteed under our multiplicative noise model. See Implementation note
+    on `wilcoxon_signed_rank_pvalue`.
+    """
+    x, y = np.array(a, dtype=float), np.array(b, dtype=float)
+    if x.shape != y.shape or len(x) == 0:
+        return 1.0
+    d = x - y
+    observed = abs(float(np.mean(d)))
+    rng = np.random.default_rng(_cell_seed("paired_perm", cell_key))
+    ge = 0
+    for _ in range(n_perm):
+        signs = rng.choice([-1.0, 1.0], size=len(d))
+        if abs(float(np.mean(d * signs))) >= observed:
+            ge += 1
+    return float((ge + 1) / (n_perm + 1))
+
+
+def mann_whitney_pvalue(a, b, cell_key=("global",)):
+    """Two-sided Mann-Whitney U p-value (unpaired non-parametric).
+
+    Falls back to an unpaired-mean-difference permutation test when the
+    scipy call fails. The previous implementation returned a silent
+    p=1.0 on any exception, which silently nullified the headline
+    AgriBrain-vs-Static and AgriBrain-vs-Hybrid-RL significance claims
+    on HPC clusters whose scipy was older than the ``alternative=
+    "two-sided"`` keyword (or on edge cases where mannwhitneyu raised
+    on perfect rank separation). The fallback gives the correct p
+    estimate (typically ~1/n_perm for huge effects) consistent with
+    ``paired_permutation_pvalue`` returned in
+    ``p_value_legacy_signflip``.
+    """
+    x = np.asarray(a, dtype=float)
+    y = np.asarray(b, dtype=float)
+    if x.size == 0 or y.size == 0:
+        return 1.0
+    try:
+        from scipy.stats import mannwhitneyu
+        res = mannwhitneyu(x, y, alternative="two-sided")
+        return float(res.pvalue)
+    except Exception:
+        pass
+    # Fallback: unpaired permutation on the difference of means. Pool
+    # both arms, repeatedly shuffle the partition into two equal-size
+    # halves, and count the fraction with |mean diff| >= observed.
+    rng = np.random.default_rng(_cell_seed("mannwhitney_fallback", cell_key))
+    observed = abs(float(np.mean(x) - np.mean(y)))
+    pooled = np.concatenate([x, y])
+    n_a = x.size
+    n_perm = 10_000
+    ge = 0
+    for _ in range(n_perm):
+        rng.shuffle(pooled)
+        diff = abs(float(np.mean(pooled[:n_a]) - np.mean(pooled[n_a:])))
+        if diff >= observed:
+            ge += 1
+    return float((ge + 1) / (n_perm + 1))
+
+
+def cohens_dz(a, b):
+    """Paired Cohen's d_z = mean(a-b) / std(a-b).
+
+    Appropriate for repeated-measures / matched designs where (a, b) are
+    paired observations. Standardised by the within-pair standard
+    deviation, which is small when the two arms share environmental
+    variance — large d_z values reflect both effect size AND the
+    precision of the paired design, so should always be reported
+    alongside the unpaired/pooled Cohen's d (see ``cohens_d_pooled``).
+    """
+    x, y = np.array(a, dtype=float), np.array(b, dtype=float)
+    if x.shape != y.shape or len(x) < 2:
+        return 0.0
+    d = x - y
+    sd = np.std(d, ddof=1)
+    return float(np.mean(d) / sd) if sd > 0 else 0.0
+
+
+def cohens_d_pooled(a, b):
+    """Unpaired (pooled) Cohen's d = (mean(a) - mean(b)) / s_pooled.
+
+    s_pooled = sqrt(((n_a-1)*var(a) + (n_b-1)*var(b)) / (n_a+n_b-2)).
+
+    Implementation note: companion to cohens_dz.
+    The paired d_z and pooled d answer different questions. d_z asks
+    "given matched conditions, how reliably does method A beat method B
+    seed-to-seed?" — its denominator is std(diff), which under a paired
+    design that shares scenario template across arms can be very small,
+    pushing d_z into the 4-10 range, which is implausibly large for
+    operations-research effect sizes. Pooled d asks "across realistic
+    deployment variation, how separated are the two methods on the
+    metric scale?" — its denominator is the pooled within-method
+    standard deviation, which captures the run-to-run variability
+    operators actually observe and lands in the empirical 0.5-2.5
+    range. Reporting both lets the reader see the effect-size claim
+    under the experimental-design lens (paired) and the deployment
+    lens (pooled) without conflating the two.
+    """
+    x, y = np.array(a, dtype=float), np.array(b, dtype=float)
+    if len(x) < 2 or len(y) < 2:
+        return 0.0
+    n_a, n_b = len(x), len(y)
+    var_a = np.var(x, ddof=1)
+    var_b = np.var(y, ddof=1)
+    pooled = np.sqrt(((n_a - 1) * var_a + (n_b - 1) * var_b) / max(n_a + n_b - 2, 1))
+    if pooled <= 0:
+        return 0.0
+    return float((np.mean(x) - np.mean(y)) / pooled)
+
+
+def hedges_g(a, b, paired: bool = False):
+    """Hedges' g — small-sample-corrected Cohen's d.
+
+    g = J(df) * d, where J(df) = 1 - 3/(4*df - 1). For n=20 the
+    correction is approximately 0.987. Recommended by APA / OR
+    reporting standards for samples below n=50.
+    """
+    if paired:
+        d = cohens_dz(a, b)
+        df = max(len(a) - 1, 1)
+    else:
+        d = cohens_d_pooled(a, b)
+        df = max(len(a) + len(b) - 2, 1)
+    j = 1.0 - 3.0 / (4.0 * df - 1.0)
+    return float(j * d)
+
+
+def bootstrap_effect_size_ci(a, b, n_boot: int = 10_000, alpha: float = 0.05,
+                              paired: bool = True, cell_key=("global",),
+                              statistic: str = "pooled"):
+    """95 % BCa bootstrap CI on the requested Cohen's d statistic.
+
+    ``statistic="pooled"`` returns a CI on cohens_d_pooled (canonical
+    per docs/STATISTICAL_METHODS.md, used for both paired and unpaired
+    contrasts). ``statistic="dz"`` returns a CI on cohens_dz (paired
+    designs only, reported alongside the canonical CI for
+    transparency).
+
+    BCa correction (Efron 1987) handles the bias and skew that the
+    plain percentile method misses on n=20 with non-normal residuals.
+    """
+    x, y = np.array(a, dtype=float), np.array(b, dtype=float)
+    if len(x) < 2 or len(y) < 2:
+        return 0.0, 0.0
+    rng = np.random.default_rng(_cell_seed(f"d_ci_{statistic}", cell_key))
+
+    def _stat(xa, xb):
+        if statistic == "dz":
+            return cohens_dz(xa, xb)
+        return cohens_d_pooled(xa, xb)
+
+    boots = []
+    if paired and x.shape == y.shape:
+        idx = np.arange(len(x))
+        for _ in range(n_boot):
+            sel = rng.choice(idx, size=len(idx), replace=True)
+            boots.append(_stat(x[sel], y[sel]))
+    else:
+        idx_a = np.arange(len(x))
+        idx_b = np.arange(len(y))
+        for _ in range(n_boot):
+            sa = rng.choice(idx_a, size=len(idx_a), replace=True)
+            sb = rng.choice(idx_b, size=len(idx_b), replace=True)
+            boots.append(_stat(x[sa], y[sb]))
+
+    return _bca_quantiles(np.asarray(boots, dtype=float), _stat(x, y),
+                           paired_xy=(x, y) if (paired and x.shape == y.shape) else None,
+                           unpaired_xy=(x, y) if not (paired and x.shape == y.shape) else None,
+                           statistic_fn=_stat, alpha=alpha)
+
+
+def _bca_quantiles(boots: np.ndarray, theta_hat: float,
+                   paired_xy=None, unpaired_xy=None,
+                   statistic_fn=None, alpha: float = 0.05):
+    """Return BCa-corrected lower/upper percentiles for a bootstrap sample.
+
+    Falls back to the plain percentile method when the acceleration or
+    bias-correction terms cannot be estimated (rare; happens when all
+    bootstrap replicates equal theta_hat exactly). Increments the
+    module-level ``_BCA_STATS`` counters on each fallback path so the
+    aggregator's _meta block surfaces a non-zero ``fallback_rate``
+    when the effect-size BCa step degenerates - mirrors the
+    instrumentation in ``_bca_ci_from_boots``. Earlier, only the
+    mean-CI BCa path incremented the counters and the effect-size CI
+    fallbacks were silent, which under-reported the published
+    fallback_rate value.
+    """
+    from math import erf, sqrt
+    _BCA_STATS["bca_calls"] += 1
+    n_boot = len(boots)
+    if n_boot < 2:
+        return float(theta_hat), float(theta_hat)
+
+    # Bias correction z0
+    p0 = float(np.mean(boots < theta_hat))
+    if p0 <= 0.0 or p0 >= 1.0:
+        # All bootstrap values on one side of theta_hat -> percentile fallback.
+        # 2026-05: callers that wrap this function should already have
+        # short-circuited on zero-variance input, so reaching this branch
+        # means the bootstrap distribution had non-trivial spread but
+        # BCa's z0 still degenerated -- the "true" BCa fallback,
+        # tracked under bca_fallbacks. Target ~0.
+        _BCA_STATS["bca_fallbacks"] += 1
+        return (float(np.quantile(boots, alpha / 2)),
+                float(np.quantile(boots, 1 - alpha / 2)))
+
+    def _phi_inv(p: float) -> float:
+        # Beasley-Springer-Moro inverse normal CDF (good enough for n=20)
+        from scipy.special import ndtri  # type: ignore
+        return float(ndtri(p))
+
+    try:
+        z0 = _phi_inv(p0)
+    except Exception:
+        _BCA_STATS["fallback_scipy_unavailable"] += 1
+        return (float(np.quantile(boots, alpha / 2)),
+                float(np.quantile(boots, 1 - alpha / 2)))
+
+    # Acceleration via jackknife on the original observations
+    a_acc = 0.0
+    if paired_xy is not None and statistic_fn is not None:
+        x, y = paired_xy
+        n = len(x)
+        jacks = np.empty(n)
+        for i in range(n):
+            mask = np.ones(n, dtype=bool); mask[i] = False
+            jacks[i] = statistic_fn(x[mask], y[mask])
+        m = jacks.mean()
+        num = np.sum((m - jacks) ** 3)
+        den = 6.0 * (np.sum((m - jacks) ** 2) ** 1.5) + 1e-12
+        a_acc = float(num / den)
+    elif unpaired_xy is not None and statistic_fn is not None:
+        x, y = unpaired_xy
+        nx, ny = len(x), len(y)
+        jacks = np.empty(nx + ny)
+        for i in range(nx):
+            mask = np.ones(nx, dtype=bool); mask[i] = False
+            jacks[i] = statistic_fn(x[mask], y)
+        for j in range(ny):
+            mask = np.ones(ny, dtype=bool); mask[j] = False
+            jacks[nx + j] = statistic_fn(x, y[mask])
+        m = jacks.mean()
+        num = np.sum((m - jacks) ** 3)
+        den = 6.0 * (np.sum((m - jacks) ** 2) ** 1.5) + 1e-12
+        a_acc = float(num / den)
+
+    z_lo = _phi_inv(alpha / 2)
+    z_hi = _phi_inv(1.0 - alpha / 2)
+
+    def _adj(z_q: float) -> float:
+        # standard normal CDF via erf
+        x = (z0 + (z0 + z_q) / max(1.0 - a_acc * (z0 + z_q), 1e-12))
+        return 0.5 * (1.0 + erf(x / sqrt(2.0)))
+
+    p_lo = max(min(_adj(z_lo), 1.0 - 1e-9), 1e-9)
+    p_hi = max(min(_adj(z_hi), 1.0 - 1e-9), 1e-9)
+    return float(np.quantile(boots, p_lo)), float(np.quantile(boots, p_hi))
+
+
+def benjamini_yekutieli(p_values: dict[str, float]) -> dict[str, float]:
+    """Benjamini-Yekutieli step-up FDR correction (valid under arbitrary dependence).
+
+    Differs from BH-FDR by a factor c(m) = sum_{i=1..m} 1/i in the
+    threshold formula. More conservative than BH but doesn't require
+    PRDS — the right choice when the m hypotheses can have negative
+    correlations (e.g., waste vs ARI metrics that share simulation
+    traces).
+
+    Implementation note: added 2025-04 in response to the dependence-violation
+    concern. Within-scenario metrics are mechanically correlated with
+    sign varying by metric pair; PRDS is not guaranteed.
+    """
+    keys = list(p_values.keys())
+    m = len(keys)
+    if m == 0:
+        return {}
+    c_m = sum(1.0 / i for i in range(1, m + 1))
+    ordered = sorted(((k, float(p_values[k])) for k in keys), key=lambda kv: kv[1])
+    adjusted = {}
+    prev = 1.0
+    for rank_rev, (k, p) in enumerate(reversed(ordered), start=1):
+        i = m - rank_rev + 1
+        q = min(prev, (p * m * c_m) / max(i, 1))
+        adjusted[k] = float(min(max(q, 0.0), 1.0))
+        prev = adjusted[k]
+    return adjusted
+
+
+def benjamini_hochberg(p_values: dict[str, float]) -> dict[str, float]:
+    """Benjamini-Hochberg step-up FDR correction.
+
+    Controls the false discovery rate at alpha. Preserves input keys.
+    Returns each key's BH-adjusted p-value. Order-independent in the output.
+
+    Implementation note: post-2026-04 propagation-bug fix. The earlier
+    body used ``prev = q`` after the clip-to-[0, 1] step, which left
+    ``prev`` carrying the unclipped pre-clip ``q`` from the previous
+    iteration when ``p * m / i > 1``. BY-FDR (above) correctly used
+    ``prev = adjusted[k]`` so the propagated bound is the clipped
+    value. Asymmetry between the two FDR routines was confusing for
+    a maintainer reading the code; switched BH to the same
+    ``prev = adjusted[k]`` idiom so both functions track the same
+    monotonic-in-rank step-up envelope.
+    """
+    keys = list(p_values.keys())
+    m = len(keys)
+    if m == 0:
+        return {}
+    ordered = sorted(((k, float(p_values[k])) for k in keys), key=lambda kv: kv[1])
+    adjusted = {}
+    prev = 1.0
+    for rank_rev, (k, p) in enumerate(reversed(ordered), start=1):
+        i = m - rank_rev + 1
+        q = min(prev, (p * m) / max(i, 1))
+        adjusted[k] = float(min(max(q, 0.0), 1.0))
+        prev = adjusted[k]
+    return adjusted
+
+
+def holm_bonferroni(p_values: dict[str, float]) -> dict[str, float]:
+    """Holm-Bonferroni step-down FWER correction.
+
+    Controls the family-wise error rate. Stricter than BH-FDR. Preserves
+    input keys. Matches paper Section 3.13's declared multiplicity control
+    for the primary H1 family (the five scenario-level agribrain vs
+    no_context comparisons on ARI).
+    """
+    keys = list(p_values.keys())
+    m = len(keys)
+    if m == 0:
+        return {}
+    ordered = sorted(((k, float(p_values[k])) for k in keys), key=lambda kv: kv[1])
+    adjusted = {}
+    running = 0.0
+    for rank_idx, (k, p) in enumerate(ordered):
+        # Holm step-down: p_(i) * (m - i + 1), then monotone non-decreasing
+        q = min(1.0, p * (m - rank_idx))
+        running = max(running, q)
+        adjusted[k] = float(running)
+    return adjusted
+
+
+def main():
+    # Reset BCa fallback counters so the per-run stats reflect only
+    # this aggregator invocation, not residue from prior calls in the
+    # same Python process (relevant in tests).
+    _reset_bca_fallback_stats()
+
+    seed_csv = os.environ.get(
+        "BENCHMARK_SEEDS",
+        "42,1337,2024,7,99,101,202,303,404,505,606,707,808,909,1010,1111,1212,1313,1414,1515",
+    ).strip()
+    seeds = []
+    for raw in seed_csv.split(","):
+        raw = raw.strip()
+        if not raw:
+            continue
+        try:
+            seeds.append(int(raw))
+        except ValueError:
+            continue
+    if not seeds:
+        seeds = SEEDS
+    print(f"Configured seed count: {len(seeds)}")
+
+    # Load seed results.
+    #
+    # Per-seed JSON envelope (post-2026-05, written by run_single_seed.py):
+    #     {"seed": int,
+    #      "scenarios": {sc: {mode: {metric: value}}},
+    #      "traces":    {sc: {mode: {trace_field: [floats]}}}}
+    #
+    # Legacy flat format (pre-2026-05): scenarios at the top level
+    # directly:
+    #     {sc: {mode: {metric: value}}}
+    #
+    # Detect the envelope by the presence of a top-level "scenarios"
+    # key whose value is a dict; unwrap if so. The aggregator's per-
+    # cell access pattern (``all_data[s][sc][mode][met]``) is the
+    # legacy flat shape, so we normalise on load. Without this fix
+    # every metric is silently filtered out (the .get(sc, {}) check
+    # returns empty), the BCa loop never runs (calls=0), and every
+    # summary cell ends up {} -- the failure mode that surfaced on
+    # HPC RUN_TAG 485c769_20260505_0349.
+    all_data = {}
+    for seed in seeds:
+        f = seed_dir / f"seed_{seed}.json"
+        if f.exists():
+            payload = json.loads(f.read_text())
+            scenarios_block = payload.get("scenarios")
+            if isinstance(scenarios_block, dict):
+                all_data[seed] = scenarios_block
+            else:
+                all_data[seed] = payload
+            print(f"Loaded seed {seed}")
+        else:
+            print(f"WARNING: {f} not found, skipping")
+
+    if len(all_data) < 2:
+        print(f"ERROR: Only {len(all_data)} seed(s) found, need at least 2")
+        sys.exit(1)
+
+    print(f"Aggregating {len(all_data)} seeds...")
+
+    # Build summary. Iterate over core METRICS plus any EXTRA_METRICS that
+    # the per-seed JSON carries so operational / regulatory CVR and honor
+    # rate also get bootstrap CIs instead of being dropped.
+    summary = {}
+    all_metrics = tuple(METRICS) + tuple(EXTRA_METRICS)
+    for sc in SCENARIOS:
+        summary[sc] = {}
+        for mode in MODES:
+            summary[sc][mode] = {}
+            for met in all_metrics:
+                vals = [
+                    all_data[s][sc][mode][met]
+                    for s in all_data
+                    if mode in all_data[s].get(sc, {})
+                    and met in all_data[s][sc][mode]
+                    and all_data[s][sc][mode][met] is not None
+                ]
+                if not vals:
+                    continue
+                lo, hi = bootstrap_ci(vals)
+                summary[sc][mode][met] = {
+                    "mean": float(np.mean(vals)),
+                    "std": float(np.std(vals)),
+                    "ci_low": lo,
+                    "ci_high": hi,
+                    "n_seeds": len(vals),
+                }
+
+    # Build significance with two-level multiplicity control.
+    # Pass 1: collect raw p-values for every (scenario, baseline, metric) cell.
+    significance: dict = {}
+    per_scenario_pvals: dict[str, dict[str, float]] = {sc: {} for sc in SCENARIOS}
+    primary_h1_pvals: dict[str, float] = {}
+
+    # Pairing scope.
+    # ----------------------------------------------------------------
+    # Every (mode, seed) within a given (scenario, seed) shares the
+    # *scenario trajectory* (same df_scenario, same scenario_rng,
+    # same ambient temperature/RH/inventory time-series). What differs
+    # across modes is the per-mode policy-temperature draw (Source 8,
+    # sigma=0.25 in log-space) plus, for non-_AGRIBRAIN_LOGIT_MODES,
+    # the ablation-seed integer.
+    #
+    # The Wilcoxon signed-rank test pairs by seed and tests whether
+    # the *within-seed* difference is centered away from zero. The
+    # pairing is statistically valid whenever the two arms (a, b)
+    # are evaluated on the same scenario trajectory; it does NOT
+    # require ablation_seed-equality. Wasting that within-seed
+    # correlation by treating static / hybrid_rl as unpaired
+    # discards real information and produces conservatively-loose
+    # p-values.
+    #
+    # Post-2026-04 audit fix: extend pairing to ALL baselines.
+    # Cohen's d_z is reported alongside Cohen's d_pooled for every
+    # paired contrast with the design-tax note explaining that the
+    # within-pair SD is dominated by Source 8 (per-(mode, seed)
+    # policy temperature draws); reviewers who prefer the
+    # design-independent effect size read d_pooled, those who
+    # prefer the matched-design statistic read d_z.
+    _PAIRED_BASELINES = {"no_context", "mcp_only", "pirag_only",
+                          "static", "hybrid_rl"}
+
+    for sc in SCENARIOS:
+        significance[sc] = {}
+        for baseline in BASELINES:
+            seeds_paired = sorted(
+                s for s in all_data
+                if "agribrain" in all_data[s].get(sc, {})
+                and baseline in all_data[s].get(sc, {})
+            )
+            if not seeds_paired:
+                continue
+            is_paired = baseline in _PAIRED_BASELINES
+            # Canonical effect size is cohens_d_pooled for ALL contrasts
+            # (paired and unpaired) per docs/STATISTICAL_METHODS.md.
+            # cohens_dz is reported alongside for paired contrasts with
+            # a noted design tax: paired arms share `ablation_seed` for
+            # Sources 1-5, so the within-pair denominator is dominated
+            # by Source 8 (per-(mode, seed) policy temperature draw,
+            # sigma=0.25) and d_z is therefore design-inflated.
+            comp: dict = {"is_paired_design": is_paired,
+                          "test_type": "wilcoxon_signed_rank" if is_paired
+                                       else "mann_whitney_u",
+                          "effect_size_primary": "cohens_d_pooled"}
+            for met in METRICS:
+                a = [all_data[s][sc]["agribrain"][met] for s in seeds_paired]
+                b = [all_data[s][sc][baseline][met] for s in seeds_paired]
+                cell_key = (sc, baseline, met)
+                # Test selection: paired Wilcoxon when seeds match;
+                # unpaired Mann-Whitney when they don't. The legacy
+                # paired_permutation result is also kept as a consistency
+                # cross-check field.
+                if is_paired:
+                    p_value = wilcoxon_signed_rank_pvalue(a, b, cell_key=cell_key)
+                else:
+                    p_value = mann_whitney_pvalue(a, b, cell_key=cell_key)
+                p_perm_legacy = paired_permutation_pvalue(a, b, cell_key=cell_key)
+                dz = cohens_dz(a, b) if is_paired else float("nan")
+                d_pooled = cohens_d_pooled(a, b)
+                hg = hedges_g(a, b, paired=is_paired)
+                lo_diff, hi_diff = bootstrap_mean_diff_ci(
+                    a, b, paired=is_paired, cell_key=cell_key
+                )
+                d_lo, d_hi = bootstrap_effect_size_ci(
+                    a, b, paired=is_paired, cell_key=cell_key,
+                    statistic="pooled",
+                )
+                if is_paired:
+                    dz_lo, dz_hi = bootstrap_effect_size_ci(
+                        a, b, paired=True, cell_key=cell_key,
+                        statistic="dz",
+                    )
+                    # Within-pair SD makes the d_z design tax explicit:
+                    # arms share `ablation_seed` for Sources 1-5, so
+                    # within-pair SD is essentially Source 8 (per-(mode,
+                    # seed) policy temperature, sigma=0.25). A small
+                    # `within_pair_sd` plus a moderate `mean_diff` is
+                    # exactly what produces the design-inflated d_z.
+                    paired_diff = np.array(a, dtype=float) - np.array(b, dtype=float)
+                    within_pair_sd = float(np.std(paired_diff, ddof=1)) if len(paired_diff) >= 2 else 0.0
+                else:
+                    dz_lo, dz_hi = float("nan"), float("nan")
+                    within_pair_sd = float("nan")
+                mean_diff = float(np.mean(a) - np.mean(b))
+                comp[met] = {
+                    "p_value": p_value,
+                    "p_value_legacy_signflip": p_perm_legacy,
+                    # cohens_d is now the legacy alias for the canonical
+                    # cohens_d_pooled (post-2026-04 canonical effect size).
+                    # Both paired and unpaired contrasts read this field
+                    # as the same effect-size statistic, so cross-baseline
+                    # tables are commensurable. cohens_dz remains
+                    # available for paired contrasts but is design-tax
+                    # inflated and is not the headline statistic.
+                    "cohens_d": d_pooled,
+                    "cohens_dz": dz,
+                    "cohens_d_pooled": d_pooled,
+                    "hedges_g": hg,
+                    "effect_size_ci_low": d_lo,
+                    "effect_size_ci_high": d_hi,
+                    "effect_size_ci_method": "BCa",
+                    "cohens_dz_ci_low": dz_lo,
+                    "cohens_dz_ci_high": dz_hi,
+                    "within_pair_sd": within_pair_sd,
+                    "design_tax_note": (
+                        "d_z denominator is within-pair SD; for paired "
+                        "baselines the arms share ablation_seed for "
+                        "Sources 1-5, so within-pair SD is dominated "
+                        "by Source 8 (per-(mode, seed) policy "
+                        "temperature, sigma=0.25). Report cohens_d_pooled "
+                        "as the design-independent effect size."
+                    ) if is_paired else "unpaired (no design tax on d_z)",
+                    "mean_diff": mean_diff,
+                    "mean_diff_ci_low": lo_diff,
+                    "mean_diff_ci_high": hi_diff,
+                    "n_seeds": len(seeds_paired),
+                }
+                per_scenario_pvals[sc][f"{baseline}:{met}"] = p_value
+                if baseline == "no_context" and met == "ari":
+                    primary_h1_pvals[sc] = p_value
+            significance[sc][f"agribrain_vs_{baseline}"] = comp
+
+    # Pass 1.5: Channel-decomposition family.
+    # Direct tests for the C4 claim that each context channel (MCP,
+    # piRAG) contributes to quality improvements. The agribrain_vs_X
+    # family alone leaves C4 inferable only by transitivity; this loop
+    # adds the single-channel-vs-no_context contrasts on the same
+    # paired-seed design.
+    #
+    # Both modes in each pair (e.g. mcp_only and no_context) share the
+    # ablation_seed for Sources 1-5, so the Wilcoxon signed-rank pairing
+    # is statistically valid - same logic as the agribrain_vs_X loop
+    # above. Canonical effect size remains cohens_d_pooled; cohens_dz
+    # is reported alongside with the design-tax note.
+    channel_pvals: dict[str, float] = {}
+    for sc in SCENARIOS:
+        for a_mode, b_mode in _CHANNEL_DECOMPOSITION_PAIRS:
+            seeds_paired = sorted(
+                s for s in all_data
+                if a_mode in all_data[s].get(sc, {})
+                and b_mode in all_data[s].get(sc, {})
+            )
+            if not seeds_paired:
+                continue
+            comp: dict = {
+                "is_paired_design": True,
+                "test_type": "wilcoxon_signed_rank",
+                "effect_size_primary": "cohens_d_pooled",
+                "_family": "channel_decomposition",
+            }
+            for met in METRICS:
+                a = [all_data[s][sc][a_mode][met] for s in seeds_paired]
+                b = [all_data[s][sc][b_mode][met] for s in seeds_paired]
+                cell_key = (sc, f"{a_mode}_vs_{b_mode}", met)
+                p_value = wilcoxon_signed_rank_pvalue(a, b, cell_key=cell_key)
+                p_perm_legacy = paired_permutation_pvalue(a, b, cell_key=cell_key)
+                dz = cohens_dz(a, b)
+                d_pooled = cohens_d_pooled(a, b)
+                hg = hedges_g(a, b, paired=True)
+                lo_diff, hi_diff = bootstrap_mean_diff_ci(
+                    a, b, paired=True, cell_key=cell_key
+                )
+                d_lo, d_hi = bootstrap_effect_size_ci(
+                    a, b, paired=True, cell_key=cell_key,
+                    statistic="pooled",
+                )
+                dz_lo, dz_hi = bootstrap_effect_size_ci(
+                    a, b, paired=True, cell_key=cell_key,
+                    statistic="dz",
+                )
+                paired_diff = np.array(a, dtype=float) - np.array(b, dtype=float)
+                within_pair_sd = (
+                    float(np.std(paired_diff, ddof=1))
+                    if len(paired_diff) >= 2 else 0.0
+                )
+                mean_diff = float(np.mean(a) - np.mean(b))
+                comp[met] = {
+                    "p_value": p_value,
+                    "p_value_legacy_signflip": p_perm_legacy,
+                    "cohens_d": d_pooled,
+                    "cohens_dz": dz,
+                    "cohens_d_pooled": d_pooled,
+                    "hedges_g": hg,
+                    "effect_size_ci_low": d_lo,
+                    "effect_size_ci_high": d_hi,
+                    "effect_size_ci_method": "BCa",
+                    "cohens_dz_ci_low": dz_lo,
+                    "cohens_dz_ci_high": dz_hi,
+                    "within_pair_sd": within_pair_sd,
+                    "design_tax_note": (
+                        "d_z denominator is within-pair SD; for paired "
+                        "channel-decomposition contrasts the arms share "
+                        "ablation_seed for Sources 1-5, so within-pair "
+                        "SD is dominated by Source 8 (per-(mode, seed) "
+                        "policy temperature, sigma=0.25). Report "
+                        "cohens_d_pooled as the design-independent "
+                        "effect size."
+                    ),
+                    "mean_diff": mean_diff,
+                    "mean_diff_ci_low": lo_diff,
+                    "mean_diff_ci_high": hi_diff,
+                    "n_seeds": len(seeds_paired),
+                }
+                # Per-scenario secondary FDR participation: the channel
+                # contrasts are within-scenario secondary endpoints
+                # exactly like the agribrain_vs_X cells, so they go
+                # through the same per-scenario BY-FDR / BH-FDR
+                # correction below. Keying convention prefixes with
+                # the comparison name to avoid collision with the
+                # ``baseline:metric`` keys that agribrain_vs_X uses.
+                per_scenario_pvals[sc][f"{a_mode}_vs_{b_mode}:{met}"] = p_value
+                # Channel-decomposition Holm family covers the ARI
+                # endpoint only (matching the primary H1 family
+                # convention of one metric per scenario per contrast).
+                # Other metrics participate via per-scenario FDR.
+                if met == "ari":
+                    channel_pvals[f"{sc}:{a_mode}_vs_{b_mode}"] = p_value
+            significance[sc][f"{a_mode}_vs_{b_mode}"] = comp
+
+    # Pass 2a: Holm-Bonferroni across the primary H1 family (5 scenarios).
+    # The primary family is fixed in docs/STATISTICAL_METHODS.md: one
+    # contrast (agribrain vs no_context) on one metric (ARI) per
+    # scenario, m=5.
+    primary_h1_holm = holm_bonferroni(primary_h1_pvals)
+
+    # Auxiliary 1: Holm across an extended paired-baseline grid (3
+    # endpoints x 5 paired baselines x 5 scenarios = 75 tests after
+    # the post-2026-04 pairing-extension fix). Lets headline robustness
+    # be judged under a moderately-wider family.
+    extended_pvals: dict[str, float] = {}
+    for sc in SCENARIOS:
+        for baseline in _PAIRED_BASELINES:
+            comp = significance.get(sc, {}).get(f"agribrain_vs_{baseline}")
+            if comp is None:
+                continue
+            for met in ("ari", "rle", "slca"):
+                rec = comp.get(met)
+                if rec is None:
+                    continue
+                extended_pvals[f"{sc}:{baseline}:{met}"] = float(rec["p_value"])
+    extended_holm = holm_bonferroni(extended_pvals) if extended_pvals else {}
+
+    # Auxiliary 2: Holm across the FULL grid of every (scenario,
+    # baseline, metric) cell that has a p-value. m = scenarios *
+    # baselines * metrics (typically 5 * 5 * 6 = 150). This is the
+    # strictest end-to-end FWER control: any p_value_adj_holm_full
+    # below alpha rejects the null at family-wise alpha across
+    # everything reported in benchmark_significance.json. Reviewers
+    # who want to read significance off the full table without
+    # restricting to the primary H1 family can use this column.
+    # Per docs/STATISTICAL_METHODS.md the canonical p_value_adj is
+    # still BY-FDR within scenario for secondary endpoints (less
+    # conservative under arbitrary dependence), with this full-grid
+    # Holm column reported alongside as the FWER-strict alternative.
+    full_grid_pvals: dict[str, float] = {}
+    for sc in SCENARIOS:
+        for baseline in BASELINES:
+            comp = significance.get(sc, {}).get(f"agribrain_vs_{baseline}")
+            if comp is None:
+                continue
+            for met in METRICS:
+                rec = comp.get(met)
+                if rec is None:
+                    continue
+                full_grid_pvals[f"{sc}:{baseline}:{met}"] = float(rec["p_value"])
+        # Channel-decomposition contrasts also participate in the
+        # full-grid Holm. Same shape as agribrain_vs_X cells, just
+        # different comparison name.
+        for a_mode, b_mode in _CHANNEL_DECOMPOSITION_PAIRS:
+            comp = significance.get(sc, {}).get(f"{a_mode}_vs_{b_mode}")
+            if comp is None:
+                continue
+            for met in METRICS:
+                rec = comp.get(met)
+                if rec is None:
+                    continue
+                full_grid_pvals[f"{sc}:{a_mode}_vs_{b_mode}:{met}"] = float(rec["p_value"])
+    full_grid_holm = (holm_bonferroni(full_grid_pvals)
+                       if full_grid_pvals else {})
+
+    # Auxiliary 3: Channel-decomposition Holm-Bonferroni.
+    # 2 contrasts (mcp_only_vs_no_context, pirag_only_vs_no_context) x
+    # 5 scenarios = 10 tests on ARI. Closes the C4 paper-claim gap
+    # (each context channel contributes to quality improvements) by
+    # applying a family-honest multiple-comparison correction within
+    # the channel-decomposition family alone — separate from the
+    # primary H1 family (5 tests) and the extended/full grids. The
+    # canonical p_value_adj on every channel-decomposition cell uses
+    # this correction; reviewers interested in single-channel
+    # contributions can read significance off this column without
+    # restricting to either the H1 family or the full grid.
+    channel_holm = holm_bonferroni(channel_pvals) if channel_pvals else {}
+
+    # Pass 2b: BH-FDR (PRDS-assuming) AND BY-FDR (arbitrary-dependence)
+    # within each scenario across all (baseline, metric) pairs. Reporting
+    # both surfaces the conservative bound (BY) when within-scenario
+    # metric correlations have mixed signs.
+    per_scenario_bh: dict[str, dict[str, float]] = {
+        sc: benjamini_hochberg(per_scenario_pvals[sc]) for sc in SCENARIOS
+    }
+    per_scenario_by: dict[str, dict[str, float]] = {
+        sc: benjamini_yekutieli(per_scenario_pvals[sc]) for sc in SCENARIOS
+    }
+
+    # Pass 3: write adjusted p-values back into each comparison record. Each
+    # cell gets both fields (p_value_adj_bh and, where applicable,
+    # p_value_adj_holm) plus a canonical p_value_adj and correction_method.
+    for sc in SCENARIOS:
+        bh_map = per_scenario_bh.get(sc, {})
+        by_map = per_scenario_by.get(sc, {})
+        for baseline in BASELINES:
+            comp_key = f"agribrain_vs_{baseline}"
+            comp = significance[sc].get(comp_key)
+            if comp is None:
+                continue
+            for met in METRICS:
+                rec = comp.get(met)
+                if rec is None:
+                    continue
+                key = f"{baseline}:{met}"
+                p_bh = float(bh_map.get(key, rec["p_value"]))
+                p_by = float(by_map.get(key, rec["p_value"]))
+                rec["p_value_adj_bh"] = p_bh
+                rec["p_value_adj_by"] = p_by
+                # Auxiliary extended-Holm field on every record where
+                # the contrast is part of the extended grid (3 endpoints
+                # x 3 paired baselines x 5 scenarios = 45 tests).
+                ext_key = f"{sc}:{baseline}:{met}"
+                if ext_key in extended_holm:
+                    rec["p_value_adj_holm_extended"] = float(extended_holm[ext_key])
+                # End-to-end Holm across the FULL grid (every scenario
+                # x baseline x metric cell with a p-value). This is the
+                # strictest FWER control: a cell can be read off as
+                # significant at family-wise alpha across the entire
+                # significance table without restricting to the primary
+                # H1 family. Always populated; the canonical
+                # p_value_adj for secondary endpoints continues to be
+                # BY-FDR within scenario per STATISTICAL_METHODS.md
+                # because it is less conservative under arbitrary
+                # dependence and matches the published reporting
+                # convention; full-grid Holm is the FWER-strict
+                # alternative.
+                if ext_key in full_grid_holm:
+                    rec["p_value_adj_holm_full"] = float(full_grid_holm[ext_key])
+                # M3/M4 descriptive-only flags. RLE on static is
+                # structurally zero (static always picks cold_chain),
+                # so the RLE contrast against static is descriptive
+                # only — it measures the policy ceiling, not a
+                # comparable RLE. regulatory_violation_rate USED to be
+                # structurally zero for non-MCP baselines (static,
+                # hybrid_rl, no_pinn, no_slca) because they didn't
+                # invoke the compliance tool, but the post-2026-04
+                # deep-audit fix routes check_compliance uniformly on
+                # every step regardless of mode (commit 1d9caf0), so
+                # compliance_violation_rate / regulatory_violation_rate
+                # are now directly comparable across every mode and the
+                # descriptive_only flag for non-MCP baselines is
+                # retired. Only the static-RLE flag remains because
+                # that one is genuinely structural (static never
+                # selects a recovery action; the metric scores the
+                # *action*, not the environment).
+                if met == "rle" and baseline == "static":
+                    rec["descriptive_only"] = True
+                    rec["descriptive_only_reason"] = (
+                        "static RLE is structurally 0 (always cold_chain); "
+                        "the contrast measures policy ceiling, not RLE"
+                    )
+                if baseline == "no_context" and met == "ari":
+                    p_holm = float(primary_h1_holm.get(sc, rec["p_value"]))
+                    rec["p_value_adj_holm"] = p_holm
+                    rec["p_value_adj"] = p_holm
+                    rec["correction_method"] = "holm_bonferroni_across_scenarios"
+                else:
+                    # Canonical p_value_adj on secondary endpoints uses
+                    # the more conservative BY-FDR (valid under arbitrary
+                    # dependence). BH retained as a less-conservative
+                    # comparator under the PRDS assumption.
+                    rec["p_value_adj"] = p_by
+                    rec["correction_method"] = "by_fdr_within_scenario"
+
+        # Pass 3b: write adjusted p-values into the channel-decomposition
+        # records (mcp_only_vs_no_context, pirag_only_vs_no_context).
+        # Each cell carries:
+        #   p_value_adj_bh / p_value_adj_by  — per-scenario FDR (matches
+        #                                      the agribrain_vs_X cells'
+        #                                      treatment of secondary
+        #                                      endpoints; the same
+        #                                      per_scenario_pvals[sc]
+        #                                      dictionary fed BH/BY)
+        #   p_value_adj_holm_full            — full-grid Holm (FWER-strict
+        #                                      across the entire significance
+        #                                      table)
+        #   p_value_adj_holm_channel         — Holm within the
+        #                                      channel-decomposition family
+        #                                      of 10 tests (ARI only)
+        #   p_value_adj                      — canonical: holm_channel on
+        #                                      ARI (the C4 family); BY-FDR
+        #                                      on every other metric
+        #   correction_method                — names which correction was
+        #                                      applied
+        for a_mode, b_mode in _CHANNEL_DECOMPOSITION_PAIRS:
+            comp_key = f"{a_mode}_vs_{b_mode}"
+            comp = significance[sc].get(comp_key)
+            if comp is None:
+                continue
+            for met in METRICS:
+                rec = comp.get(met)
+                if rec is None:
+                    continue
+                key = f"{a_mode}_vs_{b_mode}:{met}"
+                p_bh = float(bh_map.get(key, rec["p_value"]))
+                p_by = float(by_map.get(key, rec["p_value"]))
+                rec["p_value_adj_bh"] = p_bh
+                rec["p_value_adj_by"] = p_by
+                full_key = f"{sc}:{a_mode}_vs_{b_mode}:{met}"
+                if full_key in full_grid_holm:
+                    rec["p_value_adj_holm_full"] = float(full_grid_holm[full_key])
+                if met == "ari":
+                    ch_key = f"{sc}:{a_mode}_vs_{b_mode}"
+                    p_holm_channel = float(
+                        channel_holm.get(ch_key, rec["p_value"])
+                    )
+                    rec["p_value_adj_holm_channel"] = p_holm_channel
+                    rec["p_value_adj"] = p_holm_channel
+                    rec["correction_method"] = (
+                        "holm_bonferroni_channel_decomposition"
+                    )
+                else:
+                    rec["p_value_adj"] = p_by
+                    rec["correction_method"] = "by_fdr_within_scenario"
+
+    # Save
+    out_dir = _SCRIPT_DIR / "results"
+    out_dir.mkdir(exist_ok=True)
+    bca_stats = _bca_fallback_stats_snapshot()
+    # Provenance pin (post-2026-05): record the seed count and the
+    # source-code commit alongside the bootstrap parameters. A
+    # reviewer reading benchmark_summary.json should see at a glance
+    # which version of the simulator produced which numbers, without
+    # cross-referencing artifact_manifest.json.
+    #
+    # Resolution order (each tier falls through to the next on failure):
+    #   1. AGRIBRAIN_GIT_COMMIT env var (HPC pipelines export this via
+    #      sbatch --export so the stamp survives slurm contexts where
+    #      git is not in PATH).
+    #   2. ``git rev-parse HEAD`` subprocess (local-dev path; requires
+    #      the ``git`` binary on PATH).
+    #   3. Direct read of ``.git/HEAD`` (slurm-compute-node path; works
+    #      even when ``git`` is not installed on the worker, as long
+    #      as the repo's ``.git`` directory is on the shared filesystem
+    #      that the worker can see). Handles both detached-HEAD and
+    #      ref-based forms.
+    #   4. None (last resort; verify_manifest.py --strict-commit on
+    #      the artifact manifest still gates the artifact set, so a
+    #      None here is informational rather than a hard failure).
+    #
+    # The post-HPC RUN_TAG 485c769_20260505_0349 incident: a manual
+    # ``sbatch hpc/hpc_aggregate.sh`` resubmission bypassed the env
+    # export from ``hpc_run.sh`` and the slurm worker's PATH didn't
+    # include ``git`` -- tiers 1 and 2 both returned None, ``_meta.git_commit``
+    # ended up null. Tier 3 added so this fallback chain reaches a
+    # real SHA on every realistic HPC + local invocation path.
+    import os as _os_meta
+    import subprocess as _subprocess_meta
+    _git_commit_meta: str | None = (
+        _os_meta.environ.get("AGRIBRAIN_GIT_COMMIT", "").strip() or None
+    )
+    _git_root_meta_path = _SCRIPT_DIR.parent.parent.parent
+    if _git_commit_meta is None:
+        try:
+            _git_commit_meta = _subprocess_meta.check_output(
+                ["git", "rev-parse", "HEAD"],
+                cwd=str(_git_root_meta_path),
+                stderr=_subprocess_meta.PIPE,
+            ).decode("utf-8").strip() or None
+        except Exception:
+            _git_commit_meta = None
+    if _git_commit_meta is None:
+        # Tier 3: read .git/HEAD directly. Handles slurm workers
+        # without git on PATH.
+        try:
+            _head_path = _git_root_meta_path / ".git" / "HEAD"
+            _head_text = _head_path.read_text(encoding="utf-8").strip()
+            if _head_text.startswith("ref: "):
+                _ref = _head_text[5:].strip()  # e.g. "refs/heads/main"
+                _ref_path = _git_root_meta_path / ".git" / _ref
+                if _ref_path.exists():
+                    _sha = _ref_path.read_text(encoding="utf-8").strip()
+                    if len(_sha) == 40 and all(
+                        c in "0123456789abcdef" for c in _sha
+                    ):
+                        _git_commit_meta = _sha
+                else:
+                    # Packed refs fallback: ref might be in
+                    # ``.git/packed-refs`` instead of an unpacked file.
+                    _packed = _git_root_meta_path / ".git" / "packed-refs"
+                    if _packed.exists():
+                        for _line in _packed.read_text(encoding="utf-8").splitlines():
+                            if _line.endswith(_ref) and len(_line) >= 41:
+                                _candidate = _line.split(" ", 1)[0].strip()
+                                if len(_candidate) == 40:
+                                    _git_commit_meta = _candidate
+                                    break
+            elif len(_head_text) == 40 and all(
+                c in "0123456789abcdef" for c in _head_text
+            ):
+                # Detached HEAD: HEAD itself contains the SHA.
+                _git_commit_meta = _head_text
+        except Exception:
+            _git_commit_meta = None
+    payload_summary = {
+        "_meta": {
+            "n_boot": 10_000,
+            "n_perm": 10_000,
+            "bootstrap_alpha": 0.05,
+            "seeds_loaded": sorted(all_data),
+            "n_seeds": len(all_data),
+            "git_commit": _git_commit_meta,
+            # BCa percentile-fallback diagnostics. n=20 seeds is below
+            # the recommended floor for BCa stability (Efron &
+            # Tibshirani 1993 recommend n >= 30); the fallback fires
+            # when the BCa correction is mathematically undefined
+            # (e.g. RLE on static, where every bootstrap replicate is
+            # 0.0 -> p0 degenerate). The methods section can quote
+            # ``fallback_rate`` directly so the silent-fallback issue
+            # the post-2026-04 audit flagged is a known quantity.
+            "bca_fallback_stats": bca_stats,
+        },
+        "summary": summary,
+    }
+    if bca_stats["fallback_rate"] > 0.10:
+        print(
+            f"WARNING: BCa percentile fallback fired on "
+            f"{bca_stats['fallback_total']} of {bca_stats['calls']} calls "
+            f"({100.0 * bca_stats['fallback_rate']:.1f}%). Threshold for "
+            "this warning is 10%; cells where the fallback fired may have "
+            "wider-than-BCa CIs and should be flagged in the manuscript "
+            "as percentile-fallback rather than BCa."
+        )
+    payload_significance = {
+        "_meta": {
+            "n_seeds": len(all_data),
+            "git_commit": _git_commit_meta,
+            "primary_h1_family": "agribrain_vs_no_context on ARI, 5 scenarios",
+            "primary_h1_correction": "holm_bonferroni",
+            "secondary_correction": "by_fdr",
+            "secondary_family_scope": "per-scenario, all (comparison, metric) pairs",
+            # Channel-decomposition family closes the C4 paper-claim
+            # gap: agribrain_vs_no_context (the primary H1) shows that
+            # the context channel as a whole matters; the C4 claim
+            # additionally states that each individual channel (MCP,
+            # piRAG) contributes. The two pairs below test that
+            # claim directly — single-channel mode vs the no-context
+            # floor on the same paired-seed design as primary H1.
+            "channel_decomposition_family": (
+                "{mcp_only,pirag_only}_vs_no_context on ARI, 5 scenarios "
+                "(2 contrasts x 5 = 10 tests)"
+            ),
+            "channel_decomposition_correction": "holm_bonferroni",
+            "channel_decomposition_canonical_field": "p_value_adj_holm_channel",
+            "n_perm": 10_000,
+            "paired": True,
+        },
+        "primary_h1_holm_adjusted": primary_h1_holm,
+        # Family-specific Holm-adjusted ARI p-values for the
+        # channel-decomposition contrasts. Reviewers reading C4 in the
+        # paper can pull the {scenario}:{a_mode}_vs_{b_mode} key from
+        # this dict to get the family-corrected p-value without
+        # reaching into the per-cell records.
+        "channel_decomposition_holm_adjusted": channel_holm,
+        "significance": significance,
+    }
+    (out_dir / "benchmark_summary.json").write_text(
+        json.dumps(payload_summary, indent=2)
+    )
+    (out_dir / "benchmark_significance.json").write_text(
+        json.dumps(payload_significance, indent=2)
+    )
+    print("Saved benchmark_summary.json")
+    print("Saved benchmark_significance.json")
+
+    # Print key results
+    print()
+    for sc in SCENARIOS:
+        a = summary[sc]["agribrain"]["ari"]
+        print(f"  {sc}: ARI mean={a['mean']:.4f} CI=[{a['ci_low']:.4f}, {a['ci_high']:.4f}] std={a['std']:.6f}")
+
+    print()
+    print("Primary H1 family (Holm-Bonferroni across 5 scenarios):")
+    for sc in SCENARIOS:
+        p_raw = primary_h1_pvals.get(sc)
+        p_adj = primary_h1_holm.get(sc)
+        if p_raw is None or p_adj is None:
+            continue
+        print(f"  {sc} agribrain_vs_no_context ARI: p={p_raw:.4f} p_holm={p_adj:.4f}")
+
+    print()
+    print("Secondary (per-scenario BH-FDR) selected comparisons, ARI:")
+    print(f"    {'Scenario':<22} {'Comparison':<28} {'p_adj':>7} {'d_z':>7} {'d_pooled':>9}")
+    for sc in SCENARIOS:
+        for comp_name in ("agribrain_vs_no_context", "agribrain_vs_hybrid_rl"):
+            rec = significance[sc].get(comp_name, {}).get("ari")
+            if rec is None:
+                continue
+            print(f"    {sc:<22} {comp_name:<28} {rec['p_value_adj']:>7.4f} "
+                  f"{rec['cohens_dz']:>+7.3f} {rec.get('cohens_d_pooled', 0.0):>+9.3f}")
+
+    print()
+    print("Channel-decomposition family (Holm across 2 x 5 = 10 ARI tests):")
+    print(f"    {'Scenario':<22} {'Comparison':<32} {'p_adj_holm':>11} {'d_pooled':>9}")
+    for sc in SCENARIOS:
+        for a_mode, b_mode in _CHANNEL_DECOMPOSITION_PAIRS:
+            comp_name = f"{a_mode}_vs_{b_mode}"
+            rec = significance[sc].get(comp_name, {}).get("ari")
+            if rec is None:
+                continue
+            print(
+                f"    {sc:<22} {comp_name:<32} "
+                f"{rec.get('p_value_adj_holm_channel', float('nan')):>11.4f} "
+                f"{rec.get('cohens_d_pooled', 0.0):>+9.3f}"
+            )
+
+    # ------------------------------------------------------------------
+    # Rewrite the Stage 1 CSVs with 20-seed statistics (Option 1).
+    # The single-seed (seed=42) versions written by generate_results.py are
+    # preserved as *_seed42.csv siblings for traceability. Downstream paper
+    # figures and the export_paper_evidence stage should always read the
+    # unsuffixed table1_summary.csv / table2_ablation.csv; these now carry
+    # 20-seed bootstrap means and 95% CIs. Formula-compatible: the existing
+    # column names (ARI, RLE, Waste, SLCA, Carbon, Equity) are preserved
+    # with their values replaced by 20-seed means, and new _ci_low /
+    # _ci_high columns are appended per metric.
+    # ------------------------------------------------------------------
+    _rewrite_stochastic_csvs(out_dir, summary)
+
+
+def _fmt(x: float, precision: int = 4) -> str:
+    """Format a float for CSV output; used so DataFrame-free builds of
+    table1/table2 still produce the same number of decimals the legacy
+    single-seed files used."""
+    if x is None:
+        return ""
+    return f"{x:.{precision}f}"
+
+
+def _rewrite_stochastic_csvs(out_dir, summary):
+    """Rewrite table1_summary.csv and table2_ablation.csv as 20-seed means
+    + 95% CIs from ``summary``. Renames any existing single-seed files to
+    *_seed42.csv siblings before writing so those point-value references
+    remain available for debugging.
+
+    Column layout: same display names as the legacy single-seed CSVs
+    (ARI, Waste, ...), followed by ``ARI_ci_low``, ``ARI_ci_high``, etc.
+    Downstream readers that only index by ``row["ARI"]`` continue to work
+    and now get the 20-seed mean; readers that want CIs pick up the new
+    columns.
+    """
+    import csv
+    import shutil
+
+    # Preserve single-seed files, if present, as debugging siblings.
+    for base in ("table1_summary.csv", "table2_ablation.csv"):
+        src = out_dir / base
+        if src.exists():
+            dst = out_dir / base.replace(".csv", "_seed42.csv")
+            try:
+                shutil.move(str(src), str(dst))
+                print(f"Preserved single-seed: {dst.name}")
+            except OSError as exc:
+                print(f"WARNING: could not rename {src} -> {dst}: {exc}")
+
+    # table1_summary.csv: three-method headline across scenarios.
+    t1_path = out_dir / "table1_summary.csv"
+    header = ["Scenario", "Method"]
+    for _key, disp in _TABLE1_COLUMNS:
+        header.extend([disp, f"{disp}_ci_low", f"{disp}_ci_high"])
+    header.extend(["n_seeds"])
+    rows = []
+    for sc in SCENARIOS:
+        for mode in _TABLE1_ROW_METHODS:
+            bucket = summary.get(sc, {}).get(mode, {})
+            if not bucket:
+                continue
+            row = [sc, mode]
+            n_seeds_row = 0
+            for key, _ in _TABLE1_COLUMNS:
+                rec = bucket.get(key)
+                if rec is None:
+                    row.extend(["", "", ""])
+                    continue
+                precision = 0 if key == "carbon" else 4
+                row.append(_fmt(rec["mean"], precision))
+                row.append(_fmt(rec["ci_low"], precision))
+                row.append(_fmt(rec["ci_high"], precision))
+                n_seeds_row = max(n_seeds_row, int(rec.get("n_seeds", 0)))
+            row.append(str(n_seeds_row))
+            rows.append(row)
+    with open(t1_path, "w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(header)
+        writer.writerows(rows)
+    print(f"Saved 20-seed {t1_path.name} ({len(rows)} rows)")
+
+    # table2_ablation.csv: every mode across scenarios.
+    t2_path = out_dir / "table2_ablation.csv"
+    header = ["Scenario", "Variant"]
+    for _key, disp in _TABLE2_COLUMNS:
+        header.extend([disp, f"{disp}_ci_low", f"{disp}_ci_high"])
+    header.extend(["n_seeds"])
+    rows = []
+    for sc in SCENARIOS:
+        for mode in MODES:
+            bucket = summary.get(sc, {}).get(mode, {})
+            if not bucket:
+                continue
+            row = [sc, mode]
+            n_seeds_row = 0
+            for key, _ in _TABLE2_COLUMNS:
+                rec = bucket.get(key)
+                if rec is None:
+                    row.extend(["", "", ""])
+                    continue
+                row.append(_fmt(rec["mean"], 4))
+                row.append(_fmt(rec["ci_low"], 4))
+                row.append(_fmt(rec["ci_high"], 4))
+                n_seeds_row = max(n_seeds_row, int(rec.get("n_seeds", 0)))
+            row.append(str(n_seeds_row))
+            rows.append(row)
+    with open(t2_path, "w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(header)
+        writer.writerows(rows)
+    print(f"Saved 20-seed {t2_path.name} ({len(rows)} rows)")
+
+
+if __name__ == "__main__":
+    main()

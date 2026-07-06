@@ -1,0 +1,343 @@
+name: ci
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  # Cross-platform test suite. README documents Windows + macOS as
+  # supported development platforms; the matrix proves it on every
+  # push. Artifact-hash-sensitive steps (validate_results,
+  # verify_manifest) live in the dedicated `artifact-validation`
+  # job below — those rely on SHA-256s computed on the originating
+  # filesystem (LF line endings), so cross-OS execution would false-
+  # positive on the manifest hashes even though the simulator code
+  # itself is cross-platform.
+  backend-tests:
+    name: backend-tests (${{ matrix.os }} / py${{ matrix.python-version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.11"]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install backend
+        run: |
+          python -m pip install --upgrade pip
+          # Install with the [dev] extra so httpx and pytest-asyncio are
+          # available -- TestClient-based integration tests fail without
+          # them. The "[dev]" form is a project optional-dependencies
+          # group declared in pyproject.toml.
+          pip install -e "agribrain/backend[dev]"
+      - name: Run backend tests
+        run: |
+          python -m pytest agribrain/backend/pirag/tests agribrain/backend/tests
+      - name: Run stochastic simulation validation test
+        run: |
+          python mvp/simulation/tests/test_stochastic_quick.py
+
+  # Slow-marker tests: full end-to-end simulator runs (mode x scenario
+  # matrix) that the default `addopts = "-m 'not slow'"` skips. We run
+  # them here on Linux/Python 3.11 only -- they are not expected to be
+  # platform-sensitive but they are minutes-per-test rather than
+  # milliseconds, so the cross-platform matrix above stays fast.
+  # The 2026-05 forensic pass surfaced a stale calibration in one slow
+  # test that was hidden behind the addopts opt-out; this job ensures
+  # future drift fails CI loudly. continue-on-error is intentionally
+  # not set: a slow-test failure must red the build.
+  slow-tests:
+    name: slow-tests (ubuntu / py3.11)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install backend (with [dev] extras)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e "agribrain/backend[dev]"
+      - name: Run slow-marked tests
+        run: |
+          # --override-ini="addopts=" wins over the addopts in
+          # agribrain/backend/pyproject.toml ("-m 'not slow'") so the
+          # explicit -m slow selector here is honoured. Without the
+          # override, the addopts and the -m flag conflict and pytest
+          # selects nothing.
+          python -m pytest --override-ini="addopts=" -m slow \
+            agribrain/backend
+
+  # Ubuntu-only artifact validation: line-ending differences on Windows
+  # checkouts would shift tracked-artifact SHA-256s and false-positive
+  # the manifest verifier. The artifacts themselves were written and
+  # hashed on Linux/HPC, so Linux CI is the canonical verification host.
+  artifact-validation:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install backend
+        run: |
+          python -m pip install --upgrade pip
+          # Install with the [dev] extra so httpx and pytest-asyncio are
+          # available -- TestClient-based integration tests fail without
+          # them. The "[dev]" form is a project optional-dependencies
+          # group declared in pyproject.toml.
+          pip install -e "agribrain/backend[dev]"
+      - name: Validate simulation results (strict gate, default)
+        env:
+          STRICT_VALIDATION: "1"
+        run: |
+          python mvp/simulation/validation/validate_results.py
+      - name: Verify artifact manifest (strict commit + tracked allowlist)
+        # On CI we don't have the gitignored artifacts (mcp_interop_*,
+        # traces_*); --allow-missing turns those into warnings. But
+        # the 2026-05 audit flagged that --allow-missing alone makes
+        # the gate too lax: a deleted tracked figure also passed as a
+        # warning. --require-tracked tightens the gate so any missing
+        # *tracked* artifact (fig*.png, fig*.pdf, table*.csv,
+        # benchmark_*.json, etc.) is a hard failure, while gitignored
+        # artifacts still soft-warn. The HPC delivery pipeline runs
+        # without either flag to ensure every promised artifact is
+        # present.
+        run: |
+          python mvp/simulation/analysis/verify_manifest.py \
+              --strict-commit --allow-missing --require-tracked
+      - name: Deterministic-mode regression check
+        env:
+          DETERMINISTIC_MODE: "true"
+          # Branch-conditional ALLOW_MISSING_BASELINE: PR / feature
+          # branches may legitimately predate the baseline snapshot
+          # commit, so a missing baseline soft-skips. On main, the
+          # baseline must exist or the build fails -- this prevents a
+          # silent regression from landing because the guard self-
+          # disabled on a missing snapshot.
+          ALLOW_MISSING_BASELINE: ${{ github.ref == 'refs/heads/main' && '0' || '1' }}
+        run: |
+          python mvp/simulation/validation/run_regression_guard.py
+
+  # Regenerate the lockfile under canonical Python (3.11) on every push
+  # and upload as artifact + warn on drift. We do NOT fail the build on
+  # drift -- transitive deps move at upstream cadence and we don't want
+  # green CI to block on that. The artifact is uploaded so a maintainer
+  # can download the refreshed lock and commit it as part of the
+  # release procedure documented in docs/RELEASE.md.
+  lockfile-drift:
+    name: lockfile drift check (advisory)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Regenerate lockfile from pyproject
+        run: |
+          python -m pip install --upgrade pip
+          python -m venv .venv-lock
+          .venv-lock/bin/pip install --upgrade pip
+          .venv-lock/bin/pip install -e "agribrain/backend[dev]"
+          .venv-lock/bin/pip freeze --exclude-editable > /tmp/freeze.lock.bare
+          # Apply the same header the committed file carries.
+          {
+            sed -n '/^# AGRI-BRAIN backend dependency lockfile/,/^$/p' \
+              agribrain/backend/requirements-lock.txt | head -20
+            cat /tmp/freeze.lock.bare
+          } > /tmp/freeze.lock.full
+      - name: Compare with committed lockfile (warn on branches, fail on tags)
+        run: |
+          # Strip the header AND env-marker conditions on both sides so the
+          # comparison is purely the version pins. ``pywin32==311 ; sys_platform == "win32"``
+          # appears in the committed file as the env-marker form but the
+          # Linux freeze emits it without the marker (or omits it entirely).
+          grep -v '^#' agribrain/backend/requirements-lock.txt \
+              | sed 's/[[:space:]]*;[[:space:]].*$//' \
+              | sort > /tmp/committed.lock
+          grep -v '^#' /tmp/freeze.lock.bare | sort > /tmp/fresh.lock
+          if diff -u /tmp/committed.lock /tmp/fresh.lock > /tmp/lock.diff; then
+            echo "Lockfile is current."
+          else
+            # On version tags (refs/tags/v*) drift is a hard failure: a
+            # tagged release must ship a lockfile that resolves
+            # bit-identically. On branch / PR pushes the drift is a
+            # warning so transitive-dep updates do not red the build
+            # outside of release procedure.
+            ref="${GITHUB_REF:-}"
+            if [[ "$ref" == refs/tags/v* ]]; then
+              echo "::error::Lockfile drifted from a fresh 3.11 freeze on a tagged release ($ref)."
+              cat /tmp/lock.diff
+              echo "Refresh procedure: docs/RELEASE.md step 2, then re-tag."
+              exit 1
+            else
+              echo "::warning::Committed lockfile drifted from a fresh 3.11 freeze."
+              echo "::group::diff (committed vs fresh)"
+              cat /tmp/lock.diff
+              echo "::endgroup::"
+              echo "Refresh procedure: docs/RELEASE.md step 2."
+            fi
+          fi
+      - name: Upload refreshed lockfile (Python 3.11)
+        uses: actions/upload-artifact@v4
+        with:
+          name: requirements-lock-py311
+          path: /tmp/freeze.lock.full
+
+  python-lint:
+    name: python-lint (ruff)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install ruff
+        run: |
+          python -m pip install --upgrade pip
+          pip install "ruff>=0.5,<1"
+      - name: Run ruff (lint -- structural correctness gate)
+        run: |
+          # ruff.toml at repo root configures per-file ignores. We gate
+          # on the rules that catch real defects rather than style:
+          #   E9/F63/F7/F82  -- syntax errors and parse failures
+          #   F401          -- unused imports (the review flagged these)
+          #   F821          -- undefined names (catches refactor breakage)
+          # Style rules (I import-sorting, B bug-prone patterns) are
+          # intentionally not yet gated; they should be tightened in a
+          # focused cleanup pass before turning them on as build gates.
+          ruff check --select E9,F63,F7,F82,F401,F821 \
+            agribrain/backend mvp/simulation
+
+  contract-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: agribrain/contracts/hardhat
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install and test
+        run: |
+          npm ci
+          npm test
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: agribrain/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Test
+        run: npm test
+      - name: Build
+        run: npm run build
+
+  contract-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install hardhat deps
+        working-directory: agribrain/contracts/hardhat
+        run: npm ci
+      - name: Run Slither static analysis
+        uses: crytic/slither-action@v0.4.0
+        with:
+          target: agribrain/contracts/hardhat
+          slither-args: --exclude-informational --exclude-low
+          fail-on: medium
+          slither-version: 0.11.4
+
+  # Supply-chain CVE audits. Advisory by design: a new CVE in a
+  # transitive dep should not red the build (we cannot patch upstream
+  # in real time), but a maintainer pulling up CI logs should see it.
+  # Tightening to fail-on-high is the natural next step once the
+  # repo is on a regular dep-bump cadence.
+  python-audit:
+    name: pip-audit (advisory)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pip-audit
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+      - name: Audit lockfile (advisory)
+        run: |
+          # --requirement points at the canonical lockfile; --strict
+          # would treat any vulnerability as a build failure but is
+          # too noisy for a research repo on a non-emergency cadence.
+          # Continue-on-error keeps the workflow green; the report is
+          # visible in the job log for the maintainer.
+          pip-audit --requirement agribrain/backend/requirements-lock.txt \
+              --strict 2>&1 | tee /tmp/pip-audit.log || true
+          echo "::group::pip-audit summary"
+          tail -50 /tmp/pip-audit.log
+          echo "::endgroup::"
+        continue-on-error: true
+
+  frontend-audit:
+    name: npm audit (advisory)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: agribrain/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: npm audit (production deps only, advisory)
+        run: |
+          # --omit=dev limits the surface to runtime deps; dev-only
+          # vulnerabilities (eslint plugins, vitest etc.) do not ship
+          # to users and are reported separately if needed.
+          # Continue-on-error keeps the workflow green; report visible
+          # in the job log.
+          npm audit --omit=dev --audit-level=high 2>&1 | tee /tmp/npm-audit.log || true
+          echo "::group::npm audit summary"
+          tail -50 /tmp/npm-audit.log
+          echo "::endgroup::"
+        continue-on-error: true

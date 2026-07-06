@@ -1,0 +1,45 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "AGRI-BRAIN: A Protocol-Mediated Physics-Informed Interoperable Multi-Agent Framework for Explainable Perishable Supply Chains"
+type: software
+authors:
+  - family-names: Sarker
+    given-names: Nahid
+    affiliation: "Karen M. Swindler Department of Chemical and Biological Engineering, South Dakota School of Mines and Technology, Rapid City, SD 57701, USA"
+  - family-names: Kazi
+    given-names: Monzure-Khoda
+    affiliation: "Karen M. Swindler Department of Chemical and Biological Engineering, South Dakota School of Mines and Technology, Rapid City, SD 57701, USA"
+version: "1.2.0"
+date-released: "2026-05-04"
+# Versioning policy: the pinned ``version`` here must match
+# ``[project] version`` in agribrain/backend/pyproject.toml. The
+# tests/test_metadata_consistency.py guard fails the build if they
+# drift. ``date-released`` is set to the date the v<X.Y.Z> tag is
+# pushed; bump both together with the tag.
+#
+# Active maintenance through 2026-Q2. Cite the version + commit SHA
+# from `mvp/simulation/results/artifact_manifest.json` for paper-grade
+# reproducibility.
+license: MIT
+repository-code: "https://github.com/kprodigi/AGRI-BRAIN"
+
+# DOI deliberately omitted from this file. Cite via version + commit
+# SHA + repository URL. If a Zenodo DOI is minted in a later release
+# cycle, add the canonical ``identifiers:`` block (CFF 1.2 schema)
+# rather than re-introducing a top-level ``doi:`` field.
+keywords:
+  - multi-agent systems
+  - agri-food supply chain
+  - blockchain
+  - reinforcement learning
+  - physics-informed neural networks
+  - sustainability
+  - SLCA
+  - Model Context Protocol
+  - MCP
+  - retrieval-augmented generation
+  - physics-informed RAG
+  - explainable AI
+  - interoperability
+  - causal explanation
+  - governance override

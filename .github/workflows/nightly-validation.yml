@@ -1,0 +1,129 @@
+name: nightly-validation
+
+# Renamed from "nightly-benchmark" in 2026-04. The previous name
+# implied a full 20-seed multi-seed benchmark; in fact this workflow
+# runs a single-seed paper-table generation and pipes the result
+# through the aggregator under BENCHMARK_USE_TABLES=true. That is a
+# nightly single-seed validation / regression check, not a benchmark. The full 20-seed
+# benchmark only runs on HPC (see `hpc/hpc_run.sh`); never schedule it
+# under GitHub Actions limits.
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e "agribrain/backend[dev]"
+      - name: Generate paper tables (single-seed fallback)
+        # The multi-seed aggregator refuses to run when no per-seed JSONs
+        # are present. On a clean checkout we produce the single-seed
+        # paper tables first so the aggregator has something to consume.
+        # BENCHMARK_USE_TABLES=true below makes the aggregator fall back
+        # to the tables produced by this step rather than requiring the
+        # full 20-seed directory (which only exists on the HPC run).
+        run: |
+          python mvp/simulation/generate_results.py
+      - name: Run benchmark suite
+        # BENCHMARK_USE_TABLES=true makes the aggregator fall back to the
+        # single-seed paper tables when no per-seed JSONs exist.
+        # BENCHMARK_WRITE_COMPAT=true also writes the legacy
+        # benchmark_summary.json path this workflow uploads (the primary
+        # outputs are benchmark_context_summary.json and
+        # benchmark_context_significance.json; the compat path is kept
+        # so older tooling that reads benchmark_summary.json keeps
+        # working and so the uploaded artifact always reflects the run
+        # that just happened).
+        env:
+          BENCHMARK_USE_TABLES: "true"
+          BENCHMARK_WRITE_COMPAT: "true"
+        run: |
+          python mvp/simulation/benchmarks/run_benchmark_suite.py
+      - name: Print validation summary + baseline comparison
+        # Human-readable digest of the nightly run that lands in the
+        # job log so a maintainer doesn't have to download artifacts to
+        # see whether numbers regressed. The drift gate is optional: it
+        # compares against ``mvp/simulation/nightly_baseline.json`` only
+        # if that (uncommitted-by-default) baseline is present, and then
+        # an out-of-band metric (ARI / Waste / RLE / SLCA off by >5%)
+        # fails the workflow; absent a baseline it logs a skip notice.
+        run: |
+          python - <<'PY'
+          import json, os, sys
+          path = "mvp/simulation/results/benchmark_summary.json"
+          baseline_path = "mvp/simulation/nightly_baseline.json"
+          if not os.path.exists(path):
+              print(f"::warning::{path} not produced by the validation run")
+              sys.exit(0)
+          with open(path) as f:
+              data = json.load(f)
+          summary = data.get("summary", data)
+
+          baseline = None
+          if os.path.exists(baseline_path):
+              with open(baseline_path) as f:
+                  baseline = json.load(f)
+              print(f"Comparing against baseline at {baseline_path}")
+          else:
+              print(f"::notice::No baseline at {baseline_path}; comparison skipped.")
+
+          print("\n=== Nightly validation summary (agribrain) ===")
+          tolerance = 0.05  # 5% bands per metric
+          out_of_band = []
+          for sc in ("baseline", "heatwave", "overproduction",
+                     "cyber_outage", "adaptive_pricing"):
+              row = summary.get(sc, {}).get("agribrain", {})
+              if not row:
+                  print(f"  {sc:>18s}: <missing>")
+                  continue
+              metrics = {}
+              for key in ("ari", "waste", "rle", "slca"):
+                  metrics[key] = row.get(key, {}).get("mean", float("nan"))
+              line = (
+                  f"  {sc:>18s}: ARI={metrics['ari']:.3f}  "
+                  f"Waste={metrics['waste']:.3f}  RLE={metrics['rle']:.3f}  "
+                  f"SLCA={metrics['slca']:.3f}"
+              )
+              if baseline is not None:
+                  base_row = (baseline.get("summary") or baseline).get(sc, {}).get("agribrain", {})
+                  for key, current in metrics.items():
+                      ref = base_row.get(key, {}).get("mean") if isinstance(base_row.get(key), dict) else base_row.get(key)
+                      if ref is None or current != current:  # NaN check
+                          continue
+                      if abs(ref) < 1e-9:
+                          continue
+                      drift = abs(current - ref) / abs(ref)
+                      if drift > tolerance:
+                          out_of_band.append(
+                              f"{sc}.{key}: current={current:.3f} baseline={ref:.3f} "
+                              f"drift={100*drift:.1f}% > {100*tolerance:.0f}%"
+                          )
+              print(line)
+          if out_of_band:
+              print()
+              print("::error::Nightly validation metrics out of baseline band (5%):")
+              for msg in out_of_band:
+                  print(f"  - {msg}")
+              sys.exit(1)
+          print()
+          PY
+      - name: Upload benchmark artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-summary
+          path: |
+            mvp/simulation/results/benchmark_summary.json
+            mvp/simulation/results/benchmark_context_summary.json
+            mvp/simulation/results/benchmark_context_significance.json
+

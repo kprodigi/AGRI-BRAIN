@@ -1,0 +1,39 @@
+CARBON ACCOUNTING FOR TRANSPORT OPERATIONS
+Document ID: KB-CAT-008
+Effective Date: 2025-09-01
+Regulatory Basis: GHG Protocol Corporate Standard; EPA Emission Factors for GHG Inventories
+
+1. BASE EMISSION FACTORS
+
+The standard emission factor for refrigerated truck transport is 0.12 kg CO2-equivalent
+per vehicle-kilometer (vkm). This factor covers Scope 1 direct emissions from diesel
+combustion and Scope 2 indirect emissions from auxiliary refrigeration unit power draw.
+The factor is derived from EPA emission factors for heavy-duty vehicles and adjusted for
+the additional fuel consumption of transport refrigeration units operating at a setpoint
+of 4 degrees Celsius.
+
+2. AMBIENT TEMPERATURE DEGRADATION
+
+When ambient temperature exceeds 35 degrees Celsius, refrigeration unit coefficient of
+performance (COP) degrades significantly. Under these conditions, the effective emission
+factor increases by 40 percent to approximately 0.168 kg CO2-eq per vkm. This degradation
+must be applied automatically by the carbon accounting module when ambient temperature
+sensor data or regional weather feeds indicate sustained high-temperature conditions.
+
+3. SCOPE CLASSIFICATION
+
+Fuel combustion by owned or leased vehicles falls under Scope 1. Purchased electricity
+for electric refrigeration units and depot charging falls under Scope 2. Outsourced
+carrier emissions are Scope 3 Category 4 (upstream transportation) per the GHG Protocol
+Corporate Value Chain Standard.
+
+4. REQUIRED ACTIONS
+
+Action 1: Calculate per-shipment carbon intensity by multiplying route distance by the
+applicable emission factor (base or heat-adjusted). Record the result in the shipment
+carbon ledger and attach it to the corresponding blockchain audit record.
+
+Action 2: Aggregate monthly emissions by scope category and submit to the cooperative
+sustainability office for inclusion in the annual GHG inventory report. Any month where
+total transport emissions exceed the quarterly budget by more than 10 percent must
+trigger a corrective action review within 14 days.

@@ -1,0 +1,38 @@
+SOCIAL LIFE CYCLE ASSESSMENT: LABOR FAIRNESS STANDARDS
+Document ID: KB-SLF-005
+Effective Date: 2025-09-01
+Regulatory Basis: ILO Conventions; UNEP-SETAC Guidelines for Social LCA of Products
+
+1. SHIFT DURATION LIMITS BY ROUTING PATHWAY
+
+Cold chain logistics operators are subject to maximum shift durations of 10 to 12 hours,
+consistent with the U.S. Department of Transportation Hours of Service regulations
+(49 CFR Part 395). Drivers must take a mandatory 30-minute rest break after 8 consecutive
+hours of driving. Exceeding the 12-hour ceiling triggers an automatic routing penalty
+in the SLCA labor fairness score.
+
+Local redistribution routes, including food bank deliveries and community distribution
+center transfers, should be planned within 4 to 6 hour shift windows. This range
+balances operational efficiency with reduced worker fatigue and supports equitable
+labor conditions as outlined in the ILO Decent Work framework.
+
+2. LABOR FAIRNESS SCORING
+
+The SLCA labor fairness subscore is calculated on a 0 to 1 scale using the following
+criteria:
+
+  - Shift length at or below 8 hours: score 1.00
+  - Shift length between 8 and 10 hours: score 0.80
+  - Shift length between 10 and 12 hours: score 0.60
+  - Shift length exceeding 12 hours: score 0.30
+
+3. REQUIRED ACTIONS
+
+Action 1: Record actual shift start and end times for all routing personnel in the
+Labor Compliance Log (LCL-500). Cross-reference with GPS telemetry data to verify
+reported hours. Discrepancies exceeding 30 minutes must be flagged for supervisory
+review within 48 hours.
+
+Action 2: Conduct quarterly labor fairness audits per UNEP-SETAC methodology, including
+worker interviews, payroll verification, and rest period compliance checks. Submit
+audit summaries to the cooperative governance board for review.

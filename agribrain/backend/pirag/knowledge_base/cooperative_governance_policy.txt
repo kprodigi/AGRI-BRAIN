@@ -1,0 +1,11 @@
+Cooperative Governance Policy for Multi-Agent Supply Chain Coordination
+
+Quorum Requirements: Governance decisions require a minimum quorum of 3 participating agents. Each agent (farm, processor, cooperative, distributor, recovery) has one vote. The cooperative agent serves as the coordination facilitator but does not have veto authority.
+
+Voting Periods: Routine governance decisions (parameter adjustments, policy updates) have a 24-hour voting period. Emergency decisions (rerouting under critical conditions, capacity reallocation during outages) have a 4-hour expedited voting period. Simple majority (greater than 50 percent of quorum) is required for approval.
+
+SLCA Performance Thresholds: Agents maintaining a composite SLCA score above 0.70 over a rolling 24-hour window receive governance rewards (increased decision autonomy and priority routing access). Agents with composite SLCA scores below 0.30 are subject to governance slashing (reduced autonomy and mandatory coordinator oversight). Scores between 0.30 and 0.70 maintain standard operating parameters.
+
+Parameter Bounds: Autonomous agents may adjust routing parameters within governance-approved bounds. Temperature threshold adjustments are limited to plus or minus 1 degree Celsius from FDA baseline. Inventory reallocation is capped at 20 percent of current levels per decision cycle. Carbon budget adjustments require explicit cooperative approval.
+
+Dispute Resolution: When agents disagree on routing decisions, the cooperative agent facilitates resolution by comparing SLCA projections for each proposed action. The action with the highest projected composite SLCA score is selected, with ties broken in favor of the action that minimizes spoilage risk.

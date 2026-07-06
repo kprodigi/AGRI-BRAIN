@@ -1,0 +1,26 @@
+
+import hashlib
+from typing import List
+def _h(x: bytes) -> bytes:
+    return hashlib.sha256(x).digest()
+def merkle_root(hashes_hex: List[str]) -> str:
+    if not hashes_hex:
+        return ""
+    nodes = [bytes.fromhex(h) for h in hashes_hex]
+    while len(nodes) > 1:
+        nxt = []
+        it = iter(nodes)
+        for a in it:
+            try:
+                b = next(it)
+            except StopIteration:
+                b = a
+            nxt.append(_h(min(a, b) + max(a, b)))
+        nodes = nxt
+    return nodes[0].hex()
+
+
+# Note: On-chain anchoring of Merkle roots is performed by the governance
+# router (contracts/hardhat/contracts/ProvenanceRegistry.sol), not by this
+# module directly. This module computes the root hash; the router calls
+# ProvenanceRegistry.anchor() when a decision rationale is finalized.

@@ -1,0 +1,27 @@
+{
+  "n_changed": 1991,
+  "n_seeds": 20,
+  "scenarios": [
+    "heatwave",
+    "overproduction",
+    "cyber_outage",
+    "adaptive_pricing"
+  ],
+  "complementarity_index": 0.7498744349573079,
+  "bootstrap_ci": [
+    0.7215261627906977,
+    0.776676136109988
+  ],
+  "bootstrap_ci_above_0p5": true,
+  "cells": {
+    "mcp_only": 0.0010045203415369162,
+    "pirag_only": 0.5765946760421898,
+    "synergy": 0.17227523857358112,
+    "redundant": 0.2501255650426921
+  },
+  "phi_mcp_pirag": 0.25899895352554875,
+  "phi_perm_p_two_sided": 9.999000099990002e-05,
+  "C_independence_baseline": 0.7923856752674832,
+  "C_perm_p_upper": 1.0,
+  "n_perm": 10000
+}

@@ -1,0 +1,77 @@
+"""Compatibility router for legacy decision-endpoint shapes.
+
+The 2026-05 consolidation collapsed the parallel decision implementation
+into :func:`src.app.decide`. This router stays as a thin coercion layer
+that maps legacy GET/POST/query payloads onto the canonical request
+shape so existing dashboards and scripts keep working.
+"""
+from __future__ import annotations
+
+import json
+from typing import Any, Dict, Optional
+
+from fastapi import APIRouter, Request
+from pydantic import BaseModel
+
+from src.routers.decide import DecideRequest, decide
+
+router = APIRouter()
+
+
+def _coerce(payload: Dict[str, Any] | None) -> DecideRequest:
+    d = dict(payload or {})
+    kwargs: Dict[str, Any] = {
+        "agent": str(d.get("agent") or d.get("agent_id") or "farm"),
+        "role": str(d.get("role") or ""),
+        "mode": d.get("mode", "agribrain"),
+        "deterministic": d.get("deterministic", True),
+    }
+    if d.get("step") is not None:
+        kwargs["step"] = int(d["step"])
+    for fld in ("inventory_units", "demand_units", "temp_c", "volatility"):
+        if d.get(fld) is not None:
+            kwargs[fld] = float(d[fld])
+    return DecideRequest(**kwargs)
+
+
+async def _payload(req: Request) -> Dict[str, Any]:
+    data: Dict[str, Any] = {}
+    if req.method in ("POST", "PUT", "PATCH"):
+        try:
+            data = await req.json()
+        except (json.JSONDecodeError, ValueError):
+            pass
+    for k, v in req.query_params.items():
+        data.setdefault(k, v)
+    return data
+
+
+@router.api_route("/decision/take",      methods=["GET", "POST"])
+@router.api_route("/decisions/take",     methods=["GET", "POST"])
+@router.api_route("/decision",           methods=["GET", "POST"])
+@router.api_route("/case/decide",        methods=["GET", "POST"])
+@router.api_route("/api/decision/take",  methods=["GET", "POST"])
+async def legacy_any(req: Request):
+    """Coerce a legacy payload into the canonical DecideRequest and dispatch."""
+    return decide(_coerce(await _payload(req)))
+
+
+# ---------------------------------------------------------------------------
+# /sim/validate -- feasibility guard endpoint (piRAG feasibility_guard.py)
+# ---------------------------------------------------------------------------
+class SimValidateRequest(BaseModel):
+    answer: str = ""
+    context: Optional[Dict[str, Any]] = None
+
+
+@router.post("/sim/validate")
+def sim_validate(req: SimValidateRequest):
+    """Basic feasibility check used by the piRAG feasibility guard.
+
+    Returns feasible=true unless the answer contains obviously out-of-range
+    numeric values relative to the context constraints.
+    """
+    from pirag.guards.feasibility_guard import within_ranges
+    constraints = (req.context or {}).get("constraints", {})
+    feasible = within_ranges(req.answer, constraints)
+    return {"feasible": feasible}

@@ -1,0 +1,284 @@
+{
+  "_meta": {
+    "generated_at": "2026-06-06T08:58:37.057129+00:00",
+    "git_commit": "unknown",
+    "benchmark_run": "5ad0256_20260605_2203",
+    "n_seeds": 20,
+    "sesoi_ari": 0.01,
+    "alpha": 0.05,
+    "split_rng_seed": 20260606,
+    "source": "benchmark_seeds/<run>/seed_*.json (ari field)",
+    "method": "TOST equivalence on paired add-second-channel diffs (SESOI=0.01 ARI = H3 pre-reg threshold) + cross-fitted moderation slope (coupling-free)"
+  },
+  "by_scenario": {
+    "heatwave": {
+      "n_seeds": 20,
+      "standalone_mcp": {
+        "mean": 0.011248419037978102,
+        "ci_low": 0.009731504976122416,
+        "ci_high": 0.012765333099833789,
+        "n": 20
+      },
+      "standalone_pirag": {
+        "mean": 0.008415952739988153,
+        "ci_low": 0.007414616540165105,
+        "ci_high": 0.009417288939811202,
+        "n": 20
+      },
+      "full_gain": {
+        "mean": 0.011591179192531215,
+        "ci_low": 0.005466473591571304,
+        "ci_high": 0.017715884793491128,
+        "n": 20
+      },
+      "add_pirag_on_mcp": {
+        "verdict": "equivalent",
+        "n": 20,
+        "mean_diff": 0.0003427601545531123,
+        "ci_low": -0.005688628638565605,
+        "ci_high": 0.00637414894767183,
+        "p_two_sided": 0.9065673081210899,
+        "p_tost": 0.0016770935946833034,
+        "sesoi": 0.01
+      },
+      "add_mcp_on_pirag": {
+        "verdict": "equivalent",
+        "n": 20,
+        "mean_diff": 0.003175226452543062,
+        "ci_low": -0.0033035511404871324,
+        "ci_high": 0.009654004045573256,
+        "p_two_sided": 0.3178767772638579,
+        "p_tost": 0.019995979707583395,
+        "sesoi": 0.01
+      }
+    },
+    "overproduction": {
+      "n_seeds": 20,
+      "standalone_mcp": {
+        "mean": 0.012784630263239272,
+        "ci_low": 0.011440946092592693,
+        "ci_high": 0.014128314433885852,
+        "n": 20
+      },
+      "standalone_pirag": {
+        "mean": 0.006842217081429602,
+        "ci_low": 0.005801482087549994,
+        "ci_high": 0.007882952075309209,
+        "n": 20
+      },
+      "full_gain": {
+        "mean": 0.01581739486900628,
+        "ci_low": 0.010577640879499303,
+        "ci_high": 0.021057148858513255,
+        "n": 20
+      },
+      "add_pirag_on_mcp": {
+        "verdict": "equivalent",
+        "n": 20,
+        "mean_diff": 0.0030327646057670076,
+        "ci_low": -0.002016651877680209,
+        "ci_high": 0.008082181089214224,
+        "p_two_sided": 0.22394969748637147,
+        "p_tost": 0.004712157166880627,
+        "sesoi": 0.01
+      },
+      "add_mcp_on_pirag": {
+        "verdict": "additive",
+        "n": 20,
+        "mean_diff": 0.008975177787576677,
+        "ci_low": 0.003938752161151997,
+        "ci_high": 0.014011603414001355,
+        "p_two_sided": 0.0014196555352721644,
+        "p_tost": 0.337485775456848,
+        "sesoi": 0.01
+      }
+    },
+    "cyber_outage": {
+      "n_seeds": 20,
+      "standalone_mcp": {
+        "mean": 0.003309931860944665,
+        "ci_low": 0.0023723354709258987,
+        "ci_high": 0.004247528250963431,
+        "n": 20
+      },
+      "standalone_pirag": {
+        "mean": 0.00662800141072799,
+        "ci_low": 0.004899692955073718,
+        "ci_high": 0.008356309866382264,
+        "n": 20
+      },
+      "full_gain": {
+        "mean": 0.01346734525117183,
+        "ci_low": 0.009414878892930353,
+        "ci_high": 0.017519811609413308,
+        "n": 20
+      },
+      "add_pirag_on_mcp": {
+        "verdict": "additive",
+        "n": 20,
+        "mean_diff": 0.010157413390227165,
+        "ci_low": 0.006158803948557138,
+        "ci_high": 0.014156022831897193,
+        "p_two_sided": 3.937619149345177e-05,
+        "p_tost": 0.5324032240577944,
+        "sesoi": 0.01
+      },
+      "add_mcp_on_pirag": {
+        "verdict": "additive",
+        "n": 20,
+        "mean_diff": 0.00683934384044384,
+        "ci_low": 0.00295091325315429,
+        "ci_high": 0.01072777442773339,
+        "p_two_sided": 0.0015855155202636171,
+        "p_tost": 0.05259894292310377,
+        "sesoi": 0.01
+      }
+    },
+    "adaptive_pricing": {
+      "n_seeds": 20,
+      "standalone_mcp": {
+        "mean": 0.01591758736390809,
+        "ci_low": 0.013938408830037552,
+        "ci_high": 0.01789676589777863,
+        "n": 20
+      },
+      "standalone_pirag": {
+        "mean": 0.014570815464564684,
+        "ci_low": 0.012377515994513618,
+        "ci_high": 0.016764114934615753,
+        "n": 20
+      },
+      "full_gain": {
+        "mean": 0.025064210177127743,
+        "ci_low": 0.020405275665115682,
+        "ci_high": 0.029723144689139804,
+        "n": 20
+      },
+      "add_pirag_on_mcp": {
+        "verdict": "additive",
+        "n": 20,
+        "mean_diff": 0.009146622813219651,
+        "ci_low": 0.003616379416277131,
+        "ci_high": 0.014676866210162173,
+        "p_two_sided": 0.0026126599482646003,
+        "p_tost": 0.3751202051944834,
+        "sesoi": 0.01
+      },
+      "add_mcp_on_pirag": {
+        "verdict": "additive",
+        "n": 20,
+        "mean_diff": 0.010493394712563059,
+        "ci_low": 0.005408167518084269,
+        "ci_high": 0.015578621907041849,
+        "p_two_sided": 0.0003700401088635301,
+        "p_tost": 0.5793826527131402,
+        "sesoi": 0.01
+      }
+    },
+    "baseline": {
+      "n_seeds": 20,
+      "standalone_mcp": {
+        "mean": 0.016969134252839756,
+        "ci_low": 0.014847273339396184,
+        "ci_high": 0.019090995166283327,
+        "n": 20
+      },
+      "standalone_pirag": {
+        "mean": 0.016524390739663802,
+        "ci_low": 0.014555394612602409,
+        "ci_high": 0.018493386866725196,
+        "n": 20
+      },
+      "full_gain": {
+        "mean": 0.03185430289125994,
+        "ci_low": 0.02663594765740168,
+        "ci_high": 0.0370726581251182,
+        "n": 20
+      },
+      "add_pirag_on_mcp": {
+        "verdict": "additive",
+        "n": 20,
+        "mean_diff": 0.014885168638420182,
+        "ci_low": 0.008967161763494835,
+        "ci_high": 0.02080317551334553,
+        "p_two_sided": 4.419212635706883e-05,
+        "p_tost": 0.949872661177316,
+        "sesoi": 0.01
+      },
+      "add_mcp_on_pirag": {
+        "verdict": "additive",
+        "n": 20,
+        "mean_diff": 0.015329912151596136,
+        "ci_low": 0.009963647151560763,
+        "ci_high": 0.02069617715163151,
+        "p_two_sided": 9.385193563861355e-06,
+        "p_tost": 0.9742899208859714,
+        "sesoi": 0.01
+      }
+    }
+  },
+  "pooled_perturbed": {
+    "scenarios": [
+      "heatwave",
+      "overproduction",
+      "cyber_outage",
+      "adaptive_pricing"
+    ],
+    "add_pirag_on_mcp": {
+      "verdict": "additive_small",
+      "n": 80,
+      "mean_diff": 0.005669890240941734,
+      "ci_low": 0.003072949173252188,
+      "ci_high": 0.008266831308631279,
+      "p_two_sided": 4.090884528930357e-05,
+      "p_tost": 0.0006844536723592218,
+      "sesoi": 0.01
+    },
+    "add_mcp_on_pirag": {
+      "verdict": "additive_small",
+      "n": 80,
+      "mean_diff": 0.007370785698281659,
+      "ci_low": 0.004867002911689075,
+      "ci_high": 0.009874568484874243,
+      "p_two_sided": 1.0194742118125978e-07,
+      "p_tost": 0.019909717627842445,
+      "sesoi": 0.01
+    }
+  },
+  "moderation": {
+    "pirag_marginal_vs_mcp_strength": {
+      "crossfit": {
+        "slope": 0.2049623922608319,
+        "intercept": 0.004394328488777139,
+        "p_value": 0.6025891779219845,
+        "r2": 0.007202793130260181,
+        "n": 40
+      },
+      "naive_coupled_bound": {
+        "slope": -0.43467993929473897,
+        "intercept": 0.010371015566133748,
+        "p_value": 0.06207062789020878,
+        "r2": 0.043922570510419943,
+        "n": 80
+      },
+      "interpretation": "slope ~ -1 substitution/strong saturation; slope ~ 0 independent additivity; crossfit breaks the shared-term coupling, naive is a coupling-inflated bound"
+    },
+    "mcp_marginal_vs_pirag_strength": {
+      "crossfit": {
+        "slope": 0.44788821009375646,
+        "intercept": 0.003833882732330057,
+        "p_value": 0.4698111812196621,
+        "r2": 0.013833177961764505,
+        "n": 40
+      },
+      "naive_coupled_bound": {
+        "slope": -0.17897101626718004,
+        "intercept": 0.009001971688068992,
+        "p_value": 0.5166779397729789,
+        "r2": 0.005411235504002334,
+        "n": 80
+      },
+      "interpretation": "slope ~ -1 substitution/strong saturation; slope ~ 0 independent additivity; crossfit breaks the shared-term coupling, naive is a coupling-inflated bound"
+    }
+  }
+}

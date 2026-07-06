@@ -1,0 +1,43 @@
+DEMAND VOLATILITY RESPONSE PROTOCOL
+Document ID: KB-DVR-011
+Effective Date: 2025-09-01
+Regulatory Basis: ISO 31000 Risk Management Framework; FSMA Preventive Controls Rule
+
+1. DETECTION METHODOLOGY
+
+Demand volatility is monitored using a rolling 30-day mean with Bollinger Band analysis.
+The volatility threshold is set at k=2.0 standard deviations from the rolling mean. When
+observed demand exceeds the upper band (surge condition) or falls below the lower band
+(trough condition), the system enters volatility response mode automatically.
+
+The detection algorithm calculates the rolling mean and standard deviation using
+exponentially weighted moving averages with a half-life of 7 days to ensure
+responsiveness to recent demand shifts while dampening short-term noise.
+
+2. SURGE RESPONSE
+
+When demand exceeds 2 standard deviations above the rolling mean, the routing engine
+shifts to conservative mode with the following adjustments: prioritize cold chain
+pathways for highest-quality product (rho below 0.15), reduce maximum route length
+by 25 percent to minimize transit risk, and increase safety stock allocation at primary
+distribution hubs by 20 percent.
+
+3. TROUGH RESPONSE
+
+When demand falls below 2 standard deviations under the rolling mean, surplus product
+must be redirected to redistribution channels. Activate food bank redistribution for
+all product with rho below 0.30. Accelerate animal feed diversion decisions for product
+approaching the 0.30 threshold to prevent spoilage escalation during the low-demand
+period.
+
+4. REQUIRED ACTIONS
+
+Action 1: Generate a Demand Volatility Alert Report within 1 hour of threshold breach.
+The report must include current demand level, rolling mean, standard deviation, breach
+magnitude, and recommended routing adjustments. Distribute to all routing operators and
+the cooperative governance board.
+
+Action 2: Conduct a post-event demand variance analysis within 7 days of return to
+normal operating range. Document the root cause of volatility, effectiveness of response
+actions, product loss or diversion volumes, and recommended parameter adjustments for
+future events per ISO 31000 continuous improvement requirements.
