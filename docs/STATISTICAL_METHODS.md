@@ -96,7 +96,7 @@ method standard deviation rather than the within-pair difference SD.
   conventional non-significant difference cannot separate "no effect" from
   "underpowered", so we run a paired **two-one-sided-test** against an
   equivalence margin SESOI = 0.01 ARI — the same negligible-effect threshold
-  pre-registered for H3 robustness, so the margin is not chosen post hoc. A
+  pre-specified for H3 robustness, so the margin is not chosen post hoc. A
   cell is *equivalent* (a bounded null) only when both one-sided t-tests reject
   at α = 0.05 (`p_tost = max(p_lower, p_upper) < 0.05`); otherwise it is
   *additive* (two-sided p < 0.05 with mean > 0) or *inconclusive*. The

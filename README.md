@@ -74,7 +74,7 @@ and [`paper_benchmark_table.json`](mvp/simulation/results/paper_benchmark_table.
 |---|---|---|
 | **H1 — Integration superiority.** AGRI-BRAIN ARI beats no-context across all 5 scenarios. | ΔARI **+0.012 to +0.032** | Cohen's d_pooled **0.96–2.01**, p_adj < 0.001 |
 | **H2 — Channel complementarity.** piRAG is the dominant standalone router; MCP integrates **synergistically** and adds an exclusive discrete-safety layer (governance overrides, compliance reroutes, outage resilience). | Context decisive on **10.3%** of decisions (41% where active); piRAG-necessary **7.7%**, MCP-necessary **1.7%**, MCP-necessity doubling on its governed events | **Non-redundancy 75.0%** (95% CI [72.2, 77.7]); necessity coupling **φ = +0.26** (p < 10⁻³); each channel beats no-context (p_adj < 0.001) |
-| **H3 — Communication robustness.** Performance degrades < 1% under sensor noise, missing data, telemetry delay, and MCP tool fault. | \|ΔARI\| < **0.01** all five stressors (worst single cell 0.0097) | Pre-registered ≤ 0.01 threshold met |
+| **H3 — Communication robustness.** Performance degrades < 1% under sensor noise, missing data, telemetry delay, and MCP tool fault. | \|ΔARI\| < **0.01** all five stressors (worst single cell 0.0091) | Pre-specified ≤ 0.01 threshold met |
 
 <details>
 <summary><b>H2 in full — the decision-level channel decomposition</b></summary>

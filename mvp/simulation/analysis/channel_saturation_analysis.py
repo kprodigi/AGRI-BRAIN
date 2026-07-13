@@ -19,7 +19,7 @@ envelopes (``benchmark_seeds/<run>/seed_*.json``) -- no re-run required.
                      merely underpowered);
      * inconclusive: neither (underpowered / can't separate from SESOI).
    SESOI = 0.01 ARI -- the same negligible-effect threshold the manuscript
-   pre-registers for H3 robustness, so the margin is not chosen post hoc.
+   pre-specifies for H3 robustness, so the margin is not chosen post hoc.
 
 2. Cross-fitted moderation slope (the saturation mechanism). Saturation
    predicts the second channel's marginal value *shrinks where the first
