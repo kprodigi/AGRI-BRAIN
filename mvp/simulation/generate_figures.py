@@ -3069,7 +3069,7 @@ def fig13_stress_robustness(data=None):
     # Drift (ari_delta) is a paired within-experiment difference, so it is
     # seed-set-independent (no 5-seed-vs-20-seed caveat needed, unlike absolute
     # ARI). Sensor noise is the largest-drift stressor; per-scenario |drift| +/-
-    # SE across the 5 stress seeds, against the pre-registered 0.01 threshold.
+    # SE across the 5 stress seeds, against the pre-specified 0.01 threshold.
     _n_stress = 5
     delta = [abs(float(cell[(s, "sensor_noise")]["ari_delta"])) for s in SCEN]
     derr = [float(cell[(s, "sensor_noise")].get("ari_delta_std", 0) or 0) / np.sqrt(_n_stress) for s in SCEN]

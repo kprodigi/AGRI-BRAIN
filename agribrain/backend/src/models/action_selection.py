@@ -434,7 +434,7 @@ pi(local_redistribute) exceeds pi(cold_chain) by
 redistribution. Stated in probability space rather than raw logits so
 the condition is auditable without reference to the rest of the
 distribution: regulators can verify the policy "overrides only when
-confidence in cold-chain is in the bottom one percent of the
+confidence in cold-chain is in the bottom half a percent of the
 calibration distribution and local-redistribute strongly dominates."
 
 Implementation note: realism recalibration.
@@ -443,8 +443,8 @@ The previous value (0.170329) was the 5th percentile from the original
 SLCA_RHO_BONUS docstrings above), the distribution of pi(cold_chain)
 shifts right (less squeezed toward zero), so a 5th-percentile-derived
 ceiling would now fire on perfectly ordinary decisions. The new value
-(0.05) is intentionally more conservative: it triggers the override
-only on extreme cases (pi(CC) < 5 %), which is the regulator-defensible
+(0.005) is intentionally more conservative: it triggers the override
+only on extreme cases (pi(CC) < 0.5 %), which is the regulator-defensible
 behaviour anyway — an override is a last-resort guardrail, not a
 routine routing mechanism. This change directly addresses the RLE = 1.0
 saturation: with the override firing rarely, agribrain's RLE becomes a
@@ -465,9 +465,9 @@ Implementation note: realism recalibration.
 The previous value (0.394268, the median advantage) was paired with
 the saturated SLCA bonuses; with the softer bonuses the same median
 would correspond to a routine advantage gap and would fire on too many
-decisions. The new value (0.50) keeps the override reserved for cases
-where local-redistribute is unambiguously dominant by half a probability
-unit, matching the regulator-friendly "override only on extreme cases"
+decisions. The new value (0.80) keeps the override reserved for cases
+where local-redistribute is unambiguously dominant by 0.8 probability
+units, matching the regulator-friendly "override only on extreme cases"
 framing. As before, requires unambiguous dominance of local-redistribute,
 not any preference over cold-chain. See calibrate_governance.py.
 """
@@ -494,6 +494,13 @@ def calibrate_governance_thresholds(
        :data:`GOVERNANCE_CC_PROB_CEILING` and
        :data:`GOVERNANCE_LOCAL_ADVANTAGE_MIN` before the main benchmark
        run.
+
+    Note: the shipped GOVERNANCE_CC_PROB_CEILING and
+    GOVERNANCE_LOCAL_ADVANTAGE_MIN are stricter than the values this helper
+    derives at its default quantiles (the ceiling sits below, the advantage
+    floor above); they were tightened by hand so the override stays a
+    last-resort guardrail (see the "realism recalibration" note on each
+    constant).
 
     Parameters
     ----------
