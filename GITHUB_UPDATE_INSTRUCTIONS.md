@@ -1,7 +1,7 @@
 # Publish this prepared repository to GitHub
 
-This folder is already a history-free Git repository on branch `main`. It has
-no configured remote and contains two intended layers:
+The prepared GitHub-ready folder is a history-free Git repository on branch
+`main`. It has no configured remote and contains two intended layers:
 
 1. `simulation-source-d3286ae` tags the byte-identical scientific source sent
    to HPC; and
@@ -9,7 +9,21 @@ no configured remote and contains two intended layers:
    provenance, documentation, and packaging layers. These additions do not
    alter or rerun the preserved simulation algorithms or raw outputs.
 
-Do not initialize it again and do not copy in an older `.git` directory.
+The companion ZIP is a source-only journal/sharing archive and intentionally
+does not contain `.git` metadata. It is not the history- and tag-preserving
+vehicle for a GitHub push. For GitHub, either use the prepared folder directly
+or reconstruct it from the companion Git bundle:
+
+```bash
+git clone AGRI-BRAIN_GitHub_ready_<commit>_<date>.bundle AGRI-BRAIN
+cd AGRI-BRAIN
+git remote remove origin
+```
+
+The clone preserves `main` and `simulation-source-d3286ae`; removing the local
+bundle remote restores the intended no-remote state. Do not initialize the
+prepared folder again, initialize an extracted source-only ZIP as a substitute,
+or copy in an older `.git` directory.
 
 ## 1. Verify the prepared repository
 

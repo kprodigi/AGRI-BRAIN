@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate a fresh staged figure set and transactionally promote its files."""
+"""Validate a newly staged figure set and transactionally promote its files."""
 from __future__ import annotations
 
 import argparse
@@ -122,7 +122,7 @@ def main(argv: list[str] | None = None) -> int:
         source_commit=args.source_commit,
         run_tag=args.run_tag,
     )
-    print("[PASS] fresh decoded figure set promoted as one validated transaction")
+    print("[PASS] newly decoded figure set promoted as one validated transaction")
     return 0
 
 

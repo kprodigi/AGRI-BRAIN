@@ -182,6 +182,12 @@ retrieval, outcome/reward equations, scenarios, stochastic streams, forecast
 inputs, stress exposure, or ablation definitions requires a fresh simulation
 run under a new source commit and run tag. Deterministic replay may be used to
 verify that analyses and rendering reproduce unchanged, hash-verified raw
-artifacts, but a shippable release may not mix simulation and publication
-commits. Any code or manuscript correction requires the complete pipeline to
-be rerun from one clean source snapshot.
+artifacts. A shippable release may use either one clean source identity for the
+complete pipeline or the narrowly authorized dual-provenance publication-only
+recovery in `docs/PUBLICATION_RECOVERY.md`. Recovery requires byte-preserved
+completed simulation outputs, verified failed-publisher accounting, distinct
+simulation and publication commit/tree identities, `simulation_rerun: false`,
+and all recovery plus combined-submission validators. A change to simulation
+semantics or raw outputs still requires the affected simulation pipeline to be
+rerun; deterministic publication, validation, or manuscript corrections do
+not authorize changing the preserved simulation evidence.

@@ -16,8 +16,9 @@ version: "1.3.0"
 # drift. Add ``date-released`` only when the corresponding v<X.Y.Z>
 # tag is actually pushed; this methodology-aligned source is pre-results.
 #
-# After a fresh validated run exists, cite the version + source commit SHA
-# from its `artifact_manifest.json` for paper-grade reproducibility.
+# After either accepted evidence mode completes, cite the version, run tag,
+# manifest checksum, and simulation source commit. For authorized recovery,
+# also cite the distinct publication code commit recorded by the manifest.
 license: MIT
 repository-code: "https://github.com/kprodigi/AGRI-BRAIN"
 

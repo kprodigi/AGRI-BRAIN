@@ -76,15 +76,31 @@ steps—not 800 episodes.
 ## Validate newly generated evidence
 
 The historical `2fd7bff` evidence is incompatible with this aligned source.
-After a fresh clean-commit run, checksum and inspect the newly named release
-asset, extract a validation copy into `mvp/simulation/results/`, and run:
+After checksum inspection and extraction into `mvp/simulation/results/`, use
+the following commands for fresh single-provenance evidence:
 
 ```bash
 python mvp/simulation/analysis/verify_manifest.py --strict-commit
 python mvp/simulation/validation/validate_publication_artifacts.py
 ```
 
-## Regenerate figures from preserved values
+For authorized recovery, run from the exact publication-code checkout and pass
+the canonical receipt to both validators:
+
+```bash
+RUN_TAG=<run-tag>
+RECOVERY_RECEIPT="mvp/simulation/results/publication_recovery_receipts/$RUN_TAG.json"
+python mvp/simulation/analysis/verify_manifest.py --strict-commit \
+  --recovery-receipt "$RECOVERY_RECEIPT"
+python mvp/simulation/validation/validate_publication_artifacts.py \
+  --recovery-receipt "$RECOVERY_RECEIPT"
+```
+
+## Regenerate figures from fresh preserved values
+
+This simplified manual replay is for fresh single-provenance evidence only.
+For authorized recovery, consume the figures emitted and validated by the
+recovery publisher rather than omitting its required receipt-bound environment.
 
 ```bash
 export STRICT_VALIDATION=1
@@ -96,7 +112,7 @@ export FIGURE_OUTPUT_DIR=/absolute/path/to/derived_figures
 python mvp/simulation/regenerate_figures_from_cache.py
 ```
 
-This route does not rerun the expensive seed simulations. The fresh validated
+This route does not rerun the expensive seed simulations. The validated
 archive remains the evidence source. Identity validation and the complete
 20-seed panel are mandatory; relabeled or reformatted figures belong in the
 explicit separate derived-output directory.

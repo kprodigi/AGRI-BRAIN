@@ -58,9 +58,12 @@ This source tree is aligned to the locked protocol in
 [EXPERIMENT_PROTOCOL.md](EXPERIMENT_PROTOCOL.md). Its changes affect simulation
 semantics, so results from the historical `2fd7bff` run must not be attributed
 to this code. No confirmatory benchmark-effect, H1-H3, or structural-
-sensitivity result is currently claimed from this tree. A new result set is
-accepted only when it is generated from a clean commit of this source and
-passes the raw-input, inference, ledger, environment, and artifact validators.
+sensitivity result is currently claimed from this tree. A result set is
+accepted only through either a normal fresh single-commit run or the narrowly
+authorized dual-provenance publication-only recovery described in
+[docs/PUBLICATION_RECOVERY.md](docs/PUBLICATION_RECOVERY.md). In both cases it
+must pass the raw-input, inference, ledger, environment, artifact, and combined
+submission validators.
 
 The locked core design uses five scenarios and 20 paired seeds. Learned arms
 run three adaptation episodes followed by a frozen evaluation episode; Static

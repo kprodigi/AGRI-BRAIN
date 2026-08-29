@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Replay every figure from on-disk artifacts using the same clean source.
 
-This is a deterministic same-commit verification/rendering step, not a path
-for applying changed figure code to old simulation artifacts. The executing
-checkout must be clean outside the run-output tree and its HEAD must equal the
-simulation source commit. Direct execution of ``generate_figures.py`` is
-retired and fails closed.
+This is a deterministic verification/rendering step, not an unrestricted path
+for applying changed figure code to old simulation artifacts. Fresh evidence
+requires a clean executing checkout whose HEAD equals the simulation source
+commit. The narrowly authorized recovery path instead requires the complete
+canonical recovery receipt plus distinct simulation/publication identities and
+a clean checkout at the publication code commit. Direct execution of
+``generate_figures.py`` is retired and fails closed.
 
 Two on-disk caches drive every panel:
 

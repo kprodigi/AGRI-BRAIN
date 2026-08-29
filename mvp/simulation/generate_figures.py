@@ -1055,7 +1055,7 @@ def _fig4_cyber_inner(data):
     # during-window steps 2000x and take the std of the bootstrap
     # level distribution. The pre-vs-during delta construction was
     # retired in 2026-05 because levels avoid a headroom-dependent delta
-    # interpretation. Any cross-method ordering is supplied only by the fresh
+    # interpretation. Any cross-method ordering is supplied only by validated
     # validated inputs; it is not assumed by this plotting routine.
     ari_during_se: list[float] = []
     waste_during_se: list[float] = []
@@ -1558,7 +1558,7 @@ def _remap_legacy_rle_variants(bench: dict | None) -> dict | None:
     Only the
     EU-hierarchy + severity-weighted form survived the simplification —
     it now lives under the plain key ``rle`` in
-    ``resilience.compute_rle`` and in fresh aggregator output.
+    ``resilience.compute_rle`` and in current aggregator output.
 
     For backward compatibility with summary files written before the
     simplification, this helper detects the legacy format (presence of

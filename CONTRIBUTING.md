@@ -34,16 +34,26 @@ and Slurm procedures.
 - **Interactive application:** API, dashboard, or optional contract behavior
   that does not alter the publication benchmark. State why the benchmark is
   unaffected and add focused tests.
-- **Scientific implementation:** policy logits, peer messaging, context
-  channels, PINN behavior, outcomes, stochastic streams, scenarios, learning,
-  hypotheses, statistics, figures, or evidence packaging. These changes
-  invalidate affected numerical results and require a new commit-bound run.
+- **Simulation or statistical semantics:** policy logits, peer messaging,
+  context channels, PINN behavior, outcomes, stochastic streams, scenarios,
+  learning, hypotheses, estimands, or inferential rules. These changes
+  invalidate affected numerical results and require a fresh commit-bound
+  simulation treatment.
+- **Deterministic publication or validation:** aggregation, figure rendering,
+  validation, provenance, or evidence packaging that leaves simulation
+  semantics and preserved raw outputs unchanged. Existing completed workers
+  may be republished only through the narrowly authorized, byte-preserved
+  dual-provenance recovery in `docs/PUBLICATION_RECOVERY.md`; otherwise rerun
+  the complete affected pipeline.
 - **Publication evidence:** generated tables, figures, or summaries. Accept
-  these only from the canonical HPC publisher after every validator passes.
+  these only from a canonical HPC publisher after every validator passes.
 
 Do not relabel a scientific change as documentation-only. A change that can
-alter a simulated decision, endpoint, test result, or evidence byte is a
-scientific implementation change.
+alter a simulated decision, raw endpoint, hypothesis, estimand, or inferential
+result is a simulation/statistical-semantic change. A deterministic publisher
+change that alters derived evidence bytes must be separately provenance-bound;
+it neither authorizes editing raw outputs nor by itself implies a simulation
+rerun.
 
 ## Checks before opening a pull request
 

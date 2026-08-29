@@ -98,27 +98,61 @@ Retrieval-only arm.
 
 The historical `2fd7bff` archive is not compatible with this
 methodology-aligned source. Do not use it to validate or populate results in
-this tree. A new treatment must be run from a clean commit first.
+this tree. Use only a methodology-aligned treatment produced from its recorded
+clean simulation-source commit. For the currently preserved completed workers,
+acceptance additionally requires the authorized publication-only recovery and
+combined validation boundary described above.
 
 For a newly generated archive, inspect its member names and verify the
-run-issued SHA-256 before extraction. Then validate literal bytes, membership,
-schemas, H1/H2 inference, H3 equivalence, and retained evaluation ledgers:
+run-issued SHA-256 before extraction. For fresh single-provenance evidence,
+validate literal bytes and semantics with:
 
 ```bash
 python mvp/simulation/analysis/verify_manifest.py --strict-commit
 python mvp/simulation/validation/validate_publication_artifacts.py
-python hpc/validate_decision_ledgers.py
 ```
 
-The manifest's simulation source commit must exactly equal the clean commit
-used by the new run. Any mismatch is a validation failure.
+For authorized recovery, run from the exact publication-code checkout and pass
+the canonical extracted recovery receipt explicitly to both validators:
+
+```bash
+RUN_TAG=<run-tag>
+RESULTS_DIR=mvp/simulation/results
+RECOVERY_RECEIPT="$RESULTS_DIR/publication_recovery_receipts/$RUN_TAG.json"
+python mvp/simulation/analysis/verify_manifest.py --strict-commit \
+  --recovery-receipt "$RECOVERY_RECEIPT"
+python mvp/simulation/validation/validate_publication_artifacts.py \
+  --recovery-receipt "$RECOVERY_RECEIPT"
+```
+
+For either mode, validate the retained final-evaluation ledgers with the exact
+run tag recorded in the manifest:
+
+```bash
+RUN_TAG=<run-tag>
+RESULTS_DIR=mvp/simulation/results
+python hpc/validate_decision_ledgers.py \
+  --ledger-root "$RESULTS_DIR/decision_ledger_per_seed/$RUN_TAG" \
+  --seed-root "$RESULTS_DIR/benchmark_seeds/$RUN_TAG"
+```
+
+For a fresh run, the manifest's simulation source commit must exactly equal the
+clean commit used by that run. For authorized recovery, the receipts and
+combined evidence must instead preserve both the original
+`simulation_source_commit` and the distinct clean `publication_code_commit`,
+with the run tag bound to the former and `simulation_rerun: false`. Any missing
+identity, unexpected equality/difference for the selected evidence mode, or
+commit mismatch is a validation failure.
 
 ## 6. Regenerate figures and tables from validated evidence
 
-After extracting and validating an accepted fresh or authorized-recovery
-evidence archive, render only into a
-separate derived-output directory. Substitute the source commit and run tag
-recorded in that archive's manifest:
+The manual replay command below applies only to accepted fresh,
+single-provenance evidence and its exact clean simulation-source checkout. For
+authorized recovery, use the figures emitted and validated by the recovery
+publisher; do not invoke the simplified replay without its complete canonical
+receipt and dual-provenance environment. For fresh replay, render only into a
+separate derived-output directory and substitute the source commit and run tag
+recorded in the manifest:
 
 ```bash
 export STRICT_VALIDATION=1
