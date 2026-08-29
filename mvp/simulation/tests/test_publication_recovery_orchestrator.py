@@ -32,7 +32,7 @@ def test_dual_recovery_orchestrator_holds_authorizes_then_releases() -> None:
     assert '"afterok:${CORE_RECOVERY_JOB}:${STRUCTURAL_RECOVERY_JOB}"' in script
     assert '"afterok:${CORE_RECOVERY_JOB},afterok:${STRUCTURAL_RECOVERY_JOB}"' in script
     assert r"\(unfulfilled\)" in script and r"\(satisfied\)" in script
-    assert "SLURM_STATE_MAX_ATTEMPTS=30" in script
+    assert "SLURM_STATE_MAX_ATTEMPTS=120" in script
     assert "SLURM_STATE_RETRY_SECONDS=1" in script
     assert script.count("attempt <= SLURM_STATE_MAX_ATTEMPTS") == 3
     assert script.count('sleep "$SLURM_STATE_RETRY_SECONDS"') == 3
