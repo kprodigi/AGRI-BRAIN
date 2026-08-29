@@ -39,61 +39,82 @@ STRUCTURAL_RECOVERY_RECEIPT=""
 STRUCTURAL_CANONICAL_RAW_CREATED=false
 STRUCTURAL_CANONICAL_RECEIPT_CREATED=false
 RELEASE_ATTEMPTED=false
+SLURM_STATE_MAX_ATTEMPTS=30
+SLURM_STATE_RETRY_SECONDS=1
 require_user_held_job() {
     local job_id="$1"
-    local record
-    record="$(scontrol show job -o "$job_id")" || return 1
-    case " $record " in
-        *" JobId=${job_id} "*" JobState=PENDING "*" Reason=JobHeldUser "*) ;;
-        *)
-            echo "BLOCK: recovery job ${job_id} is not PENDING/User-held."
-            return 1
-            ;;
-    esac
+    local record=""
+    local attempt
+    for ((attempt = 1; attempt <= SLURM_STATE_MAX_ATTEMPTS; attempt++)); do
+        if record="$(scontrol show job -o "$job_id" 2>/dev/null)"; then
+            case " $record " in
+                *" JobId=${job_id} "*" JobState=PENDING "*" Reason=JobHeldUser "*)
+                    return 0
+                    ;;
+            esac
+        fi
+        if [ "$attempt" -lt "$SLURM_STATE_MAX_ATTEMPTS" ]; then
+            sleep "$SLURM_STATE_RETRY_SECONDS"
+        fi
+    done
+    echo "BLOCK: recovery job ${job_id} did not settle as PENDING/User-held."
+    return 1
 }
 require_held_finalizer_dependency() {
-    local record
+    local record=""
     local dependency=""
     local field
     local normalized
+    local attempt
     require_user_held_job "$FINALIZER_RECOVERY_JOB"
-    record="$(scontrol show job -o "$FINALIZER_RECOVERY_JOB")" || return 1
-    for field in $record; do
-        case "$field" in Dependency=*) dependency="${field#Dependency=}";; esac
+    for ((attempt = 1; attempt <= SLURM_STATE_MAX_ATTEMPTS; attempt++)); do
+        dependency=""
+        if record="$(scontrol show job -o "$FINALIZER_RECOVERY_JOB" 2>/dev/null)"; then
+            for field in $record; do
+                case "$field" in Dependency=*) dependency="${field#Dependency=}";; esac
+            done
+            normalized="${dependency//\(unfulfilled\)/}"
+            normalized="${normalized//\(satisfied\)/}"
+            case "$normalized" in
+                "afterok:${CORE_RECOVERY_JOB}:${STRUCTURAL_RECOVERY_JOB}"|\
+                "afterok:${STRUCTURAL_RECOVERY_JOB}:${CORE_RECOVERY_JOB}"|\
+                "afterok:${CORE_RECOVERY_JOB},afterok:${STRUCTURAL_RECOVERY_JOB}"|\
+                "afterok:${STRUCTURAL_RECOVERY_JOB},afterok:${CORE_RECOVERY_JOB}")
+                    return 0
+                    ;;
+            esac
+        fi
+        if [ "$attempt" -lt "$SLURM_STATE_MAX_ATTEMPTS" ]; then
+            sleep "$SLURM_STATE_RETRY_SECONDS"
+        fi
     done
-    normalized="${dependency//\(unfulfilled\)/}"
-    normalized="${normalized//\(satisfied\)/}"
-    case "$normalized" in
-        "afterok:${CORE_RECOVERY_JOB}:${STRUCTURAL_RECOVERY_JOB}"|\
-        "afterok:${STRUCTURAL_RECOVERY_JOB}:${CORE_RECOVERY_JOB}"|\
-        "afterok:${CORE_RECOVERY_JOB},afterok:${STRUCTURAL_RECOVERY_JOB}"|\
-        "afterok:${STRUCTURAL_RECOVERY_JOB},afterok:${CORE_RECOVERY_JOB}") ;;
-        *)
-            echo "BLOCK: combined finalizer lacks the exact two-publisher afterok dependency."
-            return 1
-            ;;
-    esac
+    echo "BLOCK: combined finalizer did not settle with the exact two-publisher afterok dependency."
+    return 1
 }
 require_not_user_held_job() {
     local job_id="$1"
-    local record
-    record="$(scontrol show job -o "$job_id")" || return 1
-    case " $record " in
-        *" JobId=${job_id} "*) ;;
-        *)
-            echo "BLOCK: cannot prove release state for recovery job ${job_id}."
-            return 1
-            ;;
-    esac
-    case " $record " in
-        *" JobState=PENDING "*" Reason=JobHeldUser "*)
-            echo "BLOCK: recovery job ${job_id} remained user-held after release."
-            return 1
-            ;;
-        *)
-            echo "Release transition observed for recovery job ${job_id}."
-            ;;
-    esac
+    local record=""
+    local attempt
+    for ((attempt = 1; attempt <= SLURM_STATE_MAX_ATTEMPTS; attempt++)); do
+        if record="$(scontrol show job -o "$job_id" 2>/dev/null)"; then
+            case " $record " in
+                *" JobId=${job_id} "*)
+                    case " $record " in
+                        *" JobState=PENDING "*" Reason=JobHeldUser "*) ;;
+                        *)
+                            echo "Release transition observed for recovery job ${job_id}."
+                            return 0
+                            ;;
+                    esac
+                    ;;
+            esac
+        fi
+        if [ "$attempt" -lt "$SLURM_STATE_MAX_ATTEMPTS" ]; then
+            sleep "$SLURM_STATE_RETRY_SECONDS"
+        fi
+    done
+    echo "BLOCK: cannot prove the released state for recovery job ${job_id}."
+    return 1
 }
 cancel_held_recovery_jobs_on_failure() {
     local status=$?

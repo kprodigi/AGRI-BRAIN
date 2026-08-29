@@ -32,6 +32,12 @@ def test_dual_recovery_orchestrator_holds_authorizes_then_releases() -> None:
     assert '"afterok:${CORE_RECOVERY_JOB}:${STRUCTURAL_RECOVERY_JOB}"' in script
     assert '"afterok:${CORE_RECOVERY_JOB},afterok:${STRUCTURAL_RECOVERY_JOB}"' in script
     assert r"\(unfulfilled\)" in script and r"\(satisfied\)" in script
+    assert "SLURM_STATE_MAX_ATTEMPTS=30" in script
+    assert "SLURM_STATE_RETRY_SECONDS=1" in script
+    assert script.count("attempt <= SLURM_STATE_MAX_ATTEMPTS") == 3
+    assert script.count('sleep "$SLURM_STATE_RETRY_SECONDS"') == 3
+    assert "did not settle as PENDING/User-held" in script
+    assert "did not settle with the exact two-publisher afterok dependency" in script
 
 
 def test_finalizer_scheduler_authorization_is_persisted_and_consumed() -> None:
