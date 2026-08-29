@@ -5,8 +5,9 @@ no configured remote and contains two intended layers:
 
 1. `simulation-source-d3286ae` tags the byte-identical scientific source sent
    to HPC; and
-2. `main` adds documentation, GitHub community metadata, and non-scientific
-   packaging hygiene without changing simulation behavior.
+2. `main` adds the audited deterministic publication-recovery, validation,
+   provenance, documentation, and packaging layers. These additions do not
+   alter or rerun the preserved simulation algorithms or raw outputs.
 
 Do not initialize it again and do not copy in an older `.git` directory.
 
@@ -19,8 +20,7 @@ git status --short --branch
 git log --oneline --decorate --max-count=5
 git remote -v
 git rev-parse 'simulation-source-d3286ae^{tree}'
-git diff --name-only simulation-source-d3286ae..main -- agribrain mvp hpc \
-  | grep -Ev '\.md$|package(-lock)?\.json$|pyproject\.toml$|pnpm-(lock|workspace)\.yaml$'
+git diff --name-status simulation-source-d3286ae..main
 ```
 
 Expected conditions:
@@ -28,7 +28,9 @@ Expected conditions:
 - branch `main` is clean;
 - no remote is configured;
 - the tag tree is `cef1e66f0b3cadeaf54f7189b080f26810d8212c`;
-- the filtered diff command prints nothing; and
+- the diff is the reviewed recovery/publication inventory described in
+  `SOURCE_PROVENANCE.md`, rather than an assertion that `main` is identical to
+  the simulation tag; and
 - `mvp/simulation/results/` contains only `README.md`.
 
 ## 2. Create an empty GitHub repository
@@ -70,6 +72,8 @@ reviewed `--force-with-lease`, never an unguarded force push.
 
 Pushing this source does not authorize numerical claims. Do not create a
 result-bearing release or upload the historical `2fd7bff` evidence. Wait for
-the fresh methodology-aligned HPC publishers and all validators to complete.
-Then record the exact run identifiers and archive checksum in the release
-notes and follow [docs/RELEASE.md](docs/RELEASE.md).
+both authorized publication-only recovery publishers and the dependent
+combined `READY` validation boundary to complete. This recovery must preserve
+`simulation_rerun: false`. Then record the exact simulation and publication
+identities, run identifiers, archive checksums, and validation status in the
+release notes and follow [docs/RELEASE.md](docs/RELEASE.md).
