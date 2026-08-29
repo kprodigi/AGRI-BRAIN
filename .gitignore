@@ -2,6 +2,18 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Operating-system and generic local logs
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.log
 
 # Working scratch files at repo root (audit-pass tmp scripts, draft
 # manuscript snapshots, sanity-check probes). Strict pattern at the

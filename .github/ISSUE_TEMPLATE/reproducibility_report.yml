@@ -1,0 +1,64 @@
+name: Reproducibility report
+description: Report an evidence, replay, or validation discrepancy
+title: "[Reproducibility]: "
+labels:
+  - reproducibility
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Report exact identities and checksums. Do not attach private logs, credentials, or unpublished data.
+  - type: input
+    id: source
+    attributes:
+      label: Source identity
+      description: Simulation commit and tree, or the public source tag.
+      placeholder: "simulation-source-d3286ae"
+    validations:
+      required: true
+  - type: input
+    id: run_tag
+    attributes:
+      label: Run tag
+      description: Use `not applicable` for source-only validation.
+    validations:
+      required: true
+  - type: input
+    id: checksum
+    attributes:
+      label: Evidence archive SHA-256
+      description: Use `not applicable` when no archive is involved.
+    validations:
+      required: true
+  - type: textarea
+    id: commands
+    attributes:
+      label: Commands run
+      description: Include validator commands and relevant non-secret environment settings.
+    validations:
+      required: true
+  - type: textarea
+    id: discrepancy
+    attributes:
+      label: Observed discrepancy
+      description: State the expected and actual identities, counts, hashes, or outputs.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Runtime environment
+      description: OS, Python version, dependency source, scheduler if applicable, and resource context.
+    validations:
+      required: true
+  - type: checkboxes
+    id: boundary
+    attributes:
+      label: Evidence boundary
+      options:
+        - label: I did not substitute historical `2fd7bff` outputs for methodology-aligned evidence.
+          required: true
+        - label: I preserved the original archive and worked from a verification copy.
+          required: false
+        - label: I removed private infrastructure details and credentials.
+          required: true

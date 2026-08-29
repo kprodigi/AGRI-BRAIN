@@ -32,9 +32,10 @@ finalization additionally requires one clean, commit-exact fixed validator
 checkout before and after archive creation. Post-job scheduler accounting must
 cover every declared simulation worker before either evidence set is accepted.
 
-The complete core-plus-H3 evidence must retain exactly 6,100 lossless episode
-archives, 4,500 adaptation ledgers, and 1,600 final-evaluation ledgers. The
-separate structural evidence must retain exactly 24,500 episode archives,
+The complete core, H3, and secondary-ablation evidence must retain exactly
+6,100 lossless episode archives, 4,500 adaptation ledgers, and 1,600 final-
+evaluation ledgers. The separate structural evidence must retain exactly
+24,500 episode archives,
 18,000 adaptation ledgers, and 6,500 final-evaluation ledgers. Failed-attempt
 artifacts are retained and inventoried separately for diagnosis and audit; they
 must not inflate those canonical counts or successful scheduler accounting.
@@ -50,6 +51,12 @@ schedule, stochastic semantics, or simulation logic requires a fresh affected
 simulation run and a newly validated evidence archive.
 
 ## Version and tag
+
+The committed Python and npm locks are evidence inputs. CI installs and checks
+those locks; it does not compare them with newly resolved upstream versions.
+Upgrade dependencies only in a dedicated reviewed change, regenerate the
+affected lock, run the complete tests, and rerun any affected simulation
+treatment before attaching publication evidence.
 
 Update these together only when cutting a new software version:
 

@@ -44,7 +44,8 @@
    An author-declared RRF-floor gate `g_r` and temporal continuity `tau_c`
    scale only the retrieval contribution; they do not attenuate MCP. The optional
    hard physics-consistency gate is disabled in the locked confirmatory run, so
-   `g_p = 1`; physical consistency is still used for piRAG reranking.
+   `g_p = 1`; physical consistency is still used for institutional-retrieval
+   reranking (internal identifier: piRAG).
    Standard-RAG keeps the author-declared RRF-floor gate but removes query expansion,
    physical-consistency reranking, and the temporal multiplier. No-external-context
    disables both MCP and retrieval while retaining peer communication.

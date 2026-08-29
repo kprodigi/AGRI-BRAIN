@@ -2,7 +2,10 @@
   "name": "agri-brain-hardhat",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=10"
+  },
   "type": "commonjs",
   "scripts": {
     "test": "hardhat test",

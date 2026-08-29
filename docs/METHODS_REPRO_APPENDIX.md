@@ -69,10 +69,11 @@ Decision history is not learner state: each episode receives a fresh in-memory
 The evidence pipeline now retains every executed episode as a lossless,
 content-addressed episode archive, retains a separate adaptation ledger for
 each learned-arm adaptation episode, and retains the final-evaluation JSONL
-ledger used for endpoint recomputation. Across the core and H3 treatments this
-is exactly 6,100 episode archives, 4,500 adaptation ledgers, and 1,600 final
-ledgers. Across the separate structural treatment it is exactly 24,500 episode
-archives, 18,000 adaptation ledgers, and 6,500 final ledgers.
+ledger used for endpoint recomputation. Across the core, H3, and secondary-
+ablation treatments this is exactly 6,100 episode archives, 4,500 adaptation
+ledgers, and 1,600 final ledgers. Across the separate structural treatment it
+is exactly 24,500 episode archives, 18,000 adaptation ledgers, and 6,500 final
+ledgers.
 Stochastic policy-temperature noise, injected context faults, dynamic feedback,
 and blockchain submission are disabled in the confirmatory benchmark unless a
 stress cell explicitly declares the relevant fault.

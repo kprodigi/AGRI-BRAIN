@@ -1,8 +1,9 @@
 # Independent retrieval-ranking evaluation
 
 This interface supports one narrow comparison: the rankings returned by
-`agribrain_standard_rag` (Standard RAG) versus the piRAG retrieval variant in
-`agribrain`. It does **not** evaluate the Adaptive Resilience Index (ARI),
+`agribrain_standard_rag` (Standard RAG) versus the institutional-retrieval
+variant in `agribrain` (internal identifier: piRAG). It does **not** evaluate
+the Adaptive Resilience Index (ARI),
 routing outcomes, or operational performance. Retrieval-quality evidence and
 downstream simulation evidence must remain separate.
 
@@ -77,7 +78,8 @@ percentile bootstrap that resamples queries; its confidence level and number of
 resamples are locked in metadata.
 
 Only nDCG at `primary_cutoff` is inferential. The recorded directional rule is
-satisfied only if the paired piRAG-minus-Standard-RAG interval has a lower
+satisfied only if the paired institutional-retrieval-minus-Standard-RAG
+interval has a lower
 bound above zero. Other metrics and cutoffs are descriptive. Any statement is
 limited to the fixed query set, judged pool, run depth, and assessor cohort.
 Judged-pool recall is not full-corpus recall.

@@ -53,8 +53,9 @@ All endpoints are simulation-derived and are not field measurements.
 The eight primary modes produce 800 retained cells but execute 2,900 episodes.
 Three secondary one-factor ablations add 300 retained cells and 1,200 executed
 episodes. H3 reuses the primary nominal cells and adds 500 retained stressed
-cells and 2,000 executed episodes. Thus the core-plus-H3 total is 1,600 unique
-retained cells, 6,100 executed episodes, and 1,756,800 steps—not 800 episodes.
+cells and 2,000 executed episodes. Thus the core, H3, and secondary-ablation
+total is 1,600 unique retained cells, 6,100 executed episodes, and 1,756,800
+steps—not 800 episodes.
 
 ## Main entry points
 

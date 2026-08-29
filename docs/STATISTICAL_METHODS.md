@@ -206,7 +206,7 @@ concrete clean Git commit.
 
 ## Interpretation limits
 
-- The design validates behavior under synthetic scenarios; it is not external
+- The design evaluates behavior under synthetic scenarios; it is not external
   or field validation.
 - ARI, RLE, social performance, temporal social performance, waste, route
   exposure, and emissions are modeled constructs with declared parameters.

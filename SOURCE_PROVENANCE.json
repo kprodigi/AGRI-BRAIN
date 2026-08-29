@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "status": "methodology_aligned_source_only_no_current_confirmatory_results",
+  "validated_hpc_source": {
+    "commit": "d3286aef28803c715045176008fae6b9c7e3367b",
+    "tree": "cef1e66f0b3cadeaf54f7189b080f26810d8212c"
+  },
+  "public_history_free_snapshot": {
+    "root_commit": "7bcd883ac88b7c3fabf1dee9cdd79db1f69420f2",
+    "tag": "simulation-source-d3286ae",
+    "tree": "cef1e66f0b3cadeaf54f7189b080f26810d8212c",
+    "tree_byte_identity": "exact"
+  },
+  "issued_packages": [
+    {
+      "filename": "AGRI-BRAIN_HPC_ready_d3286ae_20260829_final.bundle",
+      "sha256": "8a0e90ac446cace291ec6addf54cbf4bfcf5d3ded28909787562855541acf224"
+    },
+    {
+      "filename": "AGRI-BRAIN_HPC_ready_d3286ae_20260829.zip",
+      "sha256": "aaab0daf5c2e2c4ae51bd90048ee47e4f94252f9c2e3d2c6967d7f85a3f85665"
+    }
+  ],
+  "public_main_scope": [
+    "documentation",
+    "github_community_metadata",
+    "non_scientific_package_hygiene"
+  ],
+  "historical_2fd7bff_evidence_is_current": false,
+  "current_confirmatory_results_committed": false
+}

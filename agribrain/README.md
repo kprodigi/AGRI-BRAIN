@@ -10,9 +10,9 @@ This directory holds the implementation of the AGRI-BRAIN system:
 
 The canonical README and run guide live at the repository root:
 
-- [Repository README](../README.md) -- architecture overview, claims, screenshots.
+- [Repository README](../README.md) -- project overview, scope, setup, and documentation map.
 - [HOW_TO_RUN.md](../HOW_TO_RUN.md) -- complete setup, environment variables, and walk-throughs.
-- [docs/RELEASE.md](../docs/RELEASE.md) -- release procedure (version bumps, lockfile, DOI, tagging).
+- [docs/RELEASE.md](../docs/RELEASE.md) -- release procedure (versioning, dependency lock, evidence, and tagging).
 - [docs/METHODS_REPRO_APPENDIX.md](../docs/METHODS_REPRO_APPENDIX.md) -- the canonical reproduction recipe.
 
 This stub replaces a previous duplicate quick-start that drifted out of sync

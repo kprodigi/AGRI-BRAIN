@@ -30,13 +30,13 @@ keywords:
   - agri-food supply chain
   - reinforcement learning
   - mechanistic spoilage modelling
-  - sustainability
+  - sustainability simulation
   - social-performance proxy
   - Model Context Protocol
   - MCP
   - institutional retrieval
   - mechanistic retrieval reranking
-  - calculation-trace transparency
+  - context-to-policy traceability
   - typed peer messaging
   - local Merkle provenance
-  - policy attribution
+  - policy-input decomposition

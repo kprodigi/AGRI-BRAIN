@@ -3,7 +3,8 @@
 ## 1. Requirements
 
 - Python 3.11 (the publication workflow rejects other Python minors)
-- Node.js 18 or later for the dashboard only
+- Node.js 22.12 or later for the dashboard only (required by the locked Vite
+  toolchain)
 - Git
 - A Slurm cluster only when running a new full 20-seed treatment
 
@@ -19,6 +20,15 @@ For ordinary development:
 ```bash
 python -m venv .venv
 source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e "agribrain/backend[dev]"
+```
+
+On Windows PowerShell, use:
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -e "agribrain/backend[dev]"
 ```
@@ -45,7 +55,7 @@ Start the dashboard in another terminal:
 
 ```bash
 cd agribrain/frontend
-npm install
+npm ci
 npm run dev
 ```
 
@@ -167,8 +177,9 @@ and manifest-binds `forecast_validation_summary.json` and
 on the constructed benchmark series; they are not external or field
 validation.
 
-The complete core-plus-H3 evidence retains exactly 6,100 lossless episode
-archives, 4,500 adaptation ledgers, and 1,600 final-evaluation ledgers. The
+The complete core, H3, and secondary-ablation evidence retains exactly 6,100
+lossless episode archives, 4,500 adaptation ledgers, and 1,600 final-evaluation
+ledgers. The
 publisher captures post-job scheduler accounting for every seed and stress
 worker before finalization. Failed worker resource receipts are retained and
 inventoried separately; resumable episode archives remain hash-validated at
