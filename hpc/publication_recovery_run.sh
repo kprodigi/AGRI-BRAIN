@@ -29,6 +29,40 @@ for command in git sbatch scontrol sacct scancel; do
     fi
 done
 
+# Convert a regular file reached through a site-managed mount alias (for
+# example, /scratch -> /mmfs1/scratch) to its physical-parent spelling.  The
+# Python receipt validator deliberately rejects every symlink component, so
+# passing the physical spelling preserves that fail-closed check without
+# treating a cluster mount alias as user-controlled evidence.  The leaf is
+# checked before and after normalization to prevent a symlink substitution.
+physical_regular_file() {
+    local supplied="$1"
+    local label="$2"
+    local parent=""
+    local filename=""
+    local physical_parent=""
+    if [ ! -f "$supplied" ] || [ -L "$supplied" ]; then
+        echo "BLOCK: ${label} is missing or symlinked: ${supplied}" >&2
+        return 1
+    fi
+    parent="$(dirname -- "$supplied")"
+    filename="$(basename -- "$supplied")"
+    physical_parent="$(cd "$parent" 2>/dev/null && pwd -P)" || {
+        echo "BLOCK: cannot resolve the physical parent for ${label}: ${supplied}" >&2
+        return 1
+    }
+    if [ "$physical_parent" = / ]; then
+        supplied="/${filename}"
+    else
+        supplied="${physical_parent}/${filename}"
+    fi
+    if [ ! -f "$supplied" ] || [ -L "$supplied" ]; then
+        echo "BLOCK: normalized ${label} is missing or symlinked: ${supplied}" >&2
+        return 1
+    fi
+    printf '%s\n' "$supplied"
+}
+
 CORE_RECOVERY_JOB=""
 STRUCTURAL_RECOVERY_JOB=""
 FINALIZER_RECOVERY_JOB=""
@@ -303,6 +337,20 @@ for path in "$CORE_ORIGINAL_RECEIPT" "$STRUCTURAL_ORIGINAL_RECEIPT" \
         exit 1
     fi
 done
+
+# Failed Slurm log paths can retain the login shell's lexical /scratch alias
+# even though the preserved run roots above have already been canonicalized by
+# pwd -P.  Normalize all four log bindings before exact canonical-path checks.
+AGRIBRAIN_CORE_FAILED_STDOUT="$(physical_regular_file \
+    "$AGRIBRAIN_CORE_FAILED_STDOUT" "failed core publisher stdout")"
+AGRIBRAIN_CORE_FAILED_STDERR="$(physical_regular_file \
+    "$AGRIBRAIN_CORE_FAILED_STDERR" "failed core publisher stderr")"
+AGRIBRAIN_STRUCTURAL_FAILED_STDOUT="$(physical_regular_file \
+    "$AGRIBRAIN_STRUCTURAL_FAILED_STDOUT" \
+    "failed structural publisher stdout")"
+AGRIBRAIN_STRUCTURAL_FAILED_STDERR="$(physical_regular_file \
+    "$AGRIBRAIN_STRUCTURAL_FAILED_STDERR" \
+    "failed structural publisher stderr")"
 
 mkdir -p "$AGRIBRAIN_RECOVERY_CONTROL_ROOT"
 CONTROL_ROOT="$(cd "$AGRIBRAIN_RECOVERY_CONTROL_ROOT" && pwd -P)"

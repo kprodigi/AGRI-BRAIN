@@ -97,6 +97,70 @@ printf 'SLURM_STATE_PARSER_OK\\n'
     assert "SLURM_STATE_PARSER_OK" in completed.stdout
 
 
+def test_physical_regular_file_normalizes_ancestor_alias_and_rejects_leaf_link(
+    tmp_path: Path,
+) -> None:
+    if os.name == "nt":
+        pytest.skip("behavioral Bash path test runs on POSIX CI/HPC")
+    bash = shutil.which("bash")
+    if bash is None:
+        pytest.skip("Bash is unavailable")
+    real_logs = tmp_path / "physical" / "logs"
+    real_logs.mkdir(parents=True)
+    real_file = real_logs / "publish_103.out"
+    real_file.write_text("failed\n", encoding="utf-8")
+    alias = tmp_path / "scratch"
+    alias.symlink_to(tmp_path / "physical", target_is_directory=True)
+    leaf_alias = real_logs / "publish_alias.out"
+    leaf_alias.symlink_to(real_file)
+
+    script = _text("hpc/publication_recovery_run.sh")
+    start = script.index("physical_regular_file()")
+    end = script.index('CORE_RECOVERY_JOB=""', start)
+    helper = script[start:end]
+    program = f"""
+set -euo pipefail
+{helper}
+observed="$(physical_regular_file "$1" test-log)"
+test "$observed" = "$2"
+if physical_regular_file "$3" leaf-link >/dev/null 2>&1; then
+    exit 91
+fi
+printf 'PHYSICAL_REGULAR_FILE_OK\\n'
+"""
+    completed = subprocess.run(
+        [
+            bash,
+            "-c",
+            program,
+            "path-test",
+            str(alias / "logs" / real_file.name),
+            str(real_file.resolve()),
+            str(leaf_alias),
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "PHYSICAL_REGULAR_FILE_OK" in completed.stdout
+
+
+def test_failed_log_paths_are_physically_normalized_before_submission() -> None:
+    script = _text("hpc/publication_recovery_run.sh")
+    first_submission = script.index("CORE_SUBMISSION=\"$(sbatch")
+    for variable in (
+        "AGRIBRAIN_CORE_FAILED_STDOUT",
+        "AGRIBRAIN_CORE_FAILED_STDERR",
+        "AGRIBRAIN_STRUCTURAL_FAILED_STDOUT",
+        "AGRIBRAIN_STRUCTURAL_FAILED_STDERR",
+    ):
+        normalization = script.index(
+            f'{variable}="$(physical_regular_file',
+        )
+        assert normalization < first_submission
+
+
 def test_finalizer_scheduler_authorization_is_persisted_and_consumed() -> None:
     orchestrator = _text("hpc/publication_recovery_run.sh")
     finalizer = _text("hpc/hpc_full_submission_recovery.sh")
