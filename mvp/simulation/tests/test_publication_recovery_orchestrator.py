@@ -1,8 +1,13 @@
-"""Static fail-closed contracts for the Slurm recovery launchers."""
+"""Fail-closed contracts for the Slurm recovery launchers."""
 
 from __future__ import annotations
 
+import os
+import shutil
+import subprocess
 from pathlib import Path
+
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
@@ -38,6 +43,58 @@ def test_dual_recovery_orchestrator_holds_authorizes_then_releases() -> None:
     assert script.count('sleep "$SLURM_STATE_RETRY_SECONDS"') == 3
     assert "did not settle as PENDING/User-held" in script
     assert "did not settle with the exact two-publisher afterok dependency" in script
+    assert "slurm_job_fields()" in script
+    assert 'JobId=*) observed_job_id="${field#JobId=}"' in script
+    assert 'JobState=*) state="${field#JobState=}"' in script
+    assert 'Reason=*) reason="${field#Reason=}"' in script
+    assert script.count(
+        'IFS="|" read -r observed_job_id state reason <<< "$observed"'
+    ) == 2
+    assert '*" JobState=PENDING "*" Reason=JobHeldUser "*' not in script
+
+
+def test_slurm_state_parser_accepts_exact_tokens_and_rejects_held_release() -> None:
+    if os.name == "nt":
+        pytest.skip("behavioral Bash helper test runs on POSIX CI/HPC")
+    bash = shutil.which("bash")
+    if bash is None:
+        pytest.skip("Bash is unavailable")
+    script = _text("hpc/publication_recovery_run.sh")
+    start = script.index("SLURM_STATE_MAX_ATTEMPTS=")
+    end = script.index("cancel_held_recovery_jobs_on_failure()")
+    helpers = script[start:end]
+    program = f"""
+set -euo pipefail
+{helpers}
+scontrol() {{
+    test "$1" = show
+    test "$2" = job
+    test "$3" = -o
+    printf 'JobId=%s JobName=test JobState=%s Reason=%s Dependency=(null)\\n' \\
+        "$4" "$FAKE_STATE" "$FAKE_REASON"
+}}
+SLURM_STATE_MAX_ATTEMPTS=1
+FAKE_STATE=PENDING
+FAKE_REASON=JobHeldUser
+require_user_held_job 12345
+FAKE_STATE=RUNNING
+FAKE_REASON=None
+require_not_user_held_job 12345
+FAKE_STATE=PENDING
+FAKE_REASON=JobHeldUser
+if require_not_user_held_job 12345; then
+    exit 91
+fi
+printf 'SLURM_STATE_PARSER_OK\\n'
+"""
+    completed = subprocess.run(
+        [bash, "-c", program],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "SLURM_STATE_PARSER_OK" in completed.stdout
 
 
 def test_finalizer_scheduler_authorization_is_persisted_and_consumed() -> None:

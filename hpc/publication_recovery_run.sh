@@ -41,17 +41,42 @@ STRUCTURAL_CANONICAL_RECEIPT_CREATED=false
 RELEASE_ATTEMPTED=false
 SLURM_STATE_MAX_ATTEMPTS=120
 SLURM_STATE_RETRY_SECONDS=1
-require_user_held_job() {
+slurm_job_fields() {
     local job_id="$1"
     local record=""
+    local field
+    local observed_job_id=""
+    local state=""
+    local reason=""
+    record="$(scontrol show job -o "$job_id" 2>/dev/null)" || return 1
+    for field in $record; do
+        case "$field" in
+            JobId=*) observed_job_id="${field#JobId=}" ;;
+            JobState=*) state="${field#JobState=}" ;;
+            Reason=*) reason="${field#Reason=}" ;;
+        esac
+    done
+    if [ "$observed_job_id" != "$job_id" ] \
+        || [ -z "$state" ] || [ -z "$reason" ]; then
+        return 1
+    fi
+    printf '%s|%s|%s\n' "$observed_job_id" "$state" "$reason"
+}
+require_user_held_job() {
+    local job_id="$1"
+    local observed=""
+    local observed_job_id=""
+    local state=""
+    local reason=""
     local attempt
     for ((attempt = 1; attempt <= SLURM_STATE_MAX_ATTEMPTS; attempt++)); do
-        if record="$(scontrol show job -o "$job_id" 2>/dev/null)"; then
-            case " $record " in
-                *" JobId=${job_id} "*" JobState=PENDING "*" Reason=JobHeldUser "*)
-                    return 0
-                    ;;
-            esac
+        if observed="$(slurm_job_fields "$job_id")"; then
+            IFS="|" read -r observed_job_id state reason <<< "$observed"
+            if [ "$observed_job_id" = "$job_id" ] \
+                && [ "$state" = PENDING ] \
+                && [ "$reason" = JobHeldUser ]; then
+                return 0
+            fi
         fi
         if [ "$attempt" -lt "$SLURM_STATE_MAX_ATTEMPTS" ]; then
             sleep "$SLURM_STATE_RETRY_SECONDS"
@@ -93,21 +118,20 @@ require_held_finalizer_dependency() {
 }
 require_not_user_held_job() {
     local job_id="$1"
-    local record=""
+    local observed=""
+    local observed_job_id=""
+    local state=""
+    local reason=""
     local attempt
     for ((attempt = 1; attempt <= SLURM_STATE_MAX_ATTEMPTS; attempt++)); do
-        if record="$(scontrol show job -o "$job_id" 2>/dev/null)"; then
-            case " $record " in
-                *" JobId=${job_id} "*)
-                    case " $record " in
-                        *" JobState=PENDING "*" Reason=JobHeldUser "*) ;;
-                        *)
-                            echo "Release transition observed for recovery job ${job_id}."
-                            return 0
-                            ;;
-                    esac
-                    ;;
-            esac
+        if observed="$(slurm_job_fields "$job_id")"; then
+            IFS="|" read -r observed_job_id state reason <<< "$observed"
+            if [ "$observed_job_id" = "$job_id" ] \
+                && { [ "$state" != PENDING ] \
+                    || [ "$reason" != JobHeldUser ]; }; then
+                echo "Release transition observed for recovery job ${job_id}."
+                return 0
+            fi
         fi
         if [ "$attempt" -lt "$SLURM_STATE_MAX_ATTEMPTS" ]; then
             sleep "$SLURM_STATE_RETRY_SECONDS"
