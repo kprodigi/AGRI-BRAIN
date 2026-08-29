@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "status": "historical_superseded_not_current_evidence",
+  "release_scope": "source snapshot plus deterministic publication repair",
+  "simulation_source_commit": "2fd7bff2128bd8ef89b838fd963c937f728f2e1b",
+  "simulation_source_tree": "7ec0c5fac23db1b6b26d1bb1ca8ed44076517ac6",
+  "publication_repair_commit": "82b04546886b2a0b2fa9c83b2acc7b414d469fac",
+  "publication_repair_tree": "fea0c569d5453dfa586308abeaf516a555be735a",
+  "run_tag": "2fd7bff_20260819_105517",
+  "simulation_rerun_for_repair": false,
+  "parent_archive_sha256": "0d69dfbc4422d5575e2633029d73a3363a1b98c320d4d95642aafe06453b4ad9",
+  "repaired_archive": {
+    "filename": "hpc_results_2fd7bff_20260819_105517_publication_repair_82b0454.tar.gz",
+    "bytes": 367464538,
+    "member_count": 1976,
+    "sha256": "5481205b2a35254c8254b7f3ea928345162533d8222f16a1883a673514e6eb7c"
+  },
+  "manifest": {
+    "artifact_count": 1975,
+    "hash_semantics": "literal bytes",
+    "payload_merkle_root": "2ed221af8fa0c56debab23bcbe9aca46acd76c2935969eb9d23426c4ce1f6dd4",
+    "sha256": "89c2682842c91e4296e305895ca0b2a877d7eea16a8c2ed3da0631245a56c4b7"
+  },
+  "archive_in_source_snapshot": false,
+  "archive_distribution": "separate release asset"
+}

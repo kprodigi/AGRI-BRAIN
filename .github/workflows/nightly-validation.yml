@@ -1,0 +1,105 @@
+name: development-simulation-smoke
+
+# Manual development diagnostic only. This workflow deliberately has no
+# schedule and cannot create or upload publication-named artifacts. The full
+# locked seed panel, stress panel, sensitivity design, and confirmatory tests
+# run only through the validated HPC publication pipeline.
+on:
+  workflow_dispatch:
+
+jobs:
+  development-smoke:
+    name: single-seed deterministic development smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      DETERMINISTIC_MODE: "true"
+      DEV_RESULTS_DIR: mvp/simulation/development_results/manual-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e "agribrain/backend[dev]"
+      - name: Generate isolated development tables
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from mvp.simulation import generate_results
+
+          destination = Path(os.environ["DEV_RESULTS_DIR"])
+          destination.mkdir(parents=True, exist_ok=True)
+          generate_results.RESULTS_DIR = destination
+          run = generate_results.run_all()
+          generate_results.save_tables(run["table1"], run["table2"])
+          (destination / "table1_summary.csv").replace(
+              destination / "development_table1_summary.csv"
+          )
+          (destination / "table2_ablation.csv").replace(
+              destination / "development_table2_ablation.csv"
+          )
+          print("Development-only single-seed tables:", destination)
+          print("publication_evidence=false")
+          PY
+      - name: Build explicitly non-publication smoke summary
+        run: |
+          python mvp/simulation/benchmarks/run_benchmark_suite.py \
+            --output-dir "$DEV_RESULTS_DIR/aggregate" \
+            --single-run-table "$DEV_RESULTS_DIR/development_table2_ablation.csv"
+      - name: Verify non-publication evidence boundary
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path(os.environ["DEV_RESULTS_DIR"])
+          expected = {
+              "development_benchmark_summary.json",
+              "development_benchmark_significance.json",
+          }
+          aggregate = root / "aggregate"
+          actual = {path.name for path in aggregate.glob("*.json")}
+          if actual != expected:
+              raise SystemExit(
+                  f"development aggregate names differ: {sorted(actual)}"
+              )
+          for name in expected:
+              payload = json.loads((aggregate / name).read_text(encoding="utf-8"))
+              meta = payload.get("_meta", {})
+              if meta.get("publication_evidence") is not False:
+                  raise SystemExit(f"{name} lacks publication_evidence=false")
+              if meta.get("scope") != "single_seed_development_smoke":
+                  raise SystemExit(f"{name} has an incorrect development scope")
+
+          forbidden = {
+              "benchmark_summary.json",
+              "benchmark_significance.json",
+              "benchmark_context_summary.json",
+              "benchmark_context_significance.json",
+              "artifact_manifest.json",
+              "table1_summary.csv",
+              "table2_ablation.csv",
+          }
+          leaked = [
+              str(path) for path in root.rglob("*")
+              if path.is_file() and path.name in forbidden
+          ]
+          if leaked:
+              raise SystemExit(f"publication-like artifacts were created: {leaked}")
+          print("PASS: isolated development smoke; publication_evidence=false")
+          PY
+      - name: Upload development smoke artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: development-single-seed-smoke-${{ github.run_id }}
+          retention-days: 7
+          path: |
+            ${{ env.DEV_RESULTS_DIR }}/development_table1_summary.csv
+            ${{ env.DEV_RESULTS_DIR }}/development_table2_ablation.csv
+            ${{ env.DEV_RESULTS_DIR }}/aggregate/development_benchmark_summary.json
+            ${{ env.DEV_RESULTS_DIR }}/aggregate/development_benchmark_significance.json

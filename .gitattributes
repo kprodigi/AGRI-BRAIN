@@ -1,0 +1,64 @@
+# Pin line endings to LF on checkout regardless of host OS.
+# Without this, Windows clones (with the default core.autocrlf=true)
+# rewrite text files to CRLF, which shifts the SHA-256 of every tracked
+# artifact and breaks `verify_manifest.py`. The simulator and validator
+# scripts both read files in text mode, so the actual byte content the
+# manifest was hashed against must match on every host.
+
+* text=auto eol=lf
+
+# Source code — text, LF.
+*.py        text eol=lf
+*.pyi       text eol=lf
+*.sh        text eol=lf
+*.bash      text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.toml      text eol=lf
+*.cfg       text eol=lf
+*.ini       text eol=lf
+*.json      text eol=lf
+*.jsonl     text eol=lf
+*.md        text eol=lf
+*.txt       text eol=lf
+*.csv       text eol=lf
+*.sol       text eol=lf
+*.ts        text eol=lf
+*.tsx       text eol=lf
+*.js        text eol=lf
+*.jsx       text eol=lf
+*.mjs       text eol=lf
+*.cjs       text eol=lf
+*.html      text eol=lf
+*.css       text eol=lf
+*.scss      text eol=lf
+*.svg       text eol=lf
+
+# Windows-only files keep CRLF so they actually run when checked out.
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+*.ps1       text eol=crlf
+
+# Binary content — never line-end-normalise.
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.pdf       binary
+*.zip       binary
+*.gz        binary
+*.tar       binary
+*.parquet   binary
+*.npy       binary
+*.npz       binary
+*.pkl       binary
+*.pt        binary
+*.pth       binary
+*.onnx      binary
+*.tflite    binary
+*.h5        binary
+*.woff      binary
+*.woff2     binary
+*.ttf       binary
+*.eot       binary

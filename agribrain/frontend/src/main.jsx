@@ -1,0 +1,155 @@
+import React, { lazy, Suspense } from "react";
+import ReactDOM from "react-dom/client";
+import "./index.css";
+import { getApiBase } from "./mvp/api.js";
+import { authDownload, getApiKey } from "./lib/utils.js";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { ThemeProvider } from "./hooks/useTheme.jsx";
+import { useWebSocket } from "./hooks/useWebSocket.jsx";
+import { Toaster } from "sonner";
+import MainLayout from "./layouts/MainLayout.jsx";
+import OpsPage from "./pages/OpsPage.jsx";
+
+// Lazy-load heavy pages
+const QualityPage = lazy(() => import("./pages/QualityPage.jsx"));
+const DecisionsPage = lazy(() => import("./pages/DecisionsPage.jsx"));
+const MapPage = lazy(() => import("./pages/MapPage.jsx"));
+const AnalyticsPage = lazy(() => import("./pages/AnalyticsPage.jsx"));
+const AdminPage = lazy(() => import("./pages/AdminPage.jsx"));
+const McpPiragPage = lazy(() => import("./pages/McpPiragPage.jsx"));
+const DemoPage = lazy(() => import("./pages/DemoPage.jsx"));
+// TheaterPage is now embedded in DemoPage as a tab
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center h-64">
+      <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
+    </div>
+  );
+}
+
+function AppShell({ children }) {
+  const { connected, notifications, unreadCount, markAllRead } = useWebSocket();
+
+  return (
+    <MainLayout
+      wsConnected={connected}
+      notifications={notifications}
+      unreadCount={unreadCount}
+      onMarkAllRead={markAllRead}
+    >
+      <Suspense fallback={<PageLoader />}>{children}</Suspense>
+    </MainLayout>
+  );
+}
+
+const router = createBrowserRouter([
+  { path: "/", element: <AppShell><OpsPage /></AppShell> },
+  { path: "/quality", element: <AppShell><QualityPage /></AppShell> },
+  { path: "/decisions", element: <AppShell><DecisionsPage /></AppShell> },
+  { path: "/map", element: <AppShell><MapPage /></AppShell> },
+  { path: "/analytics", element: <AppShell><AnalyticsPage /></AppShell> },
+  { path: "/mcp-pirag", element: <AppShell><McpPiragPage /></AppShell> },
+  { path: "/demo", element: <AppShell><DemoPage /></AppShell> },
+  { path: "/admin", element: <AppShell><AdminPage /></AppShell> },
+]);
+
+// ---------- Global "Take decision" handler (backward compat) ----------
+;(function installTakeDecision() {
+  if (window.__takeDecisionInstalled) return;
+  window.__takeDecisionInstalled = true;
+
+  const base = getApiBase();
+
+  function _hdrs() {
+    const h = { "Content-Type": "application/json" };
+    const key = getApiKey();
+    if (key) h["x-api-key"] = key;
+    return h;
+  }
+
+  async function callAny() {
+    const roleSelect = document.querySelector("[data-role-select]") || document.querySelector("select");
+    const role = (roleSelect && roleSelect.value) || "farm";
+    const payload = JSON.stringify({ agent_id: `global:${role}`, agent: `global:${role}`, role });
+    const tries = [
+      [`${base}/decide`, { method: "POST", headers: _hdrs(), body: payload }],
+      [`${base}/decision/take`, { method: "POST", headers: _hdrs(), body: payload }],
+    ];
+    for (const [url, init] of tries) {
+      try { const r = await fetch(url, init); if (r.ok) return await r.json(); } catch {}
+    }
+    throw new Error("No decision endpoint responded with 200");
+  }
+
+  document.addEventListener("click", async (e) => {
+    const el = e.target.closest('button, a, [role="button"]');
+    if (!el) return;
+    if (location.pathname.startsWith("/admin")) return;
+    if (el.closest("[data-skip-global-take]")) return;
+    const label = (el.textContent || "").replace(/\s+/g, " ").trim();
+    if (!/^\s*take\s+decision\s*$/i.test(label)) return;
+    e.preventDefault();
+    try {
+      const res = await callAny();
+      const memo = res.memo ?? res;
+      document.dispatchEvent(new CustomEvent("decision:new", { detail: memo }));
+    } catch (err) {
+      console.warn(err);
+    }
+  }, true);
+})();
+
+// ---------- Fix "Download Decision Memo (PDF)" button ----------
+;(function fixMemoDownloadButton() {
+  const base = getApiBase();
+  const url = `${base}/report/pdf`;
+
+  function attach() {
+    const btn = Array.from(document.querySelectorAll("a,button"))
+      .find((el) => /download\s+decision\s+memo\s*\(pdf\)/i.test((el.textContent || "").trim()));
+    if (!btn || btn.dataset.memoBound === "1") return;
+    if (btn.tagName === "A") {
+      btn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        try {
+          await authDownload(url, "decision-report.pdf");
+        } catch (err) {
+          console.warn(err);
+        }
+      });
+    } else {
+      btn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        try {
+          await authDownload(url, "decision-report.pdf");
+        } catch (err) {
+          console.warn(err);
+        }
+      });
+    }
+    btn.dataset.memoBound = "1";
+  }
+  attach();
+  window.addEventListener("load", attach);
+  const mo = new MutationObserver(() => attach());
+  mo.observe(document.documentElement, { childList: true, subtree: true });
+})();
+
+// ---------- Mount app ----------
+const rootEl = document.getElementById("root");
+if (!rootEl) throw new Error("Root element #root not found");
+
+const root = rootEl._reactRoot || (rootEl._reactRoot = ReactDOM.createRoot(rootEl));
+root.render(
+  <ThemeProvider defaultTheme="system">
+    <RouterProvider router={router} />
+    <Toaster
+      position="bottom-right"
+      toastOptions={{
+        className: "border shadow-lg",
+        style: { borderRadius: "0.75rem" },
+      }}
+    />
+  </ThemeProvider>
+);

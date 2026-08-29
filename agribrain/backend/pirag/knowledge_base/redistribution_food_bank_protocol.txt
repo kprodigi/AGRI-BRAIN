@@ -1,0 +1,22 @@
+LOCAL-REDISTRIBUTION PROXY (LEGACY FOOD-BANK CORPUS LABEL)
+Status: Constructed benchmark input; it does not determine fitness for donation or human consumption.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, are contextual references only; the executable code and locked protocol govern all benchmark values.
+Document ID: KB-RFB-002
+Executable sources: agribrain/backend/src/models/policy.py, slca.py, waste.py, and reverse_logistics.py
+
+local_redistribute is one of three canonical policy actions. Its nominal modeled route
+distance is 45 km before the keyed stochastic transport multiplier. Its author-declared
+social priors are L=0.82, R=0.78, and P=0.78. Its action-specific waste-saving coefficient
+is 0.45, scaled by 1/(1+0.10*surplus_ratio). These are synthetic outcome coefficients,
+not measured benefits.
+
+The descriptive recovery-option module computes
+food_bank_raw=max(0,1-2*rho), halved when temperature exceeds 10 degrees Celsius, then
+normalizes it with animal-feed and composting heuristic scores. This is a circularity
+proxy only. It does not certify safety or eligibility, and rho=0.30 is a policy logit
+knee rather than a donation or consumption boundary.
+
+The benchmark does not inspect food, accept or reject a lot, identify a receiving
+organization, impose a transfer time, collect signatures, create transfer forms, or
+verify traceability and cold-storage capability. Operational redistribution requires an
+independent product-safety, recipient, logistics, and legal assessment.

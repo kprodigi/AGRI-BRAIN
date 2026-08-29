@@ -1,0 +1,32 @@
+OFF-CHAIN CALCULATION TRACE AND OPTIONAL EXTERNAL ANCHORING
+Status: Constructed benchmark input; external ledger anchoring is optional and is not a publication outcome.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External standards, where named, do not impose requirements on this benchmark; the executable code and locked protocol govern all evidence fields.
+Document ID: KB-BAR-012
+Executable sources: agribrain/backend/pirag/provenance and the episode evidence contract
+
+1. EXECUTABLE EVIDENCE SCOPE
+
+The benchmark retains an off-chain, reconstructable decision trace. Evidence payloads
+and source passages are hashed, and retained hashes can be combined into a Merkle root
+for integrity checking. The exact required schema is defined by the executable episode
+evidence contract and validated against source inputs; this corpus note does not add
+fields or substitute for that contract.
+
+A hash or Merkle root supports calculation-trace integrity only. It does not establish
+that an upstream statement is true, that a decision is legally compliant, or that the
+system is decentralized or autonomously deployed.
+
+2. OPTIONAL EXTERNAL ANCHORING
+
+The repository contains an optional EVM demonstration path. A caller may request an
+external anchor only when an endpoint, contract, and signing configuration are supplied.
+The confirmatory publication benchmark does not require an on-chain transaction and does
+not treat transaction success, immutability, voting, or contract execution as a measured
+result.
+
+3. EXCLUDED CLAIMS
+
+The benchmark does not impose a statutory retention period, regulatory-response time,
+mandatory chain submission, governance quorum, voting window, organization-level audit,
+or deployment certification. Any real ledger, records-management, access-control,
+governance, or audit process must be specified and assessed separately.

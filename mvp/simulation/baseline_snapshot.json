@@ -1,0 +1,78 @@
+{
+  "schema_version": 2,
+  "status": "pending",
+  "scope": "deterministic_development_regression_only",
+  "publication_evidence": false,
+  "deterministic_mode": true,
+  "protocol": {
+    "path": "mvp/simulation/experiment_protocol.json",
+    "sha256": "c384e18dd66247aca8502bfb58634c6d2129b91944dc497c4929c0c12003ac86"
+  },
+  "source": {
+    "commit": null,
+    "clean_source_required": true
+  },
+  "key_contract": {
+    "table1": {
+      "key_columns": [
+        "Scenario",
+        "Method"
+      ],
+      "metrics": [
+        "ARI",
+        "RLE",
+        "Waste",
+        "SLCA",
+        "Carbon",
+        "Equity"
+      ],
+      "scenarios": [
+        "heatwave",
+        "overproduction",
+        "cyber_outage",
+        "adaptive_pricing",
+        "baseline"
+      ],
+      "methods": [
+        "static",
+        "hybrid_rl",
+        "no_pinn",
+        "no_slca",
+        "no_context",
+        "mcp_only",
+        "pirag_only",
+        "agribrain"
+      ],
+      "expected_cell_count": 40
+    },
+    "table2": {
+      "key_columns": [
+        "Scenario",
+        "Variant"
+      ],
+      "metrics": [
+        "ARI",
+        "RLE",
+        "Waste",
+        "SLCA"
+      ],
+      "scenarios": [
+        "heatwave",
+        "overproduction",
+        "cyber_outage",
+        "adaptive_pricing",
+        "baseline"
+      ],
+      "methods": [
+        "static",
+        "hybrid_rl",
+        "no_pinn",
+        "no_slca",
+        "no_context",
+        "agribrain"
+      ],
+      "expected_cell_count": 30
+    }
+  },
+  "tables": null
+}

@@ -1,0 +1,11 @@
+Sustainability/Social-Performance Proxy Procedure (legacy SLCA corpus label)
+Status: Synthetic benchmark procedure; it is not an empirical Social Life-Cycle Assessment.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, are contextual references only; the executable code and locked protocol govern all benchmark values.
+
+Assessment Framework: The benchmark combines a modelled transport-carbon term with three author-declared social priors: labour fairness, community resilience, and price transparency. UNEP Social LCA guidance motivates inventory-backed stakeholder assessment but does not prescribe this four-part composite, these route scores, or these weights.
+
+Scoring Methodology: Each component is represented on a synthetic 0-1 scale. The proxy is S = w_C times C + w_L times L + w_R times R + w_P times P. Benchmark weights are w_C = 0.30, w_L = 0.20, w_R = 0.25, and w_P = 0.25. They are design priors rather than elicited or measured stakeholder weights.
+
+Carbon Component: The carbon score C reflects transport emissions relative to a baseline cap: C = max(0, 1 - carbon_kg / carbon_cap). Lower emissions from local redistribution routes score higher than long-distance cold chain transport. The COP degradation factor accounts for reduced refrigeration efficiency under thermal stress.
+
+Use limitation: The proxy may be used only as a scenario-specific routing signal and reported simulation outcome. It must not be presented as product certification, field-measured social performance, or compliance with UNEP Social LCA guidance. Deployment requires a defined functional unit, stakeholder inventory, geographic and sector data, uncertainty analysis, and external validation.

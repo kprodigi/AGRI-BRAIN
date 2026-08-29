@@ -1,0 +1,42 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "AGRI-BRAIN: A Coordinator-Mediated Heterogeneous Multi-Agent Framework for Simulation of Perishable Supply Chains"
+type: software
+authors:
+  - family-names: Sarker
+    given-names: Nahid
+    affiliation: "Karen M. Swindler Department of Chemical and Biological Engineering, South Dakota School of Mines and Technology, Rapid City, SD 57701, USA"
+  - family-names: Kazi
+    given-names: Monzure-Khoda
+    affiliation: "Karen M. Swindler Department of Chemical and Biological Engineering, South Dakota School of Mines and Technology, Rapid City, SD 57701, USA"
+version: "1.3.0"
+# Versioning policy: the pinned ``version`` here must match
+# ``[project] version`` in agribrain/backend/pyproject.toml. The
+# tests/test_metadata_consistency.py guard fails the build if they
+# drift. Add ``date-released`` only when the corresponding v<X.Y.Z>
+# tag is actually pushed; this methodology-aligned source is pre-results.
+#
+# After a fresh validated run exists, cite the version + source commit SHA
+# from its `artifact_manifest.json` for paper-grade reproducibility.
+license: MIT
+repository-code: "https://github.com/kprodigi/AGRI-BRAIN"
+
+# DOI deliberately omitted from this file. Cite via version + commit
+# SHA + repository URL. If a Zenodo DOI is minted in a later release
+# cycle, add the canonical ``identifiers:`` block (CFF 1.2 schema)
+# rather than re-introducing a top-level ``doi:`` field.
+keywords:
+  - multi-agent systems
+  - agri-food supply chain
+  - reinforcement learning
+  - mechanistic spoilage modelling
+  - sustainability
+  - social-performance proxy
+  - Model Context Protocol
+  - MCP
+  - institutional retrieval
+  - mechanistic retrieval reranking
+  - calculation-trace transparency
+  - typed peer messaging
+  - local Merkle provenance
+  - policy attribution

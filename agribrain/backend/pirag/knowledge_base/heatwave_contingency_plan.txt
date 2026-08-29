@@ -1,0 +1,21 @@
+SYNTHETIC HEATWAVE SCENARIO CONTRACT
+Status: Constructed benchmark input; it is a controlled perturbation, not a heat-emergency or workplace standard.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, are contextual references only; the executable code and locked protocol govern all benchmark values.
+Document ID: KB-HCP-009
+Executable source: agribrain/backend/src/models/scenario_engine.py
+
+At nominal intensity, the heatwave perturbation begins at simulation hour 24. From hour
+24 through hour 48 it adds
+
+  temperature: 20*(1-exp(-0.5*(h-24))) degrees Celsius
+  relative humidity: 10*(1-exp(-0.5*(h-24))) percentage points.
+
+After hour 48, both additions decay as their peak coefficient multiplied by
+exp(-0.1*(h-48)); relative humidity is clipped to [0,100]. The mechanistic spoilage and
+volatility columns are then recomputed from the perturbed state for every paired mode.
+
+The scenario does not activate from an observed 35-degree threshold, query a weather
+feed, shorten the 120-km cold_chain route, mandate redistribution, alter inspection or
+sensor cadence, or notify personnel. Route choice remains probabilistic under the active
+policy components. These equations are synthetic stress-test assumptions, not a
+validated representation of a specific heatwave or refrigeration system.

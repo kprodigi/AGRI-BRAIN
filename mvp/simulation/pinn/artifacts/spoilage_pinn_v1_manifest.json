@@ -1,0 +1,156 @@
+{
+  "architecture": {
+    "hidden_size": 12,
+    "kind": "one_hidden_layer_tanh_residual_network",
+    "parameter_count": 121,
+    "residual_bound": 0.08,
+    "residual_equation": "delta_C=0.08*tanh(v^T*tanh(W*x_norm+b)+c)"
+  },
+  "checkpoint_file": "spoilage_pinn_v1.npz",
+  "checkpoint_sha256": "6b16d11b455271c58c4917eae3db5114c38e791ec5a82a80925f1bef53f7d8a5",
+  "dataset_file": "synthetic_spoilage_residual_v1.csv",
+  "dataset_manifest_file": "synthetic_spoilage_residual_v1_manifest.json",
+  "dataset_sha256": "58fa5ef1bbcc9ff6d8ad5780692c9f96aeee72189ec46d66ecc3677b7106ab5c",
+  "empirical_claims_permitted": false,
+  "external_validation": false,
+  "feature_names": [
+    "time_h",
+    "tempC",
+    "RH",
+    "shockG",
+    "packaging_index",
+    "rh_transient_per_h",
+    "k_ref_per_h",
+    "ea_over_r_kelvin"
+  ],
+  "feature_normalization": "train-trajectories mean and population SD only",
+  "limitations": [
+    "The checkpoint is validated only against held-out synthetic DGP trajectories.",
+    "It is not evidence of empirical spinach shelf-life accuracy.",
+    "The estimator is frozen before and shared across simulation arms."
+  ],
+  "loss": {
+    "equation": "lambda_data*MSE(C_pred,C_syn_obs) + lambda_phys*MSE(r_trapezoidal) + lambda_BC*MSE(C_pred(t0),1) + lambda_reg*MSE(delta_C,0) + lambda_mono*MSE(ReLU(C_pred[j]-C_pred[j-1]),0)",
+    "physics_discretization": "trajectory-wise trapezoidal first-order ODE residual",
+    "weights": {
+      "boundary": 1.0,
+      "data": 1.0,
+      "monotonicity": 0.2,
+      "physics": 0.2,
+      "regularization": 0.01
+    }
+  },
+  "metrics": {
+    "test": {
+      "boundary_rmse": 0.0006096602251030998,
+      "deployed_latent_rmse": 0.004060998778830866,
+      "deployed_monotonicity_violation_count": 0,
+      "deployed_observed_rmse": 0.004296271544306138,
+      "deployed_unit_interval_violation_count": 0,
+      "latent_rmse": 0.0040683936884657315,
+      "mechanistic_latent_rmse": 0.013166348643646958,
+      "monotonicity_violation_count": 115,
+      "n_rows": 1728,
+      "n_trajectories": 6,
+      "observed_mae": 0.0030361395673564346,
+      "observed_rmse": 0.004304099757538922,
+      "physics_residual_rmse_per_h": 0.0013595503815941904,
+      "residual_abs_max": 0.03346338179069262,
+      "residual_rms": 0.012230790863401505,
+      "unit_interval_violation_count": 41
+    },
+    "train": {
+      "boundary_rmse": 0.000541004193929586,
+      "deployed_latent_rmse": 0.00169273886362987,
+      "deployed_monotonicity_violation_count": 0,
+      "deployed_observed_rmse": 0.0022479182293217922,
+      "deployed_unit_interval_violation_count": 0,
+      "latent_rmse": 0.0016990216324124113,
+      "mechanistic_latent_rmse": 0.011379734322673647,
+      "monotonicity_violation_count": 462,
+      "n_rows": 6912,
+      "n_trajectories": 24,
+      "observed_mae": 0.001734281769379403,
+      "observed_rmse": 0.0022548338869726194,
+      "physics_residual_rmse_per_h": 0.0014012548042278286,
+      "residual_abs_max": 0.03424205017191585,
+      "residual_rms": 0.011016899618350274,
+      "unit_interval_violation_count": 86
+    },
+    "validation": {
+      "boundary_rmse": 0.0002578183768663662,
+      "deployed_latent_rmse": 0.0025855653880892514,
+      "deployed_monotonicity_violation_count": 0,
+      "deployed_observed_rmse": 0.002964846937533731,
+      "deployed_unit_interval_violation_count": 0,
+      "latent_rmse": 0.002600943044415739,
+      "mechanistic_latent_rmse": 0.008111927419635515,
+      "monotonicity_violation_count": 129,
+      "n_rows": 1728,
+      "n_trajectories": 6,
+      "observed_mae": 0.002302909375970651,
+      "observed_rmse": 0.002980198002001299,
+      "physics_residual_rmse_per_h": 0.001598352706031629,
+      "residual_abs_max": 0.029866443235066466,
+      "residual_rms": 0.00811122109423924,
+      "unit_interval_violation_count": 26
+    }
+  },
+  "schema_version": 1,
+  "selected_initialization_seed": 155921,
+  "status": "frozen_for_confirmatory_simulation",
+  "synthetic_only": true,
+  "target_origin": "independent_synthetic_dgp",
+  "test_split_used_for_selection": false,
+  "training_history_file": "spoilage_pinn_v1_training_history.json",
+  "training_history_sha256": "070690c1eee15200241498db7cf6eba107ba807d61b230c78b1702f8248fc454",
+  "training_seeds": [
+    104729,
+    130363,
+    155921
+  ],
+  "trajectory_splits": {
+    "test": [
+      "trajectory_020",
+      "trajectory_034",
+      "trajectory_032",
+      "trajectory_010",
+      "trajectory_030",
+      "trajectory_009"
+    ],
+    "train": [
+      "trajectory_011",
+      "trajectory_015",
+      "trajectory_019",
+      "trajectory_029",
+      "trajectory_031",
+      "trajectory_035",
+      "trajectory_001",
+      "trajectory_005",
+      "trajectory_002",
+      "trajectory_014",
+      "trajectory_027",
+      "trajectory_017",
+      "trajectory_013",
+      "trajectory_016",
+      "trajectory_004",
+      "trajectory_008",
+      "trajectory_025",
+      "trajectory_033",
+      "trajectory_024",
+      "trajectory_026",
+      "trajectory_036",
+      "trajectory_018",
+      "trajectory_007",
+      "trajectory_028"
+    ],
+    "validation": [
+      "trajectory_012",
+      "trajectory_006",
+      "trajectory_022",
+      "trajectory_003",
+      "trajectory_021",
+      "trajectory_023"
+    ]
+  }
+}

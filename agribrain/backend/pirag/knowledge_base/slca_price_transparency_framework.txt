@@ -1,0 +1,35 @@
+SOCIAL-PERFORMANCE PROXY: PRICE TRANSPARENCY (LEGACY SLCA LABEL)
+Status: Constructed benchmark input; the values below are author-declared priors, not measured price transparency.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, motivate topic selection only; the executable code and locked protocol govern all benchmark values.
+Document ID: KB-SPT-007
+Executable source: agribrain/backend/src/models/slca.py
+
+1. EXECUTABLE PRICE-TRANSPARENCY PRIORS
+
+The simulator uses one fixed price-transparency prior P for each canonical routing
+action:
+
+  - cold_chain: P = 0.55
+  - local_redistribute: P = 0.78
+  - recovery: P = 0.68
+
+These values encode a synthetic ordering, local_redistribute greater than recovery
+greater than cold_chain. They were not calculated from prices, margins, invoices,
+transaction records, subsidy records, donation valuations, or external audits.
+
+2. ROLE IN THE SOCIAL-PERFORMANCE PROXY
+
+P receives the author-declared weight w_P = 0.25 in
+
+  S = 0.30*C + 0.20*L + 0.25*R + 0.25*P.
+
+The route-level P prior is evaluated by the outcome equation for the selected action.
+Institutional retrieval can supply context to a context-enabled policy, but retrieved
+text does not replace the executable score table.
+
+3. EXCLUDED CLAIMS
+
+The benchmark has no price-audit workflow, transaction-level margin test, member audit
+right, response deadline, quarterly price report, or measured consumer-information
+outcome. A real transparency assessment would require independently collected and
+validated transaction evidence outside this benchmark.

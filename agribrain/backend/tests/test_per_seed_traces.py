@@ -1,0 +1,414 @@
+"""Regression tests for the 2026-05 per-seed-trace dump + loader.
+
+Locks the contracts that fig 2 panel (d) seed-CI ribbon depends on:
+
+* ``run_single_seed.py`` dumps a JSON envelope of the form
+  ``{"seed": int, "scenarios": {...}, "traces": {sc: {mode: {"ari_trace": [...]}}}}``.
+* The "scenarios" block keeps the same shape the legacy aggregator
+  consumes (so old benchmark_summary aggregation is byte-stable).
+* The "traces" block carries ``ari_trace`` for the canonical paper trio
+  ``(static, hybrid_rl, agribrain)`` across all 5 scenarios at 4-decimal
+  precision.
+* ``generate_figures._load_per_seed_traces`` walks a tagged or flat
+  ``benchmark_seeds/`` directory, stacks the per-seed traces into a
+  ``(n_seeds, n_steps)`` array, and returns ``None`` when no per-seed
+  JSONs are present (so fig 2 panel d's ribbon path can fall back to
+  the single-seed line cleanly).
+"""
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+_SIM_DIR = _REPO_ROOT / "mvp" / "simulation"
+_BENCHMARKS_DIR = _SIM_DIR / "benchmarks"
+
+if str(_SIM_DIR) not in sys.path:
+    sys.path.insert(0, str(_SIM_DIR))
+
+
+def test_serialise_trace_handles_all_three_shapes():
+    """Pin the per-step trace serialisation contract.
+
+    The HPC seed runner's trace-dump dispatch must handle:
+
+      (a) list[float]            -- the common case (ari_trace,
+                                    waste_trace, action_trace, etc.).
+      (b) list[dict[str, float]] -- slca_component_trace.
+      (c) list[list[float]]      -- prob_trace
+                                    (per-step action-probability vector).
+
+    The 2026-05 TRACE_FIELDS extension blew up an HPC run when prob_trace
+    (a list[list[float]]) hit the list[float] fallback and float(<list>)
+    raised TypeError. This test exercises all three shapes plus the
+    numpy-array path so a similar regression cannot reach an HPC run
+    again.
+    """
+    sys.path.insert(0, str(_BENCHMARKS_DIR))
+    import importlib
+    rss = importlib.import_module("run_single_seed")
+    fn = rss._serialise_trace
+
+    # (a) list[float] / list[int] -- ari_trace style.
+    assert fn([0.123456, 0.789012]) == [0.1235, 0.7890]
+    assert fn([0, 1, 2, 0]) == [0, 1, 2, 0]
+    # numpy 1D ndarray.
+    assert fn(np.array([0.5, 1.5, 2.5])) == [0.5, 1.5, 2.5]
+
+    # (b) list[dict[str, float]] -- slca_component_trace style.
+    assert fn([
+        {"C": 0.700001, "L": 0.500009, "R": 0.6, "P": 0.55},
+        {"C": 0.7,      "L": 0.5,      "R": 0.6, "P": 0.55},
+    ]) == [
+        {"C": 0.7, "L": 0.5, "R": 0.6, "P": 0.55},
+        {"C": 0.7, "L": 0.5, "R": 0.6, "P": 0.55},
+    ]
+
+    # (b') list[dict[str, mixed]] -- the actual schema slca_component_trace
+    # ships: {C, L, R, P, composite} are floats but ``action_family`` is a
+    # string ("cold_chain" / "local_redistribute" / "recovery"). The dict
+    # dispatch must preserve the string verbatim; rounding only the
+    # numeric leaves. Locked in as a regression test after the writer
+    # smoke caught a ValueError("could not convert string to float:
+    # 'cold_chain'") on the first attempt at this dispatch.
+    out = fn([
+        {"C": 0.9082, "L": 0.82, "R": 0.78, "P": 0.78,
+         "composite": 0.8265, "action_family": "local_redistribute"},
+        {"C": 0.7000, "L": 0.50, "R": 0.60, "P": 0.55,
+         "composite": 0.6125, "action_family": "cold_chain"},
+    ])
+    assert out == [
+        {"C": 0.9082, "L": 0.82, "R": 0.78, "P": 0.78,
+         "composite": 0.8265, "action_family": "local_redistribute"},
+        {"C": 0.7,    "L": 0.5,  "R": 0.6,  "P": 0.55,
+         "composite": 0.6125, "action_family": "cold_chain"},
+    ]
+    # bool stays True/False rather than collapsing to 1/0 even though
+    # bool is an int subclass.
+    assert fn([{"flag": True, "x": 0.123456}]) == [
+        {"flag": True, "x": 0.1235},
+    ]
+
+    # (c) list[list[float]] -- prob_trace style.
+    assert fn([[0.30, 0.50, 0.20], [0.40, 0.40, 0.20]]) == [
+        [0.3, 0.5, 0.2],
+        [0.4, 0.4, 0.2],
+    ]
+    # numpy 2D ndarray (the actual shape run_episode produces for prob_trace).
+    assert fn(np.array([[0.3, 0.5, 0.2], [0.4, 0.4, 0.2]])) == [
+        [0.3, 0.5, 0.2],
+        [0.4, 0.4, 0.2],
+    ]
+
+    # Empty trace serialises to []; doesn't crash on arr[0].
+    assert fn([]) == []
+    assert fn(np.array([])) == []
+
+    # (e) The pernicious case: list[np.float64] / list[np.ndarray].
+    # Numpy scalars HAVE a .tolist() method (returning the underlying
+    # Python scalar, NOT an iterable), so a naive
+    # ``hasattr(first, "tolist")`` dispatch misroutes these into the
+    # nested-list branch and crashes when it tries to iterate a float.
+    # Two HPC runs (jobs 10852464 and 10853393) burned ~50 h of
+    # compute on this before the dispatch was made universal.
+    assert fn([np.float64(0.5), np.float64(1.5)]) == [0.5, 1.5]
+    assert fn([np.int64(3), np.int64(7)]) == [3, 7]
+    # list[np.ndarray] must serialise as list[list[float]].
+    out = fn([np.array([0.3, 0.5, 0.2]), np.array([0.4, 0.4, 0.2])])
+    assert out == [[0.3, 0.5, 0.2], [0.4, 0.4, 0.2]], out
+
+    # Output is JSON-serialisable end-to-end (matches what
+    # run_single_seed.py emits at out_file.write_text(json.dumps(...))).
+    payload = {"slca": fn([{"C": 0.7, "L": 0.5, "R": 0.6, "P": 0.55}]),
+               "prob": fn([[0.3, 0.5, 0.2]]),
+               "ari":  fn([0.5])}
+    json.dumps(payload)  # raises if any leaf is not JSON-friendly
+
+
+def test_run_single_seed_self_test_trace_dispatch_passes():
+    """The ``_self_test_trace_dispatch`` fail-fast guard added at the
+    top of run_single_seed.py main() must run cleanly on import. If
+    this test starts failing, the dispatch has regressed and any
+    HPC seed task would crash at startup -- which is what we want.
+    """
+    sys.path.insert(0, str(_BENCHMARKS_DIR))
+    import importlib
+    rss = importlib.import_module("run_single_seed")
+    rss._self_test_trace_dispatch()  # raises if any case fails
+
+
+def test_run_single_seed_declares_canonical_trace_modes():
+    """The canonical paper trio is the documented contract."""
+    from benchmarks.trace_contract import TRACE_MODES
+
+    assert TRACE_MODES == ("static", "hybrid_rl", "agribrain"), (
+        "TRACE_MODES drifted from the canonical paper trio "
+        "(static, hybrid_rl, agribrain). Update fig 2 panel d "
+        "comments and the test in lockstep with any change."
+    )
+
+
+def test_run_single_seed_declares_canonical_trace_fields():
+    """Pin the per-step fields each seed envelope must dump.
+
+    Pre-2026-05 the contract was the single field ``ari_trace`` for
+    fig 2 panel D's seed-CI ribbon. Extended in 2026-05 to cover
+    every per-step field the figure code reads, so a completed
+    HPC run produces a self-contained cache the
+    ``regenerate_figures_from_cache.py`` script can re-render every
+    figure from without rerunning the simulator. The full set is
+    enumerated in TRACE_FIELDS at the top of run_single_seed.py and
+    documented inline there.
+    """
+    from benchmarks.trace_contract import TRACE_FIELDS
+
+    required_fields = (
+        "ari_trace",
+        "waste_trace",
+        "rho_trace",
+        "rho_policy_observed_trace",
+        "rho_outcome_environmental_trace",
+        "action_trace",
+        "prob_trace",
+        "carbon_trace",
+        "hours",
+        "temp_trace",
+        "rh_trace",
+        "inventory_trace",
+        "demand_trace",
+        "temp_policy_observed_trace",
+        "temp_outcome_environmental_trace",
+        "rh_policy_observed_trace",
+        "rh_outcome_environmental_trace",
+        "inventory_policy_observed_trace",
+        "inventory_outcome_environmental_trace",
+        "demand_policy_observed_trace",
+        "demand_forecast_policy_observed_trace",
+        "demand_regime_flag_trace",
+        "price_signal_trace",
+        "supply_forecast_policy_observed_trace",
+        "demand_outcome_environmental_trace",
+        "transport_multiplier_outcome_environmental_trace",
+        "simulated_dispatch_accounted_trace",
+        "slca_component_trace",
+        "slca_trace",
+        "equity_trace",
+        "reward_trace",
+    )
+    assert TRACE_FIELDS == required_fields, (
+        "The shared TRACE_FIELDS contract drifted from the complete, ordered "
+        "publication trace schema. Update the simulator, raw validator, figure "
+        "renderer, and this assertion together for an intentional change."
+    )
+
+
+def test_run_single_seed_envelope_shape(tmp_path: Path, monkeypatch):
+    """The dumped JSON has the documented envelope keys.
+
+    Imports run_single_seed.main with sys.argv patched. Uses
+    DETERMINISTIC_MODE=true for speed (still ~3-5 min on this hardware
+    -- the simulator runs the full mode x scenario matrix). Marked
+    'slow' so it doesn't bloat the default suite.
+    """
+    pytest.skip(
+        "Heavy: requires full simulator run. Covered by the "
+        "structural / file-existence checks below plus the runtime "
+        "exercise in mvp/simulation/tests/test_per_seed_traces_integration.py "
+        "(once HPC writes per-seed JSONs into the canonical path)."
+    )
+
+
+def test_loader_returns_none_when_benchmark_seeds_missing(tmp_path, monkeypatch):
+    """Fig 2 panel d falls back cleanly when no per-seed JSONs exist."""
+    import generate_figures as gf  # type: ignore
+    # Redirect RESULTS_DIR to an empty tmp_path; loader should return None.
+    monkeypatch.setattr(gf, "RESULTS_DIR", tmp_path)
+    out = gf._load_per_seed_traces("heatwave", "agribrain", "ari_trace")
+    assert out is None, (
+        "Loader returned non-None when benchmark_seeds/ doesn't exist; "
+        "the fig 2 fallback path won't trigger and the panel will "
+        "crash on a missing array."
+    )
+
+
+def test_loader_returns_none_when_dir_empty(tmp_path, monkeypatch):
+    """Empty benchmark_seeds/ -> loader returns None (graceful fallback)."""
+    import generate_figures as gf  # type: ignore
+    (tmp_path / "benchmark_seeds").mkdir()
+    monkeypatch.setattr(gf, "RESULTS_DIR", tmp_path)
+    out = gf._load_per_seed_traces("heatwave", "agribrain", "ari_trace")
+    assert out is None
+
+
+def _write_seed_json(seed_dir: Path, seed: int, *, traces: dict) -> None:
+    """Helper to drop a synthetic per-seed JSON in the documented envelope shape."""
+    payload = {
+        "seed": seed,
+        "scenarios": {
+            "heatwave": {"agribrain": {"ari": 0.6, "waste": 0.04}},
+        },
+        "traces": traces,
+    }
+    (seed_dir / f"seed_{seed}.json").write_text(json.dumps(payload))
+
+
+def test_loader_stacks_three_synthetic_seeds(tmp_path, monkeypatch):
+    """Three synthetic seeds -> (3, n_steps) stack returned."""
+    import generate_figures as gf  # type: ignore
+    seeds_dir = tmp_path / "benchmark_seeds"
+    seeds_dir.mkdir()
+    n_steps = 8
+    for s, base in [(42, 0.5), (1337, 0.55), (2024, 0.60)]:
+        trace = [round(base + 0.01 * t, 4) for t in range(n_steps)]
+        _write_seed_json(
+            seeds_dir, s,
+            traces={"heatwave": {"agribrain": {"ari_trace": trace}}},
+        )
+    monkeypatch.setattr(gf, "RESULTS_DIR", tmp_path)
+    out = gf._load_per_seed_traces("heatwave", "agribrain", "ari_trace")
+    assert out is not None, "Loader returned None despite three valid seed files"
+    assert out.shape == (3, n_steps), f"shape={out.shape}, expected (3, {n_steps})"
+    # Per-step seed-mean for step 0 should be (0.5 + 0.55 + 0.6) / 3 = 0.55
+    assert out[:, 0].mean() == pytest.approx(0.55, abs=1e-9)
+
+
+def test_loader_handles_tagged_subdir_layout(tmp_path, monkeypatch):
+    """HPC orchestrator writes seeds under benchmark_seeds/<RUN_TAG>/."""
+    import generate_figures as gf  # type: ignore
+    seeds_root = tmp_path / "benchmark_seeds"
+    tagged_dir = seeds_root / "abc123_20260504_1200"
+    tagged_dir.mkdir(parents=True)
+    n_steps = 6
+    for s in (42, 1337):
+        _write_seed_json(
+            tagged_dir, s,
+            traces={"heatwave": {"static": {"ari_trace": [0.4] * n_steps}}},
+        )
+    monkeypatch.setattr(gf, "RESULTS_DIR", tmp_path)
+    out = gf._load_per_seed_traces("heatwave", "static", "ari_trace")
+    assert out is not None and out.shape == (2, n_steps)
+
+
+def test_loader_rejects_ambiguous_tagged_runs(tmp_path, monkeypatch):
+    """Sibling run tags must never be silently combined."""
+    import generate_figures as gf  # type: ignore
+
+    for tag in ("run_a", "run_b"):
+        tagged = tmp_path / "benchmark_seeds" / tag
+        tagged.mkdir(parents=True)
+        _write_seed_json(
+            tagged, 42,
+            traces={"heatwave": {"agribrain": {"ari_trace": [0.5] * 4}}},
+        )
+    monkeypatch.setattr(gf, "RESULTS_DIR", tmp_path)
+    monkeypatch.delenv("FIGURE_SEED_ROOT", raising=False)
+    monkeypatch.delenv("RUN_TAG", raising=False)
+    with pytest.raises(RuntimeError, match="ambiguous benchmark seed cache"):
+        gf._load_per_seed_traces("heatwave", "agribrain", "ari_trace")
+
+
+def test_loader_drops_seeds_with_mismatched_step_count(tmp_path, monkeypatch):
+    """A truncated seed must not crash the stack; it gets dropped."""
+    import generate_figures as gf  # type: ignore
+    seeds_dir = tmp_path / "benchmark_seeds"
+    seeds_dir.mkdir()
+    full = [0.5] * 8
+    short = [0.5] * 5  # truncated
+    for s, t in [(42, full), (1337, full), (2024, short)]:
+        _write_seed_json(
+            seeds_dir, s,
+            traces={"heatwave": {"agribrain": {"ari_trace": t}}},
+        )
+    monkeypatch.setattr(gf, "RESULTS_DIR", tmp_path)
+    out = gf._load_per_seed_traces("heatwave", "agribrain", "ari_trace")
+    # Modal length is 8 (two seeds), so the short seed (one) is dropped.
+    assert out is not None and out.shape == (2, 8)
+
+
+def test_loader_returns_none_when_no_traces_key(tmp_path, monkeypatch):
+    """Legacy per-seed JSONs (pre-2026-05) lack the "traces" key.
+
+    The loader returns None for those so the figure's fallback path
+    fires cleanly.
+    """
+    import generate_figures as gf  # type: ignore
+    seeds_dir = tmp_path / "benchmark_seeds"
+    seeds_dir.mkdir()
+    legacy_payload = {
+        "heatwave": {"agribrain": {"ari": 0.6}},
+        # No "traces" key, no "seed" key, just the legacy
+        # scenario-at-root format.
+    }
+    (seeds_dir / "seed_42.json").write_text(json.dumps(legacy_payload))
+    monkeypatch.setattr(gf, "RESULTS_DIR", tmp_path)
+    out = gf._load_per_seed_traces("heatwave", "agribrain", "ari_trace")
+    assert out is None
+
+
+def test_loader_returns_none_for_missing_scenario_or_mode(tmp_path, monkeypatch):
+    """Asking for a scenario/mode the dump didn't carry -> None."""
+    import generate_figures as gf  # type: ignore
+    seeds_dir = tmp_path / "benchmark_seeds"
+    seeds_dir.mkdir()
+    _write_seed_json(
+        seeds_dir, 42,
+        traces={"heatwave": {"agribrain": {"ari_trace": [0.5, 0.51]}}},
+    )
+    monkeypatch.setattr(gf, "RESULTS_DIR", tmp_path)
+    # Wrong scenario.
+    assert gf._load_per_seed_traces("cyber_outage", "agribrain", "ari_trace") is None
+    # Wrong mode.
+    assert gf._load_per_seed_traces("heatwave", "missing_mode", "ari_trace") is None
+    # Wrong field.
+    assert gf._load_per_seed_traces("heatwave", "agribrain", "rho_trace") is None
+
+
+def test_rolling_helpers_do_not_zero_pad_endpoints():
+    """Constant trajectories stay constant at both plot boundaries."""
+    import generate_figures as gf  # type: ignore
+
+    values = np.full(17, 0.625)
+    centred = gf._rolling_mean(values, 12)
+    trailing = gf._rolling_mean(values, 12, centered=False)
+    assert np.allclose(centred, values)
+    assert np.allclose(trailing, values)
+
+
+def test_trailing_full_window_rle_equals_episode_rle():
+    """The final plotted value reproduces the canonical episode metric."""
+    import generate_figures as gf  # type: ignore
+    from agribrain.backend.src.models.resilience import (
+        HIERARCHY_WEIGHT,
+        RLE_THRESHOLD,
+        compute_rle,
+        hierarchy_weight,
+    )
+
+    rho = np.asarray([0.05, 0.20, 0.48, 0.60, 0.75], dtype=float)
+    actions = [
+        "cold_chain",
+        "local_redistribute",
+        "local_redistribute",
+        "recovery",
+        "recovery",
+    ]
+    w_max = max(HIERARCHY_WEIGHT.values())
+    numerator = np.asarray([
+        value * hierarchy_weight(action, value)
+        if value > RLE_THRESHOLD else 0.0
+        for value, action in zip(rho, actions)
+    ])
+    denominator = np.asarray([
+        value * w_max if value > RLE_THRESHOLD else 0.0
+        for value in rho
+    ])
+    rolling_num = gf._rolling_sum(numerator, len(rho), centered=False)
+    rolling_den = gf._rolling_sum(denominator, len(rho), centered=False)
+    plotted_endpoint = rolling_num[-1] / rolling_den[-1]
+    assert plotted_endpoint == pytest.approx(compute_rle(rho.tolist(), actions))

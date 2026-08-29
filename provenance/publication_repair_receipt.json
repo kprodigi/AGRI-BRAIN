@@ -1,0 +1,30 @@
+{
+  "status": "historical_superseded_not_current_evidence",
+  "archive": {
+    "bytes": 367464538,
+    "file": "hpc_results_2fd7bff_20260819_105517_publication_repair_82b0454.tar.gz",
+    "member_count": 1976,
+    "sha256": "5481205b2a35254c8254b7f3ea928345162533d8222f16a1883a673514e6eb7c"
+  },
+  "derivation_type": "publication-only deterministic repair",
+  "generated_at_utc": "2026-08-20T13:21:34.648961+00:00",
+  "manifest": {
+    "artifact_count": 1975,
+    "bytes": 462506,
+    "hash_semantics": "literal bytes",
+    "payload_merkle_root": "2ed221af8fa0c56debab23bcbe9aca46acd76c2935969eb9d23426c4ce1f6dd4",
+    "sha256": "89c2682842c91e4296e305895ca0b2a877d7eea16a8c2ed3da0631245a56c4b7"
+  },
+  "parent_archive_sha256": "0d69dfbc4422d5575e2633029d73a3363a1b98c320d4d95642aafe06453b4ad9",
+  "publication_code_commit": "82b04546886b2a0b2fa9c83b2acc7b414d469fac",
+  "run_tag": "2fd7bff_20260819_105517",
+  "schema_version": 1,
+  "simulation_rerun": false,
+  "simulation_source_commit": "2fd7bff2128bd8ef89b838fd963c937f728f2e1b",
+  "validation": {
+    "exact_manifest_membership": "PASS",
+    "postarchive_payload_hashes": "PASS",
+    "prearchive_payload_hashes": "PASS",
+    "safe_regular_members_only": "PASS"
+  }
+}

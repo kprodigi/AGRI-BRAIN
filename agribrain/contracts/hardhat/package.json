@@ -1,0 +1,21 @@
+{
+  "name": "agri-brain-hardhat",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "type": "commonjs",
+  "scripts": {
+    "test": "hardhat test",
+    "compile": "hardhat compile",
+    "node": "hardhat node",
+    "deploy:localhost": "hardhat run --network localhost scripts/deploy.js",
+    "lint": "hardhat compile --force"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.1.2",
+    "@nomicfoundation/hardhat-network-helpers": "^1.1.2",
+    "hardhat": "^2.22.5",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "chai": "^4.5.0"
+  }
+}
