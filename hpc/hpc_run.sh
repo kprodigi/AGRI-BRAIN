@@ -84,6 +84,7 @@ fi
 # sbatch --export=ALL, or the dependent publisher can misclassify the run only
 # after the simulation arrays have completed.
 unset AGRIBRAIN_RECOVERY_RECEIPT \
+    AGRIBRAIN_RECOVERY_ATTEMPT_ROOT \
     AGRIBRAIN_SIMULATION_COMMIT \
     AGRIBRAIN_PUBLICATION_CODE_COMMIT \
     AGRIBRAIN_SIMULATION_SOURCE_TREE_SHA256 \

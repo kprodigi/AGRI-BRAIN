@@ -57,7 +57,9 @@ def test_serialise_trace_handles_all_three_shapes():
 
     # (a) list[float] / list[int] -- ari_trace style.
     assert fn([0.123456, 0.789012]) == [0.1235, 0.7890]
-    assert fn([0, 1, 2, 0]) == [0, 1, 2, 0]
+    serialized_actions = fn([0, 1, 2, 0])
+    assert serialized_actions == [0, 1, 2, 0]
+    assert all(type(value) is int for value in serialized_actions)
     # numpy 1D ndarray.
     assert fn(np.array([0.5, 1.5, 2.5])) == [0.5, 1.5, 2.5]
 
@@ -118,7 +120,9 @@ def test_serialise_trace_handles_all_three_shapes():
     # Two HPC runs (jobs 10852464 and 10853393) burned ~50 h of
     # compute on this before the dispatch was made universal.
     assert fn([np.float64(0.5), np.float64(1.5)]) == [0.5, 1.5]
-    assert fn([np.int64(3), np.int64(7)]) == [3, 7]
+    serialized_numpy_ints = fn([np.int64(3), np.int64(7)])
+    assert serialized_numpy_ints == [3, 7]
+    assert all(type(value) is int for value in serialized_numpy_ints)
     # list[np.ndarray] must serialise as list[list[float]].
     out = fn([np.array([0.3, 0.5, 0.2]), np.array([0.4, 0.4, 0.2])])
     assert out == [[0.3, 0.5, 0.2], [0.4, 0.4, 0.2]], out
@@ -141,6 +145,32 @@ def test_run_single_seed_self_test_trace_dispatch_passes():
     import importlib
     rss = importlib.import_module("run_single_seed")
     rss._self_test_trace_dispatch()  # raises if any case fails
+
+
+def test_action_contract_accepts_only_exact_discrete_numeric_values():
+    """Immutable d3286ae traces use integral floats; reject everything else."""
+
+    from benchmarks.trace_contract import _canonical_action_index
+
+    for value, expected in ((0, 0), (1, 1), (2, 2), (0.0, 0), (1.0, 1), (2.0, 2)):
+        assert _canonical_action_index(value, where="test/action_trace") == expected
+    invalid_values = (
+        True,
+        False,
+        -1,
+        3,
+        10**400,
+        0.5,
+        1.5,
+        float("nan"),
+        float("inf"),
+        float("-inf"),
+        "1",
+        None,
+    )
+    for invalid in invalid_values:
+        with pytest.raises(ValueError, match="noncanonical action"):
+            _canonical_action_index(invalid, where="test/action_trace")
 
 
 def test_run_single_seed_declares_canonical_trace_modes():

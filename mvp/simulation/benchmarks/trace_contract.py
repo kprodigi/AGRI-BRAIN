@@ -71,6 +71,25 @@ def _numeric_sequence(value: Any, *, where: str) -> list[float]:
     return values
 
 
+def _canonical_action_index(value: Any, *, where: str) -> int:
+    """Return one exact discrete action, accepting legacy JSON ``1.0``.
+
+    Simulation commit d3286ae serialized every Python integer through
+    ``round(float(value), 4)``, so its immutable preserved action traces use
+    0.0/1.0/2.0.  Those values are exactly the documented discrete action set;
+    fractional, non-finite, Boolean, string, and out-of-range values remain
+    invalid.  The current writer preserves integer types for future runs.
+    """
+
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{where} contains a noncanonical action")
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError(f"{where} contains a noncanonical action")
+    if value not in (0, 1, 2):
+        raise ValueError(f"{where} contains a noncanonical action")
+    return int(value)
+
+
 def validate_trace_cell(cell: Any, *, where: str) -> None:
     """Validate the exact trace fields, shapes, domains, and identities."""
 
@@ -99,9 +118,9 @@ def validate_trace_cell(cell: Any, *, where: str) -> None:
         raise ValueError(f"{where}/action_trace is not an exact 288-step list")
     actions: list[int] = []
     for value in actions_raw:
-        if isinstance(value, bool) or not isinstance(value, int) or value not in range(3):
-            raise ValueError(f"{where}/action_trace contains a noncanonical action")
-        actions.append(value)
+        actions.append(_canonical_action_index(
+            value, where=f"{where}/action_trace",
+        ))
 
     probabilities = cell["prob_trace"]
     if not isinstance(probabilities, list) or len(probabilities) != TRACE_LENGTH:

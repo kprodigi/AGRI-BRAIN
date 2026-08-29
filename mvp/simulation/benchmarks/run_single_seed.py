@@ -145,8 +145,9 @@ def _to_jsonable(obj, _decimals: int | None = 4):
                                           (NOT folded into 0 / 1 even
                                           though ``bool`` is an
                                           ``int`` subclass).
-      * Other ``int`` / ``float``    ->  rounded to ``_decimals``
-                                          decimal places.
+      * ``int``                      ->  preserved as an integer.
+      * ``float``                    ->  rounded to ``_decimals`` decimal
+                                          places.
       * Anything else (str, None,
         custom objects, NaN/Inf, ...) -> preserved verbatim.
 
@@ -184,7 +185,10 @@ def _to_jsonable(obj, _decimals: int | None = 4):
     if isinstance(obj, bool):
         return obj
     if isinstance(obj, int):
-        return obj if _decimals is None else round(float(obj), _decimals)
+        # Discrete trace fields (especially action_trace) must remain JSON
+        # integers.  Converting through float made the preserved d3286ae HPC
+        # run encode valid action indices as 0.0/1.0/2.0.
+        return obj
     if isinstance(obj, float):
         value = float(obj)
         if not math.isfinite(value):

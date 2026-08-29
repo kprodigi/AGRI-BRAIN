@@ -63,6 +63,7 @@ def test_slurm_orchestrator_is_external_exact_and_fail_closed() -> None:
     fresh_gate = orchestrator[fresh_gate_start:fresh_gate_end]
     for variable in (
         "AGRIBRAIN_RECOVERY_RECEIPT",
+        "AGRIBRAIN_RECOVERY_ATTEMPT_ROOT",
         "AGRIBRAIN_SIMULATION_COMMIT",
         "AGRIBRAIN_PUBLICATION_CODE_COMMIT",
         "AGRIBRAIN_SIMULATION_SOURCE_TREE_SHA256",

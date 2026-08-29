@@ -59,6 +59,7 @@ fi
 # A fresh structural DAG must not inherit publication-recovery authorization
 # from a reused login shell through sbatch --export=ALL.
 unset AGRIBRAIN_RECOVERY_RECEIPT \
+    AGRIBRAIN_RECOVERY_ATTEMPT_ROOT \
     AGRIBRAIN_SIMULATION_COMMIT \
     AGRIBRAIN_PUBLICATION_CODE_COMMIT \
     AGRIBRAIN_SIMULATION_SOURCE_TREE_SHA256 \

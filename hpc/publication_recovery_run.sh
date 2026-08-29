@@ -66,12 +66,10 @@ physical_regular_file() {
 CORE_RECOVERY_JOB=""
 STRUCTURAL_RECOVERY_JOB=""
 FINALIZER_RECOVERY_JOB=""
-STRUCTURAL_CANONICAL_RAW=""
-STRUCTURAL_CANONICAL_RECEIPT=""
+STRUCTURAL_ATTEMPT_ROOT=""
+STRUCTURAL_ATTEMPT_RAW_MANIFEST=""
 STRUCTURAL_RAW_MANIFEST=""
 STRUCTURAL_RECOVERY_RECEIPT=""
-STRUCTURAL_CANONICAL_RAW_CREATED=false
-STRUCTURAL_CANONICAL_RECEIPT_CREATED=false
 RELEASE_ATTEMPTED=false
 SLURM_STATE_MAX_ATTEMPTS=120
 SLURM_STATE_RETRY_SECONDS=1
@@ -207,33 +205,11 @@ cancel_held_recovery_jobs_on_failure() {
                 fi
             fi
         done
-        local preserve_canonical=false
         if [ "$RELEASE_ATTEMPTED" = true ] \
             || [ "$all_confirmed_held" != true ]; then
-            preserve_canonical=true
-            echo "Preserving canonical recovery evidence because release state is partial or uncertain." >&2
-        fi
-        if [ "$preserve_canonical" = false ] \
-            && [ "$STRUCTURAL_CANONICAL_RECEIPT_CREATED" = true ]; then
-            if [ -f "$STRUCTURAL_CANONICAL_RECEIPT" ] \
-                && [ ! -L "$STRUCTURAL_CANONICAL_RECEIPT" ] \
-                && cmp --silent -- "$STRUCTURAL_RECOVERY_RECEIPT" \
-                    "$STRUCTURAL_CANONICAL_RECEIPT"; then
-                rm -- "$STRUCTURAL_CANONICAL_RECEIPT"
-            else
-                echo "WARNING: canonical structural recovery receipt changed; remove/audit it manually." >&2
-            fi
-        fi
-        if [ "$preserve_canonical" = false ] \
-            && [ "$STRUCTURAL_CANONICAL_RAW_CREATED" = true ]; then
-            if [ -f "$STRUCTURAL_CANONICAL_RAW" ] \
-                && [ ! -L "$STRUCTURAL_CANONICAL_RAW" ] \
-                && cmp --silent -- "$STRUCTURAL_RAW_MANIFEST" \
-                    "$STRUCTURAL_CANONICAL_RAW"; then
-                rm -- "$STRUCTURAL_CANONICAL_RAW"
-            else
-                echo "WARNING: canonical structural raw manifest changed; remove/audit it manually." >&2
-            fi
+            echo "Preserving immutable recovery-attempt evidence because release state is partial or uncertain." >&2
+        elif [ -n "$STRUCTURAL_ATTEMPT_ROOT" ]; then
+            echo "Preserving immutable recovery-attempt evidence for the cancelled held setup: ${STRUCTURAL_ATTEMPT_ROOT}" >&2
         fi
     fi
     exit "$status"
@@ -314,20 +290,9 @@ for path in "$CORE_RAW_SEEDS" "$CORE_RAW_STRESS" "$CORE_RAW_H3"; do
         exit 1
     fi
 done
-for output in completion_status.json structural_sensitivity_analysis.json \
-    publication_environment.json slurm_simulation_accounting.json \
-    structural_sensitivity_artifact_manifest.json \
-    "structural_sensitivity_evidence_${AGRIBRAIN_STRUCTURAL_RUN_TAG}.tar.gz" \
-    structural_sensitivity_archive_receipt.json \
-    structural_sensitivity_summary.csv structural_sensitivity_summary.png \
-    structural_sensitivity_summary.pdf \
-    structural_sensitivity_publication_receipt.json; do
-    if [ -e "${STRUCTURAL_RUN_DIR}/${output}" ] \
-        || [ -L "${STRUCTURAL_RUN_DIR}/${output}" ]; then
-        echo "BLOCK: structural derived output already exists: ${STRUCTURAL_RUN_DIR}/${output}"
-        exit 1
-    fi
-done
+# Legacy publication attempts may have left top-level derived artifacts in the
+# preserved run.  They are audit evidence, not inputs to this attempt.  The new
+# publisher writes only beneath its Slurm-job-ID-scoped attempt directory.
 for path in "$CORE_ORIGINAL_RECEIPT" "$STRUCTURAL_ORIGINAL_RECEIPT" \
     "$AGRIBRAIN_CORE_FAILED_STDOUT" "$AGRIBRAIN_CORE_FAILED_STDERR" \
     "$AGRIBRAIN_STRUCTURAL_FAILED_STDOUT" \
@@ -357,7 +322,6 @@ CONTROL_ROOT="$(cd "$AGRIBRAIN_RECOVERY_CONTROL_ROOT" && pwd -P)"
 mkdir -p "$CONTROL_ROOT/accounting" "$CONTROL_ROOT/raw_manifests/core" \
     "$CONTROL_ROOT/raw_manifests/structural" \
     "$CONTROL_ROOT/recovery_receipts/core" \
-    "$CONTROL_ROOT/recovery_receipts/structural" \
     "$CONTROL_ROOT/recovery_receipts/finalizer" \
     "$CONTROL_ROOT/recovery_logs"
 
@@ -504,44 +468,7 @@ fi
 PUBLICATION_TREE_SHA256="$CORE_PUBLICATION_TREE_SHA256"
 
 CORE_RECOVERY_RECEIPT="${CONTROL_ROOT}/recovery_receipts/core/${AGRIBRAIN_CORE_RUN_TAG}.json"
-STRUCTURAL_RECOVERY_RECEIPT="${CONTROL_ROOT}/recovery_receipts/structural/${AGRIBRAIN_STRUCTURAL_RUN_TAG}.json"
 FINALIZER_AUTHORIZATION="${CONTROL_ROOT}/recovery_receipts/finalizer/${AGRIBRAIN_CORE_RUN_TAG}_${AGRIBRAIN_STRUCTURAL_RUN_TAG}.json"
-STRUCTURAL_CANONICAL_RAW="${STRUCTURAL_RUN_DIR}/preserved_raw_manifests/${AGRIBRAIN_STRUCTURAL_RUN_TAG}.json"
-STRUCTURAL_CANONICAL_RECEIPT="${STRUCTURAL_RUN_DIR}/publication_recovery_receipts/${AGRIBRAIN_STRUCTURAL_RUN_TAG}.json"
-"$PUBLICATION_PYTHON" - "$STRUCTURAL_RUN_DIR" "$STRUCTURAL_CANONICAL_RAW" \
-    "$STRUCTURAL_CANONICAL_RECEIPT" <<'PY'
-import sys
-from pathlib import Path
-
-root = Path(sys.argv[1])
-for raw_target in sys.argv[2:]:
-    target = Path(raw_target)
-    if not root.is_absolute() or not target.is_absolute():
-        raise SystemExit("BLOCK: canonical structural evidence paths must be absolute")
-    try:
-        target.relative_to(root)
-    except ValueError as exc:
-        raise SystemExit(
-            "BLOCK: canonical structural evidence target escapes the run directory"
-        ) from exc
-    for component in (target, *target.parents):
-        if component.is_symlink():
-            raise SystemExit(
-                f"BLOCK: canonical structural evidence has a symlink component: {component}"
-            )
-        if component.exists() and component != target and not component.is_dir():
-            raise SystemExit(
-                f"BLOCK: canonical structural evidence parent is not a directory: {component}"
-            )
-        if component == root:
-            break
-PY
-for canonical in "$STRUCTURAL_CANONICAL_RAW" "$STRUCTURAL_CANONICAL_RECEIPT"; do
-    if [ -e "$canonical" ] || [ -L "$canonical" ]; then
-        echo "BLOCK: canonical structural recovery evidence already exists: ${canonical}"
-        exit 1
-    fi
-done
 CORE_BUNDLE="${CORE_PUBLICATION_SNAPSHOT}/publication_bundle_${AGRIBRAIN_CORE_RUN_TAG}"
 CORE_ARCHIVE="${CORE_BUNDLE}/hpc_results_${AGRIBRAIN_CORE_RUN_TAG}.tar.gz"
 CORE_ARCHIVE_RECEIPT="${CORE_BUNDLE}/publication_archive_receipt_${AGRIBRAIN_CORE_RUN_TAG}.json"
@@ -550,8 +477,6 @@ CORE_COMPLETE_BUNDLE="${CORE_PUBLICATION_SNAPSHOT}/mvp/simulation/results/comple
 CORE_COMPLETE_ARCHIVE="${CORE_COMPLETE_BUNDLE}/complete_run_evidence_${AGRIBRAIN_CORE_RUN_TAG}.tar.gz"
 CORE_COMPLETE_RECEIPT="${CORE_COMPLETE_BUNDLE}/RECEIPT.json"
 CORE_COMPLETE_READY="${CORE_COMPLETE_BUNDLE}/READY.json"
-STRUCTURAL_ARCHIVE="${STRUCTURAL_RUN_DIR}/structural_sensitivity_evidence_${AGRIBRAIN_STRUCTURAL_RUN_TAG}.tar.gz"
-STRUCTURAL_ARCHIVE_RECEIPT="${STRUCTURAL_RUN_DIR}/structural_sensitivity_archive_receipt.json"
 FULL_EVIDENCE_DIR="${CONTROL_ROOT}/full_submission_evidence"
 CORE_SUBMISSION="$(sbatch --parsable --hold \
     --partition="$AGRIBRAIN_PARTITION" --chdir="$CORE_PUBLICATION_SNAPSHOT" \
@@ -570,7 +495,7 @@ STRUCTURAL_SUBMISSION="$(sbatch --parsable --hold \
     --partition="$AGRIBRAIN_PARTITION" --chdir="$STRUCTURAL_PUBLICATION_SNAPSHOT" \
     --output="${CONTROL_ROOT}/recovery_logs/structural_%j.out" \
     --error="${CONTROL_ROOT}/recovery_logs/structural_%j.err" \
-    --export=ALL,RUN_TAG="$AGRIBRAIN_STRUCTURAL_RUN_TAG",AGRIBRAIN_SOURCE_SNAPSHOT="$STRUCTURAL_PUBLICATION_SNAPSHOT",AGRIBRAIN_SOURCE_SNAPSHOT_MODE=detached_readonly_git_worktree_v1,AGRIBRAIN_SOURCE_TREE_SHA256="$PUBLICATION_TREE_SHA256",AGRIBRAIN_SIMULATION_SOURCE_TREE_SHA256="$STRUCTURAL_SIMULATION_TREE",AGRIBRAIN_SIMULATION_COMMIT="$AGRIBRAIN_SIMULATION_COMMIT",AGRIBRAIN_PUBLICATION_CODE_COMMIT="$PUBLICATION_COMMIT",AGRIBRAIN_RECOVERY_RECEIPT="$STRUCTURAL_CANONICAL_RECEIPT",AGRIBRAIN_PRESERVED_RAW_MANIFEST="$STRUCTURAL_CANONICAL_RAW",AGRIBRAIN_RECOVERY_LOG_DIR="${CONTROL_ROOT}/recovery_logs",AGRIBRAIN_VENV=".publication_venvs/${AGRIBRAIN_STRUCTURAL_RUN_TAG}",AGRIBRAIN_SENSITIVITY_SOURCE_COMMIT="$AGRIBRAIN_SIMULATION_COMMIT",AGRIBRAIN_SENSITIVITY_ROOT="$(dirname "$STRUCTURAL_RUN_DIR")",SENSITIVITY_RUN_DIR="$STRUCTURAL_RUN_DIR",SENSITIVITY_RUN_PLAN="${STRUCTURAL_RUN_DIR}/run_plan.json" \
+    --export=ALL,RUN_TAG="$AGRIBRAIN_STRUCTURAL_RUN_TAG",AGRIBRAIN_SOURCE_SNAPSHOT="$STRUCTURAL_PUBLICATION_SNAPSHOT",AGRIBRAIN_SOURCE_SNAPSHOT_MODE=detached_readonly_git_worktree_v1,AGRIBRAIN_SOURCE_TREE_SHA256="$PUBLICATION_TREE_SHA256",AGRIBRAIN_SIMULATION_SOURCE_TREE_SHA256="$STRUCTURAL_SIMULATION_TREE",AGRIBRAIN_SIMULATION_COMMIT="$AGRIBRAIN_SIMULATION_COMMIT",AGRIBRAIN_PUBLICATION_CODE_COMMIT="$PUBLICATION_COMMIT",AGRIBRAIN_RECOVERY_LOG_DIR="${CONTROL_ROOT}/recovery_logs",AGRIBRAIN_VENV=".publication_venvs/${AGRIBRAIN_STRUCTURAL_RUN_TAG}",AGRIBRAIN_SENSITIVITY_SOURCE_COMMIT="$AGRIBRAIN_SIMULATION_COMMIT",AGRIBRAIN_SENSITIVITY_ROOT="$(dirname "$STRUCTURAL_RUN_DIR")",SENSITIVITY_RUN_DIR="$STRUCTURAL_RUN_DIR",SENSITIVITY_RUN_PLAN="${STRUCTURAL_RUN_DIR}/run_plan.json" \
     hpc/hpc_sensitivity_publish_recovery.sh)"
 STRUCTURAL_RECOVERY_JOB="${STRUCTURAL_SUBMISSION%%;*}"
 if [[ ! "$STRUCTURAL_RECOVERY_JOB" =~ ^[1-9][0-9]*$ ]] \
@@ -579,6 +504,57 @@ if [[ ! "$STRUCTURAL_RECOVERY_JOB" =~ ^[1-9][0-9]*$ ]] \
     exit 1
 fi
 require_user_held_job "$STRUCTURAL_RECOVERY_JOB"
+
+# The actual held Slurm job ID is the immutable attempt identifier.  This
+# avoids collisions with every earlier released or partially written recovery,
+# including legacy top-level outputs, without deleting any audit evidence.
+STRUCTURAL_ATTEMPT_ROOT="${STRUCTURAL_RUN_DIR}/publication_recovery_attempts/${STRUCTURAL_RECOVERY_JOB}"
+STRUCTURAL_ATTEMPT_RAW_MANIFEST="${STRUCTURAL_ATTEMPT_ROOT}/preserved_raw_manifests/${AGRIBRAIN_STRUCTURAL_RUN_TAG}.json"
+STRUCTURAL_RECOVERY_RECEIPT="${STRUCTURAL_ATTEMPT_ROOT}/publication_recovery_receipts/${AGRIBRAIN_STRUCTURAL_RUN_TAG}.json"
+STRUCTURAL_ARCHIVE="${STRUCTURAL_ATTEMPT_ROOT}/structural_sensitivity_evidence_${AGRIBRAIN_STRUCTURAL_RUN_TAG}.tar.gz"
+STRUCTURAL_ARCHIVE_RECEIPT="${STRUCTURAL_ATTEMPT_ROOT}/structural_sensitivity_archive_receipt.json"
+"$PUBLICATION_PYTHON" - "$STRUCTURAL_RUN_DIR" "$STRUCTURAL_ATTEMPT_ROOT" \
+    "$STRUCTURAL_RECOVERY_JOB" "$STRUCTURAL_RAW_MANIFEST" \
+    "$STRUCTURAL_ATTEMPT_RAW_MANIFEST" <<'PY'
+import os
+import re
+import sys
+from pathlib import Path
+
+run_root = Path(os.path.abspath(sys.argv[1]))
+attempt_root = Path(os.path.abspath(sys.argv[2]))
+job_id = sys.argv[3]
+source = Path(os.path.abspath(sys.argv[4]))
+target = Path(os.path.abspath(sys.argv[5]))
+if re.fullmatch(r"[1-9][0-9]*", job_id) is None:
+    raise SystemExit("BLOCK: structural recovery job ID is invalid")
+expected = run_root / "publication_recovery_attempts" / job_id
+if attempt_root != expected:
+    raise SystemExit("BLOCK: structural recovery attempt root is not job-ID-scoped")
+if run_root.is_symlink() or not run_root.is_dir():
+    raise SystemExit("BLOCK: structural run root became unsafe")
+attempt_parent = expected.parent
+if attempt_parent.is_symlink():
+    raise SystemExit("BLOCK: structural recovery attempt parent is symlinked")
+attempt_parent.mkdir(parents=False, exist_ok=True)
+if attempt_parent.is_symlink() or not attempt_parent.is_dir():
+    raise SystemExit("BLOCK: structural recovery attempt parent is unsafe")
+if attempt_root.exists() or attempt_root.is_symlink():
+    raise SystemExit(
+        f"BLOCK: structural recovery attempt already exists: {attempt_root}"
+    )
+attempt_root.mkdir(parents=False, exist_ok=False)
+if source.is_symlink() or not source.is_file():
+    raise SystemExit("BLOCK: control-root structural raw manifest is unsafe")
+if target != attempt_root / "preserved_raw_manifests" / source.name:
+    raise SystemExit("BLOCK: attempt raw-manifest target is not canonical")
+target.parent.mkdir(parents=False, exist_ok=False)
+payload = source.read_bytes()
+with target.open("xb") as stream:
+    stream.write(payload)
+if target.is_symlink() or target.read_bytes() != payload:
+    raise SystemExit("BLOCK: attempt raw-manifest copy mismatch")
+PY
 
 FINALIZER_SUBMISSION="$(sbatch --parsable --hold \
     --partition="$AGRIBRAIN_PARTITION" --chdir="$FINALIZER_PUBLICATION_SNAPSHOT" \
@@ -636,7 +612,7 @@ PYTHONPATH="$STRUCTURAL_PUBLICATION_SNAPSHOT" "$PUBLICATION_PYTHON" \
     --failed-accounting-record "$STRUCTURAL_FAILED_ACCOUNTING" \
     --failed-stdout "$AGRIBRAIN_STRUCTURAL_FAILED_STDOUT" \
     --failed-stderr "$AGRIBRAIN_STRUCTURAL_FAILED_STDERR" \
-    --raw-output-manifest "$STRUCTURAL_RAW_MANIFEST" \
+    --raw-output-manifest "$STRUCTURAL_ATTEMPT_RAW_MANIFEST" \
     --held-recovery-publisher-job-id "$STRUCTURAL_RECOVERY_JOB" \
     --reason-code terminal_failed_publisher_publication_only_recovery
 
@@ -657,8 +633,8 @@ PYTHONPATH="$STRUCTURAL_PUBLICATION_SNAPSHOT" "$PUBLICATION_PYTHON" \
     --publication-commit "$PUBLICATION_COMMIT" \
     --recovery-publisher-slurm-job-id "$STRUCTURAL_RECOVERY_JOB"
 
-# Both jobs and both control-root receipts are now valid while the jobs remain
-# held. Only now add the two canonical recovery files to the structural run.
+# Both jobs and their immutable attempt-scoped authorizations are valid while
+# the jobs remain held.  Revalidate all bindings immediately before release.
 require_user_held_job "$CORE_RECOVERY_JOB"
 require_user_held_job "$STRUCTURAL_RECOVERY_JOB"
 require_held_finalizer_dependency
@@ -669,45 +645,9 @@ PYTHONPATH="$FINALIZER_PUBLICATION_SNAPSHOT" "$PUBLICATION_PYTHON" \
     --core-publisher-job-id "$CORE_RECOVERY_JOB" \
     --structural-publisher-job-id "$STRUCTURAL_RECOVERY_JOB" \
     --require-live-held
-copy_canonical_evidence() {
-    local source="$1"
-    local target="$2"
-    "$PUBLICATION_PYTHON" - "$source" "$target" <<'PY'
-import sys
-from pathlib import Path
-
-source, target = Path(sys.argv[1]), Path(sys.argv[2])
-if source.is_symlink() or target.is_symlink() or target.exists():
-    raise SystemExit(
-        "BLOCK: canonical structural recovery evidence is unsafe or already exists"
-    )
-for component in target.parents:
-    if component.is_symlink():
-        raise SystemExit(
-            f"BLOCK: canonical structural recovery parent is symlinked: {component}"
-        )
-    if component.exists() and not component.is_dir():
-        raise SystemExit(
-            f"BLOCK: canonical structural recovery parent is not a directory: {component}"
-        )
-target.parent.mkdir(parents=True, exist_ok=True)
-if target.parent.is_symlink() or not target.parent.is_dir():
-    raise SystemExit("BLOCK: canonical structural recovery parent became unsafe")
-payload = source.read_bytes()
-with target.open("xb") as handle:
-    handle.write(payload)
-if target.read_bytes() != payload:
-    raise SystemExit("BLOCK: canonical structural recovery-evidence copy mismatch")
-PY
-}
-copy_canonical_evidence "$STRUCTURAL_RAW_MANIFEST" "$STRUCTURAL_CANONICAL_RAW"
-STRUCTURAL_CANONICAL_RAW_CREATED=true
-copy_canonical_evidence "$STRUCTURAL_RECOVERY_RECEIPT" \
-    "$STRUCTURAL_CANONICAL_RECEIPT"
-STRUCTURAL_CANONICAL_RECEIPT_CREATED=true
 PYTHONPATH="$STRUCTURAL_PUBLICATION_SNAPSHOT" "$PUBLICATION_PYTHON" \
     "$STRUCTURAL_PUBLICATION_SNAPSHOT/hpc/publication_recovery_receipt.py" validate \
-    --receipt "$STRUCTURAL_CANONICAL_RECEIPT" \
+    --receipt "$STRUCTURAL_RECOVERY_RECEIPT" \
     --original-submission-receipt "$STRUCTURAL_ORIGINAL_RECEIPT" --kind structural \
     --run-tag "$AGRIBRAIN_STRUCTURAL_RUN_TAG" \
     --simulation-commit "$AGRIBRAIN_SIMULATION_COMMIT" \
@@ -733,6 +673,8 @@ require_not_user_held_job "$FINALIZER_RECOVERY_JOB"
 trap - EXIT
 echo "Authorized and released core recovery publisher ${CORE_RECOVERY_JOB}."
 echo "Authorized and released structural recovery publisher ${STRUCTURAL_RECOVERY_JOB}."
+echo "Structural recovery attempt directory: ${STRUCTURAL_ATTEMPT_ROOT}"
+echo "Structural recovery archive destination: ${STRUCTURAL_ARCHIVE}"
 echo "Released combined-evidence finalizer ${FINALIZER_RECOVERY_JOB} (afterok both publishers)."
 echo "Combined receipt/READY destination: ${FULL_EVIDENCE_DIR}"
 echo "No simulation arrays were submitted or rerun."

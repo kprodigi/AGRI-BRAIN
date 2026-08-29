@@ -1100,6 +1100,219 @@ def test_complete_core_recovery_bundle_rejects_raw_path_substitution(
         )
 
 
+def test_structural_recovery_attempt_paths_are_exactly_job_scoped() -> None:
+    run_tag = "sensitivity_aaaaaaa_20260829_120000"
+    job_id = "15550002"
+    attempt_root = f"publication_recovery_attempts/{job_id}"
+    authorization = {
+        "attempt_root": attempt_root,
+        "authorized_recovery_publisher_job_id": job_id,
+        "receipt_file": (
+            f"{attempt_root}/publication_recovery_receipts/{run_tag}.json"
+        ),
+        "preserved_raw_manifest_file": (
+            f"{attempt_root}/preserved_raw_manifests/{run_tag}.json"
+        ),
+    }
+
+    assert evidence._structural_recovery_attempt_root(
+        authorization, run_tag=run_tag,
+    ) == attempt_root
+    assert evidence._publication_member("", "completion_status.json") == (
+        "completion_status.json"
+    )
+    assert evidence._publication_member(
+        attempt_root, "completion_status.json",
+    ) == f"{attempt_root}/completion_status.json"
+
+    for field, value in (
+        ("authorized_recovery_publisher_job_id", "0"),
+        ("attempt_root", "publication_recovery_attempts/15550001"),
+        (
+            "receipt_file",
+            f"{attempt_root}/publication_recovery_receipts/../{run_tag}.json",
+        ),
+        (
+            "preserved_raw_manifest_file",
+            "publication_recovery_attempts/15550001/"
+            f"preserved_raw_manifests/{run_tag}.json",
+        ),
+    ):
+        changed = dict(authorization)
+        changed[field] = value
+        with pytest.raises(ValueError):
+            evidence._structural_recovery_attempt_root(
+                changed, run_tag=run_tag,
+            )
+
+
+def test_archived_structural_recovery_reads_current_attempt_members(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run_tag = "sensitivity_aaaaaaa_20260829_120000"
+    job_id = "15550002"
+    attempt_root = f"publication_recovery_attempts/{job_id}"
+    receipt_bytes = b"{}"
+    raw_bytes = b"{}"
+    original_bytes = _json_bytes({"receipt_sha256": "9" * 64})
+    raw_payload = {
+        "manifest_sha256": "8" * 64,
+        "payload_merkle_root": "7" * 64,
+        "files": [],
+        "file_count": 0,
+        "total_bytes": 0,
+    }
+    recovery = {
+        "receipt_sha256": "6" * 64,
+        "source_identity": {"publication_repair_tree": "c" * 40},
+        "original_submission_receipt": {
+            "file": "slurm_submission.json",
+            "literal_sha256": hashlib.sha256(original_bytes).hexdigest(),
+            "receipt_sha256": "9" * 64,
+            "preserved_without_mutation": True,
+        },
+        "preserved_raw_outputs": {
+            "file": f"{run_tag}.json",
+            "bytes": len(raw_bytes),
+            "literal_sha256": hashlib.sha256(raw_bytes).hexdigest(),
+            "manifest_self_hash": raw_payload["manifest_sha256"],
+            "record_count": 0,
+            "normalized_record_set_sha256": evidence._canonical_sha256([]),
+            "payload_merkle_root": raw_payload["payload_merkle_root"],
+        },
+        "failed_publisher": {"job_id": "14473494"},
+        "recovery_publisher": {"job_id": job_id},
+    }
+    authorization = {
+        "attempt_root": attempt_root,
+        "receipt_file": (
+            f"{attempt_root}/publication_recovery_receipts/{run_tag}.json"
+        ),
+        "receipt_literal_sha256": hashlib.sha256(receipt_bytes).hexdigest(),
+        "preserved_raw_manifest_file": (
+            f"{attempt_root}/preserved_raw_manifests/{run_tag}.json"
+        ),
+        "preserved_raw_manifest_literal_sha256": hashlib.sha256(
+            raw_bytes
+        ).hexdigest(),
+        "preserved_raw_payload_merkle_root": raw_payload[
+            "payload_merkle_root"
+        ],
+        "simulation_rerun": False,
+        "receipt_sha256": recovery["receipt_sha256"],
+        "preserved_raw_manifest_sha256": raw_payload["manifest_sha256"],
+        "original_failed_publisher_job_id": "14473494",
+        "authorized_recovery_publisher_job_id": job_id,
+        "original_submission_receipt_preserved": True,
+    }
+    prefix = "structural_sensitivity_evidence/"
+    requested: list[str] = []
+
+    def member_bytes(_archive, member, *, metadata):
+        requested.append(member)
+        assert metadata == {}
+        if member.endswith("slurm_submission.json"):
+            return original_bytes
+        if "/publication_recovery_receipts/" in member:
+            return receipt_bytes
+        return raw_bytes
+
+    monkeypatch.setattr(evidence, "_archive_member_bytes", member_bytes)
+    monkeypatch.setattr(
+        evidence,
+        "validate_recovery_receipt_payload",
+        lambda *_args, **_kwargs: recovery,
+    )
+    monkeypatch.setattr(
+        evidence,
+        "validate_manifest_document",
+        lambda *_args, **_kwargs: raw_payload,
+    )
+    monkeypatch.setattr(
+        evidence,
+        "_validate_structural_raw_archive_mapping",
+        lambda *_args, **_kwargs: {"exact_member_set": True},
+    )
+
+    result = evidence._validate_archived_recovery(
+        tmp_path / "unused.tar.gz",
+        metadata={},
+        prefix=prefix,
+        kind="structural",
+        run_tag=run_tag,
+        simulation_commit="a" * 40,
+        publication_commit="b" * 40,
+        simulation_source_tree_sha256="1" * 64,
+        original_submission_member="slurm_submission.json",
+        manifested_authorization=authorization,
+    )
+    assert requested == [
+        f"{prefix}{attempt_root}/publication_recovery_receipts/{run_tag}.json",
+        f"{prefix}{attempt_root}/preserved_raw_manifests/{run_tag}.json",
+        f"{prefix}slurm_submission.json",
+    ]
+    assert result["attempt_root"] == attempt_root
+    assert result["authorized_recovery_publisher_job_id"] == job_id
+
+
+def test_structural_inventory_uses_attempt_scoped_derived_members(
+    tmp_path: Path,
+) -> None:
+    commit = "7" * 40
+    archive, _receipt = _structural_bundle(tmp_path, commit=commit)
+    virtual = VIRTUAL_STRUCTURAL_ARCHIVES[archive.resolve()]
+    manifest = json.loads(virtual["manifest_bytes"].decode("utf-8"))
+    manifest["excluded_runtime_material"] = (
+        "temporary files, interpreter caches, the in-progress publisher log, "
+        "and prior or legacy publication-attempt artifacts only; every durable "
+        "simulation task artifact and every artifact of this authorized recovery "
+        "attempt is included"
+    )
+    prefix = "structural_sensitivity_evidence/"
+    run_plan = virtual["json_members"][f"{prefix}run_plan.json"]
+    attempt_root = "publication_recovery_attempts/15550002"
+    derived_names = {
+        "completion_status.json",
+        "structural_sensitivity_analysis.json",
+        "publication_environment.json",
+        "slurm_simulation_accounting.json",
+        "structural_sensitivity_summary.csv",
+        "structural_sensitivity_summary.png",
+        "structural_sensitivity_summary.pdf",
+        "structural_sensitivity_publication_receipt.json",
+    }
+    records = json.loads(json.dumps(manifest["files"]))
+    for record in records:
+        if record["path"] in derived_names:
+            record["path"] = f"{attempt_root}/{record['path']}"
+    for name in derived_names:
+        old_member = f"{prefix}{name}"
+        new_member = f"{prefix}{attempt_root}/{name}"
+        virtual["metadata"][new_member] = virtual["metadata"].pop(old_member)
+        if old_member in virtual["json_members"]:
+            virtual["json_members"][new_member] = virtual["json_members"].pop(
+                old_member
+            )
+
+    evidence._validate_structural_inventory(
+        archive,
+        metadata=virtual["metadata"],
+        records=records,
+        manifest=manifest,
+        run_plan=run_plan,
+        publication_root=attempt_root,
+    )
+    with pytest.raises(ValueError, match="required canonical evidence files"):
+        evidence._validate_structural_inventory(
+            archive,
+            metadata=virtual["metadata"],
+            records=records,
+            manifest=manifest,
+            run_plan=run_plan,
+            publication_root="",
+        )
+
+
 def test_structural_recovery_archive_rejects_extra_or_changed_raw_member() -> None:
     prefix = "structural_sensitivity_evidence/"
     binding_types = {
@@ -1740,6 +1953,7 @@ def test_fresh_core_orchestrator_clears_recovery_authorization_environment() -> 
     fresh_environment_gate = source[start:end]
     for variable in (
         "AGRIBRAIN_RECOVERY_RECEIPT",
+        "AGRIBRAIN_RECOVERY_ATTEMPT_ROOT",
         "AGRIBRAIN_SIMULATION_COMMIT",
         "AGRIBRAIN_PUBLICATION_CODE_COMMIT",
         "AGRIBRAIN_SIMULATION_SOURCE_TREE_SHA256",

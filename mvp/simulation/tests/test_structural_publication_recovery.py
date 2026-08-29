@@ -6,8 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from mvp.simulation.sensitivity import finalize_structural_sensitivity as finalizer
-
+from mvp.simulation.sensitivity import (
+    finalize_structural_sensitivity as finalizer,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SIMULATION_COMMIT = "a" * 40
@@ -15,17 +16,25 @@ PUBLICATION_COMMIT = "b" * 40
 PUBLICATION_TREE = "c" * 40
 SIMULATION_TREE = "d" * 64
 RUN_TAG = f"sensitivity_{SIMULATION_COMMIT[:7]}_20260829_120000"
+RECOVERY_JOB_ID = "15550001"
 
 
-def _canonical_recovery_files(run_root: Path) -> tuple[Path, Path, Path]:
+def _canonical_recovery_files(
+    run_root: Path,
+    *,
+    job_id: str = RECOVERY_JOB_ID,
+) -> tuple[Path, Path, Path, Path]:
     original = run_root / "slurm_submission.json"
+    attempt_root = (
+        run_root / finalizer.RECOVERY_ATTEMPT_DIRECTORY / job_id
+    )
     receipt = (
-        run_root
+        attempt_root
         / finalizer.RECOVERY_RECEIPT_DIRECTORY
         / f"{RUN_TAG}.json"
     )
     manifest = (
-        run_root
+        attempt_root
         / finalizer.PRESERVED_RAW_MANIFEST_DIRECTORY
         / f"{RUN_TAG}.json"
     )
@@ -38,7 +47,7 @@ def _canonical_recovery_files(run_root: Path) -> tuple[Path, Path, Path]:
     original.write_text("{}\n", encoding="utf-8")
     receipt.write_text("{}\n", encoding="utf-8")
     manifest.write_text('{"raw":true}\n', encoding="utf-8")
-    return original, receipt, manifest
+    return original, attempt_root, receipt, manifest
 
 
 def _fake_recovery_receipt(manifest: Path, *, tree: str = PUBLICATION_TREE) -> dict:
@@ -59,7 +68,7 @@ def _fake_recovery_receipt(manifest: Path, *, tree: str = PUBLICATION_TREE) -> d
                 "sha256": hashlib.sha256(b"failed stderr\n").hexdigest(),
             },
         },
-        "recovery_publisher": {"job_id": "15550001"},
+        "recovery_publisher": {"job_id": RECOVERY_JOB_ID},
         "preserved_raw_outputs": {
             "file": manifest.name,
             "bytes": len(manifest_bytes),
@@ -84,7 +93,9 @@ def test_structural_recovery_requires_canonical_files_exact_job_and_tree(
 ) -> None:
     run_root = tmp_path / "run"
     run_root.mkdir()
-    original, receipt_path, manifest_path = _canonical_recovery_files(run_root)
+    original, attempt_root, receipt_path, manifest_path = (
+        _canonical_recovery_files(run_root)
+    )
     receipt = _fake_recovery_receipt(manifest_path)
     observed: dict[str, object] = {}
 
@@ -112,21 +123,22 @@ def test_structural_recovery_requires_canonical_files_exact_job_and_tree(
 
     context = finalizer._validate_structural_recovery(
         run_root=run_root,
+        attempt_root=attempt_root,
         run_tag=RUN_TAG,
         simulation_commit=SIMULATION_COMMIT,
         simulation_source_tree_sha256=SIMULATION_TREE,
         publication_commit=PUBLICATION_COMMIT,
         recovery_receipt_path=receipt_path,
         raw_manifest_path=manifest_path,
-        publisher_slurm_job_id="15550001",
+        publisher_slurm_job_id=RECOVERY_JOB_ID,
     )
     assert context["receipt"] is receipt
     assert context["publication_tree"] == PUBLICATION_TREE
     assert observed == {
         "receipt": receipt_path.resolve(),
         "original": original.resolve(),
-        "expected_job": "15550001",
-        "actual_job": "15550001",
+        "expected_job": RECOVERY_JOB_ID,
+        "actual_job": RECOVERY_JOB_ID,
     }
 
 
@@ -135,7 +147,9 @@ def test_structural_recovery_rejects_noncanonical_or_changed_evidence(
 ) -> None:
     run_root = tmp_path / "run"
     run_root.mkdir()
-    _original, receipt_path, manifest_path = _canonical_recovery_files(run_root)
+    _original, attempt_root, receipt_path, manifest_path = (
+        _canonical_recovery_files(run_root)
+    )
     receipt = _fake_recovery_receipt(manifest_path)
     monkeypatch.setattr(
         finalizer,
@@ -159,26 +173,28 @@ def test_structural_recovery_rejects_noncanonical_or_changed_evidence(
     with pytest.raises(ValueError, match="canonical run-scoped path"):
         finalizer._validate_structural_recovery(
             run_root=run_root,
+            attempt_root=attempt_root,
             run_tag=RUN_TAG,
             simulation_commit=SIMULATION_COMMIT,
             simulation_source_tree_sha256=SIMULATION_TREE,
             publication_commit=PUBLICATION_COMMIT,
             recovery_receipt_path=copied,
             raw_manifest_path=manifest_path,
-            publisher_slurm_job_id="15550001",
+            publisher_slurm_job_id=RECOVERY_JOB_ID,
         )
 
     manifest_path.write_text('{"raw":false}\n', encoding="utf-8")
     with pytest.raises(ValueError, match="differs from recovery authorization"):
         finalizer._validate_structural_recovery(
             run_root=run_root,
+            attempt_root=attempt_root,
             run_tag=RUN_TAG,
             simulation_commit=SIMULATION_COMMIT,
             simulation_source_tree_sha256=SIMULATION_TREE,
             publication_commit=PUBLICATION_COMMIT,
             recovery_receipt_path=receipt_path,
             raw_manifest_path=manifest_path,
-            publisher_slurm_job_id="15550001",
+            publisher_slurm_job_id=RECOVERY_JOB_ID,
         )
 
 
@@ -187,7 +203,9 @@ def test_structural_recovery_rejects_wrong_publication_tree(
 ) -> None:
     run_root = tmp_path / "run"
     run_root.mkdir()
-    _original, receipt_path, manifest_path = _canonical_recovery_files(run_root)
+    _original, attempt_root, receipt_path, manifest_path = (
+        _canonical_recovery_files(run_root)
+    )
     receipt = _fake_recovery_receipt(manifest_path, tree="9" * 40)
     monkeypatch.setattr(
         finalizer,
@@ -203,13 +221,77 @@ def test_structural_recovery_rejects_wrong_publication_tree(
     with pytest.raises(ValueError, match="tree differs"):
         finalizer._validate_structural_recovery(
             run_root=run_root,
+            attempt_root=attempt_root,
             run_tag=RUN_TAG,
             simulation_commit=SIMULATION_COMMIT,
             simulation_source_tree_sha256=SIMULATION_TREE,
             publication_commit=PUBLICATION_COMMIT,
             recovery_receipt_path=receipt_path,
             raw_manifest_path=manifest_path,
-            publisher_slurm_job_id="15550001",
+            publisher_slurm_job_id=RECOVERY_JOB_ID,
+        )
+
+
+def test_recovery_attempt_root_is_exactly_scoped_to_executing_job(
+    tmp_path: Path,
+) -> None:
+    run_root = tmp_path / "run"
+    run_root.mkdir()
+    first = run_root / finalizer.RECOVERY_ATTEMPT_DIRECTORY / RECOVERY_JOB_ID
+    second_job = "15550002"
+    second = run_root / finalizer.RECOVERY_ATTEMPT_DIRECTORY / second_job
+    first.mkdir(parents=True)
+    second.mkdir()
+    sentinel = first / "partial-output.json"
+    sentinel.write_bytes(b"first-attempt\n")
+
+    assert finalizer._validated_recovery_attempt_root(
+        first,
+        run_root=run_root,
+        publisher_slurm_job_id=RECOVERY_JOB_ID,
+    ) == first
+    assert finalizer._validated_recovery_attempt_root(
+        second,
+        run_root=run_root,
+        publisher_slurm_job_id=second_job,
+    ) == second
+    assert sentinel.read_bytes() == b"first-attempt\n"
+
+    with pytest.raises(ValueError, match="job-ID-scoped"):
+        finalizer._validated_recovery_attempt_root(
+            first,
+            run_root=run_root,
+            publisher_slurm_job_id=second_job,
+        )
+    escaped = tmp_path / RECOVERY_JOB_ID
+    escaped.mkdir()
+    with pytest.raises(ValueError, match="job-ID-scoped"):
+        finalizer._validated_recovery_attempt_root(
+            escaped,
+            run_root=run_root,
+            publisher_slurm_job_id=RECOVERY_JOB_ID,
+        )
+
+
+def test_recovery_attempt_root_rejects_symlinked_job_directory(
+    tmp_path: Path,
+) -> None:
+    run_root = tmp_path / "run"
+    attempt_parent = run_root / finalizer.RECOVERY_ATTEMPT_DIRECTORY
+    attempt_parent.mkdir(parents=True)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    attempt = attempt_parent / RECOVERY_JOB_ID
+    try:
+        attempt.symlink_to(outside, target_is_directory=True)
+    except OSError as exc:
+        pytest.skip(f"symlink creation is unavailable: {exc}")
+
+    with pytest.raises(ValueError, match="symbolic link"):
+        finalizer._validated_recovery_attempt_root(
+            attempt,
+            run_root=run_root,
+            publisher_slurm_job_id=RECOVERY_JOB_ID,
         )
 
 
@@ -227,7 +309,12 @@ def test_recovery_publisher_never_runs_workers_and_revalidates_raw_inputs() -> N
     for name in finalizer.STRUCTURAL_RAW_FILES:
         assert f'--input-file "{name}=' in script
     assert "--recovery-publisher-slurm-job-id \"$SLURM_JOB_ID\"" in script
+    assert '--recovery-attempt-root "$RECOVERY_ATTEMPT_ROOT"' in script
     assert "--recovery-receipt \"$AGRIBRAIN_RECOVERY_RECEIPT\"" in script
+    assert (
+        'RECOVERY_ATTEMPT_ROOT="${SENSITIVITY_RUN_DIR}/'
+        'publication_recovery_attempts/${SLURM_JOB_ID}"'
+    ) in script
 
 
 def test_partial_recovery_request_fails_before_fresh_finalization(
@@ -251,7 +338,7 @@ def test_partial_recovery_request_fails_before_fresh_finalization(
             {},
         ),
     )
-    with pytest.raises(ValueError, match="requires receipt, raw manifest"):
+    with pytest.raises(ValueError, match="requires attempt root, receipt, raw manifest"):
         finalizer.finalize_run(
             plan,
             status_path=run_root / "completion_status.json",

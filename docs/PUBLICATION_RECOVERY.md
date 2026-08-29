@@ -36,7 +36,9 @@ The original publisher failures, their terminal Slurm accounting, and their
 literal stdout/stderr hashes are bound by separate core and structural
 recovery receipts. Rejected manual attempts `14476501`–`14476503` are not
 treated as simulation or publication provenance and are not required to
-authorize recovery.
+authorize recovery. The released recovery attempt `14476522`–`14476524` is
+also retained as immutable audit history; a retry must use a new control root
+and new Slurm jobs rather than deleting or overwriting any of its files.
 
 ## Required preserved inputs
 
@@ -89,7 +91,7 @@ CORE_SOURCE="$ROOT/source_d3286ae/.publication_sources/d3286ae_20260829_105800"
 STRUCTURAL_RUN="$ROOT/structural_results_d3286ae/sensitivity_d3286ae_20260829_105855"
 
 export AGRIBRAIN_PARTITION=compute
-export AGRIBRAIN_RECOVERY_CONTROL_ROOT="$ROOT/publication_recovery_20260829_v1"
+export AGRIBRAIN_RECOVERY_CONTROL_ROOT="$ROOT/publication_recovery_20260829_retry2"
 export AGRIBRAIN_CORE_RAW_SOURCE_SNAPSHOT="$CORE_SOURCE"
 export AGRIBRAIN_STRUCTURAL_RUN_DIR="$STRUCTURAL_RUN"
 export AGRIBRAIN_SIMULATION_COMMIT=d3286aef28803c715045176008fae6b9c7e3367b
@@ -116,10 +118,12 @@ evidence, or receipt validation fails. Its order is:
 3. create three independent detached read-only worktrees of the identical clean
    publication commit (core, structural, and combined finalizer), eliminating
    cross-job dirty-tree/output races;
-4. submit one core publisher, one structural publisher, and one combined-
-   evidence finalizer with `sbatch --hold`; the finalizer has an exact
-   `afterok:<core>:<structural>` dependency;
-5. create separate receipts binding each new held job ID to its original
+4. submit the core and structural publishers with `sbatch --hold`, then create
+   the structural attempt directory
+   `publication_recovery_attempts/<structural-publisher-job-id>` exclusively;
+5. submit the combined-evidence finalizer held with an exact
+   `afterok:<core>:<structural>` dependency and create separate receipts
+   binding each new held job ID to its original
    receipt, failed job, logs, raw manifest, simulation commit, publication
    commit/tree, and `simulation_rerun: false`, plus a self-hashed finalizer
    authorization binding its exact job ID, both publisher IDs, held state, and
@@ -130,9 +134,16 @@ evidence, or receipt validation fails. Its order is:
    both publishers complete successfully.
 
 If release fails or its state transition cannot be proved, the orchestrator
-preserves the canonical authorization evidence, reports the observed states,
-and requests cancellation of all three publication-only jobs. It never reports
-an unverified cancellation or successful release.
+preserves the immutable attempt authorization evidence, reports the observed
+states, and requests cancellation of all three publication-only jobs. It never
+reports an unverified cancellation or successful release.
+
+Every structural retry is keyed by the actual held publisher Slurm job ID. A
+new retry therefore receives a disjoint directory even when a prior attempt
+left partial top-level outputs or a partial attempt directory. Those prior
+bytes never block the new job and are never removed or used as current
+evidence. Reusing the same attempt path, traversing a symlink, or selecting a
+path that does not exactly match the executing job ID fails closed.
 
 The command prints all three Slurm job IDs and the final combined-evidence
 destination. The finalizer defaults to 8 hours, 32 GiB, and 4 CPUs; those can
@@ -150,8 +161,12 @@ archive/receipt creation. Scheduler accounting is written outside the bound
 raw seed directory.
 
 The structural publisher writes live logs outside the preserved structural
-run, validates the exact bound directories/files before analysis, and repeats
-that validation immediately before and inside final archive creation.
+run and writes every derived artifact beneath
+`publication_recovery_attempts/<structural-publisher-job-id>/`. It validates
+the exact bound raw directories/files before analysis and repeats that
+validation immediately before and inside final archive creation. The attempt
+directory is outside the raw-manifest-bound `logs/`, `runtime_receipts/`,
+`tasks/`, and fixed input-file surface.
 
 Any changed, missing, extra, symlinked, or copy-corrupted raw file aborts
 recovery.
@@ -165,15 +180,18 @@ successfully:
   `$AGRIBRAIN_RECOVERY_CONTROL_ROOT/publication_source_core/publication_bundle_d3286ae_20260829_105800/`
 - core lossless evidence:
   `$AGRIBRAIN_RECOVERY_CONTROL_ROOT/publication_source_core/mvp/simulation/results/complete_run_evidence/d3286ae_20260829_105800/`
-- structural archive and receipt: in the structural run directory;
+- structural archive and receipt:
+  `$STRUCTURAL_RUN/publication_recovery_attempts/$STRUCTURAL_RECOVERY_JOB/`;
 - combined, atomic submission evidence:
   `$AGRIBRAIN_RECOVERY_CONTROL_ROOT/full_submission_evidence/`, containing
   exactly `FULL_SUBMISSION_EVIDENCE_RECEIPT.json`, `READY.json`,
   `FINALIZER_SUBMISSION_AUTHORIZATION.json`, and
   `FINALIZER_PUBLICATION_ENVIRONMENT.json`;
-- recovery authorizations, raw manifests, failed accounting, and replacement
-  logs: under `$AGRIBRAIN_RECOVERY_CONTROL_ROOT` (with canonical copies in the
-  corresponding evidence trees).
+- core/finalizer authorizations, control copies of the raw manifests, failed
+  accounting, and replacement logs: under
+  `$AGRIBRAIN_RECOVERY_CONTROL_ROOT`; the structural authorization and raw
+  manifest consumed by the structural publisher are stored in its immutable
+  job-ID-scoped attempt directory.
 
 Do not describe results as fully recovered, validated, certified, or ready for
 submission merely because the recovery code exists or the jobs were submitted.

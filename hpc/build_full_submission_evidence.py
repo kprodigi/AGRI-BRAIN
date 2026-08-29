@@ -27,12 +27,12 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from hpc.validate_source_snapshot import tracked_source_digest  # noqa: E402
 from hpc.capture_slurm_accounting import validate_accounting_payload  # noqa: E402
 from hpc.preserved_raw_manifest import validate_manifest_document  # noqa: E402
 from hpc.publication_recovery_receipt import (  # noqa: E402
     validate_recovery_receipt_payload,
 )
+from hpc.validate_source_snapshot import tracked_source_digest  # noqa: E402
 from mvp.simulation.validation.validator_source_identity import (  # noqa: E402
     validate_clean_validator_checkout,
 )
@@ -47,6 +47,7 @@ _JOB_ID = re.compile(r"^[1-9][0-9]*$")
 _PARTITION = re.compile(r"^[A-Za-z0-9._,+-]+$")
 _STRUCTURAL_PREFIX = "structural_sensitivity_evidence"
 _STRUCTURAL_MANIFEST = "structural_sensitivity_artifact_manifest.json"
+_STRUCTURAL_RECOVERY_ATTEMPTS = "publication_recovery_attempts"
 _CORE_VALIDATION_RECEIPT = "publication_validation_receipt.json"
 
 _CORE_ACCOUNTING = {
@@ -222,6 +223,56 @@ def _safe_name(raw: object, *, label: str = "archive member") -> str:
     ):
         raise ValueError(f"unsafe {label} path: {raw!r}")
     return path.as_posix()
+
+
+def _structural_recovery_attempt_root(
+    authorization: Mapping[str, Any], *, run_tag: str,
+) -> str:
+    """Return the one canonical archive root for a structural recovery job."""
+
+    job_id = authorization.get("authorized_recovery_publisher_job_id")
+    if not isinstance(job_id, str) or not _JOB_ID.fullmatch(job_id):
+        raise ValueError(
+            "structural recovery authorization has an invalid publisher job id"
+        )
+    root = f"{_STRUCTURAL_RECOVERY_ATTEMPTS}/{job_id}"
+    attempt_root = _safe_name(
+        authorization.get("attempt_root"),
+        label="structural recovery attempt root",
+    )
+    if attempt_root != root:
+        raise ValueError(
+            "structural recovery attempt root does not match its publisher job id"
+        )
+    expected = {
+        "receipt_file": f"{root}/publication_recovery_receipts/{run_tag}.json",
+        "preserved_raw_manifest_file": (
+            f"{root}/preserved_raw_manifests/{run_tag}.json"
+        ),
+    }
+    for field, expected_path in expected.items():
+        observed = _safe_name(
+            authorization.get(field),
+            label=f"structural recovery {field}",
+        )
+        if observed != expected_path:
+            raise ValueError(
+                f"structural recovery {field} is outside its job-scoped "
+                "attempt root"
+            )
+    return root
+
+
+def _publication_member(publication_root: str, name: str) -> str:
+    """Return a safe archive-relative publication member path."""
+
+    safe_name = _safe_name(name, label="structural publication member")
+    if not publication_root:
+        return safe_name
+    safe_root = _safe_name(
+        publication_root, label="structural publication attempt root"
+    )
+    return f"{safe_root}/{safe_name}"
 
 
 def _require_hex(value: object, *, label: str, width: int) -> str:
@@ -510,8 +561,20 @@ def _validate_archived_recovery(
     to be an exact projection of those independently validated bytes.
     """
 
-    recovery_relative = f"publication_recovery_receipts/{run_tag}.json"
-    raw_relative = f"preserved_raw_manifests/{run_tag}.json"
+    attempt_root: str | None = None
+    if kind == "structural":
+        attempt_root = _structural_recovery_attempt_root(
+            manifested_authorization, run_tag=run_tag,
+        )
+        recovery_relative = _publication_member(
+            attempt_root, f"publication_recovery_receipts/{run_tag}.json",
+        )
+        raw_relative = _publication_member(
+            attempt_root, f"preserved_raw_manifests/{run_tag}.json",
+        )
+    else:
+        recovery_relative = f"publication_recovery_receipts/{run_tag}.json"
+        raw_relative = f"preserved_raw_manifests/{run_tag}.json"
     recovery_member = f"{prefix}{recovery_relative}"
     raw_member = f"{prefix}{raw_relative}"
     original_member = f"{prefix}{original_submission_member}"
@@ -621,7 +684,9 @@ def _validate_archived_recovery(
                 "core manifest recovery authorization is not the exact validated projection"
             )
     else:
+        assert attempt_root is not None
         structural_projection = {
+            "attempt_root": attempt_root,
             "receipt_sha256": receipt_self_hash,
             "preserved_raw_manifest_sha256": raw_payload["manifest_sha256"],
             "original_failed_publisher_job_id": recovery["failed_publisher"][
@@ -667,6 +732,9 @@ def _validate_archived_recovery(
         "authorized_recovery_publisher_job_id": recovery["recovery_publisher"][
             "job_id"
         ],
+        **(
+            {"attempt_root": attempt_root} if attempt_root is not None else {}
+        ),
         "validated": True,
         "_raw_manifest_payload": raw_payload,
     }
@@ -1696,6 +1764,7 @@ def _validate_structural_inventory(
     records: list[dict[str, Any]],
     manifest: Mapping[str, Any],
     run_plan: Mapping[str, Any],
+    publication_root: str,
 ) -> None:
     artifacts = run_plan.get("artifacts")
     expected_artifact_keys = {
@@ -1868,15 +1937,20 @@ def _validate_structural_inventory(
         raise ValueError("structural task totals differ from locked accounting")
 
     required_final = {
-        "completion_status.json",
-        "structural_sensitivity_analysis.json",
-        "publication_environment.json",
         "slurm_submission.json",
-        "slurm_simulation_accounting.json",
-        "structural_sensitivity_summary.csv",
-        "structural_sensitivity_summary.png",
-        "structural_sensitivity_summary.pdf",
-        "structural_sensitivity_publication_receipt.json",
+        *(
+            _publication_member(publication_root, name)
+            for name in (
+                "completion_status.json",
+                "structural_sensitivity_analysis.json",
+                "publication_environment.json",
+                "slurm_simulation_accounting.json",
+                "structural_sensitivity_summary.csv",
+                "structural_sensitivity_summary.png",
+                "structural_sensitivity_summary.pdf",
+                "structural_sensitivity_publication_receipt.json",
+            )
+        ),
     }
     expected_records = {
         "run_plan.json", *artifact_names.values(), *task_paths, *ledger_paths,
@@ -2028,11 +2102,21 @@ def _validate_structural_inventory(
             "structural manifest has incomplete episode, runtime, scheduler, "
             "or failed-attempt evidence"
         )
+    expected_excluded_runtime_material = (
+        "temporary files, interpreter caches, the in-progress publisher log, "
+        "and prior or legacy publication-attempt artifacts only; every durable "
+        "simulation task artifact and every artifact of this authorized recovery "
+        "attempt is included"
+        if publication_root
+        else (
+            "temporary files, interpreter caches, and the in-progress publisher "
+            "log only; every durable task artifact, episode archive, adaptation "
+            "ledger, final ledger, worker runtime receipt, and completed task log "
+            "is included"
+        )
+    )
     if manifest.get("excluded_runtime_material") != (
-        "temporary files, interpreter caches, and the in-progress publisher "
-        "log only; every durable task artifact, episode archive, adaptation "
-        "ledger, final ledger, worker runtime receipt, and completed task log "
-        "is included"
+        expected_excluded_runtime_material
     ):
         raise ValueError("structural manifest has an invalid evidence exclusion policy")
     ledger_records = sorted(
@@ -2050,7 +2134,9 @@ def _validate_structural_inventory(
         raise ValueError("structural retained-ledger set binding is invalid")
 
     completion = _json_member(
-        archive_path, f"{_STRUCTURAL_PREFIX}/completion_status.json"
+        archive_path,
+        f"{_STRUCTURAL_PREFIX}/"
+        f"{_publication_member(publication_root, 'completion_status.json')}",
     )
     if completion != {
         "status": "complete",
@@ -2071,11 +2157,21 @@ def _validate_structural_inventory(
 def _run_canonical_structural_validation(
     extracted_root: Path,
     *,
+    publication_root: Path,
     source_commit: str,
     publication_commit: str,
     run_tag: str,
 ) -> None:
     """Re-run every structural semantic validator without running simulations."""
+
+    extracted_root = extracted_root.resolve(strict=True)
+    publication_root = publication_root.resolve(strict=True)
+    if not publication_root.is_dir() or not publication_root.is_relative_to(
+        extracted_root
+    ):
+        raise ValueError(
+            "structural publication root is outside the extracted evidence"
+        )
 
     from hpc.capture_slurm_accounting import validate_accounting_payload
     from mvp.simulation.sensitivity.analyze_structural_sensitivity import (
@@ -2107,18 +2203,18 @@ def _run_canonical_structural_validation(
     _validate_status(fresh_status)
     if len(retained_ledgers) != 6_500:
         raise ValueError("structural semantic validation did not bind 6,500 ledgers")
-    saved_status = _load_json(extracted_root / "completion_status.json")
+    saved_status = _load_json(publication_root / "completion_status.json")
     _validate_status(saved_status)
     if saved_status != fresh_status:
         raise ValueError("structural saved status differs from fresh task validation")
     saved_analysis = _load_json(
-        extracted_root / "structural_sensitivity_analysis.json"
+        publication_root / "structural_sensitivity_analysis.json"
     )
     _validate_analysis(saved_analysis, source_commit=source_commit)
     if saved_analysis != analyze_run(run_plan):
         raise ValueError("structural analysis differs from fresh recomputation")
     _validate_environment(
-        _load_json(extracted_root / "publication_environment.json"),
+        _load_json(publication_root / "publication_environment.json"),
         run_tag=run_tag,
         source_commit=publication_commit,
     )
@@ -2146,7 +2242,7 @@ def _run_canonical_structural_validation(
     if set(runtime_paths) - manifest_paths:
         raise ValueError("structural manifest omits a runtime receipt")
     scheduler_summary = validate_accounting_payload(
-        _load_json(extracted_root / "slurm_simulation_accounting.json"),
+        _load_json(publication_root / "slurm_simulation_accounting.json"),
         kind="structural",
         run_tag=run_tag,
         source_commit=source_commit,
@@ -2159,7 +2255,8 @@ def _run_canonical_structural_validation(
         )
     publication_paths = _validate_structural_publication_artifacts(
         extracted_root,
-        analysis_path=extracted_root / "structural_sensitivity_analysis.json",
+        publication_root=publication_root,
+        analysis_path=publication_root / "structural_sensitivity_analysis.json",
         source_commit=source_commit,
     )
     if set(publication_paths) - manifest_paths:
@@ -2372,6 +2469,13 @@ def _validate_structural_evidence(
     match = _STRUCTURAL_RUN_TAG.fullmatch(str(run_tag))
     if match is None or match.group(1) != source_commit[:7]:
         raise ValueError("structural run tag is not bound to its source commit")
+    publication_root_relative = (
+        _structural_recovery_attempt_root(
+            manifest["recovery_authorization"], run_tag=str(run_tag),
+        )
+        if dual
+        else ""
+    )
     if receipt.get("source_commit") != source_commit:
         raise ValueError("structural receipt source commit differs from its manifest")
     if receipt.get("run_tag") != run_tag:
@@ -2553,12 +2657,18 @@ def _validate_structural_evidence(
         records=records,
         manifest=manifest,
         run_plan=run_plan,
+        publication_root=publication_root_relative,
     )
     with tempfile.TemporaryDirectory(prefix="agribrain_structural_evidence_") as temp:
         extracted = Path(temp)
         _extract_safe_archive(archive_path, extracted, metadata)
         _run_canonical_structural_validation(
             extracted / _STRUCTURAL_PREFIX,
+            publication_root=(
+                extracted / _STRUCTURAL_PREFIX / publication_root_relative
+                if publication_root_relative
+                else extracted / _STRUCTURAL_PREFIX
+            ),
             source_commit=source_commit,
             publication_commit=publication_commit,
             run_tag=str(run_tag),
@@ -2598,10 +2708,13 @@ def _validate_structural_evidence(
             manifest["complete_episode_evidence"]
         ),
         "structural_publication_artifacts": [
-            "structural_sensitivity_summary.csv",
-            "structural_sensitivity_summary.png",
-            "structural_sensitivity_summary.pdf",
-            "structural_sensitivity_publication_receipt.json",
+            _publication_member(publication_root_relative, name)
+            for name in (
+                "structural_sensitivity_summary.csv",
+                "structural_sensitivity_summary.png",
+                "structural_sensitivity_summary.pdf",
+                "structural_sensitivity_publication_receipt.json",
+            )
         ],
         "design": {
             "latin_hypercube_points": 100,

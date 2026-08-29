@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -197,7 +198,7 @@ def test_uncertain_release_preserves_authorization_and_requests_cancellation() -
     )
     assert script.rfind("RELEASE_ATTEMPTED=true", 0, release) >= 0
     assert 'if [ "$RELEASE_ATTEMPTED" = true ]' in script
-    assert "Preserving canonical recovery evidence" in script
+    assert "Preserving immutable recovery-attempt evidence" in script
     assert "Cancellation requested for publication-only recovery job" in script
     assert script.find('require_not_user_held_job "$CORE_RECOVERY_JOB"', release) > release
 
@@ -274,19 +275,126 @@ def test_finalizer_revalidates_and_persists_locked_runtime_environment() -> None
     assert '"finalizer_publication_environment"' in ready_validator
 
 
-def test_structural_canonical_copy_is_retry_safe() -> None:
+def test_structural_recovery_attempt_is_job_scoped_and_retry_safe() -> None:
     script = _text("hpc/publication_recovery_run.sh")
-    first_copy = script.index(
-        'copy_canonical_evidence "$STRUCTURAL_RAW_MANIFEST" "$STRUCTURAL_CANONICAL_RAW"'
+    parsed_job = script.index(
+        'STRUCTURAL_RECOVERY_JOB="${STRUCTURAL_SUBMISSION%%;*}"'
     )
-    first_flag = script.index("STRUCTURAL_CANONICAL_RAW_CREATED=true", first_copy)
-    second_copy = script.index('copy_canonical_evidence "$STRUCTURAL_RECOVERY_RECEIPT"', first_flag)
-    second_flag = script.index("STRUCTURAL_CANONICAL_RECEIPT_CREATED=true", second_copy)
-    assert first_copy < first_flag < second_copy < second_flag
-    assert 'cmp --silent -- "$STRUCTURAL_RECOVERY_RECEIPT"' in script
-    assert 'cmp --silent -- "$STRUCTURAL_RAW_MANIFEST"' in script
-    assert "canonical structural evidence has a symlink component" in script
-    assert "canonical structural recovery parent is symlinked" in script
+    held = script.index(
+        'require_user_held_job "$STRUCTURAL_RECOVERY_JOB"', parsed_job,
+    )
+    attempt = script.index(
+        'STRUCTURAL_ATTEMPT_ROOT="${STRUCTURAL_RUN_DIR}/'
+        'publication_recovery_attempts/${STRUCTURAL_RECOVERY_JOB}"',
+        held,
+    )
+    finalizer_submission = script.index('FINALIZER_SUBMISSION="$(sbatch', attempt)
+    assert parsed_job < held < attempt < finalizer_submission
+    assert 'if attempt_root.exists() or attempt_root.is_symlink():' in script
+    assert 'with target.open("xb") as stream:' in script
+    assert (
+        'STRUCTURAL_RECOVERY_RECEIPT="${STRUCTURAL_ATTEMPT_ROOT}/'
+        'publication_recovery_receipts/${AGRIBRAIN_STRUCTURAL_RUN_TAG}.json"'
+    ) in script
+    assert (
+        'STRUCTURAL_ATTEMPT_RAW_MANIFEST="${STRUCTURAL_ATTEMPT_ROOT}/'
+        'preserved_raw_manifests/${AGRIBRAIN_STRUCTURAL_RUN_TAG}.json"'
+    ) in script
+    assert 'STRUCTURAL_CANONICAL_RAW' not in script
+    assert 'STRUCTURAL_CANONICAL_RECEIPT' not in script
+    assert 'rm -- "$STRUCTURAL_ATTEMPT_ROOT"' not in script
+    assert 'Structural recovery attempt directory: ${STRUCTURAL_ATTEMPT_ROOT}' in script
+    assert 'Structural recovery archive destination: ${STRUCTURAL_ARCHIVE}' in script
+    assert (
+        'echo "BLOCK: structural derived output already exists: '
+        '${STRUCTURAL_RUN_DIR}/${output}"'
+    ) not in script
+
+
+def test_structural_attempt_creator_preserves_prior_attempt_and_legacy_outputs(
+    tmp_path: Path,
+) -> None:
+    script = _text("hpc/publication_recovery_run.sh")
+    section = script.split(
+        "# The actual held Slurm job ID is the immutable attempt identifier.",
+        1,
+    )[1]
+    program = section.split("<<'PY'\n", 1)[1].split("\nPY\n", 1)[0]
+    compile(program, "publication_recovery_run.sh:attempt_creator", "exec")
+
+    run_root = tmp_path / "structural-run"
+    run_root.mkdir()
+    source = tmp_path / "sensitivity_tag.json"
+    source.write_bytes(b'{"manifest":"immutable"}\n')
+
+    def create(job_id: str) -> subprocess.CompletedProcess[str]:
+        attempt = run_root / "publication_recovery_attempts" / job_id
+        target = attempt / "preserved_raw_manifests" / source.name
+        return subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                program,
+                str(run_root),
+                str(attempt),
+                job_id,
+                str(source),
+                str(target),
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+    first_job = "15550001"
+    first = create(first_job)
+    assert first.returncode == 0, first.stdout + first.stderr
+    first_manifest = (
+        run_root
+        / "publication_recovery_attempts"
+        / first_job
+        / "preserved_raw_manifests"
+        / source.name
+    )
+    first_bytes = first_manifest.read_bytes()
+
+    # These are intentionally retained bytes from an older fixed-path release.
+    (run_root / "completion_status.json").write_text("legacy\n", encoding="utf-8")
+    (run_root / "publication_recovery_receipts").mkdir()
+    (run_root / "preserved_raw_manifests").mkdir()
+    second = create("15550002")
+    assert second.returncode == 0, second.stdout + second.stderr
+    assert first_manifest.read_bytes() == first_bytes
+
+    repeated = create(first_job)
+    assert repeated.returncode != 0
+    assert "structural recovery attempt already exists" in (
+        repeated.stdout + repeated.stderr
+    )
+    assert first_manifest.read_bytes() == first_bytes
+
+
+def test_structural_recovery_wrapper_derives_all_outputs_from_attempt_root() -> None:
+    script = _text("hpc/hpc_sensitivity_publish_recovery.sh")
+    assert (
+        'RECOVERY_ATTEMPT_ROOT="${SENSITIVITY_RUN_DIR}/'
+        'publication_recovery_attempts/${SLURM_JOB_ID}"'
+    ) in script
+    for filename in (
+        "completion_status.json",
+        "structural_sensitivity_analysis.json",
+        "publication_environment.json",
+        "slurm_simulation_accounting.json",
+        "structural_sensitivity_artifact_manifest.json",
+        "structural_sensitivity_archive_receipt.json",
+        "structural_sensitivity_summary.csv",
+        "structural_sensitivity_summary.png",
+        "structural_sensitivity_summary.pdf",
+        "structural_sensitivity_publication_receipt.json",
+    ):
+        assert f'="${{RECOVERY_ATTEMPT_ROOT}}/{filename}"' in script
+    assert '"$ANALYSIS_PATH" "$RECOVERY_ATTEMPT_ROOT"' in script
+    assert '--recovery-attempt-root "$RECOVERY_ATTEMPT_ROOT"' in script
 
 
 def test_core_recovery_rebinds_manifest_to_consumed_staged_bytes() -> None:

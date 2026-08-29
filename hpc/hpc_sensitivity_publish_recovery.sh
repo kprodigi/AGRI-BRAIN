@@ -15,7 +15,6 @@ set -euo pipefail
 for required in AGRIBRAIN_SOURCE_SNAPSHOT AGRIBRAIN_SOURCE_SNAPSHOT_MODE \
     AGRIBRAIN_SOURCE_TREE_SHA256 AGRIBRAIN_SIMULATION_SOURCE_TREE_SHA256 \
     AGRIBRAIN_SIMULATION_COMMIT AGRIBRAIN_PUBLICATION_CODE_COMMIT \
-    AGRIBRAIN_RECOVERY_RECEIPT AGRIBRAIN_PRESERVED_RAW_MANIFEST \
     AGRIBRAIN_RECOVERY_LOG_DIR AGRIBRAIN_VENV \
     AGRIBRAIN_SENSITIVITY_SOURCE_COMMIT AGRIBRAIN_SENSITIVITY_ROOT \
     SENSITIVITY_RUN_DIR SENSITIVITY_RUN_PLAN RUN_TAG SLURM_JOB_ID; do
@@ -111,20 +110,58 @@ AGRIBRAIN_GIT_COMMIT="$AGRIBRAIN_SIMULATION_COMMIT" \
     python hpc/validate_structural_sensitivity_hpc.py
 
 ORIGINAL_SUBMISSION="${SENSITIVITY_RUN_DIR}/slurm_submission.json"
-CANONICAL_RECOVERY_RECEIPT="${SENSITIVITY_RUN_DIR}/publication_recovery_receipts/${RUN_TAG}.json"
-CANONICAL_RAW_MANIFEST="${SENSITIVITY_RUN_DIR}/preserved_raw_manifests/${RUN_TAG}.json"
-python - "$AGRIBRAIN_RECOVERY_RECEIPT" "$CANONICAL_RECOVERY_RECEIPT" \
-    "$AGRIBRAIN_PRESERVED_RAW_MANIFEST" "$CANONICAL_RAW_MANIFEST" <<'PY'
+RECOVERY_ATTEMPT_ROOT="${SENSITIVITY_RUN_DIR}/publication_recovery_attempts/${SLURM_JOB_ID}"
+AGRIBRAIN_RECOVERY_RECEIPT="${RECOVERY_ATTEMPT_ROOT}/publication_recovery_receipts/${RUN_TAG}.json"
+AGRIBRAIN_PRESERVED_RAW_MANIFEST="${RECOVERY_ATTEMPT_ROOT}/preserved_raw_manifests/${RUN_TAG}.json"
+export AGRIBRAIN_RECOVERY_RECEIPT AGRIBRAIN_PRESERVED_RAW_MANIFEST
+python - "$SENSITIVITY_RUN_DIR" "$RECOVERY_ATTEMPT_ROOT" "$SLURM_JOB_ID" \
+    "$AGRIBRAIN_RECOVERY_RECEIPT" "$AGRIBRAIN_PRESERVED_RAW_MANIFEST" \
+    "$RUN_TAG" <<'PY'
+import os
+import re
 import sys
 from pathlib import Path
 
-for actual_raw, expected_raw in zip(sys.argv[1::2], sys.argv[2::2], strict=True):
-    actual = Path(actual_raw)
-    expected = Path(expected_raw)
-    if actual.is_symlink() or expected.is_symlink():
-        raise SystemExit("BLOCK: canonical recovery evidence must not be symlinked")
-    if actual.resolve(strict=True) != expected.resolve(strict=True):
-        raise SystemExit("BLOCK: recovery evidence is outside its canonical run path")
+run_root = Path(os.path.abspath(sys.argv[1]))
+attempt_root = Path(os.path.abspath(sys.argv[2]))
+job_id, receipt_raw, manifest_raw, run_tag = sys.argv[3:]
+if re.fullmatch(r"[1-9][0-9]*", job_id) is None:
+    raise SystemExit("BLOCK: recovery publisher Slurm job ID is invalid")
+expected_attempt = run_root / "publication_recovery_attempts" / job_id
+if attempt_root != expected_attempt:
+    raise SystemExit("BLOCK: recovery attempt root is not job-ID-scoped")
+cursor = attempt_root
+while True:
+    if cursor.is_symlink():
+        raise SystemExit(
+            f"BLOCK: recovery attempt path has a symlink component: {cursor}"
+        )
+    if cursor == run_root:
+        break
+    if cursor == cursor.parent:
+        raise SystemExit("BLOCK: recovery attempt root escapes the structural run")
+    cursor = cursor.parent
+if not attempt_root.is_dir():
+    raise SystemExit("BLOCK: recovery attempt root is missing")
+expected_files = (
+    (
+        Path(receipt_raw),
+        attempt_root / "publication_recovery_receipts" / f"{run_tag}.json",
+        "publication-recovery receipt",
+    ),
+    (
+        Path(manifest_raw),
+        attempt_root / "preserved_raw_manifests" / f"{run_tag}.json",
+        "preserved raw-output manifest",
+    ),
+)
+for actual, expected, label in expected_files:
+    actual = Path(os.path.abspath(actual))
+    if actual != expected or actual.is_symlink() or not actual.is_file():
+        raise SystemExit(f"BLOCK: {label} is not canonical for this recovery attempt")
+    parent = actual.parent
+    if parent.is_symlink() or not parent.is_dir():
+        raise SystemExit(f"BLOCK: {label} parent is unsafe")
 PY
 
 python hpc/publication_recovery_receipt.py validate \
@@ -161,17 +198,17 @@ validate_preserved_raw_outputs() {
 # operation has run in this recovery job yet.
 validate_preserved_raw_outputs
 
-STATUS_PATH="${SENSITIVITY_RUN_DIR}/completion_status.json"
-ANALYSIS_PATH="${SENSITIVITY_RUN_DIR}/structural_sensitivity_analysis.json"
-ENVIRONMENT_PATH="${SENSITIVITY_RUN_DIR}/publication_environment.json"
-SCHEDULER_ACCOUNTING_PATH="${SENSITIVITY_RUN_DIR}/slurm_simulation_accounting.json"
-MANIFEST_PATH="${SENSITIVITY_RUN_DIR}/structural_sensitivity_artifact_manifest.json"
-ARCHIVE_PATH="${SENSITIVITY_RUN_DIR}/structural_sensitivity_evidence_${RUN_TAG}.tar.gz"
-RECEIPT_PATH="${SENSITIVITY_RUN_DIR}/structural_sensitivity_archive_receipt.json"
-STRUCTURAL_TABLE_PATH="${SENSITIVITY_RUN_DIR}/structural_sensitivity_summary.csv"
-STRUCTURAL_PNG_PATH="${SENSITIVITY_RUN_DIR}/structural_sensitivity_summary.png"
-STRUCTURAL_PDF_PATH="${SENSITIVITY_RUN_DIR}/structural_sensitivity_summary.pdf"
-STRUCTURAL_PUBLICATION_RECEIPT="${SENSITIVITY_RUN_DIR}/structural_sensitivity_publication_receipt.json"
+STATUS_PATH="${RECOVERY_ATTEMPT_ROOT}/completion_status.json"
+ANALYSIS_PATH="${RECOVERY_ATTEMPT_ROOT}/structural_sensitivity_analysis.json"
+ENVIRONMENT_PATH="${RECOVERY_ATTEMPT_ROOT}/publication_environment.json"
+SCHEDULER_ACCOUNTING_PATH="${RECOVERY_ATTEMPT_ROOT}/slurm_simulation_accounting.json"
+MANIFEST_PATH="${RECOVERY_ATTEMPT_ROOT}/structural_sensitivity_artifact_manifest.json"
+ARCHIVE_PATH="${RECOVERY_ATTEMPT_ROOT}/structural_sensitivity_evidence_${RUN_TAG}.tar.gz"
+RECEIPT_PATH="${RECOVERY_ATTEMPT_ROOT}/structural_sensitivity_archive_receipt.json"
+STRUCTURAL_TABLE_PATH="${RECOVERY_ATTEMPT_ROOT}/structural_sensitivity_summary.csv"
+STRUCTURAL_PNG_PATH="${RECOVERY_ATTEMPT_ROOT}/structural_sensitivity_summary.png"
+STRUCTURAL_PDF_PATH="${RECOVERY_ATTEMPT_ROOT}/structural_sensitivity_summary.pdf"
+STRUCTURAL_PUBLICATION_RECEIPT="${RECOVERY_ATTEMPT_ROOT}/structural_sensitivity_publication_receipt.json"
 for output in "$STATUS_PATH" "$ANALYSIS_PATH" "$ENVIRONMENT_PATH" \
     "$SCHEDULER_ACCOUNTING_PATH" "$MANIFEST_PATH" "$ARCHIVE_PATH" \
     "$RECEIPT_PATH" "$STRUCTURAL_TABLE_PATH" "$STRUCTURAL_PNG_PATH" \
@@ -210,7 +247,7 @@ python -m mvp.simulation.sensitivity.run_structural_sensitivity analyze \
     --run-plan "$SENSITIVITY_RUN_PLAN" \
     --output "$ANALYSIS_PATH"
 python -m mvp.simulation.sensitivity.publish_structural_sensitivity \
-    "$ANALYSIS_PATH" "$SENSITIVITY_RUN_DIR"
+    "$ANALYSIS_PATH" "$RECOVERY_ATTEMPT_ROOT"
 python hpc/capture_publication_environment.py --output "$ENVIRONMENT_PATH"
 
 # Second explicit live check is immediately before the final semantic
@@ -226,6 +263,7 @@ python -m mvp.simulation.sensitivity.finalize_structural_sensitivity \
     --manifest "$MANIFEST_PATH" \
     --archive "$ARCHIVE_PATH" \
     --receipt "$RECEIPT_PATH" \
+    --recovery-attempt-root "$RECOVERY_ATTEMPT_ROOT" \
     --recovery-receipt "$AGRIBRAIN_RECOVERY_RECEIPT" \
     --preserved-raw-manifest "$AGRIBRAIN_PRESERVED_RAW_MANIFEST" \
     --publication-commit "$AGRIBRAIN_PUBLICATION_CODE_COMMIT"
