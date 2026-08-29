@@ -2288,6 +2288,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--run-tag", required=True)
     parser.add_argument("--submission-receipt", type=Path, required=True)
     parser.add_argument("--publisher-slurm-job-id", required=True)
+    parser.add_argument(
+        "--recovery-receipt",
+        type=Path,
+        help=(
+            "Explicit publication-recovery authorization for a replacement "
+            "publisher. When omitted, the running job must remain the "
+            "publisher declared by the original submission receipt."
+        ),
+    )
+    parser.add_argument(
+        "--publication-commit",
+        help="Clean publication-repair commit (required with --recovery-receipt).",
+    )
     args = parser.parse_args(argv)
 
     if not re.fullmatch(r"[0-9a-f]{40}", args.source_commit):
@@ -2308,10 +2321,36 @@ def main(argv: list[str] | None = None) -> int:
         expected_run_tag=args.run_tag,
         expected_source_commit=args.source_commit,
     )
-    require_declared_publisher(
-        submission_receipt,
-        actual_slurm_job_id=args.publisher_slurm_job_id,
-    )
+    if args.recovery_receipt is None:
+        if args.publication_commit is not None:
+            raise RuntimeError(
+                "--publication-commit is invalid without --recovery-receipt"
+            )
+        require_declared_publisher(
+            submission_receipt,
+            actual_slurm_job_id=args.publisher_slurm_job_id,
+        )
+    else:
+        if not isinstance(args.publication_commit, str) or re.fullmatch(
+            r"[0-9a-f]{40}", args.publication_commit,
+        ) is None:
+            raise RuntimeError(
+                "--publication-commit must be a full lowercase Git SHA-1 "
+                "with --recovery-receipt"
+            )
+        from hpc.publication_recovery_receipt import (
+            validate_recovery_receipt_file,
+        )
+
+        validate_recovery_receipt_file(
+            args.recovery_receipt,
+            original_receipt_path=args.submission_receipt,
+            expected_kind="core",
+            expected_run_tag=args.run_tag,
+            expected_simulation_commit=args.source_commit,
+            expected_publication_commit=args.publication_commit,
+            expected_recovery_job_id=args.publisher_slurm_job_id,
+        )
 
     validate_seed_inputs(
         args.seed_root, source_commit=args.source_commit, run_tag=args.run_tag,

@@ -259,10 +259,21 @@ def validate_figure_directory(
         raise ValueError(f"invalid figure_provenance.json: {exc}") from exc
     if not isinstance(provenance, dict):
         raise ValueError("figure_provenance.json is not an object")
-    if provenance.get("schema_version") != 2:
+    if provenance.get("schema_version") != 3:
         raise ValueError("figure provenance uses an obsolete schema")
     if provenance.get("source_commit") != source_commit:
         raise ValueError("figure provenance source_commit mismatch")
+    if (
+        provenance.get("source_commit_semantics")
+        != "raw_input_simulation_commit"
+        or provenance.get("simulation_source_commit") != source_commit
+    ):
+        raise ValueError("figure provenance raw-input identity is ambiguous")
+    renderer_commit = provenance.get("renderer_code_commit")
+    if not isinstance(renderer_commit, str) or not _HEX40.fullmatch(renderer_commit):
+        raise ValueError("figure provenance renderer commit is invalid")
+    if provenance.get("dual_provenance") is not (renderer_commit != source_commit):
+        raise ValueError("figure provenance dual-provenance flag is inconsistent")
     if provenance.get("run_tag") != run_tag:
         raise ValueError("figure provenance run_tag mismatch")
     if provenance.get("seed_panel") != list(EXPECTED_SEEDS):

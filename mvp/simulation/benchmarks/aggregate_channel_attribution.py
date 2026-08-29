@@ -79,6 +79,10 @@ from pathlib import Path
 
 import numpy as np
 
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
 # Probability-gap override thresholds (probability space). Imported from the live
 # policy so this script stays in lockstep with action_selection.py; the
 # literals are the documented fallbacks if the backend is not importable.
@@ -542,9 +546,33 @@ def evidence_scope_metadata(ledger_root: Path | str, seed_count: int) -> dict:
         )
     head_commit = _git_commit()
     if env_commit and head_commit and env_commit != head_commit:
-        raise RuntimeError(
-            "AGRIBRAIN_GIT_COMMIT does not match the checked-out source commit"
-        )
+        # Publication-only recovery intentionally computes deterministic
+        # derivatives at a clean repair commit while preserving the simulation
+        # commit on raw-result metadata.  Accept that split only after the full
+        # run-scoped recovery authorization has been validated.  A normal run
+        # still fails on any env/HEAD mismatch exactly as before.
+        try:
+            from mvp.simulation.analysis.recovery_provenance import (
+                recovery_context_from_environment,
+            )
+
+            recovery = recovery_context_from_environment(
+                results_dir=_REPO_ROOT / "mvp" / "simulation" / "results",
+                repo_root=_REPO_ROOT,
+            )
+        except (OSError, ValueError) as exc:
+            raise RuntimeError(
+                "AGRIBRAIN_GIT_COMMIT does not match the checked-out source "
+                f"commit and recovery authorization is invalid: {exc}"
+            ) from exc
+        if (
+            recovery is None
+            or recovery.get("simulation_source_commit") != env_commit
+            or recovery.get("publication_code_commit") != head_commit
+        ):
+            raise RuntimeError(
+                "AGRIBRAIN_GIT_COMMIT does not match the checked-out source commit"
+            )
     source_commit = env_commit or head_commit
 
     run_tag = os.environ.get("RUN_TAG", "").strip()

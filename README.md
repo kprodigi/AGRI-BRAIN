@@ -189,6 +189,7 @@ terminology is "institutional retrieval" for the mechanism and
 | Document | Use |
 |---|---|
 | [HOW_TO_RUN.md](HOW_TO_RUN.md) | Local setup, tests, application, HPC, and evidence validation |
+| [Publication recovery](docs/PUBLICATION_RECOVERY.md) | Fail-closed, no-simulation-rerun recovery after a completed run's publisher fails |
 | [EXPERIMENT_PROTOCOL.md](EXPERIMENT_PROTOCOL.md) | Locked scientific design and accounting |
 | [Architecture](docs/ARCHITECTURE.md) | Decision flow, channel separation, learning, and evidence layers |
 | [Methods appendix](docs/METHODS_REPRO_APPENDIX.md) | Exact reproducibility specification |
@@ -201,9 +202,10 @@ terminology is "institutional retrieval" for the mechanism and
 
 ## Citation and license
 
-Citation metadata is provided in [CITATION.cff](CITATION.cff). After a fresh
-validated treatment exists, cite the software version together with its exact
-simulation source commit, run tag, and evidence-archive checksum. The code is released under the
+Citation metadata is provided in [CITATION.cff](CITATION.cff). After validated
+evidence exists, cite the software version together with its exact simulation
+source commit, publication source commit when distinct, run tag, and
+evidence-archive checksum. The code is released under the
 [MIT License](LICENSE).
 
 Security reports should follow [SECURITY.md](SECURITY.md); general

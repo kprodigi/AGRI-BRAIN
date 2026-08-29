@@ -16,22 +16,26 @@ still byte-identifiable.
 | Tree at the public source tag | `cef1e66f0b3cadeaf54f7189b080f26810d8212c` |
 
 The identical tree hashes prove that the tagged public snapshot contains the
-same tracked bytes as the source submitted to HPC. The current `main` branch
-adds documentation, GitHub-community metadata, and non-scientific package
-hygiene; the scientific simulation implementation is unchanged.
+same tracked bytes as the source submitted to HPC. That tag—not the later
+`main` tree—is the authoritative simulation identity. The current `main`
+branch also contains deterministic publication recovery, Slurm-accounting,
+manifest, validation, and archive code added after the simulation workers
+finished. Those changes do not alter or rerun the preserved simulation
+algorithms or raw outputs, but they are substantive publication-code changes
+and are recorded as a separate publication commit in recovered evidence.
 
 Verify locally:
 
 ```bash
 git rev-parse 'simulation-source-d3286ae^{tree}'
-git diff --name-only simulation-source-d3286ae..main -- agribrain mvp hpc \
-  | grep -Ev '\.md$|package(-lock)?\.json$|pyproject\.toml$|pnpm-(lock|workspace)\.yaml$'
+git diff --name-only simulation-source-d3286ae..main
 ```
 
 The first command must print
-`cef1e66f0b3cadeaf54f7189b080f26810d8212c`; the second must print nothing.
-The excluded package files contain metadata and package-manager cleanup only;
-the committed dependency versions used by HPC are unchanged.
+`cef1e66f0b3cadeaf54f7189b080f26810d8212c`. The second command is now expected
+to list the reviewed deterministic recovery/publication changes; it is an audit
+inventory, not a no-difference assertion. Recovery receipts preserve both the
+simulation commit/tree and the later clean publication commit/tree.
 
 ## Issued source-package checksums
 
@@ -47,14 +51,19 @@ inside this repository.
 
 ## Current result status
 
-No methodology-aligned confirmatory benchmark-effect, H1-H3, or structural-
-sensitivity result is committed here. The historical `2fd7bff` evidence
+The methodology-aligned core and structural simulation workers completed, but
+their original publisher jobs failed. Publication-only replacement jobs have
+not yet completed, so no methodology-aligned confirmatory benchmark-effect,
+H1-H3, or structural-sensitivity result is currently certified by this
+repository. The historical `2fd7bff` evidence
 predates the aligned simulation semantics and is retained under `provenance/`
 only as a superseded audit record. It must not be used to populate tables,
 figures, claims, or paper results for this source.
 
-A result-bearing release is valid only after the fresh core, H3, secondary,
-and structural treatments complete and the raw-input, inference, environment,
-ledger, figure, manifest, and archive validators all pass. Its release record
-must state the exact simulation source commit and tree, run tag, archive size,
-member count, and SHA-256.
+A result-bearing release is valid only after both authorized publication-only
+recovery publishers complete and the raw-input, inference, environment,
+ledger, figure, manifest, archive, and combined full-submission validators all
+pass. Its release record must state the exact simulation source commit/tree,
+publication code commit/tree, `simulation_rerun: false`, run tags, archive
+sizes, member counts, and SHA-256 values. See
+[docs/PUBLICATION_RECOVERY.md](docs/PUBLICATION_RECOVERY.md).

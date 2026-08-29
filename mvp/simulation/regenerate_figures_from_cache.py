@@ -105,14 +105,40 @@ _AGGREGATE_FIGURE_INPUTS = (
 
 
 def _require_renderer_source_identity() -> None:
-    """Require the renderer to be the clean simulation-source checkout.
+    """Require a clean source checkout authorized for this derivation.
 
     Run artifacts are the sole status exception because aggregation and figure
     promotion necessarily populate that output tree. Their literal input bytes
     are independently snapshotted below and the final manifest binds them.
     """
 
+    validation_environment = dict(os.environ)
+    if any(
+        os.environ.get(name, "").strip()
+        for name in (
+            "AGRIBRAIN_RECOVERY_RECEIPT",
+            "AGRIBRAIN_SIMULATION_COMMIT",
+            "AGRIBRAIN_PUBLICATION_CODE_COMMIT",
+        )
+    ):
+        from mvp.simulation.analysis.recovery_provenance import (
+            recovery_context_from_environment,
+        )
+
+        recovery = recovery_context_from_environment(
+            results_dir=_RESULTS_DIR,
+            repo_root=_REPO_ROOT,
+        )
+        if recovery is None:
+            raise RuntimeError("incomplete publication-recovery renderer identity")
+        # Git checkout validation describes the code executing the renderer;
+        # figure provenance below continues to stamp the simulation commit on
+        # its raw inputs and the artifact manifest records both identities.
+        validation_environment["AGRIBRAIN_GIT_COMMIT"] = str(
+            recovery["publication_code_commit"]
+        )
     errors = _source_validation_errors(
+        environ=validation_environment,
         repo_root=_REPO_ROOT,
         allow_run_artifacts=True,
     )
@@ -121,6 +147,32 @@ def _require_renderer_source_identity() -> None:
             "renderer source identity is not the clean simulation commit: "
             + "; ".join(errors)
         )
+
+
+def _figure_source_identity(
+    environ: dict[str, str] | None = None,
+) -> dict[str, object]:
+    """Separate immutable simulation inputs from the executing renderer."""
+
+    env = os.environ if environ is None else environ
+    simulation_commit = (
+        str(env.get("AGRIBRAIN_SIMULATION_COMMIT", "")).strip()
+        or str(env.get("AGRIBRAIN_GIT_COMMIT", "")).strip()
+    )
+    raw_input_commit = str(env.get("AGRIBRAIN_GIT_COMMIT", "")).strip()
+    renderer_commit = (
+        str(env.get("AGRIBRAIN_PUBLICATION_CODE_COMMIT", "")).strip()
+        or simulation_commit
+    )
+    if not simulation_commit or raw_input_commit != simulation_commit:
+        raise RuntimeError("figure raw-input commit is not the simulation commit")
+    return {
+        "source_commit": simulation_commit,
+        "source_commit_semantics": "raw_input_simulation_commit",
+        "simulation_source_commit": simulation_commit,
+        "renderer_code_commit": renderer_commit,
+        "dual_provenance": renderer_commit != simulation_commit,
+    }
 
 
 def _load_summary_scalars(results_dir: Path = _RESULTS_DIR) -> dict:
@@ -367,8 +419,10 @@ def _write_figure_provenance(
         "resolved_path": str(font_path),
     })
     payload = {
-        "schema_version": 2,
-        "source_commit": os.environ.get("AGRIBRAIN_GIT_COMMIT", "").strip() or None,
+        "schema_version": 3,
+        # The source_commit compatibility alias is explicitly scoped to raw
+        # simulation inputs rather than the code that rendered the figures.
+        **_figure_source_identity(),
         "run_tag": os.environ.get("RUN_TAG", "").strip() or None,
         "seed_root": str(source_seed_root),
         "render_input_isolated_snapshot": True,

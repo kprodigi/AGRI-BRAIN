@@ -13,6 +13,11 @@ the interpreter, installed-package versions, environment contract, platform,
 and source hashes. This is a version-resolved runtime inventory, not a claim
 of byte-identical wheels, BLAS binaries, or a container image.
 
+Sections describing seed/stress and structural arrays are the normal fresh-run
+workflow. For the current completed methodology-aligned workers whose original
+publishers failed, do not resubmit those arrays; use the separately authorized
+publication-only procedure in [docs/PUBLICATION_RECOVERY.md](docs/PUBLICATION_RECOVERY.md).
+
 ## 2. Install the backend
 
 For ordinary development:
@@ -108,9 +113,10 @@ python hpc/validate_decision_ledgers.py
 The manifest's simulation source commit must exactly equal the clean commit
 used by the new run. Any mismatch is a validation failure.
 
-## 6. Regenerate figures and tables from fresh evidence
+## 6. Regenerate figures and tables from validated evidence
 
-After extracting and validating a fresh evidence archive, render only into a
+After extracting and validating an accepted fresh or authorized-recovery
+evidence archive, render only into a
 separate derived-output directory. Substitute the source commit and run tag
 recorded in that archive's manifest:
 

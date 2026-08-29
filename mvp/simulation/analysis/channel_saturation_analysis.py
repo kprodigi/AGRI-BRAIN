@@ -59,9 +59,14 @@ import json
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 import numpy as np
+
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 try:
     from scipy import stats as _st
@@ -391,7 +396,28 @@ def main(argv=None):
         raise RuntimeError("channel saturation requires a run tag")
     head = _git_commit()
     if head != "unknown" and head != source_commit:
-        raise RuntimeError("channel saturation source commit differs from Git HEAD")
+        try:
+            from mvp.simulation.analysis.recovery_provenance import (
+                recovery_context_from_environment,
+            )
+
+            recovery = recovery_context_from_environment(
+                results_dir=_REPO_ROOT / "mvp" / "simulation" / "results",
+                repo_root=_REPO_ROOT,
+            )
+        except (OSError, ValueError) as exc:
+            raise RuntimeError(
+                "channel saturation source commit differs from Git HEAD and "
+                f"recovery authorization is invalid: {exc}"
+            ) from exc
+        if (
+            recovery is None
+            or recovery.get("simulation_source_commit") != source_commit
+            or recovery.get("publication_code_commit") != head
+        ):
+            raise RuntimeError(
+                "channel saturation source commit differs from Git HEAD"
+            )
     ari, seeds = _load_ari(seed_root)
 
     by_scn = {}

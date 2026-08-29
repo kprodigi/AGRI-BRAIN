@@ -5,7 +5,10 @@ The JSON receipt and patch in this directory describe the superseded August
 audit trail. They are **not** evidence for the current methodology-aligned
 source and must not be used to support current numerical claims.
 
-A current publication run creates a new, commit-bound provenance receipt and
-artifact manifest through the locked HPC publication workflow. Until that
-fresh run passes all validators, the current repository has no certified
+A current evidence set is valid only after either the normal fresh
+single-commit workflow or the narrowly authorized publication-only recovery
+passes every validator. Recovery must bind the preserved raw outputs, original
+failed publishers, distinct simulation/publication commits and trees, and
+`simulation_rerun: false`. Until the pending recovery publishers and dependent
+combined validator finish successfully, this repository has no certified
 publication-result package.

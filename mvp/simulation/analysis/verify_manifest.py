@@ -2,8 +2,10 @@
 """Verify mvp/simulation/results/artifact_manifest.json.
 
 Re-hashes every artifact listed in the manifest and asserts the
-SHA-256 matches what is recorded. In strict mode it also requires one clean,
-identical source commit for simulation, aggregation, and publication. Exits 0
+SHA-256 matches what is recorded. In strict fresh mode it also requires one
+clean, identical source commit for simulation, aggregation, and publication.
+Dual provenance is accepted only with a separately validated deterministic-
+recovery receipt that explicitly records ``simulation_rerun=false``. Exits 0
 on clean verification, 1 on any mismatch or missing artifact.
 
 Usage::
@@ -27,6 +29,13 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from mvp.simulation.analysis.recovery_provenance import (
+    validate_recovery_context,
+)
+
 RESULTS_DIR = REPO_ROOT / "mvp" / "simulation" / "results"
 MANIFEST_PATH = RESULTS_DIR / "artifact_manifest.json"
 
@@ -48,8 +57,9 @@ def main() -> int:
         "--strict-commit",
         action="store_true",
         help=(
-            "Require full equal git/simulation/publication commits, "
-            "dual_provenance=false, and git_dirty=false."
+            "Require a clean full-commit identity: one equal commit for a "
+            "fresh run, or two receipt-authorized commits for deterministic "
+            "recovery."
         ),
     )
     parser.add_argument(
@@ -68,6 +78,14 @@ def main() -> int:
         "--manifest",
         default=str(MANIFEST_PATH),
         help="Path to artifact_manifest.json (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--recovery-receipt",
+        type=Path,
+        help=(
+            "Explicit run-scoped publication-recovery authorization. Required "
+            "for a dual-provenance manifest and rejected for a fresh manifest."
+        ),
     )
     parser.add_argument(
         "--require-tracked",
@@ -94,6 +112,78 @@ def main() -> int:
     payload = json.loads(manifest_path.read_text(encoding="utf-8"))
 
     git_commit = payload.get("git_commit")
+    simulation_commit = payload.get("simulation_source_commit", git_commit)
+    publication_commit = payload.get("publication_code_commit", git_commit)
+    dual_provenance = payload.get("dual_provenance")
+
+    if dual_provenance is True:
+        for label, value in (
+            ("git_commit", git_commit),
+            ("simulation_source_commit", simulation_commit),
+            ("publication_code_commit", publication_commit),
+        ):
+            if not isinstance(value, str) or not _HEX40.fullmatch(value):
+                print(f"FAIL: manifest.{label} is not a 40-hex SHA: {value!r}")
+                return 1
+        if git_commit != simulation_commit or simulation_commit == publication_commit:
+            print(
+                "FAIL: a recovery manifest must keep git_commit bound to its "
+                "distinct simulation source commit"
+            )
+            return 1
+        if payload.get("git_dirty") is not False:
+            print("FAIL: a recovery manifest cannot carry a dirty Git stamp")
+            return 1
+        if args.recovery_receipt is None:
+            print(
+                "FAIL: dual-provenance manifest requires --recovery-receipt"
+            )
+            return 1
+        try:
+            recovery_authorization = validate_recovery_context(
+                args.recovery_receipt,
+                results_dir=manifest_path.parent,
+                run_tag=payload.get("artifact_run_tag"),
+                simulation_commit=simulation_commit,
+                publication_commit=publication_commit,
+                expected_kind="core",
+            )
+        except (OSError, ValueError) as exc:
+            print(f"FAIL: invalid publication-recovery authorization: {exc}")
+            return 1
+        if payload.get("recovery_authorization") != recovery_authorization:
+            print(
+                "FAIL: manifest recovery_authorization differs from the "
+                "validated receipt and preserved-input binding"
+            )
+            return 1
+        recovery_records = {
+            record.get("file"): record
+            for record in payload.get("artifacts", [])
+            if isinstance(record, dict)
+        }
+        for path_key, digest_key in (
+            ("receipt_file", "receipt_literal_sha256"),
+            (
+                "preserved_raw_manifest_file",
+                "preserved_raw_manifest_literal_sha256",
+            ),
+            ("original_submission_receipt_file", None),
+        ):
+            name = recovery_authorization[path_key]
+            record = recovery_records.get(name)
+            if record is None:
+                print(f"FAIL: recovery evidence is not manifested: {name}")
+                return 1
+            if digest_key is not None and record.get(
+                "sha256"
+            ) != recovery_authorization[digest_key]:
+                print(f"FAIL: manifested recovery-evidence hash changed: {name}")
+                return 1
+    elif args.recovery_receipt is not None:
+        print("FAIL: --recovery-receipt is invalid for single-provenance evidence")
+        return 1
+
     if args.strict_commit:
         if not isinstance(git_commit, str) or not _HEX40.match(git_commit):
             print(
@@ -101,8 +191,6 @@ def main() -> int:
                 f"40-hex SHA: {git_commit!r}"
             )
             return 1
-        simulation_commit = payload.get("simulation_source_commit", git_commit)
-        publication_commit = payload.get("publication_code_commit", git_commit)
         for label, value in (
             ("simulation_source_commit", simulation_commit),
             ("publication_code_commit", publication_commit),
@@ -110,15 +198,19 @@ def main() -> int:
             if not isinstance(value, str) or not _HEX40.match(value):
                 print(f"FAIL: manifest.{label} is not a 40-hex SHA: {value!r}")
                 return 1
-        if not git_commit == simulation_commit == publication_commit:
-            print(
-                "FAIL: strict publication evidence must use one identical "
-                "git/simulation/publication commit"
-            )
-            return 1
-        if payload.get("dual_provenance") is not False:
-            print("FAIL: manifest.dual_provenance must be false in strict mode")
-            return 1
+        if dual_provenance is not True:
+            if not git_commit == simulation_commit == publication_commit:
+                print(
+                    "FAIL: strict fresh publication evidence must use one "
+                    "identical git/simulation/publication commit"
+                )
+                return 1
+            if dual_provenance is not False:
+                print(
+                    "FAIL: manifest.dual_provenance must be false in strict "
+                    "fresh mode"
+                )
+                return 1
         if payload.get("git_dirty") is not False:
             print("FAIL: manifest.git_dirty must be false in strict mode")
             return 1

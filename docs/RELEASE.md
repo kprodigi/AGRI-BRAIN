@@ -11,16 +11,27 @@
 
 ## Publication evidence
 
-This methodology-aligned source requires a fresh simulation treatment; the
-historical `2fd7bff` archive cannot be reused. Upload only the new validated
-evidence archive and publish its exact SHA-256 checksum, member count, byte
-size, source commit, protocol hash, environment receipt, and run tag.
+The historical `2fd7bff` archive cannot be reused. Evidence is accepted in
+exactly two modes:
 
-The shippable archive builder does not accept publication-only or
-dual-provenance repairs. Any post-run change that affects generated tables,
-figures, validation, or packaging requires the complete evidence pipeline to
-be rerun from one clean commit. Historical repair receipts remain audit-trail
-records only and cannot produce a READY release bundle.
+1. a normal fresh run whose simulations and publication pipeline use one clean
+   source commit; or
+2. the narrowly authorized publication-only recovery in
+   `docs/PUBLICATION_RECOVERY.md`, when the methodology-aligned workers already
+   completed, the original publishers failed, the raw outputs remain
+   byte-preserved, and the recovered bundle records distinct simulation and
+   publication commits/trees with `simulation_rerun: false`.
+
+Recovery may repair deterministic aggregation, figures, validation, and
+packaging only. Any change to simulation semantics or raw outputs requires a
+fresh affected simulation run. The current repository remains source-only and
+recovery-pending until both recovered publishers and the dependent combined
+validator produce and revalidate their receipts and `READY.json`.
+
+For either accepted mode, publish the evidence archive's exact SHA-256,
+member count, byte size, run tag, protocol hash, environment receipt, and
+source identity. A recovered release must publish both source identities and
+its recovery authorization; it must never be relabeled as a fresh run.
 
 Both Slurm workflows execute from a detached read-only snapshot and bind its
 literal source-tree SHA-256 into submission receipts and worker payloads. Those
@@ -75,3 +86,11 @@ git tag -a "$TAG" -m "AGRI-BRAIN $TAG"
 Push only after reviewing the exact commit, tag, release-asset checksum, and
 public file inventory. Never commit environment files, keys, credentials,
 cluster logs, private provenance, or manuscript comparison files.
+
+Tag the exact clean publication-source commit used by the publishers. Keep the
+generated manifest, canonical recovery receipts, tables, figures, and raw
+episode archives together in the sealed GitHub Release assets; do not create a
+later evidence-carrier commit. A later commit would have a different source
+identity from the one recorded and validated by the evidence. Publish the
+combined READY bundle and external SHA-256 checksums with those assets so a
+reviewer can validate them after download.

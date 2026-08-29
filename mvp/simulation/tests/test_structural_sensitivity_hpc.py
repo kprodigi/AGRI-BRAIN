@@ -54,6 +54,28 @@ def test_slurm_orchestrator_is_external_exact_and_fail_closed() -> None:
     assert "--allow-dirty" not in orchestrator
     assert "--skip-dynamic-audit" not in orchestrator
     assert 'RESULTS_DIR="mvp/simulation/results"' not in orchestrator
+    fresh_gate_start = orchestrator.index(
+        "# A fresh structural DAG must not inherit publication-recovery"
+    )
+    fresh_gate_end = orchestrator.index(
+        "source hpc/publication_env.sh", fresh_gate_start,
+    )
+    fresh_gate = orchestrator[fresh_gate_start:fresh_gate_end]
+    for variable in (
+        "AGRIBRAIN_RECOVERY_RECEIPT",
+        "AGRIBRAIN_SIMULATION_COMMIT",
+        "AGRIBRAIN_PUBLICATION_CODE_COMMIT",
+        "AGRIBRAIN_SIMULATION_SOURCE_TREE_SHA256",
+        "AGRIBRAIN_PUBLICATION_SOURCE_TREE_SHA256",
+        "AGRIBRAIN_PRESERVED_RAW_MANIFEST",
+        "AGRIBRAIN_RAW_SEEDS_DIR",
+        "AGRIBRAIN_RAW_STRESS_DIR",
+        "AGRIBRAIN_RAW_H3_LEDGER_DIR",
+        "AGRIBRAIN_EXTERNAL_RECOVERY_RECEIPT",
+        "AGRIBRAIN_EXTERNAL_RAW_MANIFEST",
+        "AGRIBRAIN_ORIGINAL_CORE_RECEIPT",
+    ):
+        assert variable in fresh_gate
 
     assert "TASK_INDEX=$((SENSITIVITY_TASK_OFFSET + SLURM_ARRAY_TASK_ID))" in task
     assert '"$TASK_INDEX" -ge 3000' in task

@@ -213,7 +213,7 @@ def test_development_runner_emits_only_nonpublication_names(
 
 
 def test_manual_smoke_workflow_has_no_schedule_or_publication_upload_names():
-    workflow = (REPO_ROOT / ".github" / "workflows" / "nightly-validation.yml").read_text(
+    workflow = (REPO_ROOT / ".github" / "workflows" / "development-smoke.yml").read_text(
         encoding="utf-8"
     )
     assert "schedule:" not in workflow
@@ -233,6 +233,10 @@ def test_ci_skips_absent_current_evidence_without_archive_fallback():
     assert "current-evidence-boundary:" in workflow
     assert 'manifest = Path("mvp/simulation/results/artifact_manifest.json")' in workflow
     assert 'out.write("has_current=false\\n")' in workflow
+    assert "submission-evidence-" not in workflow
+    assert "GitHub Release asset tied to the exact publication-source tag" in workflow
+    assert 'out.write("recovery_receipt=\\n")' in workflow
+    assert 'args+=(--recovery-receipt "$RECOVERY_RECEIPT")' in workflow
     assert "Archived/legacy outputs were not used" in workflow
     assert "if: steps.evidence.outputs.has_current == 'true'" in workflow
     assert "ALLOW_MISSING_BASELINE" not in workflow

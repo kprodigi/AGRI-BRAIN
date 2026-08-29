@@ -9,11 +9,17 @@ import io
 import json
 import os
 import re
+import subprocess
 import tarfile
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 from hpc.capture_slurm_accounting import validate_accounting_payload
+from hpc.preserved_raw_manifest import validate_manifest_payload
+from hpc.publication_recovery_receipt import (
+    require_authorized_publisher,
+    validate_recovery_receipt_file,
+)
 from hpc.slurm_execution_provenance import (
     SNAPSHOT_MODE,
     require_declared_publisher,
@@ -58,6 +64,20 @@ RECEIPT_SCHEMA_VERSION = 1
 SUBMISSION_SCHEMA_VERSION = 2
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 ARCHIVE_PREFIX = "structural_sensitivity_evidence"
+RECOVERY_RECEIPT_DIRECTORY = "publication_recovery_receipts"
+PRESERVED_RAW_MANIFEST_DIRECTORY = "preserved_raw_manifests"
+STRUCTURAL_RAW_DIRECTORIES = ("logs", "runtime_receipts", "tasks")
+STRUCTURAL_RAW_FILES = (
+    "episode_accounting.json",
+    "experiment_protocol.json",
+    "lhs_design.csv",
+    "lhs_design.json",
+    "parameter_registry.json",
+    "run_plan.json",
+    "slurm_submission.json",
+    "task_manifest.json",
+    "task_manifest.jsonl",
+)
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -65,6 +85,209 @@ def _load_json(path: Path) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError(f"expected a JSON object: {path}")
     return payload
+
+
+def _canonical_regular_file(actual: Path, expected: Path, *, label: str) -> Path:
+    """Require an exact, non-symlink recovery evidence path."""
+
+    if actual.is_symlink() or expected.is_symlink():
+        raise ValueError(f"{label} must not be a symbolic link")
+    try:
+        resolved = actual.resolve(strict=True)
+        expected_resolved = expected.resolve(strict=True)
+    except OSError as exc:
+        raise ValueError(f"{label} is missing") from exc
+    if resolved != expected_resolved or not resolved.is_file():
+        raise ValueError(f"{label} must use its canonical run-scoped path")
+    return resolved
+
+
+def _validated_run_output_path(
+    actual: Path,
+    expected: Path,
+    *,
+    label: str,
+    must_exist: bool,
+) -> Path:
+    """Validate an output lexically before any symlink-resolving operation."""
+
+    actual_absolute = Path(os.path.abspath(os.fspath(actual)))
+    expected_absolute = Path(os.path.abspath(os.fspath(expected)))
+    if actual_absolute != expected_absolute:
+        raise ValueError(
+            f"{label} path {actual_absolute} must equal {expected_absolute}"
+        )
+    for component in (actual_absolute, *actual_absolute.parents):
+        if component.is_symlink():
+            raise ValueError(f"{label} path must not contain a symbolic link")
+    if must_exist:
+        if not actual_absolute.is_file():
+            raise ValueError(f"{label} must be an existing regular file")
+    elif actual_absolute.exists():
+        raise FileExistsError(f"refusing to overwrite existing {label}")
+    return actual_absolute
+
+
+def _git_tree_sha1(repo_root: Path) -> str:
+    try:
+        value = subprocess.run(
+            ["git", "rev-parse", "HEAD^{tree}"],
+            cwd=repo_root.resolve(),
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise ValueError("cannot establish publication-repair Git tree") from exc
+    if not re.fullmatch(r"[0-9a-f]{40}", value):
+        raise ValueError("publication-repair Git tree is not a full SHA-1")
+    return value
+
+
+def _raw_manifest_bindings(
+    run_root: Path,
+) -> tuple[list[tuple[str, Path]], list[tuple[str, Path]]]:
+    """Return the fixed immutable-input surface for structural recovery."""
+
+    roots = [(name, run_root / name) for name in STRUCTURAL_RAW_DIRECTORIES]
+    files = [(name, run_root / name) for name in STRUCTURAL_RAW_FILES]
+    return roots, files
+
+
+def _validate_live_recovery_raw_outputs(
+    raw_manifest_path: Path,
+    *,
+    run_root: Path,
+    run_tag: str,
+    simulation_commit: str,
+    simulation_source_tree_sha256: str,
+) -> dict[str, Any]:
+    roots, files = _raw_manifest_bindings(run_root)
+    return validate_manifest_payload(
+        _load_json(raw_manifest_path),
+        kind="structural",
+        run_tag=run_tag,
+        simulation_commit=simulation_commit,
+        simulation_source_tree_sha256=simulation_source_tree_sha256,
+        roots=roots,
+        files=files,
+    )
+
+
+def _validate_structural_recovery(
+    *,
+    run_root: Path,
+    run_tag: str,
+    simulation_commit: str,
+    simulation_source_tree_sha256: str,
+    publication_commit: str,
+    recovery_receipt_path: Path,
+    raw_manifest_path: Path,
+    publisher_slurm_job_id: str,
+) -> dict[str, Any]:
+    """Validate dual provenance without weakening the normal publisher gate."""
+
+    if not re.fullmatch(r"[0-9a-f]{40}", publication_commit):
+        raise ValueError("publication commit must be a full lowercase Git SHA-1")
+    if publication_commit == simulation_commit:
+        raise ValueError("publication recovery requires distinct source commits")
+    canonical_receipt = (
+        run_root / RECOVERY_RECEIPT_DIRECTORY / f"{run_tag}.json"
+    )
+    canonical_raw = (
+        run_root / PRESERVED_RAW_MANIFEST_DIRECTORY / f"{run_tag}.json"
+    )
+    receipt_path = _canonical_regular_file(
+        recovery_receipt_path,
+        canonical_receipt,
+        label="publication-recovery receipt",
+    )
+    manifest_path = _canonical_regular_file(
+        raw_manifest_path,
+        canonical_raw,
+        label="preserved raw-output manifest",
+    )
+    original_submission = _canonical_regular_file(
+        run_root / "slurm_submission.json",
+        run_root / "slurm_submission.json",
+        label="original structural submission receipt",
+    )
+    receipt = validate_recovery_receipt_file(
+        receipt_path,
+        original_receipt_path=original_submission,
+        expected_kind="structural",
+        expected_run_tag=run_tag,
+        expected_simulation_commit=simulation_commit,
+        expected_publication_commit=publication_commit,
+        expected_recovery_job_id=publisher_slurm_job_id,
+    )
+    require_authorized_publisher(
+        receipt,
+        actual_slurm_job_id=publisher_slurm_job_id,
+        expected_kind="structural",
+        expected_run_tag=run_tag,
+        expected_simulation_commit=simulation_commit,
+        expected_publication_commit=publication_commit,
+    )
+    source_identity = receipt["source_identity"]
+    publication_tree = _git_tree_sha1(REPO_ROOT)
+    if source_identity["publication_repair_tree"] != publication_tree:
+        raise ValueError(
+            "publication-repair checkout tree differs from recovery authorization"
+        )
+
+    manifest_bytes = manifest_path.read_bytes()
+    raw_binding = receipt["preserved_raw_outputs"]
+    if (
+        raw_binding["file"] != manifest_path.name
+        or raw_binding["bytes"] != len(manifest_bytes)
+        or raw_binding["literal_sha256"]
+        != hashlib.sha256(manifest_bytes).hexdigest()
+    ):
+        raise ValueError(
+            "preserved raw-output manifest differs from recovery authorization"
+        )
+    validated_raw = _validate_live_recovery_raw_outputs(
+        manifest_path,
+        run_root=run_root,
+        run_tag=run_tag,
+        simulation_commit=simulation_commit,
+        simulation_source_tree_sha256=simulation_source_tree_sha256,
+    )
+    if (
+        raw_binding["manifest_self_hash"] != validated_raw["manifest_sha256"]
+        or raw_binding["payload_merkle_root"]
+        != validated_raw["payload_merkle_root"]
+        or raw_binding["record_count"] != validated_raw["file_count"]
+    ):
+        raise ValueError("preserved raw-output binding is inconsistent")
+    failed_log_paths: list[Path] = []
+    for stream_name in ("stdout", "stderr"):
+        binding = receipt["failed_publisher"][stream_name]
+        filename = binding["file"]
+        if (
+            not isinstance(filename, str)
+            or Path(filename).name != filename
+            or "\\" in filename
+        ):
+            raise ValueError(f"failed publisher {stream_name} filename is unsafe")
+        failed_log = _safe_file(run_root, f"logs/{filename}")
+        if (
+            failed_log.stat().st_size != binding["bytes"]
+            or file_sha256(failed_log) != binding["sha256"]
+        ):
+            raise ValueError(
+                f"failed publisher {stream_name} differs from recovery authorization"
+            )
+        failed_log_paths.append(failed_log)
+    return {
+        "receipt": receipt,
+        "receipt_path": receipt_path,
+        "raw_manifest_path": manifest_path,
+        "raw_manifest": validated_raw,
+        "publication_tree": publication_tree,
+        "failed_log_paths": failed_log_paths,
+    }
 
 
 def _safe_file(run_root: Path, relative: str) -> Path:
@@ -453,6 +676,9 @@ def finalize_run(
     manifest_path: Path,
     archive_path: Path,
     receipt_path: Path,
+    recovery_receipt_path: Path | None = None,
+    raw_manifest_path: Path | None = None,
+    publication_commit: str | None = None,
 ) -> dict[str, Any]:
     run_plan = run_plan.resolve()
     run_root = run_plan.parent
@@ -463,8 +689,48 @@ def finalize_run(
         raise ValueError("only a run-tag-bound structural-only plan can be finalized")
     if plan.get("source_tree_clean_at_generation") is not True:
         raise ValueError("structural run plan was not generated from a clean source tree")
+
+    receipt_value = recovery_receipt_path or (
+        Path(os.environ["AGRIBRAIN_RECOVERY_RECEIPT"])
+        if os.environ.get("AGRIBRAIN_RECOVERY_RECEIPT", "").strip()
+        else None
+    )
+    raw_manifest_value = raw_manifest_path or (
+        Path(os.environ["AGRIBRAIN_PRESERVED_RAW_MANIFEST"])
+        if os.environ.get("AGRIBRAIN_PRESERVED_RAW_MANIFEST", "").strip()
+        else None
+    )
+    publication_value = (
+        str(publication_commit or "").strip()
+        or os.environ.get("AGRIBRAIN_PUBLICATION_CODE_COMMIT", "").strip()
+        or None
+    )
+    recovery_requested = any(
+        value is not None
+        for value in (receipt_value, raw_manifest_value, publication_value)
+    )
+    if recovery_requested and not all(
+        value is not None
+        for value in (receipt_value, raw_manifest_value, publication_value)
+    ):
+        raise ValueError(
+            "structural recovery requires receipt, raw manifest, and publication commit"
+        )
+    simulation_env = os.environ.get("AGRIBRAIN_SIMULATION_COMMIT", "").strip()
+    if recovery_requested and simulation_env != source_commit:
+        raise ValueError(
+            "AGRIBRAIN_SIMULATION_COMMIT must equal the structural run-plan commit"
+        )
+    validator_commit = str(publication_value) if recovery_requested else source_commit
+    if recovery_requested and os.environ.get("AGRIBRAIN_GIT_COMMIT", "").strip() != (
+        validator_commit
+    ):
+        raise ValueError(
+            "AGRIBRAIN_GIT_COMMIT must equal the publication-repair commit during "
+            "structural recovery finalization"
+        )
     validator_source_identity = validate_clean_validator_checkout(
-        source_commit, repo_root=REPO_ROOT,
+        validator_commit, repo_root=REPO_ROOT,
     )
     snapshot_failures = source_snapshot_errors(repo_root=REPO_ROOT)
     if snapshot_failures:
@@ -483,30 +749,73 @@ def finalize_run(
         submission,
         run_tag=run_tag,
         source_commit=source_commit,
-        publisher_slurm_job_id=publisher_slurm_job_id,
+        publisher_slurm_job_id=(None if recovery_requested else publisher_slurm_job_id),
     )
-    if os.environ.get("AGRIBRAIN_SOURCE_SNAPSHOT_MODE", "").strip() != (
-        submission["source_snapshot_mode"]
-    ) or os.environ.get("AGRIBRAIN_SOURCE_TREE_SHA256", "").strip() != (
-        submission["source_tree_sha256"]
-    ):
-        raise ValueError(
-            "structural publisher source snapshot differs from the submission receipt"
+    recovery_context: dict[str, Any] | None = None
+    if recovery_requested:
+        assert receipt_value is not None
+        assert raw_manifest_value is not None
+        assert publication_value is not None
+        recovery_context = _validate_structural_recovery(
+            run_root=run_root,
+            run_tag=run_tag,
+            simulation_commit=source_commit,
+            simulation_source_tree_sha256=submission["source_tree_sha256"],
+            publication_commit=str(publication_value),
+            recovery_receipt_path=receipt_value,
+            raw_manifest_path=raw_manifest_value,
+            publisher_slurm_job_id=publisher_slurm_job_id,
         )
-    expected_outputs = {
-        status_path.resolve(): run_root / "completion_status.json",
-        analysis_path.resolve(): run_root / "structural_sensitivity_analysis.json",
-        environment_path.resolve(): run_root / "publication_environment.json",
-        scheduler_accounting_path.resolve(): run_root / "slurm_simulation_accounting.json",
-        manifest_path.resolve(): run_root / "structural_sensitivity_artifact_manifest.json",
-        archive_path.resolve(): run_root / f"structural_sensitivity_evidence_{run_tag}.tar.gz",
-        receipt_path.resolve(): run_root / "structural_sensitivity_archive_receipt.json",
-    }
-    for actual, expected in expected_outputs.items():
-        if actual != expected.resolve():
+        publication_source_tree_sha256 = os.environ.get(
+            "AGRIBRAIN_SOURCE_TREE_SHA256", ""
+        ).strip()
+        if (
+            os.environ.get("AGRIBRAIN_SOURCE_SNAPSHOT_MODE", "").strip()
+            != submission["source_snapshot_mode"]
+            or not _HEX64.fullmatch(publication_source_tree_sha256)
+        ):
             raise ValueError(
-                f"structural final evidence path {actual} must equal {expected.resolve()}"
+                "structural recovery lacks a valid publication source snapshot"
             )
+    else:
+        publication_source_tree_sha256 = submission["source_tree_sha256"]
+        if os.environ.get("AGRIBRAIN_SOURCE_SNAPSHOT_MODE", "").strip() != (
+            submission["source_snapshot_mode"]
+        ) or os.environ.get("AGRIBRAIN_SOURCE_TREE_SHA256", "").strip() != (
+            submission["source_tree_sha256"]
+        ):
+            raise ValueError(
+                "structural publisher source snapshot differs from the submission receipt"
+            )
+    status_path = _validated_run_output_path(
+        status_path, run_root / "completion_status.json",
+        label="structural completion status", must_exist=True,
+    )
+    analysis_path = _validated_run_output_path(
+        analysis_path, run_root / "structural_sensitivity_analysis.json",
+        label="structural analysis", must_exist=True,
+    )
+    environment_path = _validated_run_output_path(
+        environment_path, run_root / "publication_environment.json",
+        label="structural environment receipt", must_exist=True,
+    )
+    scheduler_accounting_path = _validated_run_output_path(
+        scheduler_accounting_path, run_root / "slurm_simulation_accounting.json",
+        label="structural scheduler accounting", must_exist=True,
+    )
+    manifest_path = _validated_run_output_path(
+        manifest_path, run_root / "structural_sensitivity_artifact_manifest.json",
+        label="structural artifact manifest", must_exist=False,
+    )
+    archive_path = _validated_run_output_path(
+        archive_path,
+        run_root / f"structural_sensitivity_evidence_{run_tag}.tar.gz",
+        label="structural evidence archive", must_exist=False,
+    )
+    receipt_path = _validated_run_output_path(
+        receipt_path, run_root / "structural_sensitivity_archive_receipt.json",
+        label="structural archive receipt", must_exist=False,
+    )
 
     current_status, retained_ledgers = validate_completed_results_with_ledgers(
         run_plan, submission_receipt=submission,
@@ -526,7 +835,11 @@ def finalize_run(
         raise ValueError("saved analysis differs from a fresh analysis of task bytes")
 
     environment = _load_json(environment_path.resolve())
-    _validate_environment(environment, run_tag=run_tag, source_commit=source_commit)
+    _validate_environment(
+        environment,
+        run_tag=run_tag,
+        source_commit=validator_commit,
+    )
     scheduler_accounting = _load_json(scheduler_accounting_path.resolve())
     scheduler_summary = validate_accounting_payload(
         scheduler_accounting,
@@ -556,13 +869,25 @@ def finalize_run(
     )
     required_relative.extend(runtime_paths)
     required_relative.extend(structural_publication_paths)
+    if recovery_context is not None:
+        required_relative.extend([
+            recovery_context["receipt_path"].relative_to(run_root).as_posix(),
+            recovery_context["raw_manifest_path"].relative_to(run_root).as_posix(),
+        ])
     # Completed upstream task logs are useful operational evidence. The current
     # publisher log is deliberately not read while it is still being written.
     logs_root = run_root / "logs"
     if logs_root.exists():
         if logs_root.is_symlink() or not logs_root.is_dir():
             raise ValueError("structural log directory is unsafe")
-        for log_path in sorted(logs_root.glob("task_*")):
+        log_candidates = (
+            logs_root.rglob("*")
+            if recovery_context is not None
+            else logs_root.glob("task_*")
+        )
+        for log_path in sorted(log_candidates):
+            if log_path.is_dir():
+                continue
             if log_path.is_symlink() or not log_path.is_file():
                 raise ValueError(f"structural task log is unsafe: {log_path}")
             required_relative.append(log_path.relative_to(run_root).as_posix())
@@ -623,10 +948,13 @@ def finalize_run(
         )
     ]
 
-    if manifest_path.exists() or receipt_path.exists():
+    if (
+        manifest_path.exists() or manifest_path.is_symlink()
+        or receipt_path.exists() or receipt_path.is_symlink()
+    ):
         raise FileExistsError("refusing to overwrite an existing structural manifest or receipt")
     if validate_clean_validator_checkout(
-        source_commit, repo_root=REPO_ROOT,
+        validator_commit, repo_root=REPO_ROOT,
     ) != validator_source_identity:
         raise ValueError("structural validator source identity changed before archive creation")
     snapshot_failures = source_snapshot_errors(repo_root=REPO_ROOT)
@@ -635,6 +963,26 @@ def finalize_run(
             "structural finalizer source snapshot changed before archive creation: "
             + "; ".join(snapshot_failures[:5])
         )
+    if recovery_context is not None:
+        # This is deliberately the last simulation-input operation before the
+        # semantic manifest is created.  Any missing, changed, or newly added
+        # raw file after derivation therefore fails the recovery closed.
+        refreshed_recovery = _validate_structural_recovery(
+            run_root=run_root,
+            run_tag=run_tag,
+            simulation_commit=source_commit,
+            simulation_source_tree_sha256=submission["source_tree_sha256"],
+            publication_commit=validator_commit,
+            recovery_receipt_path=recovery_context["receipt_path"],
+            raw_manifest_path=recovery_context["raw_manifest_path"],
+            publisher_slurm_job_id=publisher_slurm_job_id,
+        )
+        if (
+            refreshed_recovery["receipt"] != recovery_context["receipt"]
+            or refreshed_recovery["raw_manifest"]
+            != recovery_context["raw_manifest"]
+        ):
+            raise ValueError("structural recovery evidence changed during derivation")
     artifact_manifest: dict[str, Any] = {
         "schema_version": MANIFEST_SCHEMA_VERSION,
         "analysis_label": "structural sensitivity",
@@ -680,6 +1028,53 @@ def finalize_run(
         "file_count": len(records),
         "files": records,
     }
+    if recovery_context is not None:
+        recovery_receipt = recovery_context["receipt"]
+        raw_manifest = recovery_context["raw_manifest"]
+        artifact_manifest.update({
+            "simulation_source_commit": source_commit,
+            "publication_code_commit": validator_commit,
+            "dual_provenance": True,
+            "simulation_rerun": False,
+            "simulation_source_snapshot_binding": {
+                "mode": submission["source_snapshot_mode"],
+                "source_tree_sha256": submission["source_tree_sha256"],
+            },
+            "publication_source_snapshot_binding": {
+                "mode": os.environ.get(
+                    "AGRIBRAIN_SOURCE_SNAPSHOT_MODE", ""
+                ).strip(),
+                "source_tree_sha256": publication_source_tree_sha256,
+                "git_tree_sha1": recovery_context["publication_tree"],
+            },
+        })
+        artifact_manifest["recovery_authorization"] = {
+            "receipt_file": recovery_context["receipt_path"].relative_to(
+                run_root
+            ).as_posix(),
+            "receipt_sha256": recovery_receipt["receipt_sha256"],
+            "receipt_literal_sha256": file_sha256(
+                recovery_context["receipt_path"]
+            ),
+            "preserved_raw_manifest_file": recovery_context[
+                "raw_manifest_path"
+            ].relative_to(run_root).as_posix(),
+            "preserved_raw_manifest_sha256": raw_manifest["manifest_sha256"],
+            "preserved_raw_manifest_literal_sha256": file_sha256(
+                recovery_context["raw_manifest_path"]
+            ),
+            "preserved_raw_payload_merkle_root": raw_manifest[
+                "payload_merkle_root"
+            ],
+            "original_failed_publisher_job_id": recovery_receipt[
+                "failed_publisher"
+            ]["job_id"],
+            "authorized_recovery_publisher_job_id": recovery_receipt[
+                "recovery_publisher"
+            ]["job_id"],
+            "original_submission_receipt_preserved": True,
+            "simulation_rerun": False,
+        }
     artifact_manifest["manifest_sha256"] = canonical_sha256(artifact_manifest)
     _atomic_json(manifest_path, artifact_manifest)
     _write_verified_archive(
@@ -689,7 +1084,7 @@ def finalize_run(
         records=records,
     )
     if validate_clean_validator_checkout(
-        source_commit, repo_root=REPO_ROOT,
+        validator_commit, repo_root=REPO_ROOT,
     ) != validator_source_identity:
         raise ValueError("structural validator source identity changed during archive creation")
     snapshot_failures = source_snapshot_errors(repo_root=REPO_ROOT)
@@ -760,6 +1155,46 @@ def finalize_run(
             "full_submission_requires_core_receipt": True,
         },
     }
+    if recovery_context is not None:
+        recovery_receipt = recovery_context["receipt"]
+        receipt.update({
+            "simulation_source_commit": source_commit,
+            "publication_code_commit": validator_commit,
+            "dual_provenance": True,
+            "simulation_rerun": False,
+            "simulation_source_snapshot_binding": {
+                "mode": submission["source_snapshot_mode"],
+                "source_tree_sha256": submission["source_tree_sha256"],
+            },
+            "publication_source_snapshot_binding": {
+                "mode": os.environ.get(
+                    "AGRIBRAIN_SOURCE_SNAPSHOT_MODE", ""
+                ).strip(),
+                "source_tree_sha256": publication_source_tree_sha256,
+                "git_tree_sha1": recovery_context["publication_tree"],
+            },
+            "recovery_authorization": artifact_manifest[
+                "recovery_authorization"
+            ],
+            "publisher_execution": {
+                "slurm_job_id": publisher_slurm_job_id,
+                "declared_publisher_job_id": submission["publisher"]["job_id"],
+                "identity_match": False,
+                "authorization_mode": "publication_recovery_authorization",
+                "authorized_recovery_publisher_job_id": recovery_receipt[
+                    "recovery_publisher"
+                ]["job_id"],
+                "original_declared_publisher_failed": True,
+                "simulation_rerun": False,
+            },
+        })
+        receipt["validation"].update({
+            "declared_publisher_runtime_identity": "NOT_APPLICABLE_RECOVERY",
+            "authorized_recovery_publisher_runtime_identity": "PASS",
+            "preserved_raw_outputs_revalidated_before_archive": "PASS",
+            "dual_provenance_receipt_and_source_trees": "PASS",
+            "simulation_rerun_prohibited": "PASS",
+        })
     receipt["receipt_sha256"] = canonical_sha256(receipt)
     _atomic_json(receipt_path, receipt)
     return receipt
@@ -775,6 +1210,16 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--archive", type=Path, required=True)
     parser.add_argument("--receipt", type=Path, required=True)
+    parser.add_argument(
+        "--recovery-receipt",
+        type=Path,
+        help=(
+            "Canonical held-job recovery authorization; requires "
+            "--preserved-raw-manifest and --publication-commit"
+        ),
+    )
+    parser.add_argument("--preserved-raw-manifest", type=Path)
+    parser.add_argument("--publication-commit")
     return parser
 
 
@@ -789,6 +1234,9 @@ def main(argv: list[str] | None = None) -> int:
         manifest_path=args.manifest,
         archive_path=args.archive,
         receipt_path=args.receipt,
+        recovery_receipt_path=args.recovery_receipt,
+        raw_manifest_path=args.preserved_raw_manifest,
+        publication_commit=args.publication_commit,
     )
     print(json.dumps(receipt, indent=2, allow_nan=False))
     return 0

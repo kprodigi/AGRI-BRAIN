@@ -19,7 +19,7 @@ def _stub_full_release_validator(monkeypatch):
 
     results._clear_publication_verification_cache()
     monkeypatch.setattr(
-        results, "_validate_canonical_release_contract", lambda: None,
+        results, "_validate_canonical_release_contract", lambda *_args, **_kwargs: None,
     )
 
 
@@ -92,6 +92,106 @@ def _write_valid_release(tmp_path, commit: str, artifact, **changes):
         json.dumps(manifest), encoding="utf-8",
     )
     return manifest, receipt_path
+
+
+def _write_valid_recovery_release(tmp_path, artifact):
+    simulation_commit = "a" * 40
+    publication_commit = "b" * 40
+    run_tag = "aaaaaaa_20260829_105800"
+    expected = {
+        "receipt_file": f"publication_recovery_receipts/{run_tag}.json",
+        "preserved_raw_manifest_file": f"preserved_raw_manifests/{run_tag}.json",
+        "original_submission_receipt_file": f"core_submission_receipts/{run_tag}.json",
+    }
+    payloads = {
+        expected["receipt_file"]: b'{"authorized":true}\n',
+        expected["preserved_raw_manifest_file"]: b'{"preserved":true}\n',
+        expected["original_submission_receipt_file"]: b'{"submitted":true}\n',
+    }
+    for relative, payload in payloads.items():
+        path = tmp_path.joinpath(*relative.split("/"))
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(payload)
+    authorization = {
+        **expected,
+        "receipt_literal_sha256": hashlib.sha256(
+            payloads[expected["receipt_file"]]
+        ).hexdigest(),
+        "receipt_self_hash": "c" * 64,
+        "preserved_raw_manifest_literal_sha256": hashlib.sha256(
+            payloads[expected["preserved_raw_manifest_file"]]
+        ).hexdigest(),
+        "preserved_raw_payload_merkle_root": "d" * 64,
+        "simulation_rerun": False,
+        "publication_repair_tree": "e" * 40,
+        "validated": True,
+    }
+
+    def record(path):
+        payload = path.read_bytes()
+        return {
+            "file": path.relative_to(tmp_path).as_posix(),
+            "bytes": len(payload),
+            "sha256": hashlib.sha256(payload).hexdigest(),
+        }
+
+    evidence = [artifact] + [
+        tmp_path.joinpath(*relative.split("/")) for relative in expected.values()
+    ]
+    manifest = {
+        "schema_version": 2,
+        "git_dirty": False,
+        "git_commit": simulation_commit,
+        "simulation_source_commit": simulation_commit,
+        "publication_code_commit": publication_commit,
+        "dual_provenance": True,
+        "artifact_run_tag": run_tag,
+        "recovery_authorization": authorization,
+        "artifacts": [record(path) for path in evidence],
+    }
+    protocol_path = results._SIM_DIR / "experiment_protocol.json"
+    protocol = protocol_path.read_bytes()
+    semantic_receipt = {
+        "schema_version": 1,
+        "validation_status": "PASS",
+        "validation_scope": "core_publication_evidence",
+        "fresh_single_commit_run": False,
+        "authorized_deterministic_recovery": True,
+        "simulation_rerun": False,
+        "git_commit": simulation_commit,
+        "simulation_source_commit": simulation_commit,
+        "publication_code_commit": publication_commit,
+        "run_tag": run_tag,
+        "recovery_authorization": authorization,
+        "protocol": {
+            "file": "mvp/simulation/experiment_protocol.json",
+            "bytes": len(protocol),
+            "sha256": hashlib.sha256(protocol).hexdigest(),
+        },
+        "semantic_artifact_set": {
+            "artifact_count_excluding_receipt": len(manifest["artifacts"]),
+            "merkle_root": results._artifact_set_root(manifest["artifacts"]),
+        },
+        "locked_accounting": {
+            "core_unique_retained_cells": 1_600,
+            "core_executed_episodes": 6_100,
+            "core_simulated_steps": 1_756_800,
+            "h1_directional_tests": 5,
+            "h2_directional_tests": 20,
+            "h3_equivalence_cells": 25,
+        },
+        "structural_sensitivity": {
+            "included_in_core_receipt": False,
+            "required_for_full_submission_evidence": True,
+        },
+    }
+    semantic_path = tmp_path / results._VALIDATION_RECEIPT
+    semantic_path.write_text(json.dumps(semantic_receipt), encoding="utf-8")
+    manifest["artifacts"].append(record(semantic_path))
+    (tmp_path / "artifact_manifest.json").write_text(
+        json.dumps(manifest), encoding="utf-8",
+    )
+    return manifest, authorization
 
 
 def test_development_run_cannot_overwrite_publication_artifacts(tmp_path, monkeypatch):
@@ -194,6 +294,117 @@ def test_publication_endpoint_requires_manifested_matching_bytes(tmp_path, monke
     assert verified.content == payload
     assert verified.sha256 == hashlib.sha256(payload).hexdigest()
     artifact.write_bytes(b"tampered")
+    with pytest.raises(HTTPException) as exc:
+        results._publication_artifact(artifact.name)
+    assert exc.value.status_code == 503
+
+
+def test_publication_endpoint_accepts_only_fully_authorized_core_recovery(
+    tmp_path, monkeypatch,
+):
+    artifact = tmp_path / "benchmark_significance.json"
+    artifact.write_bytes(b"recovered-publication")
+    manifest, authorization = _write_valid_recovery_release(tmp_path, artifact)
+    recovery_receipt = tmp_path.joinpath(
+        *authorization["receipt_file"].split("/")
+    )
+    observed = {}
+
+    def validate_context(receipt, **kwargs):
+        observed["context_receipt"] = receipt
+        observed["context"] = kwargs
+        return authorization
+
+    def validate_release(receipt=None):
+        observed["release_receipt"] = receipt
+
+    monkeypatch.setattr(results, "_RESULTS_DIR", tmp_path)
+    monkeypatch.setattr(
+        results, "_current_source_commit",
+        lambda: manifest["publication_code_commit"],
+    )
+    monkeypatch.setattr(
+        "mvp.simulation.analysis.recovery_provenance.validate_recovery_context",
+        validate_context,
+    )
+    monkeypatch.setattr(
+        results, "_validate_canonical_release_contract", validate_release,
+    )
+
+    verified = results._publication_artifact(artifact.name)
+
+    assert verified.content == b"recovered-publication"
+    assert observed["context_receipt"] == recovery_receipt
+    assert observed["context"]["simulation_commit"] == (
+        manifest["simulation_source_commit"]
+    )
+    assert observed["context"]["publication_commit"] == (
+        manifest["publication_code_commit"]
+    )
+    assert observed["context"]["expected_kind"] == "core"
+    assert observed["release_receipt"] == recovery_receipt
+
+
+@pytest.mark.parametrize("failure", ["missing", "tampered", "symlink"])
+def test_recovery_endpoint_rejects_missing_tampered_or_linked_authorization_receipt(
+    tmp_path, monkeypatch, failure,
+):
+    artifact = tmp_path / "benchmark_significance.json"
+    artifact.write_bytes(b"recovered-publication")
+    manifest, authorization = _write_valid_recovery_release(tmp_path, artifact)
+    receipt = tmp_path.joinpath(*authorization["receipt_file"].split("/"))
+    if failure == "missing":
+        receipt.unlink()
+    elif failure == "tampered":
+        receipt.write_bytes(b'{"authorized":false}\n')
+    else:
+        target = tmp_path / "outside-recovery-receipt.json"
+        target.write_bytes(receipt.read_bytes())
+        receipt.unlink()
+        try:
+            receipt.symlink_to(target)
+        except OSError:
+            pytest.skip("symlink creation is unavailable on this platform")
+
+    monkeypatch.setattr(results, "_RESULTS_DIR", tmp_path)
+    monkeypatch.setattr(
+        results, "_current_source_commit",
+        lambda: manifest["publication_code_commit"],
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        results._publication_artifact(artifact.name)
+    assert exc.value.status_code == 503
+
+
+def test_recovery_endpoint_rejects_wrong_publication_checkout(tmp_path, monkeypatch):
+    artifact = tmp_path / "benchmark_significance.json"
+    artifact.write_bytes(b"recovered-publication")
+    _manifest, _authorization = _write_valid_recovery_release(tmp_path, artifact)
+    monkeypatch.setattr(results, "_RESULTS_DIR", tmp_path)
+    monkeypatch.setattr(results, "_current_source_commit", lambda: "c" * 40)
+
+    with pytest.raises(HTTPException, match="serving-code commit"):
+        results._publication_artifact(artifact.name)
+
+
+@pytest.mark.parametrize("dual", [False, True])
+def test_publication_endpoint_rejects_partial_recovery_hints(
+    tmp_path, monkeypatch, dual,
+):
+    commit = "a" * 40
+    artifact = tmp_path / "benchmark_significance.json"
+    artifact.write_bytes(b"canonical")
+    changes = {"recovery_authorization": {"validated": True}}
+    if dual:
+        changes.update({
+            "dual_provenance": True,
+            "publication_code_commit": "b" * 40,
+        })
+    _write_valid_release(tmp_path, commit, artifact, **changes)
+    monkeypatch.setattr(results, "_RESULTS_DIR", tmp_path)
+    monkeypatch.setattr(results, "_current_source_commit", lambda: commit)
+
     with pytest.raises(HTTPException) as exc:
         results._publication_artifact(artifact.name)
     assert exc.value.status_code == 503

@@ -56,6 +56,20 @@ if ! command -v "$PUBLICATION_PYTHON_BIN" >/dev/null 2>&1; then
     echo "       Set AGRIBRAIN_PYTHON_BIN to the cluster's Python 3.11 executable."
     exit 1
 fi
+# A fresh structural DAG must not inherit publication-recovery authorization
+# from a reused login shell through sbatch --export=ALL.
+unset AGRIBRAIN_RECOVERY_RECEIPT \
+    AGRIBRAIN_SIMULATION_COMMIT \
+    AGRIBRAIN_PUBLICATION_CODE_COMMIT \
+    AGRIBRAIN_SIMULATION_SOURCE_TREE_SHA256 \
+    AGRIBRAIN_PUBLICATION_SOURCE_TREE_SHA256 \
+    AGRIBRAIN_PRESERVED_RAW_MANIFEST \
+    AGRIBRAIN_RAW_SEEDS_DIR \
+    AGRIBRAIN_RAW_STRESS_DIR \
+    AGRIBRAIN_RAW_H3_LEDGER_DIR \
+    AGRIBRAIN_EXTERNAL_RECOVERY_RECEIPT \
+    AGRIBRAIN_EXTERNAL_RAW_MANIFEST \
+    AGRIBRAIN_ORIGINAL_CORE_RECEIPT
 source hpc/publication_env.sh
 "$PUBLICATION_PYTHON_BIN" hpc/validate_launch_preflight.py --workflow structural
 "$PUBLICATION_PYTHON_BIN" hpc/validate_pinn_artifacts.py

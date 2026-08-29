@@ -24,7 +24,12 @@ RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 REPO_ROOT = RESULTS_DIR.parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
+from mvp.simulation.analysis.recovery_provenance import (  # noqa: E402
+    validate_recovery_context,
+)
+
 VALIDATION_RECEIPT_NAME = "publication_validation_receipt.json"
+RECOVERY_RECEIPT_PATH: Path | None = None
 _RUN_TAG_RE = re.compile(r"^([0-9a-f]{7})_[0-9]{8}_[0-9]{6}$")
 EXPECTED_SEEDS = (
     42, 1337, 2024, 7, 99, 101, 202, 303, 404, 505,
@@ -442,6 +447,32 @@ def _compare_reaggregated_core_artifacts(regenerated_dir: Path) -> None:
     for name in json_names:
         regenerated = _load_json(regenerated_dir / name)
         canonical = _load_json(RESULTS_DIR / name)
+        # The isolated replay deliberately does not consume a recovery
+        # authorization: it writes outside the canonical publication tree and
+        # must never masquerade as another shippable recovery.  When validating
+        # an authorized recovery, normalize only the provenance labels before
+        # the exact statistical-payload comparison; all means, intervals,
+        # tests, resampling identities, and tables remain byte-for-value exact.
+        canonical_meta = (
+            canonical.get("_meta") if isinstance(canonical, dict) else None
+        )
+        regenerated_meta = (
+            regenerated.get("_meta") if isinstance(regenerated, dict) else None
+        )
+        if (
+            isinstance(canonical_meta, dict)
+            and canonical_meta.get("dual_provenance") is True
+            and isinstance(regenerated_meta, dict)
+        ):
+            for key in (
+                "git_commit",
+                "source_commit",
+                "simulation_source_commit",
+                "analysis_code_commit",
+                "dual_provenance",
+                "recovery_authorization",
+            ):
+                regenerated_meta[key] = canonical_meta.get(key)
         if regenerated != canonical:
             _fail(
                 f"{name} is not the deterministic reaggregation of the raw "
@@ -488,6 +519,7 @@ def _validate_reaggregated_core_statistics() -> None:
     # Repair/dual-provenance inputs are forbidden for a fresh single-commit
     # release and must not influence the independent reaggregation process.
     for name in (
+        "AGRIBRAIN_RECOVERY_RECEIPT",
         "AGRIBRAIN_PUBLICATION_CODE_COMMIT",
         "AGRIBRAIN_SIMULATION_COMMIT",
         "AGRIBRAIN_PUBLICATION_AGGREGATION",
@@ -618,12 +650,26 @@ def _validate_derived_evidence_replay() -> None:
         "STRICT_VALIDATION": "1",
         "AGRIBRAIN_PUBLICATION_REPLAY": "1",
     })
-    for name in (
-        "AGRIBRAIN_PUBLICATION_CODE_COMMIT",
-        "AGRIBRAIN_SIMULATION_COMMIT",
-        "AGRIBRAIN_PUBLICATION_AGGREGATION",
-    ):
-        env.pop(name, None)
+    env.pop("AGRIBRAIN_PUBLICATION_AGGREGATION", None)
+    if manifest.get("dual_provenance") is True:
+        if RECOVERY_RECEIPT_PATH is None:
+            _fail("derived recovery replay lacks --recovery-receipt")
+        env.update({
+            "AGRIBRAIN_RECOVERY_RECEIPT": str(
+                RECOVERY_RECEIPT_PATH.resolve(strict=True)
+            ),
+            "AGRIBRAIN_SIMULATION_COMMIT": source_commit,
+            "AGRIBRAIN_PUBLICATION_CODE_COMMIT": str(
+                manifest.get("publication_code_commit", "")
+            ),
+        })
+    else:
+        for name in (
+            "AGRIBRAIN_RECOVERY_RECEIPT",
+            "AGRIBRAIN_PUBLICATION_CODE_COMMIT",
+            "AGRIBRAIN_SIMULATION_COMMIT",
+        ):
+            env.pop(name, None)
 
     with tempfile.TemporaryDirectory(
         prefix="agribrain_derived_replay_",
@@ -2103,11 +2149,21 @@ def _validate_h3_test() -> None:
     print("[PASS] exact H3 Cartesian panel + TOST recomputation")
 
 
-def _expected_manifest_paths(run_tag: str, *, include_receipt: bool) -> set[str]:
+def _expected_manifest_paths(
+    run_tag: str,
+    *,
+    include_receipt: bool,
+    include_recovery: bool = False,
+) -> set[str]:
     expected = set(EXPECTED_TOP_LEVEL_ARTIFACTS)
     if include_receipt:
         expected.add(VALIDATION_RECEIPT_NAME)
     expected.add(f"core_submission_receipts/{run_tag}.json")
+    if include_recovery:
+        expected.update({
+            f"publication_recovery_receipts/{run_tag}.json",
+            f"preserved_raw_manifests/{run_tag}.json",
+        })
     expected.update(
         f"benchmark_seeds/seed_{seed}.json" for seed in EXPECTED_SEEDS
     )
@@ -2133,7 +2189,10 @@ def _expected_manifest_paths(run_tag: str, *, include_receipt: bool) -> set[str]
 
 
 def _validate_manifest_inventory(
-    manifest: dict[str, Any], *, receipt_expected: bool,
+    manifest: dict[str, Any],
+    *,
+    receipt_expected: bool,
+    recovery_authorization: dict[str, object] | None = None,
 ) -> dict[str, int]:
     """Require the exact raw evidence inventory declared by the protocol."""
 
@@ -2147,10 +2206,27 @@ def _validate_manifest_inventory(
         for value in (commit, simulation_commit, publication_commit)
     ):
         raise ValueError("artifact manifest commit identities must be full Git SHA-1s")
-    if not (
+    dual = manifest.get("dual_provenance") is True
+    if dual:
+        if not (
+            commit == simulation_commit
+            and simulation_commit != publication_commit
+            and manifest.get("git_dirty") is False
+            and recovery_authorization is not None
+            and manifest.get("recovery_authorization") == recovery_authorization
+            and recovery_authorization.get("simulation_rerun") is False
+            and recovery_authorization.get("validated") is True
+        ):
+            raise ValueError(
+                "dual-provenance publication evidence requires the exact "
+                "validated recovery authorization"
+            )
+    elif not (
         commit == simulation_commit == publication_commit
         and manifest.get("dual_provenance") is False
         and manifest.get("git_dirty") is False
+        and manifest.get("recovery_authorization") is None
+        and recovery_authorization is None
     ):
         raise ValueError("publication evidence must be a clean fresh single-commit run")
     if manifest.get("includes_raw_run_artifacts") is not True:
@@ -2186,7 +2262,9 @@ def _validate_manifest_inventory(
     if manifest.get("artifact_count") != len(names):
         raise ValueError("artifact manifest artifact_count is inconsistent")
     expected = _expected_manifest_paths(
-        str(run_tag), include_receipt=receipt_expected,
+        str(run_tag),
+        include_receipt=receipt_expected,
+        include_recovery=dual,
     )
     observed = set(names)
     if observed != expected:
@@ -2210,7 +2288,37 @@ def _validate_manifest_inventory(
             len(EXPECTED_SCENARIOS) * len(EXPECTED_STRESS_TASK_FILES)
         ),
         "core_slurm_submission_receipts": 1,
+        "publication_recovery_receipts": int(dual),
+        "preserved_raw_manifests": int(dual),
     }
+
+
+def _recovery_authorization_for_manifest(
+    manifest: dict[str, Any],
+    *,
+    results_dir: Path,
+    recovery_receipt: Path | None,
+) -> dict[str, object] | None:
+    """Independently resolve the only permitted dual-provenance mode."""
+
+    if manifest.get("dual_provenance") is not True:
+        if recovery_receipt is not None:
+            raise ValueError(
+                "a recovery receipt is invalid for fresh single-provenance evidence"
+            )
+        return None
+    if recovery_receipt is None:
+        raise ValueError(
+            "dual-provenance semantic validation requires --recovery-receipt"
+        )
+    return validate_recovery_context(
+        recovery_receipt,
+        results_dir=results_dir,
+        run_tag=manifest.get("artifact_run_tag"),
+        simulation_commit=manifest.get("simulation_source_commit"),
+        publication_commit=manifest.get("publication_code_commit"),
+        expected_kind="core",
+    )
 
 
 def _validate_manifest(*, receipt_expected: bool) -> None:
@@ -2221,8 +2329,17 @@ def _validate_manifest(*, receipt_expected: bool) -> None:
     if not isinstance(data, dict):
         _fail("artifact_manifest.json is not an object")
     try:
-        _validate_manifest_inventory(data, receipt_expected=receipt_expected)
-    except ValueError as exc:
+        recovery_authorization = _recovery_authorization_for_manifest(
+            data,
+            results_dir=RESULTS_DIR,
+            recovery_receipt=RECOVERY_RECEIPT_PATH,
+        )
+        _validate_manifest_inventory(
+            data,
+            receipt_expected=receipt_expected,
+            recovery_authorization=recovery_authorization,
+        )
+    except (OSError, ValueError) as exc:
         _fail(str(exc))
     artifacts = data.get("artifacts")
     if not isinstance(artifacts, list) or not artifacts:
@@ -2279,9 +2396,14 @@ def _artifact_set_root(records: list[dict[str, Any]]) -> str:
 
 
 def _receipt_contract(
-    manifest: dict[str, Any], *, repo_root: Path | None = None,
+    manifest: dict[str, Any],
+    *,
+    repo_root: Path | None = None,
+    results_dir: Path | None = None,
+    recovery_receipt: Path | None = None,
 ) -> dict[str, Any]:
     contract_repo_root = REPO_ROOT if repo_root is None else repo_root
+    contract_results_dir = RESULTS_DIR if results_dir is None else results_dir
     protocol_path = (
         contract_repo_root / "mvp" / "simulation" / "experiment_protocol.json"
     )
@@ -2295,8 +2417,15 @@ def _receipt_contract(
         and record.get("file") == VALIDATION_RECEIPT_NAME
         for record in records
     )
+    recovery_authorization = _recovery_authorization_for_manifest(
+        manifest,
+        results_dir=contract_results_dir,
+        recovery_receipt=recovery_receipt,
+    )
     inventory = _validate_manifest_inventory(
-        manifest, receipt_expected=receipt_manifested,
+        manifest,
+        receipt_expected=receipt_manifested,
+        recovery_authorization=recovery_authorization,
     )
     semantic_records = [
         record for record in records
@@ -2318,6 +2447,13 @@ def _receipt_contract(
             == manifest.get("simulation_source_commit")
             == manifest.get("publication_code_commit")
         ),
+        "authorized_deterministic_recovery": bool(
+            recovery_authorization is not None
+        ),
+        "simulation_rerun": (
+            False if recovery_authorization is not None else True
+        ),
+        "recovery_authorization": recovery_authorization,
         "protocol": {
             "file": "mvp/simulation/experiment_protocol.json",
             "bytes": protocol_path.stat().st_size,
@@ -2356,8 +2492,12 @@ def _write_publication_validation_receipt() -> None:
     if not isinstance(manifest, dict):
         _fail("artifact manifest is not an object")
     try:
-        contract = _receipt_contract(manifest)
-    except ValueError as exc:
+        contract = _receipt_contract(
+            manifest,
+            results_dir=RESULTS_DIR,
+            recovery_receipt=RECOVERY_RECEIPT_PATH,
+        )
+    except (OSError, ValueError) as exc:
         _fail(str(exc))
     payload = {
         **contract,
@@ -2376,8 +2516,17 @@ def _write_publication_validation_receipt() -> None:
             "literal_byte_manifest_integrity",
         ],
     }
-    if payload["fresh_single_commit_run"] is not True:
-        _fail("semantic receipt requires a fresh clean single-commit run")
+    if not (
+        payload["fresh_single_commit_run"] is True
+        or (
+            payload["authorized_deterministic_recovery"] is True
+            and payload["simulation_rerun"] is False
+        )
+    ):
+        _fail(
+            "semantic receipt requires either a fresh clean run or an "
+            "authorized deterministic recovery with no simulation rerun"
+        )
     path.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
@@ -2386,7 +2535,10 @@ def _write_publication_validation_receipt() -> None:
 
 
 def validate_publication_validation_receipt(
-    results_dir: Path, *, repo_root: Path,
+    results_dir: Path,
+    *,
+    repo_root: Path,
+    recovery_receipt: Path | None = None,
 ) -> None:
     """Verify the semantic receipt against literal files and its manifest.
 
@@ -2423,7 +2575,12 @@ def validate_publication_validation_receipt(
         != hashlib.sha256(receipt_bytes).hexdigest()
     ):
         raise ValueError("semantic validation receipt bytes disagree with the manifest")
-    expected = _receipt_contract(manifest, repo_root=repo_root)
+    expected = _receipt_contract(
+        manifest,
+        repo_root=repo_root,
+        results_dir=results_dir,
+        recovery_receipt=recovery_receipt,
+    )
     for key, value in expected.items():
         if receipt.get(key) != value:
             raise ValueError(f"publication validation receipt disagrees on {key}")
@@ -2464,11 +2621,23 @@ def validate_publication_validation_receipt(
 def _validate_publication_validation_receipt() -> None:
     try:
         validate_publication_validation_receipt(
-            RESULTS_DIR, repo_root=REPO_ROOT,
+            RESULTS_DIR,
+            repo_root=REPO_ROOT,
+            recovery_receipt=RECOVERY_RECEIPT_PATH,
         )
     except (OSError, ValueError) as exc:
         _fail(str(exc))
     print("[PASS] hash-bound semantic publication validation receipt")
+
+
+def _publication_execution_commit(manifest: dict[str, Any]) -> object:
+    """Return the code identity that executed deterministic publication."""
+
+    return (
+        manifest.get("publication_code_commit")
+        if manifest.get("dual_provenance") is True
+        else manifest.get("git_commit")
+    )
 
 
 def _validate_publication_environment() -> None:
@@ -2487,8 +2656,12 @@ def _validate_publication_environment() -> None:
         or not isinstance(binary_scope.get("interpretation"), str)
     ):
         _fail("publication environment has an inaccurate binary-reproducibility claim")
-    if data.get("git_commit") != manifest.get("git_commit"):
-        _fail("publication_environment.json commit differs from artifact manifest")
+    expected_environment_commit = _publication_execution_commit(manifest)
+    if data.get("git_commit") != expected_environment_commit:
+        _fail(
+            "publication_environment.json commit differs from the code that "
+            "executed publication"
+        )
     if data.get("run_tag") != manifest.get("artifact_run_tag"):
         _fail("publication_environment.json run tag differs from artifact manifest")
     packages = data.get("installed_distributions")
@@ -2970,6 +3143,40 @@ def _validate_evidence_scope_metadata() -> None:
     print("[PASS] ledger-derived evidence scope + provenance metadata")
 
 
+def _validate_figure_source_identity(
+    figure_provenance: dict[str, Any], manifest: dict[str, Any],
+) -> None:
+    """Require explicit raw-simulation and renderer-code identities."""
+
+    expected_commit = manifest.get("git_commit")
+    expected_simulation_commit = manifest.get(
+        "simulation_source_commit", expected_commit,
+    )
+    expected_renderer_commit = manifest.get(
+        "publication_code_commit", expected_commit,
+    )
+    if figure_provenance.get("schema_version") != 3:
+        _fail("figure_provenance.json does not use dual-identity schema 3")
+    if figure_provenance.get("source_commit") != expected_commit:
+        _fail("figure_provenance.json source_commit differs from the manifest")
+    if (
+        figure_provenance.get("source_commit_semantics")
+        != "raw_input_simulation_commit"
+    ):
+        _fail("figure_provenance.json source_commit semantics are ambiguous")
+    if (
+        figure_provenance.get("simulation_source_commit")
+        != expected_simulation_commit
+    ):
+        _fail("figure_provenance.json simulation commit differs from the manifest")
+    if figure_provenance.get("renderer_code_commit") != expected_renderer_commit:
+        _fail("figure_provenance.json renderer commit differs from the manifest")
+    if figure_provenance.get("dual_provenance") is not (
+        expected_renderer_commit != expected_simulation_commit
+    ):
+        _fail("figure_provenance.json dual-provenance flag is inconsistent")
+
+
 def _validate_run_provenance() -> None:
     """Ensure staged seed/stress artifacts retain the manifest identity."""
     manifest = _load_json(RESULTS_DIR / "artifact_manifest.json")
@@ -3024,8 +3231,7 @@ def _validate_run_provenance() -> None:
         _fail("channel_saturation_analysis.json run tag differs from the manifest")
 
     figure_provenance = _load_json(RESULTS_DIR / "figure_provenance.json")
-    if figure_provenance.get("source_commit") != expected_commit:
-        _fail("figure_provenance.json source_commit differs from the manifest")
+    _validate_figure_source_identity(figure_provenance, manifest)
     if figure_provenance.get("run_tag") != expected_run_tag:
         _fail("figure_provenance.json run_tag differs from the manifest")
     figure_seed_panel = figure_provenance.get("seed_panel")
@@ -3426,7 +3632,10 @@ def _check_contrast_record(sig: dict, sc: str, comp_name: str,
 
 
 def validate_full_publication_release(
-    results_dir: Path, *, repo_root: Path,
+    results_dir: Path,
+    *,
+    repo_root: Path,
+    recovery_receipt: Path | None = None,
 ) -> None:
     """Run the complete semantic validator in an isolated interpreter.
 
@@ -3444,15 +3653,18 @@ def validate_full_publication_release(
     )
     if not script.is_file() or script.is_symlink():
         raise ValueError("canonical publication validator source is unavailable")
-    completed = subprocess.run(
-        [
+    command = [
             sys.executable,
             str(script),
             "--results-dir",
             str(results_dir),
             "--repo-root",
             str(repo_root),
-        ],
+    ]
+    if recovery_receipt is not None:
+        command.extend(["--recovery-receipt", str(recovery_receipt.resolve())])
+    completed = subprocess.run(
+        command,
         cwd=repo_root,
         text=True,
         capture_output=True,
@@ -3466,7 +3678,7 @@ def validate_full_publication_release(
 
 
 def main(argv: list[str] | None = None) -> None:
-    global RESULTS_DIR, REPO_ROOT
+    global RESULTS_DIR, REPO_ROOT, RECOVERY_RECEIPT_PATH
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -3490,6 +3702,14 @@ def main(argv: list[str] | None = None) -> None:
             "without this flag to verify the receipt's manifested bytes."
         ),
     )
+    parser.add_argument(
+        "--recovery-receipt",
+        type=Path,
+        help=(
+            "Exact canonical recovery authorization required for any "
+            "dual-provenance semantic validation."
+        ),
+    )
     args = parser.parse_args(argv)
     raw_results_dir = args.results_dir
     raw_repo_root = args.repo_root
@@ -3502,6 +3722,7 @@ def main(argv: list[str] | None = None) -> None:
         _fail(f"cannot resolve validation roots: {exc}")
     if not RESULTS_DIR.is_dir() or not REPO_ROOT.is_dir():
         _fail("results/repository validation roots must be directories")
+    RECOVERY_RECEIPT_PATH = args.recovery_receipt
     # Establish the exact safe literal-byte inventory before any semantic
     # parser opens a manifested payload.
     _validate_manifest(receipt_expected=not args.write_receipt)

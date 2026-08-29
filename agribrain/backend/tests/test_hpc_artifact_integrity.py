@@ -2680,8 +2680,12 @@ def test_final_artifact_gate_rechecks_staged_run_identity(tmp_path, monkeypatch)
         "_meta": {"git_commit": commit, "benchmark_run": tag},
     }), encoding="utf-8")
     (tmp_path / "figure_provenance.json").write_text(json.dumps({
-        "schema_version": 2,
+        "schema_version": 3,
         "source_commit": commit,
+        "source_commit_semantics": "raw_input_simulation_commit",
+        "simulation_source_commit": commit,
+        "renderer_code_commit": commit,
+        "dual_provenance": False,
         "run_tag": tag,
         "seed_root": "/cluster/repo/mvp/simulation/results/benchmark_seeds",
         "seed_panel": [42],

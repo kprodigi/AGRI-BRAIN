@@ -57,7 +57,7 @@ for output in "$STATUS_PATH" "$ANALYSIS_PATH" "$ENVIRONMENT_PATH" \
     "$SCHEDULER_ACCOUNTING_PATH" "$MANIFEST_PATH" "$ARCHIVE_PATH" \
     "$RECEIPT_PATH" "$STRUCTURAL_TABLE_PATH" "$STRUCTURAL_PNG_PATH" \
     "$STRUCTURAL_PDF_PATH" "$STRUCTURAL_PUBLICATION_RECEIPT"; do
-    if [ -e "$output" ]; then
+    if [ -e "$output" ] || [ -L "$output" ]; then
         echo "BLOCK: refusing to overwrite existing final evidence: ${output}"
         exit 1
     fi
@@ -74,7 +74,11 @@ python hpc/capture_slurm_accounting.py \
     --kind structural \
     --run-tag "$RUN_TAG" \
     --source-commit "$AGRIBRAIN_SENSITIVITY_SOURCE_COMMIT" \
-    --source-tree-sha256 "$AGRIBRAIN_SOURCE_TREE_SHA256"
+    --source-tree-sha256 "$AGRIBRAIN_SOURCE_TREE_SHA256" \
+    --attempts 12 \
+    --retry-seconds 5 \
+    --max-retry-seconds 120 \
+    --query-timeout-seconds 60
 
 echo "=== Hash-check all 3,000 structural task outputs ==="
 STATUS_TMP="${STATUS_PATH}.tmp.${SLURM_JOB_ID:-manual}"

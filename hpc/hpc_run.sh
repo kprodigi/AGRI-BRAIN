@@ -79,6 +79,22 @@ if [ "${DETERMINISTIC_MODE:-false}" = "true" ]; then
     exit 1
 fi
 # Make the choice explicit and inheritable by every sbatch task.
+# A login shell may previously have launched publication-only recovery.  Fresh
+# simulation DAGs must never inherit that separate authorization contract via
+# sbatch --export=ALL, or the dependent publisher can misclassify the run only
+# after the simulation arrays have completed.
+unset AGRIBRAIN_RECOVERY_RECEIPT \
+    AGRIBRAIN_SIMULATION_COMMIT \
+    AGRIBRAIN_PUBLICATION_CODE_COMMIT \
+    AGRIBRAIN_SIMULATION_SOURCE_TREE_SHA256 \
+    AGRIBRAIN_PUBLICATION_SOURCE_TREE_SHA256 \
+    AGRIBRAIN_PRESERVED_RAW_MANIFEST \
+    AGRIBRAIN_RAW_SEEDS_DIR \
+    AGRIBRAIN_RAW_STRESS_DIR \
+    AGRIBRAIN_RAW_H3_LEDGER_DIR \
+    AGRIBRAIN_EXTERNAL_RECOVERY_RECEIPT \
+    AGRIBRAIN_EXTERNAL_RAW_MANIFEST \
+    AGRIBRAIN_ORIGINAL_CORE_RECEIPT
 source hpc/publication_env.sh
 PUBLICATION_PYTHON_BIN="${AGRIBRAIN_PYTHON_BIN:-python3.11}"
 if ! command -v "$PUBLICATION_PYTHON_BIN" >/dev/null 2>&1; then

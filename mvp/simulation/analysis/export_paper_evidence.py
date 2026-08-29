@@ -47,14 +47,69 @@ def _publication_export_identity_errors(
         sys.path.insert(0, str(REPO_ROOT))
     from hpc.validate_source_checkout import validation_errors
 
-    errors = validation_errors(
-        repo_root=REPO_ROOT,
-        allow_run_artifacts=True,
-    )
+    errors: list[str] = []
     declared_commit = os.environ.get("AGRIBRAIN_GIT_COMMIT", "").strip()
     declared_run_tag = os.environ.get("RUN_TAG", "").strip()
     if not declared_run_tag:
         errors.append("RUN_TAG must identify the publication run")
+
+    recovery_path = os.environ.get("AGRIBRAIN_RECOVERY_RECEIPT", "").strip()
+    simulation_commit = declared_commit
+    publication_commit = declared_commit
+    expected_dual = False
+    checkout_environment = dict(os.environ)
+    if recovery_path:
+        simulation_commit = os.environ.get(
+            "AGRIBRAIN_SIMULATION_COMMIT", ""
+        ).strip()
+        publication_commit = os.environ.get(
+            "AGRIBRAIN_PUBLICATION_CODE_COMMIT", ""
+        ).strip()
+        original_receipt = os.environ.get(
+            "CORE_SUBMISSION_RECEIPT", ""
+        ).strip()
+        actual_job_id = os.environ.get("SLURM_JOB_ID", "").strip()
+        if not original_receipt:
+            errors.append(
+                "CORE_SUBMISSION_RECEIPT is required for publication recovery"
+            )
+        elif not actual_job_id:
+            errors.append("SLURM_JOB_ID is required for publication recovery")
+        else:
+            try:
+                from hpc.publication_recovery_receipt import (
+                    validate_recovery_receipt_file,
+                )
+
+                validate_recovery_receipt_file(
+                    Path(recovery_path),
+                    original_receipt_path=Path(original_receipt),
+                    expected_kind="core",
+                    expected_run_tag=declared_run_tag,
+                    expected_simulation_commit=simulation_commit,
+                    expected_publication_commit=publication_commit,
+                    expected_recovery_job_id=actual_job_id,
+                )
+            except (OSError, RuntimeError, TypeError, ValueError) as exc:
+                errors.append(f"publication recovery receipt is invalid: {exc}")
+        if not simulation_commit or not publication_commit:
+            errors.append("publication recovery commit identities are missing")
+        if declared_commit != simulation_commit:
+            errors.append(
+                "AGRIBRAIN_GIT_COMMIT must retain the simulation commit in recovery"
+            )
+        if simulation_commit == publication_commit:
+            errors.append(
+                "publication recovery requires distinct simulation and publication commits"
+            )
+        checkout_environment["AGRIBRAIN_GIT_COMMIT"] = publication_commit
+        expected_dual = simulation_commit != publication_commit
+
+    errors = validation_errors(
+        environ=checkout_environment,
+        repo_root=REPO_ROOT,
+        allow_run_artifacts=True,
+    ) + errors
 
     for label, payload in (
         ("benchmark_summary.json", bench_payload),
@@ -64,16 +119,19 @@ def _publication_export_identity_errors(
         if not isinstance(meta, dict):
             errors.append(f"{label} lacks _meta source identity")
             continue
-        for key in (
-            "git_commit", "source_commit", "simulation_source_commit",
-            "analysis_code_commit",
-        ):
-            if meta.get(key) != declared_commit:
+        expected_identity = {
+            "git_commit": simulation_commit,
+            "source_commit": simulation_commit,
+            "simulation_source_commit": simulation_commit,
+            "analysis_code_commit": publication_commit,
+            "dual_provenance": expected_dual,
+        }
+        for key, expected in expected_identity.items():
+            if meta.get(key) != expected:
                 errors.append(
-                    f"{label} {key} does not equal AGRIBRAIN_GIT_COMMIT"
+                    f"{label} {key} does not equal the authorized "
+                    "simulation/publication identity"
                 )
-        if meta.get("dual_provenance") is not False:
-            errors.append(f"{label} must declare dual_provenance=false")
         if meta.get("run_tag") != declared_run_tag:
             errors.append(f"{label} run_tag does not equal RUN_TAG")
     return errors

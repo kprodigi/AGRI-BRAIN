@@ -92,7 +92,11 @@ def test_every_worker_activates_and_validates_the_exact_run_venv():
         assert script.index(bootstrap) < script.index(source_gate)
         assert '"${AGRIBRAIN_VENV:-}" != ".publication_venvs/${RUN_TAG}"' in script
         assert 'source "$AGRIBRAIN_VENV/bin/activate"' in script
-        assert "capture_publication_environment.py --validate-only" in script
+        if name == "hpc_publish.sh":
+            assert "capture_publication_environment()" in script
+            assert "capture_publication_environment --validate-only" in script
+        else:
+            assert "capture_publication_environment.py --validate-only" in script
         assert script.count("python hpc/validate_source_snapshot.py") >= 2
         assert 'cd "$AGRIBRAIN_SOURCE_SNAPSHOT"' in script
 

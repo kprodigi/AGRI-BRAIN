@@ -66,6 +66,139 @@ def _write_tar(path: Path, members: dict[str, bytes]) -> None:
                     archive.addfile(info, io.BytesIO(payload))
 
 
+def _minimal_complete_raw_bundle(
+    root: Path, *, commit: str, run_tag: str,
+) -> tuple[dict, Path, Path, Path]:
+    """Create a tiny schema-valid bundle for exact raw-mapping unit tests."""
+
+    logical_payloads = {
+        "benchmark_seed_outputs/seed_42.json": b'{"seed":42}\n',
+        "stress_outputs/baseline/result.json": b'{"stress":false}\n',
+        "h3_decision_ledgers/baseline/ledger.jsonl": b'{"action":1}\n',
+        "core_submission_receipt.json": b'{"receipt_sha256":"' + b"1" * 64 + b'"}\n',
+    }
+    raw_records = [
+        _record(name, payload, path_key="path")
+        for name, payload in sorted(logical_payloads.items())
+    ]
+    raw_manifest = {
+        "bindings": [
+            {
+                "name": "benchmark_seed_outputs",
+                "type": "directory",
+                "file_count": 1,
+                "bytes": len(logical_payloads["benchmark_seed_outputs/seed_42.json"]),
+            },
+            {
+                "name": "core_submission_receipt.json",
+                "type": "file",
+                "file_count": 1,
+                "bytes": len(logical_payloads["core_submission_receipt.json"]),
+            },
+            {
+                "name": "h3_decision_ledgers",
+                "type": "directory",
+                "file_count": 1,
+                "bytes": len(
+                    logical_payloads["h3_decision_ledgers/baseline/ledger.jsonl"]
+                ),
+            },
+            {
+                "name": "stress_outputs",
+                "type": "directory",
+                "file_count": 1,
+                "bytes": len(logical_payloads["stress_outputs/baseline/result.json"]),
+            },
+        ],
+        "file_count": len(raw_records),
+        "total_bytes": sum(record["bytes"] for record in raw_records),
+        "payload_merkle_root": evidence._raw_payload_merkle_root(raw_records),
+        "files": raw_records,
+    }
+    mapped_payloads = {
+        "inputs/core/seed_42.json": logical_payloads[
+            "benchmark_seed_outputs/seed_42.json"
+        ],
+        "inputs/h3_results/baseline/result.json": logical_payloads[
+            "stress_outputs/baseline/result.json"
+        ],
+        "inputs/h3_ledgers/baseline/ledger.jsonl": logical_payloads[
+            "h3_decision_ledgers/baseline/ledger.jsonl"
+        ],
+        "inputs/core_submission_receipt.json": logical_payloads[
+            "core_submission_receipt.json"
+        ],
+        "inputs/scheduler/slurm_simulation_accounting.json": b'{"tasks":25}\n',
+    }
+    artifact_records = [
+        _record(name, payload, path_key="path")
+        for name, payload in sorted(mapped_payloads.items())
+    ]
+    episode_totals = {
+        "episode_groups": 1_600,
+        "executed_episode_archives": 6_100,
+        "adaptation_episode_ledgers": 4_500,
+        "final_episode_ledgers": 1_600,
+        "decision_records": 10,
+    }
+    runtime = {
+        "receipt_count": 25,
+        "successful_receipt_count": 25,
+        "failed_attempt_receipt_count": 0,
+        "summed_task_wall_seconds_nonconcurrent": 1.0,
+        "summed_child_cpu_seconds": 1.0,
+    }
+    scheduler = {"completed_simulation_task_count": 25}
+    manifest = {
+        "schema_version": 1,
+        "status": "COMPLETE",
+        "scope": "lossless raw evidence",
+        "limitation": "new experiments still require new simulations",
+        "source_commit": commit,
+        "source_tree_sha256": "1" * 64,
+        "run_tag": run_tag,
+        "episode_totals": episode_totals,
+        "runtime_receipt_totals": runtime,
+        "scheduler_accounting": scheduler,
+        "artifact_count": len(artifact_records),
+        "artifact_bytes": sum(record["bytes"] for record in artifact_records),
+        "artifacts": artifact_records,
+    }
+    _self_hash(manifest, "manifest_sha256")
+    manifest_bytes = json.dumps(
+        manifest, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    archive = root / f"complete_run_evidence_{run_tag}.tar.gz"
+    _write_tar(
+        archive,
+        {"COMPLETE_RUN_EVIDENCE_MANIFEST.json": manifest_bytes, **mapped_payloads},
+    )
+    receipt = {
+        "schema_version": 1,
+        "status": "VERIFIED",
+        "run_tag": run_tag,
+        "source_commit": commit,
+        "manifest_sha256": manifest["manifest_sha256"],
+        "archive": archive.name,
+        "archive_sha256": hashlib.sha256(archive.read_bytes()).hexdigest(),
+        "archive_bytes": archive.stat().st_size,
+        "artifact_count": len(artifact_records),
+        "episode_totals": episode_totals,
+        "runtime_receipt_totals": runtime,
+        "scheduler_accounting": scheduler,
+    }
+    _self_hash(receipt, "receipt_sha256")
+    receipt_path = root / "RECEIPT.json"
+    receipt_path.write_bytes(_json_bytes(receipt))
+    ready_path = root / "COMPLETE_READY.json"
+    ready_path.write_bytes(_json_bytes({
+        "status": "READY",
+        "archive_sha256": receipt["archive_sha256"],
+        "receipt_sha256": receipt["receipt_sha256"],
+    }))
+    return raw_manifest, archive, receipt_path, ready_path
+
+
 def _core_bundle(
     root: Path,
     *,
@@ -856,6 +989,326 @@ def test_assembler_binds_both_complete_scopes_and_self_hashes(tmp_path: Path) ->
     assert len(structural["structural_publication_artifacts"]) == 4
 
 
+def test_assembler_accepts_current_fresh_archive_producer_validation_schema(
+    tmp_path: Path,
+) -> None:
+    """Exercise the exact fresh projection emitted by archive producer v1."""
+
+    commit = "0" * 40
+    core_archive, core_receipt, core_ready = _core_bundle(tmp_path, commit=commit)
+    receipt = json.loads(core_receipt.read_text(encoding="utf-8"))
+    receipt["validation"][
+        "publication_recovery_receipt_and_preserved_inputs"
+    ] = "NOT_APPLICABLE"
+    core_receipt.write_bytes(_json_bytes(receipt))
+    ready = json.loads(core_ready.read_text(encoding="utf-8"))
+    ready["receipt"]["sha256"] = hashlib.sha256(
+        core_receipt.read_bytes()
+    ).hexdigest()
+    core_ready.write_bytes(_json_bytes(ready))
+    structural_archive, structural_receipt = _structural_bundle(
+        tmp_path, commit=commit
+    )
+    payload = evidence.assemble_full_submission_evidence(
+        core_archive=core_archive,
+        core_receipt=core_receipt,
+        core_ready=core_ready,
+        structural_archive=structural_archive,
+        structural_receipt=structural_receipt,
+        output=tmp_path / "full_producer_schema.json",
+    )
+    assert payload["dual_provenance"] is False
+    assert payload["simulation_source_commit"] == commit
+
+
+def test_complete_core_recovery_bundle_reproves_exact_raw_mapping(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    commit = "a" * 40
+    tag = f"{commit[:7]}_20260829_105800"
+    raw, archive, receipt, ready = _minimal_complete_raw_bundle(
+        tmp_path, commit=commit, run_tag=tag
+    )
+    calls = []
+
+    def validate_scheduler(payload, **kwargs):
+        calls.append((payload, kwargs))
+        return {"completed_simulation_task_count": 25}
+
+    monkeypatch.setattr(evidence, "validate_accounting_payload", validate_scheduler)
+    validated = evidence._validate_core_complete_run_evidence(
+        archive,
+        receipt,
+        ready,
+        run_tag=tag,
+        simulation_commit=commit,
+        simulation_source_tree_sha256="1" * 64,
+        raw_manifest=raw,
+    )
+    assert validated["raw_mapping"] == {
+        "binding_scope": "complete_run_evidence_bundle",
+        "mapped_member_count": 4,
+        "mapped_bytes": raw["total_bytes"],
+        "payload_merkle_root": raw["payload_merkle_root"],
+        "exact_member_set": True,
+        "literal_sizes_and_sha256": True,
+    }
+    assert calls == [(
+        {"tasks": 25},
+        {
+            "kind": "core",
+            "run_tag": tag,
+            "source_commit": commit,
+            "source_tree_sha256": "1" * 64,
+            "expected_task_count": 25,
+        },
+    )]
+
+
+def test_complete_core_recovery_bundle_rejects_raw_path_substitution(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    commit = "b" * 40
+    tag = f"{commit[:7]}_20260829_105800"
+    raw, archive, receipt, ready = _minimal_complete_raw_bundle(
+        tmp_path, commit=commit, run_tag=tag
+    )
+    monkeypatch.setattr(
+        evidence,
+        "validate_accounting_payload",
+        lambda *_args, **_kwargs: {"completed_simulation_task_count": 25},
+    )
+    substituted = json.loads(json.dumps(raw))
+    seed_record = next(
+        item for item in substituted["files"]
+        if item["path"].startswith("benchmark_seed_outputs/")
+    )
+    seed_record["path"] = "benchmark_seed_outputs/substituted.json"
+    substituted["files"].sort(key=lambda item: item["path"])
+    substituted["payload_merkle_root"] = evidence._raw_payload_merkle_root(
+        substituted["files"]
+    )
+    with pytest.raises(ValueError, match="member set differs"):
+        evidence._validate_core_complete_run_evidence(
+            archive,
+            receipt,
+            ready,
+            run_tag=tag,
+            simulation_commit=commit,
+            simulation_source_tree_sha256="1" * 64,
+            raw_manifest=substituted,
+        )
+
+
+def test_structural_recovery_archive_rejects_extra_or_changed_raw_member() -> None:
+    prefix = "structural_sensitivity_evidence/"
+    binding_types = {
+        "logs": "directory",
+        "runtime_receipts": "directory",
+        "tasks": "directory",
+        "episode_accounting.json": "file",
+        "experiment_protocol.json": "file",
+        "lhs_design.csv": "file",
+        "lhs_design.json": "file",
+        "parameter_registry.json": "file",
+        "run_plan.json": "file",
+        "slurm_submission.json": "file",
+        "task_manifest.json": "file",
+        "task_manifest.jsonl": "file",
+    }
+    payloads = {
+        "logs/worker.out": b"complete\n",
+        "runtime_receipts/task.json": b'{"status":"complete"}\n',
+        "tasks/lhs_000/result.json": b'{"result":1}\n',
+        **{
+            name: f'{{"file":"{name}"}}\n'.encode("utf-8")
+            for name, kind in binding_types.items() if kind == "file"
+        },
+    }
+    records = [
+        _record(name, payload, path_key="path")
+        for name, payload in sorted(payloads.items())
+    ]
+    bindings = []
+    for name, kind in sorted(binding_types.items()):
+        members = [
+            record for record in records
+            if (
+                record["path"].startswith(f"{name}/")
+                if kind == "directory" else record["path"] == name
+            )
+        ]
+        bindings.append({
+            "name": name,
+            "type": kind,
+            "file_count": len(members),
+            "bytes": sum(record["bytes"] for record in members),
+        })
+    raw = {
+        "bindings": bindings,
+        "file_count": len(records),
+        "total_bytes": sum(record["bytes"] for record in records),
+        "payload_merkle_root": evidence._raw_payload_merkle_root(records),
+        "files": records,
+    }
+    metadata = {
+        f"{prefix}{record['path']}": {
+            "bytes": record["bytes"], "sha256": record["sha256"],
+        }
+        for record in records
+    }
+    metadata[f"{prefix}derived_summary.json"] = {
+        "bytes": 2, "sha256": hashlib.sha256(b"{}").hexdigest(),
+    }
+    result = evidence._validate_structural_raw_archive_mapping(
+        raw, metadata=metadata, prefix=prefix
+    )
+    assert result["mapped_member_count"] == len(records)
+
+    changed = json.loads(json.dumps(metadata))
+    changed[f"{prefix}tasks/lhs_000/result.json"]["sha256"] = "f" * 64
+    with pytest.raises(ValueError, match="raw byte binding differs"):
+        evidence._validate_structural_raw_archive_mapping(
+            raw, metadata=changed, prefix=prefix
+        )
+
+    extra = json.loads(json.dumps(metadata))
+    extra[f"{prefix}tasks/lhs_000/substituted.json"] = {
+        "bytes": 3, "sha256": hashlib.sha256(b"new").hexdigest(),
+    }
+    with pytest.raises(ValueError, match="raw-member set differs"):
+        evidence._validate_structural_raw_archive_mapping(
+            raw, metadata=extra, prefix=prefix
+        )
+
+
+def test_dual_assembler_requires_two_distinct_receipts_and_shared_repair_tree(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    simulation = "a" * 40
+    publication = "b" * 40
+    publication_tree = "c" * 40
+    simulation_tree_sha256 = "1" * 64
+    publication_tree_sha256 = "2" * 64
+    core_receipt_path = tmp_path / "core_receipt.json"
+    core_receipt_path.write_bytes(_json_bytes({
+        "simulation_source_commit": simulation,
+        "publication_code_commit": publication,
+        "derivation_type": "publication-only deterministic recovery",
+        "simulation_rerun": False,
+        "recovery_authorization": {"validated": True},
+    }))
+    structural_receipt_path = tmp_path / "structural_receipt.json"
+    structural_receipt_path.write_bytes(_json_bytes({
+        "source_commit": simulation,
+        "simulation_source_commit": simulation,
+        "publication_code_commit": publication,
+        "dual_provenance": True,
+        "simulation_rerun": False,
+        "recovery_authorization": {"validated": True},
+    }))
+    core_recovery = {
+        "kind": "core",
+        "simulation_rerun": False,
+        "validated": True,
+        "receipt_literal_sha256": "3" * 64,
+        "receipt_self_hash": "4" * 64,
+        "authorized_recovery_publisher_job_id": "301",
+        "publication_repair_tree": publication_tree,
+    }
+    structural_recovery = {
+        "kind": "structural",
+        "simulation_rerun": False,
+        "validated": True,
+        "receipt_literal_sha256": "5" * 64,
+        "receipt_self_hash": "6" * 64,
+        "authorized_recovery_publisher_job_id": "401",
+        "publication_repair_tree": publication_tree,
+    }
+    core_result = {
+        "source_commit": simulation,
+        "simulation_source_commit": simulation,
+        "publication_code_commit": publication,
+        "dual_provenance": True,
+        "simulation_rerun": False,
+        "provenance_mode": "authorized_publication_recovery",
+        "recovery_authorization": core_recovery,
+        "slurm_submission_receipt": {
+            "source_tree_sha256": simulation_tree_sha256,
+        },
+    }
+    structural_result = {
+        "source_commit": simulation,
+        "simulation_source_commit": simulation,
+        "publication_code_commit": publication,
+        "dual_provenance": True,
+        "simulation_rerun": False,
+        "provenance_mode": "authorized_publication_recovery",
+        "recovery_authorization": structural_recovery,
+        "source_snapshot_binding": {
+            "source_tree_sha256": simulation_tree_sha256,
+        },
+        "publication_source_snapshot_binding": {
+            "mode": "detached_readonly_git_worktree_v1",
+            "source_tree_sha256": publication_tree_sha256,
+            "git_tree_sha1": publication_tree,
+        },
+    }
+    monkeypatch.setattr(
+        evidence, "_validate_core_evidence", lambda *_args, **_kwargs: core_result
+    )
+    monkeypatch.setattr(
+        evidence,
+        "_validate_structural_evidence",
+        lambda *_args, **_kwargs: structural_result,
+    )
+    monkeypatch.setattr(
+        evidence,
+        "_validate_local_validator_checkout",
+        lambda commit: {
+            "head_commit": commit,
+            "source_tree_clean": True,
+            "tracked_and_untracked_status_empty": True,
+        },
+    )
+    monkeypatch.setattr(
+        evidence,
+        "tracked_source_digest",
+        lambda _root: (publication_tree_sha256, 500),
+    )
+    monkeypatch.setattr(
+        evidence, "_current_git_tree_sha1", lambda: publication_tree
+    )
+    payload = evidence.assemble_full_submission_evidence(
+        core_archive=tmp_path / "core.tar.gz",
+        core_receipt=core_receipt_path,
+        core_ready=tmp_path / "core_ready.json",
+        core_complete_archive=tmp_path / "complete.tar.gz",
+        core_complete_receipt=tmp_path / "complete_receipt.json",
+        core_complete_ready=tmp_path / "complete_ready.json",
+        structural_archive=tmp_path / "structural.tar.gz",
+        structural_receipt=structural_receipt_path,
+        output=tmp_path / "full_recovery.json",
+    )
+    assert payload["dual_provenance"] is True
+    assert payload["simulation_rerun"] is False
+    assert payload["recovery_authorizations"] == {
+        "core": core_recovery,
+        "structural": structural_recovery,
+    }
+
+    structural_recovery["receipt_self_hash"] = core_recovery["receipt_self_hash"]
+    with pytest.raises(ValueError, match="must be distinct"):
+        evidence.assemble_full_submission_evidence(
+            core_archive=tmp_path / "core.tar.gz",
+            core_receipt=core_receipt_path,
+            core_ready=tmp_path / "core_ready.json",
+            structural_archive=tmp_path / "structural.tar.gz",
+            structural_receipt=structural_receipt_path,
+            output=tmp_path / "full_recovery_reused_receipt.json",
+        )
+
+
 def test_assembler_rejects_mismatched_source_commits(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="different source commits"):
         _assemble(
@@ -1098,6 +1551,39 @@ def test_atomic_receipt_install_never_exposes_partial_final_file(
     assert list(tmp_path.iterdir()) == []
 
 
+def test_atomic_receipt_install_rejects_dangling_output_symlink(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "outside.json"
+    output = tmp_path / "full_submission_evidence_receipt.json"
+    try:
+        output.symlink_to(target)
+    except OSError as exc:
+        pytest.skip(f"symlink creation is unavailable: {exc}")
+
+    with pytest.raises(FileExistsError, match="refusing to overwrite"):
+        evidence._write_new_file_atomically(output, b'{"complete":true}\n')
+
+    assert output.is_symlink()
+    assert not target.exists()
+
+
+def test_atomic_receipt_install_rejects_symlinked_parent(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    alias = tmp_path / "alias"
+    try:
+        alias.symlink_to(outside, target_is_directory=True)
+    except OSError as exc:
+        pytest.skip(f"symlink creation is unavailable: {exc}")
+    output = alias / "full_submission_evidence_receipt.json"
+
+    with pytest.raises(ValueError, match="symlinked parent"):
+        evidence._write_new_file_atomically(output, b'{"complete":true}\n')
+
+    assert not (outside / output.name).exists()
+
+
 def test_assembler_rejects_dirty_or_different_validator_checkout(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1245,6 +1731,28 @@ def test_core_orchestrator_creates_run_scoped_dag_receipt() -> None:
     assert "--dependency=afterok:${SEED_JOB}" in source
     assert "publication_bundle_${RUN_TAG}/" in source
     assert "complete_run_evidence/${RUN_TAG}/" in source
+
+
+def test_fresh_core_orchestrator_clears_recovery_authorization_environment() -> None:
+    source = (REPO_ROOT / "hpc" / "hpc_run.sh").read_text(encoding="utf-8")
+    start = source.index("# A login shell may previously have launched")
+    end = source.index("source hpc/publication_env.sh", start)
+    fresh_environment_gate = source[start:end]
+    for variable in (
+        "AGRIBRAIN_RECOVERY_RECEIPT",
+        "AGRIBRAIN_SIMULATION_COMMIT",
+        "AGRIBRAIN_PUBLICATION_CODE_COMMIT",
+        "AGRIBRAIN_SIMULATION_SOURCE_TREE_SHA256",
+        "AGRIBRAIN_PUBLICATION_SOURCE_TREE_SHA256",
+        "AGRIBRAIN_PRESERVED_RAW_MANIFEST",
+        "AGRIBRAIN_RAW_SEEDS_DIR",
+        "AGRIBRAIN_RAW_STRESS_DIR",
+        "AGRIBRAIN_RAW_H3_LEDGER_DIR",
+        "AGRIBRAIN_EXTERNAL_RECOVERY_RECEIPT",
+        "AGRIBRAIN_EXTERNAL_RAW_MANIFEST",
+        "AGRIBRAIN_ORIGINAL_CORE_RECEIPT",
+    ):
+        assert variable in fresh_environment_gate
 
 
 def test_full_evidence_cli_bootstraps_repo_without_pythonpath(

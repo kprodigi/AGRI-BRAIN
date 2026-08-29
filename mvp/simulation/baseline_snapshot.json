@@ -6,7 +6,7 @@
   "deterministic_mode": true,
   "protocol": {
     "path": "mvp/simulation/experiment_protocol.json",
-    "sha256": "c384e18dd66247aca8502bfb58634c6d2129b91944dc497c4929c0c12003ac86"
+    "sha256": "f8df18adc037a5a8ff765c93409044b1f1bd49ac16498a5e398993645dd7619c"
   },
   "source": {
     "commit": null,

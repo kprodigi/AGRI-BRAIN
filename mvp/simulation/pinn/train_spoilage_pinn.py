@@ -23,7 +23,6 @@ from src.models.pinn_residual import (  # noqa: E402
     LossWeights,
     build_training_objective,
     pack_parameters,
-    residual_prediction_and_jacobian,
     unpack_parameters,
 )
 

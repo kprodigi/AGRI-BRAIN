@@ -84,6 +84,31 @@ def test_cache_renderer_rejects_changed_or_wrong_source(
         renderer._require_renderer_source_identity()
 
 
+def test_figure_provenance_separates_simulation_and_renderer_commits() -> None:
+    from mvp.simulation import regenerate_figures_from_cache as renderer
+
+    simulation = "a" * 40
+    publication = "b" * 40
+    identity = renderer._figure_source_identity({
+        "AGRIBRAIN_GIT_COMMIT": simulation,
+        "AGRIBRAIN_SIMULATION_COMMIT": simulation,
+        "AGRIBRAIN_PUBLICATION_CODE_COMMIT": publication,
+    })
+    assert identity == {
+        "source_commit": simulation,
+        "source_commit_semantics": "raw_input_simulation_commit",
+        "simulation_source_commit": simulation,
+        "renderer_code_commit": publication,
+        "dual_provenance": True,
+    }
+    with pytest.raises(RuntimeError, match="raw-input commit"):
+        renderer._figure_source_identity({
+            "AGRIBRAIN_GIT_COMMIT": publication,
+            "AGRIBRAIN_SIMULATION_COMMIT": simulation,
+            "AGRIBRAIN_PUBLICATION_CODE_COMMIT": publication,
+        })
+
+
 def test_hpc_publisher_uses_fresh_staging_and_validated_promotion() -> None:
     source = (REPO_ROOT / "hpc" / "hpc_publish.sh").read_text(encoding="utf-8")
     assert 'export FIGURE_OUTPUT_DIR="$FIGURE_STAGE"' in source

@@ -1,6 +1,6 @@
 {
-  "schema_version": 1,
-  "status": "methodology_aligned_source_only_no_current_confirmatory_results",
+  "schema_version": 2,
+  "status": "simulations_completed_publication_recovery_pending_no_certified_results",
   "validated_hpc_source": {
     "commit": "d3286aef28803c715045176008fae6b9c7e3367b",
     "tree": "cef1e66f0b3cadeaf54f7189b080f26810d8212c"
@@ -24,8 +24,22 @@
   "public_main_scope": [
     "documentation",
     "github_community_metadata",
-    "non_scientific_package_hygiene"
+    "non_scientific_package_hygiene",
+    "deterministic_publication_recovery",
+    "slurm_accounting_repair",
+    "dual_provenance_manifests_and_validation",
+    "publication_archive_recovery"
   ],
+  "simulation_algorithms_or_raw_outputs_changed_by_recovery": false,
+  "simulation_rerun": false,
+  "publication_recovery": {
+    "core_run_tag": "d3286ae_20260829_105800",
+    "structural_run_tag": "sensitivity_d3286ae_20260829_105855",
+    "original_failed_core_publisher_job_id": "14473471",
+    "original_failed_structural_publisher_job_id": "14473494",
+    "replacement_publishers_completed": false,
+    "combined_full_submission_validation_passed": false
+  },
   "historical_2fd7bff_evidence_is_current": false,
   "current_confirmatory_results_committed": false
 }

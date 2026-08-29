@@ -125,6 +125,17 @@ mvp/simulation/results/*
 !mvp/simulation/results/stress_summary.json
 !mvp/simulation/results/stress_degradation.csv
 !mvp/simulation/results/artifact_manifest.json
+# Small canonical authorization documents needed to validate a public
+# dual-provenance manifest. Raw episode outputs remain ignored/archive-only.
+!mvp/simulation/results/publication_recovery_receipts/
+mvp/simulation/results/publication_recovery_receipts/*
+!mvp/simulation/results/publication_recovery_receipts/*.json
+!mvp/simulation/results/preserved_raw_manifests/
+mvp/simulation/results/preserved_raw_manifests/*
+!mvp/simulation/results/preserved_raw_manifests/*.json
+!mvp/simulation/results/core_submission_receipts/
+mvp/simulation/results/core_submission_receipts/*
+!mvp/simulation/results/core_submission_receipts/*.json
 !mvp/simulation/results/fig*.png
 !mvp/simulation/results/fig*.pdf
 # FOCAPO conference results figures (separate folder, rendered on HPC)

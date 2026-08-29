@@ -4,29 +4,39 @@
 
 - [ ] `simulation-source-d3286ae` resolves to tree
   `cef1e66f0b3cadeaf54f7189b080f26810d8212c`.
-- [ ] The public `main` branch differs from that source only in documentation,
-  GitHub community metadata, and non-scientific packaging hygiene.
-- [ ] The methodology-aligned snapshot is clean and committed before any
-  confirmatory run starts.
+- [ ] Every change after `simulation-source-d3286ae` is inventoried as
+  deterministic recovery/publication code, Slurm-accounting validation,
+  documentation, community metadata, or package hygiene; no simulation
+  algorithm or preserved raw output changed.
+- [ ] The simulation tag and later clean publication-repair commit/tree are
+  both recorded, with `simulation_rerun: false` for recovery.
 - [ ] The locked human and JSON protocols agree with the executable mode,
   episode, pairing, inference, H3, forecast, and sensitivity contracts.
-- [ ] The final simulation source commit and run tag are recorded here after
-  the fresh run; neither points to the historical `2fd7bff` evidence.
+- [ ] The final simulation source commit, publication code commit, and run tags
+  are recorded; none points to the historical `2fd7bff` evidence.
 - [ ] No result has been tuned to force a preferred ranking.
-- [ ] No old manuscript number is retained unless the fresh artifacts
-  independently reproduce it.
+- [ ] No old manuscript number is retained unless the current validated
+  artifacts independently reproduce it.
 - [ ] Claims are partial, inconclusive, or unsupported wherever the locked
   inferential rule fails.
 
 ## Evidence asset
 
-- [ ] The fresh asset filename, byte size, member count, and SHA-256 are
-  recorded after packaging.
+- [ ] The accepted asset mode is explicit: fresh single-commit, or authorized
+  publication-only dual provenance with no simulation rerun.
+- [ ] Each asset filename, byte size, member count, and SHA-256 is recorded
+  after packaging.
+- [ ] The Git tag resolves to the exact clean publication-source commit; no
+  later commit is created merely to add generated evidence.
+- [ ] Generated manifests, recovery receipts, tables, figures, raw evidence,
+  the combined READY bundle, and external checksums are uploaded as immutable
+  release assets rather than committed into a different source identity.
 - [ ] Member names are inspected before extraction.
 - [ ] The public receipt and literal-byte manifest are included.
-- [ ] The original fresh archive remains unchanged.
-- [ ] The archive binds every result to the exact methodology-aligned source
-  commit, dependency lock, protocol hash, and run tag.
+- [ ] Original simulation receipts and preserved raw outputs remain unchanged.
+- [ ] Each archive binds every result to the exact simulation source,
+  publication source when distinct, dependency lock, protocol hash, and run
+  tag.
 
 ## Public wording
 
@@ -52,9 +62,10 @@
 
 - [ ] Only the history-free public repository is pushed; superseded private
   Git history is not attached or merged.
-- [ ] No credentials, tokens, private keys, environment files, local absolute
-  paths, cluster login identifiers, private logs, or manuscript comparison
-  files are tracked.
+- [ ] No credentials, tokens, private keys, environment files, private logs,
+  manuscript comparison files, or unreviewed local paths/identifiers are
+  tracked. The recovery guide's required run paths and Slurm job IDs are
+  deliberate audit provenance, not credentials.
 - [ ] No unintended assistance or tooling attribution text is present.
 - [ ] Git author and committer metadata identify a human maintainer.
 - [ ] The repository has no configured remote until the maintainer adds one.

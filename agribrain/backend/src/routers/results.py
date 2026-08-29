@@ -70,6 +70,7 @@ _JOB = {"running": False, "started_at": None, "finished_at": None,
 
 _HEX40 = re.compile(r"^[0-9a-f]{40}$")
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
+_RUN_TAG = re.compile(r"^([0-9a-f]{7})_[0-9]{8}_[0-9]{6}$")
 _VALIDATION_RECEIPT = "publication_validation_receipt.json"
 
 
@@ -307,7 +308,107 @@ def _artifact_set_root(records: list[dict]) -> str:
     return leaves[0].hex()
 
 
-def _validate_canonical_release_contract() -> None:
+def _canonical_recovery_receipt_path(
+    manifest: dict,
+    records: dict[str, dict],
+    *,
+    run_tag: str,
+    simulation_commit: str,
+    publication_commit: str,
+) -> Path:
+    """Resolve only the run-scoped evidence for an authorized core recovery."""
+
+    match = _RUN_TAG.fullmatch(run_tag)
+    if match is None or match.group(1) != simulation_commit[:7]:
+        raise HTTPException(
+            status_code=503,
+            detail="Recovery publication run tag is unsafe or not simulation-bound",
+        )
+    if simulation_commit == publication_commit:
+        raise HTTPException(
+            status_code=503,
+            detail="Recovery publication requires distinct simulation and publication commits",
+        )
+    authorization = manifest.get("recovery_authorization")
+    if not isinstance(authorization, dict):
+        raise HTTPException(
+            status_code=503,
+            detail="Recovery publication lacks a complete authorization",
+        )
+    expected = {
+        "receipt_file": f"publication_recovery_receipts/{run_tag}.json",
+        "preserved_raw_manifest_file": f"preserved_raw_manifests/{run_tag}.json",
+        "original_submission_receipt_file": f"core_submission_receipts/{run_tag}.json",
+    }
+    if (
+        authorization.get("validated") is not True
+        or authorization.get("simulation_rerun") is not False
+        or any(authorization.get(key) != value for key, value in expected.items())
+    ):
+        raise HTTPException(
+            status_code=503,
+            detail="Recovery publication authorization is incomplete or noncanonical",
+        )
+    for label, relative in expected.items():
+        if relative not in records:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Recovery publication does not manifest {label}",
+            )
+        # The relative name is constructed from the validated run tag rather
+        # than accepted from the authorization.  _safe_manifest_payload then
+        # rejects a symlink at the leaf or in any parent and confines the file
+        # to the canonical results root.
+        _safe_manifest_payload(relative)
+    return _safe_manifest_payload(expected["receipt_file"])
+
+
+def _validate_recovery_authorization(
+    manifest: dict,
+    recovery_receipt: Path,
+    *,
+    run_tag: str,
+    simulation_commit: str,
+    publication_commit: str,
+) -> dict[str, object]:
+    """Independently reproduce and exactly match the manifest authorization."""
+
+    try:
+        repo_root = _TRUSTED_REPO_ROOT.resolve()
+        if str(repo_root) not in sys.path:
+            sys.path.insert(0, str(repo_root))
+        from mvp.simulation.analysis.recovery_provenance import (
+            validate_recovery_context,
+        )
+
+        validated = validate_recovery_context(
+            recovery_receipt,
+            results_dir=_RESULTS_DIR,
+            run_tag=run_tag,
+            simulation_commit=simulation_commit,
+            publication_commit=publication_commit,
+            expected_kind="core",
+        )
+    except (ImportError, OSError, ValueError) as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Recovery publication authorization failed: {exc}",
+        ) from exc
+    if (
+        validated != manifest.get("recovery_authorization")
+        or validated.get("validated") is not True
+        or validated.get("simulation_rerun") is not False
+    ):
+        raise HTTPException(
+            status_code=503,
+            detail="Recovery publication authorization does not match its evidence",
+        )
+    return validated
+
+
+def _validate_canonical_release_contract(
+    recovery_receipt: Path | None = None,
+) -> None:
     """Run the same exact-inventory receipt verifier used by packaging."""
 
     repo_root = _TRUSTED_REPO_ROOT.resolve()
@@ -319,7 +420,9 @@ def _validate_canonical_release_contract() -> None:
         )
 
         validate_full_publication_release(
-            _RESULTS_DIR.resolve(), repo_root=repo_root,
+            _RESULTS_DIR.resolve(),
+            repo_root=repo_root,
+            recovery_receipt=recovery_receipt,
         )
     except (ImportError, OSError, ValueError) as exc:
         raise HTTPException(
@@ -329,7 +432,13 @@ def _validate_canonical_release_contract() -> None:
 
 
 def _validate_semantic_receipt(
-    manifest: dict, records: dict[str, dict], manifest_commit: str, run_tag: str,
+    manifest: dict,
+    records: dict[str, dict],
+    simulation_commit: str,
+    publication_commit: str,
+    run_tag: str,
+    *,
+    recovery_authorization: dict[str, object] | None = None,
 ) -> None:
     record = records.get(_VALIDATION_RECEIPT)
     if record is None:
@@ -353,16 +462,29 @@ def _validate_semantic_receipt(
         raise HTTPException(
             status_code=503, detail="Semantic validation receipt is invalid",
         ) from exc
-    if (
+    common_invalid = (
         receipt.get("schema_version") != 1
         or receipt.get("validation_status") != "PASS"
         or receipt.get("validation_scope") != "core_publication_evidence"
-        or receipt.get("fresh_single_commit_run") is not True
-        or receipt.get("git_commit") != manifest_commit
-        or receipt.get("simulation_source_commit") != manifest_commit
-        or receipt.get("publication_code_commit") != manifest_commit
+        or receipt.get("git_commit") != simulation_commit
+        or receipt.get("simulation_source_commit") != simulation_commit
+        or receipt.get("publication_code_commit") != publication_commit
         or receipt.get("run_tag") != run_tag
-    ):
+    )
+    if recovery_authorization is None:
+        provenance_invalid = (
+            receipt.get("fresh_single_commit_run") is not True
+            or simulation_commit != publication_commit
+        )
+    else:
+        provenance_invalid = (
+            receipt.get("fresh_single_commit_run") is not False
+            or receipt.get("authorized_deterministic_recovery") is not True
+            or receipt.get("simulation_rerun") is not False
+            or receipt.get("recovery_authorization") != recovery_authorization
+            or simulation_commit == publication_commit
+        )
+    if common_invalid or provenance_invalid:
         raise HTTPException(
             status_code=503,
             detail="Semantic validation receipt does not match this release",
@@ -441,26 +563,42 @@ def _publication_artifact(filename: str) -> _VerifiedPublicationArtifact:
     if manifest.get("schema_version") != 2 or manifest.get("git_dirty") is not False:
         raise HTTPException(status_code=503, detail="Publication manifest is not a clean validated release")
     run_tag = manifest.get("artifact_run_tag")
-    identities = {
-        str(manifest.get(key, "")).strip().lower()
+    identity_values = {
+        key: str(manifest.get(key, "")).strip().lower()
         for key in ("git_commit", "simulation_source_commit", "publication_code_commit")
     }
+    identities = set(identity_values.values())
+    simulation_commit = identity_values["simulation_source_commit"]
+    publication_commit = identity_values["publication_code_commit"]
+    dual_provenance = manifest.get("dual_provenance")
     if (
         not isinstance(run_tag, str)
         or not run_tag.strip()
-        or manifest.get("dual_provenance") is not False
-        or len(identities) != 1
-        or not _HEX40.fullmatch(next(iter(identities), ""))
+        or any(not _HEX40.fullmatch(value) for value in identity_values.values())
     ):
         raise HTTPException(
             status_code=503,
-            detail="Publication manifest is not a fresh single-commit evidence run",
+            detail="Publication manifest has invalid source provenance",
         )
-    manifest_commit = next(iter(identities))
-    if manifest_commit != _current_source_commit():
+    if dual_provenance is False:
+        if len(identities) != 1 or manifest.get("recovery_authorization") is not None:
+            raise HTTPException(
+                status_code=503,
+                detail="Publication manifest is not a fresh single-commit evidence run",
+            )
+    elif dual_provenance is True:
+        if (
+            identity_values["git_commit"] != simulation_commit
+            or simulation_commit == publication_commit
+        ):
+            raise HTTPException(
+                status_code=503,
+                detail="Recovery publication has inconsistent source provenance",
+            )
+    else:
         raise HTTPException(
             status_code=503,
-            detail="Publication evidence was generated by a different source commit",
+            detail="Publication manifest has an invalid provenance mode",
         )
     artifact_records = manifest.get("artifacts")
     if not isinstance(artifact_records, list) or any(
@@ -476,6 +614,23 @@ def _publication_artifact(filename: str) -> _VerifiedPublicationArtifact:
     if rec is None:
         raise HTTPException(status_code=404, detail=f"Artifact is not in the publication manifest: {filename}")
 
+    recovery_receipt: Path | None = None
+    if dual_provenance is True:
+        recovery_receipt = _canonical_recovery_receipt_path(
+            manifest,
+            records,
+            run_tag=run_tag,
+            simulation_commit=simulation_commit,
+            publication_commit=publication_commit,
+        )
+
+    serving_commit = _current_source_commit()
+    if serving_commit != publication_commit:
+        raise HTTPException(
+            status_code=503,
+            detail="Publication evidence was generated by a different serving-code commit",
+        )
+
     manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
     results_root = str(_RESULTS_DIR.resolve(strict=True))
     with _PUBLICATION_CACHE_LOCK:
@@ -483,7 +638,7 @@ def _publication_artifact(filename: str) -> _VerifiedPublicationArtifact:
         expected_cache = _PublicationVerificationCache(
             results_root=results_root,
             manifest_sha256=manifest_sha256,
-            source_commit=manifest_commit,
+            source_commit=serving_commit,
             payload_metadata=metadata_before,
         )
         if _PUBLICATION_CACHE != expected_cache:
@@ -491,10 +646,27 @@ def _publication_artifact(filename: str) -> _VerifiedPublicationArtifact:
             # rejects symlinks, path swaps, and coherent receipt edits before
             # the expensive validator is allowed to trust any result file.
             before = _manifest_payload_snapshot(records)
+            recovery_authorization = None
+            if recovery_receipt is not None:
+                recovery_authorization = _validate_recovery_authorization(
+                    manifest,
+                    recovery_receipt,
+                    run_tag=run_tag,
+                    simulation_commit=simulation_commit,
+                    publication_commit=publication_commit,
+                )
             _validate_semantic_receipt(
-                manifest, records, manifest_commit, run_tag,
+                manifest,
+                records,
+                simulation_commit,
+                publication_commit,
+                run_tag,
+                recovery_authorization=recovery_authorization,
             )
-            _validate_canonical_release_contract()
+            if recovery_receipt is None:
+                _validate_canonical_release_contract()
+            else:
+                _validate_canonical_release_contract(recovery_receipt)
             if manifest_path.read_bytes() != manifest_bytes:
                 raise HTTPException(
                     status_code=503,

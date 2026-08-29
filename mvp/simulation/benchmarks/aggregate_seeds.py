@@ -49,6 +49,9 @@ try:
         H2_DIRECTIONAL_PAIRS,
         h2_synergy_interaction,
     )
+    from ..analysis.recovery_provenance import (
+        recovery_context_from_environment,
+    )
 except ImportError:
     _REPO_IMPORT_ROOT = Path(__file__).resolve().parents[3]
     if str(_REPO_IMPORT_ROOT) not in sys.path:
@@ -61,6 +64,9 @@ except ImportError:
         H1_PRACTICAL_MARGIN,
         H2_DIRECTIONAL_PAIRS,
         h2_synergy_interaction,
+    )
+    from mvp.simulation.analysis.recovery_provenance import (  # noqa: E402
+        recovery_context_from_environment,
     )
 
 SEEDS = [42, 1337, 2024, 7, 99, 101, 202, 303, 404, 505,
@@ -1094,6 +1100,16 @@ def main(argv: list[str] | None = None):
     if not input_seed_dir.is_dir():
         raise FileNotFoundError(f"benchmark seed root is missing: {input_seed_dir}")
     out_dir.mkdir(parents=True, exist_ok=True)
+    repo_root = _SCRIPT_DIR.parents[1]
+    recovery_provenance = recovery_context_from_environment(
+        results_dir=out_dir,
+        repo_root=repo_root,
+    )
+    if recovery_provenance is not None and not args.publication:
+        raise RuntimeError(
+            "deterministic recovery provenance is valid only for the locked "
+            "publication aggregation path"
+        )
 
     # Reset BCa fallback counters so the per-run stats reflect only
     # this aggregator invocation, not residue from prior calls in the
@@ -1987,24 +2003,10 @@ def main(argv: list[str] | None = None):
     # real SHA on every realistic HPC + local invocation path.
     import os as _os_meta
     import subprocess as _subprocess_meta
-    _retired_commit_overrides = [
-        name
-        for name in (
-            "AGRIBRAIN_SIMULATION_COMMIT",
-            "AGRIBRAIN_PUBLICATION_CODE_COMMIT",
-        )
-        if _os_meta.environ.get(name, "").strip()
-    ]
-    if _retired_commit_overrides:
-        raise RuntimeError(
-            "dual-commit publication repair overrides are retired; unset "
-            + ", ".join(_retired_commit_overrides)
-            + " and aggregate only inside the fresh run's source snapshot"
-        )
     _git_commit_meta: str | None = (
         _os_meta.environ.get("AGRIBRAIN_GIT_COMMIT", "").strip() or None
     )
-    _git_root_meta_path = _SCRIPT_DIR.parent.parent.parent
+    _git_root_meta_path = repo_root
     if _git_commit_meta is None:
         try:
             _git_commit_meta = _subprocess_meta.check_output(
@@ -2048,10 +2050,26 @@ def main(argv: list[str] | None = None):
         except Exception:
             _git_commit_meta = None
 
-    # Fresh publication evidence is single-provenance: simulation and
-    # aggregation execute from the same clean source snapshot. Historical
-    # dual-commit repair overrides are intentionally not accepted here.
-    _analysis_code_commit = _git_commit_meta
+    # Fresh publication evidence remains single-provenance.  The only
+    # exception is an independently authorized deterministic recovery over
+    # byte-bound preserved simulation outputs.  In that narrow path the two
+    # identities are kept separate instead of relabelling the simulation as a
+    # run of the repaired publication code.
+    if recovery_provenance is None:
+        _analysis_code_commit = _git_commit_meta
+        _dual_provenance = False
+        _recovery_authorization = None
+    else:
+        _git_commit_meta = str(
+            recovery_provenance["simulation_source_commit"]
+        )
+        _analysis_code_commit = str(
+            recovery_provenance["publication_code_commit"]
+        )
+        _dual_provenance = True
+        _recovery_authorization = recovery_provenance[
+            "recovery_authorization"
+        ]
 
     _resampling_meta = _resampling_identity(list(all_data))
     episode_budget_by_mode = {
@@ -2083,7 +2101,8 @@ def main(argv: list[str] | None = None):
             "source_commit": _git_commit_meta,
             "simulation_source_commit": _git_commit_meta,
             "analysis_code_commit": _analysis_code_commit,
-            "dual_provenance": False,
+            "dual_provenance": _dual_provenance,
+            "recovery_authorization": _recovery_authorization,
             "run_tag": _os_meta.environ.get("RUN_TAG", "").strip() or None,
             "resampling_rng": _resampling_meta,
             "episode_accounting": episode_accounting,
@@ -2161,7 +2180,8 @@ def main(argv: list[str] | None = None):
             "source_commit": _git_commit_meta,
             "simulation_source_commit": _git_commit_meta,
             "analysis_code_commit": _analysis_code_commit,
-            "dual_provenance": False,
+            "dual_provenance": _dual_provenance,
+            "recovery_authorization": _recovery_authorization,
             "run_tag": _os_meta.environ.get("RUN_TAG", "").strip() or None,
             "resampling_rng": _resampling_meta,
             "episode_accounting": episode_accounting,
@@ -2264,6 +2284,18 @@ def main(argv: list[str] | None = None):
         run_tag=_os_meta.environ.get("RUN_TAG", "").strip() or None,
     )
     payload_significance["h2_directional_evidence"] = h2_evidence_rows
+    if recovery_provenance is not None:
+        # Re-read and revalidate the immutable authorization immediately before
+        # committing outputs so a long aggregation cannot hide a concurrent
+        # replacement of either receipt or the preserved-input manifest.
+        final_recovery_provenance = recovery_context_from_environment(
+            results_dir=out_dir,
+            repo_root=repo_root,
+        )
+        if final_recovery_provenance != recovery_provenance:
+            raise RuntimeError(
+                "publication recovery provenance changed during aggregation"
+            )
     (out_dir / "benchmark_summary.json").write_text(
         json.dumps(payload_summary, indent=2, allow_nan=False)
     )

@@ -3,7 +3,7 @@ name: ci
 on:
   push:
     branches: ["main"]
-    tags: ["v*", "submission-evidence-*"]
+    tags: ["v*"]
   pull_request:
 
 permissions:
@@ -50,6 +50,30 @@ jobs:
           python mvp/simulation/tests/test_stochastic_quick.py
           python -m pytest mvp/simulation/tests/test_regression_evidence_boundary.py
 
+  publication-evidence-tests:
+    name: publication and recovery tests (ubuntu / py3.11)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e "agribrain/backend[dev]"
+      - name: Validate Slurm launcher syntax
+        run: |
+          bash -n hpc/hpc_run.sh hpc/hpc_sensitivity_run.sh \
+            hpc/publication_recovery_run.sh hpc/hpc_publish_recovery.sh \
+            hpc/hpc_sensitivity_publish_recovery.sh \
+            hpc/hpc_full_submission_recovery.sh
+      - name: Run simulation publication and recovery tests
+        run: python -m pytest mvp/simulation/tests
+
   # Slow-marker tests: full end-to-end simulator runs (mode x scenario
   # matrix) that the default `addopts = "-m 'not slow'"` skips. We run
   # them here on Linux/Python 3.11 only -- they are not expected to be
@@ -88,7 +112,11 @@ jobs:
   # checkout is allowed to contain no current publication evidence; in that
   # case CI says so and does not search archives or legacy directories for a
   # substitute. If an exact schema-v2 manifest is present, the tracked current
-  # artifacts are validated. A release tag must carry current evidence.
+  # artifacts are validated. Publication evidence is distributed as a sealed
+  # GitHub Release asset tied to the exact publication-source tag, rather than
+  # committed after generation (which would change the code identity recorded
+  # by the evidence). A source checkout may therefore legitimately contain no
+  # current evidence.
   current-evidence-boundary:
     name: current publication-evidence boundary
     runs-on: ubuntu-latest
@@ -110,15 +138,10 @@ jobs:
           from pathlib import Path
 
           manifest = Path("mvp/simulation/results/artifact_manifest.json")
-          is_release = os.environ.get("GITHUB_REF", "").startswith("refs/tags/")
           if not manifest.is_file():
-              if is_release:
-                  raise SystemExit(
-                      "Release tag blocked: current schema-v2 publication "
-                      "artifact_manifest.json is absent."
-                  )
               with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
                   out.write("has_current=false\n")
+                  out.write("recovery_receipt=\n")
               print(
                   "::notice::Source-only candidate: no current publication "
                   "evidence is committed. Archived/legacy outputs were not used."
@@ -137,8 +160,32 @@ jobs:
                   raise SystemExit(f"Current manifest has invalid {key}.")
           if not isinstance(payload.get("artifacts"), list) or not payload["artifacts"]:
               raise SystemExit("Current manifest has no artifact inventory.")
+          recovery_receipt = ""
+          if payload.get("dual_provenance") is True:
+              authorization = payload.get("recovery_authorization")
+              if not isinstance(authorization, dict):
+                  raise SystemExit(
+                      "Dual-provenance manifest lacks recovery_authorization."
+                  )
+              relative = str(authorization.get("receipt_file", ""))
+              candidate = Path(relative)
+              if (
+                  not relative
+                  or candidate.is_absolute()
+                  or "\\" in relative
+                  or any(part in {"", ".", ".."} for part in candidate.parts)
+              ):
+                  raise SystemExit("Manifest recovery receipt path is unsafe.")
+              receipt = manifest.parent / candidate
+              if not receipt.is_file() or receipt.is_symlink():
+                  raise SystemExit(
+                      "Dual-provenance manifest's canonical recovery receipt "
+                      "is absent or symlinked."
+                  )
+              recovery_receipt = receipt.as_posix()
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
               out.write("has_current=true\n")
+              out.write(f"recovery_receipt={recovery_receipt}\n")
           print("Current schema-v2 publication evidence detected; strict checks enabled.")
           PY
       - name: Install current-evidence validator dependencies
@@ -154,9 +201,14 @@ jobs:
           python mvp/simulation/validation/validate_results.py
       - name: Verify current manifest bytes and tracked allowlist
         if: steps.evidence.outputs.has_current == 'true'
+        env:
+          RECOVERY_RECEIPT: ${{ steps.evidence.outputs.recovery_receipt }}
         run: |
-          python mvp/simulation/analysis/verify_manifest.py \
-              --strict-commit --allow-missing --require-tracked
+          args=(--strict-commit --allow-missing --require-tracked)
+          if [[ -n "$RECOVERY_RECEIPT" ]]; then
+            args+=(--recovery-receipt "$RECOVERY_RECEIPT")
+          fi
+          python mvp/simulation/analysis/verify_manifest.py "${args[@]}"
 
   # Validate the committed publication lock itself. Comparing it with a newly
   # resolved environment would test upstream package churn rather than the
@@ -214,7 +266,7 @@ jobs:
           # intentionally not yet gated; they should be tightened in a
           # focused cleanup pass before turning them on as build gates.
           ruff check --select E9,F63,F7,F82,F401,F821 \
-            agribrain/backend mvp/simulation
+            agribrain/backend mvp/simulation hpc
 
   contract-tests:
     runs-on: ubuntu-latest

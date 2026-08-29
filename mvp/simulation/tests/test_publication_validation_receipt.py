@@ -85,6 +85,18 @@ def test_manifest_inventory_requires_commit_bound_run_tag() -> None:
         vpa._validate_manifest_inventory(manifest, receipt_expected=False)
 
 
+def test_publication_environment_uses_repair_commit_only_in_recovery() -> None:
+    fresh = _exact_inventory_manifest(include_receipt=False)
+    assert vpa._publication_execution_commit(fresh) == fresh["git_commit"]
+
+    recovery = dict(fresh)
+    recovery.update({
+        "publication_code_commit": "f" * 40,
+        "dual_provenance": True,
+    })
+    assert vpa._publication_execution_commit(recovery) == "f" * 40
+
+
 def test_semantic_receipt_is_bound_to_protocol_manifest_and_run(
     tmp_path, monkeypatch,
 ):
@@ -121,7 +133,7 @@ def test_semantic_receipt_is_bound_to_protocol_manifest_and_run(
     monkeypatch.setattr(
         vpa,
         "_validate_manifest_inventory",
-        lambda _manifest, *, receipt_expected: inventory,
+        lambda _manifest, *, receipt_expected, recovery_authorization=None: inventory,
     )
 
     vpa._write_publication_validation_receipt()
@@ -158,8 +170,12 @@ def _write_figure_set(root: Path, *, commit: str, tag: str) -> None:
         pdf.line(36, 72, 468, 288)
         pdf.save()
     provenance = {
-        "schema_version": 2,
+        "schema_version": 3,
         "source_commit": commit,
+        "source_commit_semantics": "raw_input_simulation_commit",
+        "simulation_source_commit": commit,
+        "renderer_code_commit": commit,
+        "dual_provenance": False,
         "run_tag": tag,
         "seed_panel": list(EXPECTED_SEEDS),
         "n_seed_envelopes_loaded": len(EXPECTED_SEEDS),
@@ -311,6 +327,28 @@ def test_figure_promotion_rejects_unbound_staging_before_overwrite(tmp_path):
     with pytest.raises(ValueError, match="hash-bind"):
         promote(staging, results, source_commit=commit, run_tag=tag)
     assert sentinel.read_bytes() == b"existing canonical bytes"
+
+
+def test_semantic_validator_binds_recovery_renderer_commit() -> None:
+    simulation = "a" * 40
+    publication = "b" * 40
+    manifest = {
+        "git_commit": simulation,
+        "simulation_source_commit": simulation,
+        "publication_code_commit": publication,
+    }
+    provenance = {
+        "schema_version": 3,
+        "source_commit": simulation,
+        "source_commit_semantics": "raw_input_simulation_commit",
+        "simulation_source_commit": simulation,
+        "renderer_code_commit": publication,
+        "dual_provenance": True,
+    }
+    vpa._validate_figure_source_identity(provenance, manifest)
+    provenance["renderer_code_commit"] = simulation
+    with pytest.raises(SystemExit):
+        vpa._validate_figure_source_identity(provenance, manifest)
 
 
 def test_reaggregated_core_comparison_rejects_coherent_summary_edit(

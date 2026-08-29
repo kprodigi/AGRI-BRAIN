@@ -11,10 +11,85 @@ from mvp.simulation.benchmarks import aggregate_channel_attribution as aca
 from mvp.simulation.analysis import explainability_metrics as em
 from mvp.simulation.validation import validate_publication_artifacts as vpa
 from mvp.simulation.analysis import export_paper_evidence as evidence_export
+import hpc.publication_recovery_receipt as recovery_receipt
+import hpc.validate_source_checkout as source_checkout
 
 
 EPISODE_SCOPE = "final episode per scenario-mode-seed arm"
 HISTORY_SCOPE = "earlier decisions in the same episode only"
+
+
+def _identity_payload(
+    *, simulation_commit: str, publication_commit: str, run_tag: str,
+) -> dict:
+    return {"_meta": {
+        "git_commit": simulation_commit,
+        "source_commit": simulation_commit,
+        "simulation_source_commit": simulation_commit,
+        "analysis_code_commit": publication_commit,
+        "dual_provenance": simulation_commit != publication_commit,
+        "run_tag": run_tag,
+    }}
+
+
+def test_paper_export_fresh_identity_validates_fresh_checkout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    commit = "a" * 40
+    run_tag = "aaaaaaa_20260829_105800"
+    captured: dict = {}
+    monkeypatch.setenv("AGRIBRAIN_GIT_COMMIT", commit)
+    monkeypatch.setenv("RUN_TAG", run_tag)
+    for name in (
+        "AGRIBRAIN_RECOVERY_RECEIPT", "AGRIBRAIN_SIMULATION_COMMIT",
+        "AGRIBRAIN_PUBLICATION_CODE_COMMIT",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setattr(
+        source_checkout,
+        "validation_errors",
+        lambda *, environ, **_kwargs: captured.update(environ=environ) or [],
+    )
+    payload = _identity_payload(
+        simulation_commit=commit, publication_commit=commit, run_tag=run_tag,
+    )
+    assert evidence_export._publication_export_identity_errors(payload, payload) == []
+    assert captured["environ"]["AGRIBRAIN_GIT_COMMIT"] == commit
+
+
+def test_paper_export_recovery_validates_publication_checkout_but_stamps_simulation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    simulation = "a" * 40
+    publication = "b" * 40
+    run_tag = "aaaaaaa_20260829_105800"
+    captured: dict = {}
+    monkeypatch.setenv("AGRIBRAIN_GIT_COMMIT", simulation)
+    monkeypatch.setenv("AGRIBRAIN_SIMULATION_COMMIT", simulation)
+    monkeypatch.setenv("AGRIBRAIN_PUBLICATION_CODE_COMMIT", publication)
+    monkeypatch.setenv("AGRIBRAIN_RECOVERY_RECEIPT", "recovery.json")
+    monkeypatch.setenv("CORE_SUBMISSION_RECEIPT", "original.json")
+    monkeypatch.setenv("SLURM_JOB_ID", "12345")
+    monkeypatch.setenv("RUN_TAG", run_tag)
+    monkeypatch.setattr(
+        recovery_receipt, "validate_recovery_receipt_file", lambda *_a, **_k: {},
+    )
+    monkeypatch.setattr(
+        source_checkout,
+        "validation_errors",
+        lambda *, environ, **_kwargs: captured.update(environ=environ) or [],
+    )
+    payload = _identity_payload(
+        simulation_commit=simulation,
+        publication_commit=publication,
+        run_tag=run_tag,
+    )
+    assert evidence_export._publication_export_identity_errors(payload, payload) == []
+    assert captured["environ"]["AGRIBRAIN_GIT_COMMIT"] == publication
+
+    monkeypatch.setenv("AGRIBRAIN_GIT_COMMIT", publication)
+    errors = evidence_export._publication_export_identity_errors(payload, payload)
+    assert any("must retain the simulation commit" in error for error in errors)
 
 
 def _write_instrumented_ledger(root: Path, seed: int = 1) -> None:

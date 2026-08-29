@@ -23,6 +23,36 @@ fi
 # the default batch PATH.  Load it before the fail-closed source identity gate.
 source hpc/ensure_git_available.sh
 
+# A replacement publisher is never inferred from a changed Slurm job id.  It
+# is enabled only by the complete, independently validated recovery contract.
+# The normal fresh-run path below remains the default and retains its original
+# single-commit publisher-identity gates.
+RECOVERY_MODE=false
+RECOVERY_HINTS=(
+    "${AGRIBRAIN_RECOVERY_RECEIPT:-}"
+    "${AGRIBRAIN_SIMULATION_COMMIT:-}"
+    "${AGRIBRAIN_PUBLICATION_CODE_COMMIT:-}"
+)
+if [ -n "${RECOVERY_HINTS[0]}${RECOVERY_HINTS[1]}${RECOVERY_HINTS[2]}" ]; then
+    for required in AGRIBRAIN_RECOVERY_RECEIPT AGRIBRAIN_SIMULATION_COMMIT \
+        AGRIBRAIN_PUBLICATION_CODE_COMMIT \
+        AGRIBRAIN_SIMULATION_SOURCE_TREE_SHA256 \
+        AGRIBRAIN_PUBLICATION_SOURCE_TREE_SHA256 \
+        AGRIBRAIN_PRESERVED_RAW_MANIFEST \
+        AGRIBRAIN_RAW_SEEDS_DIR AGRIBRAIN_RAW_STRESS_DIR \
+        AGRIBRAIN_RAW_H3_LEDGER_DIR; do
+        if [ -z "${!required:-}" ]; then
+            echo "BLOCK: incomplete publication-recovery contract: ${required} is missing."
+            exit 1
+        fi
+    done
+    if [ "${AGRIBRAIN_GIT_COMMIT:-}" != "$AGRIBRAIN_SIMULATION_COMMIT" ]; then
+        echo "BLOCK: recovery AGRIBRAIN_GIT_COMMIT must retain the simulation identity."
+        exit 1
+    fi
+    RECOVERY_MODE=true
+fi
+
 if [ -z "${RUN_TAG:-}" ]; then
     echo "BLOCK: RUN_TAG not exported. Submit via hpc/hpc_run.sh."
     exit 1
@@ -45,9 +75,48 @@ source hpc/publication_env.sh
 export ARTIFACT_MANIFEST_INCLUDE_RAW=1
 export ARTIFACT_RUN_TAG="$RUN_TAG"
 python hpc/validate_publication_env.py
-python hpc/validate_source_checkout.py --allow-run-artifacts
-python hpc/validate_source_snapshot.py
-python hpc/capture_publication_environment.py --validate-only
+
+validate_publication_checkout() {
+    if [ "$RECOVERY_MODE" = true ]; then
+        env AGRIBRAIN_GIT_COMMIT="$AGRIBRAIN_PUBLICATION_CODE_COMMIT" \
+            AGRIBRAIN_SOURCE_TREE_SHA256="$AGRIBRAIN_PUBLICATION_SOURCE_TREE_SHA256" \
+            python hpc/validate_source_checkout.py --allow-run-artifacts
+        env AGRIBRAIN_GIT_COMMIT="$AGRIBRAIN_PUBLICATION_CODE_COMMIT" \
+            AGRIBRAIN_SOURCE_TREE_SHA256="$AGRIBRAIN_PUBLICATION_SOURCE_TREE_SHA256" \
+            python hpc/validate_source_snapshot.py
+    else
+        python hpc/validate_source_checkout.py --allow-run-artifacts
+        python hpc/validate_source_snapshot.py
+    fi
+}
+
+capture_publication_environment() {
+    if [ "$RECOVERY_MODE" = true ]; then
+        env AGRIBRAIN_GIT_COMMIT="$AGRIBRAIN_PUBLICATION_CODE_COMMIT" \
+            python hpc/capture_publication_environment.py "$@"
+    else
+        python hpc/capture_publication_environment.py "$@"
+    fi
+}
+
+validate_live_preserved_raw() {
+    if [ "$RECOVERY_MODE" != true ]; then
+        return 0
+    fi
+    python hpc/preserved_raw_manifest.py validate \
+        --manifest "$AGRIBRAIN_PRESERVED_RAW_MANIFEST" \
+        --kind core \
+        --run-tag "$RUN_TAG" \
+        --simulation-commit "$AGRIBRAIN_SIMULATION_COMMIT" \
+        --simulation-source-tree-sha256 "$AGRIBRAIN_SIMULATION_SOURCE_TREE_SHA256" \
+        --input-root "benchmark_seed_outputs=${AGRIBRAIN_RAW_SEEDS_DIR}" \
+        --input-root "stress_outputs=${AGRIBRAIN_RAW_STRESS_DIR}" \
+        --input-root "h3_decision_ledgers=${AGRIBRAIN_RAW_H3_LEDGER_DIR}" \
+        --input-file "core_submission_receipt.json=${CORE_SUBMISSION_RECEIPT}"
+}
+
+validate_publication_checkout
+capture_publication_environment --validate-only
 
 RESULTS_DIR="mvp/simulation/results"
 SEEDS_DIR="${RESULTS_DIR}/benchmark_seeds/${RUN_TAG}"
@@ -70,23 +139,58 @@ if [ -z "${SLURM_JOB_ID:-}" ]; then
     echo "BLOCK: publisher SLURM_JOB_ID is missing. Submit via hpc/hpc_run.sh."
     exit 1
 fi
-python hpc/core_submission_receipt.py validate \
-    --receipt "$CORE_SUBMISSION_RECEIPT" \
-    --run-tag "$RUN_TAG" \
-    --source-commit "$AGRIBRAIN_GIT_COMMIT" \
-    --publisher-slurm-job-id "$SLURM_JOB_ID"
+if [ "$RECOVERY_MODE" = true ]; then
+    python hpc/core_submission_receipt.py validate \
+        --receipt "$CORE_SUBMISSION_RECEIPT" \
+        --run-tag "$RUN_TAG" \
+        --source-commit "$AGRIBRAIN_SIMULATION_COMMIT"
+    python hpc/publication_recovery_receipt.py validate \
+        --receipt "$AGRIBRAIN_RECOVERY_RECEIPT" \
+        --original-submission-receipt "$CORE_SUBMISSION_RECEIPT" \
+        --kind core \
+        --run-tag "$RUN_TAG" \
+        --simulation-commit "$AGRIBRAIN_SIMULATION_COMMIT" \
+        --publication-commit "$AGRIBRAIN_PUBLICATION_CODE_COMMIT" \
+        --recovery-publisher-slurm-job-id "$SLURM_JOB_ID"
+    validate_live_preserved_raw
+else
+    python hpc/core_submission_receipt.py validate \
+        --receipt "$CORE_SUBMISSION_RECEIPT" \
+        --run-tag "$RUN_TAG" \
+        --source-commit "$AGRIBRAIN_GIT_COMMIT" \
+        --publisher-slurm-job-id "$SLURM_JOB_ID"
+fi
 
 echo "=== Capture post-job Slurm accounting for all 25 simulation workers ==="
-SCHEDULER_ACCOUNTING="${SEEDS_DIR}/slurm_simulation_accounting.json"
+if [ "$RECOVERY_MODE" = true ]; then
+    # Accounting is newly captured publication evidence, not an immutable
+    # simulation output.  Keep it outside the raw-manifest-bound staged seed
+    # tree so subsequent live-input validation still covers exactly the bytes
+    # consumed by aggregation.
+    SCHEDULER_ACCOUNTING="${AGRIBRAIN_VENV}/slurm_simulation_accounting.json"
+else
+    SCHEDULER_ACCOUNTING="${SEEDS_DIR}/slurm_simulation_accounting.json"
+fi
 python hpc/capture_slurm_accounting.py \
     --submission-receipt "$CORE_SUBMISSION_RECEIPT" \
     --output "$SCHEDULER_ACCOUNTING" \
     --kind core \
     --run-tag "$RUN_TAG" \
     --source-commit "$AGRIBRAIN_GIT_COMMIT" \
-    --source-tree-sha256 "$AGRIBRAIN_SOURCE_TREE_SHA256"
+    --source-tree-sha256 "${AGRIBRAIN_SIMULATION_SOURCE_TREE_SHA256:-$AGRIBRAIN_SOURCE_TREE_SHA256}" \
+    --attempts 12 \
+    --retry-seconds 5 \
+    --max-retry-seconds 120 \
+    --query-timeout-seconds 60
 
 echo "=== Validate raw run identity and exact experimental panels ==="
+RAW_VALIDATION_RECOVERY_ARGS=()
+if [ "$RECOVERY_MODE" = true ]; then
+    RAW_VALIDATION_RECOVERY_ARGS=(
+        --recovery-receipt "$AGRIBRAIN_RECOVERY_RECEIPT"
+        --publication-commit "$AGRIBRAIN_PUBLICATION_CODE_COMMIT"
+    )
+fi
 python hpc/validate_raw_publication_inputs.py \
     --seed-root "$SEEDS_DIR" \
     --stress-root "$STRESS_DIR" \
@@ -94,7 +198,8 @@ python hpc/validate_raw_publication_inputs.py \
     --submission-receipt "$CORE_SUBMISSION_RECEIPT" \
     --publisher-slurm-job-id "$SLURM_JOB_ID" \
     --source-commit "$AGRIBRAIN_GIT_COMMIT" \
-    --run-tag "$RUN_TAG"
+    --run-tag "$RUN_TAG" \
+    "${RAW_VALIDATION_RECOVERY_ARGS[@]}"
 
 # Preserve obsolete, non-regenerated diagnostics outside the publication
 # results tree so they cannot be mistaken for outputs of this commit. Their
@@ -120,6 +225,7 @@ for seed in "${EXPECTED_SEEDS[@]}"; do
 done
 
 echo "=== Aggregate H1/H2 benchmark statistics and tables ==="
+validate_live_preserved_raw
 export AGRIBRAIN_PUBLICATION_AGGREGATION=1
 python mvp/simulation/benchmarks/aggregate_seeds.py \
     --seed-root "${RESULTS_DIR}/benchmark_seeds" \
@@ -210,42 +316,65 @@ python mvp/simulation/validation/validate_forecasts.py \
     --run-tag "$RUN_TAG"
 
 echo "=== Capture version-resolved publication environment ==="
-python hpc/capture_publication_environment.py
+capture_publication_environment
 
 echo "=== Build pre-receipt manifest and run every semantic gate ==="
 (cd mvp/simulation && python analysis/build_artifact_manifest.py)
-python mvp/simulation/analysis/verify_manifest.py --strict-commit
-python mvp/simulation/validation/validate_publication_artifacts.py --write-receipt
+VERIFY_RECOVERY_ARGS=()
+SEMANTIC_RECOVERY_ARGS=()
+if [ "$RECOVERY_MODE" = true ]; then
+    VERIFY_RECOVERY_ARGS=(--recovery-receipt "$AGRIBRAIN_RECOVERY_RECEIPT")
+    SEMANTIC_RECOVERY_ARGS=(--recovery-receipt "$AGRIBRAIN_RECOVERY_RECEIPT")
+fi
+python mvp/simulation/analysis/verify_manifest.py --strict-commit \
+    "${VERIFY_RECOVERY_ARGS[@]}"
+python mvp/simulation/validation/validate_publication_artifacts.py \
+    --write-receipt "${SEMANTIC_RECOVERY_ARGS[@]}"
 
 echo "=== Hash-bind the semantic receipt and re-run the final validator ==="
 (cd mvp/simulation && python analysis/build_artifact_manifest.py)
-python mvp/simulation/analysis/verify_manifest.py --strict-commit
-python mvp/simulation/validation/validate_publication_artifacts.py
+python mvp/simulation/analysis/verify_manifest.py --strict-commit \
+    "${VERIFY_RECOVERY_ARGS[@]}"
+python mvp/simulation/validation/validate_publication_artifacts.py \
+    "${SEMANTIC_RECOVERY_ARGS[@]}"
 
 BUNDLE="publication_bundle_${RUN_TAG}"
 ARCHIVE="${BUNDLE}/hpc_results_${RUN_TAG}.tar.gz"
 ARCHIVE_RECEIPT="${BUNDLE}/publication_archive_receipt_${RUN_TAG}.json"
 # The builder writes archive, receipt, and READY marker in a temporary sibling
 # directory, verifies them, then atomically promotes the complete bundle.
+validate_live_preserved_raw
+ARCHIVE_RECOVERY_ARGS=()
+if [ "$RECOVERY_MODE" = true ]; then
+    ARCHIVE_RECOVERY_ARGS=(--recovery-receipt "$AGRIBRAIN_RECOVERY_RECEIPT")
+fi
 python mvp/simulation/analysis/build_publication_archive.py \
     --results-dir "$RESULTS_DIR" \
     --output "$ARCHIVE" \
-    --receipt "$ARCHIVE_RECEIPT"
+    --receipt "$ARCHIVE_RECEIPT" \
+    "${ARCHIVE_RECOVERY_ARGS[@]}"
 echo "[publish] ready bundle: ${BUNDLE}"
 echo "[publish] archive: ${ARCHIVE}"
 echo "[publish] completion marker: ${BUNDLE}/READY.json"
 
 echo "=== Build separately verified lossless future-analysis evidence archive ==="
 COMPLETE_EVIDENCE_BUNDLE="${RESULTS_DIR}/complete_run_evidence/${RUN_TAG}"
+COMPLETE_EVIDENCE_ACCOUNTING_ARGS=()
+if [ "$RECOVERY_MODE" = true ]; then
+    COMPLETE_EVIDENCE_ACCOUNTING_ARGS=(
+        --input-file "scheduler/slurm_simulation_accounting.json=${SCHEDULER_ACCOUNTING}"
+    )
+fi
 python hpc/build_complete_run_evidence.py \
     --input-root "core=${SEEDS_DIR}" \
     --input-root "h3_results=${STRESS_DIR}" \
     --input-root "h3_ledgers=${H3_LEDGER_ROOT}" \
     --input-file "core_submission_receipt.json=${CORE_SUBMISSION_RECEIPT}" \
+    "${COMPLETE_EVIDENCE_ACCOUNTING_ARGS[@]}" \
     --output "$COMPLETE_EVIDENCE_BUNDLE" \
     --run-tag "$RUN_TAG" \
     --source-commit "$AGRIBRAIN_GIT_COMMIT" \
-    --source-tree-sha256 "$AGRIBRAIN_SOURCE_TREE_SHA256" \
+    --source-tree-sha256 "${AGRIBRAIN_SIMULATION_SOURCE_TREE_SHA256:-$AGRIBRAIN_SOURCE_TREE_SHA256}" \
     --expected-manifests 25 \
     --expected-groups 1600 \
     --expected-episodes 6100 \
@@ -254,6 +383,6 @@ python hpc/build_complete_run_evidence.py \
     --expected-runtime-receipts 25 \
     --expected-scheduler-tasks 25
 echo "[publish] complete raw evidence: ${COMPLETE_EVIDENCE_BUNDLE}"
-python hpc/validate_source_checkout.py --allow-run-artifacts
-python hpc/validate_source_snapshot.py
+validate_live_preserved_raw
+validate_publication_checkout
 echo "[publish] complete at $(date)"

@@ -4,9 +4,11 @@
 The manifest is finalized before packaging.  Every listed payload is checked
 against its literal-byte length and SHA-256, the archive is written to a
 temporary path, and the completed archive is reopened and checked again before
-it is atomically promoted.  The shippable path accepts only one clean commit
-with a fully validated fresh stochastic run; historical publication-only
-repair packaging is deliberately retired.
+it is atomically promoted.  The normal shippable path accepts one clean commit
+with a fully validated fresh stochastic run.  A dual-provenance deterministic
+recovery is accepted only with its run-scoped authorization and preserved-
+input manifest, both included in the artifact inventory; that authorization
+explicitly prohibits a simulation rerun.
 """
 from __future__ import annotations
 
@@ -33,6 +35,9 @@ from mvp.simulation.validation.validate_publication_artifacts import (
 )
 from mvp.simulation.validation.validator_source_identity import (
     validate_clean_validator_checkout,
+)
+from mvp.simulation.analysis.recovery_provenance import (
+    validate_recovery_context,
 )
 
 _HEX40 = re.compile(r"^[0-9a-f]{40}$")
@@ -113,13 +118,25 @@ def _load_manifest(path: Path) -> tuple[dict, list[dict]]:
 
 
 def _derivation_metadata(
-    manifest: dict, *, semantic_receipt_validated: bool = False,
+    manifest: dict,
+    *,
+    semantic_receipt_validated: bool = False,
+    recovery_receipt_validated: bool = False,
 ) -> dict[str, object]:
     """Describe derivation only from independently validated evidence."""
     if manifest["dual_provenance"]:
+        if not recovery_receipt_validated:
+            raise ValueError(
+                "dual-provenance packaging requires a validated publication-"
+                "recovery receipt"
+            )
+        return {
+            "derivation_type": "publication-only deterministic recovery",
+            "simulation_rerun": False,
+        }
+    if recovery_receipt_validated:
         raise ValueError(
-            "publication-only repair packaging is retired; run the complete "
-            "simulation and publication pipeline from one clean commit"
+            "a fresh single-provenance archive cannot use a recovery receipt"
         )
     if semantic_receipt_validated:
         return {
@@ -263,6 +280,14 @@ def main() -> int:
     parser.add_argument("--results-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--receipt", type=Path, required=True)
+    parser.add_argument(
+        "--recovery-receipt",
+        type=Path,
+        help=(
+            "Run-scoped recovery authorization; required for dual provenance "
+            "and rejected for a fresh archive."
+        ),
+    )
     parser.add_argument("--parent-archive-sha256")
     parser.add_argument("--source-date-epoch", type=int, default=0)
     args = parser.parse_args()
@@ -284,29 +309,80 @@ def main() -> int:
         raise FileNotFoundError("publication bundle parent directory does not exist")
     if args.parent_archive_sha256:
         raise ValueError(
-            "--parent-archive-sha256 is retired; a shippable release requires "
-            "one clean fresh-run archive"
+            "--parent-archive-sha256 is retired; deterministic recovery is "
+            "bound through --recovery-receipt and its preserved raw manifest"
         )
 
     manifest_bytes = manifest_path.read_bytes()
     manifest, records = _load_manifest_bytes(manifest_bytes)
+    recovery_authorization: dict[str, object] | None = None
     if manifest["dual_provenance"]:
-        raise ValueError(
-            "dual-provenance publication repair archives are not shippable; "
-            "regenerate all evidence from one clean commit"
+        if args.recovery_receipt is None:
+            raise ValueError(
+                "dual-provenance archive requires --recovery-receipt"
+            )
+        if manifest["git_commit"] != manifest["simulation_source_commit"]:
+            raise ValueError(
+                "recovery manifest git_commit must remain the simulation commit"
+            )
+        if manifest.get("git_dirty") is not False:
+            raise ValueError(
+                "recovery publication evidence cannot carry a dirty Git stamp"
+            )
+        recovery_authorization = validate_recovery_context(
+            args.recovery_receipt,
+            results_dir=results_dir,
+            run_tag=manifest.get("artifact_run_tag"),
+            simulation_commit=manifest["simulation_source_commit"],
+            publication_commit=manifest["publication_code_commit"],
+            expected_kind="core",
+            repo_root=_REPO_ROOT,
         )
-    source_commits = {
-        manifest["git_commit"],
-        manifest["simulation_source_commit"],
-        manifest["publication_code_commit"],
-    }
-    if len(source_commits) != 1:
-        raise ValueError(
-            "fresh publication evidence must use one identical Git commit"
-        )
-    if manifest.get("git_dirty") is not False:
-        raise ValueError("fresh publication evidence cannot carry a dirty Git stamp")
-    source_commit = manifest["simulation_source_commit"]
+        if manifest.get("recovery_authorization") != recovery_authorization:
+            raise ValueError(
+                "manifest recovery_authorization differs from the validated "
+                "receipt and preserved-input binding"
+            )
+        records_by_name = {record["file"]: record for record in records}
+        for path_key, digest_key in (
+            ("receipt_file", "receipt_literal_sha256"),
+            (
+                "preserved_raw_manifest_file",
+                "preserved_raw_manifest_literal_sha256",
+            ),
+            ("original_submission_receipt_file", None),
+        ):
+            name = recovery_authorization[path_key]
+            record = records_by_name.get(name)
+            if record is None:
+                raise ValueError(f"recovery evidence is not manifested: {name}")
+            if digest_key is not None and record["sha256"] != (
+                recovery_authorization[digest_key]
+            ):
+                raise ValueError(f"recovery evidence hash changed: {name}")
+        # Semantic validation executes from the repaired publication checkout,
+        # while the preserved stochastic outputs remain attributed to the
+        # separate simulation commit.
+        source_commit = manifest["publication_code_commit"]
+    else:
+        if args.recovery_receipt is not None:
+            raise ValueError(
+                "--recovery-receipt is invalid for a fresh single-provenance archive"
+            )
+        source_commits = {
+            manifest["git_commit"],
+            manifest["simulation_source_commit"],
+            manifest["publication_code_commit"],
+        }
+        if len(source_commits) != 1:
+            raise ValueError(
+                "fresh publication evidence must use one identical Git commit"
+            )
+        if manifest.get("git_dirty") is not False:
+            raise ValueError(
+                "fresh publication evidence cannot carry a dirty Git stamp"
+            )
+        source_commit = manifest["simulation_source_commit"]
     if not any(
         record.get("file") == "publication_validation_receipt.json"
         for record in records
@@ -330,7 +406,9 @@ def main() -> int:
     )
     _verify_files(results_dir, records)
     validate_full_publication_release(
-        results_dir, repo_root=_REPO_ROOT,
+        results_dir,
+        repo_root=_REPO_ROOT,
+        recovery_receipt=args.recovery_receipt,
     )
     semantic_receipt_validated = True
     if manifest_path.read_bytes() != manifest_bytes:
@@ -367,11 +445,15 @@ def main() -> int:
             **_derivation_metadata(
                 manifest,
                 semantic_receipt_validated=semantic_receipt_validated,
+                recovery_receipt_validated=(
+                    recovery_authorization is not None
+                ),
             ),
             "simulation_source_commit": manifest["simulation_source_commit"],
             "publication_code_commit": manifest["publication_code_commit"],
             "run_tag": manifest.get("artifact_run_tag"),
             "parent_archive_sha256": None,
+            "recovery_authorization": recovery_authorization,
             "validator_source_identity": validator_source_identity,
             "archive": {
                 "file": output.name,
@@ -393,6 +475,11 @@ def main() -> int:
                 "safe_regular_members_only": "PASS",
                 "semantic_validation_receipt_manifested_and_verified": (
                     "PASS" if semantic_receipt_validated else "NOT_APPLICABLE"
+                ),
+                "publication_recovery_receipt_and_preserved_inputs": (
+                    "PASS"
+                    if recovery_authorization is not None
+                    else "NOT_APPLICABLE"
                 ),
                 "validator_checkout_same_clean_commit_outside_exact_evidence": (
                     "PASS"
