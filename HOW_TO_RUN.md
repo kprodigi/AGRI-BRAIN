@@ -133,7 +133,7 @@ RUN_TAG=<run-tag>
 RESULTS_DIR=mvp/simulation/results
 python hpc/validate_decision_ledgers.py \
   --ledger-root "$RESULTS_DIR/decision_ledger_per_seed/$RUN_TAG" \
-  --seed-root "$RESULTS_DIR/benchmark_seeds/$RUN_TAG"
+  --seed-root "$RESULTS_DIR/benchmark_seeds"
 ```
 
 For a fresh run, the manifest's simulation source commit must exactly equal the
