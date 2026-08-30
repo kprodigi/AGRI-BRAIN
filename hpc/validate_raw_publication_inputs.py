@@ -1291,64 +1291,176 @@ def _validate_h3_observation_transform(
             )
 
 
+def _require_h3_directory(path: Path, *, where: str) -> None:
+    if path.is_symlink() or not path.is_dir():
+        raise RuntimeError(f"H3 inventory entry is not a real directory: {where}")
+
+
+def _require_h3_regular_file(path: Path, *, where: str) -> None:
+    if path.is_symlink() or not path.is_file():
+        raise RuntimeError(f"H3 inventory entry is not a regular file: {where}")
+
+
+def _require_exact_h3_entries(
+    root: Path,
+    expected_names: set[str],
+    *,
+    where: str,
+) -> dict[str, Path]:
+    _require_h3_directory(root, where=where)
+    entries = {path.name: path for path in root.iterdir()}
+    found_names = set(entries)
+    if found_names != expected_names:
+        raise RuntimeError(
+            f"H3 inventory mismatch at {where}: "
+            f"missing={sorted(expected_names - found_names)}, "
+            f"unexpected={sorted(found_names - expected_names)}"
+        )
+    return entries
+
+
 def _validate_h3_ledger_inventory_shape(
     h3_ledger_root: Path,
 ) -> None:
+    """Validate the exact full-evidence inventory emitted by ``hpc_stress.sh``.
+
+    Receipt, manifest, and ledger contents are validated by their dedicated
+    provenance and evidence gates after this fail-closed topology check.
+    """
+
     expected_scenarios = set(SCENARIOS)
-    root_entries = list(h3_ledger_root.iterdir())
-    found_scenarios = {path.name for path in root_entries}
-    if found_scenarios != expected_scenarios:
-        raise RuntimeError(
-            "H3 ledger scenario inventory mismatch: "
-            f"missing={sorted(expected_scenarios - found_scenarios)}, "
-            f"unexpected={sorted(found_scenarios - expected_scenarios)}"
-        )
-    if any(not path.is_dir() for path in root_entries):
-        raise RuntimeError("H3 ledger root contains a non-scenario entry")
-    expected_seed_dirs = {f"seed_{seed}" for seed in EXPECTED_SEEDS}
-    for scenario in SCENARIOS:
-        scenario_root = h3_ledger_root / scenario
-        stressor_entries = list(scenario_root.iterdir())
-        found_stressors = {path.name for path in stressor_entries}
-        if found_stressors != set(STRESSORS):
-            raise RuntimeError(f"H3 ledger stressor inventory mismatch: {scenario}")
-        if any(not path.is_dir() for path in stressor_entries):
-            raise RuntimeError(f"H3 ledger stressor entry is not a directory: {scenario}")
-        for stressor in STRESSORS:
-            stressor_root = scenario_root / stressor
-            seed_entries = list(stressor_root.iterdir())
-            found_seeds = {path.name for path in seed_entries}
-            if found_seeds != expected_seed_dirs:
-                raise RuntimeError(
-                    f"H3 ledger seed inventory mismatch: {scenario}/{stressor}"
-                )
-            if any(not path.is_dir() for path in seed_entries):
-                raise RuntimeError(
-                    f"H3 ledger seed entry is not a directory: {scenario}/{stressor}"
-                )
-            for seed in EXPECTED_SEEDS:
-                seed_root = stressor_root / f"seed_{seed}"
-                expected_file = f"agribrain__{scenario}.jsonl"
-                file_entries = list(seed_root.iterdir())
-                found_files = {path.name for path in file_entries}
-                if found_files != {expected_file}:
-                    raise RuntimeError(
-                        "H3 ledger file inventory mismatch: "
-                        f"{scenario}/{stressor}/seed_{seed}"
-                    )
-                if any(not path.is_file() for path in file_entries):
-                    raise RuntimeError(
-                        "H3 ledger seed directory contains a non-file entry: "
-                        f"{scenario}/{stressor}/seed_{seed}"
-                    )
-    expected_count = (
-        len(SCENARIOS) * len(STRESSORS) * len(EXPECTED_SEEDS)
+    scenario_entries = _require_exact_h3_entries(
+        h3_ledger_root,
+        expected_scenarios,
+        where="H3 ledger root",
     )
-    actual_files = list(h3_ledger_root.rglob("*.jsonl"))
-    if len(actual_files) != expected_count:
-        raise RuntimeError(
-            f"H3 ledger count mismatch: {len(actual_files)} != {expected_count}"
+    expected_seed_dirs = {f"seed_{seed}" for seed in EXPECTED_SEEDS}
+    scenario_evidence_names = {
+        "complete_episode_evidence_manifest.json",
+        "runtime_receipts",
+    }
+    final_ledger_count = 0
+    adaptation_ledger_count = 0
+    episode_archive_count = 0
+
+    for scenario in SCENARIOS:
+        scenario_root = scenario_entries[scenario]
+        scenario_children = _require_exact_h3_entries(
+            scenario_root,
+            set(STRESSORS) | scenario_evidence_names,
+            where=f"H3 scenario {scenario}",
         )
+        _require_h3_regular_file(
+            scenario_children["complete_episode_evidence_manifest.json"],
+            where=f"{scenario}/complete_episode_evidence_manifest.json",
+        )
+        receipt_root = scenario_children["runtime_receipts"]
+        _require_h3_directory(
+            receipt_root,
+            where=f"{scenario}/runtime_receipts",
+        )
+        receipt_entries = list(receipt_root.iterdir())
+        if not receipt_entries:
+            raise RuntimeError(
+                f"H3 runtime receipt inventory is empty: {scenario}"
+            )
+        for receipt_path in receipt_entries:
+            if re.fullmatch(
+                r"job_[1-9][0-9]*__restart_[0-9]+\.json",
+                receipt_path.name,
+            ) is None:
+                raise RuntimeError(
+                    "H3 runtime receipt has an unexpected name: "
+                    f"{scenario}/runtime_receipts/{receipt_path.name}"
+                )
+            _require_h3_regular_file(
+                receipt_path,
+                where=f"{scenario}/runtime_receipts/{receipt_path.name}",
+            )
+
+        for stressor in STRESSORS:
+            stressor_root = scenario_children[stressor]
+            seed_entries = _require_exact_h3_entries(
+                stressor_root,
+                expected_seed_dirs,
+                where=f"H3 stressor {scenario}/{stressor}",
+            )
+            for seed in EXPECTED_SEEDS:
+                seed_name = f"seed_{seed}"
+                seed_root = seed_entries[seed_name]
+                arm_name = f"agribrain__{scenario}"
+                final_name = f"{arm_name}.jsonl"
+                seed_children = _require_exact_h3_entries(
+                    seed_root,
+                    {
+                        final_name,
+                        "adaptation_episode_ledgers",
+                        "complete_episode_evidence",
+                    },
+                    where=f"H3 seed {scenario}/{stressor}/{seed_name}",
+                )
+                _require_h3_regular_file(
+                    seed_children[final_name],
+                    where=f"{scenario}/{stressor}/{seed_name}/{final_name}",
+                )
+                final_ledger_count += 1
+
+                evidence_specs = (
+                    (
+                        "adaptation_episode_ledgers",
+                        {f"episode_{index}.jsonl.gz" for index in range(3)},
+                    ),
+                    (
+                        "complete_episode_evidence",
+                        {f"episode_{index}.json.gz" for index in range(4)},
+                    ),
+                )
+                for evidence_name, expected_files in evidence_specs:
+                    evidence_root = seed_children[evidence_name]
+                    arm_entries = _require_exact_h3_entries(
+                        evidence_root,
+                        {arm_name},
+                        where=(
+                            f"H3 evidence {scenario}/{stressor}/{seed_name}/"
+                            f"{evidence_name}"
+                        ),
+                    )
+                    episode_entries = _require_exact_h3_entries(
+                        arm_entries[arm_name],
+                        expected_files,
+                        where=(
+                            f"H3 evidence arm {scenario}/{stressor}/{seed_name}/"
+                            f"{evidence_name}/{arm_name}"
+                        ),
+                    )
+                    for filename, path in episode_entries.items():
+                        _require_h3_regular_file(
+                            path,
+                            where=(
+                                f"{scenario}/{stressor}/{seed_name}/"
+                                f"{evidence_name}/{arm_name}/{filename}"
+                            ),
+                        )
+                    if evidence_name == "adaptation_episode_ledgers":
+                        adaptation_ledger_count += len(episode_entries)
+                    else:
+                        episode_archive_count += len(episode_entries)
+
+    expected_arms = len(SCENARIOS) * len(STRESSORS) * len(EXPECTED_SEEDS)
+    expected_counts = {
+        "final episode ledger": (final_ledger_count, expected_arms),
+        "adaptation episode ledger": (
+            adaptation_ledger_count,
+            expected_arms * 3,
+        ),
+        "complete episode archive": (episode_archive_count, expected_arms * 4),
+    }
+    for label, (actual_count, expected_count) in expected_counts.items():
+        if actual_count != expected_count:
+            raise RuntimeError(
+                f"H3 {label} count mismatch: "
+                f"{actual_count} != {expected_count}"
+            )
 
 
 def _h3_ledger_set_binding(seed_panel: dict[str, Any]) -> dict[str, Any]:

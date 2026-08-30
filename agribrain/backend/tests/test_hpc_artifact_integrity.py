@@ -1451,6 +1451,24 @@ def _write_raw_fixture(root: Path, *, commit: str, tag: str) -> tuple[Path, Path
         ledger = _write_h3_fixture_ledger(
             ledger_path, seed=seed, scenario="baseline", stressor=stressor,
         )
+        if stressor != "nominal":
+            arm_root = ledger_path.parent
+            for episode_index in range(3):
+                adaptation_path = (
+                    arm_root / "adaptation_episode_ledgers"
+                    / "agribrain__baseline"
+                    / f"episode_{episode_index}.jsonl.gz"
+                )
+                adaptation_path.parent.mkdir(parents=True, exist_ok=True)
+                adaptation_path.write_bytes(b"fixture adaptation ledger\n")
+            for episode_index in range(4):
+                archive_path = (
+                    arm_root / "complete_episode_evidence"
+                    / "agribrain__baseline"
+                    / f"episode_{episode_index}.json.gz"
+                )
+                archive_path.parent.mkdir(parents=True, exist_ok=True)
+                archive_path.write_bytes(b"fixture episode archive\n")
         canonical_ledger_path = (
             f"decision_ledger_per_seed/{tag}/seed_{seed}/agribrain__baseline.jsonl"
             if stressor == "nominal"
@@ -1671,6 +1689,16 @@ def _write_raw_fixture(root: Path, *, commit: str, tag: str) -> tuple[Path, Path
             }
             for seed in raw.EXPECTED_SEEDS
         }
+    h3_scenario_root = h3_ledgers / "baseline"
+    (h3_scenario_root / "complete_episode_evidence_manifest.json").write_text(
+        "{}\n", encoding="utf-8",
+    )
+    receipt_path = (
+        h3_scenario_root / "runtime_receipts"
+        / "job_12345__restart_0.json"
+    )
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    receipt_path.write_text("{}\n", encoding="utf-8")
     summary = {
         "meta": {
             "source_commit": commit,
@@ -1811,6 +1839,228 @@ def _write_raw_fixture(root: Path, *, commit: str, tag: str) -> tuple[Path, Path
     (scenario / "stress_degradation.csv").write_text("x\n1\n", encoding="utf-8")
     (scenario / "stress_passfail.csv").write_text("x\n1\n", encoding="utf-8")
     return seeds, stress
+
+
+def _write_h3_inventory_fixture(root: Path) -> Path:
+    root.mkdir()
+    for scenario in raw.SCENARIOS:
+        scenario_root = root / scenario
+        scenario_root.mkdir()
+        (scenario_root / "complete_episode_evidence_manifest.json").write_text(
+            "{}\n", encoding="utf-8",
+        )
+        receipt = (
+            scenario_root / "runtime_receipts"
+            / "job_12345__restart_0.json"
+        )
+        receipt.parent.mkdir()
+        receipt.write_text("{}\n", encoding="utf-8")
+        for stressor in raw.STRESSORS:
+            for seed in raw.EXPECTED_SEEDS:
+                seed_root = scenario_root / stressor / f"seed_{seed}"
+                seed_root.mkdir(parents=True)
+                arm_name = f"agribrain__{scenario}"
+                (seed_root / f"{arm_name}.jsonl").write_text(
+                    "{}\n", encoding="utf-8",
+                )
+                for episode_index in range(3):
+                    path = (
+                        seed_root / "adaptation_episode_ledgers" / arm_name
+                        / f"episode_{episode_index}.jsonl.gz"
+                    )
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(b"fixture adaptation ledger\n")
+                for episode_index in range(4):
+                    path = (
+                        seed_root / "complete_episode_evidence" / arm_name
+                        / f"episode_{episode_index}.json.gz"
+                    )
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(b"fixture episode archive\n")
+    return root
+
+
+def _one_arm_h3_inventory(tmp_path: Path, monkeypatch) -> Path:
+    monkeypatch.setattr(raw, "SCENARIOS", ("baseline",))
+    monkeypatch.setattr(raw, "STRESSORS", ("sensor_noise",))
+    monkeypatch.setattr(raw, "EXPECTED_SEEDS", (42,))
+    return _write_h3_inventory_fixture(tmp_path / "decision_ledger_h3")
+
+
+def test_h3_inventory_gate_accepts_exact_full_evidence_tree(
+    tmp_path, monkeypatch,
+):
+    root = _one_arm_h3_inventory(tmp_path, monkeypatch)
+    second_receipt = (
+        root / "baseline" / "runtime_receipts"
+        / "job_12345__restart_1.json"
+    )
+    second_receipt.write_text("{}\n", encoding="utf-8")
+
+    raw._validate_h3_ledger_inventory_shape(root)
+
+
+def test_h3_inventory_gate_rejects_unknown_scenario_entry(
+    tmp_path, monkeypatch,
+):
+    root = _one_arm_h3_inventory(tmp_path, monkeypatch)
+    (root / "baseline" / "unexpected").mkdir()
+
+    with pytest.raises(RuntimeError, match="unexpected"):
+        raw._validate_h3_ledger_inventory_shape(root)
+
+
+def test_h3_inventory_gate_rejects_final_ledger_only_seed(
+    tmp_path, monkeypatch,
+):
+    root = _one_arm_h3_inventory(tmp_path, monkeypatch)
+    seed_root = root / "baseline" / "sensor_noise" / "seed_42"
+    for directory in (
+        seed_root / "adaptation_episode_ledgers",
+        seed_root / "complete_episode_evidence",
+    ):
+        for path in sorted(directory.rglob("*"), reverse=True):
+            if path.is_file():
+                path.unlink()
+            else:
+                path.rmdir()
+        directory.rmdir()
+
+    with pytest.raises(RuntimeError, match="missing"):
+        raw._validate_h3_ledger_inventory_shape(root)
+
+
+def test_h3_inventory_gate_rejects_missing_episode_archive(
+    tmp_path, monkeypatch,
+):
+    root = _one_arm_h3_inventory(tmp_path, monkeypatch)
+    missing = (
+        root / "baseline" / "sensor_noise" / "seed_42"
+        / "complete_episode_evidence" / "agribrain__baseline"
+        / "episode_3.json.gz"
+    )
+    missing.unlink()
+
+    with pytest.raises(RuntimeError, match="missing"):
+        raw._validate_h3_ledger_inventory_shape(root)
+
+
+def test_h3_inventory_gate_rejects_missing_adaptation_ledger(
+    tmp_path, monkeypatch,
+):
+    root = _one_arm_h3_inventory(tmp_path, monkeypatch)
+    missing = (
+        root / "baseline" / "sensor_noise" / "seed_42"
+        / "adaptation_episode_ledgers" / "agribrain__baseline"
+        / "episode_2.jsonl.gz"
+    )
+    missing.unlink()
+
+    with pytest.raises(RuntimeError, match="missing"):
+        raw._validate_h3_ledger_inventory_shape(root)
+
+
+def test_h3_inventory_gate_rejects_extra_nested_evidence(
+    tmp_path, monkeypatch,
+):
+    root = _one_arm_h3_inventory(tmp_path, monkeypatch)
+    extra = (
+        root / "baseline" / "sensor_noise" / "seed_42"
+        / "adaptation_episode_ledgers" / "agribrain__baseline"
+        / "episode_3.jsonl.gz"
+    )
+    extra.write_bytes(b"unexpected adaptation ledger\n")
+
+    with pytest.raises(RuntimeError, match="unexpected"):
+        raw._validate_h3_ledger_inventory_shape(root)
+
+
+def test_h3_inventory_gate_rejects_wrong_evidence_type(
+    tmp_path, monkeypatch,
+):
+    root = _one_arm_h3_inventory(tmp_path, monkeypatch)
+    manifest = root / "baseline" / "complete_episode_evidence_manifest.json"
+    manifest.unlink()
+    manifest.mkdir()
+
+    with pytest.raises(RuntimeError, match="not a regular file"):
+        raw._validate_h3_ledger_inventory_shape(root)
+
+
+def test_h3_inventory_gate_rejects_empty_runtime_receipts(
+    tmp_path, monkeypatch,
+):
+    root = _one_arm_h3_inventory(tmp_path, monkeypatch)
+    receipt = (
+        root / "baseline" / "runtime_receipts"
+        / "job_12345__restart_0.json"
+    )
+    receipt.unlink()
+
+    with pytest.raises(RuntimeError, match="receipt inventory is empty"):
+        raw._validate_h3_ledger_inventory_shape(root)
+
+
+def test_h3_inventory_gate_rejects_runtime_receipt_directory(
+    tmp_path, monkeypatch,
+):
+    root = _one_arm_h3_inventory(tmp_path, monkeypatch)
+    receipt = (
+        root / "baseline" / "runtime_receipts"
+        / "job_12345__restart_0.json"
+    )
+    receipt.unlink()
+    receipt.mkdir()
+
+    with pytest.raises(RuntimeError, match="not a regular file"):
+        raw._validate_h3_ledger_inventory_shape(root)
+
+
+def test_h3_inventory_gate_rejects_malformed_runtime_receipt_name(
+    tmp_path, monkeypatch,
+):
+    root = _one_arm_h3_inventory(tmp_path, monkeypatch)
+    malformed = root / "baseline" / "runtime_receipts" / "receipt.json"
+    malformed.write_text("{}\n", encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="unexpected name"):
+        raw._validate_h3_ledger_inventory_shape(root)
+
+
+def test_h3_inventory_gate_rejects_symlinked_stressor_directory(
+    tmp_path, monkeypatch,
+):
+    root = _one_arm_h3_inventory(tmp_path, monkeypatch)
+    stressor = root / "baseline" / "sensor_noise"
+    real_stressor = tmp_path / "real_sensor_noise"
+    stressor.rename(real_stressor)
+    try:
+        stressor.symlink_to(real_stressor, target_is_directory=True)
+    except OSError:
+        pytest.skip("symlinks are not available to this test user")
+
+    with pytest.raises(RuntimeError, match="not a real directory"):
+        raw._validate_h3_ledger_inventory_shape(root)
+
+
+def test_h3_inventory_gate_rejects_symlinked_final_ledger(
+    tmp_path, monkeypatch,
+):
+    root = _one_arm_h3_inventory(tmp_path, monkeypatch)
+    ledger = (
+        root / "baseline" / "sensor_noise" / "seed_42"
+        / "agribrain__baseline.jsonl"
+    )
+    target = tmp_path / "outside.jsonl"
+    target.write_text("{}\n", encoding="utf-8")
+    ledger.unlink()
+    try:
+        ledger.symlink_to(target)
+    except OSError:
+        pytest.skip("symlinks are not available to this test user")
+
+    with pytest.raises(RuntimeError, match="not a regular file"):
+        raw._validate_h3_ledger_inventory_shape(root)
 
 
 def test_raw_input_gate_accepts_exact_identity_and_panels(tmp_path, monkeypatch):
