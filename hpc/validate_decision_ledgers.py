@@ -2482,7 +2482,10 @@ def _build_trace_binding(
     equity_trace: list[float] = []
     for index in range(len(records)):
         window = slca_values[max(0, index - 23):index + 1]
-        equity_trace.append(float(compute_equity(window)) if len(window) > 1 else 1.0)
+        # The simulator applies compute_equity to every trailing window,
+        # including the singleton at index 0 (where it degenerates to
+        # slca_values[0]); a substituted constant would not match the writer.
+        equity_trace.append(float(compute_equity(window)))
     binding = {
         "ari_trace": [float(record["ari"]) for record in records],
         "waste_trace": [float(record["waste"]) for record in records],

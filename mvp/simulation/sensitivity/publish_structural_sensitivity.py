@@ -21,6 +21,11 @@ import matplotlib.pyplot as plt  # noqa: E402
 from PIL import Image  # noqa: E402
 from pypdf import PdfReader  # noqa: E402
 
+# The 800-DPI QC read-back is ~94.4 MP, above PIL's default decompression-bomb
+# warning threshold (89.5 MP) though below its hard-error threshold; declare
+# bounded headroom so the intentional read-back stays warning-free.
+Image.MAX_IMAGE_PIXELS = 120_000_000
+
 from ..analysis.publication_figure_style import (  # noqa: E402
     MINIMUM_PUBLICATION_DPI,
     PUBLICATION_DPI,
