@@ -3014,6 +3014,12 @@ def fig13_stress_robustness(data=None):
                 axA.text(j, i, f"{M[i, j]*1000:.1f}\n{'EQ' if passed else 'NE'}", ha="center", va="center", fontsize=ANNOT_FONT_SIZE,
                          fontweight="bold", color="#1F1F1F" if M[i, j] < color_max * 0.7 else "white")
     cb = fig.colorbar(im, ax=axA, fraction=0.046, pad=0.03)
+    # Colorbar gradients are rasterized by default in vector backends, which
+    # embeds a raster image XObject and violates the all-vector publication
+    # PDF contract; draw the solids as vector quads with face-matched edges
+    # so quad seams stay invisible.
+    cb.solids.set_rasterized(False)
+    cb.solids.set_edgecolor("face")
     cb.set_label(r"|ΔARI| ($\times10^{-3}$)", fontsize=TICK_FONT_SIZE, fontweight="normal")
     cb.ax.tick_params(labelsize=TICK_FONT_SIZE - 2)
     for _t in cb.ax.get_yticklabels():
