@@ -21,6 +21,14 @@ from mvp.simulation.analysis.publication_figure_style import (
     publication_style_contract,
 )
 
+# The validated PNGs are rendered by this pipeline itself at PUBLICATION_DPI
+# (800) with a tight bounding box, so an 18x13-inch panel grid legitimately
+# reaches ~182 MP — above Pillow's default decompression-bomb error ceiling
+# (~179 MP), which is calibrated for untrusted downloads, not self-rendered
+# publication artifacts. Keep an explicit bound (never None) with headroom:
+# 800 dpi x ~400 in^2.
+Image.MAX_IMAGE_PIXELS = 260_000_000
+
 EXPECTED_FIGURE_STEMS = (
     "heatwave",
     "overproduction",
