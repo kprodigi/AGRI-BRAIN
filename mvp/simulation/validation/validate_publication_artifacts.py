@@ -30,6 +30,10 @@ from mvp.simulation.analysis.recovery_provenance import (  # noqa: E402
 
 VALIDATION_RECEIPT_NAME = "publication_validation_receipt.json"
 RECOVERY_RECEIPT_PATH: Path | None = None
+# "complete" validates the live results tree's full H3 evidence topology;
+# "archived-subset" is for extracted publication archives, which manifest
+# exactly the stressed ledgers and never the adaptation/episode evidence.
+H3_EVIDENCE_SCOPE = "complete"
 _RUN_TAG_RE = re.compile(r"^([0-9a-f]{7})_[0-9]{8}_[0-9]{6}$")
 EXPECTED_SEEDS = (
     42, 1337, 2024, 7, 99, 101, 202, 303, 404, 505,
@@ -3499,12 +3503,17 @@ def _validate_raw_h3_inputs() -> None:
                 RESULTS_DIR / "decision_ledger_per_seed" / run_tag
             ),
             submission_receipt=submission_receipt,
+            h3_evidence_scope=H3_EVIDENCE_SCOPE,
         )
     except (OSError, RuntimeError, ValueError) as exc:
         _fail(f"raw H3 input/ledger validation failed: {exc}")
+    scope_note = (
+        "" if H3_EVIDENCE_SCOPE == "complete"
+        else " (archived-subset evidence scope)"
+    )
     print(
         "[PASS] final raw H3 dose/endpoints, 500 stressed ledgers, "
-        "and 100 reused primary-ledger references"
+        "and 100 reused primary-ledger references" + scope_note
     )
 
 
@@ -3636,6 +3645,7 @@ def validate_full_publication_release(
     *,
     repo_root: Path,
     recovery_receipt: Path | None = None,
+    h3_evidence: str = "complete",
 ) -> None:
     """Run the complete semantic validator in an isolated interpreter.
 
@@ -3663,6 +3673,10 @@ def validate_full_publication_release(
     ]
     if recovery_receipt is not None:
         command.extend(["--recovery-receipt", str(recovery_receipt.resolve())])
+    if h3_evidence not in ("complete", "archived-subset"):
+        raise ValueError(f"unsupported H3 evidence scope: {h3_evidence!r}")
+    if h3_evidence != "complete":
+        command.extend(["--h3-evidence", h3_evidence])
     completed = subprocess.run(
         command,
         cwd=repo_root,
@@ -3678,7 +3692,7 @@ def validate_full_publication_release(
 
 
 def main(argv: list[str] | None = None) -> None:
-    global RESULTS_DIR, REPO_ROOT, RECOVERY_RECEIPT_PATH
+    global RESULTS_DIR, REPO_ROOT, RECOVERY_RECEIPT_PATH, H3_EVIDENCE_SCOPE
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -3710,6 +3724,17 @@ def main(argv: list[str] | None = None) -> None:
             "dual-provenance semantic validation."
         ),
     )
+    parser.add_argument(
+        "--h3-evidence",
+        choices=("complete", "archived-subset"),
+        default="complete",
+        help=(
+            "H3 ledger evidence scope: 'complete' for the live results tree, "
+            "'archived-subset' for an extracted publication archive, which "
+            "manifests exactly the stressed ledgers and never the "
+            "adaptation/episode evidence tree."
+        ),
+    )
     args = parser.parse_args(argv)
     raw_results_dir = args.results_dir
     raw_repo_root = args.repo_root
@@ -3723,6 +3748,7 @@ def main(argv: list[str] | None = None) -> None:
     if not RESULTS_DIR.is_dir() or not REPO_ROOT.is_dir():
         _fail("results/repository validation roots must be directories")
     RECOVERY_RECEIPT_PATH = args.recovery_receipt
+    H3_EVIDENCE_SCOPE = args.h3_evidence
     # Establish the exact safe literal-byte inventory before any semantic
     # parser opens a manifested payload.
     _validate_manifest(receipt_expected=not args.write_receipt)

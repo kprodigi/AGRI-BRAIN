@@ -691,7 +691,9 @@ def main(argv=None):
             cell.pop("_raw_decisive", None)
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(out, indent=2))
+    # allow_nan=False so a non-finite statistic fails here, at the producer,
+    # instead of surfacing later in the semantic gate's strict JSON parser.
+    args.output.write_text(json.dumps(out, indent=2, allow_nan=False))
     print(f"Saved: {args.output}")
 
 

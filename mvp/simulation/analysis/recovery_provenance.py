@@ -264,12 +264,20 @@ def recovery_context_from_environment(
         raise ValueError(
             "AGRIBRAIN_GIT_COMMIT must remain the simulation commit in recovery mode"
         )
+    # The recovery launcher exports the receipt path relative to the
+    # repository root, while some callers (build_artifact_manifest,
+    # export stages) run from mvp/simulation; resolve against repo_root
+    # so the canonical-path comparison cannot depend on the caller's
+    # working directory.
+    receipt_arg = Path(receipt_raw)
+    if not receipt_arg.is_absolute():
+        receipt_arg = repo_root / receipt_arg
     return {
         "simulation_source_commit": simulation_commit,
         "publication_code_commit": publication_commit,
         "dual_provenance": True,
         "recovery_authorization": validate_recovery_context(
-            Path(receipt_raw),
+            receipt_arg,
             results_dir=results_dir,
             run_tag=run_tag,
             simulation_commit=simulation_commit,

@@ -81,9 +81,19 @@ def _publication_export_identity_errors(
                     validate_recovery_receipt_file,
                 )
 
+                # The recovery launcher exports these receipt paths relative
+                # to the repository root, but this stage runs from
+                # mvp/simulation, so a bare Path() would resolve them against
+                # the wrong base directory.
+                recovery_receipt_file = Path(recovery_path)
+                if not recovery_receipt_file.is_absolute():
+                    recovery_receipt_file = REPO_ROOT / recovery_receipt_file
+                original_receipt_file = Path(original_receipt)
+                if not original_receipt_file.is_absolute():
+                    original_receipt_file = REPO_ROOT / original_receipt_file
                 validate_recovery_receipt_file(
-                    Path(recovery_path),
-                    original_receipt_path=Path(original_receipt),
+                    recovery_receipt_file,
+                    original_receipt_path=original_receipt_file,
                     expected_kind="core",
                     expected_run_tag=declared_run_tag,
                     expected_simulation_commit=simulation_commit,

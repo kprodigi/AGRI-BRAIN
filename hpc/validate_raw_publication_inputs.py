@@ -1797,14 +1797,27 @@ def validate_stress_inputs(
     h3_ledger_root: Path | None = None,
     primary_ledger_root: Path | None = None,
     submission_receipt: Mapping[str, Any] | None = None,
+    h3_evidence_scope: str = "complete",
 ) -> None:
+    if h3_evidence_scope not in ("complete", "archived-subset"):
+        raise ValueError(
+            f"unsupported H3 evidence scope: {h3_evidence_scope!r}"
+        )
     if not seed_root.is_dir():
         raise RuntimeError(f"primary seed root does not exist: {seed_root}")
     if h3_ledger_root is None:
         h3_ledger_root = stress_root.parent / "decision_ledger_h3"
     if not h3_ledger_root.is_dir():
         raise RuntimeError(f"H3 decision-ledger root does not exist: {h3_ledger_root}")
-    _validate_h3_ledger_inventory_shape(h3_ledger_root)
+    if h3_evidence_scope == "complete":
+        _validate_h3_ledger_inventory_shape(h3_ledger_root)
+    # "archived-subset": the publication archive manifests exactly the
+    # stressed decision ledgers, not the adaptation/episode evidence tree,
+    # so its extracted copy cannot satisfy the full-evidence topology check.
+    # Completeness of that tree is validated on the live results tree by the
+    # publisher in the same chain and is bound into the semantic validation
+    # receipt, which archive consumers verify independently; every ledger the
+    # archive does contain is still opened and reconstructed below.
     if primary_ledger_root is not None and not primary_ledger_root.is_dir():
         raise RuntimeError(
             f"primary decision-ledger root does not exist: {primary_ledger_root}"

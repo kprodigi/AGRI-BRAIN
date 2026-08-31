@@ -404,7 +404,11 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     out_path = Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(out, indent=2), encoding="utf-8")
+    # allow_nan=False so a non-finite statistic fails here, at the producer,
+    # instead of surfacing later in the semantic gate's strict JSON parser.
+    out_path.write_text(
+        json.dumps(out, indent=2, allow_nan=False), encoding="utf-8",
+    )
 
     # Headline summary for the terminal.
     cov = aggregate_metrics["policy_trace_coverage"]

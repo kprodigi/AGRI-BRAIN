@@ -9,10 +9,19 @@ import io
 import json
 import os
 import shutil
+import sys
 import tarfile
 import tempfile
 from pathlib import Path, PurePosixPath
 from typing import Any
+
+# This script is executed as `python hpc/build_complete_run_evidence.py`
+# from the snapshot root with PYTHONPATH force-unset by publication_env.sh,
+# so the repository root must be bootstrapped onto sys.path before the
+# package imports below can resolve.
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 from hpc.capture_slurm_accounting import validate_accounting_payload
 from mvp.simulation.benchmarks.episode_archive import (
@@ -40,8 +49,16 @@ def _parse_binding(raw: str, *, directory: bool) -> tuple[str, Path]:
 
 
 def _binding(path: Path) -> tuple[str, int]:
-    payload = path.read_bytes()
-    return hashlib.sha256(payload).hexdigest(), len(payload)
+    # The finished complete-evidence archive spans tens of gigabytes, far
+    # beyond the publisher's memory allocation; hash in streamed chunks so
+    # the binding never materializes the whole file in memory.
+    digest = hashlib.sha256()
+    total = 0
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(chunk)
+            total += len(chunk)
+    return digest.hexdigest(), total
 
 
 def _collect(

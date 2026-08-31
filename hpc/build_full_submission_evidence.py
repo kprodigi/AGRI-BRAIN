@@ -1342,10 +1342,15 @@ def _run_canonical_core_validation(
         validate_full_publication_release,
     )
 
+    # The extracted archive carries exactly the manifested artifacts — the
+    # stressed H3 ledgers but never the adaptation/episode evidence tree,
+    # whose completeness was validated on the live results tree by the
+    # publisher and bound into the semantic receipt verified alongside.
     validate_full_publication_release(
         extracted_results,
         repo_root=repo_root,
         recovery_receipt=recovery_receipt,
+        h3_evidence="archived-subset",
     )
 
 
