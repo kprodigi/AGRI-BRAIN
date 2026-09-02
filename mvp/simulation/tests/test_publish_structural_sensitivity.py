@@ -268,7 +268,7 @@ def test_complete_structural_panels_use_legible_redundant_encoding() -> None:
         assert len(h3_markers) == 5
         strict_margin = next(
             line for line in figure.axes[2].lines
-            if line.get_label() == "Strict margin = 0.01"
+            if line.get_label() == "Margin 0.01"
         )
         assert strict_margin.get_linestyle() == "--"
     finally:

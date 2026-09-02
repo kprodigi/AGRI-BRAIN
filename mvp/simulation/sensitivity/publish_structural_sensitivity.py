@@ -71,20 +71,18 @@ H3_STYLE_KEYS = {
     "compounded": "agribrain_no_peer",
 }
 H2_LABELS = {
-    "mcp_only_minus_no_context": "MCP-only − no-context",
-    "pirag_only_minus_no_context": "PIRAG-only − no-context",
-    "agribrain_minus_mcp_only": "AGRI-BRAIN − MCP-only",
-    "agribrain_minus_pirag_only": "AGRI-BRAIN − PIRAG-only",
-    "synergy_full_minus_mcp_minus_retrieval_plus_no_context": (
-        "Full − MCP-only − PIRAG-only + no-context"
-    ),
+    "mcp_only_minus_no_context": "MCP − No-context",
+    "pirag_only_minus_no_context": "Retrieval − No-context",
+    "agribrain_minus_mcp_only": "Full − MCP",
+    "agribrain_minus_pirag_only": "Full − Retrieval",
+    "synergy_full_minus_mcp_minus_retrieval_plus_no_context": "Synergy",
 }
 H3_LABELS = {
     "sensor_noise": "Sensor noise",
     "missing_data": "Missing data",
     "telemetry_delay": "Telemetry delay",
-    "mcp_fault_injection": "MCP fault injection",
-    "compounded": "Compounded stress",
+    "mcp_fault_injection": "MCP fault",
+    "compounded": "Compounded",
 }
 STRUCTURAL_SCENARIOS = (
     "adaptive_pricing", "baseline", "cyber_outage", "heatwave",
@@ -301,6 +299,34 @@ def _offsets(n_series: int) -> list[float]:
     ]
 
 
+def _panel_key(axis: Any, *, ncol: int | None = None) -> None:
+    """Draw the panel key in reserved space above the axes.
+
+    The same contract the rest of the figure suite uses: a frameless
+    horizontal key under the panel title, never inside the data area, so it
+    cannot sit on a marker or an error bar.
+    """
+    handles, labels = axis.get_legend_handles_labels()
+    if not handles:
+        return
+    if ncol is None:
+        ncol = len(handles)
+    rows = -(-len(handles) // ncol)
+    legend = accessible_legend(
+        axis, handles=handles, labels=labels,
+        loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=ncol,
+        frameon=False, borderaxespad=0.0, handlelength=1.8,
+        handletextpad=0.5, columnspacing=1.6, labelspacing=0.3,
+    )
+    if legend is not None:
+        for text in legend.get_texts():
+            text.set_fontweight("normal")
+    # These panels title with loc="left"; get_title() defaults to the centre
+    # slot and would hand back an empty string, silently dropping the title.
+    axis.set_title(axis.get_title(loc="left"), loc="left", fontweight="bold",
+                   pad=25.0 * rows + 12.0)
+
+
 def _style_horizontal_axis(
     axis: Any, scenarios: list[str], *, title: str, xlabel: str,
 ) -> None:
@@ -326,8 +352,9 @@ def _draw_figure(rows: list[dict[str, Any]]) -> plt.Figure:
 
     apply_publication_style()
     figure, axes = plt.subplots(
-        3, 1, figsize=(12.0, 9.6), constrained_layout=True,
+        3, 1, figsize=(18.0, 11.5), constrained_layout=True,
     )
+    figure.get_layout_engine().set(hspace=0.16, h_pad=0.10)
 
     h1_rows = [row for row in rows if row["family"] == "H1"]
     h1_scenarios = sorted({str(row["scenario"]) for row in h1_rows})
@@ -363,8 +390,8 @@ def _draw_figure(rows: list[dict[str, Any]]) -> plt.Figure:
     _style_horizontal_axis(
         axes[0],
         h1_scenarios,
-        title="(a) H1: AGRI-BRAIN − no-context ARI",
-        xlabel="Descriptive mean contrast (5th–95th percentile)",
+        title="(a) H1: Full − No-context",
+        xlabel="ΔARI (5th–95th percentile over 100 points)",
     )
 
     h2_rows = [row for row in rows if row["family"] == "H2"]
@@ -407,13 +434,10 @@ def _draw_figure(rows: list[dict[str, Any]]) -> plt.Figure:
     _style_horizontal_axis(
         axes[1],
         h2_scenarios,
-        title="(b) H2: component contrasts in ARI",
-        xlabel="Descriptive mean contrast (5th–95th percentile)",
+        title="(b) H2: Channel Contrasts",
+        xlabel="ΔARI (5th–95th percentile over 100 points)",
     )
-    accessible_legend(
-        axes[1], loc="center left", bbox_to_anchor=(1.01, 0.5),
-        borderaxespad=0.0,
-    )
+    _panel_key(axes[1], ncol=5)
 
     h3_rows = [row for row in rows if row["family"] == "H3"]
     h3_scenarios = sorted({str(row["scenario"]) for row in h3_rows})
@@ -445,25 +469,21 @@ def _draw_figure(rows: list[dict[str, Any]]) -> plt.Figure:
     _style_horizontal_axis(
         axes[2],
         h3_scenarios,
-        title="(c) H3: maximum absolute stressed − nominal AGRI-BRAIN ARI",
-        xlabel="Maximum absolute ARI difference over 100 structural points",
+        title="(c) H3: Stressed − Nominal, Worst Case",
+        xlabel="Max |ΔARI| over 100 points",
     )
     axes[2].axvline(
         0.01,
         color=SEMANTIC_COLORS["mcp_only"],
         linestyle=SEMANTIC_LINESTYLES["hybrid_rl"],
         linewidth=2.0,
-        label="Strict margin = 0.01",
+        label="Margin 0.01",
         zorder=2,
     )
-    accessible_legend(
-        axes[2], loc="center left", bbox_to_anchor=(1.01, 0.5),
-        borderaxespad=0.0,
-    )
+    _panel_key(axes[2], ncol=6)
 
     figure.suptitle(
-        "Structural sensitivity across the prespecified 100-point factor box\n"
-        "Descriptive stability only; not probabilities over a parameter population",
+        "Structural Sensitivity across the 100-Point Factor Box",
         fontweight="bold",
     )
     return figure
