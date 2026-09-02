@@ -258,7 +258,15 @@ def _legend(ax, **kwargs):
 GRID_FIGSIZE = (18.0, 13.5)      # 2x2 figures
 TRIPTYCH_FIGSIZE = (18.0, 7.6)   # 1x3 figures
 PAIR_FIGSIZE = (18.0, 8.0)       # 1x2 figures
-SUPTITLE_Y = 0.995
+# The figure title is anchored just under the layout rect it shares with the
+# panels. Anchoring it at the very top of the canvas instead leaves the whole
+# unused reserve as a blank band under it -- about an inch on these figures --
+# so the two values are kept together here and applied by the finishers rather
+# than passed in at each call site.
+GRID_RECT_TOP = 0.985            # 2x2 figures
+STRIP_RECT_TOP = 0.955           # single-row figures
+SUPTITLE_DROP = 0.005            # title anchor sits this far under the rect top
+SUPTITLE_Y = GRID_RECT_TOP - SUPTITLE_DROP
 _KEY_ROW_PTS = 25.0              # vertical room one key row needs, in points
 _KEY_TITLE_GAP_PTS = 12.0        # gap between the key block and the title
 
@@ -319,16 +327,24 @@ def _cat_ticks(ax, positions, labels, axis="x"):
         ax.set_yticklabels(list(labels), rotation=0)
 
 
+def _seat_suptitle(fig, rect_top):
+    """Anchor the figure title directly above the panels."""
+    if fig._suptitle is not None:
+        fig._suptitle.set_y(rect_top - SUPTITLE_DROP)
+
+
 def _finish_grid(fig, *, bottom=0.0):
     """Shared outer layout for every 2x2 figure."""
     _align_panel_titles(fig)
-    fig.tight_layout(rect=[0, bottom, 1, 0.955], h_pad=3.2, w_pad=3.2)
+    fig.tight_layout(rect=[0, bottom, 1, GRID_RECT_TOP], h_pad=3.2, w_pad=3.2)
+    _seat_suptitle(fig, GRID_RECT_TOP)
 
 
 def _finish_strip(fig, *, bottom=0.0):
     """Shared outer layout for every single-row (1x2 / 1x3) figure."""
     _align_panel_titles(fig)
-    fig.tight_layout(rect=[0, bottom, 1, 0.93], w_pad=3.2)
+    fig.tight_layout(rect=[0, bottom, 1, STRIP_RECT_TOP], w_pad=3.2)
+    _seat_suptitle(fig, STRIP_RECT_TOP)
 
 
 def _save(fig, name):
@@ -2855,7 +2871,10 @@ def fig11_performance_efficiency(data=None):
                             color=COLORS["agribrain"], lw=2.2, ls="--", alpha=0.8, zorder=1)
     fig.add_artist(_con)
 
-    fig.suptitle("Paired Comparisons and Decision Latency", y=SUPTITLE_Y)
+    # This figure's GridSpec tops out at 0.885 and its panel titles and keys
+    # sit above that, so the title is seated relative to them, not to the
+    # shared grid rect.
+    fig.suptitle("Paired Comparisons and Decision Latency", y=0.972)
     _align_panel_titles(fig)
     fig.canvas.draw()
     # (c) and (d) are broken-axis pairs, so their shared title and x-axis name
