@@ -104,18 +104,22 @@ HATCHES = dict(SEMANTIC_HATCHES)
 MARKERS = dict(SEMANTIC_MARKERS)
 LINESTYLES = dict(SEMANTIC_LINESTYLES)
 
+# Figure keys carry the short arm name only. What each arm ablates, and how,
+# is stated in the caption and the methods text where there is room to say it
+# precisely; repeating it inside a six-inch panel is what pushed the earlier
+# keys on top of the data.
 MODE_LABELS = {
     "static":     "Static",
     "hybrid_rl":  "Hybrid RL",
-    "no_pinn":    "Mechanistic-only (No-PINN)",
-    "no_slca":    "No social-proxy shaping",
+    "no_pinn":    "No-PINN",
+    "no_slca":    "No-sLCA",
     "agribrain":  "AGRI-BRAIN",
-    "no_context": "No-external-context",
-    "mcp_only":   "MCP-only",
-    "pirag_only": "Retrieval-only",
-    "agribrain_standard_rag":       "Standard-RAG ablation",
-    "agribrain_no_peer":            "No-peer ablation",
-    "agribrain_sign_unconstrained": "Sign-unconstrained ablation",
+    "no_context": "No-context",
+    "mcp_only":   "MCP",
+    "pirag_only": "Retrieval",
+    "agribrain_standard_rag":       "Standard-RAG",
+    "agribrain_no_peer":            "No-peer",
+    "agribrain_sign_unconstrained": "Sign-free",
 }
 
 SCENARIO_LABELS = {
@@ -123,6 +127,17 @@ SCENARIO_LABELS = {
     "overproduction":   "Overproduction",
     "cyber_outage":     "Cyber Outage",
     "adaptive_pricing": "Price Volatility",
+    "baseline":         "Baseline",
+}
+
+# Categorical tick form of the same names. Wrapping to two lines keeps every
+# tick horizontal, which reads better than a rotated label and is immune to
+# the neighbour collisions rotation produces once a panel gets narrow.
+SCENARIO_TICKS = {
+    "heatwave":         "Heatwave",
+    "overproduction":   "Over-\nproduction",
+    "cyber_outage":     "Cyber\nOutage",
+    "adaptive_pricing": "Price\nVolatility",
     "baseline":         "Baseline",
 }
 
@@ -232,6 +247,90 @@ def _legend(ax, **kwargs):
     return accessible_legend(ax, **kwargs)
 
 
+# ---------------------------------------------------------------------------
+# Shared multi-panel layout contract
+# ---------------------------------------------------------------------------
+# Every figure is drawn on the same 18-inch canvas, so one page width renders
+# identical type in all of them, and every panel key is placed the same way.
+# A key is never drawn inside the data area: it goes in reserved blank space
+# directly above its axes, under the panel title, where it cannot occlude a
+# line, a bar, or an annotation no matter where the data falls.
+GRID_FIGSIZE = (18.0, 13.5)      # 2x2 figures
+TRIPTYCH_FIGSIZE = (18.0, 7.6)   # 1x3 figures
+PAIR_FIGSIZE = (18.0, 8.0)       # 1x2 figures
+SUPTITLE_Y = 0.995
+_KEY_ROW_PTS = 25.0              # vertical room one key row needs, in points
+_KEY_TITLE_GAP_PTS = 12.0        # gap between the key block and the title
+
+
+def _panel_key(ax, *, handles=None, labels=None, ncol=None, **kwargs):
+    """Draw one panel's key in reserved space above its axes."""
+    if handles is None or labels is None:
+        handles, labels = ax.get_legend_handles_labels()
+    if not handles:
+        return None
+    count = len(handles)
+    if ncol is None:
+        ncol = count if count <= 3 else (count + 1) // 2
+    rows = -(-count // ncol)
+    kwargs.setdefault("fontsize", LEGEND_FONT_SIZE)
+    anchor = kwargs.pop("bbox_to_anchor", (0.5, 1.0))
+    legend = ax.legend(
+        handles, labels,
+        loc="lower center", bbox_to_anchor=anchor, ncol=ncol,
+        frameon=False, borderaxespad=0.0, handlelength=2.0,
+        handletextpad=0.5, columnspacing=1.6, labelspacing=0.3,
+        **kwargs,
+    )
+    for text in legend.get_texts():
+        text.set_fontweight("normal")
+    pad = _KEY_ROW_PTS * rows + _KEY_TITLE_GAP_PTS
+    ax._agri_title_pad = pad
+    ax.set_title(
+        ax.get_title(), pad=pad,
+        fontsize=SUBPLOT_TITLE_SIZE, fontweight="bold",
+    )
+    return legend
+
+
+def _align_panel_titles(fig):
+    """Give every titled panel in a figure the same title offset.
+
+    Panels carrying a two-row key would otherwise sit their titles higher
+    than their key-less neighbours, which reads as a misaligned grid.
+    """
+    titled = [ax for ax in fig.axes if ax.get_title()]
+    if not titled:
+        return
+    pad = max(getattr(ax, "_agri_title_pad", _KEY_TITLE_GAP_PTS)
+              for ax in titled)
+    for ax in titled:
+        ax.set_title(ax.get_title(), pad=pad,
+                     fontsize=SUBPLOT_TITLE_SIZE, fontweight="bold")
+
+
+def _cat_ticks(ax, positions, labels, axis="x"):
+    """Set horizontal categorical tick labels from the wrapped label forms."""
+    if axis == "x":
+        ax.set_xticks(list(positions))
+        ax.set_xticklabels(list(labels), rotation=0, ha="center")
+    else:
+        ax.set_yticks(list(positions))
+        ax.set_yticklabels(list(labels), rotation=0)
+
+
+def _finish_grid(fig, *, bottom=0.0):
+    """Shared outer layout for every 2x2 figure."""
+    _align_panel_titles(fig)
+    fig.tight_layout(rect=[0, bottom, 1, 0.955], h_pad=3.2, w_pad=3.2)
+
+
+def _finish_strip(fig, *, bottom=0.0):
+    """Shared outer layout for every single-row (1x2 / 1x3) figure."""
+    _align_panel_titles(fig)
+    fig.tight_layout(rect=[0, bottom, 1, 0.93], w_pad=3.2)
+
+
 def _save(fig, name):
     """Save figure as PNG (800 DPI) and PDF (vector, TrueType fonts)."""
     output_raw = os.environ.get("FIGURE_OUTPUT_DIR", "").strip()
@@ -325,13 +424,13 @@ def fig2_heatwave(data):
         SUBPLOT_TITLE_SIZE, FIG_TITLE_SIZE, LEGEND_FONT_SIZE,
         ANNOT_FONT_SIZE,
     )
-    BODY_FONT_SIZE = _saved_sizes[0] + 2
-    TICK_FONT_SIZE = _saved_sizes[1] + 2
-    AXIS_LABEL_SIZE = _saved_sizes[2] + 2
-    SUBPLOT_TITLE_SIZE = _saved_sizes[3] + 2
-    FIG_TITLE_SIZE = _saved_sizes[4] + 2
-    LEGEND_FONT_SIZE = _saved_sizes[5] + 2
-    ANNOT_FONT_SIZE = _saved_sizes[6] + 2
+    BODY_FONT_SIZE = _saved_sizes[0]
+    TICK_FONT_SIZE = _saved_sizes[1]
+    AXIS_LABEL_SIZE = _saved_sizes[2]
+    SUBPLOT_TITLE_SIZE = _saved_sizes[3]
+    FIG_TITLE_SIZE = _saved_sizes[4]
+    LEGEND_FONT_SIZE = _saved_sizes[5]
+    ANNOT_FONT_SIZE = _saved_sizes[6]
     _saved_rc = {
         "font.size": plt.rcParams["font.size"],
         "axes.labelsize": plt.rcParams["axes.labelsize"],
@@ -368,23 +467,23 @@ def _fig2_heatwave_inner(hw, ab, hours):
     """Body of fig 2. Extracted from ``fig2_heatwave`` so the per-figure
     font-size overrides applied above can be cleanly torn down via
     try/finally regardless of how the body returns or raises."""
-    fig, axes = plt.subplots(2, 2, figsize=(18, 13))
-    fig.suptitle("Heatwave Scenario Analysis", y=0.995)
+    fig, axes = plt.subplots(2, 2, figsize=GRID_FIGSIZE)
+    fig.suptitle("Heatwave Scenario Analysis", y=SUPTITLE_Y)
 
     # --- (a) Temperature + Humidity with heatwave window ---
     ax = axes[0, 0]
     ax.plot(hours, ab["temp_outcome_environmental_trace"],
             color="#B71C1C", linewidth=2.4, linestyle="-",
-            label="Temperature (latent)")
+            label="Temp (latent)")
     ax.plot(hours, ab["temp_policy_observed_trace"], color="#882255",
             linewidth=1.3, alpha=1.0, linestyle="--", marker="o",
-            markevery=MARKER_EVERY, label="Temperature (observed)")
+            markevery=MARKER_EVERY, label="Temp (observed)")
     policy_ceiling = float(Policy().max_temp_c)
     ax.axhline(policy_ceiling, color="#C62828", linestyle=":", linewidth=1.4,
-               alpha=0.65, label="Declared policy ceiling")
+               alpha=0.65, label="Policy ceiling")
     ax2 = ax.twinx()
     ax2.plot(hours, ab["rh_outcome_environmental_trace"], color="#332288",
-             linewidth=2.2, alpha=0.9, linestyle="-.", label="RH (latent)")
+             linewidth=2.2, alpha=0.9, linestyle="-.", label="RH")
     ax.set_xlabel("Time (hr.)")
     ax.set_ylabel("Temperature (\u00b0C)")
     ax2.set_ylabel("Relative Humidity (%)")
@@ -403,18 +502,12 @@ def _fig2_heatwave_inner(hw, ab, hours):
     # vertical center at 17.5 degC (mid-point of the 10-25 degC band)
     # so it sits between the cool pre-heatwave temperature curve below
     # and the heatwave peak above.
-    _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave", ypos=0.45)
+    _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave")
     h1, l1 = ax.get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()
-    # Opaque frame (framealpha=1.0 + white facecolor) so this legend
-    # reads as solid over the busy dual-axis Temp/RH data. Attach it to
-    # the twin axis (ax2) so it draws on top of every line (including
-    # ax2's RH line) instead of a line cutting across the box.
-    _legend(ax2, handles=h1 + h2, labels=l1 + l2,
-            loc="center left",
-            bbox_to_anchor=(0.02, 17.5),
-            bbox_transform=ax.get_yaxis_transform(),
-            framealpha=1.0, facecolor="white")
+    # Both axes' series share one key above the panel. Nothing has to be
+    # drawn on top of the dual-axis traces to stay readable.
+    _panel_key(ax, handles=h1 + h2, labels=l1 + l2, ncol=2)
 
     # --- (b) Independent-DGP outcome and policy estimate ---
     # The solid curve is the common noise-free synthetic DGP outcome used for
@@ -430,17 +523,17 @@ def _fig2_heatwave_inner(hw, ab, hours):
     )
 
     ax.plot(hours, _rho_latent, color="#212121", linewidth=2.6,
-            label="Independent-DGP risk (scored outcome)")
+            label="Scored outcome")
     ax.plot(hours, _rho_observed, color=COLORS["agribrain"], linewidth=1.8,
             alpha=0.9, linestyle="--", marker=MARKERS["agribrain"],
-            markevery=MARKER_EVERY, label="PINN risk estimate (policy input)")
+            markevery=MARKER_EVERY, label="PINN estimate")
     # The only threshold shown is the severity-weighted RLE event trigger. The
     # legacy 0.30 route knee and 0.65 disposition cutoff are excluded from the
     # confirmatory model and therefore must not appear as policy evidence.
     ax.axhline(RLE_THRESHOLD, color="#A66F00", linestyle=":", linewidth=1.4,
                alpha=0.7)
     ax.text(1.5, RLE_THRESHOLD - 0.020,
-            f"RLE at-risk trigger (ρ > {RLE_THRESHOLD:.2f})",
+            f"RLE trigger (ρ > {RLE_THRESHOLD:.2f})",
             color="#A66F00", fontsize=17, va="top", ha="left",
             fontweight="bold",
             bbox=dict(boxstyle="round,pad=0.2", facecolor="white",
@@ -448,14 +541,12 @@ def _fig2_heatwave_inner(hw, ab, hours):
 
     ax.set_xlabel("Time (hr.)")
     ax.set_ylabel("Spoilage Risk ρ")
-    ax.set_title("(b) Scored Outcome and Policy Risk Estimate")
+    ax.set_title("(b) Spoilage Risk Trajectory")
     ax.set_ylim(0, 0.70)
     ax.set_xlim(0, 72)
     _apply_style(ax)
-    # 2026-05 layout request: drop the "Heatwave" window label from the
-    # near-top of the panel down to axes-fraction y=0.5.
-    _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave", ypos=0.5)
-    _legend(ax, loc="upper left", bbox_to_anchor=(0.02, 0.92))
+    _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave")
+    _panel_key(ax)
 
     # --- (c) AgriBrain action-probability stacked area + regime guides ---
     ax = axes[1, 0]
@@ -495,14 +586,14 @@ def _fig2_heatwave_inner(hw, ab, hours):
     ax.set_xlabel("Time (hr.)")
     ax.set_ylabel("Action Probability")
     ax.set_title("(c) Policy Response to Heat Stress")
-    ax.set_ylim(0, 1.0)
+    # The three action probabilities sum to 1, so the band above 1.0 is
+    # blank by construction: it carries the window tag without covering
+    # any of the stack.
+    ax.set_ylim(0, 1.18)
+    ax.set_yticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
     _apply_style(ax)
-    _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave", ypos=0.45)
-    # Legend moved from "center right" to a left-of-center, slightly-
-    # above-center anchor so it sits over the Local Redist. band
-    # (which is the dominant area in the center of the plot) without
-    # covering the AgriBrain rho-threshold annotations on the right.
-    _legend(ax, loc="center left", bbox_to_anchor=(0.02, 0.62), ncol=1)
+    _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave")
+    _panel_key(ax, ncol=3)
 
     # --- (d) Per-step Adaptive resilience index (ARI) ---
     # Per-step ARI = (1 - waste) * social-performance term * (1 - rho),
@@ -541,13 +632,9 @@ def _fig2_heatwave_inner(hw, ab, hours):
     ax.set_ylim(0, 1.0)
     _apply_style(ax)
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave")
-    # ARI declines monotonically from ~0.5 at h0 toward ~0.1 by h72 as
-    # the cumulative (1 - rho) factor saturates, so the upper-right
-    # corner is empty space. Anchoring the legend there keeps it clear
-    # of the three mode traces, the heatwave shading, and its label.
-    _legend(ax, loc="upper right", bbox_to_anchor=(0.98, 0.98))
+    _panel_key(ax)
 
-    fig.tight_layout(rect=[0, 0, 1, 0.985], h_pad=1.6, w_pad=1.6)
+    _finish_grid(fig)
     _save(fig, "heatwave")
 
 
@@ -573,13 +660,13 @@ def fig3_overproduction(data):
         SUBPLOT_TITLE_SIZE, FIG_TITLE_SIZE, LEGEND_FONT_SIZE,
         ANNOT_FONT_SIZE,
     )
-    BODY_FONT_SIZE = _saved_sizes[0] + 2
-    TICK_FONT_SIZE = _saved_sizes[1] + 2
-    AXIS_LABEL_SIZE = _saved_sizes[2] + 2
-    SUBPLOT_TITLE_SIZE = _saved_sizes[3] + 2
-    FIG_TITLE_SIZE = _saved_sizes[4] + 2
-    LEGEND_FONT_SIZE = _saved_sizes[5] + 2
-    ANNOT_FONT_SIZE = _saved_sizes[6] + 2
+    BODY_FONT_SIZE = _saved_sizes[0]
+    TICK_FONT_SIZE = _saved_sizes[1]
+    AXIS_LABEL_SIZE = _saved_sizes[2]
+    SUBPLOT_TITLE_SIZE = _saved_sizes[3]
+    FIG_TITLE_SIZE = _saved_sizes[4]
+    LEGEND_FONT_SIZE = _saved_sizes[5]
+    ANNOT_FONT_SIZE = _saved_sizes[6]
     _saved_rc = {
         "font.size": plt.rcParams["font.size"],
         "axes.labelsize": plt.rcParams["axes.labelsize"],
@@ -615,8 +702,8 @@ def _fig3_overproduction_inner(op, ab, hours):
     per-figure font-size overrides applied above can be cleanly torn
     down via try/finally regardless of how the body returns or
     raises."""
-    fig, axes = plt.subplots(2, 2, figsize=(18, 13))
-    fig.suptitle("Overproduction & Reverse Logistics", y=0.995)
+    fig, axes = plt.subplots(2, 2, figsize=GRID_FIGSIZE)
+    fig.suptitle("Overproduction & Reverse Logistics", y=SUPTITLE_Y)
 
     # --- (a) Inventory vs demand (dual y-axis) ---
     ax = axes[0, 0]
@@ -651,12 +738,7 @@ def _fig3_overproduction_inner(op, ab, hours):
     _annotate_window(ax, 12, 60, WINDOW_COLOR, "Overproduction", xpos=40)
     h1, l1 = ax.get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()
-    # Opaque frame on the twin axis (ax2) so the legend draws on top of
-    # every line -- including ax2's Demand line, which (as an artist of
-    # the upper twin) otherwise cuts straight across a legend attached to
-    # ax. This keeps the box over the data lines, not under them.
-    _legend(ax2, handles=h1 + h2, labels=l1 + l2, loc="upper left",
-            framealpha=1.0, facecolor="white")
+    _panel_key(ax, handles=h1 + h2, labels=l1 + l2, ncol=2)
 
     # --- (b) Waste rolling average ---
     ax = axes[0, 1]
@@ -667,11 +749,11 @@ def _fig3_overproduction_inner(op, ab, hours):
         rolling = _rolling_mean(waste, window)
         _mode_plot(ax, hours, rolling, mode)
     ax.set_xlabel("Time (hr.)")
-    ax.set_ylabel("Waste Fraction per Routing Opportunity")
+    ax.set_ylabel("Waste Fraction")
     ax.set_title("(b) Waste Reduction over Time")
     _apply_style(ax)
     _annotate_window(ax, 12, 60, WINDOW_COLOR, "Overproduction")
-    _legend(ax, loc="upper left")
+    _panel_key(ax)
 
     # --- (c) RLE rolling (EU-hierarchy + severity-weighted) ---
     # Mirrors the canonical episode-level metric in
@@ -753,7 +835,7 @@ def _fig3_overproduction_inner(op, ab, hours):
     # placement keeps it clear of both the "first rho > 0.1 at h~32"
     # threshold-onset annotation in the lower band and the
     # "Overproduction" window label at the top.
-    _legend(ax, loc="center left")
+    _panel_key(ax)
 
     # --- (d) Declared social-proxy component bars with cross-seed SE ---
     # Two-tier rendering:
@@ -780,7 +862,8 @@ def _fig3_overproduction_inner(op, ab, hours):
     # cross-step mean per component per seed.
     ax = axes[1, 1]
     components = ["C", "L", "R", "P"]
-    comp_labels = ["Inverse emissions", "Labour-practice", "Community-network", "Price-information"]
+    comp_labels = ["Inverse\nemissions", "Labour\npractice",
+                   "Community\nnetwork", "Price\ninformation"]
     x = np.arange(len(components))
     width = 0.26
     _slca_per_seed = {
@@ -817,13 +900,13 @@ def _fig3_overproduction_inner(op, ab, hours):
                    edgecolor="#1F1F1F", linewidth=0.7)
     ax.set_xticks(x + width)
     ax.set_xticklabels(comp_labels)
-    ax.set_ylabel("Author-Declared Social-Performance Proxy")
-    ax.set_title("(d) Declared Social-Performance Proxy Components")
+    ax.set_ylabel("Social-Performance Proxy")
+    ax.set_title("(d) Social-Proxy Components")
     ax.set_ylim(0, 1.15)
     _apply_style(ax)
-    _legend(ax, loc="upper right")
+    _panel_key(ax)
 
-    fig.tight_layout(rect=[0, 0, 1, 0.985], h_pad=1.6, w_pad=1.6)
+    _finish_grid(fig)
     _save(fig, "overproduction")
 
 
@@ -859,13 +942,13 @@ def fig4_cyber(data):
         SUBPLOT_TITLE_SIZE, FIG_TITLE_SIZE, LEGEND_FONT_SIZE,
         ANNOT_FONT_SIZE,
     )
-    BODY_FONT_SIZE = _saved_sizes[0] + 2
-    TICK_FONT_SIZE = _saved_sizes[1] + 2
-    AXIS_LABEL_SIZE = _saved_sizes[2] + 2
-    SUBPLOT_TITLE_SIZE = _saved_sizes[3] + 2
-    FIG_TITLE_SIZE = _saved_sizes[4] + 2
-    LEGEND_FONT_SIZE = _saved_sizes[5] + 2
-    ANNOT_FONT_SIZE = _saved_sizes[6] + 2
+    BODY_FONT_SIZE = _saved_sizes[0]
+    TICK_FONT_SIZE = _saved_sizes[1]
+    AXIS_LABEL_SIZE = _saved_sizes[2]
+    SUBPLOT_TITLE_SIZE = _saved_sizes[3]
+    FIG_TITLE_SIZE = _saved_sizes[4]
+    LEGEND_FONT_SIZE = _saved_sizes[5]
+    ANNOT_FONT_SIZE = _saved_sizes[6]
     _saved_rc = {
         "font.size": plt.rcParams["font.size"],
         "axes.labelsize": plt.rcParams["axes.labelsize"],
@@ -911,11 +994,11 @@ def _fig4_cyber_inner(data):
     # natural evidence grid (top row = stimulus + observed behavior,
     # bottom row = magnitude + outcome) and matches the reader's
     # left-to-right + top-to-bottom scan order in the other figures.
-    fig, axes2d = plt.subplots(2, 2, figsize=(18, 13))
+    fig, axes2d = plt.subplots(2, 2, figsize=GRID_FIGSIZE)
     # Flatten for legacy indexing (axes[0..3] corresponds to (a..d)
     # in row-major order: top-left, top-right, bottom-left, bottom-right).
     axes = axes2d.flatten()
-    fig.suptitle("Cyber Outage Scenario Analysis", y=0.995)
+    fig.suptitle("Cyber Outage Scenario Analysis", y=SUPTITLE_Y)
 
     # --- (a) ARI over time with outage shading ---
     # ARI = (1 - waste) * SLCA * (1 - rho). Spoilage risk rho rises
@@ -946,11 +1029,7 @@ def _fig4_cyber_inner(data):
         ax, 24, 72, WINDOW_COLOR, "Outage",
         ypos=0.07, va="bottom",
     )
-    # Legend at upper-right: ARI declines monotonically from its
-    # h~15 peak so the right edge of the panel sits well below the
-    # data ceiling, leaving the upper-right corner clear of the three
-    # mode traces.
-    _legend(ax, loc="upper right")
+    _panel_key(ax)
 
     # --- (b) Action distribution pre/during outage ---
     # 2026-05 multi-seed upgrade: when per-seed action_trace dumps
@@ -1019,7 +1098,7 @@ def _fig4_cyber_inner(data):
     ax.set_ylim(0, max(max(pre_counts + pre_se * 2), max(during_counts + during_se * 2)) * 1.25 + 0.02)
     ax.set_title("(b) Action Distribution Shift")
     _apply_style(ax)
-    _legend(ax, loc="upper right")
+    _panel_key(ax)
 
     # --- (c,d) Descriptive behavior and outcome panels ---
     # Pre/during windows are split at the declared outage onset (h=24).
@@ -1238,9 +1317,7 @@ def _fig4_cyber_inner(data):
     ax_c.set_ylabel("Reroute Rate")
     ax_c.set_title("(c) Behavior Shift")
     _apply_style(ax_c)
-    # Static stays at 0 in both windows so the upper-left corner is
-    # genuinely empty; legend lives there.
-    _legend(ax_c, loc="upper left")
+    _panel_key(ax_c)
 
     # ---- (d) KPI levels during outage per method ----
     # The outcome panel reports absolute during-outage levels. The pre-vs-during delta
@@ -1282,13 +1359,9 @@ def _fig4_cyber_inner(data):
         ):
             _top_d = max(_top_d, v + 1.96 * se)
     ax_d.set_ylim(0.0, max(_top_d * 1.20, 1.05))
-    # Legend at upper-left: the leftmost cluster is ARI (~0.4-0.6),
-    # which leaves clean headroom in that corner, whereas the
-    # upper-right is now occupied by the tall Service cluster
-    # (~0.86-0.96 + CI cap).
-    _legend(ax_d, loc="upper left")
+    _panel_key(ax_d)
 
-    fig.tight_layout(rect=[0, 0, 1, 0.985], h_pad=1.6, w_pad=1.6)
+    _finish_grid(fig)
     _save(fig, "cyber_outage")
 
 
@@ -1316,13 +1389,13 @@ def fig5_pricing(data):
         SUBPLOT_TITLE_SIZE, FIG_TITLE_SIZE, LEGEND_FONT_SIZE,
         ANNOT_FONT_SIZE,
     )
-    BODY_FONT_SIZE = _saved_sizes[0] + 2
-    TICK_FONT_SIZE = _saved_sizes[1] + 2
-    AXIS_LABEL_SIZE = _saved_sizes[2] + 2
-    SUBPLOT_TITLE_SIZE = _saved_sizes[3] + 2
-    FIG_TITLE_SIZE = _saved_sizes[4] + 2
-    LEGEND_FONT_SIZE = _saved_sizes[5] + 2
-    ANNOT_FONT_SIZE = _saved_sizes[6] + 2
+    BODY_FONT_SIZE = _saved_sizes[0]
+    TICK_FONT_SIZE = _saved_sizes[1]
+    AXIS_LABEL_SIZE = _saved_sizes[2]
+    SUBPLOT_TITLE_SIZE = _saved_sizes[3]
+    FIG_TITLE_SIZE = _saved_sizes[4]
+    LEGEND_FONT_SIZE = _saved_sizes[5]
+    ANNOT_FONT_SIZE = _saved_sizes[6]
     _saved_rc = {
         "font.size": plt.rcParams["font.size"],
         "axes.labelsize": plt.rcParams["axes.labelsize"],
@@ -1357,8 +1430,8 @@ def _fig5_pricing_inner(ap, ab, hours):
     """Body of fig 5. Extracted from ``fig5_pricing`` so the per-figure
     font-size overrides applied above can be cleanly torn down via
     try/finally regardless of how the body returns or raises."""
-    fig, axes = plt.subplots(2, 2, figsize=(18, 13))
-    fig.suptitle("Adaptive Pricing & Demand Volatility", y=0.995)
+    fig, axes = plt.subplots(2, 2, figsize=GRID_FIGSIZE)
+    fig.suptitle("Adaptive Pricing & Demand Volatility", y=SUPTITLE_Y)
 
     # --- (a) Demand + Bollinger triggers ---
     ax = axes[0, 0]
@@ -1389,7 +1462,7 @@ def _fig5_pricing_inner(ap, ab, hours):
     ax.set_ylabel("Demand (units/step)")
     ax.set_title("(a) Demand with Bollinger Triggers")
     _apply_style(ax)
-    _legend(ax, loc="upper right")
+    _panel_key(ax)
 
     # --- (b) Routing fractions over time bins ---
     ax = axes[0, 1]
@@ -1437,10 +1510,7 @@ def _fig5_pricing_inner(ap, ab, hours):
     # (axes y ~= 0.870) and the subplot title baseline (axes y ~= 1.02
     # at the default 10 pt title pad), giving equal vertical gaps to
     # the data above y=1 and to the title above the panel.
-    _legend(ax, loc="center", ncol=3,
-            bbox_to_anchor=(0.5, 0.945),
-            columnspacing=0.8, handlelength=1.4,
-            handletextpad=0.4, borderpad=0.35)
+    _panel_key(ax, ncol=3)
 
     # --- (c) Temporal social-performance stability proxy ---
     # Auto-scale across the three modes; the previous fixed y-range
@@ -1456,8 +1526,8 @@ def _fig5_pricing_inner(ap, ab, hours):
         _mode_plot(ax, hours, rolling, mode)
         eq_curves[mode] = rolling
     ax.set_xlabel("Time (hr.)")
-    ax.set_ylabel("Temporal Social-Performance Stability Proxy")
-    ax.set_title("(c) Temporal Proxy-Stability Comparison")
+    ax.set_ylabel("Proxy Stability")
+    ax.set_title("(c) Proxy Stability over Time")
     all_vals = np.concatenate(list(eq_curves.values())) if eq_curves else np.array([0.0, 1.0])
     y_lo = max(0.0, float(np.min(all_vals)) - 0.05)
     y_hi = min(1.05, float(np.max(all_vals)) + 0.05)
@@ -1468,7 +1538,7 @@ def _fig5_pricing_inner(ap, ab, hours):
     # because the three mode traces stay above ~0.55 across the
     # interior hours, so the legend sits in clear space without
     # touching any line.
-    _legend(ax, loc="lower center", bbox_to_anchor=(0.5, 0.10))
+    _panel_key(ax)
 
     # --- (d) Reward decomposition: SLCA, waste penalty, rho penalty ---
     # Three stacked layers on a single axis make the additive decomposition
@@ -1497,9 +1567,9 @@ def _fig5_pricing_inner(ap, ab, hours):
     # off the x-axis) so the two bottom-row panels read symmetrically.
     # The reward traces stay above ~0.50 across the interior hours, so
     # the lifted lower-center anchor is clear of all three lines.
-    _legend(ax, loc="lower center", bbox_to_anchor=(0.5, 0.10))
+    _panel_key(ax)
 
-    fig.tight_layout(rect=[0, 0, 1, 0.985], h_pad=1.6, w_pad=1.6)
+    _finish_grid(fig)
     _save(fig, "adaptive_pricing")
 
 
@@ -2053,10 +2123,10 @@ def _resolve_yerr(bench: dict | None, scenarios: list[str], mode: str,
 
 
 def _bar_xticklabels(ax, scenarios_plot):
-    """Bold, slightly rotated scenario names that never overlap."""
+    """Horizontal, two-line scenario names that never overlap."""
     ax.set_xticklabels(
-        [SCENARIO_LABELS[s] for s in scenarios_plot],
-        rotation=20, ha="right",
+        [SCENARIO_TICKS[s] for s in scenarios_plot],
+        rotation=0, ha="center",
     )
 
 
@@ -2146,7 +2216,7 @@ def fig6_cross(data):
     last-resort within-episode fallback."""
     bench = _load_benchmark_ci()
 
-    fig, axes = plt.subplots(2, 2, figsize=(18, 13))
+    fig, axes = plt.subplots(2, 2, figsize=GRID_FIGSIZE)
     # suptitle is applied at the end with the larger fig6-specific font.
 
     # Per-element font sizes aligned to the four-panel-figure family.
@@ -2154,10 +2224,10 @@ def fig6_cross(data):
     # regime over canonical. fig 6 does not bump the module globals, so
     # it adds the same +2 explicitly here and re-applies after
     # _apply_style (which would otherwise reset sizes to canonical).
-    _F6_TITLE = SUBPLOT_TITLE_SIZE + 2   # 24 (matches the 2x2 family)
-    _F6_AXIS  = AXIS_LABEL_SIZE + 2      # 22 (matches the 2x2 family)
-    _F6_TICK  = TICK_FONT_SIZE + 2       # 20 (matches the 2x2 family)
-    _F6_LEG   = LEGEND_FONT_SIZE + 2     # 20 (matches the 2x2 family)
+    _F6_TITLE = SUBPLOT_TITLE_SIZE
+    _F6_AXIS  = AXIS_LABEL_SIZE
+    _F6_TICK  = TICK_FONT_SIZE
+    _F6_LEG   = LEGEND_FONT_SIZE
 
     # Single canonical RLE: author-defined, hierarchy-inspired,
     # severity-weighted form (resilience.compute_rle). It scores at-risk
@@ -2173,8 +2243,8 @@ def fig6_cross(data):
     metrics = [
         ("ari",   "Adaptive Resilience Index",   "(a)", "Cross-Scenario Resilience Ranking"),
         ("rle",   "Severity-Weighted RLE", "(b)", "Defensive Routing Effectiveness"),
-        ("waste", "Waste Fraction per Routing Opportunity", "(c)", "Waste across Stressors"),
-        ("slca",  "Author-Declared Social-Performance Proxy", "(d)", "Social-Performance Proxy by Method"),
+        ("waste", "Waste Fraction", "(c)", "Waste across Stressors"),
+        ("slca",  "Social-Performance Proxy", "(d)", "Social Proxy by Method"),
     ]
     methods = ["static", "hybrid_rl", "agribrain"]
     scenarios_plot = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing"]
@@ -2237,7 +2307,7 @@ def fig6_cross(data):
         text.set_fontweight("normal")
     fig.suptitle("Cross-Scenario Performance Comparison", y=0.995,
                  fontsize=FIG_TITLE_SIZE + 2, fontweight="bold")
-    fig.tight_layout(rect=[0, 0.05, 1, 0.985], h_pad=1.6, w_pad=1.6)
+    _finish_grid(fig, bottom=0.06)
     _save(fig, "cross_scenario")
 
 
@@ -2288,7 +2358,7 @@ def fig7_ablation(data):
     # so the only on-page effect is that all text inside the figure
     # reads ~26 % larger relative to body text without any in-figure
     # overlap risk.
-    fig, axes = plt.subplots(1, 3, figsize=(24, 9.6))
+    fig, axes = plt.subplots(1, 3, figsize=TRIPTYCH_FIGSIZE)
     # suptitle is applied at the end of the function with the larger
     # fig7-specific font; placeholder kept here so layout calculations
     # leave headroom even if the suite-wide rcParams are inspected.
@@ -2300,9 +2370,9 @@ def fig7_ablation(data):
     # the metric.
     metrics = [
         ("ari",   "Adaptive Resilience Index",   "(a)", "Resilience across Modes"),
-        ("waste", "Waste Fraction per Routing Opportunity", "(b)", "Spoilage Sensitivity"),
-        ("carbon", "Modeled Transport-Emissions Indicator",
-         "(c)", "Modeled Transport-Emissions Indicator across Modes"),
+        ("waste", "Waste Fraction", "(b)", "Spoilage Sensitivity"),
+        ("carbon", "Emissions Indicator",
+         "(c)", "Emissions across Modes"),
     ]
     stress_scenarios = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing"]
 
@@ -2341,10 +2411,14 @@ def fig7_ablation(data):
     # fig7 is 24in wide vs the 18in 2x2 family; to read at the same
     # on-page size after column-scaling, its raw fonts are ~1.333x the
     # +2 canonical (title 24->32, axis 22->29, tick 20->27, legend 20->27).
-    _F7_TITLE = SUBPLOT_TITLE_SIZE + 10  # 32 (1.333x the +2 title=24)
-    _F7_AXIS  = TICK_FONT_SIZE + 11      # 29 (1.333x the +2 axis=22)
-    _F7_TICK  = TICK_FONT_SIZE + 9       # 27 (1.333x the +2 tick=20)
-    _F7_LEG   = LEGEND_FONT_SIZE + 9     # 27 (1.333x the +2 legend=20)
+    # This figure used to be drawn on a 24-inch canvas and compensated with a
+    # 1.333x type scale so that it matched the others once the page shrank it.
+    # It is now the same 18 inches wide as every other figure, so it uses the
+    # shared sizes directly and no longer prints with oversized axis text.
+    _F7_TITLE = SUBPLOT_TITLE_SIZE
+    _F7_AXIS  = AXIS_LABEL_SIZE
+    _F7_TICK  = TICK_FONT_SIZE
+    _F7_LEG   = LEGEND_FONT_SIZE
 
     for ax, (metric, ylabel, panel, title) in zip(axes, metrics):
         x = np.arange(len(stress_scenarios)) * x_scale
@@ -2425,9 +2499,9 @@ def fig7_ablation(data):
         text.set_fontweight("normal")
     # Suptitle scales with the larger panel typography: ~1.333x the
     # +2 canonical suptitle (28) = 37, matching the 24in width.
-    fig.suptitle("Ablation Study", y=0.995, fontsize=37,
+    fig.suptitle("Ablation Study", y=SUPTITLE_Y, fontsize=FIG_TITLE_SIZE,
                  fontweight="bold")
-    fig.tight_layout(rect=[0, 0.08, 1, 0.985], w_pad=1.4)
+    _finish_strip(fig, bottom=0.13)
     _save(fig, "ablation")
 
 
@@ -2463,15 +2537,15 @@ def fig8_transport_emissions(data):
     """
     bench = _load_benchmark_ci()
 
-    fig, axes = plt.subplots(1, 2, figsize=(18, 7.5))
+    fig, axes = plt.subplots(1, 2, figsize=PAIR_FIGSIZE)
 
     # Per-element font sizes for this 1x2 figure: a +3 / +2 / +2 / +2
     # title/axis/tick/legend cascade so titles read as the dominant
     # element and ticks/legend stay readable on the (18, 7.5) figsize.
-    _F8_TITLE = SUBPLOT_TITLE_SIZE + 2   # 24 (matches the +2 family)
-    _F8_AXIS  = AXIS_LABEL_SIZE + 2      # 22 (matches the +2 family)
-    _F8_TICK  = TICK_FONT_SIZE + 2       # 20 (matches the +2 family)
-    _F8_LEG   = LEGEND_FONT_SIZE + 2     # 20 (matches the +2 family)
+    _F8_TITLE = SUBPLOT_TITLE_SIZE
+    _F8_AXIS  = AXIS_LABEL_SIZE
+    _F8_TICK  = TICK_FONT_SIZE
+    _F8_LEG   = LEGEND_FONT_SIZE
 
     hw = data["results"]["heatwave"]
     hours = np.array(hw["agribrain"]["hours"])
@@ -2484,22 +2558,14 @@ def fig8_transport_emissions(data):
         cum_carbon = np.cumsum(ep["carbon_trace"])
         _mode_plot(ax, hours, cum_carbon, mode)
     ax.set_xlabel("Time (hr.)", fontsize=_F8_AXIS, fontweight="normal")
-    ax.set_ylabel("Cumulative Modeled Emissions Indicator",
+    ax.set_ylabel("Cumulative Emissions",
                   fontsize=_F8_AXIS, fontweight="normal")
-    ax.set_title("(a) Cumulative Modeled Emissions Indicator \u2014 Heatwave",
+    ax.set_title("(a) Cumulative Emissions \u2014 Heatwave",
                  fontsize=_F8_TITLE, fontweight="bold", pad=14)
     _apply_style(ax)
-    # Heatwave annotation pushed to vertical middle so the new
-    # top-anchored legend strip does not collide with it.
     _annotate_window(ax, 24, 48, WINDOW_COLOR, "Heatwave", ypos=0.55,
-                     fontsize=ANNOT_FONT_SIZE + 2)
-    # Legend anchored to the upper center of the panel \u2014 sits over the
-    # mid x-range where the curves are well below the legend baseline,
-    # keeping the 3-entry row clear of both axes.
-    _legend(ax, loc="upper center",
-            bbox_to_anchor=(0.5, 0.99), ncol=len(fig8a_modes),
-            fontsize=_F8_LEG, handlelength=1.6, columnspacing=1.2,
-            handletextpad=0.5, borderpad=0.5)
+                     fontsize=ANNOT_FONT_SIZE)
+    _panel_key(ax, ncol=len(fig8a_modes), fontsize=_F8_LEG)
     ax.tick_params(labelsize=_F8_TICK, length=6, width=1.4)
     for lbl in list(ax.get_xticklabels()) + list(ax.get_yticklabels()):
         lbl.set_fontsize(_F8_TICK); lbl.set_fontweight("normal")
@@ -2533,15 +2599,12 @@ def fig8_transport_emissions(data):
 
     ax.set_xticks(x + width)
     _bar_xticklabels(ax, scenarios_plot)
-    ax.set_ylabel("Modeled Transport-Emissions Indicator",
+    ax.set_ylabel("Emissions Indicator",
                   fontsize=_F8_AXIS, fontweight="normal")
-    ax.set_title("(b) Modeled Emissions Indicator by Scenario",
+    ax.set_title("(b) Emissions by Scenario",
                  fontsize=_F8_TITLE, fontweight="bold", pad=14)
     _apply_style(ax)
-    _legend(ax, loc="upper center",
-            bbox_to_anchor=(0.5, 1.0), ncol=len(methods_plot),
-            fontsize=_F8_LEG, handlelength=1.6, columnspacing=1.2,
-            handletextpad=0.5, borderpad=0.5)
+    _panel_key(ax, ncol=len(methods_plot), fontsize=_F8_LEG)
     ax.tick_params(labelsize=_F8_TICK, length=6, width=1.4)
     for lbl in list(ax.get_xticklabels()) + list(ax.get_yticklabels()):
         lbl.set_fontsize(_F8_TICK); lbl.set_fontweight("normal")
@@ -2550,14 +2613,9 @@ def fig8_transport_emissions(data):
     ax.xaxis.label.set_size(_F8_AXIS); ax.yaxis.label.set_size(_F8_AXIS)
     ax.title.set_size(_F8_TITLE)
 
-    fig.suptitle("Modeled Transport-Emissions Indicator", y=0.995,
-                 fontsize=FIG_TITLE_SIZE + 2, fontweight="bold")
-    # Slightly more headroom inside each axes so the top-anchored
-    # legend has space between it and the data.
-    for a in axes:
-        y_lo, y_hi = a.get_ylim()
-        a.set_ylim(y_lo, y_hi + 0.15 * (y_hi - y_lo))
-    fig.tight_layout(rect=[0, 0, 1, 0.985], w_pad=1.6)
+    fig.suptitle("Modeled Transport-Emissions Indicator", y=SUPTITLE_Y,
+                 fontsize=FIG_TITLE_SIZE, fontweight="bold")
+    _finish_strip(fig)
     _save(fig, "transport_emissions")
 
 
@@ -2617,9 +2675,9 @@ def fig11_performance_efficiency(data=None):
     SCEN = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing", "baseline"]
     SLAB = SCENARIO_LABELS
     BASELINES = [
-        ("static", "vs Static\n(descriptive)"),
-        ("hybrid_rl", "vs Hybrid RL\n(descriptive)"),
-        ("no_context", "H1: vs No-external-context"),
+        ("static", "vs\nStatic"),
+        ("hybrid_rl", "vs\nHybrid RL"),
+        ("no_context", "vs\nNo-context"),
     ]
     scen = [s for s in SCEN if s in sig]
 
@@ -2663,13 +2721,19 @@ def fig11_performance_efficiency(data=None):
         if xtick_decimals is not None:
             _fmt = _FmtStr(f"%.{xtick_decimals}f")
             axl.xaxis.set_major_formatter(_fmt); axr.xaxis.set_major_formatter(_fmt)
-        axl.set_ylabel("Across-Scenario Mean ARI\n(error bars: scenario SE)")
+        axl.set_ylabel("Mean ARI (\u00b1SE)")
         hh_, ll_ = [], []
         for a in (axl, axr):
             for h, l in zip(*a.get_legend_handles_labels()):
                 if l not in ll_:
                     hh_.append(h); ll_.append(l)
-        _legend(axr, handles=hh_, labels=ll_, loc=legend_loc, ncol=lncol)
+        # Three across keeps the key inside the pair's own width, so it
+        # never spills sideways into the neighbouring panel, and the anchor
+        # centres it on the pair rather than on the wider right sub-axes.
+        _pl, _pr = axl.get_position(), axr.get_position()
+        _panel_key(axr, handles=hh_, labels=ll_, ncol=min(len(ll_), 3),
+                   bbox_to_anchor=((_pl.x0 + _pr.x1) / 2, _pr.y1),
+                   bbox_transform=fig.transFigure)
         for ax in (axl, axr):
             _apply_style(ax); ax.grid(True, axis="both", linewidth=0.6, color="#BDBDBD", alpha=0.6)
         axl.spines["right"].set_visible(False); axr.spines["left"].set_visible(False)
@@ -2685,9 +2749,16 @@ def fig11_performance_efficiency(data=None):
                                    edgecolor=COLORS["agribrain"], lw=1.4))
         return axl, axr
 
-    _saved = _font_bump(2)
-    fig = plt.figure(figsize=(18, 13))
-    outer = _gridspec.GridSpec(2, 2, figure=fig, height_ratios=[1, 1], hspace=0.24, wspace=0.22)
+    _saved = _font_bump(0)
+    fig = plt.figure(figsize=GRID_FIGSIZE)
+    # tight_layout cannot reflow the broken-axis sub-gridspecs in row 2, so
+    # this figure states its geometry directly. The generous row gap is what
+    # the row-2 panel titles and keys sit in.
+    outer = _gridspec.GridSpec(
+        2, 2, figure=fig, height_ratios=[1, 1],
+        left=0.075, right=0.985, top=0.885, bottom=0.085,
+        hspace=0.46, wspace=0.24,
+    )
     axA = fig.add_subplot(outer[0, 0]); axB = fig.add_subplot(outer[0, 1])
 
     d_mat = np.full((len(scen), len(BASELINES)), np.nan)
@@ -2722,7 +2793,7 @@ def fig11_performance_efficiency(data=None):
             if not np.isnan(v):
                 axA.text(j, i, f"{v:.1f}", ha="center", va="center", fontsize=ANNOT_FONT_SIZE,
                          fontweight="bold", color="white" if abs(v) > 0.65 * _dmax else "#1F1F1F")
-    axA.set_title(r"(a) Paired Effect Sizes: H1 and Descriptive Comparators")
+    axA.set_title("(a) Paired Effect Sizes (d$_z$)")
     axA.grid(False); axA.tick_params(length=0)
     for sp in axA.spines.values():
         sp.set_visible(False)
@@ -2751,7 +2822,7 @@ def fig11_performance_efficiency(data=None):
     for patch, (mode, _) in zip(bars_b, BASELINES, strict=True):
         patch.set_hatch(HATCHES[mode])
     axB.set_xticks(xb); axB.set_xticklabels([l for _, l in BASELINES]); axB.set_ylabel("Relative ARI Difference (%)")
-    axB.set_title("(b) H1 and Descriptive ARI Differences\n(across-scenario mean; min–max)")
+    axB.set_title("(b) Relative ARI Differences")
     low_b = min(m - l for m, l in zip(impr, lo))
     high_b = max(m + h for m, h in zip(impr, hi))
     span_b = max(high_b - low_b, 1e-6)
@@ -2769,12 +2840,12 @@ def fig11_performance_efficiency(data=None):
                              single_left_tick=True, xtick_decimals=3)
     dlat = pts["agribrain"][0] - pts["no_context"][0]; dari = pts["agribrain"][1] - pts["no_context"][1]
     axD_l, axD_r = _frontier(fig, outer[1, 1], ["no_context"], ["mcp_only", "pirag_only", "agribrain"],
-                             4.0, ref=("no_context",), lncol=2, legend_loc="upper center",
+                             4.0, ref=("no_context",), lncol=4,
                              single_left_tick=True, xtick_decimals=2,
-                             annotate_xy=(0.5, 0.70), annotate_ha="center", annotate_va="top",
+                             annotate_xy=(0.5, 0.96), annotate_ha="center", annotate_va="top",
                              annotate=f"Context-associated change\n{dlat:+.1f} ms  →  {dari:+.3f} ARI")
-    # headroom at top so the top-centre legend + overhead box clear the markers
-    _lo, _hi = axD_l.get_ylim(); axD_l.set_ylim(_lo, _hi + (_hi - _lo) * 0.55)
+    # headroom so the in-panel annotation clears the markers
+    _lo, _hi = axD_l.get_ylim(); axD_l.set_ylim(_lo, _hi + (_hi - _lo) * 0.45)
     # green indicator line: No-external-context -> AGRI-BRAIN (overhead path), drawn
     # across the broken axis from the left sub-axis to the right sub-axis.
     from matplotlib.patches import ConnectionPatch as _ConnectionPatch
@@ -2784,15 +2855,20 @@ def fig11_performance_efficiency(data=None):
                             color=COLORS["agribrain"], lw=2.2, ls="--", alpha=0.8, zorder=1)
     fig.add_artist(_con)
 
-    fig.suptitle("Paired Context Comparisons and Descriptive Latency", y=0.97)
-    fig.tight_layout(rect=[0, 0, 1, 0.95], h_pad=1.6, w_pad=1.6)
+    fig.suptitle("Paired Comparisons and Decision Latency", y=SUPTITLE_Y)
+    _align_panel_titles(fig)
     fig.canvas.draw()
+    # (c) and (d) are broken-axis pairs, so their shared title and x-axis name
+    # are placed in figure coordinates once the layout is settled. The title
+    # clears the pair's own key, which sits directly above the axes.
     for (axl, axr), title in (((axC_l, axC_r), "(c) Lightweight Methods"),
                               ((axD_l, axD_r), "(d) Context-Aware Methods")):
         pl, pr = axl.get_position(), axr.get_position(); cx = (pl.x0 + pr.x1) / 2
-        fig.text(cx, pr.y1 + 0.016, title, ha="center", va="bottom",
+        # The pair's key occupies one row directly above the axes; the shared
+        # title clears it by a fixed offset in figure coordinates.
+        fig.text(cx, pr.y1 + 0.076, title, ha="center", va="bottom",
                  fontsize=SUBPLOT_TITLE_SIZE, fontweight="bold")
-        fig.text(cx, pl.y0 - 0.050, "Mean Decision Latency (ms)", ha="center", va="top",
+        fig.text(cx, pl.y0 - 0.058, "Mean Decision Latency (ms)", ha="center", va="top",
                  fontsize=AXIS_LABEL_SIZE, fontweight="normal")
     _save(fig, "performance_efficiency")
     _font_restore(_saved)
@@ -2824,8 +2900,8 @@ def fig12_context_channels(data=None):
     cscen = [s for s in SCEN if s in bsm and "agribrain" in bsm[s]]
     cells = {s: bsm[s]["agribrain"] for s in cscen}
 
-    _saved = _font_bump(2)
-    fig, axes = plt.subplots(2, 2, figsize=(18, 13))
+    _saved = _font_bump(0)
+    fig, axes = plt.subplots(2, 2, figsize=GRID_FIGSIZE)
     (axA, axB), (axC, axD) = axes
 
     # The confirmatory H2 family contains all four directional contrasts in
@@ -2833,10 +2909,10 @@ def fig12_context_channels(data=None):
     # additions and mixed in Full-vs-No-external-context (the H1 contrast), which made
     # the panel an incomplete visual representation of H2.
     CH = [
-        ("mcp_only", "no_context", "MCP − No-external-context", C_MCP),
-        ("pirag_only", "no_context", "Retrieval − No-external-context", C_PIRAG),
-        ("agribrain", "mcp_only", "Full − MCP", C_CTX),
-        ("agribrain", "pirag_only", "Full − Retrieval", C_SYN),
+        ("mcp_only", "no_context", "MCP\n\u2212 No-context", C_MCP),
+        ("pirag_only", "no_context", "Retrieval\n\u2212 No-context", C_PIRAG),
+        ("agribrain", "mcp_only", "Full\n\u2212 MCP", C_CTX),
+        ("agribrain", "pirag_only", "Full\n\u2212 Retrieval", C_SYN),
     ]
     impr, lo, hi, dmed, cols = [], [], [], [], []
     for left_mode, right_mode, _, col in CH:
@@ -2861,8 +2937,9 @@ def fig12_context_channels(data=None):
     )
     for patch, hatch in zip(bars_a, ("//", "\\\\", "xx", "oo"), strict=True):
         patch.set_hatch(hatch)
-    axA.set_xticks(xb); axA.set_xticklabels([lab for _, _, lab, _ in CH]); axA.set_ylabel("ARI Difference from Comparison Arm (%)")
-    axA.set_title("(a) All Prespecified H2 Directional Contrasts\n(across-scenario mean; min–max)")
+    _cat_ticks(axA, xb, [lab for _, _, lab, _ in CH])
+    axA.set_ylabel("\u0394ARI vs Comparison (%)")
+    axA.set_title("(a) H2 Directional Contrasts")
     low_a = min(m - l for m, l in zip(impr, lo))
     high_a = max(m + h for m, h in zip(impr, hi))
     span_a = max(high_a - low_a, 1e-6)
@@ -2877,10 +2954,10 @@ def fig12_context_channels(data=None):
 
     x = np.arange(len(cscen)); w = 0.2
     series = [
-        ("observed vs zeroed", "context_route_change", C_CTX, "xx"),
-        ("MCP-feature mask effect", "mcp_feature_group_mask_effect", C_MCP, "//"),
-        ("retrieval-feature mask effect", "pirag_feature_group_mask_effect", C_PIRAG, "oo"),
-        ("joint-only route change", "joint_only_route_change", C_SYN, "\\\\"),
+        ("Observed vs zeroed", "context_route_change", C_CTX, "xx"),
+        ("MCP mask", "mcp_feature_group_mask_effect", C_MCP, "//"),
+        ("Retrieval mask", "pirag_feature_group_mask_effect", C_PIRAG, "oo"),
+        ("Joint-only change", "joint_only_route_change", C_SYN, "\\\\"),
     ]
     for i, (lab, key, col, hatch) in enumerate(series):
         vals = [cells[s][key]["rate"] * 100 for s in cscen]
@@ -2890,18 +2967,18 @@ def fig12_context_channels(data=None):
                 hatch=hatch, edgecolor="#1F1F1F", linewidth=0.7,
                 yerr=[los, his], capsize=3,
                 error_kw={"lw": 1.2, "alpha": 0.85, "ecolor": "#1F1F1F"})
-    axB.set_xticks(x); axB.set_xticklabels([SLAB[s] for s in cscen], rotation=20, ha="right"); axB.set_ylabel("AGRI-BRAIN Decisions (%)")
+    _cat_ticks(axB, x, [SCENARIO_TICKS[s] for s in cscen])
+    axB.set_ylabel("AGRI-BRAIN Decisions (%)")
     axB.set_ylim(0, max(cells[s]["context_route_change"]["ci_high"] for s in cscen) * 100 * 1.25)
     _apply_style(axB)
-    _legend(axB, loc="upper right", ncol=1, bbox_to_anchor=(1.0, 1.0), borderaxespad=0.0,
-            handlelength=2.0, handletextpad=0.5, borderpad=0.5)
-    axB.set_title("(b) Conditional Feature-Group Masking")
+    axB.set_title("(b) Feature-Group Masking")
+    _panel_key(axB, ncol=2)
 
     keys = [
-        ("pirag_group_matches_observed_only", "retrieval group only", C_PIRAG, "oo"),
-        ("mcp_group_matches_observed_only", "MCP group only", C_MCP, "//"),
-        ("neither_group_matches_observed", "neither group", C_SYN, "\\\\"),
-        ("both_groups_match_observed", "both groups", C_RED, "xx"),
+        ("pirag_group_matches_observed_only", "Retrieval only", C_PIRAG, "oo"),
+        ("mcp_group_matches_observed_only", "MCP only", C_MCP, "//"),
+        ("neither_group_matches_observed", "Neither", C_SYN, "\\\\"),
+        ("both_groups_match_observed", "Both", C_RED, "xx"),
     ]
     bottom = np.zeros(len(cscen))
     for k, lab, col, hatch in keys:
@@ -2911,15 +2988,14 @@ def fig12_context_channels(data=None):
             hatch=hatch, edgecolor="#1F1F1F", linewidth=0.7,
         )
         bottom += vals
-    axC.set_xticks(x); axC.set_xticklabels([SLAB[s] for s in cscen], rotation=20, ha="right")
+    _cat_ticks(axC, x, [SCENARIO_TICKS[s] for s in cscen])
     axC.set_ylabel("Context-Changed Decisions (%)"); axC.set_ylim(0, 118)
     _apply_style(axC)
     for xi, s in zip(x, cscen):
         di = cells[s]["conditional_distinctness_index"] * 100
         axC.text(xi, 102, f"D={di:.0f}%", ha="center", fontsize=ANNOT_FONT_SIZE, fontweight="bold", color="#333")
-    _legend(axC, loc="upper center", bbox_to_anchor=(0.5, -0.28), ncol=4, frameon=False,
-            handlelength=1.4, columnspacing=1.2, handletextpad=0.4)
     axC.set_title("(c) Single-Group Route Agreement")
+    _panel_key(axC, ncol=4)
 
     # Overall rate vs the rate conditioned on MCP-governed steps, per scenario,
     # with seed-cluster 95% CIs. Direction and magnitude are data-driven.
@@ -2929,21 +3005,21 @@ def fig12_context_channels(data=None):
             [(cells[s]["mcp_feature_group_mask_effect"]["ci_high"] - cells[s]["mcp_feature_group_mask_effect"]["rate"]) * 100 for s in cscen]]
     mg_e = [[(cells[s]["mcp_feature_group_mask_effect_given_compliance"]["rate"] - cells[s]["mcp_feature_group_mask_effect_given_compliance"]["ci_low"]) * 100 for s in cscen],
             [(cells[s]["mcp_feature_group_mask_effect_given_compliance"]["ci_high"] - cells[s]["mcp_feature_group_mask_effect_given_compliance"]["rate"]) * 100 for s in cscen]]
-    axD.bar(x - 0.18, mn, 0.34, color="#007C91", label="overall",
+    axD.bar(x - 0.18, mn, 0.34, color="#007C91", label="Overall",
             hatch="//", edgecolor="#1F1F1F", linewidth=0.7, yerr=mn_e, capsize=3,
             error_kw={"lw": 1.2, "ecolor": "#1F1F1F"})
-    axD.bar(x + 0.18, mg, 0.34, color="#A66F00", label="on envelope-governed",
+    axD.bar(x + 0.18, mg, 0.34, color="#A66F00", label="On governed steps",
             hatch="xx", edgecolor="#1F1F1F", linewidth=0.7, yerr=mg_e, capsize=3,
             error_kw={"lw": 1.2, "ecolor": "#1F1F1F"})
-    axD.set_xticks(x); axD.set_xticklabels([SLAB[s] for s in cscen], rotation=20, ha="right"); axD.set_ylabel("MCP-Feature Mask Effect (%)")
-    axD.set_title("(d) MCP-Feature Masking on Envelope-Governed Steps")
+    _cat_ticks(axD, x, [SCENARIO_TICKS[s] for s in cscen])
+    axD.set_ylabel("MCP Mask Effect (%)")
+    axD.set_title("(d) MCP Masking: Overall vs Governed")
     axD.set_ylim(0, max(h + e for h, e in zip(mg, mg_e[1])) * 1.2)
     _apply_style(axD)
-    _legend(axD, loc="upper center", bbox_to_anchor=(0.5, -0.28), ncol=2, frameon=False,
-            handlelength=1.4, columnspacing=1.2, handletextpad=0.4)
+    _panel_key(axD, ncol=2)
 
-    fig.suptitle("Context Layer: Arm Contrasts and Conditional Feature Masks", y=0.995)
-    fig.tight_layout(rect=[0, 0, 1, 0.985], h_pad=2.4, w_pad=0.5)
+    fig.suptitle("Context-Layer Contrasts and Feature Masks", y=SUPTITLE_Y)
+    _finish_grid(fig)
     _save(fig, "context_value")
     _font_restore(_saved)
 
@@ -2964,21 +3040,21 @@ def fig13_stress_robustness(data=None):
     SCEN = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing", "baseline"]
     SLAB = SCENARIO_LABELS
     STRESS = ["sensor_noise", "missing_data", "telemetry_delay", "mcp_fault_injection", "compounded"]
-    STLAB = {"sensor_noise": "Sensor noise", "missing_data": "Missing data",
-             "telemetry_delay": "Telemetry delay", "mcp_fault_injection": "MCP fault",
-             "compounded": "Compounded"}
+    STLAB = {"sensor_noise": "Sensor\nnoise", "missing_data": "Missing\ndata",
+             "telemetry_delay": "Telemetry\ndelay", "mcp_fault_injection": "MCP\nfault",
+             "compounded": "Com-\npounded"}
     METRICS = [("ARI", "ari_delta", "Threshold_ARI", "higher"),
-               ("Waste fraction per routing opportunity", "waste_delta", "Threshold_Waste", "lower"),
-               ("Social-performance proxy", "slca_delta", "Threshold_SLCA", "higher"),
-               ("Severity-weighted RLE", "rle_delta", "Threshold_RLE", "higher"),
-               ("Modeled emissions indicator", "carbon_delta", "Threshold_Carbon", "lower"),
-               ("Temporal social-performance stability proxy", "equity_delta", "Threshold_Equity", "higher"),
+               ("Waste fraction", "waste_delta", "Threshold_Waste", "lower"),
+               ("Social proxy", "slca_delta", "Threshold_SLCA", "higher"),
+               ("RLE", "rle_delta", "Threshold_RLE", "higher"),
+               ("Emissions", "carbon_delta", "Threshold_Carbon", "lower"),
+               ("Proxy stability", "equity_delta", "Threshold_Equity", "higher"),
                ("Latency", "latency_ms_delta", "Threshold_LatencyMs", "lower")]
     thr = {m[0]: float(rows[0][m[2]]) for m in METRICS}
     DRIFT = 0.01
 
-    _saved = _font_bump(2)
-    fig, axes = plt.subplots(2, 2, figsize=(18, 13))
+    _saved = _font_bump(0)
+    fig, axes = plt.subplots(2, 2, figsize=GRID_FIGSIZE)
     (axA, axB), (axC, axD) = axes
 
     M = np.full((len(SCEN), len(STRESS)), np.nan)
@@ -3005,8 +3081,8 @@ def fig13_stress_robustness(data=None):
     )
     axA.set_xlim(-0.5, len(STRESS) - 0.5)
     axA.set_ylim(len(SCEN) - 0.5, -0.5)
-    axA.set_xticks(range(len(STRESS))); axA.set_xticklabels([STLAB[s] for s in STRESS], rotation=20, ha="right")
-    axA.set_yticks(range(len(SCEN))); axA.set_yticklabels([SLAB[s] for s in SCEN])
+    _cat_ticks(axA, range(len(STRESS)), [STLAB[s] for s in STRESS])
+    _cat_ticks(axA, range(len(SCEN)), [SLAB[s] for s in SCEN], axis="y")
     for i in range(len(SCEN)):
         for j in range(len(STRESS)):
             if not np.isnan(M[i, j]):
@@ -3024,7 +3100,7 @@ def fig13_stress_robustness(data=None):
     cb.ax.tick_params(labelsize=TICK_FONT_SIZE - 2)
     for _t in cb.ax.get_yticklabels():
         _t.set_fontweight("normal")
-    axA.set_title(r"(a) ARI Drift under Stress ($\times10^{-3}$)")
+    axA.set_title(r"(a) ARI Drift under Stress ($\times10^{-3}$)", pad=14)
     axA.grid(False); axA.tick_params(length=0)
     for sp in axA.spines.values():
         sp.set_visible(False)
@@ -3045,13 +3121,14 @@ def fig13_stress_robustness(data=None):
     axB.axvline(-DRIFT, color="#1F1F1F", lw=2, ls="--", zorder=2)
     axB.axvline(DRIFT, color="#1F1F1F", lw=2, ls="--", zorder=2)
     axB.set_ylim(-0.6, len(SCEN) - 1 + 1.1)
-    axB.text(DRIFT, len(SCEN) - 1 + 0.65, " Equivalence margin", ha="left", va="center",
+    axB.text(0.0, len(SCEN) - 1 + 0.72, "Equivalence margin", ha="center", va="center",
              fontsize=TICK_FONT_SIZE - 3, fontweight="bold", color="#1F1F1F")
     axB.set_yticks(y); axB.set_yticklabels([SLAB[s] for s in SCEN])
     axB.set_xlabel("ΔARI under Sensor Noise (90% CI)")
     b_lo = min(min(ci_lo), -DRIFT); b_hi = max(max(ci_hi), DRIFT)
     b_pad = max((b_hi - b_lo) * 0.12, 0.001)
-    axB.set_title("(b) Paired ARI Change under Sensor Noise"); axB.set_xlim(b_lo - b_pad, b_hi + b_pad); axB.xaxis.set_major_formatter(_FmtStr("%.3f"))
+    axB.set_title("(b) Paired ARI Change: Sensor Noise", pad=14)
+    axB.set_xlim(b_lo - b_pad, b_hi + b_pad); axB.xaxis.set_major_formatter(_FmtStr("%.3f"))
     _apply_style(axB); axB.grid(False); axB.grid(True, axis="x", linewidth=0.6, color="#BDBDBD", alpha=0.6)
 
     means, worsts = [], []
@@ -3063,22 +3140,23 @@ def fig13_stress_robustness(data=None):
     worst_bars = axC.barh(
         yo, worsts, 0.6,
         color=[C_BAD if value > 1.0 else C_OK for value in worsts],
-        edgecolor="#1F1F1F", linewidth=0.7, label="worst cell", zorder=3,
+        edgecolor="#1F1F1F", linewidth=0.7, label="Worst cell", zorder=3,
     )
     for patch, value in zip(worst_bars, worsts, strict=True):
         patch.set_hatch("xx" if value > 1.0 else "//")
-    axC.scatter(means, yo, s=320, color="#1F1F1F", marker="|", linewidths=2.4, zorder=5, label="mean")
+    axC.scatter(means, yo, s=320, color="#1F1F1F", marker="|", linewidths=2.4, zorder=5, label="Mean")
     axC.axvline(0, color="#9E9E9E", lw=1.0, alpha=0.6)
     axC.axvline(1.0, color="#1F1F1F", lw=2, ls="--")
     axC.text(1.0, len(METRICS) - 0.4, " Declared bound", fontsize=TICK_FONT_SIZE - 2,
              fontweight="bold", va="top", color="#1F1F1F")
     axC.set_yticks(yo); axC.set_yticklabels([m[0] for m in METRICS])
-    axC.set_xlabel("Change as Fraction of Declared Descriptive Bound"); axC.set_title("(c) Metric Sensitivity (Descriptive Bounds)")
+    axC.set_xlabel("Change / Declared Bound")
+    axC.set_title("(c) Metric Sensitivity")
     c_lo = min(0.0, min(worsts), min(means)); c_hi = max(1.0, max(worsts), max(means))
     c_pad = max((c_hi - c_lo) * 0.08, 0.05)
     axC.set_xlim(c_lo - c_pad, c_hi + c_pad)
     _apply_style(axC); axC.grid(False); axC.grid(True, axis="x", linewidth=0.6, color="#BDBDBD", alpha=0.6)
-    _legend(axC, loc="upper center", bbox_to_anchor=(0.5, 1.0))
+    _panel_key(axC, ncol=2)
 
     means, stds, worsts = [], [], []
     for st in STRESS:
@@ -3087,21 +3165,22 @@ def fig13_stress_robustness(data=None):
     xb2 = np.arange(len(STRESS))
     axD.bar(xb2, means, 0.6, color=C_CTX, hatch="//",
             edgecolor="#1F1F1F", linewidth=0.7,
-            label="mean ± scenario SD", yerr=stds, capsize=5,
+            label="Mean \u00b1 scenario SD", yerr=stds, capsize=5,
             error_kw={"lw": 1.6, "ecolor": "#1F1F1F"})
-    axD.scatter(xb2, worsts, s=130, color=C_BAD, marker="D", zorder=5, label="worst |ΔARI|", edgecolor="white", linewidth=1.0)
+    axD.scatter(xb2, worsts, s=130, color=C_BAD, marker="D", zorder=5, label="Worst |\u0394ARI|", edgecolor="white", linewidth=1.0)
     axD.axhline(DRIFT, color="#1F1F1F", lw=2, ls="--")
-    axD.text(len(STRESS) - 0.5, DRIFT * 0.95,
-             "Declared equivalence margin\n(mean drift only) ",
-             fontsize=TICK_FONT_SIZE - 2, fontweight="bold", va="top",
+    axD.text(len(STRESS) - 0.45, DRIFT * 0.94, "Equivalence margin",
+             fontsize=TICK_FONT_SIZE - 3, fontweight="bold", va="top",
              ha="right", color="#1F1F1F")
-    axD.set_xticks(xb2); axD.set_xticklabels([STLAB[s] for s in STRESS], rotation=20, ha="right"); axD.set_ylabel("|ΔARI|")
+    _cat_ticks(axD, xb2, [STLAB[s] for s in STRESS])
+    axD.set_ylabel("|ΔARI|")
     d_hi = max(DRIFT, max(m + s for m, s in zip(means, stds)), max(worsts))
-    axD.set_title("(d) ARI Drift by Stressor (Descriptive)"); axD.set_ylim(0, d_hi * 1.12)
-    _apply_style(axD); _legend(axD, loc="upper center", bbox_to_anchor=(0.5, 0.9))
+    axD.set_title("(d) ARI Drift by Stressor"); axD.set_ylim(0, d_hi * 1.12)
+    _apply_style(axD)
+    _panel_key(axD, ncol=2)
 
-    fig.suptitle("Robustness under Sensing, Telemetry, and Protocol Stressors", y=0.995)
-    fig.tight_layout(rect=[0, 0, 1, 0.985], h_pad=2.0, w_pad=1.6)
+    fig.suptitle("Robustness under Sensing and Protocol Stressors", y=SUPTITLE_Y)
+    _finish_grid(fig)
     _save(fig, "stress_robustness")
     _font_restore(_saved)
 
