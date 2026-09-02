@@ -1350,7 +1350,7 @@ def _run_canonical_core_validation(
         extracted_results,
         repo_root=repo_root,
         recovery_receipt=recovery_receipt,
-        h3_evidence="archived-subset",
+        evidence_scope="archived-subset",
     )
 
 
