@@ -88,7 +88,7 @@ function OverviewTab({ tools, benchSummary = null, h2Payload = null }) {
     { label: "MCP Tools", value: tools.length || 13, icon: Wrench, color: "text-orange-600", bg: "bg-orange-500/10" },
     { label: "KB Documents", value: 20, icon: BookOpen, color: "text-blue-600", bg: "bg-blue-500/10" },
     { label: "Context Dims", value: "5D", icon: Layers, color: "text-teal-600", bg: "bg-teal-500/10" },
-    { label: "Modes (7 primary + 3 secondary)", value: PRIMARY_PUBLICATION_MODES.length + SECONDARY_PUBLICATION_MODES.length, icon: Network, color: "text-purple-600", bg: "bg-purple-500/10" },
+    { label: "Modes (8 primary + 3 secondary)", value: PRIMARY_PUBLICATION_MODES.length + SECONDARY_PUBLICATION_MODES.length, icon: Network, color: "text-purple-600", bg: "bg-purple-500/10" },
   ];
 
   return (

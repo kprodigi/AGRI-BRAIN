@@ -24,6 +24,15 @@ classifiers = [
 dependencies = [
     'fastapi>=0.135,<1',
     'uvicorn>=0.42,<1',
+    # src/routers/stream.py serves a WebSocket at /stream, and uvicorn only
+    # speaks the protocol when a websocket implementation is importable.
+    # Plain 'uvicorn' does not require one; the lock file has satisfied this
+    # so far only because web3 happens to depend on websockets. That is an
+    # accident of another package's dependency tree, and a server installed
+    # from these declared dependencies alone would accept the connection and
+    # then fail the handshake. Declared explicitly so the endpoint the app
+    # exposes is backed by a dependency the app itself asks for.
+    'websockets>=13,<16',
     'pydantic>=2.10,<3',
     'numpy>=2.1,<3',
     'pandas>=2.2,<3',
