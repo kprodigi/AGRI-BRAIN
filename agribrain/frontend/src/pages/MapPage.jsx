@@ -19,12 +19,17 @@ const NODES = [
   { id: "recovery", name: "Notional Recovery Node", lat: 44.2, lng: -100.5, icon: "recycle", color: "#8B5CF6", agent: "RecoveryAgent" },
 ];
 
+// The model assigns a distance to each routing ACTION, not to a physical leg
+// between two nodes. policy.py declares exactly three: km_coldchain = 120,
+// km_local = 45, km_recovery = 80. The edges below are drawn to show the
+// network's shape; only the three action distances above are model parameters,
+// so the others carry no distance rather than an invented one.
 const ROUTES = [
   { from: "farm", to: "processor", type: "cold_chain", distance: "120 km", color: "#0072B2", dash: "10 6" },
-  { from: "processor", to: "distributor", type: "cold_chain", distance: "110 km", color: "#0072B2", dash: "10 6" },
+  { from: "processor", to: "distributor", type: "cold_chain", distance: null, color: "#0072B2", dash: "10 6" },
   { from: "processor", to: "cooperative", type: "redistribution", distance: "45 km", color: "#10B981", dash: "" },
   { from: "distributor", to: "recovery", type: "recovery", distance: "80 km", color: "#8B5CF6", dash: "4 8" },
-  { from: "cooperative", to: "recovery", type: "recovery", distance: "50 km", color: "#8B5CF6", dash: "4 8" },
+  { from: "cooperative", to: "recovery", type: "recovery", distance: null, color: "#8B5CF6", dash: "4 8" },
 ];
 
 // Custom icon factory
@@ -69,7 +74,7 @@ function MapContent({ kpis, lastDecision }) {
                 <br />
                 {from.name} → {to.name}
                 <br />
-                Distance: {route.distance}
+                {route.distance ? `Declared action distance: ${route.distance}` : "No declared model distance for this edge"}
               </div>
             </Popup>
           </Polyline>
@@ -153,7 +158,7 @@ export default function MapPage() {
               {ROUTES.map((route) => (
                 <div key={`${route.from}-${route.to}`} className="flex items-center gap-1.5">
                   <div className="h-px w-4" style={{ borderTop: `2px ${route.dash ? "dashed" : "solid"} ${route.color}` }} />
-                  <span className="text-xs capitalize">{route.type.replace(/_/g, " ")} ({route.distance})</span>
+                  <span className="text-xs capitalize">{route.type.replace(/_/g, " ")}{route.distance ? ` (${route.distance})` : ""}</span>
                 </div>
               ))}
             </div>

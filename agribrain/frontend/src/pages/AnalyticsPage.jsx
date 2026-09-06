@@ -575,7 +575,7 @@ export default function AnalyticsPage() {
               <span className="text-xs font-medium tracking-wider uppercase text-muted-foreground mr-2">Table&nbsp;2</span>
               Ablation Study
             </h3>
-            <p className="text-sm text-muted-foreground italic">Compact five-mode architectural ablation. Prior and weight sensitivities are separate diagnostics. Source artifact: <code>table2_ablation.csv</code>.</p>
+            <p className="text-sm text-muted-foreground italic">Compact six-mode architectural ablation. Prior and weight sensitivities are separate diagnostics. Source artifact: <code>table2_ablation.csv</code>.</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => exportTableCSV(table2, "table2_ablation.csv")}>
