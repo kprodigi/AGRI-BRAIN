@@ -365,29 +365,43 @@ simulated.
 
 ## Data Availability
 
-All artifacts needed to verify the paper's claims are in this repository or
-regenerable from it:
+| | |
+|---|---|
+| run tag | `d3286ae_20260829_105800` |
+| simulation source commit | `d3286aef28803c715045176008fae6b9c7e3367b` |
+| publication code commit | `675bdb2d43efd2ef46b6db78df337dbb5892d059` |
+| evidence deposit | [10.5281/zenodo.22555106](https://doi.org/10.5281/zenodo.22555106) |
 
-- **Committed evidence (verify on a fresh clone, no run needed):** the canonical
-  tables, figures, and aggregates under `mvp/simulation/results/` —
-  `table1_summary.csv`, `table2_ablation.csv`, `benchmark_summary.json`,
-  `benchmark_significance.json`, `paper_benchmark_table.json`, the figure
-  `*.png/*.pdf`, `stress_*`, `temporal_stability_*`, and the channel-analysis
-  JSONs (`channel_attribution_aggregate.json`, `channel_complementarity_test.json`,
-  `channel_saturation_analysis.json`), each with SHA-256 provenance in
-  `mvp/simulation/results/artifact_manifest.json`.
-- **Regenerable runtime data (gitignored, large):** the per-seed decision ledgers
-  (`decision_ledger_h2/`, `decision_ledger_per_seed/`, ~510 MB). The spinach
-  sensor dataset is tracked at `agribrain/backend/src/data_spinach.csv`.
-  `mvp/simulation/results/` is scratch
-  space — treat the committed allowlisted files above as canonical. Reproduce the
-  full set with `bash hpc/hpc_run.sh` (20-seed benchmark), pinning
-  `PYTHONHASHSEED=0`; the
-  §5.8 ledgers come from `mvp/simulation/_run_h2_all.py` then
-  `mvp/simulation/benchmarks/aggregate_channel_attribution.py`.
-- **Reproduction guide:** see [`HOW_TO_RUN.md`](HOW_TO_RUN.md) and
-  [`docs/METHODS_REPRO_APPENDIX.md`](docs/METHODS_REPRO_APPENDIX.md). The
-  large runtime artifacts and dataset are available from the authors on request.
+**Committed here, verifiable on a fresh clone.** The canonical tables,
+statistics and receipts under `mvp/simulation/results/` —
+`table1_summary.csv`, `table2_ablation.csv`, `benchmark_summary.json`,
+`benchmark_significance.json`, `paper_benchmark_table.json`,
+`explainability_metrics.json`, the stress and H3 tables including the 25-cell
+grid, the forecast validation, and the three channel analyses — each hashed in
+`artifact_manifest.json`, alongside `publication_validation_receipt.json` and
+the recovery authorization it names. Verify with:
+
+```bash
+python mvp/simulation/analysis/verify_manifest.py --strict-commit   --allow-missing --require-tracked   --recovery-receipt mvp/simulation/results/publication_recovery_receipts/d3286ae_20260829_105800.json
+```
+
+CI runs that on every push, together with
+`mvp/simulation/validation/validate_results.py`.
+
+**In the deposit, not here.** The per-seed envelopes and the 1,600 per-decision
+ledger files, and the rendered figures. The manifest hashes them, so verifying
+with `--allow-missing` reports them as warnings rather than failures. The
+figures are omitted deliberately: the manuscript prints a presentation-only
+re-render of these same numbers and the renderer in this tree reproduces that
+set, so shipping the publication run's own images would mean committing figures
+this code no longer produces.
+
+**Regenerating.** See [`HOW_TO_RUN.md`](HOW_TO_RUN.md) and
+[`docs/METHODS_REPRO_APPENDIX.md`](docs/METHODS_REPRO_APPENDIX.md). Reproduce
+the full set with `bash hpc/hpc_run.sh` (20-seed benchmark) pinning
+`PYTHONHASHSEED=0`; the §5.8 ledgers come from `mvp/simulation/_run_h2_all.py`
+then `mvp/simulation/benchmarks/aggregate_channel_attribution.py`. The spinach
+sensor dataset is tracked at `agribrain/backend/src/data_spinach.csv`.
 
 ## License
 
