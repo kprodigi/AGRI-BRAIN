@@ -94,7 +94,7 @@ jobs:
           print("PASS: isolated development smoke; publication_evidence=false")
           PY
       - name: Upload development smoke artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: development-single-seed-smoke-${{ github.run_id }}
           retention-days: 7
