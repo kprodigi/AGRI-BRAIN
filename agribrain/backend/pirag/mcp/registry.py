@@ -403,7 +403,7 @@ def get_default_registry() -> ToolRegistry:
             schema={
                 "query": {"type": "string", "description": "Natural language search query for the knowledge base"},
                 "k": {"type": "integer", "description": "Number of documents to retrieve (default: 4, max: 10)"},
-                "role": {"type": "string", "description": "Agent role for query context (farm, processor, distributor, recovery)"},
+                "role": {"type": "string", "description": "Agent role, accepted for protocol compatibility and recorded in the call trace; this tool does not condition retrieval or expansion on it (farm, processor, cooperative, distributor, recovery)"},
                 "temperature": {"type": "number", "description": "Current temperature in Celsius for state-conditioned expansion"},
                 "rho": {"type": "number", "description": "Current spoilage risk (0-1) for state-conditioned expansion"},
                 "humidity": {"type": "number", "description": "Relative humidity for mechanistic reranking"},

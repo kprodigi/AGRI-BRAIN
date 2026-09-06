@@ -278,7 +278,7 @@ export default function OpsPage() {
           suffix=" °C"
           icon={Thermometer}
           tone={avgTemp > 8 ? "critical" : avgTemp > 6 ? "warn" : "good"}
-          description={avgTemp > 8 ? "Above declared benchmark envelope" : avgTemp > 6 ? "Within upper benchmark band" : "Within declared 2–8°C benchmark band"}
+          description={avgTemp > 8 ? "Above declared 8°C envelope ceiling" : avgTemp > 6 ? "Approaching the 8°C ceiling" : "Within the declared 8°C envelope ceiling"}
           delay={1}
         />
         <KPICard
@@ -344,7 +344,11 @@ export default function OpsPage() {
                   <ReTooltip content={<ChartTooltip />} />
                   <Legend wrapperStyle={{ fontSize: 19 }} />
                   {/* Temperature zones */}
-                  <ReferenceArea yAxisId="temp" y1={2} y2={8} fill="#10B981" fillOpacity={0.16} label="" />
+                  {/* The declared operating envelope is one-sided: compliance.py checks
+                        temperature > temp_max_c (8 C for spinach) and declares no lower
+                        bound, so the shaded region runs from the axis floor to the ceiling
+                        rather than inventing a 2 C floor. */}
+                    <ReferenceArea yAxisId="temp" y2={8} fill="#10B981" fillOpacity={0.16} label="" />
                   <ReferenceArea yAxisId="temp" y1={8} y2={12} fill="#F59E0B" fillOpacity={0.16} label="" />
                   <ReferenceArea yAxisId="temp" y1={12} y2={50} fill="#D55E00" fillOpacity={0.16} label="" />
                   <ReferenceLine yAxisId="temp" y={8} stroke="#F59E0B" strokeDasharray="5 5" strokeWidth={2} />

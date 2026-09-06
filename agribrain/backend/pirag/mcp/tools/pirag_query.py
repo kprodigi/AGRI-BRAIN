@@ -36,7 +36,10 @@ def pirag_query(
     ----------
     query : natural language query.
     k : number of documents to retrieve.
-    role : agent role (affects query expansion).
+    role : agent role. Accepted and recorded, but unused here -- retrieval and
+        expansion in this tool depend only on query, k, temperature and rho.
+        Role-conditioned query construction lives in
+        ``pirag.context_builder.build_role_query``, which the simulator uses.
     temperature : current temperature for physics expansion.
     rho : current spoilage risk for physics expansion.
     humidity : current humidity for physics reranking.

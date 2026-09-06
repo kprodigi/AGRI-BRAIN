@@ -242,7 +242,9 @@ export default function QualityPage() {
                     <YAxis yAxisId="rh" orientation="right" tick={{ fontSize: 11 }} domain={[60, 100]} label={{ value: "%RH", position: "insideTopRight", fontSize: 10, offset: -5 }} />
                     <ReTooltip content={<ChartTooltip />} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <ReferenceArea yAxisId="temp" y1={2} y2={8} fill="#10B981" fillOpacity={0.05} />
+                    {/* One-sided: the declared envelope sets only a ceiling (compliance.py
+                        temp_max_c = 8 C for spinach); there is no declared lower bound. */}
+                    <ReferenceArea yAxisId="temp" y2={8} fill="#10B981" fillOpacity={0.05} />
                     <ReferenceArea yAxisId="temp" y1={8} y2={12} fill="#F59E0B" fillOpacity={0.05} />
                     <Line yAxisId="temp" type="monotone" dataKey="tempC" dot={false} name="Temp °C" stroke="#009688" strokeWidth={2} />
                     <Line yAxisId="rh" type="monotone" dataKey="RH" dot={false} name="Humidity %" stroke="#0072B2" strokeWidth={1.5} />
@@ -280,7 +282,7 @@ export default function QualityPage() {
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Mechanistic Spoilage-Risk Trajectory</CardTitle>
+              <CardTitle className="text-base">Mechanistic Shelf-Life Trajectory</CardTitle>
               <Badge variant="outline">Common to every benchmark arm</Badge>
             </div>
           </CardHeader>
@@ -293,7 +295,7 @@ export default function QualityPage() {
                   <YAxis domain={[0, 1]} tick={{ fontSize: 11 }} />
                   <ReTooltip content={<ChartTooltip />} />
                   <Legend wrapperStyle={{ fontSize: 12, paddingTop: 16 }} />
-                  <Line type="monotone" dataKey="ode" name="Mechanistic Arrhenius-lag estimate" stroke="#009688" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="ode" name="Modeled shelf life remaining (Arrhenius-lag)" stroke="#009688" strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
