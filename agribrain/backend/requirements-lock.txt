@@ -20,7 +20,7 @@
 #   pip install ./agribrain/backend --no-deps     # exact core wheel install
 # Local development may instead use ``-e``; canonical publication runs do not.
 
-aiohappyeyeballs==2.6.1
+aiohappyeyeballs==2.7.1
 aiohttp==3.13.5
 aiosignal==1.4.0
 annotated-doc==0.0.4
