@@ -5,18 +5,20 @@
 #   pip install -e "agribrain/backend[dev]"
 #   pip freeze --exclude-editable > agribrain/backend/requirements-lock.txt
 #
-# Python:        3.11.15 (canonical; matches CI matrix and HPC pipeline)
+# Generated with Python: 3.11.15 (canonical lock-generation environment)
 # Generated on:  2026-05-04
 # Git commit:    9c17199 (cyber-reroute test fix) + remediation series
 #
-# Verified: this exact pin set also resolves on Python 3.13.13
-# (two-Python comparison run during the 2026-05 forensic pass; 74
-# packages, byte-identical content modulo line endings). Reviewers
-# may use either 3.11 or 3.13; the canonical CI environment is 3.11.
+# The shippable publication workflow is locked to Python 3.11. Resolving on a
+# different minor may select different wheels or numerical libraries and is
+# outside the certified evidence posture. The environment receipt records the
+# exact patch version and installed distribution versions without claiming
+# byte-identical wheel or BLAS binaries.
 #
 # To install for reproducibility (instead of pyproject ranges):
 #   pip install -r agribrain/backend/requirements-lock.txt
-#   pip install -e agribrain/backend --no-deps    # editable wiring only
+#   pip install ./agribrain/backend --no-deps     # exact core wheel install
+# Local development may instead use ``-e``; canonical publication runs do not.
 
 aiohappyeyeballs==2.6.1
 aiohttp==3.13.5
@@ -62,6 +64,7 @@ parsimonious==0.10.0
 pillow==12.2.0
 pluggy==1.6.0
 propcache==0.4.1
+pypdf==6.16.2
 pycryptodome==3.23.0
 pydantic==2.13.3
 pydantic_core==2.46.3

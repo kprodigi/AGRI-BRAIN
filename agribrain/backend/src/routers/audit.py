@@ -56,6 +56,13 @@ def _map_for_pdf(memo: Dict[str, Any]) -> Dict[str, Any]:
         "slca":       memo.get("slca_score") or memo.get("slca") or 0,
         "tx":         memo.get("tx_hash") or memo.get("tx") or "",
         "note":       memo.get("note") or "",
+        "evidence_status": (
+            memo.get("evidence_status") or "unverified_runtime_output"
+        ),
+        "publication_evidence": memo.get("publication_evidence") is True,
+        "execution_contract": (
+            memo.get("execution_contract") or "unspecified_runtime_contract"
+        ),
     }
     # Extended fields from regime-aware softmax policy
     if memo.get("action_probabilities"):
@@ -162,17 +169,42 @@ def _render_pdf(kpis: Dict[str, Any], last: Dict[str, Any]) -> bytes:
 
     # Title
     c.setFont("Helvetica-Bold", 16)
-    c.drawString(x, y, "AGRI-BRAIN Spinach — Decision Memo")
+    c.drawString(x, y, "AGRI-BRAIN Spinach — Runtime Decision Memo")
     y -= 28
+
+    evidence_status = last.get("evidence_status", "unverified_runtime_output")
+    publication_evidence = last.get("publication_evidence") is True
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(
+        x,
+        y,
+        f"Evidence status: {str(evidence_status).replace('_', ' ')}; "
+        f"publication evidence: {'yes' if publication_evidence else 'no'}",
+    )
+    y -= 16
+    if not publication_evidence:
+        c.setFont("Helvetica", 9)
+        c.drawString(
+            x,
+            y,
+            "Runtime output only; the full publication simulation protocol was not executed.",
+        )
+        y -= 18
 
     # KPIs
     c.setFont("Helvetica", 10)
     for line in [
-        f"records: {kpis.get('records', 0)}",
-        f"avg_tempC: {kpis.get('avg_tempC', 0)}",
-        f"anomaly_points: {kpis.get('anomaly_points', 0)}",
-        f"waste_rate_baseline: {kpis.get('waste_rate_baseline', 0)}",
-        f"waste_rate_agri: {kpis.get('waste_rate_agri', 0)}",
+        f"loaded records: {kpis.get('records', 0)}",
+        f"mean loaded temperature (C): {kpis.get('avg_tempC', 0)}",
+        f"flagged anomaly rows: {kpis.get('anomaly_points', 0)}",
+        (
+            "fixed cold-chain modeled waste fraction: "
+            f"{kpis.get('waste_rate_baseline', 0)}"
+        ),
+        (
+            "fixed local-redistribution modeled waste fraction: "
+            f"{kpis.get('waste_rate_agri', 0)}"
+        ),
     ]:
         c.drawString(x, y, line)
         y -= 14
@@ -183,23 +215,43 @@ def _render_pdf(kpis: Dict[str, Any], last: Dict[str, Any]) -> bytes:
     c.drawString(x, y, "Last Decision")
     y -= 18
     c.setFont("Helvetica", 10)
-    for label in [
-        "time", "agent", "role", "decision", "shelf_left", "spoilage_risk",
-        "volatility", "km", "carbon_kg", "unit_price", "slca", "tx", "note",
-    ]:
-        c.drawString(x, y, f"{label}: {last.get(label, '')}")
+    report_fields = [
+        ("time", "time"), ("agent", "agent"), ("role", "role"),
+        ("evidence status", "evidence_status"),
+        ("publication evidence", "publication_evidence"),
+        ("execution contract", "execution_contract"),
+        ("selected action", "decision"),
+        ("modeled quality remaining", "shelf_left"),
+        ("modeled spoilage risk", "spoilage_risk"),
+        ("volatility flag", "volatility"),
+        ("modeled route distance (km)", "km"),
+        ("modeled transport-emissions indicator (kg CO2-eq)", "carbon_kg"),
+        ("modeled unit price", "unit_price"),
+        ("author-declared social-performance proxy", "slca"),
+        ("optional on-chain record transaction", "tx"),
+        ("note", "note"),
+    ]
+    for label, key in report_fields:
+        c.drawString(x, y, f"{label}: {last.get(key, '')}")
         y -= 14
 
-    # SLCA components
+    # Author-declared social-performance proxy components
     sc = last.get("slca_components")
     if isinstance(sc, dict):
         y -= 6
         c.setFont("Helvetica-Bold", 10)
-        c.drawString(x, y, "SLCA Components")
+        c.drawString(x, y, "Social-Performance Proxy Components")
         y -= 14
         c.setFont("Helvetica", 10)
-        for k in ("carbon", "labor", "resilience", "transparency", "composite"):
-            c.drawString(x + 10, y, f"{k}: {sc.get(k, '')}")
+        component_labels = {
+            "carbon": "inverse modeled-emissions term",
+            "labor": "labour-practice prior",
+            "resilience": "community-network prior",
+            "transparency": "price-information prior",
+            "composite": "author-declared composite proxy",
+        }
+        for key, label in component_labels.items():
+            c.drawString(x + 10, y, f"{label}: {sc.get(key, '')}")
             y -= 14
 
     # Reward decomposition

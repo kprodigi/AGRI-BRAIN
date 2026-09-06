@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-/// @title DecisionLogger - On-chain audit trail for supply chain routing decisions
-/// @notice Records SLCA (UNEP/SETAC Social LCA, 2009) composite scores and
-///         carbon footprint (GHG Protocol activity-based emissions, WRI/WBCSD,
-///         2004) for each routing decision, enabling provenance verification.
+/// @title DecisionLogger - Optional local decision-record prototype
+/// @notice Stores caller-supplied decision fields and episode roots. The numeric
+///         fields are modeled proxies; the contract does not verify their meaning,
+///         source, scientific validity, or real-world execution.
 ///
 /// @dev    Access control: role-based (ADMIN_ROLE / LOGGER_ROLE), mirroring
 ///         the SLCARewards pattern. The deployer is granted both roles at
@@ -16,13 +16,8 @@ pragma solidity ^0.8.28;
 ///         and the deploy script keep their signatures; internally it
 ///         delegates to ``grantRole`` / ``revokeRole``.
 ///
-/// @dev    Permissioned EVM. The contract itself is EVM-portable and is
-///         intended to be deployed on a permissioned chain (Hyperledger
-///         Besu QBFT / IBFT 2.0, Quorum, or a Geth Clique consortium).
-///         The hardhat.config.cjs ships a ``permissioned`` network entry
-///         that configures the deployer + a curated list of validator
-///         addresses; see ``HOW_TO_RUN.md`` §7c. Localhost Hardhat is
-///         still supported for unit testing.
+/// @dev    Tested only with the repository's local Hardhat suite. No external
+///         network compatibility, security, or deployment claim is made.
 contract DecisionLogger {
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant LOGGER_ROLE = keccak256("LOGGER_ROLE");
@@ -39,20 +34,16 @@ contract DecisionLogger {
         string agent,
         string role,
         string action,
-        // SLCA composite score (UNEP/SETAC, 2009), scaled by 1000 for integer storage
+        // Author-declared social-performance proxy, scaled by 1000
         uint256 slca_milli,
-        // Carbon footprint in kg CO2-eq (GHG Protocol), scaled by 1000
+        // Modeled transport-emissions indicator in kg CO2-eq, scaled by 1000
         uint256 carbon_milli,
         string note
     );
 
-    /// @notice Per-episode anchor. The simulator collects every decision
-    ///         within an episode into an off-chain ledger, computes a
-    ///         binary SHA-256 Merkle root, and writes the root here in
-    ///         a single transaction. Any individual decision can then
-    ///         be verified with a Merkle inclusion proof against the
-    ///         emitted root, giving full per-decision traceability at
-    ///         O(1) on-chain cost per episode.
+    /// @notice Optional event for a caller-supplied episode Merkle root.
+    ///         This contract stores the root but does not receive or verify
+    ///         leaf data or an inclusion path.
     event EpisodeLogged(
         bytes32 indexed root,
         uint256 ts,
@@ -68,7 +59,7 @@ contract DecisionLogger {
         string agent;
         string role;
         string action;
-        uint256 slca_milli;   // SLCA composite * 1000
+        uint256 slca_milli;   // Legacy field: social-performance proxy * 1000
         uint256 carbon_milli; // kg CO2-eq * 1000
         string note;
     }
@@ -135,7 +126,7 @@ contract DecisionLogger {
     }
 
     // ---------------------------------------------------------------------
-    // Backward-compatible shim. Older deploy scripts and the backend chain
+    // Backward-compatible shim. Older local scripts and the backend chain
     // wrapper call ``setAuthorized``. The shim keeps that surface intact
     // while delegating to the role layer so all access-control state is
     // visible on-chain through ``RoleGranted`` / ``RoleRevoked`` events.

@@ -1,50 +1,36 @@
-"""Run one seed of the instrumented 8-canonical-mode benchmark for the §5.8
-H2 channel-attribution analysis. Writes per-seed decision ledgers (with the
-observer-only channel-attribution fields) under
-``results/decision_ledger_h2/seed_<seed>/``.
+#!/usr/bin/env python3
+"""Retired compatibility entry point for the obsolete standalone H2 run.
 
-The 8 canonical modes are run in their published order so the agribrain
-episode sees the same multi-mode global context as the headline benchmark.
-This run does NOT overwrite the canonical headline artefacts; it only
-produces the instrumented ledgers the new aggregator consumes.
+H2 channel evidence is derived from the ordinary, commit-bound per-seed
+decision ledgers. Running a second instrumented treatment would create a
+different evidence population and could leave plausible-looking side
+artifacts beside the canonical results, so this path now fails closed.
 """
-import json
-import os
+from __future__ import annotations
+
 import sys
-from pathlib import Path
+from collections.abc import Sequence
 
-HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
-sys.path.insert(0, str(HERE.parents[1] / "agribrain" / "backend"))
 
-seed = int(sys.argv[1])
-# Optional output-root override (used by the cross-hash-seed stability check).
-_root = os.environ.get("H2_LEDGER_ROOT", "decision_ledger_h2")
-ledger = HERE / "results" / _root / f"seed_{seed}"
-ledger.mkdir(parents=True, exist_ok=True)
-os.environ["DECISION_LEDGER_DIR"] = str(ledger)
-os.environ.setdefault("DETERMINISTIC_MODE", "false")
+RETIRED = True
+EXIT_RETIRED = 2
+MIGRATION_MESSAGE = """\
+RETIRED: mvp/simulation/_run_h2_seed.py cannot run or write H2 evidence.
 
-import generate_results as gr  # noqa: E402
+Launch the canonical commit-bound treatment from the repository root:
+  AGRIBRAIN_PARTITION=<partition> bash hpc/hpc_run.sh
 
-gr.MODES = ["static", "hybrid_rl", "no_pinn", "no_slca", "agribrain",
-            "no_context", "mcp_only", "pirag_only"]
+Its dependent hpc/hpc_publish.sh stage consolidates the normal per-seed
+decision ledgers and produces the validated H2/channel-attribution artifacts.
+"""
 
-data = gr.run_all(seed=seed)
 
-# Consistency snapshot: per-scenario ARI for every mode, so we can confirm the
-# instrumented run reproduces the canonical ranking / margins within CI.
-sanity = {}
-for sc in gr.SCENARIOS:
-    sc_res = data["results"].get(sc, {})
-    sanity[sc] = {
-        m: {
-            "ari": float(sc_res[m]["ari"]),
-            "waste": float(sc_res[m]["waste"]),
-            "slca": float(sc_res[m]["slca"]),
-            "context_influence_rate": float(sc_res[m].get("context_influence_rate", 0.0)),
-        }
-        for m in gr.MODES if m in sc_res
-    }
-(ledger / "_ari_sanity.json").write_text(json.dumps(sanity, indent=2))
-print(f"SEED {seed} DONE -> {ledger}")
+def main(argv: Sequence[str] | None = None) -> int:
+    """Fail closed without reading results, running simulations, or writing."""
+    del argv
+    print(MIGRATION_MESSAGE, file=sys.stderr, end="")
+    return EXIT_RETIRED
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

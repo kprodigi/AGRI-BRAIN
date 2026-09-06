@@ -1,4 +1,10 @@
-"""Per-batch FIFO inventory model with route-conditioned rho accumulation.
+"""Exploratory per-batch FIFO inventory model.
+
+This module is retained for backward-compatible sensitivity experiments only.
+It is not imported by the confirmatory simulator, does not contribute to ARI,
+RLE, reward, figures, or publication validators, and has not been calibrated
+against shipment-level mass-balance data. Its quantities must not be described
+as measured throughput or validated consumer freshness.
 
 The aggregate-state simulator in ``mvp/simulation/generate_results.py``
 tracks a single ``rho`` and a single ``inv`` per timestep. That makes the
@@ -36,9 +42,9 @@ The retail pool itself is FIFO: batches are sold off at a configured
 rate, and the metric reported is the quantity-weighted mean rho across
 batches currently in the retail pool.
 
-This gives a physically grounded answer to "what fraction of produce
-reaching the consumer is at-risk?", which is the question Figure 2
-panel (b) actually wants to display.
+It provides an inspectable hypothetical FIFO calculation under the declared
+assumptions. Figure 2 and all confirmatory endpoints instead use the common
+latent environmental rho emitted by the aggregate simulator.
 
 References
 ----------
@@ -60,15 +66,14 @@ import numpy as np
 
 from .resilience import (
     DC_RHO_FACTOR,
-    RHO_FOOD_SAFETY_CUTOFF,
+    RHO_DISPOSITION_CUTOFF,
     route_rho_factor,
 )
 
 
-# Default transit times (hours) per route, derived from the route
-# distances in policy.py at a 50 km/h refrigerated-truck average speed.
-# Range covers typical highway / urban / rural mixes per James & James
-# (2010) Table 3.
+# Default transit times (hours) per route, derived from the author-declared
+# route distances in policy.py and a declared 50 km/h benchmark speed. These
+# are not measurements from the cited cold-chain reviews.
 TRANSIT_HOURS: dict[str, float] = {
     "cold_chain":         2.4,   # 120 km / 50 km/h
     "local_redistribute": 0.9,   # 45 km / 50 km/h
@@ -76,9 +81,9 @@ TRANSIT_HOURS: dict[str, float] = {
 }
 
 
-# Default retail-pool sale rate: fraction of retail inventory cleared
-# per hour. 0.04/h = ~50% half-life of 17h, matching typical fresh
-# produce display-to-sale duration for leafy greens (Mercier 2017).
+# Author-declared exploratory retail-pool sale rate: fraction of modeled retail
+# inventory cleared per hour. The 0.04/h value has an approximately 17-hour
+# half-life and is not a field-calibrated sale-rate estimate.
 RETAIL_SALE_RATE_PER_HOUR: float = 0.04
 
 
@@ -103,7 +108,7 @@ class BatchInventory:
     admission windows, fallback ordering, lr_rejected_units counters,
     realized_route emission) was retired in 2026-04 along with the
     capacity-constrained RLE variant; the canonical RLE the paper
-    reports is the EU-hierarchy + severity-weighted form
+    reports is the hierarchy-inspired, severity-weighted form
     (compute_rle in resilience.py) which scores the chosen action
     directly without needing a realised-action distinction.
 
@@ -175,6 +180,7 @@ class BatchInventory:
         sale_rate_multiplier: float = 1.0,
         action_names: tuple[str, ...] = ("cold_chain", "local_redistribute", "recovery"),
         dt_hours: float = 0.25,
+        enforce_disposition_cutoff: bool = False,
     ) -> dict[str, float]:
         """Advance the batch inventory one simulation step.
 
@@ -183,7 +189,7 @@ class BatchInventory:
         hour : current simulation hour (matches the hours array in the
             results JSON).
         d_env_rho : environmental rho increment for this step (the
-            change in PINN env_rho since the previous step). Clamped
+            change in mechanistic env_rho since the previous step). Clamped
             to non-negative because Arrhenius spoilage is irreversible.
         action_idx : the action chosen by the policy this step. The
             oldest DC batch is routed to this action.
@@ -209,6 +215,11 @@ class BatchInventory:
         action_names : ordered action names matching ACTIONS in
             action_selection.py.
         dt_hours : simulation timestep in hours (0.25 for 15-min ticks).
+        enforce_disposition_cutoff : if True, apply the optional author-defined
+            rho cutoff that redirects an aged batch to recovery. The
+            confirmatory benchmark leaves this False so the routed-inventory
+            outcome reflects the policy action without a hidden deterministic
+            post-processor.
 
         Returns
         -------
@@ -220,10 +231,11 @@ class BatchInventory:
             - ``recovered_quantity``: total units sent to recovery
             - ``chosen_route``: the route the oldest DC batch was
               actually routed on this step. Equals the policy's
-              chosen action unless the food-safety override fired
-              (``current_rho`` > RHO_FOOD_SAFETY_CUTOFF), in which
+              chosen action unless the synthetic disposition cutoff fired
+              (``current_rho`` > RHO_DISPOSITION_CUTOFF), in which
               case it is forced to ``"recovery"``.
-            - ``food_safety_override``: True iff the override fired
+            - ``food_safety_override``: legacy field name; True iff the
+              synthetic disposition cutoff fired
               this step.
         """
         d_env = max(float(d_env_rho), 0.0)
@@ -251,25 +263,17 @@ class BatchInventory:
                 # (display refrigeration is comparable to DC).
                 b.current_rho = min(1.0, b.current_rho + self.dc_rho_factor * d_env)
 
-        # 2) Route the oldest DC batch to the chosen action, subject to
-        #    a food-safety hard cutoff: if the oldest DC batch has
-        #    already accumulated rho above RHO_FOOD_SAFETY_CUTOFF
-        #    (default 0.65, the rho threshold above which Garcia-Garcia
-        #    (2017) records >=80% of food-bank network rejections at
-        #    intake), the chosen action is overridden to ``recovery``
-        #    regardless of policy. Real food-safety regulations behave
-        #    this way: produce visibly past marketability cannot be
-        #    sold even if the operator's optimisation routine would
-        #    prefer otherwise. The override applies to *every* mode
-        #    including Static, so it does not by itself differentiate
-        #    AgriBrain from Static — the differentiation comes from
-        #    the policy-side Recovery knee in action_selection.py
-        #    (RHO_RECOVERY_KNEE = 0.30, soft logit boost) which
-        #    triages earlier than the override fires.
+        # 2) Route the oldest DC batch to the chosen action, subject to the
+        #    declared synthetic disposition cutoff. If current_rho exceeds
+        #    0.65, the model routes the batch to recovery. No cited regulation
+        #    or field study defines this rho scale or validates that value. The
+        #    rule applies uniformly to every mode and must be replaced with
+        #    product-specific inspection criteria before deployment.
         oldest = self._oldest_dc_batch()
         chosen_route = action_names[int(action_idx)]
         food_safety_override = False
-        if oldest is not None and oldest.current_rho > RHO_FOOD_SAFETY_CUTOFF:
+        if (enforce_disposition_cutoff and oldest is not None
+                and oldest.current_rho > RHO_DISPOSITION_CUTOFF):
             chosen_route = "recovery"
             food_safety_override = True
         if oldest is not None:
@@ -350,5 +354,7 @@ class BatchInventory:
             "in_transit_quantity": float(in_transit_qty),
             "recovered_quantity": float(recovered_qty),
             "chosen_route": chosen_route,
+            "disposition_override": bool(food_safety_override),
+            # Legacy API field name; the cutoff is not a food-safety rule.
             "food_safety_override": bool(food_safety_override),
         }

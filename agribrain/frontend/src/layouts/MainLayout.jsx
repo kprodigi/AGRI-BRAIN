@@ -35,7 +35,7 @@ const NAV_ITEMS = [
   { key: "decisions", label: "Decisions", icon: Leaf, path: "/decisions" },
   { key: "map", label: "Map", icon: MapPin, path: "/map" },
   { key: "analytics", label: "Analytics", icon: BarChart3, path: "/analytics" },
-  { key: "mcp-pirag", label: "MCP/piRAG", icon: Brain, path: "/mcp-pirag" },
+  { key: "mcp-pirag", label: "MCP / Institutional Retrieval", icon: Brain, path: "/mcp-pirag" },
   { key: "demo", label: "Demo", icon: Play, path: "/demo" },
   { key: "admin", label: "Admin Panel", icon: Settings, path: "/admin" },
 ];

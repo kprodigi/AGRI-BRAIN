@@ -92,7 +92,9 @@ def get_active_phase() -> str:
     try:
         from src.routers.phase import get_active_phase as _gap
     except ImportError:
-        return "autonomous"
+        # Fail safe when the optional router cannot be imported.  The local
+        # development runtime must never imply auto-finalization by default.
+        return "monitoring"
     return _gap()
 
 

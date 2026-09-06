@@ -2,10 +2,10 @@
 """
 Quick stochastic feasibility test.
 
-Uses truncated data (first 50 timesteps) to prove:
+Uses truncated data (first 50 timesteps) to check:
   1. Perturbations create measurable variation across seeds
-  2. Method ordering (agribrain > hybrid_rl > static) is preserved
-  3. Metric values stay within realistic bounds
+  2. Metric values remain within their declared construct bounds
+  3. Observed method differences are reported without outcome gates
 
 Full-length validation should follow once feasibility is confirmed.
 """
@@ -17,7 +17,8 @@ import time
 from pathlib import Path
 
 os.environ["DETERMINISTIC_MODE"] = "false"
-os.environ["FORECAST_METHOD"] = "holt_winters"
+os.environ["FORECAST_METHOD"] = "holt_linear"
+os.environ["SUPPLY_FORECAST_METHOD"] = "persistence"
 
 _BACKEND_SRC = Path(__file__).resolve().parent.parent.parent.parent / "agribrain" / "backend"
 if str(_BACKEND_SRC) not in sys.path:
@@ -81,14 +82,13 @@ def main() -> int:
 
     Exit codes
     ----------
-    0  VERDICT: FEASIBLE -- variation detected and method ordering preserved.
+    0  VERDICT: FEASIBLE -- variation detected and metrics remained bounded.
     1  VERDICT: BROKEN -- no stochastic variation, the layer is inert.
-    2  VERDICT: NEEDS TUNING -- one or more ordering violations.
+    2  VERDICT: INVALID -- one or more metrics violated construct bounds.
 
-    The 2026-05 hardening makes BROKEN and NEEDS TUNING fail the CI validation
-    test instead of returning the verdict as text and letting the job
-    pass with exit 0. STRICT_VALIDATION=0 restores the legacy permissive
-    behavior for local debugging.
+    The validation fails if the stochastic layer is inert or a construct-domain
+    violation occurs. ``STRICT_VALIDATION=0`` makes those findings advisory for
+    local debugging.
     """
     print("=" * 60)
     print("QUICK STOCHASTIC FEASIBILITY TEST")
@@ -127,22 +127,18 @@ def main() -> int:
                       f"max_delta={max_diff:.6f}")
 
     print("\n" + "=" * 60)
-    print("B) METHOD ORDERING CHECK (agribrain >= hybrid >= static)")
+    print("B) OBSERVED ARI COMPARISON (descriptive; no preferred ordering)")
     print("=" * 60)
-    violations = 0
-    checks = 0
+    comparisons = 0
     for label, data in [("deterministic", det)] + [(f"stoch_{s}", stoch_runs[s]) for s in SEEDS]:
         for sc in SCENARIOS:
             a = data[sc]["agribrain"]["ari"]
             h = data[sc]["hybrid_rl"]["ari"]
             s = data[sc]["static"]["ari"]
-            ok = a >= h >= s
-            checks += 1
-            if not ok:
-                violations += 1
+            comparisons += 1
             print(f"  {label:>15s} {sc:>10s}: "
                   f"agri={a:.4f} hybrid={h:.4f} static={s:.4f}  "
-                  f"{'OK' if ok else 'FAIL'}")
+                  "reported")
 
     print("\n" + "=" * 60)
     print("SUMMARY")
@@ -159,11 +155,19 @@ def main() -> int:
                         any_diff = True
 
     print(f"Stochastic variation: {'YES' if any_diff else 'NO (broken!)'}")
-    print(f"Ordering preserved: {checks - violations}/{checks}")
+    print(f"ARI comparisons reported: {comparisons}")
     print(f"Total runtime: {time.time()-t_total:.1f}s")
 
-    # Verdict gates the exit code so CI cannot pass with a broken
-    # stochastic layer or a regressed method ordering.
+    bound_violations = 0
+    for data in [det, *stoch_runs.values()]:
+        for sc in SCENARIOS:
+            for m in METHODS:
+                for met in METRICS:
+                    value = float(data[sc][m][met])
+                    if not (0.0 <= value <= 1.0):
+                        bound_violations += 1
+
+    # The verdict checks the stochastic mechanism and construct domains only.
     print()
     strict = os.environ.get("STRICT_VALIDATION", "1") == "1"
     if not any_diff:
@@ -173,11 +177,10 @@ def main() -> int:
                   "(set STRICT_VALIDATION=0 to make this advisory).")
             return 1
         return 0
-    if violations > 0:
-        print(f"VERDICT: NEEDS TUNING - {violations} ordering violations")
+    if bound_violations > 0:
+        print(f"VERDICT: INVALID - {bound_violations} bound violations")
         if strict:
-            print("Strict validation gate: failing with exit code 2 "
-                  "(set STRICT_SMOKE=0 to make this advisory).")
+            print("Strict validation gate: failing with exit code 2")
             return 2
         return 0
     print("VERDICT: FEASIBLE")

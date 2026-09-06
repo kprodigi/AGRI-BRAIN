@@ -1,27 +1,28 @@
-"""Retrieval-quality guard for the piRAG routing context pipeline.
+"""Author-declared RRF-floor guard for the piRAG routing context pipeline.
 
 Paper Section 3.7 declares three guards on the routing context pipeline:
 dimensional analysis (see ``unit_guard.py``), feasibility (see
-``feasibility_guard.py``), and retrieval quality (this module). When any
-guard returns False the downstream context_to_logits integrator zeroes
-the logit modifier, so a bad retrieval cannot degrade decision quality
-below the no-context baseline.
+``feasibility_guard.py``), and an RRF-score floor (this module). When any
+guard returns False the downstream context-to-logit integrator zeroes the
+piRAG-derived term only. Separately computed MCP signals remain active.
+This does not establish guard completeness or guarantee non-degradation of
+outcomes.
 
-The retrieval-quality guard is deliberately simple: a retrieval is
+This guard is deliberately simple: a retrieval is
 usable when the hybrid (BM25 + TF-IDF) retriever returned at least
 one citation and the top passage's combined score exceeds a small
 non-trivial floor.
 
 **Threshold rescale, 2026-04.** The hybrid retriever was changed from
 min-max-normalised score fusion to Reciprocal Rank Fusion (Cormack
-2009; see ``pyrag/hybrid_retriever.py``). RRF scores are bounded by
-``1/(K + 1)`` with ``K = 60``, so the top score is at most ~0.0164
-and the previous floor of ``0.15`` would never pass. The floor is
-rescaled to ``0.012`` (about 75% of the maximum RRF score, i.e.
-"either retriever ranks the top doc better than rank 4 of 4") so the
-guard still gates idle-floor retrievals while staying compatible
-with the RRF score distribution. To verify the guard calibration,
-compare against ``HybridRetriever.RRF_K``.
+2009; see ``pyrag/hybrid_retriever.py``). With two ranked lists and
+``K = 60``, the maximum fused score is ``2/(K + 1)`` (~0.0328).
+The guard therefore operates on the raw RRF strength, before any lexical or
+Arrhenius reranking bonus. To verify the score scale, compare against
+``HybridRetriever.RRF_K``.
+
+Passing this floor is an implementation gate, not a calibrated probability,
+an independent retrieval-quality judgment, or evidence of answer faithfulness.
 """
 from __future__ import annotations
 
@@ -46,13 +47,17 @@ def retrieval_quality_ok(
     *,
     min_score: float = MIN_TOP_CITATION_SCORE,
 ) -> bool:
-    """Return True when the retrieval result is usable as context.
+    """Return True when the result clears the declared RRF floor.
+
+    The function name is retained as a compatibility API; the returned boolean
+    is not a calibrated or independently validated measure of retrieval quality.
 
     Parameters
     ----------
     citations : iterable of citation records from the hybrid retriever.
-    top_citation_score : combined BM25 + TF-IDF score of the top passage.
-    min_score : threshold below which retrieval is considered low-quality.
+    top_citation_score : raw two-list RRF strength of the top passage selected
+        after reranking; excludes the reranking bonus.
+    min_score : author-declared RRF-score floor.
         Defaults to ``MIN_TOP_CITATION_SCORE``.
 
     Returns

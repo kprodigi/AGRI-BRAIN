@@ -71,8 +71,8 @@ class ToolRegistry:
         log at WARN with the previous and replacement tool ids so silent
         shadowing is auditable. Re-registrations of the *same callable*
         (which is what happens when benchmark code recreates a
-        coordinator/registry per window — common in
-        ``run_temporal_stability.py`` and the stress suite) are silent;
+        coordinator/registry per scenario or episode, including the canonical
+        stress suite) are silent;
         the dispatch behaviour is unchanged so a warning would just be
         log noise. Callers that want strict deduplication can use
         :meth:`replace` (explicit overwrite) or :meth:`register_strict`
@@ -120,14 +120,14 @@ class ToolRegistry:
             if cap_set & set(spec.capabilities)
         ]
 
-    def invoke(self, tool_name: str, **kwargs: Any) -> Any:
+    def invoke(self, registered_name: str, **kwargs: Any) -> Any:
         """Invoke a tool by name. Uses cache if applicable.
 
         Enforces the ``rate_limits`` block from
         ``configs/policy.yaml`` via :class:`pirag.mcp.rate_limiter.RateLimiter`.
         Tools with no configured limit pass through unchanged. Setting
-        ``MCP_RATE_LIMITS=disabled`` skips the check (used by tests
-        that exercise burst behaviour).
+        ``MCP_RATE_LIMITS=disabled`` skips the check (used by canonical
+        publication runs and tests that exercise burst behaviour).
 
         Cache hits skip the rate-limit check on the principle that they
         do not exercise the underlying tool -- consistent with how the
@@ -136,11 +136,15 @@ class ToolRegistry:
         Raises
         ------
         KeyError
-            If ``tool_name`` is not registered.
+            If ``registered_name`` is not registered.
         RateLimitExceeded
             If the per-tool rate-limit bucket is empty.
         """
-        spec = self._tools[tool_name]
+        # The registry selector must not itself be named ``tool_name``:
+        # policy_oracle legitimately accepts a payload argument with that
+        # name. A selector/payload collision previously made the project MCP-style
+        # tools/call path fail with "multiple values for argument".
+        spec = self._tools[registered_name]
 
         if spec.cacheable and spec.cache_key_params:
             key_data = {p: kwargs.get(p) for p in spec.cache_key_params}
@@ -148,15 +152,15 @@ class ToolRegistry:
             # security scanners flag MD5 by default and it tends to
             # raise questions. Cost difference is irrelevant at
             # registry-cache frequency.
-            cache_key = f"{tool_name}:{hashlib.sha256(json.dumps(key_data, sort_keys=True, default=str).encode()).hexdigest()}"
+            cache_key = f"{registered_name}:{hashlib.sha256(json.dumps(key_data, sort_keys=True, default=str).encode()).hexdigest()}"
             if cache_key in self._cache:
                 return self._cache[cache_key]
-            self._rate_limit(tool_name)
+            self._rate_limit(registered_name)
             result = spec.fn(**kwargs)
             self._cache[cache_key] = result
             return result
 
-        self._rate_limit(tool_name)
+        self._rate_limit(registered_name)
         return spec.fn(**kwargs)
 
     @staticmethod
@@ -231,7 +235,10 @@ def get_default_registry() -> ToolRegistry:
 
     registry.register(ToolSpec(
         name="check_compliance",
-        description="Check FDA temperature and humidity compliance for produce",
+        description=(
+            "Check readings against author-declared benchmark temperature and "
+            "humidity envelopes; not a regulatory determination"
+        ),
         capabilities=["regulatory", "temperature", "quality"],
         fn=check_compliance,
         schema={
@@ -243,7 +250,7 @@ def get_default_registry() -> ToolRegistry:
     ))
     registry.register(ToolSpec(
         name="slca_lookup",
-        description="Look up SLCA weights and base scores by product type",
+        description="Look up author-declared sustainability/social-proxy weights and base scores",
         capabilities=["social", "scoring", "routing"],
         fn=lookup_slca_weights,
         schema={
@@ -254,8 +261,11 @@ def get_default_registry() -> ToolRegistry:
     ))
     registry.register(ToolSpec(
         name="chain_query",
-        description="Query recent routing decisions from blockchain audit trail",
-        capabilities=["blockchain", "audit", "history"],
+        description=(
+            "Read recent routing decisions from active same-episode or local "
+            "audit-ledger state"
+        ),
+        capabilities=["audit", "history", "routing"],
         fn=query_recent_decisions,
         schema={
             "n": {"type": "integer", "description": "Number of recent decisions to retrieve (default: 10)"},
@@ -339,7 +349,7 @@ def get_default_registry() -> ToolRegistry:
         from .tools.spoilage_forecast import forecast_spoilage
         registry.register(ToolSpec(
             name="spoilage_forecast",
-            description="Integrate Arrhenius-Baranyi ODE forward for spoilage prediction",
+            description="Integrate the Arrhenius first-order ODE with a declared rational lag factor",
             capabilities=["spoilage", "forecast", "physics"],
             fn=forecast_spoilage,
             schema={
@@ -347,6 +357,7 @@ def get_default_registry() -> ToolRegistry:
                 "temperature": {"type": "number", "description": "Current product temperature in degrees Celsius"},
                 "humidity": {"type": "number", "description": "Relative humidity as a percentage (0-100)"},
                 "hours_ahead": {"type": "integer", "description": "Hours to forecast ahead (default: 6)"},
+                "age_hours": {"type": "number", "description": "Elapsed hours since the quality trajectory began"},
             },
             cacheable=False,
         ))
@@ -358,13 +369,22 @@ def get_default_registry() -> ToolRegistry:
         from .tools.footprint_query import query_footprint
         registry.register(ToolSpec(
             name="footprint_query",
-            description="Return cumulative and per-step energy and water footprint",
+            description=(
+                "Return declared fixed per-step energy/water proxy counters; "
+                "not elapsed-time estimates or hardware telemetry"
+            ),
             capabilities=["footprint", "green_ai", "monitoring"],
             fn=query_footprint,
             schema={
-                "steps_completed": {"type": "integer", "description": "Number of simulation steps completed"},
-                "energy_per_step_j": {"type": "number", "description": "Energy consumption per step in joules"},
-                "water_per_step_l": {"type": "number", "description": "Water consumption per step in litres"},
+                "steps_completed": {
+                    "type": "integer",
+                    "description": (
+                        "Caller-supplied simulation/inference step count used "
+                        "only by the declared fixed-rate proxy"
+                    ),
+                },
+                "energy_per_step_j": {"type": "number", "description": "Declared energy proxy per step in joules"},
+                "water_per_step_l": {"type": "number", "description": "Declared water proxy per step in litres"},
             },
             cacheable=False,
         ))
@@ -377,16 +397,16 @@ def get_default_registry() -> ToolRegistry:
         from .tools.pirag_query import pirag_query
         registry.register(ToolSpec(
             name="pirag_query",
-            description="Query the piRAG knowledge base with physics-informed retrieval",
+            description="Query the institutional knowledge base with mechanistically reranked retrieval",
             capabilities=["retrieval", "knowledge", "pirag", "regulatory"],
             fn=pirag_query,
             schema={
                 "query": {"type": "string", "description": "Natural language search query for the knowledge base"},
                 "k": {"type": "integer", "description": "Number of documents to retrieve (default: 4, max: 10)"},
                 "role": {"type": "string", "description": "Agent role for query context (farm, processor, distributor, recovery)"},
-                "temperature": {"type": "number", "description": "Current temperature in Celsius for physics-informed expansion"},
-                "rho": {"type": "number", "description": "Current spoilage risk (0-1) for physics-informed expansion"},
-                "humidity": {"type": "number", "description": "Relative humidity for physics-informed reranking"},
+                "temperature": {"type": "number", "description": "Current temperature in Celsius for state-conditioned expansion"},
+                "rho": {"type": "number", "description": "Current spoilage risk (0-1) for state-conditioned expansion"},
+                "humidity": {"type": "number", "description": "Relative humidity for mechanistic reranking"},
             },
             cacheable=False,
         ))
@@ -398,7 +418,7 @@ def get_default_registry() -> ToolRegistry:
         from .tools.explain_tool import explain
         registry.register(ToolSpec(
             name="explain",
-            description="Generate a causal explanation for a routing decision with provenance",
+            description="Generate a context-to-policy trace with provenance",
             capabilities=["explanation", "explainability", "audit"],
             fn=explain,
             schema={
@@ -429,20 +449,21 @@ def get_default_registry() -> ToolRegistry:
         _log.warning("MCP tool 'context_features' not registered: %s", exc)
         registry._registration_failures["context_features"] = str(exc)
 
-    # Holt's linear yield/supply forecast tool. Canonical entry point for
-    # supply forecasting; the simulator and REST endpoint both route
-    # through this so production and benchmark paths share one code path.
+    # Supply-proxy forecast tool. Persistence is the validation-selected
+    # confirmatory default; Holt-linear remains an explicit diagnostic.
+    # The simulator and REST endpoint share this entry point.
     try:
         from .tools.yield_query import query_yield
         registry.register(ToolSpec(
             name="yield_query",
-            description="Holt's linear yield/supply forecast returning point forecast, residual std, and normalised CV uncertainty",
+            description="Persistence-default supply-proxy forecast returning point forecast, rolling error scale, and normalised CV uncertainty; Holt-linear is diagnostic only",
             capabilities=["supply", "forecast", "uncertainty"],
             fn=query_yield,
             schema={
                 "inventory_history":  {"type": "array",   "description": "Recent inventory_units observations for forecasting"},
                 "horizon":            {"type": "integer", "description": "Forecast horizon in 15-min steps (default: 1)"},
-                "cached_uncertainty": {"type": "number",  "description": "Pre-computed CV in [0,1] (short-circuits Holt's linear when present)"},
+                "method":             {"type": "string",  "description": "Forecast method: 'persistence' (confirmatory default) or 'holt_linear'"},
+                "cached_uncertainty": {"type": "number",  "description": "Pre-computed CV in [0,1] (short-circuits the forecaster when present)"},
                 "cached_forecast":    {"type": "array",   "description": "Pre-computed point forecast (paired with cached_uncertainty)"},
                 "cached_std":         {"type": "number",  "description": "Pre-computed std (paired with cached_uncertainty)"},
             },
@@ -459,13 +480,13 @@ def get_default_registry() -> ToolRegistry:
         from .tools.demand_query import query_demand
         registry.register(ToolSpec(
             name="demand_query",
-            description="Demand forecast (LSTM or Holt's linear) returning point forecast, residual std, and normalised CV uncertainty",
+            description="Demand forecast (Holt-linear confirmatory; LSTM/persistence diagnostic) returning point forecast, residual std, and normalised CV uncertainty",
             capabilities=["demand", "forecast", "uncertainty"],
             fn=query_demand,
             schema={
                 "demand_history":     {"type": "array",   "description": "Recent demand_units observations for forecasting"},
                 "horizon":            {"type": "integer", "description": "Forecast horizon in 15-min steps (default: 1)"},
-                "method":             {"type": "string",  "description": "Forecast method: 'lstm' (default) or 'holt_winters'"},
+                "method":             {"type": "string",  "description": "Forecast method: 'holt_linear' (confirmatory default), 'lstm', or 'persistence'"},
                 "cached_uncertainty": {"type": "number",  "description": "Pre-computed CV in [0,1] (short-circuits the forecaster when present)"},
                 "cached_forecast":    {"type": "array",   "description": "Pre-computed point forecast (paired with cached_uncertainty)"},
                 "cached_std":         {"type": "number",  "description": "Pre-computed std (paired with cached_uncertainty)"},

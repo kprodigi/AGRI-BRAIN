@@ -1,600 +1,255 @@
 #!/usr/bin/env python3
-"""
-Post-generation validation suite.
-Checks ALL metric ranges and orderings against the specification.
-Run after generate_results.py. ALL checks must pass before committing.
+"""Validate publication result tables without conditioning on outcomes.
 
-Stochastic mode: uses relaxed bounds and ordering tolerance (0.01) to
-accommodate seeded perturbation noise. Deterministic mode: strict exact checks.
+The validator enforces artifact presence, balanced-table structure, numeric
+finiteness, and construct-level bounds. It deliberately does not require a
+preferred method ordering, a minimum effect size, or a hand-selected numerical
+range. H1--H3 are evaluated only by the inferential outputs produced by the
+aggregation and stress pipelines.
 
-Strict mode (STRICT_VALIDATION=1, the default in CI and production) requires
-the result tables to exist. If they are missing, the validator exits with a
-non-zero status so that CI cannot pass without producing the artifacts. To
-intentionally skip when tables are absent (e.g. on a clean checkout before
-running generate_results.py), export STRICT_VALIDATION=0.
+Set ``STRICT_VALIDATION=0`` only for local exploratory work where missing or
+invalid tables should be reported without a non-zero exit status.
 """
+from __future__ import annotations
+
+import json
+import math
 import os
-import sys
 from pathlib import Path
 
 import pandas as pd
-import json
-
-# Import stochastic config (handles env var reading)
-_SIM_DIR = Path(__file__).resolve().parent.parent
-if str(_SIM_DIR) not in sys.path:
-    sys.path.insert(0, str(_SIM_DIR))
-from stochastic import DETERMINISTIC_MODE
-
-# Resolve strict mode early -- a missing-artifacts gate must use the same
-# STRICT_VALIDATION semantics as the rest of the validator.
-_STRICT_VALIDATION = os.environ.get("STRICT_VALIDATION", "1") == "1"
-
-_RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
-_T1 = _RESULTS_DIR / "table1_summary.csv"
-_T2 = _RESULTS_DIR / "table2_ablation.csv"
-if not _T1.exists() or not _T2.exists():
-    missing = [str(p.relative_to(_RESULTS_DIR.parent.parent))
-               for p in (_T1, _T2) if not p.exists()]
-    msg_label = "VALIDATION FAILED" if _STRICT_VALIDATION else "SKIP"
-    print(f"{msg_label}: result tables missing in {_RESULTS_DIR}")
-    for p in missing:
-        print(f"  missing: {p}")
-    print("      Run generate_results.py to produce them, then re-run this script.")
-
-    # Always emit a machine-readable report so CI artifacts include the
-    # gate outcome even on the missing-artifact path.
-    try:
-        _RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-        (_RESULTS_DIR / "validation_report.json").write_text(json.dumps({
-            "mode": "DETERMINISTIC" if DETERMINISTIC_MODE else "STOCHASTIC",
-            "strict": _STRICT_VALIDATION,
-            "n_errors": 1 if _STRICT_VALIDATION else 0,
-            "errors": [f"missing artifact: {p}" for p in missing] if _STRICT_VALIDATION else [],
-            "n_ordering_warnings": 0,
-            "ordering_warnings": [],
-            "missing_artifacts": missing,
-        }, indent=2))
-    except OSError:
-        pass
-
-    if _STRICT_VALIDATION:
-        sys.exit(1)
-    sys.exit(0)
-t1 = pd.read_csv(_T1)
-t2 = pd.read_csv(_T2)
-
-# Ordering tolerance: 0.0 for deterministic, 0.06 for stochastic.
-# Implementation note: 2025-04 realism recalibration.
-# The previous 0.04 tolerance was paired with the old narrow-CI run (CIs
-# of 0.001-0.005 on ARI). With realistic stochastic noise the per-mode
-# CIs widen to ~0.02-0.05, and any two ranks separated by less than
-# ~0.06 cannot be distinguished with 95 % confidence. Tightening below
-# this would mean the validator fails on perfectly ordinary seed
-# variation. 0.06 keeps the ordering check meaningful while accepting
-# the realistic noise envelope.
-_TOL = 0.0 if DETERMINISTIC_MODE else 0.06
-
-errors = []
-warnings_ord = []  # ordering claims reported but never blocking
 
 
-def _ord(msg: str) -> None:
-    """Record an ordering claim; reported but never blocks the build.
+RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
+TABLE1 = RESULTS_DIR / "table1_summary.csv"
+TABLE2 = RESULTS_DIR / "table2_ablation.csv"
+STRICT = os.environ.get("STRICT_VALIDATION", "1") == "1"
 
-    Ordering claims (e.g. "agribrain ARI > hybrid_rl ARI") are
-    confirmation-bias-prone when used as build gates. They are
-    decided by the bootstrap CIs and adjusted p-values produced by
-    `aggregate_seeds.py`; the validator only enforces *intervals*
-    (range checks).
-    """
-    warnings_ord.append(msg)
-
-
-def get(scenario, method, metric):
-    row = t1[(t1["Scenario"] == scenario) & (t1["Method"] == method)]
-    if len(row) == 0:
-        errors.append(f"MISSING: {scenario}/{method}")
-        return None
-    return float(row[metric].values[0])
-
-def get2(scenario, variant, metric):
-    row = t2[(t2["Scenario"] == scenario) & (t2["Variant"] == variant)]
-    if len(row) == 0:
-        errors.append(f"MISSING ablation: {scenario}/{variant}")
-        return None
-    return float(row[metric].values[0])
-
-# ============================================================
-# CHECK 1: AGRI-BRAIN ARI ranges
-# ============================================================
-if DETERMINISTIC_MODE:
-    # Implementation note: Deterministic ranges were tightened around the
-    # post-recalibration analytical baselines (lower SLCA ceiling +
-    # softer SLCA bonuses + less-aggressive governance override). They
-    # span the realistic seed-mean envelope, not the wider stochastic
-    # bounds below.
-    ari_ranges = {
-        "heatwave": (0.45, 0.62), "overproduction": (0.48, 0.65),
-        "cyber_outage": (0.48, 0.65), "adaptive_pricing": (0.55, 0.72),
-        "baseline": (0.58, 0.75),
-    }
-else:
-    # Stochastic: ±0.15 envelope around the recalibrated deterministic
-    # midpoints. Wider than DETERMINISTIC because the new stochastic
-    # layer (sensor 2.5C, demand CV 25 %, theta noise 0.08, etc.) drives
-    # realistic 0.02-0.05 within-mode CI widths.
-    ari_ranges = {
-        "heatwave": (0.30, 0.77), "overproduction": (0.33, 0.80),
-        "cyber_outage": (0.33, 0.80), "adaptive_pricing": (0.40, 0.87),
-        "baseline": (0.43, 0.90),
-    }
-for sc, (lo, hi) in ari_ranges.items():
-    v = get(sc, "agribrain", "ARI")
-    if v is not None and not (lo <= v <= hi):
-        errors.append(f"ARI range: agribrain/{sc} = {v:.3f}, expected [{lo}, {hi}]")
-
-# ============================================================
-# CHECK 2: ARI method ordering in every scenario
-# ============================================================
-for sc in t1["Scenario"].unique():
-    ab = get(sc, "agribrain", "ARI")
-    hr = get(sc, "hybrid_rl", "ARI")
-    st = get(sc, "static", "ARI")
-    if ab is not None and hr is not None and st is not None:
-        if not (ab > hr - _TOL and hr > st - _TOL):
-            _ord(f"ARI ordering: {sc}: AB={ab:.3f} > HR={hr:.3f} > ST={st:.3f} VIOLATED")
-
-# ============================================================
-# CHECK 3: ARI scenario ordering for AGRI-BRAIN
-# ============================================================
-ab_ari = {sc: get(sc, "agribrain", "ARI") for sc in t1["Scenario"].unique()}
-if all(v is not None for v in ab_ari.values()):
-    if not (ab_ari["baseline"] >= ab_ari["adaptive_pricing"]):
-        _ord(f"ARI scenario order: baseline ({ab_ari['baseline']:.3f}) < pricing ({ab_ari['adaptive_pricing']:.3f})")
-    if not (ab_ari["adaptive_pricing"] > ab_ari["cyber_outage"]):
-        _ord(f"ARI scenario order: pricing ({ab_ari['adaptive_pricing']:.3f}) <= cyber ({ab_ari['cyber_outage']:.3f})")
-    if not (ab_ari["cyber_outage"] >= ab_ari["overproduction"]):
-        _ord(f"ARI scenario order: cyber ({ab_ari['cyber_outage']:.3f}) < overprod ({ab_ari['overproduction']:.3f})")
-    if not (ab_ari["overproduction"] > ab_ari["heatwave"]):
-        _ord(f"ARI scenario order: overprod ({ab_ari['overproduction']:.3f}) <= heatwave ({ab_ari['heatwave']:.3f})")
-    # Cyber must be meaningfully below baseline (ordering-style claim)
-    if ab_ari["baseline"] - ab_ari["cyber_outage"] < 0.03:
-        _ord(f"ARI: cyber ({ab_ari['cyber_outage']:.3f}) too close to baseline ({ab_ari['baseline']:.3f}), gap < 0.03")
-
-# ============================================================
-# CHECK 4: RLE rules
-# ============================================================
-for sc in t1["Scenario"].unique():
-    # Static must be 0
-    st_rle = get(sc, "static", "RLE")
-    if st_rle is not None and st_rle != 0.0:
-        errors.append(f"RLE: static/{sc} = {st_rle} (must be 0.0)")
-    # AGRI-BRAIN must be > 0
-    ab_rle = get(sc, "agribrain", "RLE")
-    if ab_rle is not None and ab_rle <= 0.0:
-        errors.append(f"RLE: agribrain/{sc} = {ab_rle} (must be > 0)")
-    # AGRI-BRAIN vs Hybrid RL RLE ordering. Under the post-2026-04
-    # rho-conditional hierarchy weighting in models/resilience.py:
-    #
-    #   marketable band (rho <= RHO_MARKETABLE_CUTOFF = 0.50):
-    #     local_redistribute = 1.00, recovery = 0.40, cold_chain = 0.00
-    #   non-marketable band (rho > 0.50):
-    #     local_redistribute = 0.00, recovery = 1.00, cold_chain = 0.00
-    #
-    # AgriBrain's RHO_RECOVERY_KNEE (0.30) and food-safety cutoff
-    # (0.65) deliberately route high-rho batches to Recovery, which
-    # now scores 1.00 in the non-marketable band (the EU 2008/98/EC
-    # Article 4 ordering: at the marketable -> non-marketable
-    # boundary, redistributing to humans is no longer permitted, so
-    # Recovery for animal feed / energy becomes the hierarchically-
-    # preferred option). Hybrid RL has no knee and keeps routing to
-    # local_redistribute, which scores 0.00 in the non-marketable
-    # band. The expected ordering on heat-stressed / over-production
-    # scenarios is therefore agribrain >= hybrid_rl RLE, with the
-    # gap proportional to the fraction of steps in the
-    # non-marketable band. We keep the check informational rather
-    # than blocking because rho profiles are stochastic enough that
-    # the gap can compress on low-noise seeds.
-    hr_rle = get(sc, "hybrid_rl", "RLE")
-    if ab_rle is not None and hr_rle is not None and ab_rle < hr_rle - 0.05:
-        _ord(
-            f"RLE inversion: {sc}: AB={ab_rle:.3f} below HR={hr_rle:.3f} "
-            f"(>0.05 gap). Under rho-conditional weighting AgriBrain "
-            f"should >= Hybrid RL on this scenario; investigate whether "
-            f"the knee is firing or whether action mapping is correct."
-        )
-
-# Cross-scenario RLE ordering for AGRI-BRAIN was previously asserted as
-# heatwave >= overproduction > cyber_outage. Under the new
-# rho-conditional knee-driven physics this is now the *expected*
-# ordering — heatwave drives the highest fraction of steps into the
-# non-marketable band where Recovery scores 1.00, so heatwave RLE
-# should sit at the top of the cross-scenario band. We keep the
-# low-band guard below as informational rather than upgrading to a
-# strict ordering invariant because per-seed rho noise can shuffle
-# the bottom two scenarios.
-ab_rle_hw = get("heatwave", "agribrain", "RLE")
-ab_rle_op = get("overproduction", "agribrain", "RLE")
-ab_rle_cy = get("cyber_outage", "agribrain", "RLE")
-if all(v is not None for v in [ab_rle_hw, ab_rle_op, ab_rle_cy]):
-    if ab_rle_hw < 0.5 or ab_rle_op < 0.5 or ab_rle_cy < 0.4:
-        _ord(f"RLE low-band: HW={ab_rle_hw:.3f} OP={ab_rle_op:.3f} CY={ab_rle_cy:.3f} (any below 0.5/0.5/0.4 expected band)")
-# Also assert agribrain RLE no longer trivially hits 1.0 across the board:
-# a saturated 1.0000 is a tautology of the policy, not a measurement, and
-# was flagged as a problem in the previous run. Allow at most one scenario
-# at 1.0 (extreme edge case where every step rerouted by chance).
-ab_rle_all = [get(sc, "agribrain", "RLE") for sc in ["heatwave","overproduction","cyber_outage","adaptive_pricing","baseline"]]
-n_at_one = sum(1 for v in ab_rle_all if v is not None and v >= 0.999)
-if n_at_one >= 4:
-    # Range-style anti-saturation gate: >=4 scenarios at the ceiling means
-    # the metric is degenerate, not a "agribrain wins" claim. Keep as a
-    # hard error.
-    errors.append(f"RLE saturation: {n_at_one}/5 scenarios hit RLE >= 0.999. Recalibrate the policy or noise; this is tautological.")
-
-# ============================================================
-# CHECK 5: Waste ranges and ordering
-# ============================================================
-if DETERMINISTIC_MODE:
-    waste_ranges_ab = {
-        "heatwave": (0.02, 0.05), "overproduction": (0.03, 0.05),
-        "cyber_outage": (0.03, 0.05), "adaptive_pricing": (0.019, 0.04),
-        "baseline": (0.018, 0.03),
-    }
-else:
-    # Stochastic: widen for realistic field-level perturbation amplitudes
-    waste_ranges_ab = {
-        "heatwave": (0.005, 0.08), "overproduction": (0.01, 0.08),
-        "cyber_outage": (0.01, 0.08), "adaptive_pricing": (0.005, 0.06),
-        "baseline": (0.005, 0.05),
-    }
-for sc, (lo, hi) in waste_ranges_ab.items():
-    v = get(sc, "agribrain", "Waste")
-    if v is not None and not (lo <= v <= hi):
-        errors.append(f"Waste range: agribrain/{sc} = {v:.3f}, expected [{lo}, {hi}]")
-
-for sc in t1["Scenario"].unique():
-    ab = get(sc, "agribrain", "Waste")
-    hr = get(sc, "hybrid_rl", "Waste")
-    st = get(sc, "static", "Waste")
-    if ab is not None and hr is not None and st is not None:
-        if not (st > hr - _TOL and hr > ab - _TOL):
-            _ord(f"Waste ordering: {sc}: ST={st:.3f} > HR={hr:.3f} > AB={ab:.3f} VIOLATED")
-
-# Cyber waste must be higher than baseline waste for AGRI-BRAIN (ordering)
-ab_w_cy = get("cyber_outage", "agribrain", "Waste")
-ab_w_bl = get("baseline", "agribrain", "Waste")
-if ab_w_cy is not None and ab_w_bl is not None:
-    if not (ab_w_cy > ab_w_bl):
-        _ord(f"Waste: cyber ({ab_w_cy:.3f}) must be > baseline ({ab_w_bl:.3f})")
-
-# ============================================================
-# CHECK 6: SLCA ordering
-# ============================================================
-for sc in t1["Scenario"].unique():
-    ab = get(sc, "agribrain", "SLCA")
-    hr = get(sc, "hybrid_rl", "SLCA")
-    st = get(sc, "static", "SLCA")
-    if ab is not None and hr is not None and st is not None:
-        if not (ab > hr - _TOL and hr > st - _TOL):
-            _ord(f"SLCA ordering: {sc}: AB={ab:.3f} > HR={hr:.3f} > ST={st:.3f} VIOLATED")
-
-# SLCA: cyber must be lower than baseline for AGRI-BRAIN (ordering)
-ab_s_cy = get("cyber_outage", "agribrain", "SLCA")
-ab_s_bl = get("baseline", "agribrain", "SLCA")
-if ab_s_cy is not None and ab_s_bl is not None:
-    if not (ab_s_bl > ab_s_cy):
-        _ord(f"SLCA: baseline ({ab_s_bl:.3f}) must be > cyber ({ab_s_cy:.3f})")
-
-# ============================================================
-# CHECK 7: Carbon ordering
-# ============================================================
-for sc in t1["Scenario"].unique():
-    ab = get(sc, "agribrain", "Carbon")
-    hr = get(sc, "hybrid_rl", "Carbon")
-    st = get(sc, "static", "Carbon")
-    if ab is not None and hr is not None and st is not None:
-        carbon_tol = 0.0 if DETERMINISTIC_MODE else 50.0
-        if not (st > hr - carbon_tol and hr > ab - carbon_tol):
-            _ord(f"Carbon ordering: {sc}: ST={st:.0f} > HR={hr:.0f} > AB={ab:.0f} VIOLATED")
-
-# ============================================================
-# CHECK 8: Equity constraints
-# ============================================================
-for sc in t1["Scenario"].unique():
-    st_eq = get(sc, "static", "Equity")
-    # Equity = mean(SLCA) * (1 - std(SLCA)).
-    # Static always picks cold_chain → SLCA is the same every step → std=0
-    # → equity = mean(SLCA). The bound therefore matches the static SLCA
-    # bound for cold_chain, which lies in roughly [0.40, 1.00] across the
-    # post-recalibration parameter space (deterministic and stochastic
-    # both). Earlier revisions of this validator used a tighter bound
-    # appropriate for an older SLCA-base set; that bound was dead by
-    # 2026-04 and is widened here to match the std=0 regime.
-    eq_lo_static = 0.30 if DETERMINISTIC_MODE else 0.25
-    eq_hi_static = 1.00
-    if st_eq is not None and not (eq_lo_static <= st_eq <= eq_hi_static):
-        errors.append(
-            f"Equity: static/{sc} = {st_eq:.3f} out of range "
-            f"[{eq_lo_static}, {eq_hi_static}]"
-        )
-    eq_range = (0.40, 0.95) if DETERMINISTIC_MODE else (0.30, 0.97)
-    for method in ["hybrid_rl", "agribrain"]:
-        eq = get(sc, method, "Equity")
-        if eq is not None and not (eq_range[0] <= eq <= eq_range[1]):
-            errors.append(f"Equity range: {method}/{sc} = {eq:.3f}, expected [{eq_range[0]}, {eq_range[1]}]")
-
-# ============================================================
-# CHECK 9: Ablation ordering (ARI) in every scenario
-# ============================================================
-# Default ordering is what the regular non-cyber scenarios produce:
-# agribrain > no_pinn > hybrid_rl > no_slca > static. The bonus-vector
-# calibration drives no_pinn > hybrid_rl (the SLCA bonus is genuinely
-# load-bearing) and hybrid_rl > no_slca (the NO_SLCA_OFFSET is a
-# weaker compensation than the bonus path).
-#
-# Cyber-outage is the scenario-aware exception. From hour 24 onward
-# the outage branch in select_action() bypasses the normal logits
-# entirely and samples reroute success from a Bernoulli with mode-
-# dependent probability built from the capability-additive
-# composition (see action_selection._cyber_reroute_prob_from_capabilities):
-#
-#     hybrid_rl   = 0.55 (base RL competence only)
-#     no_pinn     = 0.55 + 0.03 (SLCA) + 0.10 (full ctx)  = 0.68
-#     no_slca     = 0.55 + 0.05 (PINN) + 0.10 (full ctx)  = 0.70
-#     agribrain   = 0.55 + 0.05 + 0.03 + 0.10              = 0.73
-#
-# The outage portion is hours 24-72 (192 of 288 steps, ~67% of the
-# episode), so this capability gap dominates the cyber_outage ARI.
-# Both no_pinn and no_slca therefore outperform hybrid_rl on
-# cyber_outage even though hybrid_rl beats no_slca on every other
-# scenario. This is a deliberate consequence of the cyber-resilience
-# capability stack, not a buggy hybrid_rl baseline; the
-# test_cyber_reroute_ranking_invariant unit test pins both
-# no_slca > hybrid_rl and no_pinn > hybrid_rl across +/-50%
-# perturbation of the four capability deltas. The 2026-04
-# 15a8464_20260501_0109 HPC run flagged cyber_outage:
-# hybrid_rl=0.551 < no_slca=0.573 as an inversion warning under
-# the old single-ordering rule; this scenario-aware split silences
-# the false-positive warning while leaving the regular-ordering
-# guard intact for the four non-cyber scenarios.
-expected_ablation_default = ["agribrain", "no_pinn", "hybrid_rl", "no_slca", "static"]
-expected_ablation_cyber = ["agribrain", "no_pinn", "no_slca", "hybrid_rl", "static"]
-for sc in t2["Scenario"].unique():
-    expected_ablation = (
-        expected_ablation_cyber if sc == "cyber_outage"
-        else expected_ablation_default
-    )
-    vals = {}
-    for var in expected_ablation:
-        v = get2(sc, var, "ARI")
-        if v is not None:
-            vals[var] = v
-    if len(vals) == 5:
-        for i in range(len(expected_ablation) - 1):
-            a, b = expected_ablation[i], expected_ablation[i+1]
-            abl_tol = 0.005 if DETERMINISTIC_MODE else 0.02
-            if vals[a] < vals[b] - abl_tol:
-                _ord(f"Ablation ARI inversion: {sc}: {a}={vals[a]:.3f} < {b}={vals[b]:.3f}")
-
-# ============================================================
-# CHECK 10: Global plausibility bounds
-# ============================================================
-_waste_hi = 0.20 if DETERMINISTIC_MODE else 0.30
-_slca_lo = 0.35 if DETERMINISTIC_MODE else 0.25
-_carbon_lo = 1500 if DETERMINISTIC_MODE else 1200
-_carbon_hi = 5500 if DETERMINISTIC_MODE else 6200
-for _, row in t1.iterrows():
-    if not (0.01 <= row["Waste"] <= _waste_hi):
-        errors.append(f"Waste out of bounds: {row['Method']}/{row['Scenario']} = {row['Waste']}")
-    if not (0.0 <= row["ARI"] <= 1.0):
-        errors.append(f"ARI out of bounds: {row['Method']}/{row['Scenario']} = {row['ARI']}")
-    if not (_slca_lo <= row["SLCA"] <= 0.95):
-        errors.append(f"SLCA out of bounds: {row['Method']}/{row['Scenario']} = {row['SLCA']}")
-    if not (_carbon_lo <= row["Carbon"] <= _carbon_hi):
-        errors.append(f"Carbon out of bounds: {row['Method']}/{row['Scenario']} = {row['Carbon']}")
-    if not (0.0 <= row["RLE"] <= 1.0):
-        errors.append(f"RLE out of bounds: {row['Method']}/{row['Scenario']} = {row['RLE']}")
-
-# ============================================================
-# CHECK 11: Operational feasibility diagnostics (if present)
-# ============================================================
-if "DecisionLatencyMs" in t1.columns:
-    for _, row in t1.iterrows():
-        if not (0.0 <= row["DecisionLatencyMs"] <= 5000.0):
-            errors.append(
-                f"DecisionLatencyMs out of bounds: {row['Method']}/{row['Scenario']} = {row['DecisionLatencyMs']}"
-            )
-
-if "ConstraintViolationRate" in t1.columns:
-    for _, row in t1.iterrows():
-        if not (0.0 <= row["ConstraintViolationRate"] <= 1.0):
-            errors.append(
-                f"ConstraintViolationRate out of bounds: {row['Method']}/{row['Scenario']} = {row['ConstraintViolationRate']}"
-            )
-
-# Implementation note: 2025-04 instrumentation symmetry fix.
-# ConstraintViolationRate is now the operational metric (temp OR quality)
-# which is symmetric across every method. Under the new schema,
-# AgriBrain MUST score better than (or equal to within tolerance of) Static
-# on this column, because the only way to reduce temperature/quality
-# violations is to reroute, and rerouting is exactly what AgriBrain does.
-# The old asymmetric metric had AgriBrain at 0.80 vs Static at 0.59;
-# under the new metric, AgriBrain should land roughly 0.05-0.20 below
-# Static everywhere, never above.
-if "ConstraintViolationRate" in t1.columns:
-    for sc in t1["Scenario"].unique():
-        st_cv = get(sc, "static", "ConstraintViolationRate")
-        ab_cv = get(sc, "agribrain", "ConstraintViolationRate")
-        if st_cv is not None and ab_cv is not None:
-            # Allow a small tolerance for seed noise; the substantive claim
-            # is "AgriBrain does not violate operational constraints more
-            # often than the always-cold-chain baseline".
-            if ab_cv > st_cv + 0.05:
-                _ord(
-                    f"ConstraintViolationRate ordering: agribrain/{sc}={ab_cv:.3f} > "
-                    f"static/{sc}={st_cv:.3f} + 0.05. Operational metric should be "
-                    f"AB <= ST; if this fires, the asymmetric instrumentation regressed."
-                )
-
-# RegulatoryViolationRate (compliance-only). Post-2026-04 deep-audit fix
-# (commit 1d9caf0) routes check_compliance uniformly on every step
-# regardless of mode, so this rate is now non-zero for static / hybrid_rl
-# / no_pinn / no_slca too — it tracks how much of the scenario's ambient
-# trajectory falls outside the FDA cold-chain envelope, which is an
-# environmental property. Range-check that the CSV value lies in [0, 1].
-for _, row in t1.iterrows():
-    rv = row.get("RegulatoryViolationRate")
-    if rv is not None and not (0.0 <= float(rv) <= 1.0):
-        errors.append(
-            f"RegulatoryViolationRate out of bounds: "
-            f"{row['Method']}/{row['Scenario']} = {rv}"
-        )
-
-# DownstreamViolationRate / ContainedViolationRate (outcome-side disposition
-# on the env-driven violation event set). These ARE policy-driven by
-# construction — the rates are conditional on a violation event having
-# fired, and the only thing that varies across modes is the action
-# distribution on those events. Static always picks cold_chain so its
-# DownstreamViolationRate ~= 1.0 across every scenario; AgriBrain's
-# Recovery knee + food-safety override divert at-risk batches off the
-# retail-bound pool, so its rate is meaningfully lower (often by 0.40-0.70
-# absolute). Reviewers should read these two columns together with
-# ConstraintViolationRate to see "the env was bad this often, and the
-# policy contained that fraction of the bad events". Range-check both
-# in [0, 1] and assert the AgriBrain << Static ordering as a hard claim
-# (warning under STRICT_VALIDATION=0, error under =1) since this is
-# exactly the policy-quality signal the metric was added to expose.
-for _, row in t1.iterrows():
-    dv = row.get("DownstreamViolationRate")
-    if dv is not None and not (0.0 <= float(dv) <= 1.0):
-        errors.append(
-            f"DownstreamViolationRate out of bounds: "
-            f"{row['Method']}/{row['Scenario']} = {dv}"
-        )
-    cv = row.get("ContainedViolationRate")
-    if cv is not None and not (0.0 <= float(cv) <= 1.0):
-        errors.append(
-            f"ContainedViolationRate out of bounds: "
-            f"{row['Method']}/{row['Scenario']} = {cv}"
-        )
-
-if "DownstreamViolationRate" in t1.columns:
-    for sc in t1["Scenario"].unique():
-        st_dv = get(sc, "static", "DownstreamViolationRate")
-        ab_dv = get(sc, "agribrain", "DownstreamViolationRate")
-        if st_dv is not None and ab_dv is not None:
-            # Allow a 0.05 tolerance for seed noise. The substantive
-            # claim is "AgriBrain routes a smaller fraction of violation
-            # events into the retail-bound cold chain than Static" —
-            # i.e. AgriBrain contains violations that Static lets
-            # through. If AgriBrain >= Static here, either the policy
-            # regressed or the metric is wired wrong.
-            if ab_dv > st_dv - 0.05:
-                _ord(
-                    f"DownstreamViolationRate ordering: agribrain/{sc}={ab_dv:.3f} >= "
-                    f"static/{sc}={st_dv:.3f} - 0.05. Outcome-side metric should be "
-                    f"AB << ST; if this fires, the policy is letting at-risk batches "
-                    f"into retail at the same rate as the no-policy baseline."
-                )
-
-if "ContainedViolationRate" in t1.columns:
-    # Static cannot route to recovery (it always picks cold_chain), so
-    # its ContainedViolationRate must be effectively zero. Consistency check.
-    for sc in t1["Scenario"].unique():
-        st_cv = get(sc, "static", "ContainedViolationRate")
-        if st_cv is not None and float(st_cv) > 0.05:
-            _ord(
-                f"ContainedViolationRate plausibility: static/{sc}={st_cv:.3f} > 0.05. "
-                f"Static always picks cold_chain so its violation containment rate "
-                f"should be ~0. Non-zero value here suggests the disposition "
-                f"counter is being incremented on the wrong action."
-            )
-
-# ============================================================
-# REPORT
-# ============================================================
-bench_path = _RESULTS_DIR / "benchmark_summary.json"
-if bench_path.exists():
-    try:
-        bench_payload = json.loads(bench_path.read_text(encoding="utf-8"))
-        # Aggregator wraps the data under a "summary" key; unwrap so the
-        # bench[scenario][method][metric] traversal works on both the
-        # wrapped and legacy-flat formats.
-        bench = (
-            bench_payload["summary"]
-            if isinstance(bench_payload, dict) and isinstance(bench_payload.get("summary"), dict)
-            else bench_payload
-        )
-        for sc in ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing", "baseline"]:
-            if sc in bench and "agribrain" in bench[sc]:
-                ari_mean = bench[sc]["agribrain"]["ari"]["mean"]
-                if not (0.0 <= ari_mean <= 1.0):
-                    errors.append(f"Benchmark ARI mean out of bounds: {sc}={ari_mean}")
-    except Exception as e:
-        errors.append(f"Failed to parse benchmark_summary.json: {e}")
-
-# Implementation note: 2026-04 validator-mode change.
-#
-# A 2025-04 revision had downgraded the validator to report-only by
-# default to address an earlier confirmation-bias concern (range *and*
-# ordering claims were both gating the build, and the orderings encoded
-# the manuscript's preferred direction). The 2026-04 fix is more
-# surgical: ordering claims now go through
-# `_ord(...)` and are reported as warnings only, while range / interval
-# checks stay as hard errors and gate the build by default. The 2026-05
-# follow-up extends the strict gate to cover the missing-artifacts
-# branch above so CI cannot silently pass without producing tables.
-#
-# To restore the previous report-only behavior for local debugging,
-# export STRICT_VALIDATION=0. The canonical configuration is strict.
-_strict = _STRICT_VALIDATION
-_mode_label = "DETERMINISTIC" if DETERMINISTIC_MODE else "STOCHASTIC"
-print(f"\n{'='*70}")
-print(f"Validation mode: {_mode_label} (strict={_strict})")
-
-# Always write a machine-readable report so CI and downstream readers
-# can inspect the gate outcomes without re-running the validator. The
-# ``missing_artifacts`` field is unconditionally present (empty list
-# on success) so downstream consumers don't have to test for the key.
-report = {
-    "mode": _mode_label,
-    "strict": _strict,
-    "n_errors": len(errors),
-    "errors": list(errors),
-    "n_ordering_warnings": len(warnings_ord),
-    "ordering_warnings": list(warnings_ord),
-    "missing_artifacts": [],
+SCENARIOS = {
+    "heatwave", "overproduction", "cyber_outage",
+    "adaptive_pricing", "baseline",
 }
-try:
-    _RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    (_RESULTS_DIR / "validation_report.json").write_text(json.dumps(report, indent=2))
-except OSError:
-    pass
+CORE_METHODS = {
+    "static", "hybrid_rl", "no_pinn", "no_slca", "no_context",
+    "mcp_only", "pirag_only", "agribrain",
+}
+ABLATION_METHODS = {
+    "static", "hybrid_rl", "no_pinn", "no_slca", "no_context", "agribrain",
+}
 
-if warnings_ord:
-    print(f"\nORDERING WARNINGS (reported, never blocking): {len(warnings_ord)}")
-    for w in warnings_ord:
-        print(f"  WARN  {w}")
+UNIT_INTERVAL_COLUMNS = {
+    "ARI", "Waste", "SLCA", "RLE", "Equity",
+    "ConstraintViolationRate", "OperatingEnvelopeViolationRate",
+    "DownstreamViolationRate", "ContainedViolationRate",
+}
+NONNEGATIVE_COLUMNS = {"Carbon", "DecisionLatencyMs"}
 
-if errors:
-    label = "VALIDATION FAILED" if _strict else "VALIDATION REPORTED RANGE ISSUES"
-    print(f"\n{label}: {len(errors)} range/interval issue(s)")
-    print(f"{'='*70}")
-    for e in errors:
-        print(f"  {e}")
-    if _strict:
-        sys.exit(1)
-    print("\nNon-strict mode (STRICT_VALIDATION=0): continuing with exit 0.")
-else:
-    print("\nALL RANGE CHECKS PASSED")
-    print(f"{'='*70}")
 
-print("\nFinal AGRI-BRAIN results:")
-for sc in ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing", "baseline"]:
-    rows = t1[(t1["Scenario"] == sc) & (t1["Method"] == "agribrain")]
-    if rows.empty:
-        continue
-    r = rows.iloc[0]
-    print(f"  {sc:>20s}: ARI={r['ARI']:.3f} Waste={r['Waste']:.3f} RLE={r['RLE']:.3f} SLCA={r['SLCA']:.3f} Carbon={r['Carbon']:.0f} Eq={r['Equity']:.3f}")
-sys.exit(0)
+def _write_report(errors: list[str], missing: list[str]) -> None:
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "strict": STRICT,
+        "validation_scope": (
+            "artifact presence, balanced structure, numeric finiteness, "
+            "and construct-level bounds; no preferred outcome ordering"
+        ),
+        "n_errors": len(errors),
+        "errors": errors,
+        "missing_artifacts": missing,
+    }
+    (RESULTS_DIR / "validation_report.json").write_text(
+        json.dumps(payload, indent=2), encoding="utf-8"
+    )
+
+
+def _fail_or_report(errors: list[str], missing: list[str] | None = None) -> None:
+    missing = missing or []
+    _write_report(errors, missing)
+    if errors:
+        print(f"VALIDATION {'FAILED' if STRICT else 'REPORTED'}: {len(errors)} issue(s)")
+        for err in errors:
+            print(f"  - {err}")
+        if STRICT:
+            raise SystemExit(1)
+    else:
+        print("VALIDATION PASSED")
+
+
+def _require_columns(df: pd.DataFrame, required: set[str], label: str,
+                     errors: list[str]) -> None:
+    absent = sorted(required.difference(df.columns))
+    if absent:
+        errors.append(f"{label} missing columns: {', '.join(absent)}")
+
+
+def _validate_balanced_panel(
+    df: pd.DataFrame,
+    scenario_col: str,
+    method_col: str,
+    expected_methods: set[str],
+    label: str,
+    errors: list[str],
+) -> None:
+    if scenario_col not in df or method_col not in df:
+        return
+    duplicate = df.duplicated([scenario_col, method_col], keep=False)
+    if duplicate.any():
+        cells = sorted({
+            f"{row[scenario_col]}/{row[method_col]}"
+            for _, row in df.loc[duplicate, [scenario_col, method_col]].iterrows()
+        })
+        errors.append(f"{label} duplicate cells: {', '.join(cells)}")
+
+    observed_scenarios = set(df[scenario_col].dropna().astype(str))
+    if observed_scenarios != SCENARIOS:
+        errors.append(
+            f"{label} scenario set mismatch: expected {sorted(SCENARIOS)}, "
+            f"observed {sorted(observed_scenarios)}"
+        )
+
+    observed_methods = set(df[method_col].dropna().astype(str))
+    if observed_methods != expected_methods:
+        errors.append(
+            f"{label} method set mismatch: expected {sorted(expected_methods)}, "
+            f"observed {sorted(observed_methods)}"
+        )
+
+    expected_cells = {(s, m) for s in SCENARIOS for m in expected_methods}
+    observed_cells = set(zip(df[scenario_col].astype(str), df[method_col].astype(str)))
+    missing_cells = sorted(expected_cells.difference(observed_cells))
+    extra_cells = sorted(observed_cells.difference(expected_cells))
+    if missing_cells:
+        errors.append(
+            f"{label} missing {len(missing_cells)} cells: "
+            + ", ".join(f"{s}/{m}" for s, m in missing_cells[:12])
+        )
+    if extra_cells:
+        errors.append(
+            f"{label} has {len(extra_cells)} unexpected cells: "
+            + ", ".join(f"{s}/{m}" for s, m in extra_cells[:12])
+        )
+
+
+def _validate_numeric_columns(df: pd.DataFrame, label: str,
+                              errors: list[str]) -> None:
+    for column in sorted((UNIT_INTERVAL_COLUMNS | NONNEGATIVE_COLUMNS).intersection(df.columns)):
+        values = pd.to_numeric(df[column], errors="coerce")
+        bad_numeric = values.isna() | ~values.map(math.isfinite)
+        if bad_numeric.any():
+            errors.append(
+                f"{label}.{column} contains {int(bad_numeric.sum())} "
+                "missing or non-finite value(s)"
+            )
+            continue
+        if column in UNIT_INTERVAL_COLUMNS:
+            bad_bounds = (values < 0.0) | (values > 1.0)
+            if bad_bounds.any():
+                errors.append(
+                    f"{label}.{column} contains {int(bad_bounds.sum())} "
+                    "value(s) outside [0, 1]"
+                )
+        else:
+            bad_bounds = values < 0.0
+            if bad_bounds.any():
+                errors.append(
+                    f"{label}.{column} contains {int(bad_bounds.sum())} negative value(s)"
+                )
+
+
+def _validate_summary_json(errors: list[str]) -> None:
+    path = RESULTS_DIR / "benchmark_summary.json"
+    if not path.exists():
+        errors.append("benchmark_summary.json missing")
+        return
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        errors.append(f"benchmark_summary.json invalid JSON: {exc}")
+        return
+    summary = payload.get("summary", payload) if isinstance(payload, dict) else None
+    if not isinstance(summary, dict):
+        errors.append("benchmark_summary.json does not contain a summary object")
+        return
+    if set(summary) != SCENARIOS:
+        errors.append(
+            "benchmark_summary.json scenario set mismatch: "
+            f"observed {sorted(summary) if isinstance(summary, dict) else 'invalid'}"
+        )
+        return
+    for scenario in sorted(SCENARIOS):
+        methods = summary.get(scenario)
+        if not isinstance(methods, dict):
+            errors.append(f"benchmark_summary.json {scenario} is not an object")
+            continue
+        missing = CORE_METHODS.difference(methods)
+        if missing:
+            errors.append(
+                f"benchmark_summary.json {scenario} missing core methods: "
+                + ", ".join(sorted(missing))
+            )
+        for method in CORE_METHODS.intersection(methods):
+            metrics = methods[method]
+            if not isinstance(metrics, dict):
+                errors.append(f"benchmark_summary.json {scenario}/{method} is not an object")
+                continue
+            for metric in ("ari", "waste", "slca", "rle", "equity", "carbon"):
+                record = metrics.get(metric)
+                if not isinstance(record, dict) or "mean" not in record:
+                    errors.append(
+                        f"benchmark_summary.json {scenario}/{method}/{metric}.mean missing"
+                    )
+                    continue
+                try:
+                    value = float(record["mean"])
+                except (TypeError, ValueError):
+                    errors.append(
+                        f"benchmark_summary.json {scenario}/{method}/{metric}.mean non-numeric"
+                    )
+                    continue
+                if not math.isfinite(value):
+                    errors.append(
+                        f"benchmark_summary.json {scenario}/{method}/{metric}.mean non-finite"
+                    )
+                if metric in {"ari", "waste", "slca", "rle", "equity"} and not (0 <= value <= 1):
+                    errors.append(
+                        f"benchmark_summary.json {scenario}/{method}/{metric}.mean outside [0,1]"
+                    )
+                if metric == "carbon" and value < 0:
+                    errors.append(
+                        f"benchmark_summary.json {scenario}/{method}/carbon.mean negative"
+                    )
+
+
+def main() -> None:
+    missing = [str(path) for path in (TABLE1, TABLE2) if not path.exists()]
+    if missing:
+        _fail_or_report([f"missing artifact: {path}" for path in missing], missing)
+        return
+
+    errors: list[str] = []
+    try:
+        table1 = pd.read_csv(TABLE1)
+        table2 = pd.read_csv(TABLE2)
+    except Exception as exc:
+        _fail_or_report([f"failed to read result tables: {exc}"])
+        return
+
+    required_metrics = {"ARI", "Waste", "SLCA", "RLE", "Carbon", "Equity"}
+    _require_columns(table1, {"Scenario", "Method"} | required_metrics,
+                     "table1_summary.csv", errors)
+    _require_columns(table2, {"Scenario", "Variant"} | required_metrics,
+                     "table2_ablation.csv", errors)
+    _validate_balanced_panel(
+        table1, "Scenario", "Method", CORE_METHODS, "table1_summary.csv", errors
+    )
+    _validate_balanced_panel(
+        table2, "Scenario", "Variant", ABLATION_METHODS, "table2_ablation.csv", errors
+    )
+    _validate_numeric_columns(table1, "table1_summary.csv", errors)
+    _validate_numeric_columns(table2, "table2_ablation.csv", errors)
+    _validate_summary_json(errors)
+    _fail_or_report(errors)
+
+
+if __name__ == "__main__":
+    main()

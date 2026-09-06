@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn, fmt, short } from "@/lib/utils";
+import { isAnchoredTransactionHash, provenanceGuardState } from "@/lib/provenance.js";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer,
@@ -14,33 +15,36 @@ import {
 import { toast } from "sonner";
 
 const FEATURE_LABELS = [
-  { key: "compliance_severity", label: "Compliance", color: "#ef4444" },
+  { key: "operating_envelope_severity", legacyKey: "compliance_severity", label: "Envelope", color: "#ef4444" },
   { key: "forecast_urgency", label: "Forecast", color: "#f97316" },
-  { key: "retrieval_confidence", label: "Retrieval", color: "#3b82f6" },
-  { key: "regulatory_pressure", label: "Regulatory", color: "#a855f7" },
+  { key: "normalized_fused_rank_strength", legacyKey: "retrieval_confidence", label: "Retrieval", color: "#3b82f6" },
+  { key: "source_labelled_guidance_flag", legacyKey: "regulatory_pressure", label: "Guidance", color: "#a855f7" },
   { key: "recovery_saturation", label: "Recovery", color: "#22c55e" },
 ];
 
-// --- Section 1a: Causal Explanation ---
-function CausalExplanation({ explainability }) {
-  const text = explainability.causal_text || explainability.summary || "";
-  const primaryCause = explainability.causal_chain?.primary_cause;
+const featureValue = (features, feature) =>
+  features[feature.key] ?? (feature.legacyKey ? features[feature.legacyKey] : undefined) ?? 0;
+
+// --- Section 1a: policy-trace reconstruction ---
+function PolicyTraceExplanation({ explainability }) {
+  const text = explainability.policy_trace_text || explainability.causal_text || explainability.summary || "";
+  const primaryCause = (explainability.attribution_chain || explainability.causal_chain)?.primary_cause;
 
   if (!text) {
-    // Fail loud, not silent: a missing causal narrative is unusual and
+    // Fail loud, not silent: a missing policy trace is unusual and
     // the empty field should be visible rather than the section
     // vanishing silently.
     return (
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <Brain className="w-4 h-4 text-teal-600" />
-          <h4 className="text-sm font-semibold">Causal Explanation</h4>
+          <h4 className="text-sm font-semibold">Policy-Trace Explanation</h4>
           <Badge variant="outline" className="text-[10px]">unavailable</Badge>
         </div>
         <div className="text-xs text-muted-foreground pl-6">
-          The backend did not emit a causal narrative for this decision (typical for
+          The backend did not emit a policy trace for this decision (typical for
           context-disabled modes such as <code>static</code>, <code>hybrid_rl</code>,
-          <code>no_pinn</code>, or <code>no_slca</code>). The other panel sections still
+          or <code>no_context</code>). The other panel sections still
           show whatever evidence is available.
         </div>
       </div>
@@ -48,30 +52,23 @@ function CausalExplanation({ explainability }) {
   }
 
   const renderText = (raw) => {
-    const parts = raw.split(/(BECAUSE|WITHOUT|AND)/g);
-    return parts.map((part, i) => {
-      if (part === "BECAUSE") return <span key={i} className="font-bold text-teal-600 dark:text-teal-400">BECAUSE</span>;
-      if (part === "WITHOUT") return <span key={i} className="font-bold text-amber-600 dark:text-amber-400">WITHOUT</span>;
-      if (part === "AND") return <span key={i} className="font-semibold">AND</span>;
-      // Highlight [KB: ...] citations
-      const withCites = part.split(/(\[KB:[^\]]+\])/g);
-      return withCites.map((seg, j) =>
+    const parts = raw.split(/(\[KB:[^\]]+\])/g);
+    return parts.map((seg, i) =>
         seg.startsWith("[KB:") ? (
-          <Badge key={`${i}-${j}`} variant="outline" className="mx-0.5 text-[10px] font-mono">
+          <Badge key={i} variant="outline" className="mx-0.5 text-[10px] font-mono">
             {seg}
           </Badge>
         ) : (
-          <span key={`${i}-${j}`}>{seg}</span>
+          <span key={i}>{seg}</span>
         )
-      );
-    });
+    );
   };
 
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <Brain className="w-4 h-4 text-teal-600" />
-        <h4 className="text-sm font-semibold">Causal Explanation</h4>
+        <h4 className="text-sm font-semibold">Policy-Trace Explanation</h4>
         {primaryCause && (
           <Badge className="bg-teal-500/10 text-teal-600 dark:text-teal-400 border-0 text-[10px]">
             Primary: {primaryCause}
@@ -80,7 +77,7 @@ function CausalExplanation({ explainability }) {
       </div>
       <div className="text-sm text-muted-foreground leading-relaxed pl-6">
         {text.split("\n\n").map((para, i) => (
-          <p key={i} className={i > 0 ? "mt-2" : ""}>{renderText(para)}</p>
+          <div key={i} className={i > 0 ? "mt-2" : ""}>{renderText(para)}</div>
         ))}
       </div>
     </div>
@@ -101,7 +98,7 @@ function ContextRadar({ explainability }) {
         </div>
         <div className="text-xs text-muted-foreground pl-6">
           No ψ vector was attached to this decision. This is expected for
-          context-disabled modes (no_context, hybrid_rl, static, no_pinn, no_slca).
+          context-disabled modes (no_context, hybrid_rl, static).
         </div>
       </div>
     );
@@ -109,7 +106,7 @@ function ContextRadar({ explainability }) {
 
   const radarData = FEATURE_LABELS.map((f) => ({
     axis: f.label,
-    value: cf[f.key] ?? 0,
+    value: featureValue(cf, f),
   }));
 
   const logitEntries = [
@@ -154,10 +151,10 @@ function ContextRadar({ explainability }) {
                 <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all"
-                    style={{ width: `${(cf[f.key] ?? 0) * 100}%`, background: f.color }}
+                    style={{ width: `${featureValue(cf, f) * 100}%`, background: f.color }}
                   />
                 </div>
-                <span className="font-mono w-8 text-right">{fmt(cf[f.key], 2)}</span>
+                <span className="font-mono w-8 text-right">{fmt(featureValue(cf, f), 2)}</span>
               </div>
             ))}
           </div>
@@ -206,7 +203,7 @@ function KeywordsPanel({ keywords }) {
 
   const categories = [
     { key: "thresholds", field: "thresholds", label: "Thresholds", cls: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0" },
-    { key: "regulations", field: "regulations", label: "Regulations", cls: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-0" },
+    { key: "regulations", field: "regulations", label: "Source-labelled guidance", cls: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-0" },
     { key: "required_actions", field: "required_actions", label: "Actions", cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-0" },
   ];
 
@@ -256,27 +253,27 @@ function KeywordsPanel({ keywords }) {
   );
 }
 
-// --- Section 1d: Provenance Chain ---
+// --- Section 1d: Local evidence commitment ---
 function ProvenanceChain({ explainability, memo }) {
   const prov = explainability.provenance;
   const toolsInvoked = explainability.mcp_tools_invoked || [];
-  const compliance = explainability.compliance;
+  const compliance = explainability.operating_envelope || explainability.compliance;
   const forecast = explainability.forecast;
-  const topDoc = explainability.pirag_top_doc;
-  const topScore = explainability.pirag_top_score;
+  const topDoc = explainability.institutional_retrieval_top_doc || explainability.pirag_top_doc;
+  const topScore = explainability.institutional_retrieval_top_score ?? explainability.pirag_top_score;
 
   const steps = [];
 
   // MCP tool steps
   if (compliance && typeof compliance === "object") {
-    const status = compliance.compliant ? "compliant" : "violation";
+    const status = compliance.compliant ? "within envelope" : "outside envelope";
     const severity = compliance.violations?.[0]?.severity || "unknown";
     steps.push({
       icon: Shield,
       iconColor: compliance.compliant ? "text-emerald-500" : "text-red-500",
-      label: "MCP: check_compliance",
+      label: "MCP: operating-envelope check",
       detail: `${status}${!compliance.compliant ? `, severity=${severity}` : ""}`,
-      hash: prov?.evidence_hashes?.[0],
+      hash: prov?.mcp_evidence_hashes?.check_compliance,
     });
   }
 
@@ -286,7 +283,7 @@ function ProvenanceChain({ explainability, memo }) {
       iconColor: forecast.urgency === "critical" ? "text-red-500" : "text-amber-500",
       label: "MCP: spoilage_forecast",
       detail: `urgency=${forecast.urgency}, rho_6h=${fmt(forecast.forecast_rho, 3)}`,
-      hash: prov?.evidence_hashes?.[1],
+      hash: prov?.mcp_evidence_hashes?.spoilage_forecast,
     });
   }
 
@@ -301,14 +298,14 @@ function ProvenanceChain({ explainability, memo }) {
     }
   }
 
-  // piRAG step
+  // Institutional retrieval step
   if (topDoc) {
     steps.push({
       icon: BookOpen,
       iconColor: "text-blue-500",
-      label: `piRAG: ${topDoc}`,
+      label: `Institutional retrieval: ${topDoc}`,
       detail: `score=${fmt(topScore, 2)}`,
-      hash: prov?.evidence_hashes?.[2],
+      hash: prov?.retrieval_evidence_hashes?.[0],
     });
   }
 
@@ -317,27 +314,23 @@ function ProvenanceChain({ explainability, memo }) {
     steps.push({
       icon: GitBranch,
       iconColor: "text-teal-500",
-      label: "Merkle Root",
+      label: "Local Merkle commitment",
       detail: prov.merkle_root,
       isMerkle: true,
     });
   }
 
-  // Blockchain anchor: distinguish three states explicitly so the
-  // operator never confuses "not attempted" with "anchored".
-  //   * real 0x... hash  -> green "On-chain anchor"
-  //   * "0x0" or unset   -> amber "anchor pending — chain not configured"
-  //                         (with a hint pointing at HOW_TO_RUN.md §6)
-  //   * monitoring phase -> distinct "monitoring preview, no anchor by design"
+  // The live transaction records selected decision fields through
+  // logDecision; it is separate from the local Merkle commitment above.
+  // Never describe this transaction as anchoring the displayed root.
   const phaseStatus = memo.phase_status || "";
-  const txHashIsReal = memo.tx_hash &&
-    memo.tx_hash !== "0x0" &&
-    /^0x[0-9a-fA-F]{2,}$/.test(memo.tx_hash);
+  const txHashIsReal = isAnchoredTransactionHash(memo.tx_hash);
+  const guardState = provenanceGuardState(prov?.guards_passed);
   if (txHashIsReal) {
     steps.push({
       icon: CheckCircle2,
       iconColor: "text-emerald-500",
-      label: "On-chain anchor",
+      label: "Optional on-chain decision record",
       detail: memo.tx_hash,
       isHash: true,
     });
@@ -346,21 +339,21 @@ function ProvenanceChain({ explainability, memo }) {
       icon: AlertTriangle,
       iconColor: "text-blue-500",
       label: "Monitoring preview",
-      detail: "no on-chain anchor by design (deployment phase = monitoring)",
+      detail: "no on-chain decision record by design (deployment phase = monitoring)",
     });
   } else if (phaseStatus === "advisory_pending") {
     steps.push({
       icon: AlertTriangle,
       iconColor: "text-amber-500",
       label: "Advisory pending",
-      detail: "awaiting operator approval; will be anchored on approve",
+      detail: "awaiting operator approval; a separate decision record may be submitted after approval",
     });
   } else {
     steps.push({
       icon: AlertTriangle,
       iconColor: "text-amber-500",
-      label: "On-chain anchor not attempted",
-      detail: "chain not configured (set CHAIN_PRIVKEY + run npx hardhat node)",
+      label: "On-chain decision record not submitted",
+      detail: "optional chain logging is not configured; the local Merkle commitment remains off-chain",
     });
   }
 
@@ -375,12 +368,22 @@ function ProvenanceChain({ explainability, memo }) {
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <Hash className="w-4 h-4 text-teal-600" />
-        <h4 className="text-sm font-semibold">Provenance Chain</h4>
-        {prov?.guards_passed !== false ? (
+        <h4 className="text-sm font-semibold">Local Evidence Commitment</h4>
+        {prov?.evidence_hashes_complete === true
+          && prov?.evidence_hash_count === prov?.evidence_hashes?.length ? (
+          <Badge className="bg-blue-500/10 text-blue-600 border-0 text-[10px]">
+            {prov.evidence_hash_count} exposed leaves
+          </Badge>
+        ) : prov?.merkle_root ? (
+          <Badge className="bg-amber-500/10 text-amber-700 border-0 text-[10px]">
+            Leaf inventory incomplete
+          </Badge>
+        ) : null}
+        {guardState === "passed" ? (
           <Badge className="bg-emerald-500/10 text-emerald-600 border-0 text-[10px]">
             Guards Passed
           </Badge>
-        ) : (
+        ) : guardState === "failed" ? (
           <Badge className="bg-amber-500/10 text-amber-600 border-0 text-[10px]">
             Guards Failed
             {prov?.guard_breakdown && (
@@ -392,8 +395,17 @@ function ProvenanceChain({ explainability, memo }) {
               </span>
             )}
           </Badge>
+        ) : (
+          <Badge className="bg-slate-500/10 text-slate-600 border-0 text-[10px]">
+            Guards Not Evaluated
+          </Badge>
         )}
       </div>
+      {prov?.merkle_root && (
+        <p className="pl-6 text-[10px] text-muted-foreground">
+          The root is a local commitment, not a Merkle inclusion proof. This panel exposes no inclusion paths and does not claim the root is on-chain.
+        </p>
+      )}
       <div className="pl-6 relative">
         <div className="absolute left-8 top-0 bottom-0 w-px bg-border" />
         {steps.map((step, i) => (
@@ -443,12 +455,12 @@ export default function ExplainabilityPanel({ explainability, memo }) {
         <CardContent className="p-4 space-y-2">
           <div className="flex items-center gap-2">
             <Brain className="w-4 h-4 text-muted-foreground" />
-            <h4 className="text-sm font-semibold">Explainability</h4>
+            <h4 className="text-sm font-semibold">Calculation Trace</h4>
             <Badge variant="outline" className="text-[10px]">no payload</Badge>
           </div>
           <p className="text-xs text-muted-foreground">
             The backend did not attach an explainability blob to this memo. This is
-            normal for legacy decisions written before the explainability path was
+            normal for legacy decisions written before the calculation-trace path was
             wired, and for context-disabled modes where the policy reads only φ(s)
             and there is no ψ vector to explain.
           </p>
@@ -460,7 +472,7 @@ export default function ExplainabilityPanel({ explainability, memo }) {
   return (
     <Card className="bg-muted/30 border-primary/10">
       <CardContent className="p-4 space-y-4">
-        <CausalExplanation explainability={explainability} />
+        <PolicyTraceExplanation explainability={explainability} />
         <Separator />
         <ContextRadar explainability={explainability} />
         <Separator />

@@ -175,8 +175,8 @@ def test_effective_rho_rejects_misshaped_probs():
 # ---------------------------------------------------------------------------
 
 def test_low_rho_agribrain_is_cold_chain_dominant():
-    """At fresh-produce / safe-temperature operating points, the policy
-    must prefer cold chain - the operational baseline Figure 2 needs."""
+    """At the declared low-risk, low-temperature point, the policy prior
+    prefers cold-chain continuation."""
     rng = np.random.default_rng(0)
     _, probs = select_action(
         mode="agribrain",
@@ -215,8 +215,8 @@ def test_high_rho_agribrain_prefers_recovery_above_knee():
     )
 
 
-def test_recovery_dominant_at_food_safety_cutoff():
-    """At the food-safety cutoff (rho = 0.65, the threshold above
+def test_recovery_dominant_at_synthetic_disposition_cutoff():
+    """At the synthetic disposition cutoff (rho = 0.65, the threshold above
     which BatchInventory's hard override fires), the policy should
     already prefer Recovery over LR via the soft knee, so the policy
     and the override agree on the routing direction. With the
@@ -231,14 +231,14 @@ def test_recovery_dominant_at_food_safety_cutoff():
     )
     cc, lr, rec = probs
     assert rec > lr, (
-        f"expected Rec > LR at food-safety cutoff rho=0.65; got "
+        f"expected Rec > LR at synthetic disposition cutoff rho=0.65; got "
         f"Rec={rec:.3f} LR={lr:.3f}"
     )
 
 
 def test_mid_rho_agribrain_prefers_lr_below_knee():
     """In the at-risk band (RLE < rho < knee), the policy should still
-    prefer LR - this is the marketable-but-degrading triage band.
+    prefer LR under the author-declared lower-risk action-weight band.
     Tested at rho=0.20 which sits inside the at-risk band (>0.10) and
     below the new knee threshold of 0.30."""
     rng = np.random.default_rng(0)
@@ -274,7 +274,7 @@ def test_hybrid_rl_not_subject_to_recovery_knee():
     assert probs_high[2] < probs_high[1] + 1e-6
 
 
-def test_knee_threshold_constant_is_in_realistic_range():
+def test_knee_threshold_constant_is_in_declared_range():
     """The knee should sit between the at-risk threshold (0.10) and
-    the food-safety hard cutoff (0.65)."""
+    the author-declared synthetic disposition cutoff (0.65)."""
     assert 0.10 < RHO_RECOVERY_KNEE < 0.65

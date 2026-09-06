@@ -1,11 +1,13 @@
-Cooperative Governance Policy for Multi-Agent Supply Chain Coordination
+Cooperative Context Policy for the Synthetic Benchmark
+Status: Synthetic benchmark policy note; it is not an external governance standard.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, are contextual references only; the executable code and locked protocol govern all benchmark values.
 
-Quorum Requirements: Governance decisions require a minimum quorum of 3 participating agents. Each agent (farm, processor, cooperative, distributor, recovery) has one vote. The cooperative agent serves as the coordination facilitator but does not have veto authority.
+Coordination window: The cooperative role participates as an overlay from simulation hour 12 up to, but not including, hour 30. Outside this window, lifecycle-stage agents act without the cooperative overlay.
 
-Voting Periods: Routine governance decisions (parameter adjustments, policy updates) have a 24-hour voting period. Emergency decisions (rerouting under critical conditions, capacity reallocation during outages) have a 4-hour expedited voting period. Simple majority (greater than 50 percent of quorum) is required for approval.
+Context combination: During the overlay window, the primary role's context-logit modifier receives weight 0.70 and the cooperative role's modifier receives weight 0.30. These weights are declared design priors.
 
-SLCA Performance Thresholds: Agents maintaining a composite SLCA score above 0.70 over a rolling 24-hour window receive governance rewards (increased decision autonomy and priority routing access). Agents with composite SLCA scores below 0.30 are subject to governance slashing (reduced autonomy and mandatory coordinator oversight). Scores between 0.30 and 0.70 maintain standard operating parameters.
+Operating-envelope response: During the overlay window, this branch is eligible only when the cooperative synthetic operating-envelope result contains a critical violation and the primary role's result does not contain a critical violation. The primary modifier is then replaced by the cooperative modifier plus the declared bias [-0.20, +0.20, 0.00] for [cold-chain, local-redistribute, recovery], followed by the common [-1, +1] modifier clip. This is an author-declared benchmark adjustment, not a legal compliance determination, calibrated safety rule, or real voting process; it is distinct from the later probability-gap action rule.
 
-Parameter Bounds: Autonomous agents may adjust routing parameters within governance-approved bounds. Temperature threshold adjustments are limited to plus or minus 1 degree Celsius from FDA baseline. Inventory reallocation is capped at 20 percent of current levels per decision cycle. Carbon budget adjustments require explicit cooperative approval.
+Evidence boundary: The execution trace exposes the composed context modifier and its attribution scope, including cooperative_veto when that branch fires. Separate provenance helpers can compute a local Merkle commitment over retrieved-evidence hashes. The executable episode-evidence contract, rather than this corpus note, defines persisted fields. The benchmark does not implement an external audit, and on-chain anchoring is optional and disabled in the confirmatory publication run.
 
-Dispute Resolution: When agents disagree on routing decisions, the cooperative agent facilitates resolution by comparing SLCA projections for each proposed action. The action with the highest projected composite SLCA score is selected, with ties broken in favor of the action that minimizes spoilage risk.
+Limitations: The benchmark does not implement institutional quorum, stakeholder voting, governance slashing, or verified cooperative decision rights. Human governance evaluation remains future work.

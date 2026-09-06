@@ -2,7 +2,7 @@
 
 Selects the most relevant sentence window from retrieved passages
 using keyword overlap scoring. Returns the top-scoring span as the
-answer along with source attribution and a confidence score.
+answer along with source attribution and a normalized lexical-overlap score.
 """
 from __future__ import annotations
 
@@ -54,7 +54,10 @@ class ExtractiveQA:
 
         Returns
         -------
-        Dict with ``answer``, ``source_id``, ``confidence``, ``span``.
+        Dict with ``answer``, ``source_id``, ``lexical_overlap_score``,
+        ``span``, and legacy alias ``confidence``. The score is simple
+        query-token overlap divided by query-token count; it is not calibrated
+        confidence or answer correctness.
         """
         q_tokens = set(_tokenize(question))
         max_possible = max(len(q_tokens), 1)
@@ -79,11 +82,13 @@ class ExtractiveQA:
                     best_span = window_text
                     best_source = p.get("id", "unknown")
 
-        confidence = best_score / max_possible if max_possible > 0 else 0.0
+        lexical_overlap = best_score / max_possible if max_possible > 0 else 0.0
+        lexical_overlap = min(lexical_overlap, 1.0)
 
         return {
             "answer": best_span if best_span else "No relevant span found.",
             "source_id": best_source,
-            "confidence": min(confidence, 1.0),
+            "lexical_overlap_score": lexical_overlap,
+            "confidence": lexical_overlap,  # legacy schema alias
             "span": best_span,
         }

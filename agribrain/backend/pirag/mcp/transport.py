@@ -9,7 +9,7 @@ mechanism (how messages are delivered). Three transport implementations:
    deployment). This is the canonical transport used by both the
    simulator and the FastAPI ``/mcp`` endpoint, via ``MCPClient``.
 2. ``StdioTransport`` — Newline-delimited JSON-RPC over stdin/stdout.
-   Honors the standard MCP local-client pattern (one server process
+   Supports the project's MCP-style local-client pattern (one server process
    per agent, connected via pipes). Run a stdio server with
    ``python -m pirag.mcp.serve``; pair it with ``StdioTransport`` on
    the client side.
@@ -44,8 +44,8 @@ class MCPTransport(ABC):
 class InProcessTransport(MCPTransport):
     """Direct in-process message passing (for simulation).
 
-    Messages are serialized to JSON and deserialized to ensure protocol
-    compliance even in-process. This catches serialization bugs that
+    Messages are serialized to JSON and deserialized to exercise the declared
+    wire shape even in-process. This catches serialization bugs that
     would only surface in networked deployment.
     """
 
@@ -92,7 +92,7 @@ class InProcessTransport(MCPTransport):
 
 
 class StdioTransport(MCPTransport):
-    """JSON-RPC over stdin/stdout (standard MCP local client pattern).
+    """JSON-RPC over stdin/stdout (project MCP-style local pattern).
 
     Writes newline-delimited JSON-RPC messages to stdout, reads responses
     from stdin. Used when agents run as separate processes connected via

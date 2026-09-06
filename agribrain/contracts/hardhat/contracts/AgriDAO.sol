@@ -1,12 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-// Reentrancy note: the AgriDAO contract below uses a hand-rolled
-// `_LocalReentrancyGuard` in this prototype to avoid an OpenZeppelin
-// dependency. The logic is functionally equivalent to the OZ
-// ReentrancyGuard, but a production deployment should import the
-// canonical OZ utility so auditors get the battle-tested version. See
-// agribrain/contracts/README.md for the production checklist.
+// Research-prototype note: this contract uses a small local re-entry guard to
+// keep the Hardhat fixture self-contained. It has not been claimed or audited
+// as equivalent to an external security library.
 // (Comment intentionally kept outside any NatSpec block; the Solidity
 // docstring parser treats @-prefixed tokens as NatSpec tags and chokes
 // on the OZ import path.)
@@ -25,15 +22,11 @@ interface IPolicyStore {
     function setPolicy(bytes32 key, uint256 value) external;
 }
 
-/// @title AgriDAO - Consortium-style governance for supply chain policy updates
-/// @notice Enables cooperative stakeholders to propose, vote on, and execute
-///         policy parameter changes through a quorum-based governance process
-///         with voting periods and timelock execution. Only registered active
-///         agents (verified via AgentRegistry) can propose or vote. Execution
-///         triggers PolicyStore updates that propagate to the decision engine.
-/// @dev Minimal reentrancy guard pulled inline so the contracts dir
-/// stays self-contained without an OpenZeppelin import. Equivalent to
-/// OZ's ReentrancyGuard but with no external dependency.
+/// @title AgriDAO - Optional local proposal-lifecycle prototype
+/// @notice Implements a locally tested proposal, vote, queue, and execute API.
+///         It does not establish stakeholder representation or production governance,
+///         and PolicyStore writes do not automatically update a running backend.
+/// @dev Uses the self-contained guard above for local Hardhat tests only.
 abstract contract _LocalReentrancyGuard {
     uint256 private constant _NOT_ENTERED = 1;
     uint256 private constant _ENTERED = 2;

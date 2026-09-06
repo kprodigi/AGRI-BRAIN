@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-/// @title PolicyStore - On-chain governance parameter registry
-/// @notice Stores both scalar policy thresholds and matrix-shaped policy
-///         parameters that map to physical models in the backend.
+/// @title PolicyStore - Optional local parameter-storage prototype
+/// @notice Stores bounded scalar and matrix values supplied by authorized callers.
+///         Storage does not automatically synchronize with a running backend.
 ///
 ///         Scalar keys (uint256, mapped via ``policy``):
 ///         - keccak256("max_temp_c"): Max cold-chain temperature (Celsius * 100).
@@ -18,9 +18,7 @@ pragma solidity ^0.8.28;
 ///         Matrix keys (int256[], mapped via ``policyMatrix``):
 ///         - keccak256("THETA"):           base policy weights, 3x10, milli-scaled.
 ///         - keccak256("THETA_CONTEXT"):   context weight matrix, 3x5, milli-scaled.
-///         Each cell is stored as int256 (signed) scaled by 1000, so the
-///         range +/-2.000 the paper uses for Theta entries is representable
-///         exactly without floating-point round-trip. Reads return the
+///         Each cell is stored as int256 (signed) scaled by 1000. Reads return the
 ///         flat int256[] plus the (rows, cols) shape so off-chain readers
 ///         can reshape without an out-of-band schema.
 contract PolicyStore {
@@ -105,10 +103,7 @@ contract PolicyStore {
 
         // Matrix keys for the canonical policy weight matrices. Both use
         // a maxAbsMilli of 5000 so cells in [-5.000, +5.000] are
-        // accepted; the paper's largest single-cell magnitudes (Theta
-        // cold-chain spoilage = -2.00, Theta_context cold-chain
-        // compliance = -0.80) sit comfortably inside that envelope and
-        // any proposal that drifts past +/-5.0 is gated.
+        // accepted. The declared default matrices fit within this local bound.
         _registerMatrix(keccak256("THETA"), 3, 10, 5000);
         _registerMatrix(keccak256("THETA_CONTEXT"), 3, 5, 5000);
     }
@@ -123,8 +118,8 @@ contract PolicyStore {
     }
 
     /// @dev Hard upper bound on matrix cell count to prevent gas-DoS via
-    /// pathologically-large matrices. The paper's largest matrix is THETA
-    /// at (3, 10) = 30 cells; THETA_CONTEXT is (3, 5) = 15. The 256-cell
+    /// pathologically-large matrices. THETA is 3x10 and THETA_CONTEXT is
+    /// 3x5. The 256-cell
     /// cap leaves >10x headroom for future expansion while making
     /// setPolicyMatrix's per-cell loop bounded by a small constant. A
     /// matrix above this cap is rejected at registration time so a
@@ -179,8 +174,8 @@ contract PolicyStore {
     /// @param rows            number of rows; must match the registered shape.
     /// @param cols            number of columns; must match the registered shape.
     /// @param valuesMilli     row-major flat array of length rows*cols,
-    ///                        each cell scaled by 1000 (so the paper's
-    ///                        +0.50 becomes 500, -0.80 becomes -800).
+    ///                        each cell scaled by 1000 (+0.50 becomes 500,
+    ///                        -0.80 becomes -800).
     function setPolicyMatrix(
         bytes32 key,
         uint256 rows,

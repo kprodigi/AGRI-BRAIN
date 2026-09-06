@@ -56,7 +56,32 @@ def _make_episode(tmp_path: Path, mode: str, scenario: str, rows, *, corrupt_roo
     return path
 
 
-def _row(action_idx: int, *, psi=None, mod=None, dom=None):
+def _row(action_idx: int, *, psi=None, mod=None, dom=None, theta=None):
+    theta = theta or [
+        [-0.8, -0.6, -0.15, -0.30, +0.25],
+        [+0.5, +0.4, +0.20, +0.25, +0.10],
+        [+0.3, +0.2, -0.05, +0.05, -0.35],
+    ]
+    allocation = None
+    residual = None
+    contributions = None
+    chosen_residual = None
+    if psi is not None and mod is not None:
+        allocation = []
+        residual = []
+        for i in range(3):
+            raw = [float(theta[i][j]) * float(psi[j]) for j in range(5)]
+            raw_sum = sum(raw)
+            if abs(raw_sum) > 1e-15:
+                row = [v * float(mod[i]) / raw_sum for v in raw]
+                rem = float(mod[i]) - sum(row)
+            else:
+                row = [0.0] * 5
+                rem = float(mod[i])
+            allocation.append(row)
+            residual.append(rem)
+        contributions = allocation[action_idx]
+        chosen_residual = residual[action_idx]
     return {
         "ts": 0,
         "hour": 0.0,
@@ -73,6 +98,11 @@ def _row(action_idx: int, *, psi=None, mod=None, dom=None):
         "mode": "agribrain",
         "scenario": "baseline",
         "psi": list(psi) if psi is not None else None,
+        "effective_context_theta": theta if psi is not None else None,
+        "context_feature_contributions": allocation,
+        "context_nonfeature_residual": residual,
+        "chosen_action_context_contributions": contributions,
+        "chosen_action_context_residual": chosen_residual,
         "context_modifier": list(mod) if mod is not None else None,
         "dominant_psi_idx": dom,
         "dominant_action_idx": (int(max(range(len(mod)), key=lambda i: mod[i])) if mod is not None else None),
@@ -102,7 +132,7 @@ def test_provenance_integrity_detects_leaf_corruption(tmp_path):
     assert summary["provenance_ok"] is False
 
 
-def test_causal_chain_coverage_full(tmp_path):
+def test_policy_trace_coverage_full(tmp_path):
     # All three rows have a non-trivial modifier and all explainability fields.
     psi = [0.8, 0.1, 0.0, 0.0, 0.0]
     mod = [-0.6, 0.4, 0.1]
@@ -113,7 +143,7 @@ def test_causal_chain_coverage_full(tmp_path):
     assert summary["coverage_rate"] == 1.0
 
 
-def test_causal_chain_coverage_partial(tmp_path):
+def test_policy_trace_coverage_partial(tmp_path):
     psi = [0.8, 0.1, 0.0, 0.0, 0.0]
     mod = [-0.6, 0.4, 0.1]
     full = _row(1, psi=psi, mod=mod, dom=0)
@@ -125,7 +155,7 @@ def test_causal_chain_coverage_partial(tmp_path):
     assert summary["coverage_rate"] == pytest.approx(2 / 3, rel=1e-6)
 
 
-def test_sign_consistency_uses_theta_context(tmp_path):
+def test_sign_consistency_uses_recorded_final_allocation(tmp_path):
     import numpy as np
     theta = np.array([
         [-0.8, -0.6, -0.15, -0.30, +0.25],   # cold_chain
@@ -134,7 +164,7 @@ def test_sign_consistency_uses_theta_context(tmp_path):
     ])
     psi = [0.9, 0.0, 0.0, 0.0, 0.0]
     mod = (theta @ np.asarray(psi)).tolist()  # consistent by construction
-    consistent = _row(1, psi=psi, mod=mod, dom=0)  # action_idx=1 -> theta[1,0] > 0, mod[1] > 0
+    consistent = _row(1, psi=psi, mod=mod, dom=0, theta=theta.tolist())
     inconsistent = dict(consistent)
     inconsistent["context_modifier"] = [-x for x in mod]  # flip modifier sign artificially
     rows = [consistent, consistent, inconsistent]
@@ -144,15 +174,32 @@ def test_sign_consistency_uses_theta_context(tmp_path):
     assert summary["sign_consistency_rate"] == pytest.approx(2 / 3, rel=1e-6)
 
 
+def test_final_modifier_reconstruction_detects_tampering(tmp_path):
+    psi = [0.9, 0.2, 0.0, 0.0, 0.0]
+    good = _row(1, psi=psi, mod=[-0.5, 0.5, 0.1], dom=0)
+    bad = dict(good)
+    bad["chosen_action_context_contributions"] = [99.0, 0.0, 0.0, 0.0, 0.0]
+    _make_episode(tmp_path, "agribrain", "baseline", [good, bad])
+    summary = em._summarise_episode(next(tmp_path.glob("*.jsonl")), 0.05, None)
+    assert summary["final_modifier_reconstruction_rate"] == 0.5
+    assert summary["coverage_rate"] == 0.5
+
+
 def test_aggregate_handles_empty_input():
     out = em.aggregate([])
     assert out["episodes"] == 0
-    assert out["causal_chain_coverage"] is None
+    assert out["policy_trace_coverage"] is None
     assert out["sign_consistency"] is None
+    assert out["final_modifier_reconstruction"] is None
     assert out["provenance_integrity"] is None
 
 
-def test_main_writes_output(tmp_path, capsys):
+def test_main_writes_output(tmp_path, capsys, monkeypatch):
+    from mvp.simulation.benchmarks import aggregate_channel_attribution as aca
+
+    monkeypatch.setattr(aca, "_git_commit", lambda: "a" * 40)
+    monkeypatch.setenv("RUN_TAG", "unit_scope_run")
+    monkeypatch.setenv("ARTIFACT_RUN_TAG", "unit_scope_run")
     psi = [0.8, 0.1, 0.0, 0.0, 0.0]
     mod = [-0.6, 0.4, 0.1]
     rows = [_row(1, psi=psi, mod=mod, dom=0)]
@@ -168,3 +215,11 @@ def test_main_writes_output(tmp_path, capsys):
     payload = json.loads(out_path.read_text(encoding="utf-8"))
     assert payload["aggregate"]["episodes"] == 1
     assert payload["aggregate"]["provenance_integrity"] == 1.0
+    assert payload["_meta"] == {
+        "source_commit": "a" * 40,
+        "ledger_root": ledger_dir.as_posix(),
+        "seed_count": 1,
+        "run_tag": "unit_scope_run",
+        "episode_scope": "final episode per scenario-mode-seed arm",
+        "decision_history_scope": "earlier decisions in the same episode only",
+    }

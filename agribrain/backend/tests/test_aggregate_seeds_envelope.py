@@ -334,15 +334,14 @@ def test_verify_manifest_tracked_patterns_match_gitignore_allowlist():
         "missing-tracked when those files are absent from a fresh "
         "clone."
     )
-    # Paper-evidence artefacts pinned to the allowlist in 2026-05 so
+    # Canonical paper-evidence artifacts pinned to the allowlist so
     # reviewers can verify the cited evidence against the repo without
     # the HPC tar.gz archive.
     paper_evidence = [
         '"paper_benchmark_table.json"',
         '"stress_passfail.csv"',
-        '"temporal_stability_summary.json"',
-        '"temporal_stability_summary.csv"',
-        '"temporal_stability_deltas.csv"',
+        '"stress_h3_test.json"',
+        '"explainability_metrics.json"',
     ]
     for pat in paper_evidence:
         assert pat in src, (

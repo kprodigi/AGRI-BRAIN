@@ -1,26 +1,28 @@
 #!/usr/bin/env python3
 """Dual-mode stochastic perturbation layer for simulation.
 
-Eight realistic uncertainty sources (after the 2026-04 calibration
-that raised every CV to match field-realistic envelopes; the older
-"7-source" docstring referenced the pre-2026-04 calibration and did
-not include the policy-temperature heterogeneity Source 8):
+Seven operational uncertainty sources plus an optional policy-temperature
+sensitivity parameter:
 
   1. Sensor noise -- temperature sigma 2.5 degC, humidity sigma 7.0 %
-  2. Demand variability -- multiplicative CV 25 %
+  2. Observed-demand variability -- multiplicative CV 25 %, applied to the
+     exogenous demand-observation series before forecasting and regime logic
   3. Inventory/yield uncertainty -- multiplicative CV 22 %
   4. Transport distance jitter -- route CV 22 %
   5. Spoilage model error -- k_ref CV 20 %, Ea_R CV 14 %
   6. Scenario onset jitter -- +/- 6 hour uniform shift
   7. Policy weight perturbation -- THETA noise sigma 0.15
-  8. Policy temperature heterogeneity -- LogNormal sigma 0.25 in log-space
-     (operator-to-operator softmax-temperature variability)
+  8. Optional policy temperature sensitivity -- disabled by default
 
 Plus one orthogonal channel (not counted as a "source" per the paper
 narrative): telemetry lag probability 0.10 (intermittent dropouts).
 
 DETERMINISTIC_MODE=false (default) enables seeded, bounded perturbations.
 DETERMINISTIC_MODE=true disables all perturbations for strict reproducibility.
+
+Publication runs use source/counter-keyed draws. Per-step noise therefore
+depends on the environmental stream id, source name, and timestep rather than
+on mutable call order inside a policy arm.
 
 Single-source-of-truth contract: :func:`canonical_defaults` returns the
 canonical env-var -> default-value mapping that callers (and the
@@ -29,6 +31,7 @@ literals elsewhere.
 """
 from __future__ import annotations
 
+import hashlib
 import os
 from dataclasses import dataclass
 
@@ -70,117 +73,179 @@ class StochasticLayer:
     # --- Source 7: Policy weight perturbation ---
     theta_noise_std: float
     # --- Source 8: Policy temperature heterogeneity (per-mode-per-seed) ---
-    # Different deployments calibrate their softmax temperature differently;
-    # some operators run sharp (T~0.7) for confidence, some run smooth (T~1.4)
-    # for diversity. Drawing a per-(mode, seed) temperature with this sigma
-    # introduces mode-differential per-seed variance which is essential for
-    # the paired Cohen's d_z to land in the empirical 1-3 range. Without it,
-    # within-pair variance is dominated by 288-step CLT averaging and d_z
-    # explodes to 4-10, which produces implausible.
+    # Disabled in the confirmatory benchmark. Non-zero values are reserved
+    # for an explicitly labelled sensitivity analysis.
     policy_temp_std: float
     # --- Telemetry lag (kept from original) ---
     delay_prob: float
+    # Stable root for source/counter-keyed common-random-number draws. When
+    # omitted, methods retain the legacy sequential ``rng`` behaviour.
+    stream_seed: int | None = None
+
+    def _rng_for(self, source: str, counter: int | None) -> np.random.Generator:
+        """Return a draw stream that is independent of call order.
+
+        Publication callers provide ``stream_seed`` plus a semantic counter
+        (timestep for per-step sources, zero for episode-level sources). A
+        branch in one policy arm therefore cannot shift later environmental
+        draws in another arm. Legacy callers without either value continue to
+        consume ``self.rng`` sequentially.
+        """
+        if self.stream_seed is None or counter is None:
+            return self.rng
+        key = (
+            f"agribrain-stochastic-v1|{int(self.stream_seed)}|"
+            f"{source}|{int(counter)}"
+        ).encode("utf-8")
+        seed = int.from_bytes(hashlib.sha256(key).digest()[:8], "big")
+        return np.random.default_rng(seed)
 
     # ---- Source 1: Sensor noise ----
 
-    def perturb_temperature(self, temp_c: float) -> float:
+    def perturb_temperature(
+        self, temp_c: float, *, counter: int | None = None,
+    ) -> float:
         if not self.enabled or self.temp_std_c <= 0.0:
             return float(temp_c)
-        return float(np.clip(temp_c + self.rng.normal(0.0, self.temp_std_c), -5.0, 55.0))
+        draw_rng = self._rng_for("temperature", counter)
+        return float(np.clip(
+            temp_c + draw_rng.normal(0.0, self.temp_std_c), -5.0, 55.0,
+        ))
 
-    def perturb_humidity(self, rh: float) -> float:
+    def perturb_humidity(
+        self, rh: float, *, counter: int | None = None,
+    ) -> float:
         if not self.enabled or self.rh_std <= 0.0:
             return float(rh)
-        return float(np.clip(rh + self.rng.normal(0.0, self.rh_std), 0.0, 100.0))
+        draw_rng = self._rng_for("humidity", counter)
+        return float(np.clip(
+            rh + draw_rng.normal(0.0, self.rh_std), 0.0, 100.0,
+        ))
 
     # ---- Source 2: Demand variability ----
 
-    def perturb_demand(self, demand: float) -> float:
+    def perturb_demand(
+        self, demand: float, *, counter: int | None = None,
+    ) -> float:
+        """Perturb one observed exogenous demand value, not its forecast."""
         if not self.enabled or self.demand_frac_std <= 0.0:
             return float(demand)
-        mult = 1.0 + float(self.rng.normal(0.0, self.demand_frac_std))
+        draw_rng = self._rng_for("demand", counter)
+        mult = 1.0 + float(draw_rng.normal(0.0, self.demand_frac_std))
         return float(max(0.0, demand * mult))
 
     # ---- Source 3: Inventory/yield uncertainty ----
 
-    def perturb_inventory(self, inv: float) -> float:
+    def perturb_inventory(
+        self, inv: float, *, counter: int | None = None,
+    ) -> float:
         if not self.enabled or self.inventory_frac_std <= 0.0:
             return float(inv)
-        mult = 1.0 + float(self.rng.normal(0.0, self.inventory_frac_std))
+        draw_rng = self._rng_for("inventory", counter)
+        mult = 1.0 + float(draw_rng.normal(0.0, self.inventory_frac_std))
         return float(max(0.0, inv * mult))
 
     # ---- Source 4: Transport distance jitter ----
 
-    def perturb_transport_km(self, km: float) -> float:
+    def perturb_transport_km(
+        self, km: float, *, counter: int | None = None,
+    ) -> float:
         """Jitter transport distance (detours, traffic, loading delays)."""
+        return float(max(
+            0.0,
+            float(km) * self.perturb_transport_multiplier(counter=counter),
+        ))
+
+    def perturb_transport_multiplier(
+        self, *, counter: int | None = None,
+    ) -> float:
+        """Draw one action-independent transport multiplier.
+
+        Callers draw this once per routing opportunity and only then multiply
+        by the selected route's declared distance.  That ordering preserves a
+        common environmental transport realization across policy arms.
+        """
         if not self.enabled or self.transport_km_frac_std <= 0.0:
-            return float(km)
-        mult = 1.0 + float(self.rng.normal(0.0, self.transport_km_frac_std))
-        return float(max(0.0, km * mult))
+            return 1.0
+        draw_rng = self._rng_for("transport", counter)
+        return float(max(0.0, 1.0 + draw_rng.normal(
+            0.0, self.transport_km_frac_std,
+        )))
 
     # ---- Source 5: Spoilage model error (call ONCE per episode) ----
 
-    def perturb_k_ref(self, k_ref: float) -> float:
+    def perturb_k_ref(
+        self, k_ref: float, *, counter: int | None = None,
+    ) -> float:
         """Batch-to-batch variation in produce decay rate."""
         if not self.enabled or self.k_ref_frac_std <= 0.0:
             return float(k_ref)
-        mult = 1.0 + float(self.rng.normal(0.0, self.k_ref_frac_std))
+        draw_rng = self._rng_for("k_ref", counter)
+        mult = 1.0 + float(draw_rng.normal(0.0, self.k_ref_frac_std))
         return float(max(1e-6, k_ref * mult))
 
-    def perturb_ea_r(self, ea_r: float) -> float:
+    def perturb_ea_r(
+        self, ea_r: float, *, counter: int | None = None,
+    ) -> float:
         """Batch-to-batch variation in activation energy."""
         if not self.enabled or self.ea_r_frac_std <= 0.0:
             return float(ea_r)
-        mult = 1.0 + float(self.rng.normal(0.0, self.ea_r_frac_std))
+        draw_rng = self._rng_for("ea_r", counter)
+        mult = 1.0 + float(draw_rng.normal(0.0, self.ea_r_frac_std))
         return float(max(100.0, ea_r * mult))
 
     # ---- Source 6: Scenario onset jitter ----
 
-    def jitter_onset_hour(self, base_hour: float) -> float:
+    def jitter_onset_hour(
+        self, base_hour: float, *, counter: int | None = None,
+    ) -> float:
         """Shift scenario onset by ±onset_jitter_hours (uniform)."""
         if not self.enabled or self.onset_jitter_hours <= 0.0:
             return float(base_hour)
-        shift = float(self.rng.uniform(-self.onset_jitter_hours, self.onset_jitter_hours))
-        return float(max(0.0, base_hour + shift))
+        draw_rng = self._rng_for("scenario_onset", counter)
+        shift = float(draw_rng.uniform(
+            -self.onset_jitter_hours, self.onset_jitter_hours,
+        ))
+        return float(base_hour + shift)
 
     # ---- Source 7: Policy weight perturbation (call ONCE per seed) ----
 
-    def perturb_theta(self, theta: np.ndarray) -> np.ndarray:
+    def perturb_theta(
+        self, theta: np.ndarray, *, counter: int | None = None,
+    ) -> np.ndarray:
         """Add small Gaussian noise to policy weight matrix."""
         if not self.enabled or self.theta_noise_std <= 0.0:
             return theta.copy()
-        noise = self.rng.normal(0.0, self.theta_noise_std, size=theta.shape)
+        draw_rng = self._rng_for("policy_theta", counter)
+        noise = draw_rng.normal(0.0, self.theta_noise_std, size=theta.shape)
         return theta + noise
 
     # ---- Source 8: Policy-temperature heterogeneity (per-mode-per-seed) ----
 
-    def policy_temperature(self, base: float = 1.0) -> float:
+    def policy_temperature(
+        self, base: float = 1.0, *, counter: int | None = None,
+    ) -> float:
         """Return a per-call softmax temperature draw.
 
         T = base * exp(N(0, policy_temp_std))
 
-        Models real-world deployment-to-deployment calibration heterogeneity
-        (some operators tune for confidence -> sharper softmax; some for
-        diversity -> smoother softmax). When called once per (mode, seed)
-        and applied as ``probs = softmax(logits / T)``, this introduces
-        mode-differential per-seed noise that is the *only* source of
-        within-pair variance for paired-design ablations sharing
-        ablation_seed for environment matching. Without this term, the
-        paired Cohen's d_z is dominated by 288-step CLT averaging and
-        explodes to 4-10; with policy_temp_std ~0.25 it lands at ~1.5-3
-        which is what empirical operations-research literature reports.
+        When enabled, models deployment-to-deployment calibration
+        heterogeneity. It must not be chosen to target a desired inferential
+        statistic.
         """
         if not self.enabled or self.policy_temp_std <= 0.0:
             return float(base)
-        return float(base * np.exp(self.rng.normal(0.0, self.policy_temp_std)))
+        draw_rng = self._rng_for("policy_temperature", counter)
+        return float(base * np.exp(draw_rng.normal(0.0, self.policy_temp_std)))
 
     # ---- Telemetry lag ----
 
-    def should_delay(self) -> bool:
+    def should_delay(self, *, counter: int | None = None) -> bool:
         """Return True with probability delay_prob (telemetry lag event)."""
         if not self.enabled or self.delay_prob <= 0.0:
             return False
-        return float(self.rng.random()) < self.delay_prob
+        draw_rng = self._rng_for("telemetry_delay", counter)
+        return float(draw_rng.random()) < self.delay_prob
 
 
 _DISABLED = StochasticLayer(
@@ -207,7 +272,8 @@ _DISABLED = StochasticLayer(
 #:
 #: Keys are env-var names. Values are documented defaults as strings
 #: (the form a reader would type into a shell). The order matches the
-#: "8 sources + 1 orthogonal lag" narrative in the module docstring.
+#: seven operational sources, optional policy-temperature sensitivity, and
+#: one orthogonal lag channel in the module docstring.
 _CANONICAL_STOCH_DEFAULTS: dict[str, str] = {
     "STOCH_TEMP_STD_C":         "2.5",
     "STOCH_RH_STD":             "7.0",
@@ -218,7 +284,7 @@ _CANONICAL_STOCH_DEFAULTS: dict[str, str] = {
     "STOCH_EA_R_STD":           "0.14",
     "STOCH_ONSET_JITTER_H":     "6.0",
     "STOCH_THETA_NOISE_STD":    "0.15",
-    "STOCH_POLICY_TEMP_STD":    "0.25",
+    "STOCH_POLICY_TEMP_STD":    "0.0",
     "STOCH_DELAY_PROB":         "0.10",
 }
 
@@ -233,19 +299,14 @@ def canonical_defaults() -> dict[str, str]:
     return dict(_CANONICAL_STOCH_DEFAULTS)
 
 
-def make_stochastic_layer(rng: np.random.Generator) -> StochasticLayer:
+def make_stochastic_layer(
+    rng: np.random.Generator, *, stream_seed: int | None = None,
+) -> StochasticLayer:
     """Build the stochastic perturbation layer.
 
-    Implementation note: realism recalibration (2025-04).
-    The previous defaults produced 20-seed bootstrap CIs of width
-    0.001-0.005 on ARI, which combined with paired-design d_z values
-    produced effect sizes (d_z = 4-10) that are essentially never
-    observed in empirical operations-research literature. The defaults
-    below were widened so that real-world operational variability
-    (sensor drift, daily demand shocks, batch-to-batch produce
-    heterogeneity, route delays) drives a more credible 0.02-0.05 CI
-    width on ARI without changing the rank order of methods. Each
-    value is annotated with the empirical anchor used to set it.
+    Values are declared benchmark assumptions and are exposed as environment
+    variables for sensitivity analysis. The confirmatory run uses these values
+    without outcome-dependent retuning.
     """
     if _is_deterministic():
         return _DISABLED
@@ -270,4 +331,5 @@ def make_stochastic_layer(rng: np.random.Generator) -> StochasticLayer:
         theta_noise_std=_f("STOCH_THETA_NOISE_STD"),
         policy_temp_std=_f("STOCH_POLICY_TEMP_STD"),
         delay_prob=_f("STOCH_DELAY_PROB"),
+        stream_seed=stream_seed,
     )

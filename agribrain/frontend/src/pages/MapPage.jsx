@@ -9,13 +9,14 @@ import "leaflet/dist/leaflet.css";
 
 const API = getApiBase();
 
-// Supply chain nodes
+// Notional synthetic nodes for the development visualization. These names,
+// coordinates, routes, and distances are not observed facilities or field data.
 const NODES = [
-  { id: "farm", name: "Prairie Organic Farm", lat: 44.0, lng: -100.3, icon: "farm", color: "#10B981", agent: "FarmAgent" },
-  { id: "processor", name: "SD Processing Facility", lat: 44.1, lng: -99.8, icon: "factory", color: "#0072B2", agent: "ProcessorAgent" },
-  { id: "cooperative", name: "Great Plains Cooperative", lat: 44.3, lng: -100.0, icon: "warehouse", color: "#7570B3", agent: "CooperativeAgent" },
-  { id: "distributor", name: "Regional Distribution Hub", lat: 43.7, lng: -99.3, icon: "truck", color: "#E67E22", agent: "DistributorAgent" },
-  { id: "recovery", name: "Eco Recovery Center", lat: 44.2, lng: -100.5, icon: "recycle", color: "#8B5CF6", agent: "RecoveryAgent" },
+  { id: "farm", name: "Notional Farm Node", lat: 44.0, lng: -100.3, icon: "farm", color: "#10B981", agent: "FarmAgent" },
+  { id: "processor", name: "Notional Processor Node", lat: 44.1, lng: -99.8, icon: "factory", color: "#0072B2", agent: "ProcessorAgent" },
+  { id: "cooperative", name: "Notional Cooperative Node", lat: 44.3, lng: -100.0, icon: "warehouse", color: "#7570B3", agent: "CooperativeAgent" },
+  { id: "distributor", name: "Notional Distribution Node", lat: 43.7, lng: -99.3, icon: "truck", color: "#E67E22", agent: "DistributorAgent" },
+  { id: "recovery", name: "Notional Recovery Node", lat: 44.2, lng: -100.5, icon: "recycle", color: "#8B5CF6", agent: "RecoveryAgent" },
 ];
 
 const ROUTES = [
@@ -88,7 +89,7 @@ function MapContent({ kpis, lastDecision }) {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Status:</span>
-                  <span className="font-medium text-green-600">Active</span>
+                  <span className="font-medium text-slate-600">Notional node</span>
                 </div>
                 {node.id === "farm" && kpis && (
                   <>
@@ -134,6 +135,10 @@ export default function MapPage() {
       {/* Legend */}
       <Card>
         <CardContent className="p-4">
+          <p className="mb-3 text-xs text-amber-700 dark:text-amber-300">
+            Synthetic development visualization only: facility names, coordinates, routes,
+            and distances are not observed sites or field-validation data.
+          </p>
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <span className="font-medium text-muted-foreground">Supply Chain Network</span>
             <div className="flex items-center gap-4">
@@ -182,7 +187,7 @@ export default function MapPage() {
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Status</span>
-                  <Badge variant="success" className="text-[10px] h-5">Active</Badge>
+                  <Badge variant="outline" className="text-[10px] h-5">Notional node</Badge>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Coordinates</span>

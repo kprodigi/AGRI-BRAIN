@@ -6,11 +6,8 @@
 # One file per array task, isolated per run by the hash-tagged subdirectory.
 #SBATCH --job-name=agribrain-seed
 #SBATCH --array=0-19
-# 18h wall-time per seed task. Realistic runtime is 2-4h on a compute node,
-# so 18h is 4-9x headroom. Many HPC compute partitions allow up to 14 days,
-# so this is still well under a typical cluster cap. Higher limits bias the
-# scheduler toward longer queue waits on some sites; on a well-provisioned
-# compute partition the node count makes that impact negligible.
+# The 18-hour request is a conservative scheduling limit, not a runtime claim;
+# the publication environment records the actual run platform and timestamps.
 #SBATCH --time=18:00:00
 #SBATCH --mem=8G
 #SBATCH --cpus-per-task=4
@@ -19,19 +16,40 @@
 
 set -euo pipefail
 
-cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
-
-# Activate the venv prepared by hpc/hpc_run.sh on the login node.
-if [ ! -f .venv/bin/activate ]; then
-    echo "BLOCK: .venv not found. Run hpc/hpc_run.sh (or set up .venv manually) first."
+if [ -z "${AGRIBRAIN_SOURCE_SNAPSHOT:-}" ]; then
+    echo "BLOCK: AGRIBRAIN_SOURCE_SNAPSHOT not exported. Submit via hpc/hpc_run.sh."
     exit 1
 fi
-source .venv/bin/activate
+cd "$AGRIBRAIN_SOURCE_SNAPSHOT"
+if [ "$(pwd -P)" != "$AGRIBRAIN_SOURCE_SNAPSHOT" ]; then
+    echo "BLOCK: seed worker is not executing from the declared source snapshot."
+    exit 1
+fi
+
+# Compute nodes on the target cluster expose Git through a module rather than
+# the default batch PATH.  Load it before the fail-closed source identity gate.
+source hpc/ensure_git_available.sh
 
 if [ -z "${RUN_TAG:-}" ]; then
     echo "BLOCK: RUN_TAG not exported. Submit via hpc/hpc_run.sh."
     exit 1
 fi
+for required in AGRIBRAIN_SOURCE_SNAPSHOT_MODE AGRIBRAIN_SOURCE_TREE_SHA256 \
+    SLURM_JOB_ID SLURM_ARRAY_JOB_ID SLURM_ARRAY_TASK_ID; do
+    if [ -z "${!required:-}" ]; then
+        echo "BLOCK: ${required} is missing; submit via hpc/hpc_run.sh."
+        exit 1
+    fi
+done
+if [ "${AGRIBRAIN_VENV:-}" != ".publication_venvs/${RUN_TAG}" ]; then
+    echo "BLOCK: AGRIBRAIN_VENV is missing or does not match RUN_TAG."
+    exit 1
+fi
+if [ ! -f "$AGRIBRAIN_VENV/bin/activate" ]; then
+    echo "BLOCK: run-scoped venv not found: ${AGRIBRAIN_VENV}"
+    exit 1
+fi
+source "$AGRIBRAIN_VENV/bin/activate"
 
 # Belt-and-suspenders: even if --export skipped DETERMINISTIC_MODE, force
 # stochastic. Aborts visibly if something upstream tried to set it true.
@@ -41,30 +59,14 @@ if [ "${DETERMINISTIC_MODE:-false}" = "true" ]; then
 fi
 export DETERMINISTIC_MODE=false
 
-# Enable the three anomaly-defense flags so fig 4 panel C
-# (Cumulative Anomaly Defenses Triggered) actually carries non-zero
-# defense events for AgriBrain. The coordinator gates each defense
-# on a separate policy_flags entry:
-#   FAILURE_INJECTION       -> coordinator injects MCP-tool faults
-#                              every 11h and the fault_recovery
-#                              trace records each one. without this,
-#                              fault_recovery_trace is all zeros for
-#                              every mode and panel C only shows
-#                              cooperative_veto events (firing
-#                              narrowly inside the 12-30h window).
-#   PHYSICS_CONSISTENCY_GATE -> compute_context_modifier zeros the
-#                              modifier when the retrieved-context
-#                              physics_consistency_score < 0.03 and
-#                              the physics_gate trace records each
-#                              firing. without this, the gate is
-#                              silent and physics_gate_trace stays
-#                              at zero.
-# These two are propagated into Policy.policy_flags by
-# generate_results.run_episode (see env-var read at the top of the
-# function); the coordinator reads them via obs.raw["policy_flags"]
-# during _compute_step_context.
-export FAILURE_INJECTION=true
-export PHYSICS_CONSISTENCY_GATE=true
+# Confirmatory posture.  Re-apply the complete canonical environment inside
+# the worker so a direct/manual sbatch cannot bypass the login-node preflight.
+source hpc/publication_env.sh
+python hpc/validate_publication_env.py
+python hpc/validate_source_checkout.py --allow-run-artifacts
+python hpc/validate_source_snapshot.py
+python hpc/capture_publication_environment.py --validate-only
+python hpc/validate_pinn_artifacts.py
 
 # Map array index to the canonical 20-seed list.
 SEEDS=(42 1337 2024 7 99 101 202 303 404 505 \
@@ -74,19 +76,17 @@ SEED="${SEEDS[$SLURM_ARRAY_TASK_ID]}"
 OUT_DIR="mvp/simulation/results/benchmark_seeds/${RUN_TAG}"
 mkdir -p "$OUT_DIR"
 
-# 2026-05 Path A extension: route the per-step DecisionLedger JSONL files
-# to a SEED-SPECIFIC subdirectory so the 20 SLURM array tasks no longer
-# race-overwrite each other on the shared
-# mvp/simulation/results/decision_ledger/ default path. Without this
-# env-var override every task wrote 40 jsonl files (8 modes x 5 scenarios)
-# to the same default dir and only the seed that finished last survived,
-# which is why the canonical d33b8de run's ledger archive holds 1-seed
-# data instead of 20-seed data and why section 5.8's per-channel
-# attribution claim had to fall back to a single representative timestep.
+# Route the per-step DecisionLedger JSONL files to a seed-specific root so
+# the 20 Slurm array tasks cannot overwrite one another on a shared default
+# path. Each seed keeps the exact 55 final ledgers (11 modes x 5 scenarios),
+# 150 compressed adaptation ledgers, and 205 lossless episode archives.
 #
-# After this change each seed task writes its full per-step ledger to
+# A fresh in-memory ledger supplies within-episode history and shadows all
+# prior files. The 55 mode/scenario JSONLs in this seed-specific directory are
+# the final-episode audit outputs used for decision-level attribution.
+# Each seed task writes under
 # mvp/simulation/results/benchmark_seeds/${RUN_TAG}/decision_ledger_${SEED}/,
-# hpc/hpc_aggregate.sh rolls these into one archive, and
+# hpc/hpc_publish.sh rolls these into one archive, and
 # mvp/simulation/benchmarks/aggregate_channel_attribution.py computes the
 # cross-seed per-decision channel-attribution statistics that the
 # manuscript §5.8 / Fig 14 reports.
@@ -106,14 +106,35 @@ sys.path.insert(0, 'agribrain/backend')
 from pirag.mcp.registry import get_default_registry
 from pirag.context_to_logits import THETA_CONTEXT
 names = {t['name'] for t in get_default_registry().list_tools()}
-assert 'yield_query' in names, 'BLOCK: yield_query missing from MCP registry'
-assert 'demand_query' in names, 'BLOCK: demand_query missing from MCP registry'
+expected = {
+    'calculator', 'chain_query', 'check_compliance', 'context_features',
+    'convert_units', 'demand_query', 'explain', 'footprint_query',
+    'pirag_query', 'policy_oracle', 'slca_lookup', 'spoilage_forecast',
+    'yield_query',
+}
+assert names == expected, f'BLOCK: MCP registry drift: {sorted(names ^ expected)}'
 from src.models.action_selection import THETA
 assert THETA_CONTEXT.shape == (3, 5), 'BLOCK: THETA_CONTEXT shape not (3,5)'
 assert THETA.shape == (3, 10), 'BLOCK: THETA shape not (3,10)'
 print('Pre-flight invariants OK')
 "
 
-python mvp/simulation/benchmarks/run_single_seed.py "$SEED" --output-dir "$OUT_DIR"
+RUNTIME_RECEIPT="$OUT_DIR/runtime_receipts/seed_${SEED}__job_${SLURM_JOB_ID}__restart_${SLURM_RESTART_COUNT:-0}.json"
+python hpc/run_with_resource_receipt.py \
+    --output "$RUNTIME_RECEIPT" \
+    --label "core_seed_${SEED}" \
+    -- python mvp/simulation/benchmarks/run_single_seed.py \
+        "$SEED" --output-dir "$OUT_DIR"
 
+echo "[seed=${SEED}] validating complete 205-episode evidence inventory"
+python hpc/validate_complete_episode_evidence.py \
+    --ledger-root "$LEDGER_DIR" \
+    --expected-groups 55 \
+    --expected-episodes 205 \
+    --expected-adaptation-ledgers 150 \
+    --expected-final-ledgers 55 \
+    --manifest "$LEDGER_DIR/complete_episode_evidence_manifest.json"
+
+python hpc/validate_source_checkout.py --allow-run-artifacts
+python hpc/validate_source_snapshot.py
 echo "[seed=${SEED}] complete at $(date)"

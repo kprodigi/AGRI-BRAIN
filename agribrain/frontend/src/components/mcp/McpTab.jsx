@@ -19,6 +19,15 @@ import {
 
 const API = getApiBase();
 
+const displayToolName = (name) => name === "check_compliance"
+  ? "Operating-envelope check (legacy key: check_compliance)"
+  : name;
+const CAPABILITY_LABELS = {
+  compliance: "operating-envelope",
+  regulatory: "source-guidance",
+  governance: "policy-rule",
+};
+
 const TOOL_GROUPS = {
   regulatory: { label: "Domain", color: "bg-teal-500/10 text-teal-600 dark:text-teal-400" },
   temperature: { label: "Domain", color: "bg-teal-500/10 text-teal-600 dark:text-teal-400" },
@@ -26,7 +35,7 @@ const TOOL_GROUPS = {
   supply_chain: { label: "Domain", color: "bg-teal-500/10 text-teal-600 dark:text-teal-400" },
   environmental: { label: "Domain", color: "bg-teal-500/10 text-teal-600 dark:text-teal-400" },
   retrieval: { label: "Intelligence", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
-  explainability: { label: "Intelligence", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
+  explainability: { label: "Decision trace", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
   context: { label: "Intelligence", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
   math: { label: "Utility", color: "bg-gray-500/10 text-gray-600 dark:text-gray-400" },
   conversion: { label: "Utility", color: "bg-gray-500/10 text-gray-600 dark:text-gray-400" },
@@ -68,7 +77,7 @@ function ToolBrowser({ tools, onSelectTool }) {
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-sm font-mono">{tool.name}</h4>
+                        <h4 className="font-semibold text-sm font-mono">{displayToolName(tool.name)}</h4>
                         <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                           {tool.description}
                         </p>
@@ -80,7 +89,7 @@ function ToolBrowser({ tools, onSelectTool }) {
                         const g = TOOL_GROUPS[cap];
                         return (
                           <Badge key={cap} className={cn("text-[9px] border-0", g?.color || "bg-muted")}>
-                            {cap}
+                            {CAPABILITY_LABELS[cap] || cap}
                           </Badge>
                         );
                       })}
@@ -274,7 +283,7 @@ function LiveInvocation({ tools, selectedTool: initialTool }) {
 
   const PRESETS = {
     check_compliance: { temperature: "14.0", humidity: "85.0", product_type: "spinach" },
-    pirag_query: { query: "FDA temperature violation corrective action", k: "4" },
+    pirag_query: { query: "leafy-green temperature guidance and traceability scope", k: "4" },
     explain: { action: "local_redistribute", role: "farm", scenario: "heatwave", rho: "0.35", temperature: "14.0" },
   };
 
@@ -309,13 +318,16 @@ function LiveInvocation({ tools, selectedTool: initialTool }) {
   const renderResult = () => {
     if (!result) return null;
 
-    // Color-coded compliance status
+    // Color-coded synthetic benchmark-envelope status. This is not a legal,
+    // regulatory, or food-safety compliance determination.
     if (selected === "check_compliance" && result.compliant !== undefined) {
       return (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Badge className={result.compliant ? "bg-emerald-500/10 text-emerald-600 border-0" : "bg-red-500/10 text-red-600 border-0"}>
-              {result.compliant ? "Compliant" : "Violation"}
+              {result.compliant
+                ? "Within declared synthetic benchmark envelope"
+                : "Outside declared synthetic benchmark envelope"}
             </Badge>
             {result.severity && <Badge variant="outline" className="text-[10px]">{result.severity}</Badge>}
           </div>
@@ -326,7 +338,7 @@ function LiveInvocation({ tools, selectedTool: initialTool }) {
       );
     }
 
-    // piRAG results with keyword tags
+    // Institutional retrieval results with keyword tags
     if (selected === "pirag_query" && result.results) {
       return (
         <div className="space-y-2">
@@ -357,20 +369,16 @@ function LiveInvocation({ tools, selectedTool: initialTool }) {
       );
     }
 
-    // Explanation with BECAUSE/WITHOUT highlighting
+    // Calculation-trace explanation
     if (selected === "explain" && result.full_explanation) {
       const text = result.full_explanation;
       return (
         <div className="space-y-2">
-          {result.causal_chain?.primary_cause && (
-            <Badge className="bg-teal-500/10 text-teal-600 border-0">Primary: {result.causal_chain.primary_cause}</Badge>
+          {(result.attribution_chain || result.causal_chain)?.primary_cause && (
+            <Badge className="bg-teal-500/10 text-teal-600 border-0">Primary: {(result.attribution_chain || result.causal_chain).primary_cause}</Badge>
           )}
           <div className="p-3 rounded-md bg-muted text-xs leading-relaxed">
-            {text.split(/(BECAUSE|WITHOUT)/g).map((part, i) => {
-              if (part === "BECAUSE") return <span key={i} className="font-bold text-teal-600">BECAUSE</span>;
-              if (part === "WITHOUT") return <span key={i} className="font-bold text-amber-600">WITHOUT</span>;
-              return <span key={i}>{part}</span>;
-            })}
+            {text}
           </div>
         </div>
       );
@@ -437,7 +445,7 @@ function LiveInvocation({ tools, selectedTool: initialTool }) {
   );
 }
 
-// ===================== piRAG Search =====================
+// ===================== Institutional Retrieval =====================
 function PiragSearch() {
   const [query, setQuery] = useState("");
   const [role, setRole] = useState("farm");
@@ -450,7 +458,7 @@ function PiragSearch() {
     try {
       const res = await mcpCall(API, "pirag_query", {
         query: query.trim(),
-        k: 5,
+        k: 4,
         role,
         temperature: 14.0,
         rho: 0.3,
@@ -474,7 +482,7 @@ function PiragSearch() {
               <div className="relative">
                 <Search className="absolute left-2.5 top-2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search the piRAG knowledge base..."
+                  placeholder="Search the institutional knowledge base..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && search()}
@@ -648,7 +656,7 @@ export default function McpTab() {
             <Wrench className="w-5 h-5 text-primary" /> MCP Explorer
           </h2>
           <p className="text-sm text-muted-foreground">
-            Model Context Protocol interoperability layer &mdash; {tools.length} tools, JSON-RPC 2.0
+            Recorded Model Context Protocol tool-dispatch layer &mdash; {tools.length} tools, JSON-RPC 2.0
           </p>
         </div>
         <Badge variant="outline" className="font-mono text-xs">{tools.length} tools</Badge>
@@ -660,7 +668,7 @@ export default function McpTab() {
           <TabsTrigger value="resources" className="text-xs"><Database className="w-3 h-3 mr-1" /> Resources</TabsTrigger>
           <TabsTrigger value="prompts" className="text-xs"><FileText className="w-3 h-3 mr-1" /> Prompts</TabsTrigger>
           <TabsTrigger value="invoke" className="text-xs"><Zap className="w-3 h-3 mr-1" /> Invoke</TabsTrigger>
-          <TabsTrigger value="pirag" className="text-xs"><BookOpen className="w-3 h-3 mr-1" /> piRAG Search</TabsTrigger>
+          <TabsTrigger value="pirag" className="text-xs"><BookOpen className="w-3 h-3 mr-1" /> Institutional Retrieval</TabsTrigger>
           <TabsTrigger value="log" className="text-xs"><ScrollText className="w-3 h-3 mr-1" /> Protocol Log</TabsTrigger>
         </TabsList>
 

@@ -1,13 +1,26 @@
-Food Waste Hierarchy Protocol for Perishable Produce
+FOOD-WASTE-HIERARCHY CONTEXT FOR THE SYNTHETIC BENCHMARK
+Status: Constructed benchmark input; it is a routing and circularity proxy, not a product-disposition protocol.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, are contextual references only; the executable code and locked protocol govern all benchmark values.
 
-Hierarchy Assessment: In accordance with EU Waste Framework Directive 2008/98/EC, food waste management follows a strict hierarchy prioritizing prevention, then redistribution, then recycling, then recovery, and finally disposal. For perishable produce, the spoilage risk threshold determines the appropriate diversion pathway.
+The policy chooses among cold_chain, local_redistribute, and aggregate recovery. The
+literature-motivated qualitative ordering informs author-declared priors, but the code
+does not map rho bands to legally or physically eligible end uses. Its only 0.30 routing
+knee is a synthetic logit prior that raises recovery and lowers redistribution above the
+knee for non-hybrid rho-shaped policies; it is not a safety threshold.
 
-Redistribution Criteria: Produce with spoilage risk below 0.30 (rho less than 0.30) is eligible for redistribution to food banks and community organizations. Leafy greens such as spinach must be redistributed within 4 hours of the diversion decision to maintain food safety. The receiving organization must have cold storage capability at 2 to 5 degrees Celsius.
+The recovery-option heuristic uses continuous scores:
 
-Animal Feed Diversion: Produce with spoilage risk between 0.30 and 0.50 may be diverted to animal feed processing. Feed safety regulations require documentation of the original cold chain conditions and any temperature excursions. Processing must begin within 8 hours of diversion.
+  food_bank_raw=max(0,1-2*rho), halved when T>10 C;
+  animal_feed_raw=min(1,0.3+0.8*rho), with a capped 1.2 inventory multiplier
+                  when inventory>15000;
+  composting_raw=min(1,0.2+rho).
 
-Composting Pathway: Produce with spoilage risk between 0.50 and 0.80 should be directed to industrial composting facilities. Composting diverts organic waste from landfill while producing soil amendments. Facilities must comply with local composting regulations and maintain aerobic conditions at 55 degrees Celsius minimum for pathogen reduction.
+After normalization, the largest score is a descriptive recommendation. The
+circular-economy proxy returns 0 for cold_chain, 0.4+0.6*food_bank for
+local_redistribute (capped at 1), and 0.5+0.5*the largest normalized score for recovery
+(capped at 1). These are synthetic indicators, not measured circularity or disposition
+decisions.
 
-Anaerobic Digestion: Produce with spoilage risk above 0.80 is suitable only for anaerobic digestion or energy recovery. Anaerobic digestion produces biogas (methane for energy) and digestate (fertilizer). This pathway recovers both energy and nutrients from waste that cannot be used for human or animal consumption.
-
-Time Windows: For leafy greens, the decision window for redistribution closes rapidly. At ambient temperatures above 10 degrees Celsius, the effective shelf life for redistribution decreases by approximately 50 percent. All diversion decisions must be documented with the spoilage risk at decision time, ambient temperature, and the selected pathway.
+No time window, product inspection, feed or compost eligibility, anaerobic-digestion
+process, pathogen-control rule, or documentation duty is implemented. Operational
+disposition requires independent product and facility evidence outside the benchmark.

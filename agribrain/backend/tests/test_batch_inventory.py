@@ -4,8 +4,8 @@ The aggregate-state simulator can't mechanistically derive
 "rho on retail-bound inventory" from the action mix alone -
 ``compute_effective_rho`` has to do that as a post-hoc accounting
 transformation. ``BatchInventory`` runs a true per-batch FIFO model
-alongside the aggregate state, so the retail-pool rho is a measured
-quantity, not a derived one. These tests pin the behaviour Figure 2
+alongside the aggregate state, so the retail-pool rho is a directly tracked
+simulated state, not a post-hoc aggregate transformation. These tests pin the behaviour Figure 2
 panel (b) depends on:
 
   - cold-chain-only routing produces the highest retail-pool rho
@@ -331,16 +331,15 @@ def test_retail_pool_clears_at_sale_rate():
 
 
 # ---------------------------------------------------------------------------
-# Food-safety hard cutoff (RHO_FOOD_SAFETY_CUTOFF override)
+# Optional synthetic disposition cutoff
 # ---------------------------------------------------------------------------
 
-def test_food_safety_override_redirects_aged_batch_to_recovery():
-    """When the oldest DC batch has accumulated rho above the
-    food-safety cutoff (default 0.65), the BatchInventory.step()
-    routing layer overrides the policy's chosen action to Recovery
-    regardless of action_idx. This models the real-world food-safety
-    regulation that produce visibly past marketability cannot be
-    sold even if the optimisation layer would prefer otherwise."""
+def test_disposition_override_redirects_aged_batch_to_recovery():
+    """The optional author-defined cutoff redirects an aged batch.
+
+    It is a software-path test, not evidence that rho=0.65 is a legal,
+    marketability, or food-safety threshold.
+    """
     inv = BatchInventory(
         initial_n_batches=1, initial_dc_quantity=1000.0,
         fresh_arrival_rate_per_hour=0.0,
@@ -349,13 +348,16 @@ def test_food_safety_override_redirects_aged_batch_to_recovery():
     inv.batches[0].current_rho = 0.80
     # Policy chose cold_chain (action_idx=0) but the override should
     # force recovery.
-    out = inv.step(hour=0.25, d_env_rho=0.0, action_idx=0, dt_hours=0.25)
+    out = inv.step(
+        hour=0.25, d_env_rho=0.0, action_idx=0, dt_hours=0.25,
+        enforce_disposition_cutoff=True,
+    )
     assert out["food_safety_override"] is True
     assert out["chosen_route"] == "recovery"
     assert inv.batches[0].status == "transit_recovery"
 
 
-def test_food_safety_override_does_not_fire_below_cutoff():
+def test_disposition_override_does_not_fire_below_cutoff():
     """A DC batch with rho just below the cutoff (0.60) should be
     routed by the policy's choice, not overridden."""
     inv = BatchInventory(
@@ -369,7 +371,7 @@ def test_food_safety_override_does_not_fire_below_cutoff():
     assert inv.batches[0].status == "transit_local_redistribute"
 
 
-def test_food_safety_override_applies_independent_of_action_choice():
+def test_disposition_override_applies_independent_of_action_choice():
     """The override is a property of the BatchInventory routing layer
     not the policy, so it fires for ALL chosen actions when the
     oldest DC batch is past the cutoff."""
@@ -379,8 +381,10 @@ def test_food_safety_override_applies_independent_of_action_choice():
             fresh_arrival_rate_per_hour=0.0,
         )
         inv.batches[0].current_rho = 0.90
-        out = inv.step(hour=0.25, d_env_rho=0.0,
-                       action_idx=action_idx, dt_hours=0.25)
+        out = inv.step(
+            hour=0.25, d_env_rho=0.0, action_idx=action_idx, dt_hours=0.25,
+            enforce_disposition_cutoff=True,
+        )
         assert out["chosen_route"] == "recovery", (
             f"override should force recovery for action_idx={action_idx}; "
             f"got {out['chosen_route']!r}"

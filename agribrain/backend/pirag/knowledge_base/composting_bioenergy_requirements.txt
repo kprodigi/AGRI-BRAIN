@@ -1,38 +1,22 @@
-COMPOSTING AND BIOENERGY RECOVERY REQUIREMENTS
+COMPOSTING CONTEXT WITHIN THE AGGREGATE RECOVERY PROXY
+Status: Constructed benchmark input; it does not establish composting eligibility, process controls, or bioenergy yield.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, are contextual references only; the executable code and locked protocol govern all benchmark values.
 Document ID: KB-CBR-004
-Effective Date: 2025-09-01
-Regulatory Basis: EPA 40 CFR Part 503; State Solid Waste Management Regulations
+Executable source: agribrain/backend/src/models/reverse_logistics.py
 
-1. ROUTING CRITERIA
+The benchmark has one aggregate recovery action; composting is not a separately
+selectable policy action. Its descriptive recovery-option heuristic sets
 
-Product with a spoilage index rho exceeding 0.50 that is ineligible for human consumption
-or animal feed diversion must be directed to composting or anaerobic digestion facilities.
-Product with rho above 0.80 is strongly preferred for anaerobic digestion due to higher
-biogas yield from advanced decomposition substrates.
+  composting_raw = min(1, 0.2 + rho).
 
-2. THERMOPHILIC COMPOSTING STANDARDS
+This raw value is normalized together with the food-bank and animal-feed heuristic
+values. The largest normalized value is labelled the recommended subpath, and the
+primary circular-economy proxy for a selected recovery action is
 
-Composting facilities receiving diverted agricultural product must maintain thermophilic
-conditions of at least 55 degrees Celsius for a minimum of 3 consecutive days within
-the active composting phase. This requirement aligns with EPA 40 CFR Part 503 pathogen
-reduction standards (Process to Further Reduce Pathogens). Temperature must be monitored
-at a minimum of 4 locations within each windrow or vessel, with readings logged every
-6 hours.
+  min(1, 0.5 + 0.5*max(normalized subpath score)).
 
-3. ANAEROBIC DIGESTION AND METHANE YIELD
-
-Typical methane yield for diverted produce ranges from 250 to 350 cubic meters of CH4
-per tonne of volatile solids, depending on moisture content and commodity type. Digester
-retention time should be a minimum of 20 days at mesophilic temperatures (35-40 degrees
-Celsius).
-
-4. REQUIRED ACTIONS
-
-Action 1: Issue a Composting/Bioenergy Diversion Manifest (CBDM-400) documenting lot
-origin, rho value, estimated tonnage, receiving facility permit number, and transport
-chain of custody. Retain for 3 years.
-
-Action 2: Calculate and register carbon credits generated from methane capture using the
-EPA Waste Reduction Model (WARM). Eligible credits require verified diversion from
-landfill and documented biogas utilization. Credits are reportable under Scope 3
-emissions accounting and may qualify for voluntary carbon market listing.
+These values are stylized suitability and circularity proxies. Rho is modeled quality
+risk and is not a compost-feedstock test. The code does not model anaerobic digestion,
+methane yield, thermophilic temperature, pathogen reduction, retention time, facility
+permits, chain-of-custody manifests, carbon credits, or regulatory eligibility. Those
+questions require facility-specific evidence and applicable external rules.

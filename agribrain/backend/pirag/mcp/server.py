@@ -1,8 +1,9 @@
-"""MCP-compliant REST server with JSON-RPC 2.0 endpoint.
+"""REST server for the project's MCP-style JSON-RPC 2.0 subset.
 
-Provides both the new ``POST /mcp`` endpoint (JSON-RPC 2.0, standard MCP)
-and legacy ``GET /tools`` + ``POST /call`` endpoints for backward
-compatibility.
+Provides ``POST /mcp`` for the in-process tool/resource/prompt subset used by
+this project, plus legacy ``GET /tools`` and ``POST /call`` endpoints. The
+implementation has not been certified against an official MCP conformance
+suite and must not be described as full protocol compliance.
 """
 from __future__ import annotations
 
@@ -113,7 +114,7 @@ def _get_mcp_server():
 
 
 # ---------------------------------------------------------------------------
-# New MCP-compliant endpoint (JSON-RPC 2.0)
+# Project MCP-style endpoint (JSON-RPC 2.0 transport subset)
 # ---------------------------------------------------------------------------
 def _msgmsg_to_dict(response) -> Dict[str, Any]:
     out: Dict[str, Any] = {"jsonrpc": response.jsonrpc, "id": response.id}
@@ -129,14 +130,12 @@ async def mcp_endpoint(
     request: Request,
     x_api_key: str | None = Header(default=None, alias="x-api-key"),
 ):
-    """JSON-RPC 2.0 MCP endpoint. Routes to ``MCPServer.handle_message``.
+    """Project MCP-style endpoint routed through ``MCPServer.handle_message``.
 
-    Honors the JSON-RPC 2.0 §6 batch contract: when the request body
-    is a JSON array, each member is dispatched independently and the
-    array of non-notification responses is returned (or HTTP 204 No
-    Content when every member is a notification, per spec). When the
-    body is a single object, behaviour is unchanged: single envelope,
-    or HTTP 204 for a notification.
+    For declared request objects, the endpoint implements the project's
+    JSON-RPC-style single, notification, and batch behavior. Mixed malformed
+    batch-member conformance and end-to-end official-client interoperability
+    are outside the validated scope.
     """
     enforce_api_key(request, x_api_key)
     server = _get_mcp_server()

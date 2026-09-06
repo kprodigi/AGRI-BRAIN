@@ -2,8 +2,8 @@
 
 Each agent corresponds to a lifecycle stage of the produce supply chain.
 Role biases are small relative to THETA-phi and mode bonuses in
-``action_selection.py``, nudging decisions toward the mandate of each
-stage without overriding the global policy.
+``action_selection.py``, nudging decisions toward each author-declared
+stage-specific routing preference without overriding the common policy.
 """
 from __future__ import annotations
 
@@ -227,7 +227,10 @@ class DistributorAgent(SupplyChainAgent):
                 sender=self.agent_id,
                 recipient="recovery_agent",
                 msg_type=MessageType.REROUTE_REQUEST,
-                payload={"rho": obs.rho, "action": action},
+                # High-risk produce is explicitly requested into the recovery
+                # action. The receiver reads this exact schema key when
+                # converting its inbox to a bounded logit contribution.
+                payload={"rho": obs.rho, "requested_action": 2},
                 hour=obs.hour,
             ))
         return msgs
@@ -344,18 +347,33 @@ class RecoveryAgent(SupplyChainAgent):
     def generate_messages(
         self, obs: Observation, action: int
     ) -> List[InterAgentMessage]:
-        msgs: List[InterAgentMessage] = []
+        # Capacity is reported proactively to the distributor before its
+        # decision (see AgentCoordinator.step). Broadcasting only after the
+        # recovery stage became active left the message with no downstream
+        # decision owner in this forward-only episode.
+        return []
+
+    def make_capacity_update(
+        self, hour: float, recipient: str = "distributor_agent",
+    ) -> InterAgentMessage | None:
+        """Return one normalized, consumable recovery-capacity message."""
         if self._capacity_broadcasts < self.MAX_CAPACITY_BROADCASTS:
             remaining = self.MAX_CAPACITY_BROADCASTS - self._capacity_broadcasts
-            msgs.append(InterAgentMessage(
+            message = InterAgentMessage(
                 sender=self.agent_id,
-                recipient="broadcast",
+                recipient=recipient,
                 msg_type=MessageType.CAPACITY_UPDATE,
-                payload={"remaining_capacity": remaining},
-                hour=obs.hour,
-            ))
+                payload={
+                    "available_capacity": (
+                        remaining / self.MAX_CAPACITY_BROADCASTS
+                    ),
+                    "remaining_broadcasts": remaining,
+                },
+                hour=float(hour),
+            )
             self._capacity_broadcasts += 1
-        return msgs
+            return message
+        return None
 
     def reset(self) -> None:
         super().reset()

@@ -1,23 +1,22 @@
-"""FDA compliance checking tool for the MCP server.
+"""Declared operating-envelope check for the MCP server.
 
-Validates temperature and humidity readings against regulatory thresholds
-for various produce types.
+The legacy tool name is ``check_compliance``, but this function is not a legal
+or food-safety determination. It compares readings with author-specified
+benchmark temperature/humidity envelopes.
 """
 from __future__ import annotations
 
 from typing import Any, Dict
 
 
-# Regulatory temperature limits per product type. Aligned with the
-# dataset's ``regulatory_temp_max`` column (8 degC for leafy greens) so
-# the compliance check uses the same cold-chain ceiling that
-# ``temp_violation`` uses in generate_results.py. Earlier values pegged
-# spinach at 5 degC strict-FDA which produced 65-70 percent compliance
-# violation rates that read as alarming on the bench summary even when
-# the cold-chain truck was operating well within the dataset's stated
-# regulatory limit; harmonising to 8 degC removes that asymmetry.
-# Humidity bounds unchanged.
-_FDA_LIMITS = {
+# Synthetic operating envelopes per product type. Aligned with the
+# dataset's legacy ``regulatory_temp_max`` column (8 degC for leafy greens) so
+# the check uses the same benchmark cold-chain ceiling that
+# ``temp_violation`` uses in generate_results.py. These values are not
+# attributed to FDA, and the humidity limits are not legal
+# limits. FDA's 5 degC retail guidance for cut leafy greens is preserved in the
+# source-labelled knowledge-base note, not converted here into a universal law.
+_BENCHMARK_ENVELOPES = {
     "spinach": {"temp_max_c": 8.0, "rh_min": 85.0, "rh_max": 95.0},
     "lettuce": {"temp_max_c": 8.0, "rh_min": 90.0, "rh_max": 98.0},
     "berries": {"temp_max_c": 4.0, "rh_min": 90.0, "rh_max": 95.0},
@@ -30,7 +29,7 @@ def check_compliance(
     humidity: float,
     product_type: str = "spinach",
 ) -> Dict[str, Any]:
-    """Check FDA compliance for temperature and humidity readings.
+    """Check readings against the declared benchmark operating envelope.
 
     Parameters
     ----------
@@ -42,7 +41,9 @@ def check_compliance(
     -------
     Dict with compliance status, violations list, and thresholds used.
     """
-    limits = _FDA_LIMITS.get(product_type.lower(), _FDA_LIMITS["default"])
+    limits = _BENCHMARK_ENVELOPES.get(
+        product_type.lower(), _BENCHMARK_ENVELOPES["default"]
+    )
     violations = []
 
     if temperature > limits["temp_max_c"]:
@@ -74,6 +75,8 @@ def check_compliance(
 
     return {
         "compliant": len(violations) == 0,
+        "assessment_type": "synthetic_benchmark_operating_envelope",
+        "is_regulatory_determination": False,
         "product_type": product_type,
         "violations": violations,
         "thresholds": limits,

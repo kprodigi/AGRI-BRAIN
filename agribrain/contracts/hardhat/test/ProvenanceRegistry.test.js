@@ -15,7 +15,7 @@ describe("ProvenanceRegistry", function () {
     await registry.waitForDeployment();
   });
 
-  it("anchors provenance and makes it verifiable", async function () {
+  it("stores a root and reports that it is present", async function () {
     const root = ethers.id("proof:decision:1");
     const decisionId = "decision-001";
 
@@ -63,7 +63,7 @@ describe("ProvenanceRegistry", function () {
     ).to.be.revertedWith("missing role");
   });
 
-  it("reverts on duplicate root to preserve append-only audit trail", async function () {
+  it("rejects a duplicate root within the same contract instance", async function () {
     const root = ethers.id("proof:dup");
     await registry.connect(owner).anchor(root, "decision-a");
     await expect(
@@ -75,7 +75,7 @@ describe("ProvenanceRegistry", function () {
     expect(await registry.totalRecords()).to.equal(1);
   });
 
-  it("anchors multiple unique roots and verifies each", async function () {
+  it("stores multiple unique roots and reports each as present", async function () {
     const roots = [ethers.id("proof:r1"), ethers.id("proof:r2"), ethers.id("proof:r3")];
     await registry.connect(owner).anchor(roots[0], "decision-1");
     await registry.connect(owner).anchor(roots[1], "decision-2");

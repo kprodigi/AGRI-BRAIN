@@ -83,7 +83,7 @@ export function useWebSocket() {
               addNotification({
                 type: "info",
                 title: "New Decision",
-                message: `${payload?.agent || "Agent"}: ${payload?.action || "decision"} (SLCA: ${(payload?.slca_score ?? payload?.slca ?? 0).toFixed?.(3) || "—"})`,
+                message: `${payload?.agent || "Agent"}: ${payload?.action || "decision"} (social-performance proxy: ${(payload?.slca_score ?? payload?.slca ?? 0).toFixed?.(3) || "—"})`,
               });
             }
             if (type === "chain/head") {

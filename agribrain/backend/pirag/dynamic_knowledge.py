@@ -1,18 +1,15 @@
-"""Blockchain-to-piRAG feedback loop.
+"""Optional decision-history ingestion diagnostic.
 
-Synthesizes piRAG-ingestible documents from blocks of routing decisions,
-creating a feedback loop where past decision patterns inform future
-retrievals. Called periodically during simulation (every 24 timesteps /
-6 hours).
+This module can summarize blocks of past routing records into documents that
+an institutional-retrieval pipeline may ingest.  The feature is disabled by
+default because feeding a system's own outputs back into retrieval can
+self-amplify earlier choices.  It is not part of the locked publication
+protocol or a learning mechanism.
 
-When a permissioned EVM is configured (CHAIN_RPC + a deployed
-DecisionLogger address) the loop reads the most recent
-``DecisionLogged`` events directly from the chain, satisfying the
-Section 3.7 framing of a true *blockchain*-to-retrieval feedback
-loop. When no chain is configured the loop falls back to the
-caller-supplied in-memory decision history so the simulator and
-benchmark suites still exercise the synthesis path without needing
-Hardhat running.
+The diagnostic normally uses caller-supplied in-memory records.  A caller may
+explicitly request records from a configured EVM event log; that optional
+source adapter has only been exercised with local development infrastructure
+and is not evidence of a deployed blockchain feedback system.
 """
 from __future__ import annotations
 
@@ -45,13 +42,12 @@ _DECISION_LOGGED_ABI = [
 
 
 def _read_decisions_from_chain(n: int) -> Optional[List[Dict[str, Any]]]:
-    """Pull the last ``n`` ``DecisionLogged`` events from the chain.
+    """Try to read the last ``n`` ``DecisionLogged`` events.
 
     Returns ``None`` when the chain is not configured (no RPC, no
-    contract address, web3 not installed). Returns ``[]`` when the
-    chain is reachable but the contract has not emitted any events
-    yet — distinct from the unconfigured case so the caller can
-    decide whether to fall back to in-memory history.
+    contract address, or web3 unavailable). Returns ``[]`` when the configured
+    endpoint responds but no matching event is found. This adapter is optional
+    local research tooling; a successful read is not deployment validation.
     """
     try:
         from web3 import Web3
@@ -60,8 +56,8 @@ def _read_decisions_from_chain(n: int) -> Optional[List[Dict[str, Any]]]:
 
     rpc = os.environ.get("CHAIN_RPC", "")
     addr = os.environ.get("DECISION_LOGGER_ADDR", "")
-    # Allow the governance router's auto-loaded addresses to be the
-    # source of truth when env vars are absent.
+    # Reuse an explicitly configured address from the local runtime when the
+    # environment variables are absent.
     if not addr:
         try:
             from src.routers.governance import CHAIN as _CHAIN
@@ -78,9 +74,7 @@ def _read_decisions_from_chain(n: int) -> Optional[List[Dict[str, Any]]]:
         if not w3.is_connected():
             return None
         contract = w3.eth.contract(address=Web3.to_checksum_address(addr), abi=_DECISION_LOGGED_ABI)
-        # Look back over at most 5_000 blocks; in dev that covers ~1 day on
-        # the local Hardhat node and is well below the eth_getLogs limit
-        # most providers enforce.
+        # Bound the optional diagnostic query to avoid an unbounded log scan.
         latest = w3.eth.block_number
         from_block = max(0, latest - 5_000)
         events = contract.events.DecisionLogged.get_logs(from_block=from_block)
@@ -133,22 +127,22 @@ def synthesize_decision_document(
     total_carbon = sum(d.get("carbon_kg", 0.0) for d in decisions)
     mean_waste = sum(d.get("waste", 0.0) for d in decisions) / total
 
-    # Assess performance
+    # Descriptive labels for this synthetic author-declared proxy only.
     if mean_slca > 0.70 and mean_waste < 0.05:
-        assessment = "strong social and waste performance"
+        assessment = "higher social-performance proxy with lower modeled waste"
     elif mean_slca > 0.50:
-        assessment = "moderate social performance with room for waste reduction"
+        assessment = "mid-range social-performance proxy"
     else:
-        assessment = "below target social performance requiring policy review"
+        assessment = "lower social-performance proxy in this recorded block"
 
     doc_id = f"decisions_{scenario}_{hour_range[0]:.0f}_{hour_range[1]:.0f}"
     text = (
         f"Decision history for {scenario} scenario, hours {hour_range[0]:.1f} to {hour_range[1]:.1f}. "
         f"Action distribution: {action_dist}. "
-        f"Mean SLCA score: {mean_slca:.3f}. "
-        f"Total carbon emissions: {total_carbon:.1f} kg. "
-        f"Mean waste rate: {mean_waste:.4f}. "
-        f"Performance assessment: {assessment}. "
+        f"Mean author-declared social-performance proxy: {mean_slca:.3f}. "
+        f"Sum of the modeled transport-emissions indicator: {total_carbon:.1f} kg CO2-eq. "
+        f"Mean modeled waste fraction per routing opportunity: {mean_waste:.4f}. "
+        f"Descriptive block label: {assessment}. "
         f"Total decisions in block: {total}."
     )
 
@@ -156,7 +150,10 @@ def synthesize_decision_document(
         "id": doc_id,
         "text": text,
         "metadata": {
+            # ``source`` retains its historical value for schema compatibility.
             "source": "decision_feedback",
+            "source_label": "decision_history_diagnostic",
+            "source_is_legacy_alias": True,
             "scenario": scenario,
             "hour_start": hour_range[0],
             "hour_end": hour_range[1],
@@ -171,25 +168,21 @@ def ingest_decision_history(
     scenario: str,
     block_size: int = 24,
     *,
-    prefer_chain: bool = True,
+    prefer_chain: bool = False,
     chain_window: int = 96,
 ) -> int:
-    """Ingest blocks of decisions into the piRAG knowledge base.
+    """Optionally ingest decision-history summaries into retrieval.
 
     Parameters
     ----------
     pipeline : PiRAGPipeline instance.
-    decisions : in-memory decision history from the coordinator. Used as
-        the source of truth when no chain is configured (typical
-        simulator runs) and as the fallback when a chain is
-        configured but unreachable.
+    decisions : in-memory decision history from the coordinator. This is the
+        default source for the explicitly enabled diagnostic.
     scenario : current scenario name.
     block_size : number of decisions per block (24 = 6 hours at 15-min steps).
-    prefer_chain : when True, attempt to read the latest decisions from
-        the on-chain ``DecisionLogger`` first. Falls back to
-        ``decisions`` when chain not configured or unreachable. Default
-        True so the §3.7 "blockchain-to-retrieval feedback loop"
-        framing is honored by default whenever a chain is up.
+    prefer_chain : when True, explicitly try the optional event-log adapter
+        first and fall back to ``decisions`` if it is unavailable. Defaults
+        to False; no chain read is implied by ordinary ingestion.
     chain_window : number of most-recent on-chain ``DecisionLogged``
         events to fetch when ``prefer_chain`` is enabled. Mirrors the
         coordinator's 24-step block size by default (4 blocks).
@@ -223,12 +216,12 @@ def ingest_decision_history(
         hour_end = block[-1].get("hour", (start + len(block)) * 0.25)
 
         doc = synthesize_decision_document(block, scenario, (hour_start, hour_end))
-        # Tag the document with its source so it is auditable
-        # whether the feedback loop was reading the chain or the
-        # in-memory fallback at synthesis time.
+        # Record the source used by this diagnostic.
         if doc.get("metadata"):
             doc["metadata"]["source_kind"] = source
             doc["metadata"]["source"] = "decision_feedback"
+            doc["metadata"]["source_label"] = "decision_history_diagnostic"
+            doc["metadata"]["source_is_legacy_alias"] = True
         if doc["text"] and doc["id"] not in seen_ids:
             # Guard against injecting very low-information blocks.
             if "Total decisions in block: 0" in doc["text"]:

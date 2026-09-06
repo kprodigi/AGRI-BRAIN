@@ -1,0 +1,66 @@
+{
+  "schema_version": "agribrain-independent-retrieval-evaluation-v1",
+  "study_id": "",
+  "evidence_scope": "retrieval_ranking_quality_only",
+  "downstream_ari_in_scope": false,
+  "comparison": {
+    "control_system_id": "agribrain_standard_rag",
+    "control_retrieval_label": "Standard RAG",
+    "candidate_system_id": "agribrain",
+    "candidate_retrieval_label": "piRAG",
+    "contrast_direction": "piRAG_minus_Standard_RAG"
+  },
+  "systems": [
+    {
+      "system_id": "agribrain_standard_rag",
+      "retrieval_variant": "standard_rag",
+      "run_id": "",
+      "code_revision": "",
+      "configuration_sha256": ""
+    },
+    {
+      "system_id": "agribrain",
+      "retrieval_variant": "pirag",
+      "run_id": "",
+      "code_revision": "",
+      "configuration_sha256": ""
+    }
+  ],
+  "study_design": {
+    "query_set_fixed_before_judgment": true,
+    "document_pool_fixed_before_judgment": true,
+    "runs_frozen_before_judgment": true,
+    "pooled_documents_deduplicated": true,
+    "system_labels_masked": true,
+    "presentation_order_randomized": true,
+    "run_depth": 10
+  },
+  "assessment": {
+    "judgment_source": "independent_human",
+    "assessor_cohort_id": "",
+    "assessor_count": 0,
+    "assessor_ids_are_pseudonymous": true,
+    "independent_of_system_development": null,
+    "independence_basis": "",
+    "blinded_to_system_identity": null,
+    "blinding_protocol": "",
+    "judgment_scale": "ordinal_0_2",
+    "provenance_record_id": ""
+  },
+  "analysis": {
+    "cutoffs": [3, 5, 10],
+    "primary_metric": "ndcg",
+    "primary_cutoff": 10,
+    "query_aggregation": "mean_assessor_metric_then_mean_query",
+    "bootstrap_confidence_level": 0.95,
+    "bootstrap_resamples": 10000,
+    "bootstrap_seed": 20260828
+  },
+  "input_sha256": {
+    "query_set": "",
+    "document_catalog": "",
+    "retrieval_runs": "",
+    "assessors": "",
+    "relevance_judgments": ""
+  }
+}

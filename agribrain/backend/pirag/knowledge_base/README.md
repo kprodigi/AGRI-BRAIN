@@ -1,47 +1,40 @@
-# piRAG Knowledge Base
+# Institutional retrieval knowledge base
 
-This directory holds the 20-document corpus that the piRAG retriever
-indexes. **The contents are synthesised domain notes**, not verbatim
-extracts of regulatory or research text. Each document is a short
-paraphrase summarising the relevant standard, SOP, or guideline that a
-field-deployed system would index.
+This directory contains the constructed 20-document corpus used by the
+publication benchmark. The documents encode synthetic operating procedures,
+contingency guidance, waste-hierarchy assumptions, carbon-accounting
+assumptions, and social-performance assumptions for the controlled case.
 
-## Honest framing
+The corpus is untrusted benchmark input. It is not a collection of verified
+current regulations, legal or operational advice, food/feed-safety evidence,
+certification, measured social performance, or field validation. Text inside a
+retrieved document never overrides executable policy, outcome, evidence, or
+protocol contracts. Retrieval can alter a context-enabled policy only through
+the guarded context-to-logit path; the retained calculation trace records that
+path but does not prove that a retrieved statement is true.
 
-The synthesis was done so that the corpus is internally consistent
-with the simulator's Arrhenius-Baranyi parameters and the SLCA / cold-
-chain constants used by the rest of AGRI-BRAIN. As a side effect, some
-factual statements are tuned to make the simulation's metrics scan —
-notably the line in `regulatory_fda_leafy_greens.txt` claiming the
-effective decay rate "approximately doubles" between 4 °C and 10 °C
-(this is a paraphrase of the simulator's Arrhenius output at those
-temperatures, not a direct citation).
+Every `.txt` document must begin with a self-contained source-scope disclaimer
+because the complete document can be returned as one retrieval passage. The
+stable retrieval identifier is the filename stem. `README.md` is not ingested.
+There must be exactly 20 `.txt` files; renaming a file changes its retrieval ID.
 
-When evaluating the retrieval and reranking quality, this corpus
-should be treated as a **labelled retrieval benchmark constructed
-for the simulator**, not as an external knowledge source. Any test
-of generalisation to a new domain should use a fresh corpus.
+Current source scope is deliberately limited to the executable synthetic case:
+three canonical actions, modelled transport emissions, author-declared social
+priors, mechanistic spoilage risk, scenario perturbations, coordinator-mediated
+peer context, and optional external ledger anchoring. The corpus must not invent
+audits, logs, geographic overlays, measurements, legal duties, safety decisions,
+deployment capabilities, or unimplemented workflows.
 
-## Citations referenced (paraphrased, not verbatim)
+When extending the corpus:
 
-- FSMA Produce Safety Rule, Section 204 (Food Traceability Final Rule).
-- EU Directive 2008/98/EC (Waste Framework Directive).
-- ISO 14040 (LCA framework) and ISO 14044 (LCA requirements).
-- USDA Cold Chain Best Practices (paraphrase of public guidance).
-- EIP-2535 (Diamond Standard for upgradable smart contracts).
+1. record a stable document identifier and source note;
+2. distinguish constructed assumptions from externally verified guidance;
+3. rerun ingestion and retrieval-quality tests;
+4. run the benchmark as a new treatment rather than mixing the new corpus with
+   the preserved publication evidence; and
+5. record the new commit and tracked-source-tree digest in the environment and
+   artifact manifests; retained decisions record SHA-256 hashes of the exact
+   retrieved passages.
 
-## How to extend
-
-To extend the corpus with verbatim regulatory text:
-
-1. Confirm the source is public domain (FSMA 204 text is; commercial
-   guidance often is not).
-2. Place the verbatim file under
-   `agribrain/backend/pirag/knowledge_base/`.
-3. Re-run the simulator's piRAG ingestion pipeline so the new
-   document enters the BM25/TF-IDF index.
-
-The retrieval pipeline does not currently distinguish synthesised
-notes from verbatim text in its scoring — both go through the same
-`HybridRetriever` and `lexical_arrhenius_rerank`. If you mix the two,
-add a `metadata["source_type"]` field and adjust scoring accordingly.
+Any result generated from a previous source-tree digest is historical and
+cannot be presented as evidence for this revised corpus.

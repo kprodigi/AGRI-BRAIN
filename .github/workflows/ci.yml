@@ -3,17 +3,21 @@ name: ci
 on:
   push:
     branches: ["main"]
+    tags: ["v*"]
   pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   # Cross-platform test suite. README documents Windows + macOS as
   # supported development platforms; the matrix proves it on every
-  # push. Artifact-hash-sensitive steps (validate_results,
-  # verify_manifest) live in the dedicated `artifact-validation`
-  # job below — those rely on SHA-256s computed on the originating
-  # filesystem (LF line endings), so cross-OS execution would false-
-  # positive on the manifest hashes even though the simulator code
-  # itself is cross-platform.
+  # push. Current-evidence hash checks, when a schema-v2 manifest actually
+  # exists, live in the dedicated `current-evidence-boundary` job below.
   backend-tests:
     name: backend-tests (${{ matrix.os }} / py${{ matrix.python-version }})
     strategy:
@@ -44,6 +48,31 @@ jobs:
       - name: Run stochastic simulation validation test
         run: |
           python mvp/simulation/tests/test_stochastic_quick.py
+          python -m pytest mvp/simulation/tests/test_regression_evidence_boundary.py
+
+  publication-evidence-tests:
+    name: publication and recovery tests (ubuntu / py3.11)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e "agribrain/backend[dev]"
+      - name: Validate Slurm launcher syntax
+        run: |
+          bash -n hpc/hpc_run.sh hpc/hpc_sensitivity_run.sh \
+            hpc/publication_recovery_run.sh hpc/hpc_publish_recovery.sh \
+            hpc/hpc_sensitivity_publish_recovery.sh \
+            hpc/hpc_full_submission_recovery.sh
+      - name: Run simulation publication and recovery tests
+        run: python -m pytest mvp/simulation/tests
 
   # Slow-marker tests: full end-to-end simulator runs (mode x scenario
   # matrix) that the default `addopts = "-m 'not slow'"` skips. We run
@@ -79,11 +108,17 @@ jobs:
           python -m pytest --override-ini="addopts=" -m slow \
             agribrain/backend
 
-  # Ubuntu-only artifact validation: line-ending differences on Windows
-  # checkouts would shift tracked-artifact SHA-256s and false-positive
-  # the manifest verifier. The artifacts themselves were written and
-  # hashed on Linux/HPC, so Linux CI is the canonical verification host.
-  artifact-validation:
+  # Evidence boundary for the source candidate. An ordinary branch/main
+  # checkout is allowed to contain no current publication evidence; in that
+  # case CI says so and does not search archives or legacy directories for a
+  # substitute. If an exact schema-v2 manifest is present, the tracked current
+  # artifacts are validated. Publication evidence is distributed as a sealed
+  # GitHub Release asset tied to the exact publication-source tag, rather than
+  # committed after generation (which would change the code identity recorded
+  # by the evidence). A source checkout may therefore legitimately contain no
+  # current evidence.
+  current-evidence-boundary:
+    name: current publication-evidence boundary
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -93,55 +128,96 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install backend
+      - name: Detect exact current-evidence manifest
+        id: evidence
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          manifest = Path("mvp/simulation/results/artifact_manifest.json")
+          if not manifest.is_file():
+              with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+                  out.write("has_current=false\n")
+                  out.write("recovery_receipt=\n")
+              print(
+                  "::notice::Source-only candidate: no current publication "
+                  "evidence is committed. Archived/legacy outputs were not used."
+              )
+              raise SystemExit(0)
+
+          payload = json.loads(manifest.read_text(encoding="utf-8"))
+          if payload.get("schema_version") != 2:
+              raise SystemExit(
+                  "Current evidence manifest exists but schema_version is not 2."
+              )
+          for key in (
+              "git_commit", "simulation_source_commit", "publication_code_commit",
+          ):
+              if not re.fullmatch(r"[0-9a-f]{40}", str(payload.get(key, ""))):
+                  raise SystemExit(f"Current manifest has invalid {key}.")
+          if not isinstance(payload.get("artifacts"), list) or not payload["artifacts"]:
+              raise SystemExit("Current manifest has no artifact inventory.")
+          recovery_receipt = ""
+          if payload.get("dual_provenance") is True:
+              authorization = payload.get("recovery_authorization")
+              if not isinstance(authorization, dict):
+                  raise SystemExit(
+                      "Dual-provenance manifest lacks recovery_authorization."
+                  )
+              relative = str(authorization.get("receipt_file", ""))
+              candidate = Path(relative)
+              if (
+                  not relative
+                  or candidate.is_absolute()
+                  or "\\" in relative
+                  or any(part in {"", ".", ".."} for part in candidate.parts)
+              ):
+                  raise SystemExit("Manifest recovery receipt path is unsafe.")
+              receipt = manifest.parent / candidate
+              if not receipt.is_file() or receipt.is_symlink():
+                  raise SystemExit(
+                      "Dual-provenance manifest's canonical recovery receipt "
+                      "is absent or symlinked."
+                  )
+              recovery_receipt = receipt.as_posix()
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write("has_current=true\n")
+              out.write(f"recovery_receipt={recovery_receipt}\n")
+          print("Current schema-v2 publication evidence detected; strict checks enabled.")
+          PY
+      - name: Install current-evidence validator dependencies
+        if: steps.evidence.outputs.has_current == 'true'
         run: |
           python -m pip install --upgrade pip
-          # Install with the [dev] extra so httpx and pytest-asyncio are
-          # available -- TestClient-based integration tests fail without
-          # them. The "[dev]" form is a project optional-dependencies
-          # group declared in pyproject.toml.
           pip install -e "agribrain/backend[dev]"
-      - name: Validate simulation results (strict gate, default)
+      - name: Validate current simulation tables
+        if: steps.evidence.outputs.has_current == 'true'
         env:
           STRICT_VALIDATION: "1"
         run: |
           python mvp/simulation/validation/validate_results.py
-      - name: Verify artifact manifest (strict commit + tracked allowlist)
-        # On CI we don't have the gitignored artifacts (mcp_interop_*,
-        # traces_*); --allow-missing turns those into warnings. But
-        # the 2026-05 audit flagged that --allow-missing alone makes
-        # the gate too lax: a deleted tracked figure also passed as a
-        # warning. --require-tracked tightens the gate so any missing
-        # *tracked* artifact (fig*.png, fig*.pdf, table*.csv,
-        # benchmark_*.json, etc.) is a hard failure, while gitignored
-        # artifacts still soft-warn. The HPC delivery pipeline runs
-        # without either flag to ensure every promised artifact is
-        # present.
-        run: |
-          python mvp/simulation/analysis/verify_manifest.py \
-              --strict-commit --allow-missing --require-tracked
-      - name: Deterministic-mode regression check
+      - name: Verify current manifest bytes and tracked allowlist
+        if: steps.evidence.outputs.has_current == 'true'
         env:
-          DETERMINISTIC_MODE: "true"
-          # Branch-conditional ALLOW_MISSING_BASELINE: PR / feature
-          # branches may legitimately predate the baseline snapshot
-          # commit, so a missing baseline soft-skips. On main, the
-          # baseline must exist or the build fails -- this prevents a
-          # silent regression from landing because the guard self-
-          # disabled on a missing snapshot.
-          ALLOW_MISSING_BASELINE: ${{ github.ref == 'refs/heads/main' && '0' || '1' }}
+          RECOVERY_RECEIPT: ${{ steps.evidence.outputs.recovery_receipt }}
         run: |
-          python mvp/simulation/validation/run_regression_guard.py
+          args=(--strict-commit --allow-missing --require-tracked)
+          if [[ -n "$RECOVERY_RECEIPT" ]]; then
+            args+=(--recovery-receipt "$RECOVERY_RECEIPT")
+          fi
+          python mvp/simulation/analysis/verify_manifest.py "${args[@]}"
 
-  # Regenerate the lockfile under canonical Python (3.11) on every push
-  # and upload as artifact + warn on drift. We do NOT fail the build on
-  # drift -- transitive deps move at upstream cadence and we don't want
-  # green CI to block on that. The artifact is uploaded so a maintainer
-  # can download the refreshed lock and commit it as part of the
-  # release procedure documented in docs/RELEASE.md.
-  lockfile-drift:
-    name: lockfile drift check (advisory)
+  # Validate the committed publication lock itself. Comparing it with a newly
+  # resolved environment would test upstream package churn rather than the
+  # source-bound environment used by the evidence run. Dependency upgrades
+  # belong in a separate reviewed change with a fresh lock and affected run.
+  locked-environment:
+    name: committed Python lock integrity
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     defaults:
       run:
         shell: bash
@@ -150,56 +226,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Regenerate lockfile from pyproject
+      - name: Install the committed lock
         run: |
           python -m pip install --upgrade pip
           python -m venv .venv-lock
-          .venv-lock/bin/pip install --upgrade pip
-          .venv-lock/bin/pip install -e "agribrain/backend[dev]"
-          .venv-lock/bin/pip freeze --exclude-editable > /tmp/freeze.lock.bare
-          # Apply the same header the committed file carries.
-          {
-            sed -n '/^# AGRI-BRAIN backend dependency lockfile/,/^$/p' \
-              agribrain/backend/requirements-lock.txt | head -20
-            cat /tmp/freeze.lock.bare
-          } > /tmp/freeze.lock.full
-      - name: Compare with committed lockfile (warn on branches, fail on tags)
+          .venv-lock/bin/python -m pip install --upgrade pip
+          .venv-lock/bin/python -m pip install \
+            -r agribrain/backend/requirements-lock.txt
+          .venv-lock/bin/python -m pip install --no-deps -e agribrain/backend
+      - name: Check dependency compatibility and imports
         run: |
-          # Strip the header AND env-marker conditions on both sides so the
-          # comparison is purely the version pins. ``pywin32==311 ; sys_platform == "win32"``
-          # appears in the committed file as the env-marker form but the
-          # Linux freeze emits it without the marker (or omits it entirely).
-          grep -v '^#' agribrain/backend/requirements-lock.txt \
-              | sed 's/[[:space:]]*;[[:space:]].*$//' \
-              | sort > /tmp/committed.lock
-          grep -v '^#' /tmp/freeze.lock.bare | sort > /tmp/fresh.lock
-          if diff -u /tmp/committed.lock /tmp/fresh.lock > /tmp/lock.diff; then
-            echo "Lockfile is current."
-          else
-            # On version tags (refs/tags/v*) drift is a hard failure: a
-            # tagged release must ship a lockfile that resolves
-            # bit-identically. On branch / PR pushes the drift is a
-            # warning so transitive-dep updates do not red the build
-            # outside of release procedure.
-            ref="${GITHUB_REF:-}"
-            if [[ "$ref" == refs/tags/v* ]]; then
-              echo "::error::Lockfile drifted from a fresh 3.11 freeze on a tagged release ($ref)."
-              cat /tmp/lock.diff
-              echo "Refresh procedure: docs/RELEASE.md step 2, then re-tag."
-              exit 1
-            else
-              echo "::warning::Committed lockfile drifted from a fresh 3.11 freeze."
-              echo "::group::diff (committed vs fresh)"
-              cat /tmp/lock.diff
-              echo "::endgroup::"
-              echo "Refresh procedure: docs/RELEASE.md step 2."
-            fi
-          fi
-      - name: Upload refreshed lockfile (Python 3.11)
-        uses: actions/upload-artifact@v4
-        with:
-          name: requirements-lock-py311
-          path: /tmp/freeze.lock.full
+          .venv-lock/bin/python -m pip check
+          .venv-lock/bin/python -c \
+            "import numpy, pandas, scipy, src, pirag; print('locked imports: PASS')"
 
   python-lint:
     name: python-lint (ruff)
@@ -227,7 +266,7 @@ jobs:
           # intentionally not yet gated; they should be tightened in a
           # focused cleanup pass before turning them on as build gates.
           ruff check --select E9,F63,F7,F82,F401,F821 \
-            agribrain/backend mvp/simulation
+            agribrain/backend mvp/simulation hpc
 
   contract-tests:
     runs-on: ubuntu-latest

@@ -1,6 +1,6 @@
 """Online adaptation of policy and context weights.
 
-Three learner classes:
+Four learner classes:
 
 1. ``ContextMatrixLearner`` (primary): learns the full THETA_CONTEXT (3×5)
    weight matrix via REINFORCE policy gradient with sign constraints.
@@ -15,12 +15,22 @@ Three learner classes:
    forecast-only learner by treating every THETA column as learnable
    while anchoring the whole matrix on domain priors.
 
-3. ``ContextRuleLearner`` (legacy): per-feature scalar weights via
+3. ``RewardShapingLearner``: learns bounded corrections to the two
+   social-proxy vectors that actually enter eligible policy logits.
+
+4. ``ContextRuleLearner`` (legacy): per-feature scalar weights via
    exponential-weight bandit updates. Retained for backward compatibility.
 
-The REINFORCE update for THETA_CONTEXT is:
+The confirmatory REINFORCE update for THETA_CONTEXT is:
 
-    THETA_CONTEXT ← THETA_CONTEXT + η · (e_a − π) · ψ^T · (R − R̄)
+    THETA_CONTEXT ← Project[
+        THETA_CONTEXT + η · ((e_a − π)[:,None] ⊙ J) · (R − R̄) / T
+    ]
+
+where ``J[j,k] = ∂ modifier[j] / ∂ THETA_CONTEXT[j,k]`` is supplied by
+the exact forward path.  It includes channel masks, retrieval-only temporal and
+physics scales, clipping derivatives, and cooperative composition.  Using raw
+``psi`` here would be incorrect whenever any of those transformations binds.
 
 The update for the policy delta is the same softmax-policy gradient
 over the full φ plus a shrinkage term and the magnitude/sign rails:
@@ -40,6 +50,89 @@ from typing import Any, Dict, List
 
 import numpy as np
 
+from src.models.mode_capabilities import capabilities_for
+
+
+CONTEXT_GRADIENT_CONTRACT = (
+    "grad_theta=((one_hot(a)-pi)/T)[:,None]*"
+    "d_modifier_d_theta*(reward-baseline_after_update)"
+)
+
+
+def context_policy_gradient(
+    *,
+    action: int,
+    probs: np.ndarray,
+    advantage: float,
+    modifier_theta_jacobian: np.ndarray,
+    policy_temperature: float,
+    context_modifier: np.ndarray | None = None,
+    slca_shaping: np.ndarray | None = None,
+    slca_amp: float = 0.0,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return the exact softmax row score and un-clipped context gradient.
+
+    The same helper is used by the live learner and focused equation tests, so
+    the forward Jacobian, temperature, and optional social-proxy interaction
+    cannot silently diverge across two implementations.
+    """
+
+    probs_arr = np.asarray(probs, dtype=np.float64)
+    jacobian = np.asarray(modifier_theta_jacobian, dtype=np.float64)
+    temperature = float(policy_temperature)
+    advantage_value = float(advantage)
+    if probs_arr.shape != (3,) or not np.all(np.isfinite(probs_arr)):
+        raise ValueError("probs must be a finite 3-vector")
+    if not np.isclose(float(probs_arr.sum()), 1.0, rtol=0.0, atol=1e-12):
+        raise ValueError("probs must sum to one")
+    if np.any(probs_arr < 0.0):
+        raise ValueError("probs must be non-negative")
+    if not 0 <= int(action) < 3:
+        raise ValueError(f"action must be in [0, 2], got {action!r}")
+    if jacobian.shape != (3, 5) or not np.all(np.isfinite(jacobian)):
+        raise ValueError("modifier_theta_jacobian must be a finite 3x5 matrix")
+    if not np.isfinite(temperature) or temperature <= 0.0:
+        raise ValueError("policy_temperature must be finite and positive")
+    if not np.isfinite(advantage_value):
+        raise ValueError("advantage must be finite")
+
+    one_hot = np.zeros(3, dtype=np.float64)
+    one_hot[int(action)] = 1.0
+    row_score = (one_hot - probs_arr) / temperature
+
+    amp = float(slca_amp)
+    if not np.isfinite(amp):
+        raise ValueError("slca_amp must be finite")
+    if amp != 0.0:
+        if context_modifier is None or slca_shaping is None:
+            raise ValueError(
+                "context_modifier and slca_shaping are required when "
+                "slca_amp is non-zero"
+            )
+        modifier_arr = np.asarray(context_modifier, dtype=np.float64)
+        shaping_arr = np.asarray(slca_shaping, dtype=np.float64)
+        if (
+            modifier_arr.shape != (3,)
+            or shaping_arr.shape != (3,)
+            or not np.all(np.isfinite(modifier_arr))
+            or not np.all(np.isfinite(shaping_arr))
+        ):
+            raise ValueError(
+                "context_modifier and slca_shaping must be finite 3-vectors"
+            )
+        local_modifier = float(modifier_arr[1])
+        if 0.0 < abs(local_modifier) < 1.0:
+            row_score[1] += (
+                amp
+                * np.sign(local_modifier)
+                * float(np.dot((one_hot - probs_arr) / temperature, shaping_arr))
+            )
+
+    gradient = (
+        row_score[:, np.newaxis] * jacobian * advantage_value
+    )
+    return row_score, gradient
+
 
 class ContextMatrixLearner:
     """Online REINFORCE learner for THETA_CONTEXT weight matrix.
@@ -54,8 +147,8 @@ class ContextMatrixLearner:
     baseline_decay : exponential moving average decay for reward baseline.
     grad_clip : per-element gradient clipping bound.
     sign_constrained : if True, entries cannot flip sign from initial.
-        With ``initial_theta`` set to zeros (cold-start ablation) this is
-        ignored because there is no domain-justified sign to preserve.
+        A zero-magnitude cold start supplies the separate canonical sign
+        template through ``sign_mask_override``.
     magnitude_cap_mode : one of
         - ``"abs_initial"`` (legacy): ``|theta| <= |initial_theta|``.
           Entries can only shrink; zero-init entries are locked at zero.
@@ -73,6 +166,10 @@ class ContextMatrixLearner:
         delta cap under ``relative_delta``, so zero-initial entries are
         still allowed to move. 0.10 lets a zero-init entry grow toward
         small but non-trivial refinements while staying bounded.
+    learn_proxy_interaction : opt-in sensitivity switch for a bounded
+        context-by-social-proxy logit interaction. Disabled in the
+        confirmatory benchmark so context is counted once through the
+        context matrix.
     """
 
     def __init__(
@@ -88,6 +185,7 @@ class ContextMatrixLearner:
         freeze: bool = False,
         prior_precision: float = 0.05,
         sign_mask_override: np.ndarray | None = None,
+        learn_proxy_interaction: bool = False,
     ) -> None:
         self.theta = initial_theta.copy()
         self.initial_theta = initial_theta.copy()
@@ -105,23 +203,28 @@ class ContextMatrixLearner:
         # =0.05 this is a ~0.1% nudge toward initial_theta per update,
         # plus the existing magnitude/sign rails.
         self.prior_precision = float(prior_precision)
-        # When freeze is True, update() is a no-op; the perturbed
-        # initial_theta is held fixed across all training calls. Used
-        # by the pert_*_static sensitivity ablation.
+        # When freeze is True, update() is a no-op. This is also used to
+        # enforce the retained frozen-evaluation boundary.
         self.freeze = bool(freeze)
 
         # Sign mask: +1 for positive, -1 for negative, 0 for zero.
-        # 2026-04: zero-init entries (cold-start ablation, or
-        # entries the calibrator left at 0) used to silently lose the
-        # sign constraint because np.sign(0) == 0 and the constraint
-        # check `(theta * 0) < 0` is always False. The `sign_mask_override`
-        # kwarg lets cold-start callers specify the *intended* sign
-        # mask (e.g. the production THETA_CONTEXT signs) so the
-        # constraint applies consistently across abl ations. When
-        # `sign_mask_override` is None, fall back to the np.sign of
-        # initial_theta (legacy behaviour).
+        # Zero-valued calibrated entries otherwise have no sign because
+        # np.sign(0) == 0. The optional override lets an explicit calibration
+        # contract supply the intended signs; otherwise use initial_theta.
         if sign_mask_override is not None:
-            self.sign_mask = np.asarray(sign_mask_override, dtype=float).copy()
+            sign_mask = np.asarray(sign_mask_override, dtype=float)
+            if sign_mask.shape != self.theta.shape:
+                raise ValueError(
+                    "sign_mask_override must match initial_theta shape "
+                    f"{self.theta.shape}, got {sign_mask.shape}"
+                )
+            if not np.all(np.isfinite(sign_mask)) or not np.all(
+                np.isin(sign_mask, (-1.0, 0.0, 1.0))
+            ):
+                raise ValueError(
+                    "sign_mask_override entries must be finite and in {-1, 0, 1}"
+                )
+            self.sign_mask = sign_mask.copy()
         else:
             self.sign_mask = np.sign(initial_theta)
 
@@ -129,15 +232,16 @@ class ContextMatrixLearner:
         self.reward_baseline = 0.0
         self.n_updates = 0
 
-        # SLCA amplification coefficient (also learned). Initial value
-        # bumped to 0.40 in 2026-04 to match the action_selection.py
-        # default; the learner updates this via REINFORCE so the
-        # initial only matters when the learner has not yet observed
-        # enough reward signal to deviate.
-        self.slca_amp_coeff = 0.40
-        self.slca_amp_initial = 0.40
+        # Optional context-by-social-proxy interaction. The confirmatory
+        # benchmark leaves this disabled so external context is counted once
+        # through THETA_CONTEXT and H1 is not strengthened by an additional
+        # context-dependent amplification term. It remains available only as
+        # an explicitly enabled sensitivity mechanism.
+        self.learn_proxy_interaction = bool(learn_proxy_interaction)
+        self.slca_amp_coeff = 0.0
+        self.slca_amp_initial = 0.0
 
-        # Temporal modulation parameters (also learned)
+        # Fixed temporal-modulation parameters in the current implementation.
         self.temporal_base = 1.3
         self.temporal_scale = 0.6
 
@@ -157,29 +261,76 @@ class ContextMatrixLearner:
 
     def update(
         self,
-        psi: np.ndarray,
+        psi: np.ndarray | None,
         action: int,
         probs: np.ndarray,
         reward: float,
         slca_score: float = 0.0,
+        *,
+        modifier_theta_jacobian: np.ndarray | None = None,
+        policy_temperature: float = 1.0,
+        context_modifier: np.ndarray | None = None,
+        slca_shaping: np.ndarray | None = None,
+        slca_amp: float = 0.0,
     ) -> None:
-        """REINFORCE gradient update on THETA_CONTEXT.
+        """REINFORCE gradient update on ``THETA_CONTEXT``.
+
+        Publication execution supplies ``modifier_theta_jacobian`` from the
+        exact forward trace.  ``psi`` remains accepted only for compatibility
+        with isolated legacy callers; in that fallback it represents the
+        unclipped, ungated linear mapping and is broadcast across action rows.
 
         Parameters
         ----------
-        psi : (5,) context feature vector (institutional / coordination
-            signals). Supply and demand forecast signals are *state*
-            features and enter the policy via phi(s), not here.
+        psi : optional (5,) legacy linear context feature vector.
         action : taken action index (0, 1, 2).
         probs : (3,) softmax probability vector at decision time.
         reward : observed reward.
         slca_score : SLCA composite (for amplification learning).
+        modifier_theta_jacobian : optional (3, 5) exact derivative of the
+            applied context modifier with respect to the context matrix.
+        policy_temperature : positive softmax temperature used at decision
+            time. The score gradient is divided by this value.
+        context_modifier, slca_shaping, slca_amp : forward quantities for the
+            optional context-by-social-proxy interaction. The confirmatory
+            benchmark fixes ``slca_amp`` at zero, reducing to the equation in
+            the module docstring.
         """
-        # Frozen learner: no-op update so the static sensitivity modes
-        # (agribrain_pert_10/25/50_static) hold their perturbed initial
-        # theta fixed across the entire run.
+        # Frozen learner: no-op update, including during retained evaluation.
         if self.freeze or self.lr == 0.0:
             return
+        probs = np.asarray(probs, dtype=np.float64)
+        if probs.shape != (3,):
+            raise ValueError(f"probs must have shape (3,), got {probs.shape}")
+        if not 0 <= int(action) < 3:
+            raise ValueError(f"action must be in [0, 2], got {action!r}")
+        policy_temperature = float(policy_temperature)
+        if not np.isfinite(policy_temperature) or policy_temperature <= 0.0:
+            raise ValueError("policy_temperature must be finite and positive")
+
+        if modifier_theta_jacobian is None:
+            if psi is None:
+                raise ValueError(
+                    "psi is required when modifier_theta_jacobian is omitted"
+                )
+            psi_arr = np.asarray(psi, dtype=np.float64)
+            if psi_arr.shape != (5,):
+                raise ValueError(f"psi must have shape (5,), got {psi_arr.shape}")
+            modifier_theta_jacobian = np.broadcast_to(
+                psi_arr, (3, 5),
+            ).copy()
+        else:
+            modifier_theta_jacobian = np.asarray(
+                modifier_theta_jacobian, dtype=np.float64,
+            )
+            if modifier_theta_jacobian.shape != (3, 5):
+                raise ValueError(
+                    "modifier_theta_jacobian must have shape (3, 5), got "
+                    f"{modifier_theta_jacobian.shape}"
+                )
+        if not np.all(np.isfinite(modifier_theta_jacobian)):
+            raise ValueError("modifier_theta_jacobian must be finite")
+
         self.n_updates += 1
         self.reward_baseline = (
             self.baseline_decay * self.reward_baseline
@@ -188,13 +339,21 @@ class ContextMatrixLearner:
 
         advantage = reward - self.reward_baseline
 
-        # Policy gradient: (e_a - π) ⊗ ψ^T
-        e_a = np.zeros(3)
-        e_a[action] = 1.0
-        grad = np.outer(e_a - probs, psi) * advantage
+        # Exact score gradient for the applied modifier. The shared helper is
+        # the executable equation contract used by the focused tests.
+        row_score, raw_grad = context_policy_gradient(
+            action=action,
+            probs=probs,
+            advantage=advantage,
+            modifier_theta_jacobian=modifier_theta_jacobian,
+            policy_temperature=policy_temperature,
+            context_modifier=context_modifier,
+            slca_shaping=slca_shaping,
+            slca_amp=slca_amp,
+        )
 
         # Clip gradient
-        grad = np.clip(grad, -self.grad_clip, self.grad_clip)
+        grad = np.clip(raw_grad, -self.grad_clip, self.grad_clip)
 
         # 2026-04 shrinkage prior: pull theta back toward initial_theta
         # before the gradient step. With initial_theta acting as the
@@ -249,13 +408,21 @@ class ContextMatrixLearner:
                 f"unknown magnitude_cap_mode={self.magnitude_cap_mode!r}"
             )
 
-        # Update SLCA amplification coefficient
-        slca_grad = advantage * abs(probs[1])
-        self.slca_amp_coeff += 0.001 * slca_grad
-        self.slca_amp_coeff = float(np.clip(self.slca_amp_coeff, 0.05, 0.50))
+        # Optional social-proxy interaction sensitivity. When enabled, the
+        # update uses the supplied proxy score; the confirmatory default is a
+        # strict zero throughout training.
+        if self.learn_proxy_interaction:
+            proxy_grad = advantage * abs(probs[1]) * max(0.0, float(slca_score))
+            self.slca_amp_coeff += 0.001 * proxy_grad
+            self.slca_amp_coeff = float(np.clip(self.slca_amp_coeff, 0.0, 0.50))
 
         self._history.append({
             "advantage": advantage,
+            "gradient_contract": CONTEXT_GRADIENT_CONTRACT,
+            "policy_temperature": policy_temperature,
+            "row_score": row_score.tolist(),
+            "jacobian_norm": float(np.linalg.norm(modifier_theta_jacobian)),
+            "raw_grad_norm": float(np.linalg.norm(raw_grad)),
             "grad_norm": float(np.linalg.norm(grad)),
             "theta_norm": float(np.linalg.norm(self.theta)),
             "slca_amp": self.slca_amp_coeff,
@@ -263,6 +430,32 @@ class ContextMatrixLearner:
 
     def summary(self) -> Dict[str, Any]:
         """Detailed statistics for paper reporting."""
+        reversed_mask = (
+            (self.sign_mask != 0.0)
+            & ((self.theta * self.sign_mask) < 0.0)
+        )
+        reversal_coordinates = [
+            {
+                "action_index": int(row),
+                "context_feature_index": int(column),
+                "initial_weight": float(self.initial_theta[row, column]),
+                "final_weight": float(self.theta[row, column]),
+                "declared_sign": int(self.sign_mask[row, column]),
+            }
+            for row, column in np.argwhere(reversed_mask)
+        ]
+        # psi_0 is the independently computed operating-envelope/compliance
+        # severity feature.  Keep this diagnostic separate from the all-entry
+        # count so the sign-unconstrained ablation cannot be described as
+        # producing a compliance reversal unless one actually occurred.
+        compliance_reversals = [
+            item for item in reversal_coordinates
+            if item["context_feature_index"] == 0
+        ]
+        worst_compliance_reversal = (
+            max(compliance_reversals, key=lambda item: abs(item["final_weight"]))
+            if compliance_reversals else None
+        )
         return {
             "n_updates": self.n_updates,
             "initial_theta": self.initial_theta.tolist(),
@@ -273,9 +466,41 @@ class ContextMatrixLearner:
             "sign_preserved": bool(np.all(
                 (self.sign_mask == 0) | (np.sign(self.theta) * self.sign_mask >= 0)
             )),
+            "sign_reversal_count": len(reversal_coordinates),
+            "sign_reversal_coordinates": reversal_coordinates,
+            "worst_sign_reversal": (
+                max(
+                    reversal_coordinates,
+                    key=lambda item: abs(item["final_weight"]),
+                )
+                if reversal_coordinates else None
+            ),
+            "compliance_feature_index": 0,
+            "compliance_sign_reversal_count": len(compliance_reversals),
+            "worst_compliance_sign_reversal": worst_compliance_reversal,
             "initial_slca_amp": self.slca_amp_initial,
             "final_slca_amp": self.slca_amp_coeff,
+            "learn_proxy_interaction": self.learn_proxy_interaction,
+            "temporal_base": self.temporal_base,
+            "temporal_scale": self.temporal_scale,
+            "learning_rate": self.lr,
+            "prior_precision": self.prior_precision,
+            "magnitude_cap_mode": self.magnitude_cap_mode,
+            "magnitude_cap_value": self.magnitude_cap_value,
+            "magnitude_cap_abs_floor": self.magnitude_cap_abs_floor,
+            "sign_constrained": bool(self.sign_constrained),
             "reward_baseline": self.reward_baseline,
+            "gradient_contract": CONTEXT_GRADIENT_CONTRACT,
+            "last_gradient_trace": (
+                {
+                    key: self._history[-1][key]
+                    for key in (
+                        "advantage", "policy_temperature", "row_score",
+                        "jacobian_norm", "raw_grad_norm", "grad_norm",
+                    )
+                }
+                if self._history else None
+            ),
             "weight_range": [float(self.theta.min()), float(self.theta.max())],
             "mean_advantage": float(np.mean([h["advantage"] for h in self._history])) if self._history else 0.0,
         }
@@ -298,6 +523,11 @@ class ContextMatrixLearner:
         return {
             "theta": self.theta.tolist(),
             "slca_amp_coeff": float(self.slca_amp_coeff),
+            "learn_proxy_interaction": bool(self.learn_proxy_interaction),
+            # Informational rail metadata. load_state deliberately retains the
+            # receiving mode's constructed hyperparameters, including whether
+            # sign projection is enabled.
+            "sign_constrained": bool(self.sign_constrained),
             "temporal_base": float(self.temporal_base),
             "temporal_scale": float(self.temporal_scale),
             "reward_baseline": float(self.reward_baseline),
@@ -399,15 +629,9 @@ class PolicyDeltaLearner:
         self.grad_clip = float(grad_clip)
         self.cap_fraction = float(magnitude_cap_fraction)
         self.sign_constrained = bool(sign_constrained)
-        # 2026-05 freeze plumbing. When True, ``update`` is a no-op so
-        # the static sensitivity modes (agribrain_pert_*_static) hold
-        # theta_delta fixed at zero. Symmetric with
-        # ``ContextMatrixLearner.freeze`` (line 111). Pre-2026-05 only
-        # ContextMatrixLearner respected freeze, so the "_static" modes
-        # froze THETA_CONTEXT but allowed PolicyDeltaLearner and
-        # RewardShapingLearner to keep updating -- which let the policy
-        # adapt around the perturbed prior, partly defeating the
-        # "no learning recovery" intent of the experiment.
+        # When True, ``update`` is a no-op. This is symmetric with
+        # ``ContextMatrixLearner.freeze`` and supports the common frozen-
+        # evaluation boundary.
         self.freeze = bool(freeze)
 
         self._sign_mask = np.sign(self.initial_theta)
@@ -447,13 +671,7 @@ class PolicyDeltaLearner:
         if probs.shape != (3,):
             raise ValueError(f"probs must be shape (3,), got {probs.shape}")
 
-        # Frozen learner: no-op update so the static sensitivity modes
-        # (agribrain_pert_*_static) hold theta_delta at zero across the
-        # entire run. Symmetric with ContextMatrixLearner.update (line
-        # 181). Pre-2026-05 only ContextMatrixLearner had this guard,
-        # so PolicyDeltaLearner kept REINFORCing inside _static modes
-        # and the policy could compensate for the perturbed THETA_CONTEXT
-        # prior -- partly defeating the experimental intent.
+        # Frozen learner: no-op update, including during retained evaluation.
         if self.freeze or self.lr == 0.0:
             return
 
@@ -520,6 +738,21 @@ class PolicyDeltaLearner:
                 float(np.mean([h["advantage"] for h in self._history]))
                 if self._history else 0.0
             )
+        effective_theta = self.get_effective_theta()
+        reversed_mask = (
+            (self._sign_mask != 0.0)
+            & ((effective_theta * self._sign_mask) < 0.0)
+        )
+        reversal_coordinates = [
+            {
+                "action_index": int(row),
+                "state_feature_index": int(column),
+                "initial_weight": float(self.initial_theta[row, column]),
+                "final_weight": float(effective_theta[row, column]),
+                "declared_sign": int(self._sign_mask[row, column]),
+            }
+            for row, column in np.argwhere(reversed_mask)
+        ]
         return {
             "n_updates": self.n_updates,
             "final_theta_delta": self.theta_delta.tolist(),
@@ -533,6 +766,15 @@ class PolicyDeltaLearner:
             "prior_precision": self.prior_precision,
             "magnitude_cap_fraction": self.cap_fraction,
             "sign_constrained": self.sign_constrained,
+            "sign_reversal_count": len(reversal_coordinates),
+            "sign_reversal_coordinates": reversal_coordinates,
+            "worst_sign_reversal": (
+                max(
+                    reversal_coordinates,
+                    key=lambda item: abs(item["final_weight"]),
+                )
+                if reversal_coordinates else None
+            ),
         }
 
     def reset(self) -> None:
@@ -576,38 +818,28 @@ class PolicyDeltaLearner:
 
 
 class RewardShapingLearner:
-    """Online REINFORCE learner for the hand-calibrated reward-shaping
-    vectors ``SLCA_BONUS``, ``SLCA_RHO_BONUS``, and ``NO_SLCA_OFFSET``.
+    """Online REINFORCE learner for active social-proxy logit vectors.
 
     Same sign-constrained, shrinkage-anchored delta-with-cap pattern as
-    :class:`PolicyDeltaLearner`, but over three (3,) vectors instead of
-    a single (3, 10) matrix. Each vector has its own per-entry 25 percent
+    :class:`PolicyDeltaLearner`, but over the two active (3,) vectors
+    ``SLCA_BONUS`` and ``SLCA_RHO_BONUS``. Each vector has a per-entry 25 percent
     magnitude cap, its own sign mask derived from the initial values,
     and an independent zero-mean Gaussian shrinkage prior. Deltas are
     zero-initialised so step 0 is bit-identical to the hand-calibrated
-    reward-shaping.
+    reward-shaping. ``NO_SLCA_OFFSET`` remains a zero-valued compatibility
+    field; it does not enter the no-SLCA logits and is not learned.
 
-    The update is mode-conditional:
+    Gradient routing is read from :mod:`src.models.mode_capabilities`, the
+    same declaration used by the coordinator and simulator. In particular,
+    every declared publication mode whose logits contain the proxy vectors
+    receives gradients. Hybrid RL, No-SLCA, and Static do not instantiate or
+    update this learner. Retired pre-final sensitivity aliases are not
+    executable publication modes.
 
-    - ``SLCA_BONUS`` and ``SLCA_RHO_BONUS * rho`` enter the logits only
-      in ``agribrain``, ``no_pinn``, and the three context-enabled
-      modes (``no_context``, ``mcp_only``, ``pirag_only``). Those modes
-      accumulate gradient on the two SLCA vectors.
-    - ``NO_SLCA_OFFSET`` enters the logits only in ``no_slca``. That
-      mode accumulates gradient on the offset vector.
-    - ``hybrid_rl`` and ``static`` do not touch any reward-shaping
-      vector and skip this learner entirely (no-op update).
-
-    Shrinkage is applied to every delta on every update (so deltas for
-    inactive vectors still decay back toward zero over time), but the
-    gradient term is only added to the deltas whose vector contributed
-    to the logits in the current step.
+    Unsupported modes are a true no-op rather than a shrinkage-only pseudo
+    update, so ``n_updates`` counts decisions on which these vectors were
+    genuinely eligible to learn.
     """
-
-    _SLCA_BONUS_MODES = frozenset({
-        "agribrain", "no_pinn", "no_context", "mcp_only", "pirag_only",
-    })
-    _NO_SLCA_MODES = frozenset({"no_slca"})
 
     def __init__(
         self,
@@ -701,22 +933,22 @@ class RewardShapingLearner:
         mode: str,
         rho: float,
     ) -> None:
-        """REINFORCE step with mode-conditional gradient routing.
+        """REINFORCE step with centrally declared mode routing.
 
-        Shrinkage is applied to every delta on every call so inactive
-        vectors drift back toward zero; gradients are applied only to
-        the vectors active in ``mode``.
-
-        Frozen learner (``freeze=True`` or ``lr == 0``): no-op so the
-        static sensitivity modes (agribrain_pert_*_static) keep all
-        three reward-shaping deltas at zero across the entire run. The
-        early return is BEFORE shrinkage too, so frozen deltas don't
-        decay either; the perturbation is the only source of variation.
+        Frozen learner (``freeze=True`` or ``lr == 0``): no-op. The early
+        return is before shrinkage too, so a frozen evaluation cannot change
+        any reward-shaping delta.
         """
         if probs.shape != (3,):
             raise ValueError(f"probs must be shape (3,), got {probs.shape}")
 
-        if self.freeze or self.lr == 0.0:
+        caps = capabilities_for(mode)
+        if (
+            self.freeze
+            or self.lr == 0.0
+            or caps.frozen_learners
+            or not caps.reward_shaping_learning
+        ):
             return
 
         self.n_updates += 1
@@ -730,20 +962,11 @@ class RewardShapingLearner:
         e_a[action] = 1.0
         policy_grad = (e_a - probs) * advantage
 
-        # Route gradients based on the current mode's logit construction.
-        if mode in self._SLCA_BONUS_MODES:
-            grad_bonus = policy_grad
-            grad_rho = policy_grad * float(rho)
-            grad_offset = None
-        elif mode in self._NO_SLCA_MODES:
-            grad_bonus = None
-            grad_rho = None
-            grad_offset = policy_grad
-        else:
-            # hybrid_rl, static, or any unknown mode: shrinkage only.
-            grad_bonus = None
-            grad_rho = None
-            grad_offset = None
+        grad_bonus = policy_grad
+        grad_rho = policy_grad * float(rho)
+        # Deprecated compatibility vector: it is exactly zero and does not
+        # enter any current logit equation.
+        grad_offset = None
 
         self.slca_bonus_delta = self._apply_shrinkage_and_rails(
             self.slca_bonus_delta, self._sign_bonus, self._bound_bonus,
@@ -767,6 +990,40 @@ class RewardShapingLearner:
         })
 
     def summary(self) -> Dict[str, Any]:
+        effective_vectors = {
+            "slca_bonus": self.initial_slca_bonus + self.slca_bonus_delta,
+            "slca_rho_bonus": self.initial_slca_rho + self.slca_rho_delta,
+            "no_slca_offset": (
+                self.initial_no_slca_offset + self.no_slca_offset_delta
+            ),
+        }
+        initial_vectors = {
+            "slca_bonus": self.initial_slca_bonus,
+            "slca_rho_bonus": self.initial_slca_rho,
+            "no_slca_offset": self.initial_no_slca_offset,
+        }
+        sign_vectors = {
+            "slca_bonus": self._sign_bonus,
+            "slca_rho_bonus": self._sign_rho,
+            "no_slca_offset": self._sign_offset,
+        }
+        reversal_coordinates = []
+        for parameter, effective in effective_vectors.items():
+            initial = initial_vectors[parameter]
+            sign_mask = sign_vectors[parameter]
+            reversed_mask = (
+                (sign_mask != 0.0) & ((effective * sign_mask) < 0.0)
+            )
+            reversal_coordinates.extend(
+                {
+                    "parameter": parameter,
+                    "action_index": int(action),
+                    "initial_weight": float(initial[action]),
+                    "final_weight": float(effective[action]),
+                    "declared_sign": int(sign_mask[action]),
+                }
+                for action in np.argwhere(reversed_mask).flatten()
+            )
         return {
             "n_updates": self.n_updates,
             "slca_bonus_delta": self.slca_bonus_delta.tolist(),
@@ -783,6 +1040,15 @@ class RewardShapingLearner:
             "reward_baseline": float(self.reward_baseline),
             "magnitude_cap_fraction": self.cap_fraction,
             "sign_constrained": self.sign_constrained,
+            "sign_reversal_count": len(reversal_coordinates),
+            "sign_reversal_coordinates": reversal_coordinates,
+            "worst_sign_reversal": (
+                max(
+                    reversal_coordinates,
+                    key=lambda item: abs(item["final_weight"]),
+                )
+                if reversal_coordinates else None
+            ),
         }
 
     def reset(self) -> None:

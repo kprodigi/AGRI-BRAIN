@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Verification script for MCP + piRAG context integration (Task 30).
+Development smoke script for MCP + piRAG context integration.
 
-Runs the baseline scenario with agribrain context ON vs OFF, prints
-diagnostic comparisons, and asserts correctness properties.
+Runs a short baseline trace with AGRI-BRAIN context on versus off and checks
+basic wiring. This is not a publication treatment or inferential result; the
+locked multi-seed protocol and validators remain authoritative.
 
 Usage:
     cd mvp/simulation
@@ -28,14 +29,12 @@ from src.models.action_selection import ACTIONS, ACTION_KM_KEYS
 from src.models.action_selection import compute_thermal_stress, compute_slca_attenuation
 from src.models.carbon import compute_transport_carbon
 from src.models.slca import slca_score
-from src.models.waste import (
-    INV_BASELINE, MODE_CARBON_EFF,
-    compute_waste_rate, compute_save_factor,
-)
+from src.models.waste import INV_BASELINE, compute_waste_rate, compute_save_factor
 from src.models.spoilage import arrhenius_k
-from src.models.resilience import compute_ari, route_rho_factor
+from src.models.resilience import compute_ari
 from src.models.reward import compute_reward
-from src.models.lstm_demand import lstm_demand_forecast
+from src.models.yield_forecast import yield_demand_forecast
+from src.models.persistence_forecast import persistence_forecast
 
 from src.models.scenario_engine import hours_from_start as _hours_from_start
 
@@ -70,14 +69,26 @@ def _run_short_episode(df, mode, context_enabled, n_steps=48):
 
         lookback = min(idx + 1, 48)
         hist_slice = df.iloc[max(0, idx + 1 - lookback):idx + 1]
-        yf = lstm_demand_forecast(hist_slice, horizon=1)
+        yf = yield_demand_forecast(hist_slice, horizon=1)
         y_hat = float(yf["forecast"][0]) if yf["forecast"] else 100.0
+        sf = persistence_forecast(
+            hist_slice,
+            horizon=1,
+            series_col="inventory_units",
+        )
+        supply_hat = (
+            float(sf["forecast"][0]) if sf.get("forecast") else inv
+        )
+        supply_std = float(sf.get("std", 0.0) or 0.0)
+        demand_std = float(yf.get("std", 0.0) or 0.0)
         surplus_ratio = max(0.0, inv / INV_BASELINE - 1.0)
 
         env_state = {
             "rho": rho, "inv": inv, "temp": temp, "rh": rh_val,
             "y_hat": y_hat, "tau": tau, "surplus_ratio": surplus_ratio,
-            "supply_hat": inv,
+            "supply_hat": supply_hat,
+            "supply_std": supply_std,
+            "demand_std": demand_std,
         }
 
         action_idx, probs, active = coordinator.step(
@@ -90,10 +101,18 @@ def _run_short_episode(df, mode, context_enabled, n_steps=48):
         thermal_stress = compute_thermal_stress(temp)
         carbon = compute_transport_carbon(
             km, policy.carbon_per_km, thermal_stress,
-            eff_factor=MODE_CARBON_EFF.get(mode, 1.0),
+            eff_factor=1.0,
         )
 
-        slca_result = slca_score(carbon, action)
+        slca_result = slca_score(
+            carbon,
+            action,
+            w_c=policy.w_c,
+            w_l=policy.w_l,
+            w_r=policy.w_r,
+            w_p=policy.w_p,
+            carbon_cap=policy.carbon_cap,
+        )
         slca_raw = slca_result["composite"]
         slca_quality = compute_slca_attenuation(thermal_stress, surplus_ratio)
         slca_c = slca_raw * slca_quality
@@ -108,7 +127,6 @@ def _run_short_episode(df, mode, context_enabled, n_steps=48):
         reward = compute_reward(
             slca_c, waste, rho,
             eta=policy.eta, eta_rho=policy.eta_rho,
-            route_factor=route_rho_factor(action, float(temp)),
         )
 
         obs = active.observe(env_state, hours[idx])
@@ -233,11 +251,9 @@ def main():
         n_different = sum(1 for a, b in zip(actions_on, actions_off) if a != b)
         print(f"  Action differences: {n_different}/{len(actions_on)}")
 
-        # ARI delta should be bounded
+        # Report the observed effect without imposing a hand-selected maximum.
         ari_delta = abs(ctx_on["ari"] - ctx_off["ari"])
-        print(f"  ARI delta: {ari_delta:.4f} (limit: 0.10)")
-        assert ari_delta < 0.10, f"ARI delta {ari_delta:.4f} exceeds limit of 0.10"
-        print("  PASS: ARI delta within bounds")
+        print(f"  ARI delta: {ari_delta:.4f} (descriptive)")
     else:
         print("  Context infrastructure not fully initialized (imports may have failed)")
         print("  Checking that metrics are identical when context is disabled...")

@@ -1,0 +1,71 @@
+name: Bug report
+description: Report a reproducible software defect
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include credentials, private data, cluster identities, or live endpoints.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Provide the software version, Git commit, or source tag.
+      placeholder: "v1.3.0 or a 40-character commit"
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Backend/API
+        - Agent coordination and policy
+        - MCP or institutional retrieval
+        - Simulation or statistics
+        - HPC/evidence pipeline
+        - Frontend
+        - Optional smart contracts
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Give exact commands, inputs, and steps.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include a short redacted traceback or log if useful.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python/Node version, installation method, and relevant non-secret settings.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues.
+          required: true
+        - label: I removed secrets and personal or infrastructure-identifying information.
+          required: true
+        - label: I identified whether this defect could change publication evidence.
+          required: true

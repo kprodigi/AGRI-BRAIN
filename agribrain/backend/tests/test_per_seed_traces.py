@@ -57,7 +57,9 @@ def test_serialise_trace_handles_all_three_shapes():
 
     # (a) list[float] / list[int] -- ari_trace style.
     assert fn([0.123456, 0.789012]) == [0.1235, 0.7890]
-    assert fn([0, 1, 2, 0]) == [0, 1, 2, 0]
+    serialized_actions = fn([0, 1, 2, 0])
+    assert serialized_actions == [0, 1, 2, 0]
+    assert all(type(value) is int for value in serialized_actions)
     # numpy 1D ndarray.
     assert fn(np.array([0.5, 1.5, 2.5])) == [0.5, 1.5, 2.5]
 
@@ -118,7 +120,9 @@ def test_serialise_trace_handles_all_three_shapes():
     # Two HPC runs (jobs 10852464 and 10853393) burned ~50 h of
     # compute on this before the dispatch was made universal.
     assert fn([np.float64(0.5), np.float64(1.5)]) == [0.5, 1.5]
-    assert fn([np.int64(3), np.int64(7)]) == [3, 7]
+    serialized_numpy_ints = fn([np.int64(3), np.int64(7)])
+    assert serialized_numpy_ints == [3, 7]
+    assert all(type(value) is int for value in serialized_numpy_ints)
     # list[np.ndarray] must serialise as list[list[float]].
     out = fn([np.array([0.3, 0.5, 0.2]), np.array([0.4, 0.4, 0.2])])
     assert out == [[0.3, 0.5, 0.2], [0.4, 0.4, 0.2]], out
@@ -143,10 +147,37 @@ def test_run_single_seed_self_test_trace_dispatch_passes():
     rss._self_test_trace_dispatch()  # raises if any case fails
 
 
+def test_action_contract_accepts_only_exact_discrete_numeric_values():
+    """Immutable d3286ae traces use integral floats; reject everything else."""
+
+    from benchmarks.trace_contract import _canonical_action_index
+
+    for value, expected in ((0, 0), (1, 1), (2, 2), (0.0, 0), (1.0, 1), (2.0, 2)):
+        assert _canonical_action_index(value, where="test/action_trace") == expected
+    invalid_values = (
+        True,
+        False,
+        -1,
+        3,
+        10**400,
+        0.5,
+        1.5,
+        float("nan"),
+        float("inf"),
+        float("-inf"),
+        "1",
+        None,
+    )
+    for invalid in invalid_values:
+        with pytest.raises(ValueError, match="noncanonical action"):
+            _canonical_action_index(invalid, where="test/action_trace")
+
+
 def test_run_single_seed_declares_canonical_trace_modes():
     """The canonical paper trio is the documented contract."""
-    text = (_BENCHMARKS_DIR / "run_single_seed.py").read_text(encoding="utf-8")
-    assert 'TRACE_MODES = ("static", "hybrid_rl", "agribrain")' in text, (
+    from benchmarks.trace_contract import TRACE_MODES
+
+    assert TRACE_MODES == ("static", "hybrid_rl", "agribrain"), (
         "TRACE_MODES drifted from the canonical paper trio "
         "(static, hybrid_rl, agribrain). Update fig 2 panel d "
         "comments and the test in lockstep with any change."
@@ -165,33 +196,46 @@ def test_run_single_seed_declares_canonical_trace_fields():
     enumerated in TRACE_FIELDS at the top of run_single_seed.py and
     documented inline there.
     """
-    text = (_BENCHMARKS_DIR / "run_single_seed.py").read_text(encoding="utf-8")
+    from benchmarks.trace_contract import TRACE_FIELDS
+
     required_fields = (
         "ari_trace",
         "waste_trace",
         "rho_trace",
+        "rho_policy_observed_trace",
+        "rho_outcome_environmental_trace",
         "action_trace",
         "prob_trace",
         "carbon_trace",
         "hours",
-        "batch_effective_rho_trace",
-        "effective_rho_trace",
         "temp_trace",
         "rh_trace",
         "inventory_trace",
         "demand_trace",
+        "temp_policy_observed_trace",
+        "temp_outcome_environmental_trace",
+        "rh_policy_observed_trace",
+        "rh_outcome_environmental_trace",
+        "inventory_policy_observed_trace",
+        "inventory_outcome_environmental_trace",
+        "demand_policy_observed_trace",
+        "demand_forecast_policy_observed_trace",
+        "demand_regime_flag_trace",
+        "price_signal_trace",
+        "supply_forecast_policy_observed_trace",
+        "demand_outcome_environmental_trace",
+        "transport_multiplier_outcome_environmental_trace",
+        "simulated_dispatch_accounted_trace",
         "slca_component_trace",
+        "slca_trace",
         "equity_trace",
         "reward_trace",
     )
-    for field in required_fields:
-        assert f'"{field}"' in text, (
-            f"TRACE_FIELDS no longer dumps {field}; the "
-            f"regenerate_figures_from_cache.py path will lose its "
-            f"ability to re-render any panel that consumes that "
-            f"per-step trace. See run_single_seed.py docstring for "
-            f"the field-by-figure mapping."
-        )
+    assert TRACE_FIELDS == required_fields, (
+        "The shared TRACE_FIELDS contract drifted from the complete, ordered "
+        "publication trace schema. Update the simulator, raw validator, figure "
+        "renderer, and this assertion together for an intentional change."
+    )
 
 
 def test_run_single_seed_envelope_shape(tmp_path: Path, monkeypatch):
@@ -281,6 +325,24 @@ def test_loader_handles_tagged_subdir_layout(tmp_path, monkeypatch):
     assert out is not None and out.shape == (2, n_steps)
 
 
+def test_loader_rejects_ambiguous_tagged_runs(tmp_path, monkeypatch):
+    """Sibling run tags must never be silently combined."""
+    import generate_figures as gf  # type: ignore
+
+    for tag in ("run_a", "run_b"):
+        tagged = tmp_path / "benchmark_seeds" / tag
+        tagged.mkdir(parents=True)
+        _write_seed_json(
+            tagged, 42,
+            traces={"heatwave": {"agribrain": {"ari_trace": [0.5] * 4}}},
+        )
+    monkeypatch.setattr(gf, "RESULTS_DIR", tmp_path)
+    monkeypatch.delenv("FIGURE_SEED_ROOT", raising=False)
+    monkeypatch.delenv("RUN_TAG", raising=False)
+    with pytest.raises(RuntimeError, match="ambiguous benchmark seed cache"):
+        gf._load_per_seed_traces("heatwave", "agribrain", "ari_trace")
+
+
 def test_loader_drops_seeds_with_mismatched_step_count(tmp_path, monkeypatch):
     """A truncated seed must not crash the stack; it gets dropped."""
     import generate_figures as gf  # type: ignore
@@ -332,6 +394,51 @@ def test_loader_returns_none_for_missing_scenario_or_mode(tmp_path, monkeypatch)
     # Wrong scenario.
     assert gf._load_per_seed_traces("cyber_outage", "agribrain", "ari_trace") is None
     # Wrong mode.
-    assert gf._load_per_seed_traces("heatwave", "no_pinn", "ari_trace") is None
+    assert gf._load_per_seed_traces("heatwave", "missing_mode", "ari_trace") is None
     # Wrong field.
     assert gf._load_per_seed_traces("heatwave", "agribrain", "rho_trace") is None
+
+
+def test_rolling_helpers_do_not_zero_pad_endpoints():
+    """Constant trajectories stay constant at both plot boundaries."""
+    import generate_figures as gf  # type: ignore
+
+    values = np.full(17, 0.625)
+    centred = gf._rolling_mean(values, 12)
+    trailing = gf._rolling_mean(values, 12, centered=False)
+    assert np.allclose(centred, values)
+    assert np.allclose(trailing, values)
+
+
+def test_trailing_full_window_rle_equals_episode_rle():
+    """The final plotted value reproduces the canonical episode metric."""
+    import generate_figures as gf  # type: ignore
+    from agribrain.backend.src.models.resilience import (
+        HIERARCHY_WEIGHT,
+        RLE_THRESHOLD,
+        compute_rle,
+        hierarchy_weight,
+    )
+
+    rho = np.asarray([0.05, 0.20, 0.48, 0.60, 0.75], dtype=float)
+    actions = [
+        "cold_chain",
+        "local_redistribute",
+        "local_redistribute",
+        "recovery",
+        "recovery",
+    ]
+    w_max = max(HIERARCHY_WEIGHT.values())
+    numerator = np.asarray([
+        value * hierarchy_weight(action, value)
+        if value > RLE_THRESHOLD else 0.0
+        for value, action in zip(rho, actions)
+    ])
+    denominator = np.asarray([
+        value * w_max if value > RLE_THRESHOLD else 0.0
+        for value in rho
+    ])
+    rolling_num = gf._rolling_sum(numerator, len(rho), centered=False)
+    rolling_den = gf._rolling_sum(denominator, len(rho), centered=False)
+    plotted_endpoint = rolling_num[-1] / rolling_den[-1]
+    assert plotted_endpoint == pytest.approx(compute_rle(rho.tolist(), actions))

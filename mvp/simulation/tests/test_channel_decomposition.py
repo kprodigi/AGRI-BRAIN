@@ -1,12 +1,10 @@
-"""Regression tests for the channel-decomposition Holm family in
+"""Regression tests for H2 and its historical channel-subset audit fields in
 ``mvp/simulation/benchmarks/aggregate_seeds.py``.
 
-The aggregator computes a third statistical family alongside the
-primary H1 family (``agribrain_vs_no_context`` on ARI, m=5) and the
-secondary BY-FDR per-scenario family: the **channel-decomposition
-family** of m=10 tests (2 contrasts: ``mcp_only_vs_no_context`` and
-``pirag_only_vs_no_context``; each on ARI across 5 scenarios) with
-its own Holm-Bonferroni correction.
+Confirmatory H2 is one m=20 Holm family: two single-channel-versus-No-context
+contrasts and two full-versus-single-channel contrasts in five scenarios.  The
+older m=10 two-contrast correction remains only as an auxiliary audit field;
+it is never the canonical H2 p-value.
 
 Tests are written so they only import ``mvp.simulation.benchmarks.
 aggregate_seeds`` lazily, inside the test bodies that need it. The
@@ -18,24 +16,19 @@ contract tests below still run and the import-dependent tests
 
 Three contracts are pinned:
 
-  1. ``_CHANNEL_DECOMPOSITION_PAIRS`` is exactly the two single-
-     channel-vs-no-context pairs the C4 paper-claim families depend
-     on. If a future maintainer extends or shrinks this tuple, the
-     manuscript text and ``docs/STATISTICAL_METHODS.md`` need to be
-     updated to reflect the new family size; the test pins both the
-     count (m=10 after the cross-product with 5 scenarios) and the
-     exact membership.
+  1. ``_CHANNEL_DECOMPOSITION_PAIRS`` remains the exact two direct
+     single-channel-vs-No-context pairs.  Together with the two
+     full-vs-single pairs in ``H2_DIRECTIONAL_PAIRS``, these form H2.
 
   2. When the aggregator has been run on a 20-seed dump and produced
      ``benchmark_significance.json``, that file carries (a) every
      ``(scenario, pair)`` cell as a populated ``ari`` record with the
-     ``p_value_adj_holm_channel`` field set, (b) the canonical
-     ``correction_method`` is ``holm_bonferroni_channel_decomposition``
-     on those cells, and (c) the JSON top-level
-     ``channel_decomposition_holm_adjusted`` dict covers every
-     ``{scenario}:{a_mode}_vs_{b_mode}`` key.
+     ``p_value_adj_holm_h2_directional`` field set, (b) the canonical
+     ``correction_method`` is ``holm_bonferroni_h2_directional_20``, and
+     (c) the JSON top-level ``h2_directional_holm_adjusted`` dict covers
+     all 20 keys.
 
-  3. Holm step-down within a 10-test family is monotone and
+  3. Holm step-down is monotone and
      bounded in [0, 1] (pure-design test verifying the published
      correction's mathematical contract; no aggregator import needed).
 """
@@ -105,9 +98,8 @@ def test_channel_decomposition_pairs_constant_in_source():
     assert pattern.search(src), (
         "Source-level _CHANNEL_DECOMPOSITION_PAIRS tuple has changed "
         "from the canonical (mcp_only,no_context) + (pirag_only,no_context) "
-        "membership. The family-size statement in STATISTICAL_METHODS.md "
-        "references exactly these two pairs. Update that doc (and the "
-        "family m=10 statement) before changing this constant."
+        "membership. Together with the two full-versus-single contrasts, "
+        "these pairs define the m=20 H2 family."
     )
 
 
@@ -123,7 +115,8 @@ def test_channel_decomposition_pairs_constant_via_import():
     parsing would miss (e.g. the constant defined twice with
     different values)."""
     from mvp.simulation.benchmarks.aggregate_seeds import (
-        _CHANNEL_DECOMPOSITION_PAIRS, SCENARIOS,
+        _CHANNEL_DECOMPOSITION_PAIRS,
+        SCENARIOS,
     )
     assert _CHANNEL_DECOMPOSITION_PAIRS == (
         ("mcp_only",   "no_context"),
@@ -131,10 +124,8 @@ def test_channel_decomposition_pairs_constant_via_import():
     )
     expected_m = len(_CHANNEL_DECOMPOSITION_PAIRS) * len(SCENARIOS)
     assert expected_m == 10, (
-        f"Expected family size 10 (2 pairs x 5 scenarios); got {expected_m}. "
-        "If SCENARIOS or _CHANNEL_DECOMPOSITION_PAIRS changed, update "
-        "STATISTICAL_METHODS.md's 'Channel-decomposition family' size "
-        "statement to match."
+        f"Expected auxiliary subset size 10 (2 pairs x 5 scenarios); "
+        f"got {expected_m}."
     )
 
 
@@ -162,7 +153,10 @@ def test_channel_decomposition_records_present_in_significance_json():
     sig = payload.get("significance", payload)
     scenarios = ("heatwave", "overproduction", "cyber_outage",
                  "adaptive_pricing", "baseline")
-    pairs = ("mcp_only_vs_no_context", "pirag_only_vs_no_context")
+    pairs = (
+        "mcp_only_vs_no_context", "pirag_only_vs_no_context",
+        "agribrain_vs_mcp_only", "agribrain_vs_pirag_only",
+    )
     # Skip the test gracefully if this file pre-dates the
     # channel-decomposition family. The check below distinguishes
     # "aggregator hasn't been re-run since 2026-05" from "aggregator
@@ -186,16 +180,16 @@ def test_channel_decomposition_records_present_in_significance_json():
                 f"channel-decomposition: {sc}/{pair_name}/ari "
                 "is not a dict"
             )
-            assert "p_value_adj_holm_channel" in rec, (
+            assert "p_value_adj_holm_h2_directional" in rec, (
                 f"channel-decomposition: {sc}/{pair_name}/ari "
-                "missing p_value_adj_holm_channel"
+                "missing p_value_adj_holm_h2_directional"
             )
             assert rec.get("correction_method") == (
-                "holm_bonferroni_channel_decomposition"
+                "holm_bonferroni_h2_directional_20"
             ), (
                 f"channel-decomposition: {sc}/{pair_name}/ari "
                 f"correction_method is {rec.get('correction_method')!r}, "
-                "expected 'holm_bonferroni_channel_decomposition'"
+                "expected 'holm_bonferroni_h2_directional_20'"
             )
             # Effect-size CI bracketed correctly.
             lo = rec.get("effect_size_ci_low")
@@ -206,13 +200,13 @@ def test_channel_decomposition_records_present_in_significance_json():
                     f"effect-size CI inverted: low={lo} > high={hi}"
                 )
 
-    fam = payload.get("channel_decomposition_holm_adjusted")
+    fam = payload.get("h2_directional_holm_adjusted")
     assert isinstance(fam, dict), (
-        "missing top-level channel_decomposition_holm_adjusted dict"
+        "missing top-level h2_directional_holm_adjusted dict"
     )
     expected_keys = {f"{sc}:{pair}" for sc in scenarios for pair in pairs}
     assert set(fam.keys()) == expected_keys, (
-        f"channel_decomposition_holm_adjusted keys mismatch: "
+        f"h2_directional_holm_adjusted keys mismatch: "
         f"missing={expected_keys - set(fam.keys())} "
         f"extra={set(fam.keys()) - expected_keys}"
     )
@@ -289,3 +283,74 @@ def test_aggregator_holm_matches_local_reference():
             f"holm_bonferroni disagrees with reference at {k}: "
             f"aggregator={agg_adj[k]}, reference={ref_adj[k]}"
         )
+
+
+@pytest.mark.skipif(
+    not _can_import_aggregator(),
+    reason="aggregate_seeds requires the backend stack",
+)
+def test_h2_publication_projection_is_exact_20_row_table(tmp_path):
+    """The paper-facing table must include every estimate and test field."""
+    import csv
+
+    from mvp.simulation.benchmarks.aggregate_seeds import (
+        _H2_DIRECTIONAL_PAIRS,
+        _H2_PUBLICATION_COLUMNS,
+        SCENARIOS,
+        _build_h2_publication_rows,
+        _write_h2_publication_csv,
+    )
+
+    significance = {}
+    for scenario_index, scenario in enumerate(SCENARIOS):
+        significance[scenario] = {}
+        for pair_index, (left, right) in enumerate(_H2_DIRECTIONAL_PAIRS):
+            delta = 0.01 + 0.001 * (scenario_index * 4 + pair_index)
+            significance[scenario][f"{left}_vs_{right}"] = {
+                "ari": {
+                    "n_seeds": 20,
+                    "h2_test_type_actual": "wilcoxon_signed_rank",
+                    "mean_diff": delta,
+                    "mean_diff_ci_low": delta - 0.002,
+                    "mean_diff_ci_high": delta + 0.002,
+                    "mean_diff_ci_method": "BCa",
+                    "cohens_dz": 1.2,
+                    "cohens_dz_ci_low": 0.8,
+                    "cohens_dz_ci_high": 1.6,
+                    "cohens_dz_ci_method": "BCa",
+                    "p_value_directional_greater": 0.001,
+                    "p_value_adj_holm_h2_directional": 0.02,
+                    "h2_family_size": 20,
+                    "h2_cell_supported": True,
+                },
+            }
+    rows = _build_h2_publication_rows(
+        significance, source_commit="a" * 40, run_tag="aaaaaaa_20260829_010203",
+    )
+    assert len(rows) == 20
+    assert all(tuple(row) == _H2_PUBLICATION_COLUMNS for row in rows)
+    assert [
+        (row["scenario"], row["numerator_mode"], row["denominator_mode"])
+        for row in rows
+    ] == [
+        (scenario, left, right)
+        for scenario in SCENARIOS
+        for left, right in _H2_DIRECTIONAL_PAIRS
+    ]
+
+    path = tmp_path / "h2_directional_evidence.csv"
+    _write_h2_publication_csv(path, rows)
+    with path.open(newline="", encoding="utf-8") as stream:
+        exported = list(csv.DictReader(stream))
+    assert len(exported) == 20
+    assert tuple(exported[0]) == _H2_PUBLICATION_COLUMNS
+    assert exported[0]["raw_directional_p_value"] == "0.001"
+    assert exported[0]["holm_adjusted_p_value"] == "0.02"
+    assert exported[0]["cell_supported"] == "True"
+
+
+def test_resampling_metadata_labels_n_perm_as_legacy_scope():
+    source = _aggregator_source()
+    assert '"confirmatory_test": "directional_wilcoxon_signed_rank"' in source
+    assert '"legacy_sign_flip_resamples": 10_000' in source
+    assert '"n_perm_scope"' in source

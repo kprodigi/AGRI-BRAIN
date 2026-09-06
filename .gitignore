@@ -2,6 +2,18 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Operating-system and generic local logs
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.log
 
 # Working scratch files at repo root (audit-pass tmp scripts, draft
 # manuscript snapshots, sanity-check probes). Strict pattern at the
@@ -27,12 +39,21 @@ __pycache__/
 # changes rather than expected run output.
 /logs/
 /hpc_results_*.tar.gz
+# The publication aggregator moves superseded, tracked diagnostics here before
+# manifest construction. Their deletions under results/ are intentionally
+# ignored by the manifest dirty-tree filter; this run-output directory must be
+# ignored as well so preserving those files cannot make a clean commit appear
+# to contain uncommitted source changes.
+/hpc_legacy_results/
+/publication_bundle_*/
 
 # Stochastic feasibility test scripts (diagnostic, not production)
 docs/screenshots/_check/
 node_modules/
 dist/
 .venv/
+/.publication_venvs/
+/.publication_sources/
 *.egg-info/
 
 # IDE / editor
@@ -91,15 +112,30 @@ agribrain/backend/experiments/out/
 pirag_vectors/
 
 # Simulation results: keep canonical tables + figures, ignore volatile runtime outputs
+mvp/simulation/development_results/
 mvp/simulation/results/*
+!mvp/simulation/results/README.md
 !mvp/simulation/results/table1_summary.csv
 !mvp/simulation/results/table2_ablation.csv
 !mvp/simulation/results/benchmark_summary.json
 !mvp/simulation/results/benchmark_significance.json
+!mvp/simulation/results/h2_directional_evidence.csv
+!mvp/simulation/results/secondary_ablation_analysis.json
+!mvp/simulation/results/secondary_ablation_analysis.csv
 !mvp/simulation/results/stress_summary.json
 !mvp/simulation/results/stress_degradation.csv
-!mvp/simulation/results/feature_heatmap_data.json
 !mvp/simulation/results/artifact_manifest.json
+# Small canonical authorization documents needed to validate a public
+# dual-provenance manifest. Raw episode outputs remain ignored/archive-only.
+!mvp/simulation/results/publication_recovery_receipts/
+mvp/simulation/results/publication_recovery_receipts/*
+!mvp/simulation/results/publication_recovery_receipts/*.json
+!mvp/simulation/results/preserved_raw_manifests/
+mvp/simulation/results/preserved_raw_manifests/*
+!mvp/simulation/results/preserved_raw_manifests/*.json
+!mvp/simulation/results/core_submission_receipts/
+mvp/simulation/results/core_submission_receipts/*
+!mvp/simulation/results/core_submission_receipts/*.json
 !mvp/simulation/results/fig*.png
 !mvp/simulation/results/fig*.pdf
 # FOCAPO conference results figures (separate folder, rendered on HPC)
@@ -119,8 +155,8 @@ mvp/simulation/results/*
 !mvp/simulation/results/cross_scenario.pdf
 !mvp/simulation/results/ablation.png
 !mvp/simulation/results/ablation.pdf
-!mvp/simulation/results/green_ai_carbon.png
-!mvp/simulation/results/green_ai_carbon.pdf
+!mvp/simulation/results/transport_emissions.png
+!mvp/simulation/results/transport_emissions.pdf
 # 2026-06 H1/H2/H3 paper figures (generate_figures.py fig11/fig12/fig13):
 # performance_efficiency (H1), context_value (H2), stress_robustness (H3).
 !mvp/simulation/results/context_value.png
@@ -129,63 +165,53 @@ mvp/simulation/results/*
 !mvp/simulation/results/performance_efficiency.pdf
 !mvp/simulation/results/stress_robustness.png
 !mvp/simulation/results/stress_robustness.pdf
-# Paper-evidence artefacts produced by hpc_aggregate.sh stages 4, 6, 8.
-# These files are the canonical evidence for cross-method ranking,
-# stress robustness, and within-trace temporal stability. Pre-2026-05
-# they were in the manifest
-# but not the gitignore allowlist, so they only existed in the HPC
-# tar.gz archive and a reviewer cloning the repo could not verify the
-# claims without first downloading the archive.
+# Canonical paper-evidence artifacts produced by the publication pipeline.
 !mvp/simulation/results/paper_benchmark_table.json
 !mvp/simulation/results/stress_passfail.csv
-!mvp/simulation/results/temporal_stability_summary.json
-!mvp/simulation/results/temporal_stability_summary.csv
-!mvp/simulation/results/temporal_stability_deltas.csv
-# 2026-05 Path A: per-seed scalar envelopes (~2.7 MB x 20 seeds per
-# run snapshot; ~206 MB total across the committed RUN_TAG snapshots)
-# committed so a fresh clone can re-run the BCa bootstrap on
-# benchmark_summary.json without re-running the 50-h HPC benchmark.
-# See mvp/simulation/results/benchmark_seeds/README.md for which
-# snapshot is canonical.
+!mvp/simulation/results/stress_h3_test.json
+!mvp/simulation/results/explainability_metrics.json
+!mvp/simulation/results/forecast_validation_summary.json
+!mvp/simulation/results/forecast_validation_predictions.csv
+# Keep the benchmark-seed subtree ignored by default.  Only the exact 20 flat
+# canonical envelopes may be tracked; run-tagged copies, auxiliary outputs,
+# partial checkpoints, and ledgers remain archive-only evidence.
 !mvp/simulation/results/benchmark_seeds/
-!mvp/simulation/results/benchmark_seeds/**
-# The raw per-seed decision ledgers behind the channel-attribution
-# aggregate are intentionally NOT committed: they reached ~330 MB /
-# 1900 files, far beyond their reproducibility value. The aggregate
-# they feed (channel_attribution_aggregate.json, allowlisted below)
-# carries the published numbers; regenerate the raw ledgers with
-# hpc/hpc_aggregate.sh (or mvp/simulation/_run_h2_all.py) then
-# aggregate_channel_attribution.py.
+mvp/simulation/results/benchmark_seeds/**
+!mvp/simulation/results/benchmark_seeds/seed_7.json
+!mvp/simulation/results/benchmark_seeds/seed_42.json
+!mvp/simulation/results/benchmark_seeds/seed_99.json
+!mvp/simulation/results/benchmark_seeds/seed_101.json
+!mvp/simulation/results/benchmark_seeds/seed_202.json
+!mvp/simulation/results/benchmark_seeds/seed_303.json
+!mvp/simulation/results/benchmark_seeds/seed_404.json
+!mvp/simulation/results/benchmark_seeds/seed_505.json
+!mvp/simulation/results/benchmark_seeds/seed_606.json
+!mvp/simulation/results/benchmark_seeds/seed_707.json
+!mvp/simulation/results/benchmark_seeds/seed_808.json
+!mvp/simulation/results/benchmark_seeds/seed_909.json
+!mvp/simulation/results/benchmark_seeds/seed_1010.json
+!mvp/simulation/results/benchmark_seeds/seed_1111.json
+!mvp/simulation/results/benchmark_seeds/seed_1212.json
+!mvp/simulation/results/benchmark_seeds/seed_1313.json
+!mvp/simulation/results/benchmark_seeds/seed_1337.json
+!mvp/simulation/results/benchmark_seeds/seed_1414.json
+!mvp/simulation/results/benchmark_seeds/seed_1515.json
+!mvp/simulation/results/benchmark_seeds/seed_2024.json
+# Raw per-seed decision ledgers remain runtime/archive-only inputs.
 mvp/simulation/results/decision_ledger_per_seed/
-# 2026-06 §5.8 decision-level channel attribution (replaces the logit-shift
-# view above). channel_attribution_aggregate.json is fetched live by the
-# frontend H2 panel and consumed by the paper Fig 14 generator, so it must be
-# in a fresh clone. The raw instrumented per-seed ledgers it is derived from
-# (decision_ledger_h2/, ~180 MB) stay ignored as volatile runtime output —
-# reproduce them with mvp/simulation/_run_h2_all.py then
-# aggregate_channel_attribution.py (PYTHONHASHSEED=0, deterministic).
+# The 500 retained H3 stressed-arm ledgers are likewise runtime/archive-only;
+# the publication manifest includes the exact run-tagged tree and its literal
+# hashes when ARTIFACT_MANIFEST_INCLUDE_RAW=1.
+mvp/simulation/results/decision_ledger_h3/
+# Prospective allowlist for validated channel-attribution outputs. These files
+# are not present in a fresh source clone until a new run passes publication.
 !mvp/simulation/results/channel_attribution_aggregate.json
 !mvp/simulation/results/channel_complementarity_test.json
-!mvp/simulation/results/channel_hashseed_stability.json
-# 2026-06 C4 disambiguation: TOST equivalence + cross-fit moderation on the
-# add-second-channel contrasts (channel_saturation_analysis.py over the
-# canonical benchmark_seeds run). Committed so a fresh clone can read the
-# saturation/redundancy verdicts (§5.8 channel analysis) without re-running.
+# Prospective allowlist for the validated channel-saturation analysis.
 !mvp/simulation/results/channel_saturation_analysis.json
-# 2026-06 §5.8 specification-curve / multiverse robustness (channel_spec_curve.py
-# over decision_ledger_h2). Committed so a fresh clone can verify the headline
-# conclusions are invariant to the analysis's discretionary choices.
-!mvp/simulation/results/channel_spec_curve.json
-# 2026-06 #1b over-steering ablation (run_over_steer_ablation.py): the
-# aggregated result AND the per-(scenario,seed) raw checkpoint cells, committed
-# so an HPC/local rerun can --resume from saved cells or --aggregate-only
-# without recomputing. Cells are small (40 x ~0.3 KB).
-!mvp/simulation/results/over_steer_ablation.json
-!mvp/simulation/results/over_steer_cells/
-!mvp/simulation/results/over_steer_cells/**
 
 # Raw per-decision ledgers the HPC seed array writes into each tagged seed dir
 # (benchmark_seeds/<RUN_TAG>/decision_ledger_<seed>/): 300 MB+ of regenerable
 # channel-aggregator inputs, archived in the hpc_results tarball, not committed.
-# The small per-seed seed_*.json scalar envelopes stay tracked.
+# Seed envelopes are included only in a fresh run's checksummed evidence asset.
 mvp/simulation/results/benchmark_seeds/*/decision_ledger_*/

@@ -1,14 +1,15 @@
-"""Tests for calibration-derived governance override thresholds.
+"""Tests for the declared probability-gap action-substitution rule.
 
-The governance override used to be hard-coded to logit-space magic
+The compatibility implementation used to be hard-coded to logit-space magic
 numbers (``logit[0] < -2.0`` and ``logit[1] > logit[0] + 3``). It was
-rewritten to fire on policy probabilities with calibration-derived
-ceilings and advantage floors, so the condition is auditable without
-reference to the raw logit scale. These tests lock in the new semantics
-and the calibration helper that derives the constants.
+rewritten to fire on policy probabilities with declared ceilings and
+advantage floors, so the condition is auditable without reference to the raw
+logit scale. These tests lock in that two-predicate rule and separately test
+the optional exploratory calibration helper.
 """
 from __future__ import annotations
 
+import copy
 import numpy as np
 import pytest
 
@@ -16,6 +17,7 @@ from src.models.action_selection import (
     GOVERNANCE_CC_PROB_CEILING,
     GOVERNANCE_LOCAL_ADVANTAGE_MIN,
     calibrate_governance_thresholds,
+    governance_override_applies,
     select_action,
     ACTIONS,
 )
@@ -30,6 +32,35 @@ class _DummyPolicy:
 def test_default_thresholds_are_valid_probabilities():
     assert 0.0 < GOVERNANCE_CC_PROB_CEILING < 1.0
     assert 0.0 < GOVERNANCE_LOCAL_ADVANTAGE_MIN < 1.0
+
+
+def test_override_predicate_has_exact_strict_probability_boundaries():
+    """Only the declared cold-chain ceiling and local gap govern firing."""
+    eps = 1e-9
+    cc = GOVERNANCE_CC_PROB_CEILING
+    gap = GOVERNANCE_LOCAL_ADVANTAGE_MIN
+
+    # Strictly inside both bounds: fires.
+    p0 = cc - eps
+    p1 = p0 + gap + eps
+    passing = np.array([p0, p1, 1.0 - p0 - p1])
+    assert governance_override_applies(passing)
+
+    # Equality at either boundary does not fire because both comparisons are
+    # intentionally strict in the executable policy and manuscript equation.
+    p0 = cc
+    p1 = p0 + gap + eps
+    at_cc_ceiling = np.array([p0, p1, 1.0 - p0 - p1])
+    assert not governance_override_applies(at_cc_ceiling)
+    p0 = cc - eps
+    p1 = p0 + gap
+    at_gap_floor = np.array([p0, p1, 1.0 - p0 - p1])
+    assert not governance_override_applies(at_gap_floor)
+
+
+def test_override_predicate_validates_probability_vector_shape():
+    with pytest.raises(ValueError, match="length-3"):
+        governance_override_applies(np.array([0.1, 0.9]))
 
 
 def test_calibration_returns_requested_quantiles():
@@ -64,11 +95,11 @@ def test_calibration_rejects_out_of_range_quantile():
 
 def test_override_fires_when_context_pushes_cold_chain_down():
     """With a strong local-favouring context modifier and cold-chain-
-    disfavouring logits, the governance override fires and returns a
+    disfavouring logits, the probability-gap rule activates and returns a
     one-hot on local_redistribute. Tested at rho=0.20 — inside the
     at-risk band (>0.10) but below the Recovery knee (0.30), so the
-    LR triage is the right call and the override is not in tension
-    with food-safety routing."""
+    LR is the declared preferred action and the probability-gap rule is
+    directionally consistent with that synthetic policy band."""
     rng = np.random.default_rng(0)
     action, probs = select_action(
         mode="agribrain",
@@ -77,17 +108,16 @@ def test_override_fires_when_context_pushes_cold_chain_down():
         context_modifier=np.array([-5.0, 5.0, 0.0]),
     )
     assert ACTIONS[action] == "local_redistribute"
-    # Override returns a one-hot distribution, not the softmax probs.
+    # The rule returns a one-hot distribution, not the softmax probabilities.
     np.testing.assert_array_equal(probs, np.array([0.0, 1.0, 0.0]))
 
 
 def test_recovery_knee_overrides_lr_governance_at_high_rho():
-    """At rho well above the Recovery knee (0.30), Recovery's food-
-    safety triage logit boost dominates over the LR-favouring context
-    modifier. The governance override deliberately does *not* force
-    LR in this regime — the safety hierarchy says non-marketable
-    produce must go to Recovery regardless of context. This is the
-    intended behaviour of the boosted knee gain (5.0 / 3.0)."""
+    """At rho well above the Recovery knee (0.30), the author-declared
+    Recovery logit boost dominates the LR-favouring context modifier. The
+    probability-gap rule deliberately does *not* force LR in this synthetic
+    high-risk band. This is the intended behaviour of the declared knee gain
+    (5.0 / 3.0), not a real marketability or food-safety classification."""
     rng = np.random.default_rng(0)
     action, _ = select_action(
         mode="agribrain",
@@ -130,3 +160,73 @@ def test_override_does_not_fire_on_cold_chain_favouring_context():
     # pi(cold_chain) must be above the ceiling for the override to have
     # been skipped; this is the documented semantic of the new threshold.
     assert probs[0] >= GOVERNANCE_CC_PROB_CEILING
+
+
+def test_stochastic_override_consumes_one_policy_draw_like_non_override():
+    """An override must not shift later common-random-number draws."""
+    override_rng = np.random.default_rng(724)
+    ordinary_rng = np.random.default_rng(724)
+
+    override_action, override_probs = select_action(
+        mode="agribrain",
+        rho=0.20, inv=5000, y_hat=50, temp=12.0, tau=1.0,
+        policy=_DummyPolicy(), rng=override_rng,
+        context_modifier=np.array([-5.0, 5.0, 0.0]),
+    )
+    select_action(
+        mode="agribrain",
+        rho=0.20, inv=5000, y_hat=50, temp=12.0, tau=1.0,
+        policy=_DummyPolicy(), rng=ordinary_rng,
+        context_modifier=None,
+    )
+
+    assert override_action == 1
+    np.testing.assert_array_equal(
+        override_probs, np.array([0.0, 1.0, 0.0]),
+    )
+    assert override_rng.bit_generator.state == ordinary_rng.bit_generator.state
+
+
+def test_override_and_context_ablation_reuse_same_saved_policy_draw():
+    """The live override discards, but still consumes, the paired draw."""
+    live_rng = np.random.default_rng(819)
+    saved_state = copy.deepcopy(live_rng.bit_generator.state)
+    live_action, _ = select_action(
+        mode="agribrain",
+        rho=0.20, inv=5000, y_hat=50, temp=12.0, tau=1.0,
+        policy=_DummyPolicy(), rng=live_rng,
+        context_modifier=np.array([-5.0, 5.0, 0.0]),
+    )
+
+    ablated_rng = np.random.default_rng()
+    ablated_rng.bit_generator.state = saved_state
+    ablated_action, ablated_probs = select_action(
+        mode="agribrain",
+        rho=0.20, inv=5000, y_hat=50, temp=12.0, tau=1.0,
+        policy=_DummyPolicy(), rng=ablated_rng,
+        context_modifier=None,
+    )
+
+    reference_rng = np.random.default_rng()
+    reference_rng.bit_generator.state = saved_state
+    expected_ablated_action = int(
+        reference_rng.choice(len(ACTIONS), p=ablated_probs)
+    )
+    assert live_action == 1
+    assert ablated_action == expected_ablated_action
+    assert live_rng.bit_generator.state == ablated_rng.bit_generator.state
+    assert ablated_rng.bit_generator.state == reference_rng.bit_generator.state
+
+
+def test_deterministic_override_remains_draw_free():
+    """Explicit deterministic policy evaluation must not consume RNG."""
+    rng = np.random.default_rng(910)
+    state_before = copy.deepcopy(rng.bit_generator.state)
+    action, _ = select_action(
+        mode="agribrain",
+        rho=0.20, inv=5000, y_hat=50, temp=12.0, tau=1.0,
+        policy=_DummyPolicy(), rng=rng, deterministic=True,
+        context_modifier=np.array([-5.0, 5.0, 0.0]),
+    )
+    assert action == 1
+    assert rng.bit_generator.state == state_before

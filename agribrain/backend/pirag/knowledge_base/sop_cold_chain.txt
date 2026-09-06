@@ -1,7 +1,19 @@
-Cold Chain Handling Standard Operating Procedure
+SYNTHETIC COLD-CHAIN OPERATING CONTEXT
+Status: Constructed benchmark input; it is not a standard operating procedure for real product handling.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, are contextual references only; the executable code and locked protocol govern all benchmark values.
 
-Temperature Management: All perishable produce must be maintained at 2-5 degrees Celsius throughout the cold chain. Temperature monitoring devices must record readings at 15-minute intervals. Any temperature excursion above 8 degrees Celsius must be documented and reported within 1 hour.
+The benchmark's spinach operating-envelope check uses an author-declared maximum of
+8 degrees Celsius and a relative-humidity range of 85 to 95 percent. The spoilage model
+uses 4 degrees Celsius as its reference temperature, not as a proven universal setpoint.
+Its committed time series is sampled at 15-minute intervals. These values define the
+synthetic case and do not validate safe storage or handling.
 
-Pre-cooling Requirements: Freshly harvested leafy greens must be pre-cooled to 4 degrees Celsius within 2 hours of harvest using forced-air cooling or hydrocooling methods. Vacuum cooling may be used for head lettuce and similar dense produce. The initial microbial load and temperature at harvest directly affect the lag phase duration before exponential quality decay begins.
+The cold_chain action has a nominal modeled distance of 120 km before the keyed
+stochastic transport multiplier. Its modeled emissions use the same mode-neutral
+activity equation as the other actions. Selecting cold_chain does not alter the common
+latent spoilage trajectory or trigger an unimplemented physical control.
 
-Transport Protocol: Refrigerated vehicles must maintain 2-5 degrees Celsius with a tolerance of plus or minus 1 degree Celsius. Relative humidity should be maintained at 85-95 percent to prevent wilting without promoting microbial growth. Loading dock exposure time must not exceed 30 minutes. All transport units must have GPS tracking and real-time temperature telemetry.
+The benchmark does not perform harvesting, precooling, loading-dock control, packaging
+inspection, microbial testing, vehicle refrigeration control, GPS tracking, live
+telemetry, or equipment verification. Those activities require a separately validated
+operating procedure and product-specific evidence.

@@ -101,10 +101,11 @@ class RateLimiter:
                 os.path.dirname(__file__), "..", "configs", "policy.yaml",
             ))
         self._path = policy_path
-        # Default OFF for in-process registry calls (the simulator hot
-        # path calls invoke() ~288 * 5 * 8 * N_seeds times -- saturating
-        # 120/min would break the benchmark) and ON for the public-
-        # facing MCP transport. Operators flip the default with
+        # Default OFF for direct in-process registry calls and ON at the
+        # MCP JSON-RPC boundary. The recorded simulator tool path also uses
+        # that boundary, so canonical publication explicitly sets
+        # MCP_RATE_LIMITS=disabled rather than letting a wall-clock bucket
+        # become an undeclared treatment. Operators flip the default with
         # MCP_RATE_LIMITS=enabled (force-on everywhere) or
         # MCP_RATE_LIMITS=disabled (force-off everywhere). The default
         # "transport" mode is the documented production posture.
@@ -174,10 +175,11 @@ class RateLimiter:
 
         ``source`` distinguishes in-process registry calls from
         public-facing transport calls. In the default "transport" mode
-        only ``source="transport"`` consumes a token; the simulator's
-        in-process invocations (``source="registry"``) bypass the
-        bucket so the benchmark hot path is not throttled. Force-on
-        and force-off modes ignore ``source``.
+        only ``source="transport"`` consumes a token; direct registry
+        invocations (``source="registry"``) bypass the bucket. Recorded
+        simulator calls traverse the transport-labelled JSON-RPC handler;
+        canonical publication uses force-off mode. Force-on and force-off
+        modes ignore ``source``.
 
         No-op when limits are disabled or the tool has no
         configured entry.

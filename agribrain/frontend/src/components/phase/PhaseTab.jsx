@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { jget as jgetUtil, jpost as jpostUtil } from "@/lib/utils";
+import { runtimePhaseOrDefault } from "@/lib/runtimePhase.js";
 import { getApiBase } from "@/mvp/api.js";
 import { toast } from "sonner";
 import { CheckCircle2, XCircle, Clock, RefreshCw } from "lucide-react";
@@ -11,11 +12,17 @@ const API = getApiBase();
 
 const PHASE_DESC = {
   monitoring:
-    "Recommendations only. The policy emits a decision; the system shows it but does not log it on-chain or mutate ledger state.",
+    "Recommendation preview only. The decision is shown but is not added to the decision log and is not submitted to the optional chain logger.",
   advisory:
-    "Operator-in-the-loop. Each decision is queued below; you must approve or reject it before it is executed and anchored.",
+    "Operator-in-the-loop. Each decision is queued below; approval finalizes and records it. A chain record exists only when chain logging is configured and succeeds.",
   autonomous:
-    "Decisions are executed and anchored as the policy emits them. This is the mode used by the simulator and benchmark suites.",
+    "Development auto-finalize: each emitted decision is recorded immediately. A chain record exists only when chain logging is configured and succeeds.",
+};
+
+const PHASE_LABEL = {
+  monitoring: "Monitoring",
+  advisory: "Advisory",
+  autonomous: "Auto-finalize (development)",
 };
 
 export default function PhaseTab() {
@@ -29,7 +36,7 @@ export default function PhaseTab() {
   const refresh = useCallback(async () => {
     try {
       const p = await jgetUtil(API, "/phase");
-      setPhase(p?.phase || "autonomous");
+      setPhase(runtimePhaseOrDefault(p?.phase));
       setQueueDepth(p?.queue_depth || 0);
       setTtl(p?.advisory_ttl_s || 0);
       const q = await jgetUtil(API, "/phase/advisory/pending");
@@ -51,7 +58,7 @@ export default function PhaseTab() {
     setBusy(true);
     try {
       await jpostUtil(API, "/phase", { phase: p });
-      toast.success(`Deployment phase set to ${p}`);
+      toast.success(`Development runtime phase set to ${PHASE_LABEL[p] || p}`);
       await refresh();
     } catch (e) {
       toast.error(`Set phase failed: ${e.message}`);
@@ -91,7 +98,7 @@ export default function PhaseTab() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            Deployment phase
+            Development runtime phase
             {phase && (
               <Badge
                 variant={
@@ -102,14 +109,14 @@ export default function PhaseTab() {
                     : "outline"
                 }
               >
-                {phase}
+                {PHASE_LABEL[phase] || phase}
               </Badge>
             )}
           </CardTitle>
           <CardDescription>
-            AGRI-BRAIN supports three deployment phases (§1, §4.13). Switching here changes
-            the runtime semantics of <code>/decide</code> immediately. The simulator and
-            benchmark suites use <code>autonomous</code>.
+            These settings control the development <code>/decide</code> runtime only.
+            Publication benchmark episodes run through the independent simulation protocol
+            and do not inherit this dashboard phase setting.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -121,7 +128,7 @@ export default function PhaseTab() {
                 disabled={busy}
                 onClick={() => setActivePhase(p)}
               >
-                {p}
+                {PHASE_LABEL[p] || p}
               </Button>
             ))}
             <Button variant="ghost" onClick={refresh} disabled={busy} size="icon" title="Refresh">

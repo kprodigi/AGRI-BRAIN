@@ -1,36 +1,36 @@
-ANIMAL FEED DIVERSION STANDARDS
+ANIMAL-FEED CONTEXT WITHIN THE AGGREGATE RECOVERY PROXY
+Status: Constructed benchmark input; it does not establish feed eligibility or food/feed safety.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, motivate topic selection only; the executable code and locked protocol govern all benchmark values.
 Document ID: KB-AFD-003
-Effective Date: 2025-09-01
-Regulatory Basis: AAFCO Model Regulations; FDA 21 CFR Part 589
+Executable sources: agribrain/backend/src/models/action_selection.py and reverse_logistics.py
 
-1. DIVERSION ELIGIBILITY
+1. EXECUTABLE ACTION SCOPE
 
-Product is eligible for diversion to animal feed when the spoilage index rho falls
-within the range of 0.30 to 0.60. Product below rho 0.30 should be prioritized for
-human consumption or food bank redistribution. Product above rho 0.60 must be routed
-to composting, anaerobic digestion, or landfill disposal channels.
+The decision policy has exactly three canonical actions: cold_chain,
+local_redistribute, and recovery. Animal feed is not a separately selectable action; it
+is one contextual subpath considered by the aggregate recovery proxy.
 
-2. MICROBIAL TESTING REQUIREMENTS
+For non-hybrid rho-shaped policies, rho greater than 0.30 activates an author-declared
+recovery logit knee. This 0.30 value is a synthetic policy hyperparameter, not a product
+eligibility, marketability, microbial, or safety threshold.
 
-When rho exceeds 0.45, a microbial screening panel is required before release to any
-animal feed processor. The panel must include total aerobic plate count, Salmonella spp.,
-and E. coli O157:H7. Testing must be performed by an ISO 17025-accredited laboratory.
-Product may not ship until results confirm compliance with AAFCO microbial limits for
-the target animal species.
+2. EXECUTABLE RECOVERY-OPTION HEURISTIC
 
-3. PROHIBITED CONDITIONS
+The descriptive recovery module computes three unvalidated suitability scores:
 
-The following conditions disqualify product from animal feed use regardless of rho value:
-presence of non-food-grade packaging contaminants, chemical adulterants above FDA action
-levels, or visible fungal colonization exceeding 15 percent of surface area.
+  food_bank_raw = max(0, 1 - 2*rho), then multiplied by 0.5 when T > 10 C;
+  animal_feed_raw = min(1, 0.3 + 0.8*rho), then multiplied by 1.2 and capped
+                    at 1 when inventory > 15000;
+  composting_raw = min(1, 0.2 + rho).
 
-4. REQUIRED ACTIONS
+The three scores are normalized to sum to one, and the largest is labelled the
+recommended subpath. These are stylized calculations, not eligibility determinations.
+The primary circular-economy proxy for the recovery action is
+min(1, 0.5 + 0.5*max(normalized subpath score)).
 
-Action 1: Complete the Animal Feed Diversion Certificate (AFDC-300) documenting commodity
-type, rho at diversion decision, microbial test status (if applicable), and destination
-feed mill or processor. Retain copies for 2 years per AAFCO traceability requirements.
+3. EXCLUDED CLAIMS
 
-Action 2: Calculate the economic recovery value using the feed value factor of 15 to
-25 percent of retail price, adjusted by commodity type and current feed ingredient market
-rates. Log the recovery value in the financial reconciliation system for SLCA reporting
-and cooperative audit purposes.
+The benchmark does not ingest microbial tests, packaging inspections, chemical tests,
+species-specific feed rules, laboratory accreditation, certificates, destination feed
+mills, retention records, prices, or recovery revenue. Any operational diversion to
+animal feed requires an independent safety and legal assessment outside this benchmark.

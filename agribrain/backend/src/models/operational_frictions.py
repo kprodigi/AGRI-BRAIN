@@ -1,49 +1,29 @@
-"""
-Principled operational-friction model for stress-testing the routing
-policy under deployment-realistic constraints.
+"""Optional exploratory operational-friction knobs.
 
-The headline benchmark assumes unconstrained rerouting feasibility:
-the policy can choose any of {cold_chain, local_redistribute, recovery}
-at any timestep with zero capacity, scheduling, or sensor-noise cost.
-This is appropriate for the upper-bound performance claim reported in
-the manuscript, but a deployed system will face frictions that lower
-RLE_w below the unconstrained ceiling. This module exposes three
-opt-in frictions, each grounded in published literature, so that
-the question "what happens with N% reroute capacity / Y mg sensor
-noise" can be answered with a quantitative stress test without
-re-running the core benchmark.
-
-The frictions are *off by default* (the simulator's published behaviour
-is unchanged). Enable them via the ``FrictionConfig`` dataclass when
-constructing a ``FrictionGate`` and call ``apply()`` on each
-candidate-action / observed-rho pair before the policy commits the
-decision.
+This module is not called by the locked confirmatory simulator or by the
+29-factor structural-sensitivity design. It provides three disabled-by-default
+mechanisms—an author-declared token-bucket capacity, Gaussian observation
+noise, and an action lockout—for separate exploratory software experiments.
+The default magnitudes are illustrative hyperparameters, not field estimates,
+literature calibrations, deployment constraints, or evidence for an upper-bound
+performance claim. Any use requires a newly declared analysis and fresh
+simulation episodes; these mechanisms cannot be applied after a run.
 
 Frictions
 ---------
 
-1. **Reroute capacity constraint** — a token-bucket limiter that bounds
-   the number of reroutes per time window. Grounded in queueing theory
-   (Kleinrock, 1975) and the cold-chain reverse-logistics scheduling
-   literature (Govindan, Soleimani & Kannan, 2015; Steeneck & Sarin,
-   2018). Default capacity 0.6 reroutes per hour reflects the
-   operational reefer-availability rates reported by Akkerman, Farahani
-   & Grunow (2010) for North-American refrigerated distribution.
+1. **Reroute capacity knob** — a token-bucket limiter with an
+   illustrative default of 0.6 reroutes per simulated hour.
 
-2. **Sensor noise on observed ρ** — the policy sees ρ_obs = ρ_true + ε
-   with ε ~ N(0, σ²). σ defaults to 0.03 reflecting the ±3% absolute
-   error reported for postharvest temperature/quality sensors in the
-   FoodKeeper / cold-chain monitoring literature (Mercier et al., 2017;
-   Jedermann, Nicometo, Uysal & Lang, 2014). The policy may
-   misclassify borderline batches as not-at-risk when ρ_true is just
-   above threshold.
+2. **Noise on observed ρ** — the exploratory policy sees
+   ρ_obs = ρ_true + ε with ε ~ N(0, σ²); σ=0.03 is illustrative.
 
-3. **Scheduling lock-out** — once a reroute decision is committed,
-   the action is locked for ``lockout_steps`` subsequent steps,
-   reflecting the irreversibility of dispatching a batch to a
-   redistribution endpoint or recovery facility. Default 4 steps
-   (60 minutes at 15-min resolution) matches the dispatch-window
-   times in Akkerman et al. (2010) Table 2.
+3. **Action lockout knob** — an action is held for ``lockout_steps``;
+   the illustrative default is 4 steps (60 simulated minutes at the
+   benchmark's 15-minute resolution).
+
+The references below motivate broad modeling categories only. They do not
+establish these defaults or validate this module for deployment.
 
 References
 ----------
@@ -82,30 +62,27 @@ class FrictionConfig:
     """Opt-in operational-friction configuration.
 
     All frictions are off when the corresponding ``enable_*`` flag is
-    False (default). The published benchmark uses this default
-    configuration, so the headline numbers correspond to the
-    unconstrained-feasibility upper bound.
+    False (default). The locked confirmatory path does not instantiate this
+    module. Values below are illustrative author-declared settings only.
 
     Attributes
     ----------
     enable_capacity_limit : bool
         Apply token-bucket reroute capacity constraint.
     capacity_per_hour : float
-        Maximum reroute decisions per simulated hour. Default 0.6
-        from Akkerman et al. (2010).
+        Illustrative maximum reroute decisions per simulated hour (0.6).
     bucket_capacity : float
         Token-bucket peak burst size. Default 2.0 (two reroutes can
         be issued back-to-back before the rate limit kicks in).
     enable_sensor_noise : bool
         Apply Gaussian noise to observed ρ before the policy sees it.
     sigma_rho : float
-        Standard deviation of ρ observation error. Default 0.03 from
-        Mercier et al. (2017).
+        Illustrative standard deviation of ρ observation error (0.03).
     enable_lockout : bool
         Lock the action choice for ``lockout_steps`` after any reroute.
     lockout_steps : int
-        Number of steps to hold the locked-in action. Default 4
-        (60 min at 15-min resolution) from Akkerman et al. (2010).
+        Number of steps to hold the locked-in action. The illustrative
+        default is 4 (60 simulated minutes at 15-minute resolution).
     rng_seed : int
         Seed for reproducible noise streams.
     """

@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn, fmt, short, authFetch, authDownload } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
+import { isAnchoredTransactionHash } from "@/lib/provenance.js";
+import { decisionReportPath } from "@/lib/publicSurface.js";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -44,9 +46,11 @@ function DecisionCard({ memo, index }) {
   const actionStyle = getActionStyle(memo.decision || memo.action);
   const ts = memo.time || memo.ts;
   const timeStr = ts ? new Date(ts).toLocaleString([], { dateStyle: "short", timeStyle: "short" }) : "\u2014";
+  const transactionHash = memo.tx_hash || memo.tx;
+  const isAnchored = isAnchoredTransactionHash(transactionHash);
 
   const copyDetails = () => {
-    let text = `Decision: ${memo.decision || memo.action}\nAgent: ${memo.agent} (${memo.role})\nSLCA: ${memo.slca}\nCarbon: ${memo.carbon_kg} kg\nTx: ${memo.tx || memo.tx_hash}\nTime: ${timeStr}`;
+    let text = `Decision: ${memo.decision || memo.action}\nAgent: ${memo.agent} (${memo.role})\nEvidence status: ${memo.evidence_status || "unverified_runtime_output"}\nPublication evidence: ${memo.publication_evidence === true ? "yes" : "no"}\nSocial-performance proxy: ${memo.slca}\nModeled transport emissions: ${memo.carbon_kg} kg CO2-eq\nOptional on-chain decision record: ${memo.tx || memo.tx_hash || "none"}\nTime: ${timeStr}`;
     if (memo.memo_text) text += `\n\n${memo.memo_text}`;
     navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard");
@@ -79,17 +83,30 @@ function DecisionCard({ memo, index }) {
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
                   <User className="w-3 h-3" /> {memo.agent} ({memo.role})
                 </span>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "text-[10px]",
+                    memo.publication_evidence === true
+                      ? "text-emerald-600 border-emerald-500/40"
+                      : "text-amber-700 border-amber-500/40",
+                  )}
+                >
+                  {memo.publication_evidence === true
+                    ? "Publication evidence"
+                    : `${(memo.evidence_status || "unverified_runtime_output").replaceAll("_", " ")} · not publication evidence`}
+                </Badge>
               </div>
 
               {/* Metrics row */}
               <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                 <div>
-                  <p className="text-xs text-muted-foreground">SLCA</p>
+                  <p className="text-xs text-muted-foreground">Social-performance proxy</p>
                   <p className="font-mono font-semibold">{fmt(memo.slca, 3)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Carbon</p>
-                  <p className="font-mono font-semibold">{fmt(memo.carbon_kg, 1)} <span className="text-xs font-normal">kg CO₂</span></p>
+                  <p className="text-xs text-muted-foreground">Modeled transport emissions</p>
+                  <p className="font-mono font-semibold">{fmt(memo.carbon_kg, 1)} <span className="text-xs font-normal">kg CO2-eq</span></p>
                 </div>
                 {memo.unit_price != null && (
                   <div>
@@ -99,20 +116,21 @@ function DecisionCard({ memo, index }) {
                 )}
                 {memo.circular_economy_score != null && (
                   <div>
-                    <p className="text-xs text-muted-foreground">Circular Score</p>
+                    <p className="text-xs text-muted-foreground">Modeled route-circularity indicator</p>
                     <p className="font-mono font-semibold">{fmt(memo.circular_economy_score, 3)}</p>
                   </div>
                 )}
               </div>
 
-              {/* Blockchain verification */}
-              {(memo.tx || memo.tx_hash) && (
+              {/* A valid transaction records decision fields. It is separate
+                  from, and does not anchor, the local explanation Merkle root. */}
+              {isAnchored && (
                 <div className="mt-2 flex items-center gap-2 text-xs">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                  <span className="text-muted-foreground">Verified</span>
-                  <code className="font-mono text-muted-foreground">{short(memo.tx || memo.tx_hash)}</code>
+                  <span className="text-muted-foreground">Optional on-chain decision record</span>
+                  <code className="font-mono text-muted-foreground">{short(transactionHash)}</code>
                   <button
-                    onClick={() => { navigator.clipboard.writeText(memo.tx || memo.tx_hash); toast.success("Tx hash copied"); }}
+                    onClick={() => { navigator.clipboard.writeText(transactionHash); toast.success("Tx hash copied"); }}
                     className="text-primary hover:underline"
                   >
                     <Copy className="w-3 h-3" />
@@ -274,9 +292,9 @@ export default function DecisionsPage() {
       const s = String(v ?? "");
       return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
     };
-    const headers = "Time,Agent,Role,Action,SLCA,Carbon_kg,Unit_Price,Circular_Score,Tx_Hash,Note,Memo_Text\n";
+    const headers = "Time,Agent,Role,Evidence_Status,Publication_Evidence,Execution_Contract,Action,Social_performance_proxy,Modeled_transport_emissions_kg_CO2eq,Unit_Price,Modeled_route_circularity_indicator,Optional_On_Chain_Decision_Tx,Note,Memo_Text\n";
     const rows = decisions.map((d) =>
-      [d.time, d.agent, d.role, d.decision || d.action, d.slca, d.carbon_kg, d.unit_price, d.circular_economy_score, d.tx || d.tx_hash, d.note, d.memo_text].map(esc).join(",")
+      [d.time, d.agent, d.role, d.evidence_status || "unverified_runtime_output", d.publication_evidence === true, d.execution_contract || "unspecified_runtime_contract", d.decision || d.action, d.slca, d.carbon_kg, d.unit_price, d.circular_economy_score, d.tx || d.tx_hash, d.note, d.memo_text].map(esc).join(",")
     ).join("\n");
     const blob = new Blob([headers + rows], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -347,7 +365,7 @@ export default function DecisionsPage() {
           <Button size="sm" onClick={takeDecision} data-skip-global-take="1">
             <Leaf className="w-4 h-4 mr-1" /> Take Decision
           </Button>
-          <Button variant="outline" size="sm" onClick={() => authDownload(`${API}/report/pdf?role=${role === "all" ? "farm" : role}`, "decision-report.pdf")}>
+          <Button variant="outline" size="sm" onClick={() => authDownload(`${API}${decisionReportPath(role)}`, "decision-report.pdf")}>
             <FileText className="w-4 h-4 mr-1" /> PDF Report
           </Button>
           <Button variant="outline" size="sm" onClick={exportCSV}>
@@ -388,11 +406,11 @@ export default function DecisionsPage() {
               </div>
               <div className="text-center p-3 rounded-lg bg-muted/50">
                 <p className="text-2xl font-bold font-mono">{fmt(avgSLCA, 3)}</p>
-                <p className="text-xs text-muted-foreground">Mean SLCA</p>
+                <p className="text-xs text-muted-foreground">Mean social-performance proxy</p>
               </div>
               <div className="text-center p-3 rounded-lg bg-muted/50">
                 <p className="text-2xl font-bold font-mono">{fmt(totalCarbon, 0)}</p>
-                <p className="text-xs text-muted-foreground">Total CO₂ (kg)</p>
+                <p className="text-xs text-muted-foreground">Summed modeled emissions (kg CO2-eq)</p>
               </div>
               <div className="text-center p-3 rounded-lg bg-muted/50">
                 <p className="text-2xl font-bold font-mono">{actionDist.length}</p>

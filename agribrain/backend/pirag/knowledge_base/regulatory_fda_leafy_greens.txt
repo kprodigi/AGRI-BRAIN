@@ -1,7 +1,15 @@
-FDA Guidelines for Leafy Greens Storage and Handling
+SOURCE-SCOPE NOTE FOR LEAFY-GREEN GUIDANCE (LEGACY FDA CORPUS LABEL)
+Status: Constructed benchmark input; it is not a current-law digest or compliance determination.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, are source-labelled contextual references only; the executable code and locked protocol govern all benchmark values.
 
-Temperature Requirements: According to FDA Food Safety Modernization Act (FSMA) Produce Safety Rule, fresh leafy greens including spinach, lettuce, and kale must be stored at temperatures not exceeding 5 degrees Celsius (41 degrees Fahrenheit). Cold storage facilities must maintain documentation of continuous temperature monitoring.
+The corpus retains the topic of cut-leafy-green temperature and traceability guidance so
+the retrieval channel can be tested. The simulator does not convert retrieved text into
+a legal conclusion. Its executable spinach operating envelope is the author-declared
+8-degree-Celsius ceiling and 85-to-95-percent relative-humidity range. Its mechanistic
+quality model uses 4 degrees Celsius as the Arrhenius reference condition. Neither value
+is attributed to FDA or presented as a validated food-safety boundary.
 
-Shelf Life Standards: Fresh spinach has a typical shelf life of 7-10 days when stored at 4 degrees Celsius and 85-95 percent relative humidity. The Arrhenius model predicts exponential acceleration of quality decay at temperatures above the reference point. At 10 degrees Celsius, the effective decay rate approximately doubles compared to optimal storage at 4 degrees Celsius.
-
-Traceability Requirements: Under FSMA Section 204, leafy greens are designated as high-risk foods requiring enhanced traceability records. All supply chain participants must maintain Key Data Elements (KDEs) including: lot code, harvest date, cooling date, ship date and receiving date. Records must be maintained for 2 years and available within 24 hours upon FDA request.
+The benchmark does not determine whether a product or person is covered by a rule,
+maintain regulatory Key Data Elements, answer an agency request, certify traceability,
+or track changes in law. Anyone needing current operative requirements must consult the
+current primary sources and qualified domain professionals outside this benchmark.

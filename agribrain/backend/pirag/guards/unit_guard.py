@@ -40,8 +40,17 @@ _DOCUMENTARY_UNIT_WORDS = {
     "celsius.", "fahrenheit.",  # period-terminated sentence ends
 }
 
+_DOCUMENTARY_NONUNIT_TOKENS = {
+    # Legal and standards prose can place these tokens immediately after a
+    # section/part number.  They are not measurement units.
+    "cfr",
+}
+
 def extract_number_units(text: str) -> List[Tuple[float, str]]:
-    pat = r"(-?\d+(?:\.\d+)?(?:e[+-]?\d+)?)\s*([A-Za-z/%]+(?:/[A-Za-z]+)?)"
+    # Horizontal whitespace only: allowing ``\s`` made a document identifier
+    # or ISO date at the end of one line bind to the first word of the next
+    # line (for example ``009\nEffective``), producing a fictitious unit.
+    pat = r"(-?\d+(?:\.\d+)?(?:e[+-]?\d+)?)[ \t]*([A-Za-z/%]+(?:/[A-Za-z]+)?)"
     out = []
     for m in re.finditer(pat, text):
         try:
@@ -61,6 +70,22 @@ def _is_documentary_word(unit: str) -> bool:
     return base in _DOCUMENTARY_UNIT_WORDS
 
 
+def _is_documentary_nonunit(unit: str) -> bool:
+    """Identify ordinary prose accidentally captured after a number.
+
+    The guard scans free-form documentary passages, where section numbers and
+    quantities are often followed by an English word (for example,
+    ``6 or`` or ``117.150 corrective``).  A lower-case alphabetic word of at
+    least two characters is prose, not a unit token.  Mixed-case tokens such as the test
+    sentinel ``xyzUnit`` remain suspicious and are rejected.
+    """
+    base = re.split(r"[/\s]", unit)[0].rstrip(".,;:!?")
+    return (
+        base.lower() in _DOCUMENTARY_NONUNIT_TOKENS
+        or (len(base) >= 2 and base.isalpha() and base.islower())
+    )
+
+
 def units_consistent(answer: str) -> bool:
     pairs = extract_number_units(answer)
     if not pairs:
@@ -76,12 +101,16 @@ def units_consistent(answer: str) -> bool:
                 # ship as bare aliases. Treat the pair as benign when
                 # the token is on the documentary whitelist; fail only
                 # on truly unrecognised symbols.
-                if not _is_documentary_word(u):
+                if not _is_documentary_word(u) and not _is_documentary_nonunit(u):
                     return False
         return True
     else:
         for _, u in pairs:
             base = re.split(r"[/\s]", u)[0]
-            if base not in _ALLOWED_UNITS and not _is_documentary_word(u):
+            if (
+                base not in _ALLOWED_UNITS
+                and not _is_documentary_word(u)
+                and not _is_documentary_nonunit(u)
+            ):
                 return False
         return True

@@ -40,6 +40,7 @@ class RuntimeSettings:
     websocket_api_key: str
     chain_require_privkey: bool
     forecast_method: str
+    supply_forecast_method: str
     online_learning: bool
     llm_provider: str
     data_csv: str
@@ -89,7 +90,10 @@ def load_settings() -> RuntimeSettings:
         websocket_require_api_key=_bool("WS_REQUIRE_API_KEY", env != "dev"),
         websocket_api_key=os.getenv("WS_API_KEY", api_key),
         chain_require_privkey=_bool("CHAIN_REQUIRE_PRIVKEY", True),
-        forecast_method=os.getenv("FORECAST_METHOD", "lstm"),
+        forecast_method=os.getenv("FORECAST_METHOD", "holt_linear"),
+        supply_forecast_method=os.getenv(
+            "SUPPLY_FORECAST_METHOD", "persistence",
+        ),
         online_learning=_bool("ONLINE_LEARNING", False),
         llm_provider=os.getenv("LLM_PROVIDER", "template"),
         data_csv=os.getenv("DATA_CSV", ""),
@@ -104,8 +108,14 @@ def load_settings() -> RuntimeSettings:
         # same port, so simulator routes silently looped back into the
         # main app.
         sim_api_base=os.getenv("SIM_API_BASE", ""),
-        deployment_phase=_phase("DEPLOYMENT_PHASE", "autonomous"),
-        dynamic_kb_feedback=_bool("DYNAMIC_KB_FEEDBACK", True),
+        # The interactive server is a development demonstration.  A caller
+        # must opt into advisory or auto-finalize behaviour explicitly; an
+        # unset or invalid phase therefore fails safe to monitoring.
+        deployment_phase=_phase("DEPLOYMENT_PHASE", "monitoring"),
+        # Re-ingesting summaries of the system's own decision history can
+        # create a self-reinforcing retrieval loop.  Keep this diagnostic off
+        # unless an operator deliberately enables it for an ablation.
+        dynamic_kb_feedback=_bool("DYNAMIC_KB_FEEDBACK", False),
         # PROTECT_DOCS: gate /docs, /redoc, /openapi.json behind the
         # API-key middleware. Defaults to true outside dev so production
         # does not leak the full route schema for reconnaissance via an
@@ -121,4 +131,3 @@ def load_settings() -> RuntimeSettings:
 
 
 SETTINGS = load_settings()
-

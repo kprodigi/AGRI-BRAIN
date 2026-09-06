@@ -116,16 +116,16 @@ export default function AdminPanel() {
             )}
 
             <div className="flex items-center gap-3">
-                {["Policy", "Blockchain", "Audit", "Scenarios", "QuickDecision"].map(t => (
+                {["Policy", "Optional EVM", "Audit", "Scenarios", "Development Step"].map(t => (
                     <Pill key={t} active={tab === t} onClick={() => setTab(t)}>{t}</Pill>
                 ))}
             </div>
 
             {tab === "Policy" && <PolicyTab />}
-            {tab === "Blockchain" && <ChainTab active={tab === "Blockchain"} />}
+            {tab === "Optional EVM" && <ChainTab active={tab === "Optional EVM"} />}
             {tab === "Audit" && <AuditTab />}
             {tab === "Scenarios" && <ScenariosTab />}
-            {tab === "QuickDecision" && <QuickDecisionTab />}
+            {tab === "Development Step" && <QuickDecisionTab />}
         </div>
     );
 }
@@ -133,8 +133,6 @@ export default function AdminPanel() {
 /* ---------------------- Policy ---------------------- */
 function PolicyTab() {
     const [form, setForm] = useState({
-        min_shelf_reroute: 0.70,
-        min_shelf_expedite: 0.50,
         carbon_per_km: 0.12,
         eta: 0.50,
     });
@@ -146,8 +144,6 @@ function PolicyTab() {
             try {
                 const p = await jget("/governance/policy");
                 setForm({
-                    min_shelf_reroute: p.min_shelf_reroute ?? 0.70,
-                    min_shelf_expedite: p.min_shelf_expedite ?? 0.50,
                     carbon_per_km: p.carbon_per_km ?? 0.12,
                     eta: p.eta ?? 0.50,
                 });
@@ -169,9 +165,7 @@ function PolicyTab() {
         <div className="rounded-xl border p-5">
             <h2 className="text-xl font-semibold mb-4">Policy thresholds & weights</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <LabeledInput label="Min shelf for Reroute" value={form.min_shelf_reroute} onChange={set("min_shelf_reroute")} />
-                <LabeledInput label="Min shelf for Expedite" value={form.min_shelf_expedite} onChange={set("min_shelf_expedite")} />
-                <LabeledInput label="Carbon per km (kg CO2/km)" value={form.carbon_per_km} onChange={set("carbon_per_km")} />
+                <LabeledInput label="Modeled emissions factor (kg CO2-eq/km)" value={form.carbon_per_km} onChange={set("carbon_per_km")} />
                 <LabeledInput label="Waste penalty (eta)" value={form.eta} onChange={set("eta")} />
             </div>
             <button className="mt-4 px-4 py-2 rounded-md bg-black text-white" onClick={save}>Save Policy</button>
@@ -180,7 +174,7 @@ function PolicyTab() {
     );
 }
 
-/* ---------------------- Blockchain with auto status + LIVE head ---------------------- */
+/* -------- Optional locally tested EVM research prototype -------- */
 function ChainTab({ active }) {
     // Private key is provisioned via the CHAIN_PRIVKEY env var on the
     // backend; the form does not collect or transmit it. See
@@ -241,8 +235,8 @@ function ChainTab({ active }) {
     const set = (k) => (e) => setForm((s) => ({ ...s, [k]: e.target.value }));
     const save = async () => {
         setMsg("");
-        try { await jpost("/governance/chain", form); setMsg("✅ Saved blockchain config."); }
-        catch (e) { setMsg("❌ Failed to save blockchain config."); console.warn(e); }
+        try { await jpost("/governance/chain", form); setMsg("✅ Saved optional EVM config."); }
+        catch (e) { setMsg("❌ Failed to save optional EVM config."); console.warn(e); }
     };
 
     // auto-refresh on-chain status
@@ -315,7 +309,8 @@ function ChainTab({ active }) {
 
     return (
         <div className="rounded-xl border p-5">
-            <h2 className="text-xl font-semibold mb-4">Blockchain / DAO</h2>
+            <h2 className="text-xl font-semibold mb-2">Optional Local EVM Prototype</h2>
+            <p className="text-sm text-gray-600 mb-4">Research tooling tested with local Hardhat only. It is disabled for the publication benchmark and does not establish deployment readiness, consortium compatibility, or regulatory compliance.</p>
 
             <div className="grid md:grid-cols-2 gap-4">
                 <Text label="RPC" value={form.rpc} onChange={set("rpc")} />
@@ -352,7 +347,7 @@ function ChainTab({ active }) {
                 <div className="mt-3 grid md:grid-cols-3 gap-3 text-sm">
                     <Stat label="Block # (live)" value={status._live_block ?? "—"} />
                     <Stat label="DecisionLogger address" value={parsedAddresses.DecisionLogger || parsedAddresses.decisionLogger || "—"} mono />
-                    <Stat label="DecisionLogger deployed?" value={status.decisionLoggerOk === null ? "—" : status.decisionLoggerOk ? "yes" : "no"} />
+                    <Stat label="DecisionLogger bytecode present?" value={status.decisionLoggerOk === null ? "—" : status.decisionLoggerOk ? "yes" : "no"} />
                 </div>
 
                 <div className="mt-3 grid md:grid-cols-3 gap-3 text-sm">
@@ -411,10 +406,10 @@ function AuditTab() {
 }
 
 const SCENARIO_LIST_FALLBACK = [
-    { id: "heatwave", name: "Climate-Induced Heatwave", desc: "72h heatwave; accelerated spoilage; reconfigure routes." },
-    { id: "overproduction", name: "Overproduction / Glut", desc: "Glut / overproduction; trigger redistribution and recovery." },
-    { id: "cyber_outage", name: "Cyber Threat & Node Outage", desc: "Processor offline; unauthorized tx blocked; reroute flows." },
-    { id: "adaptive_pricing", name: "Adaptive Pricing & Cooperative Auctions", desc: "Learned pricing; equity-aware redistribution when saturated." },
+    { id: "heatwave", name: "Synthetic Heatwave", desc: "+20 C exponential approach 1-exp[-0.5(h-24)] from hour 24; +10 percentage-point RH adjustment; recovery tail after hour 48." },
+    { id: "overproduction", name: "Synthetic Overproduction", desc: "Inventory ×2.5 during hours 12–60 with progressive +8 C cold-storage excursion." },
+    { id: "cyber_outage", name: "Synthetic Cyber-Outage", desc: "From hour 24, demand is multiplied by 0.15 and temperature follows a +10 C exponential excursion; MCP becomes unavailable while processor-stage decisions remain active." },
+    { id: "adaptive_pricing", name: "Synthetic Adaptive-Pricing Oscillation", desc: "Oscillatory demand plus Gaussian noise; pricing is not a policy action." },
 ];
 
 function normalizeScenariosList(raw) {
@@ -550,7 +545,7 @@ function QuickDecisionTab() {
             const action = memo.decision ?? memo.action ?? "(unknown)";
             const slca = Number(memo.slca ?? memo.slca_score ?? 0).toFixed(3);
             const co2 = memo.carbon_kg ?? memo.carbon ?? 0;
-            setMsg(`✅ role=${role} | ${action} | SLCA ${slca} | CO₂ ${co2} kg`);
+            setMsg(`✅ development-only role=${role} | ${action} | social-performance proxy ${slca} | modeled emissions indicator ${co2} kg CO2-eq`);
         } catch (e) {
             setMsg("❌ Could not take decision.");
             console.warn(e);
@@ -559,7 +554,8 @@ function QuickDecisionTab() {
 
     return (
         <div className="rounded-xl border p-5">
-            <h2 className="text-xl font-semibold mb-4">Quick Decision</h2>
+            <h2 className="text-xl font-semibold mb-2">Development-Only Single Step</h2>
+            <p className="text-sm text-gray-600 mb-4">This call does not run peer exchange, adaptation episodes, or the retained publication evaluation.</p>
             <div className="flex items-center gap-3">
                 <select className="border rounded-md px-3 py-2" value={role} onChange={e => setRole(e.target.value)}>
                     <option value="farm">farm</option>

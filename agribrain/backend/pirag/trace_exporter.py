@@ -2,12 +2,12 @@
 
 Captures the full information flow at each decision step:
   Observation -> MCP tool outputs -> piRAG retrieved passages ->
-  Context features -> Logit adjustment -> Action -> Explanation -> Provenance
+  Context features -> Logit adjustment -> Action -> Explanation -> Local commitment
 
 Three export formats:
   1. Per-step trace (detailed, for supplementary material)
   2. Role comparison table (which tools/docs each role uses)
-  3. Provenance chain (evidence -> hashes -> Merkle root)
+  3. Local commitment record (evidence -> hashes -> Merkle root)
 """
 from __future__ import annotations
 
@@ -63,6 +63,7 @@ class DecisionTrace:
     logit_adjustment: List[float] = field(default_factory=list)
     action_probabilities: List[float] = field(default_factory=list)
     governance_override: bool = False
+    context_integration: Dict[str, Any] = field(default_factory=dict)
 
     # Extracted keywords per guidance type
     keywords_regulatory: List[str] = field(default_factory=list)
@@ -70,7 +71,10 @@ class DecisionTrace:
     keywords_waste_hierarchy: List[str] = field(default_factory=list)
     keywords_governance: List[str] = field(default_factory=list)
 
-    # Causal explanation data
+    # Policy-attribution data. Honest names are canonical; causal-prefixed
+    # fields remain synchronized compatibility aliases for old consumers.
+    attribution_primary_feature: str = ""
+    attribution_primary_contribution: float = 0.0
     causal_primary_cause: str = ""
     causal_primary_contribution: float = 0.0
     counterfactual_action: str = ""
@@ -129,6 +133,7 @@ class TraceExporter:
         role: str = "unknown",
         action_changed: bool = False,
         governance_override: bool = False,
+        context_integration: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Capture a full decision trace."""
         if not self.should_capture(role, action_changed, obs.hour):
@@ -218,6 +223,7 @@ class TraceExporter:
             logit_adjustment=logit_adjustment.tolist() if logit_adjustment is not None else [],
             action_probabilities=probs.tolist() if probs is not None else [],
             governance_override=governance_override,
+            context_integration=context_integration or {},
             explanation_summary=explanation.get("summary", "") if explanation else "",
             explanation_full=(explanation.get("full_explanation", "") or "")[:800] if explanation else "",
             evidence_hashes=ev_hashes,
@@ -247,12 +253,20 @@ class TraceExporter:
                     unique.append(kw)
             setattr(trace, f"keywords_{kw_type}", unique[:5])
 
-        # Populate causal explanation data
+        # Populate policy-attribution data, accepting the legacy key only for
+        # backward compatibility with previously generated explanations.
         if explanation:
-            causal = explanation.get("causal_chain", {})
-            trace.causal_primary_cause = causal.get("primary_cause", "")
-            trace.causal_primary_contribution = causal.get("primary_contribution", 0.0)
-            cf = explanation.get("counterfactual", {})
+            attribution = explanation.get("attribution_chain") or explanation.get("causal_chain", {})
+            primary_feature = attribution.get(
+                "primary_feature", attribution.get("primary_cause", ""),
+            )
+            primary_contribution = attribution.get("primary_contribution", 0.0)
+            trace.attribution_primary_feature = primary_feature
+            trace.attribution_primary_contribution = primary_contribution
+            # Legacy aliases; these names do not imply causal identification.
+            trace.causal_primary_cause = primary_feature
+            trace.causal_primary_contribution = primary_contribution
+            cf = explanation.get("ablation_delta") or explanation.get("counterfactual", {})
             trace.counterfactual_action = cf.get("action_without_context", "") or ""
             trace.counterfactual_prob_shift = cf.get("probability_shift", []) or []
             trace.action_changed_by_context = cf.get("action_changed", False)
@@ -262,7 +276,7 @@ class TraceExporter:
         self._traces.append(trace)
 
     def export_json(self, filepath: str) -> None:
-        """Export all traces as JSON for supplementary material."""
+        """Export recorded calculation traces as JSON."""
         data = []
         for t in self._traces:
             data.append({
@@ -302,6 +316,7 @@ class TraceExporter:
                         ["ColdChain", "LocalRedistribute", "Recovery"],
                         t.action_probabilities,
                     )) if t.action_probabilities else {},
+                    "integration": t.context_integration,
                 },
                 "keywords": {
                     "regulatory": t.keywords_regulatory,
@@ -309,12 +324,24 @@ class TraceExporter:
                     "waste_hierarchy": t.keywords_waste_hierarchy,
                     "governance": t.keywords_governance,
                 },
-                "causal_reasoning": {
-                    "primary_cause": t.causal_primary_cause,
-                    "primary_contribution": t.causal_primary_contribution,
-                    "counterfactual_action": t.counterfactual_action,
+                "policy_attribution": {
+                    "primary_feature": t.attribution_primary_feature,
+                    "primary_contribution": t.attribution_primary_contribution,
+                    "action_without_context": t.counterfactual_action,
                     "probability_shift": t.counterfactual_prob_shift,
                     "action_changed": t.action_changed_by_context,
+                    "attribution_scope": (
+                        "recorded linear feature allocation; not causal identification"
+                    ),
+                    # Compatibility keys retained for old readers. Their names
+                    # are explicitly legacy and carry no causal/counterfactual
+                    # semantics beyond the recorded psi=0 ablation.
+                    "primary_cause": t.causal_primary_cause,
+                    "counterfactual_action": t.counterfactual_action,
+                    "legacy_aliases": {
+                        "primary_cause": "primary_feature",
+                        "counterfactual_action": "action_without_context",
+                    },
                 },
                 "retrieval_evaluation": {
                     "metrics": t.retrieval_metrics,
@@ -325,9 +352,13 @@ class TraceExporter:
                     "full": t.explanation_full,
                 },
                 "provenance": {
-                    "evidence_hashes": t.evidence_hashes[:5],
+                    "evidence_hashes": list(t.evidence_hashes),
                     "total_evidence_items": len(t.evidence_hashes),
+                    "evidence_hashes_complete": True,
                     "merkle_root": t.merkle_root,
+                    "commitment_type": "local_merkle_root",
+                    "merkle_inclusion_paths_exposed": False,
+                    "merkle_root_anchored_on_chain": False,
                     "provenance_ready": t.provenance_ready,
                 },
             })
@@ -335,7 +366,7 @@ class TraceExporter:
             json.dump(data, f, indent=2, default=str)
 
     def export_role_comparison_table(self) -> List[Dict]:
-        """Generate a role comparison table for the paper."""
+        """Generate a descriptive role comparison from captured traces."""
         role_data: Dict[str, Dict[str, Any]] = {}
         for t in self._traces:
             if t.role not in role_data:
@@ -347,7 +378,7 @@ class TraceExporter:
                     "n": 0,
                     "guidance_types": [],
                     "all_keywords": [],
-                    "causal_causes": [],
+                    "primary_features": [],
                 }
             rd = role_data[t.role]
             rd["mcp_tools"].update(t.mcp_tools_invoked)
@@ -365,9 +396,9 @@ class TraceExporter:
             for kw_field in ["keywords_regulatory", "keywords_sop",
                              "keywords_waste_hierarchy", "keywords_governance"]:
                 rd["all_keywords"].extend(getattr(t, kw_field, []))
-            # Aggregate causal causes
-            if t.causal_primary_cause:
-                rd["causal_causes"].append(t.causal_primary_cause)
+            # Aggregate recorded dominant attribution features.
+            if t.attribution_primary_feature:
+                rd["primary_features"].append(t.attribution_primary_feature)
 
         table = []
         for role, rd in sorted(role_data.items()):
@@ -378,9 +409,10 @@ class TraceExporter:
             top_guide = guide_counts.most_common(1)[0][0] if guide_counts else "none"
             kw_counts = Counter(rd["all_keywords"])
             top_keywords = [kw for kw, _ in kw_counts.most_common(5)]
-            cause_counts = Counter(rd["causal_causes"])
-            cause_distribution = {
-                cause: round(count / n, 2) for cause, count in cause_counts.most_common()
+            feature_counts = Counter(rd["primary_features"])
+            feature_distribution = {
+                feature: round(count / n, 2)
+                for feature, count in feature_counts.most_common()
             }
             table.append({
                 "role": role,
@@ -391,12 +423,18 @@ class TraceExporter:
                 "mean_logit_shift": (rd["logit_means"] / n).tolist(),
                 "n_traces": rd["n"],
                 "top_keywords": top_keywords,
-                "primary_cause_distribution": cause_distribution,
+                "primary_feature_distribution": feature_distribution,
+                # Legacy key retained for compatibility; values are recorded
+                # feature attributions, not causal effects.
+                "primary_cause_distribution": feature_distribution,
+                "legacy_aliases": {
+                    "primary_cause_distribution": "primary_feature_distribution",
+                },
             })
         return table
 
     def export_provenance_chains(self) -> List[Dict]:
-        """Export provenance chains showing evidence -> hash -> Merkle root."""
+        """Export complete leaves for each local evidence commitment."""
         chains = []
         for t in self._traces:
             if not t.provenance_ready:
@@ -411,15 +449,24 @@ class TraceExporter:
                     "pirag_top_doc": t.pirag_top_doc,
                     "pirag_score": t.pirag_top_score,
                 },
-                "evidence_hashes": t.evidence_hashes[:5],
+                "evidence_hashes": list(t.evidence_hashes),
                 "merkle_root": t.merkle_root,
                 "hash_count": len(t.evidence_hashes),
-                "chain_complete": bool(t.merkle_root and t.evidence_hashes),
+                "evidence_hashes_complete": True,
+                "local_commitment_recomputable": bool(
+                    t.merkle_root and t.evidence_hashes
+                ),
+                "merkle_inclusion_paths_exposed": False,
+                "merkle_root_anchored_on_chain": False,
             })
         return chains
 
     def export_interoperability_trace(self) -> List[Dict]:
-        """Export MCP JSON-RPC request/response pairs for interoperability proof.
+        """Export recorded MCP JSON-RPC request/response pairs for calculation-trace verification.
+
+        The method and historical filenames retain ``interoperability`` as a
+        compatibility label. These are in-process project MCP-style dispatcher
+        traces, not official MCP-conformance or client-interoperability evidence.
 
         2026-04 fix: previous implementation omitted ``t.scenario`` from
         the entry payload. When two scenarios produced traces with
@@ -470,8 +517,8 @@ class TraceExporter:
                         },
                     },
                     "response_summary": (
-                        f"compliant={t.compliance_result.get('compliant')}, "
-                        f"violations={len(t.compliance_result.get('violations', []))}"
+                        f"within_declared_envelope={t.compliance_result.get('compliant')}, "
+                        f"envelope_excursions={len(t.compliance_result.get('violations', []))}"
                     ),
                 })
             if t.spoilage_forecast:

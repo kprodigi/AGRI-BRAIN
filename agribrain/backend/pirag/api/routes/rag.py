@@ -85,8 +85,15 @@ def ask(
                 "excerpt": c.passage[:240]
             } for c in out.citations],
             "guards_passed": out.guards_passed,
+            "evidence_hashes": out.evidence_hashes,
+            "evidence_hash_count": len(out.evidence_hashes),
+            "evidence_hashes_complete": True,
             "merkle_root": out.merkle_root,
-            "chain_tx": out.chain_tx
+            "commitment_type": "local_merkle_root",
+            "merkle_inclusion_paths_exposed": False,
+            "anchor_requested": req.anchor_on_chain,
+            "merkle_root_anchored_on_chain": bool(out.chain_tx),
+            "chain_tx": out.chain_tx,
         }
     except Exception:
         raise HTTPException(400, "PiRAG query failed")

@@ -52,7 +52,7 @@ def test_agribrain_mode_updates_slca_vectors_only():
     np.testing.assert_array_equal(learner.get_no_slca_offset_delta(), np.zeros(3))
 
 
-def test_no_slca_mode_updates_offset_only():
+def test_no_slca_mode_has_no_reward_shaping_updates():
     learner = _new_learner(learning_rate=0.1, prior_precision=0.0)
     learner.update(
         action=0,
@@ -61,7 +61,7 @@ def test_no_slca_mode_updates_offset_only():
         mode="no_slca",
         rho=0.3,
     )
-    assert np.any(learner.get_no_slca_offset_delta() != 0.0)
+    np.testing.assert_array_equal(learner.get_no_slca_offset_delta(), np.zeros(3))
     np.testing.assert_array_equal(learner.get_slca_bonus_delta(), np.zeros(3))
     np.testing.assert_array_equal(learner.get_slca_rho_delta(), np.zeros(3))
 

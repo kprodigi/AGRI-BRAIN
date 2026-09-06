@@ -1,7 +1,7 @@
 """MCP tool: query the piRAG knowledge base.
 
 Enables external AI systems to retrieve domain-specific guidance from
-the AGRI-BRAIN knowledge base through the standard MCP protocol.
+the AGRI-BRAIN knowledge base through the project's MCP-style interface.
 """
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ def _get_pipeline():
 
 
 def pirag_query(
-    query: str = "cold chain compliance for leafy greens",
+    query: str = "cold-chain operating-envelope context for leafy greens",
     k: int = 4,
     role: str = "farm",
     temperature: float = 4.0,
@@ -41,7 +41,7 @@ def pirag_query(
     rho : current spoilage risk for physics expansion.
     humidity : current humidity for physics reranking.
     physics_expansion : add physics terms to query based on T/rho.
-    physics_reranking : rerank results by physics plausibility.
+    physics_reranking : rerank results using lexical and Arrhenius-consistency terms.
 
     Returns
     -------
@@ -71,7 +71,7 @@ def pirag_query(
         # Use the real BM25/dense hybrid score that the retriever
         # actually computed (propagated through Citation.score). Earlier
         # revisions hardcoded 0.5 here, which made psi_2 (retrieval
-        # confidence) and psi_3 (regulatory pressure) constant.
+        # score signal) and psi_3 (retrieved-policy signal) constant.
         entry: Dict[str, Any] = {
             "doc_id": citation.doc_id,
             "passage": citation.passage[:500],
@@ -81,15 +81,38 @@ def pirag_query(
         results.append(entry)
 
     # Physics reranking
+    physics_k_eff = None
     if physics_reranking and results:
         try:
             from pirag.physics_reranker import physics_rerank
-            passages = [{"text": r["passage"], "score": r["score"],
-                         "id": r["doc_id"], "meta": {}} for r in results]
-            reranked = physics_rerank(passages, temperature, rho, humidity)
+            from src.models.spoilage import arrhenius_k
+            physics_k_eff = float(arrhenius_k(
+                temperature,
+                rh_frac=max(0.0, min(float(humidity) / 100.0, 1.0)),
+            ))
+            passages = [
+                {
+                    "text": r["passage"],
+                    "score": r["score"],
+                    "id": r["doc_id"],
+                    "meta": {},
+                    "sha256": r["sha256"],
+                }
+                for r in results
+            ]
+            reranked = physics_rerank(
+                passages, temperature, rho, humidity, physics_k_eff,
+            )
             results = [
-                {"doc_id": r["id"], "passage": r["text"][:500],
-                 "score": r.get("score", 0.5), "sha256": ""}
+                {
+                    "doc_id": r["id"],
+                    "passage": r["text"][:500],
+                    "score": float(r.get("score", 0.0)),
+                    "raw_rrf_score": float(
+                        r.get("fused_score", r.get("score", 0.0))
+                    ),
+                    "sha256": r["sha256"],
+                }
                 for r in reranked
             ]
         except ImportError:
@@ -103,13 +126,38 @@ def pirag_query(
     except ImportError:
         degraded_features.append("keyword_extraction")
 
+    # Apply the same three declared retrieval-context guards used by the
+    # simulator. Non-empty results alone are not evidence that guards passed.
+    from pirag.context_builder import DEFAULT_GUARD_CONSTRAINTS
+    from pirag.guards.feasibility_guard import within_ranges
+    from pirag.guards.retrieval_guard import retrieval_quality_ok
+    from pirag.guards.unit_guard import units_consistent
+
+    top_passage = str(results[0]["passage"]) if results else ""
+    top_raw_score = float(
+        results[0].get("raw_rrf_score", results[0].get("score", 0.0))
+    ) if results else 0.0
+    retrieval_ok = retrieval_quality_ok(results, top_raw_score)
+    unit_ok = units_consistent(top_passage) if top_passage else True
+    feasibility_ok = (
+        within_ranges(top_passage, DEFAULT_GUARD_CONSTRAINTS)
+        if top_passage else True
+    )
+    guard_breakdown = {
+        "retrieval": bool(retrieval_ok),
+        "unit": bool(unit_ok),
+        "feasibility": bool(feasibility_ok),
+    }
+
     payload: Dict[str, Any] = {
         "query": expanded_query,
         "original_query": query,
         "physics_expanded": physics_expansion and expanded_query != query,
         "results": results,
         "n_results": len(results),
-        "guards_passed": len(results) > 0,
+        "guards_passed": all(guard_breakdown.values()),
+        "guard_breakdown": guard_breakdown,
+        "physics_k_eff_h_inv": physics_k_eff,
     }
     if degraded_features:
         payload["_status"] = "degraded"

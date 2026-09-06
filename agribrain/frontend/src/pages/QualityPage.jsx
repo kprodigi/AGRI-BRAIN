@@ -50,12 +50,9 @@ function SpoilageGauge({ value = 0, size = 160 }) {
   );
 }
 
-// Shelf-life countdown
-function ShelfLifeCountdown({ hoursLeft = 0 }) {
-  const maxHours = 72;
-  const pct = Math.max(0, Math.min(1, hoursLeft / maxHours));
-  const h = Math.floor(hoursLeft);
-  const m = Math.floor((hoursLeft - h) * 60);
+// Dimensionless modeled remaining-quality fraction C(t), not time-to-threshold.
+function RemainingQualityGauge({ value = 0 }) {
+  const pct = Math.max(0, Math.min(1, value));
   const color = pct > 0.5 ? "#10B981" : pct > 0.2 ? "#F59E0B" : "#D55E00";
 
   const radius = 60;
@@ -75,10 +72,10 @@ function ShelfLifeCountdown({ hoursLeft = 0 }) {
           className="transition-all duration-1000"
         />
         <text x={75} y={68} textAnchor="middle" className="fill-foreground font-bold" style={{ fontSize: 22 }}>
-          {h}:{m.toString().padStart(2, "0")}
+          {(pct * 100).toFixed(1)}%
         </text>
         <text x={75} y={88} textAnchor="middle" className="fill-muted-foreground" style={{ fontSize: 11 }}>
-          hours left
+          modeled quality
         </text>
       </svg>
     </div>
@@ -123,7 +120,7 @@ export default function QualityPage() {
     };
     f();
     const id = setInterval(f, 5000);
-    // Push refresh on every new decision broadcast, so the PINN/ODE
+    // Push refresh on every new decision broadcast, so the residual/ODE
     // overlay reflects the most recent context window without waiting
     // for the next poll.
     const onDecision = () => { f(); };
@@ -152,29 +149,12 @@ export default function QualityPage() {
   // Spoilage risk (inverse of last shelf_left)
   const lastShelf = last(pred?.shelf_left) ?? 1;
   const spoilageRisk = 1 - Math.max(0, Math.min(1, lastShelf));
-  const shelfHours = lastShelf * 72; // approximate 72h max
 
-  // PINN vs ODE-only overlay (Section 4.13, Figure 13b).
-  // Both trajectories are computed by the backend's compute_spoilage and
-  // compute_spoilage_pinn (see GET /predictions: shelf_left_ode and
-  // shelf_left_pinn). When the backend cannot produce the PINN overlay
-  // (e.g. PINN dependency missing) the headline shelf_left is the
-  // ODE-only series and we render a single trace.
-  const pinnSeries = useMemo(() => {
-    const pinn = pred?.shelf_left_pinn || pred?.shelf_left;
-    const ode = pred?.shelf_left_ode || pred?.shelf_left;
-    if (!pinn || !ode) return [];
-    const n = Math.min(pinn.length, ode.length);
-    const out = [];
-    for (let i = 0; i < n; i++) {
-      out.push({ i, pinn: pinn[i], ode: ode[i], delta: pinn[i] - ode[i] });
-    }
-    return out;
+  const mechanisticSeries = useMemo(() => {
+    const ode = pred?.shelf_left;
+    if (!ode) return [];
+    return ode.map((value, i) => ({ i, ode: value }));
   }, [pred]);
-  const pinnOverlayActive = !!(
-    pred?.shelf_left_pinn && pred?.shelf_left_ode &&
-    pred.shelf_left_pinn.length === pred.shelf_left_ode.length
-  );
 
   if (loading) {
     return (
@@ -209,11 +189,11 @@ export default function QualityPage() {
           <Card className="text-center">
             <CardHeader className="pb-0">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-center gap-2">
-                <Clock className="w-4 h-4" /> Estimated Shelf Life
+                <Clock className="w-4 h-4" /> Modeled Quality Remaining
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-4 pb-6 flex justify-center">
-              <ShelfLifeCountdown hoursLeft={shelfHours} />
+              <RemainingQualityGauge value={lastShelf} />
             </CardContent>
           </Card>
         </motion.div>
@@ -250,7 +230,7 @@ export default function QualityPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">IoT: Temperature & Humidity</CardTitle>
+              <CardTitle className="text-base">Synthetic Temperature & Humidity</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-64">
@@ -295,35 +275,30 @@ export default function QualityPage() {
         </motion.div>
       </div>
 
-      {/* PINN vs ODE comparison */}
+      {/* Common mechanistic spoilage-risk estimate */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">PINN vs ODE Spoilage Trajectory</CardTitle>
-              <Badge variant={pinnOverlayActive ? "teal" : "outline"}>
-                {pinnOverlayActive ? "Physics-Informed" : "ODE-only (PINN unavailable)"}
-              </Badge>
+              <CardTitle className="text-base">Mechanistic Spoilage-Risk Trajectory</CardTitle>
+              <Badge variant="outline">Common to every benchmark arm</Badge>
             </div>
           </CardHeader>
           <CardContent>
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={pinnSeries}>
+                <LineChart data={mechanisticSeries}>
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                   <XAxis dataKey="i" tick={{ fontSize: 11 }} label={{ value: "Timestep", position: "insideBottom", offset: -5, fontSize: 11 }} />
                   <YAxis domain={[0, 1]} tick={{ fontSize: 11 }} />
                   <ReTooltip content={<ChartTooltip />} />
                   <Legend wrapperStyle={{ fontSize: 12, paddingTop: 16 }} />
-                  <Line type="monotone" dataKey="pinn" name="PINN-corrected" stroke="#009688" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="ode" name="ODE baseline (Arrhenius–Baranyi)" stroke="#808080" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
+                  <Line type="monotone" dataKey="ode" name="Mechanistic Arrhenius-lag estimate" stroke="#009688" strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
             <p className="text-xs text-muted-foreground mt-2 italic">
-              Both traces are computed by the backend (<code>compute_spoilage</code> for the
-              ODE-only baseline, <code>compute_spoilage_pinn</code> for the PINN-corrected
-              series). The neural residual is bounded to ±0.08 of the mechanistic baseline.
+              The reported trajectory is the common mechanistic Arrhenius estimate with a declared rational lag factor. It is a synthetic modeled-risk trajectory, not an observed shelf-life prediction.
             </p>
           </CardContent>
         </Card>

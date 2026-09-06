@@ -1,7 +1,8 @@
-"""SLCA weight lookup tool for the MCP server.
+"""Sustainability/social-proxy lookup tool for the MCP server.
 
-Returns Social Life-Cycle Assessment weights and base scores for
-different product types and routing actions.
+The public function and MCP tool retain their legacy ``slca`` names for API
+compatibility. Returned values are author-declared benchmark priors, not
+inventory-backed Social Life-Cycle Assessment results.
 
 Implementation note: 2025-04 single-source-of-truth fix.
 Prior to this revision the MCP tool kept its own copy of base scores
@@ -20,14 +21,15 @@ from typing import Any, Dict
 
 # Single source of truth for base scores. The simulator's `slca_score`
 # uses these directly; this MCP tool exposes them to agents.
-from src.models.slca import _ACTION_BASES as _CANONICAL_ACTION_BASES
+from src.models.slca import (
+    DEFAULT_CARBON_CAP_KG_PER_ROUTING_OPPORTUNITY,
+    _ACTION_BASES as _CANONICAL_ACTION_BASES,
+)
 
 
 # Per-product *modifiers* applied multiplicatively to the canonical bases.
-# A modifier of 1.0 means "use the canonical base"; lettuce sits slightly
-# below spinach on labour fairness because of harsher harvest mechanics
-# documented in Arcese et al. (2018). The default produce profile uses
-# the canonical bases unmodified.
+# A modifier of 1.0 means "use the canonical base". Product modifiers are
+# explicit synthetic-case assumptions; no cited source supplies these values.
 _PRODUCT_MODIFIERS: Dict[str, Dict[str, Dict[str, float]]] = {
     "spinach": {
         "cold_chain":         {"L": 1.00, "R": 1.00, "P": 1.00},
@@ -42,16 +44,13 @@ _PRODUCT_MODIFIERS: Dict[str, Dict[str, Dict[str, float]]] = {
 }
 
 _DEFAULT_WEIGHTS = {"w_c": 0.30, "w_l": 0.20, "w_r": 0.25, "w_p": 0.25}
-_DEFAULT_CARBON_CAP = 50.0
-
-
 def _apply_modifier(base: Dict[str, float], modifier: Dict[str, float]) -> Dict[str, float]:
     return {k: round(float(base[k]) * float(modifier.get(k, 1.0)), 4)
             for k in base}
 
 
 def lookup_slca_weights(product_type: str = "spinach") -> Dict[str, Any]:
-    """Look up SLCA weights and base scores for a product type.
+    """Look up declared sustainability/social-proxy priors.
 
     Parameters
     ----------
@@ -60,8 +59,8 @@ def lookup_slca_weights(product_type: str = "spinach") -> Dict[str, Any]:
 
     Returns
     -------
-    Dict with weights, base_scores per action, carbon_cap, and a
-    ``_source`` field documenting the provenance of the base scores
+    Dict with weights, base_scores per action, an explicitly time-based carbon
+    normalizer, and a ``_source`` field documenting the provenance of the bases
     (always ``"src.models.slca._ACTION_BASES"``).
     """
     pt = (product_type or "spinach").lower()
@@ -74,8 +73,20 @@ def lookup_slca_weights(product_type: str = "spinach") -> Dict[str, Any]:
                   for action in canonical}
     return {
         "product_type": product_type,
+        "assessment_type": "synthetic_sustainability_social_proxy",
+        "is_empirical_slca": False,
         "weights": dict(_DEFAULT_WEIGHTS),
         "base_scores": scores,
-        "carbon_cap": _DEFAULT_CARBON_CAP,
+        # Legacy key retained for API compatibility. The adjacent fields make
+        # its functional unit unambiguous and prevent episode-level use.
+        "carbon_cap": DEFAULT_CARBON_CAP_KG_PER_ROUTING_OPPORTUNITY,
+        "carbon_cap_kg_per_standardized_routing_opportunity": (
+            DEFAULT_CARBON_CAP_KG_PER_ROUTING_OPPORTUNITY
+        ),
+        "carbon_cap_time_basis": "standardized_routing_opportunity",
+        "carbon_cap_is_episode_cap": False,
+        "carbon_normalization_formula": (
+            "C=max(0,1-carbon_kg_per_opportunity/carbon_cap_kg_per_opportunity)"
+        ),
         "_source": "src.models.slca._ACTION_BASES",
     }

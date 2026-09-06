@@ -1,14 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-/// @title ProvenanceRegistry - On-chain anchoring for explanation provenance
-/// @notice Stores Merkle root hashes linking the explanation engine's
-///         feature-attribution outputs to their source evidence. Each
-///         root is derived from SHA-256 hashes of cited evidence
-///         passages (see pirag/provenance/merkle.py).
-/// @dev    Called optionally by the piRAG explanation module after
-///         generating a decision rationale. Provides an immutable,
-///         tamper-evident audit trail for explanation outputs.
+/// @title ProvenanceRegistry - Optional local Merkle-root storage prototype
+/// @notice Stores caller-supplied root hashes and identifiers. It does not
+///         receive evidence leaves, verify inclusion paths, or validate claims
+///         about the data represented by a root.
 ///
 /// @dev    Access control: role-based (ADMIN_ROLE / ANCHORER_ROLE),
 ///         mirroring the SLCARewards pattern. The deployer is granted
@@ -17,10 +13,8 @@ pragma solidity ^0.8.28;
 ///         contract) can be added by an ADMIN_ROLE holder. The legacy
 ///         ``onlyOwner`` semantics are preserved for the deployer key.
 ///
-/// @dev    Permissioned EVM. Deploys cleanly on Hyperledger Besu QBFT,
-///         Quorum, or a Geth Clique consortium; ``hardhat.config.cjs``
-///         ships a ``permissioned`` network entry. Localhost Hardhat
-///         is still supported for unit testing.
+/// @dev    Tested only with the repository's local Hardhat suite. No external
+///         network compatibility, security, or deployment claim is made.
 contract ProvenanceRegistry {
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant ANCHORER_ROLE = keccak256("ANCHORER_ROLE");
@@ -99,8 +93,7 @@ contract ProvenanceRegistry {
     // Anchoring
     // ---------------------------------------------------------------------
     /// @notice Anchor a Merkle root hash for a decision explanation.
-    /// @dev Append-only: re-anchoring an existing root reverts so the
-    ///      "immutable audit trail" claim holds.
+    /// @dev Duplicate roots are rejected by this contract instance.
     /// @param merkleRoot The root hash of the evidence Merkle tree.
     /// @param decisionId The decision identifier (e.g., blockchain tx hash).
     function anchor(bytes32 merkleRoot, string calldata decisionId)
@@ -119,7 +112,7 @@ contract ProvenanceRegistry {
         emit ProvenanceAnchored(merkleRoot, decisionId, msg.sender, block.timestamp);
     }
 
-    /// @notice Verify that a Merkle root has been anchored.
+    /// @notice Return whether this contract instance stores the supplied root.
     function verify(bytes32 merkleRoot) external view returns (bool exists, uint256 timestamp) {
         ProvenanceRecord storage r = records[merkleRoot];
         return (r.timestamp > 0, r.timestamp);

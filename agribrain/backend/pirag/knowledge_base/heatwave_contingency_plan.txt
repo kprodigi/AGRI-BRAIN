@@ -1,38 +1,21 @@
-HEATWAVE CONTINGENCY PLAN
+SYNTHETIC HEATWAVE SCENARIO CONTRACT
+Status: Constructed benchmark input; it is a controlled perturbation, not a heat-emergency or workplace standard.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, are contextual references only; the executable code and locked protocol govern all benchmark values.
 Document ID: KB-HCP-009
-Effective Date: 2025-09-01
-Regulatory Basis: FEMA Heat Emergency Guidelines; OSHA Heat Illness Prevention Standards
+Executable source: agribrain/backend/src/models/scenario_engine.py
 
-1. ACTIVATION CRITERIA
+At nominal intensity, the heatwave perturbation begins at simulation hour 24. From hour
+24 through hour 48 it adds
 
-This contingency plan activates when ambient temperature exceeds 35 degrees Celsius
-for 6 or more consecutive hours, as reported by the regional weather monitoring feed
-or on-site environmental sensors. Activation is automatic upon threshold detection and
-remains in effect until ambient temperature drops below 32 degrees Celsius for at least
-2 consecutive hours.
+  temperature: 20*(1-exp(-0.5*(h-24))) degrees Celsius
+  relative humidity: 10*(1-exp(-0.5*(h-24))) percentage points.
 
-2. OPERATIONAL ADJUSTMENTS
+After hour 48, both additions decay as their peak coefficient multiplied by
+exp(-0.1*(h-48)); relative humidity is clipped to [0,100]. The mechanistic spoilage and
+volatility columns are then recomputed from the perturbed state for every paired mode.
 
-Upon activation, the following modifications to standard routing parameters take effect
-immediately:
-
-  - Maximum cold chain transport distance is reduced from the standard 120 kilometers
-    to 60 kilometers. This reduction limits cumulative thermal exposure and preserves
-    cold chain integrity under degraded refrigeration performance.
-  - The secondary food bank redistribution network is activated, routing eligible product
-    (rho below 0.30) to the nearest qualified food bank within the reduced distance
-    radius rather than holding for long-haul cold chain transport.
-  - Inspection frequency at receiving docks increases from the standard interval of
-    every 4 hours to every 1 hour. Temperature verification, visual quality checks,
-    and packaging integrity assessments must all be performed at the accelerated cadence.
-
-3. REQUIRED ACTIONS
-
-Action 1: Notify all active drivers, warehouse supervisors, and food bank coordinators
-of heatwave contingency activation within 30 minutes of trigger detection. Use the
-automated alert distribution system with confirmation receipt tracking.
-
-Action 2: Increase cold chain monitoring sensor polling frequency from 5-minute intervals
-to 1-minute intervals for the duration of the contingency. Log all readings to the
-real-time telemetry dashboard and flag any excursion above 6 degrees Celsius for
-immediate investigation per the Temperature Excursion Response Protocol (KB-TEX-001).
+The scenario does not activate from an observed 35-degree threshold, query a weather
+feed, shorten the 120-km cold_chain route, mandate redistribution, alter inspection or
+sensor cadence, or notify personnel. Route choice remains probabilistic under the active
+policy components. These equations are synthetic stress-test assumptions, not a
+validated representation of a specific heatwave or refrigeration system.

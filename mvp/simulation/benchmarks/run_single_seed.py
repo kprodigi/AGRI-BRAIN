@@ -9,6 +9,12 @@ Usage:
 Output JSON envelope (post 2026-05):
 
     {
+      "_meta": {
+        "source_commit": <full Git SHA>,
+        "run_tag": <publication run tag>,
+        "episode_scope": "final episode per scenario-mode-seed arm",
+        "decision_history_scope": "earlier decisions in the same episode only"
+      },
       "seed": <int>,
       "scenarios": {<sc>: {<mode>: {<scalar metric>: float, ...}}},
       "traces":    {<sc>: {<mode>: {<trace name>: [floats]}}}
@@ -32,23 +38,53 @@ ones expose traces additively.
 """
 import argparse
 import json
+import math
+import os
 from pathlib import Path
 
 try:
-    from ..generate_results import run_all, MODES
+    from ..analysis.experiment_accounting import (
+        PRIMARY_PUBLICATION_MODES,
+        build_episode_accounting,
+    )
+except ImportError:
+    import sys as _accounting_sys
+
+    _ACCOUNTING_REPO_ROOT = Path(__file__).resolve().parents[3]
+    if str(_ACCOUNTING_REPO_ROOT) not in _accounting_sys.path:
+        _accounting_sys.path.insert(0, str(_ACCOUNTING_REPO_ROOT))
+    from mvp.simulation.analysis.experiment_accounting import (  # noqa: E402
+        PRIMARY_PUBLICATION_MODES,
+        build_episode_accounting,
+    )
+
+from hpc.slurm_execution_provenance import (  # noqa: E402
+    CORE_SEEDS,
+    build_array_execution_provenance,
+)
+
+try:
+    from .. import generate_results as _generate_results
 except ImportError:
     import sys as _sys
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
-    from generate_results import run_all, MODES  # noqa: E402
+    import generate_results as _generate_results  # noqa: E402
+
+run_all = _generate_results.run_all
+MODES = _generate_results.MODES
+TRACE_SCHEMA_VERSION = _generate_results.TRACE_SCHEMA_VERSION
+
+try:
+    from .trace_contract import TRACE_FIELDS, TRACE_MODES
+except ImportError:
+    from benchmarks.trace_contract import TRACE_FIELDS, TRACE_MODES
 
 
 #: Modes that get per-step traces dumped. The canonical paper trio for
 #: fig 2 panel (d) and fig 4 panel (a). Adding more modes is cheap
 #: (each mode adds ~3 KB of JSON per seed at 4-decimal precision) but
 #: deliberately limited here so the per-seed JSONs stay tractable.
-TRACE_MODES = ("static", "hybrid_rl", "agribrain")
-
 #: Trace fields to dump. The 2026-05 extension covers every per-step
 #: field the figure code reads from `data["results"][sc][mode]`, so a
 #: completed HPC run produces a self-contained cache that
@@ -57,17 +93,14 @@ TRACE_MODES = ("static", "hybrid_rl", "agribrain")
 #:
 #:  ari_trace                   fig 2 panel D, fig 4 panel A/D
 #:  waste_trace                 fig 3 panel B, fig 4 panel D
-#:  rho_trace                   fig 2 panel B (fallback), fig 3 panel C
+#:  rho_policy_observed_trace   policy input / fig 2 panel B
+#:  rho_outcome_environmental_trace latent endpoint state / fig 2 panel B
 #:  action_trace                fig 3 panel C, fig 4 panel B/C/D, fig 5 panel B
 #:  prob_trace                  fig 2 panel B (fallback), fig 2 panel C
 #:  carbon_trace                fig 8 panel A
 #:  hours                       every per-step plot (x-axis index)
-#:  batch_effective_rho_trace   fig 2 panel B
-#:  effective_rho_trace         fig 2 panel B (fallback)
-#:  temp_trace                  fig 2 panel A
-#:  rh_trace                    fig 2 panel A
-#:  inventory_trace             fig 3 panel A
-#:  demand_trace                fig 3 panel A, fig 5 panel A
+#:  explicit *_policy_observed / *_outcome_environmental traces preserve the
+#:  confirmatory two-world state boundary; legacy aliases are also retained.
 #:  slca_component_trace        fig 3 panel D (list[dict[str,float]] -- handled below)
 #:  equity_trace                fig 5 panel C
 #:  reward_trace                fig 5 panel D
@@ -75,27 +108,7 @@ TRACE_MODES = ("static", "hybrid_rl", "agribrain")
 #: Total per-seed envelope at 4-decimal precision, 3 trace modes,
 #: 5 scenarios: ~120 KB. 20 seeds: ~2.4 MB total. Negligible relative
 #: to the simulator's runtime.
-TRACE_FIELDS = (
-    "ari_trace",
-    "waste_trace",
-    "rho_trace",
-    "action_trace",
-    "prob_trace",
-    "carbon_trace",
-    "hours",
-    "batch_effective_rho_trace",
-    "effective_rho_trace",
-    "temp_trace",
-    "rh_trace",
-    "inventory_trace",
-    "demand_trace",
-    "slca_component_trace",
-    "equity_trace",
-    "reward_trace",
-)
-
-
-def _to_jsonable(obj, _decimals: int = 4):
+def _to_jsonable(obj, _decimals: int | None = 4):
     """Recursively convert a per-step trace value into a JSON-friendly form.
 
     Replaces the 2026-05 dispatch-by-first-element scheme that lost
@@ -132,8 +145,9 @@ def _to_jsonable(obj, _decimals: int = 4):
                                           (NOT folded into 0 / 1 even
                                           though ``bool`` is an
                                           ``int`` subclass).
-      * Other ``int`` / ``float``    ->  rounded to ``_decimals``
-                                          decimal places.
+      * ``int``                      ->  preserved as an integer.
+      * ``float``                    ->  rounded to ``_decimals`` decimal
+                                          places.
       * Anything else (str, None,
         custom objects, NaN/Inf, ...) -> preserved verbatim.
 
@@ -170,15 +184,18 @@ def _to_jsonable(obj, _decimals: int = 4):
     # than collapsing to 1 / 0 after a round-trip.
     if isinstance(obj, bool):
         return obj
-    if isinstance(obj, (int, float)):
-        return round(float(obj), _decimals)
-    # str, None, NaN floats (covered above), and anything else
-    # the caller hands us. JSON refuses NaN by default, but the
-    # simulator does not produce NaN in trace fields and the
-    # ``round(float(...))`` branch above would have caught it
-    # anyway. Custom objects round-trip iff they implement
-    # ``__str__`` or are JSON-encodable -- we don't try to
-    # second-guess.
+    if isinstance(obj, int):
+        # Discrete trace fields (especially action_trace) must remain JSON
+        # integers.  Converting through float made the preserved d3286ae HPC
+        # run encode valid action indices as 0.0/1.0/2.0.
+        return obj
+    if isinstance(obj, float):
+        value = float(obj)
+        if not math.isfinite(value):
+            raise ValueError(f"non-finite numeric trace value: {value!r}")
+        return value if _decimals is None else round(value, _decimals)
+    # Strings and None pass through. Any unsupported custom object will be
+    # rejected by the final strict json.dumps call.
     return obj
 
 
@@ -244,12 +261,23 @@ def _self_test_trace_dispatch():
         # emit NaN in TRACE_FIELDS, but this round-trip is the
         # canonical proof that the visitor's output is strictly
         # JSON-clean.
-        roundtrip = _json.loads(_json.dumps(out))
+        roundtrip = _json.loads(_json.dumps(out, allow_nan=False))
         assert roundtrip == expected, f"{label} json round-trip diverged"
-    # NaN does NOT round-trip through json.dumps by default -- this
-    # documents that boundary so a future caller is not surprised.
-    nan_out = _to_jsonable([_math.nan, 0.5])
-    assert _math.isnan(nan_out[0]) and nan_out[1] == 0.5
+    try:
+        _to_jsonable([_math.nan, 0.5])
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("non-finite trace values must be rejected")
+
+
+def _enforce_strict_trace_completion(trace_failures: list[str], seed: int) -> None:
+    """Fail the seed task after preserving its diagnostic envelope."""
+    if trace_failures and os.environ.get("STRICT_VALIDATION", "0") == "1":
+        raise RuntimeError(
+            "Strict publication seed run retained trace serialization failures; "
+            f"rerun seed {seed} after fixing them: {trace_failures!r}"
+        )
 
 
 def main() -> None:
@@ -258,18 +286,43 @@ def main() -> None:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=None,
-        help="Directory to write seed_<seed>.json into. Defaults to "
-             "mvp/simulation/results/benchmark_seeds/ when omitted.",
+        required=True,
+        help=(
+            "Explicit run-scoped directory for seed_<seed>.json. The option "
+            "is mandatory so an exploratory invocation cannot overwrite "
+            "canonical publication evidence."
+        ),
     )
     args = parser.parse_args()
 
     seed = args.seed
-    if args.output_dir is not None:
-        out_dir = args.output_dir
-    else:
-        out_dir = Path(__file__).resolve().parent.parent / "results" / "benchmark_seeds"
+    out_dir = args.output_dir
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    execution_provenance = None
+    if os.environ.get("STRICT_VALIDATION", "0") == "1":
+        if seed not in CORE_SEEDS:
+            raise RuntimeError(
+                f"strict publication seed {seed} is outside the locked 20-seed panel"
+            )
+        logical_task_index = CORE_SEEDS.index(seed)
+        execution_provenance = build_array_execution_provenance(
+            stage="core_seed_array",
+            logical_task_index=logical_task_index,
+        )
+        if execution_provenance["slurm_array_task_id"] != logical_task_index:
+            raise RuntimeError(
+                "SLURM_ARRAY_TASK_ID does not map to the requested canonical seed"
+            )
+
+    # ``run_all`` also writes representative protocol/context artifacts through
+    # its module-level RESULTS_DIR.  Parallel seed jobs previously raced on
+    # those shared filenames even though their final seed envelopes were
+    # isolated.  Redirect auxiliary artifacts to a seed-specific directory;
+    # the publication figures use the traces embedded in seed_<seed>.json.
+    auxiliary_dir = out_dir / "auxiliary" / f"seed_{seed}"
+    auxiliary_dir.mkdir(parents=True, exist_ok=True)
+    _generate_results.RESULTS_DIR = auxiliary_dir
 
     # Fail-fast self-test for the trace-dump dispatch. Catches
     # regressions in milliseconds instead of after 2.5 h of
@@ -306,6 +359,23 @@ def main() -> None:
     modes_run = [m for m in MODES if m in modes_seen] + sorted(
         modes_seen.difference(MODES)
     )
+    episode_budget_by_mode = {
+        mode: int(_generate_results._MULTI_EPISODE_MODES.get(mode, 1))
+        for mode in modes_run
+    }
+    primary_modes_run = [
+        mode for mode in PRIMARY_PUBLICATION_MODES if mode in modes_run
+    ]
+    episode_accounting = build_episode_accounting(
+        scenarios=scenarios_run,
+        configured_modes=modes_run,
+        episode_budget_by_mode=episode_budget_by_mode,
+        n_seeds=1,
+        primary_modes=primary_modes_run,
+    )
+    episode_accounting["complete_primary_mode_panel"] = (
+        tuple(primary_modes_run) == PRIMARY_PUBLICATION_MODES
+    )
     metrics = {}
     for sc in scenarios_run:
         metrics[sc] = {}
@@ -321,12 +391,32 @@ def main() -> None:
                 "slca": float(ep["slca"]),
                 "carbon": float(ep["carbon"]),
                 "equity": float(ep["equity"]),
+                # Exploratory ratio retained with its literal units.  It is
+                # computed per seed before aggregation so its BCa interval
+                # preserves the ARI/carbon covariance; it is not reconstructed
+                # from two marginal confidence intervals.
+                "carbon_efficiency_ari_per_kgco2e_proxy": float(
+                    ep["carbon_efficiency_ari_per_kgco2e_proxy"]
+                ),
             }
-            # Required for validate_results.py (checks DecisionLatencyMs and
-            # ConstraintViolationRate bounds) and for table1/table2 CSV
-            # rewrites that preserve the legacy column set.
+            # Retained as a descriptive, hardware-dependent diagnostic only.
+            # Canonical publication CSVs deliberately exclude latency from
+            # inferential seed summaries; Green-AI reporting declares its
+            # measured timer boundary separately.
             metrics[sc][mode]["mean_decision_latency_ms"] = float(
                 ep.get("mean_decision_latency_ms", 0.0)
+            )
+            metrics[sc][mode]["p95_decision_latency_ms"] = float(
+                ep.get("p95_decision_latency_ms", 0.0)
+            )
+            metrics[sc][mode]["latency_penalty_usd"] = float(
+                ep.get("latency_penalty_usd", 0.0)
+            )
+            metrics[sc][mode]["mean_decision_latency_ms_descriptive_only"] = (
+                ep.get("mean_decision_latency_ms_descriptive_only") is True
+            )
+            metrics[sc][mode]["latency_penalty_usd_descriptive_only"] = (
+                ep.get("latency_penalty_usd_descriptive_only") is True
             )
             metrics[sc][mode]["constraint_violation_rate"] = float(
                 ep.get("constraint_violation_rate", 0.0)
@@ -334,12 +424,16 @@ def main() -> None:
             metrics[sc][mode]["compliance_violation_rate"] = float(
                 ep.get("compliance_violation_rate", 0.0)
             )
+            metrics[sc][mode]["message_count"] = int(
+                ep.get("message_count", 0)
+            )
             # Also capture the new §4.7 diagnostic metrics when present so
             # the aggregator has the raw per-seed numbers for bootstrap CIs
             # without re-running the simulator. Empty/None when the mode
             # does not produce the metric (e.g. static has no honor rate).
             for extra in (
                 "operational_violation_rate", "regulatory_violation_rate",
+                "operating_envelope_violation_rate",
                 "context_active_steps", "context_active_fraction",
                 # 2026-05 apples-to-apples cross-mode dispatch
                 # counters. Always-equal-to-n_steps for context-
@@ -349,10 +443,14 @@ def main() -> None:
                 "context_dispatch_attempt_steps",
                 "context_dispatch_attempt_fraction",
                 "context_honored_steps", "context_honor_rate",
-                # 2026-05 fig9-c headline: context-influence rate
-                # (% of context-active steps where the modifier
-                # changed the chosen action). Honor rate is retained
-                # above as a supplementary-methods companion.
+                # Fig. 9 context-influence rate: percentage of
+                # context-active steps where paired live and
+                # context-ablated calls, using the same saved pre-selection
+                # RNG state, selected different actions. Stochastic calls
+                # consume the same categorical variate even if the live
+                # probability-gap override discards its sampled action. Honor rate
+                # is retained above
+                # as a supplementary-methods companion.
                 "context_influenced_steps", "context_influence_rate",
                 # 2026-05 cross-mode-comparable influence rate
                 # (numerator unchanged, denominator switched to
@@ -372,11 +470,91 @@ def main() -> None:
                 "redistribute_violation_rate",
                 "contained_violation_rate",
                 "violation_event_count",
+                # Fail-closed MCP execution evidence. Canonical strict runs
+                # abort on any JSON-RPC error, real tool isError response, or
+                # recorder truncation; the retained zero counts make that
+                # execution invariant inspectable per final episode.
+                "protocol_interaction_count",
+                "protocol_tools_call_count",
+                "protocol_prompts_get_count",
+                "protocol_jsonrpc_error_count",
+                "protocol_tool_iserror_count",
+                "protocol_real_tool_iserror_count",
+                "protocol_error_count",
+                "protocol_dropped_interaction_count",
+                "dispatcher_tool_failure_count",
+                "context_execution_error_count",
+                "mcp_calls_per_episode", "pirag_queries_per_episode",
+                "fault_injection_scheduled_opportunity_steps",
+                "fault_injection_trigger_steps",
+                "fault_injected_tool_result_count",
+                "trace_schema_version", "benchmark_seed", "episode_index",
+                "learning_enabled", "episode_phase",
+                "environment_stream_id", "policy_stream_id",
+                "stochastic_stream_id", "context_prior_sha256",
+                "policy_theta_initial_sha256", "spoilage_estimator",
+                "latent_spoilage_model",
+                "latent_environment_sha256",
+                "observed_policy_input_sha256", "demand_observation_sha256",
+                "demand_forecast_method", "supply_forecast_method",
+                "dispatch_opportunity_count",
+                "dispatch_cadence_hours", "endpoint_unit", "waste_definition",
+                "carbon_definition", "scenario_onset_offset_hours",
+                "effective_k_ref", "effective_Ea_R",
             ):
                 if extra in ep:
                     metrics[sc][mode][extra] = ep[extra] if not isinstance(
                         ep[extra], (list, tuple)
                     ) else list(ep[extra])
+            if "footprint" in ep:
+                metrics[sc][mode]["footprint"] = _to_jsonable(
+                    ep["footprint"], _decimals=12,
+                )
+                footprint = ep["footprint"]
+                # Hardware-dependent descriptive estimates for the explicitly
+                # bounded action-selection timer.  Promote scalar copies for
+                # cross-seed summaries while preserving the complete nested
+                # footprint record for equation-level audit.
+                metrics[sc][mode][
+                    "decision_path_compute_energy_estimate_j"
+                ] = float(footprint["cumulative_energy_J"])
+                metrics[sc][mode][
+                    "decision_path_compute_water_estimate_l"
+                ] = float(footprint["cumulative_water_L"])
+                metrics[sc][mode][
+                    "decision_path_elapsed_seconds"
+                ] = float(footprint["cumulative_elapsed_seconds"])
+                metrics[sc][mode][
+                    "decision_step_count_energy_proxy_j"
+                ] = float(footprint["cumulative_energy_per_step_proxy_J"])
+                metrics[sc][mode][
+                    "decision_step_count_water_proxy_l"
+                ] = float(footprint["cumulative_water_per_step_proxy_L"])
+            for context_object in (
+                "context_active_per_recommendation",
+                "context_ignored_per_recommendation",
+                "context_threshold_counters",
+            ):
+                if context_object in ep:
+                    metrics[sc][mode][context_object] = _to_jsonable(
+                        ep[context_object], _decimals=12,
+                    )
+            # Retain compact, hash-stamped learner provenance for the final
+            # episode. These nested records are not inferential endpoints, but
+            # they prove which adaptive components actually updated and keep
+            # per-role policy learning from being hidden behind one scalar.
+            for learner_key in (
+                "context_summary",
+                "evaluator_summary",
+                "learner_summary",
+                "theta_learner_summary",
+                "reward_shaping_learner_summary",
+                "learner_freeze_summary",
+            ):
+                if learner_key in ep:
+                    metrics[sc][mode][learner_key] = _to_jsonable(
+                        ep[learner_key], _decimals=None,
+                    )
 
     # ---- Partial-save guard: write metrics-only first ----
     # The 2026-05 HPC pipeline lost ~50 hours of compute when a
@@ -385,11 +563,14 @@ def main() -> None:
     # failed, and 20 seeds * 2.5 h of valid metrics evaporated
     # because they were never written to disk. Defensive change:
     # write the metrics block FIRST so the canonical published
-    # numbers (which the aggregator's bootstrap CIs are computed
-    # from) are durable regardless of what happens in the
-    # subsequent trace-dump path.
+    # numbers are durable for diagnosis/recovery regardless of what happens in
+    # the subsequent trace-dump path. Canonical publication validation still
+    # rejects a metrics-only checkpoint or any trace failure; it is never
+    # silently promoted into the 20-seed evidence panel.
     out_file = out_dir / f"seed_{seed}.json"
+    partial_file = out_dir / f"seed_{seed}.partial.json"
     metrics_only_payload = {
+        "trace_schema_version": TRACE_SCHEMA_VERSION,
         "seed": int(seed),
         "scenarios": metrics,
         "traces": {},
@@ -398,14 +579,18 @@ def main() -> None:
             "If it succeeds, this file is overwritten with the full "
             "envelope. If it crashes, the metrics block here survives "
             "and the aggregator can still produce benchmark_summary.json "
-            "and benchmark_significance.json from the canonical 20-seed "
-            "scalars."
+            "and benchmark_significance.json after the trace failure is fixed "
+            "and this seed is rerun. Canonical validators reject this "
+            "checkpoint as an incomplete publication envelope."
         ),
     }
-    out_file.write_text(json.dumps(metrics_only_payload, indent=2))
-    print(f"Saved metrics-only checkpoint: {out_file}")
+    partial_file.write_text(
+        json.dumps(metrics_only_payload, indent=2, allow_nan=False),
+        encoding="utf-8",
+    )
+    print(f"Saved metrics-only checkpoint: {partial_file}")
 
-    # ---- Per-step trace dump (best-effort, separate from metrics) ----
+    # ---- Per-step trace dump (recoverable checkpoint, strict publication gate) ----
     # Per-step traces drive figure code's line plots and any
     # per-step uncertainty band. The serialiser is now a recursive
     # visitor (``_to_jsonable``) that handles arbitrary nesting and
@@ -416,8 +601,9 @@ def main() -> None:
     # an unanticipated future shape can never destroy the metrics
     # checkpoint above. A serialisation failure logs the offending
     # (scenario, mode, field) and continues to the next field --
-    # the figures fall back to their single-seed-line code paths
-    # for any field the cache lacks.
+    # the figures may fall back during exploratory work. Strict publication
+    # runs fail after writing the diagnostic envelope, and the downstream raw
+    # gate rejects `_trace_failures` in every environment.
     traces: dict = {}
     trace_failures: list[str] = []
     for sc in scenarios_run:
@@ -447,6 +633,20 @@ def main() -> None:
             traces[sc] = sc_traces
 
     full_payload = {
+        "_meta": {
+            "trace_schema_version": TRACE_SCHEMA_VERSION,
+            "source_commit": os.environ.get("AGRIBRAIN_GIT_COMMIT", "").strip(),
+            "run_tag": os.environ.get("RUN_TAG", "").strip(),
+            "episode_scope": "final episode per scenario-mode-seed arm",
+            "decision_history_scope": "earlier decisions in the same episode only",
+            "episode_accounting": episode_accounting,
+            "execution_provenance": execution_provenance,
+            "state_design": (
+                "routing uses *_policy_observed; scored endpoints use "
+                "*_outcome_environmental"
+            ),
+        },
+        "trace_schema_version": TRACE_SCHEMA_VERSION,
         "seed": int(seed),
         "scenarios": metrics,
         "traces": traces,
@@ -457,8 +657,18 @@ def main() -> None:
             f"WARN: {len(trace_failures)} trace fields failed to "
             f"serialise; metrics block is intact."
         )
-    out_file.write_text(json.dumps(full_payload, indent=2))
-    print(f"Saved full envelope: {out_file}")
+    serialized = json.dumps(full_payload, indent=2, allow_nan=False)
+    if trace_failures and os.environ.get("STRICT_VALIDATION", "0") == "1":
+        # Preserve the diagnostic envelope only under the explicitly partial
+        # name. Never replace a valid final envelope with a failed strict run.
+        partial_file.write_text(serialized, encoding="utf-8")
+        _enforce_strict_trace_completion(trace_failures, seed)
+
+    final_temp = out_dir / f".seed_{seed}.full.tmp"
+    final_temp.write_text(serialized, encoding="utf-8")
+    os.replace(final_temp, out_file)
+    partial_file.unlink(missing_ok=True)
+    print(f"Atomically promoted full envelope: {out_file}")
 
 
 if __name__ == "__main__":

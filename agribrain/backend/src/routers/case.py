@@ -81,13 +81,13 @@ def _default_csv_path() -> str:
 
 @router.post("/load")
 def load_case(path: Optional[str] = None):
-    """Load CSV and compute PINN spoilage + volatility flags.
+    """Load CSV and compute mechanistic spoilage risk + volatility flags.
 
     Delegates to the canonical app.py case_load() if available so that
     the full Arrhenius spoilage model runs. Falls back to simple CSV
     load if the app state is not accessible.
     """
-    # Try canonical app.py case_load first (runs PINN spoilage)
+    # Try canonical app.py case_load first (runs mechanistic spoilage model)
     try:
         from src.app import case_load as _app_case_load
         result = _app_case_load()

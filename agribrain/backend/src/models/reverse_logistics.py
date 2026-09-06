@@ -16,14 +16,14 @@ that maps each routing action to a unit-interval circularity score by
 weighting the best-available recovery pathway score from
 ``evaluate_recovery_options``. It is not the EMF Material Circularity
 Indicator and does not implement any specific published circular-
-economy formula — it encodes the qualitative ordering
-local_redistribute > recovery > cold_chain that the EU food-waste
-hierarchy and Ellen MacArthur Foundation guidance both prescribe
-(EMF, 2019; Papargyropoulou et al., 2014).
+economy formula. It encodes the author-declared ordering
+local_redistribute > recovery > cold_chain, qualitatively inspired by
+waste-hierarchy literature; the cited sources do not prescribe this action
+mapping or its numerical scores (EMF, 2019; Papargyropoulou et al., 2014).
 
-For an audited, formula-grounded circularity score we expose
-``compute_mci``, which implements the Material Circularity Indicator
-methodology of EMF & Granta Design (2015):
+For a separate formula-based diagnostic we expose ``compute_mci``, an
+author-adapted approximation based on the Material Circularity Indicator
+form of EMF & Granta Design (2015):
 
     MCI = 1 − LFI · F(X)
     LFI = (V + W) / (2M + (W_F − W_C)/2)
@@ -119,23 +119,23 @@ def compute_circular_economy_score(
     """Stylised circular-economy proxy (primary form used in benchmarks).
 
     Maps each routing action to a unit-interval circularity score
-    consistent with the EU 2008/98/EC waste hierarchy (cold_chain at
-    the bottom, recovery in the middle, local_redistribute at the top
-    once a viable food-bank pathway is available). The piecewise-linear
+    inspired by the qualitative EU 2008/98/EC waste hierarchy (cold_chain at
+    the bottom, recovery in the middle, local_redistribute at the top under the
+    benchmark's declared food-bank suitability proxy). The piecewise-linear
     form is chosen so that:
 
     * cold_chain returns 0.0 (linear-economy baseline);
-    * recovery returns 0.5–1.0 depending on the best-available
-      pathway score, reflecting that compost/feed/biofuel are partial
-      circularity gains;
+    * recovery returns 0.5–1.0 depending on the better of the
+      animal-feed and composting scores, reflecting the recovery-only
+      pathways represented by that action;
     * local_redistribute returns 0.4–1.0 with food-bank suitability
       as the modulating factor, reflecting that human-consumption
       redistribution is the highest tier of the food-waste hierarchy
       (Papargyropoulou et al., 2014).
 
-    This is a *proxy*, not a measured indicator. For an audited
-    circularity number, use ``compute_mci`` which implements the
-    Material Circularity Indicator (EMF & Granta Design, 2015).
+    This is a *proxy*, not a measured indicator. ``compute_mci`` is a separate
+    author-adapted formula diagnostic; it is not an audited or standard-
+    conformant circularity assessment.
 
     Parameters
     ----------
@@ -144,8 +144,8 @@ def compute_circular_economy_score(
 
     Returns
     -------
-    Score in [0, 1] where 0 = standard cold chain (linear) and
-    1.0 = optimal circular recovery.
+    Score in [0, 1] where 0 is the declared cold-chain baseline and
+    1.0 is the upper end of this author-declared proxy.
     """
     if action == "cold_chain":
         # Cold chain is the linear economy baseline
@@ -158,9 +158,9 @@ def compute_circular_economy_score(
         return round(min(1.0, 0.4 + fb * 0.6), 4)
 
     if action == "recovery":
-        # Full recovery: score based on best available pathway
+        # Recovery excludes the human-consumption food-bank pathway, which is
+        # represented by local_redistribute above.
         best = max(
-            recovery_options.get("food_bank", 0.0),
             recovery_options.get("animal_feed", 0.0),
             recovery_options.get("composting", 0.0),
         )
@@ -193,10 +193,9 @@ def compute_mci(
         recovery           → W ≈ M·(1 − recovery_factor)
         cold_chain         → W ≈ M       (no recovery action)
 
-    The result is a literature-grounded circularity score that
-    readers familiar with EMF MCI can interpret directly. Provided
-    alongside the stylised ``compute_circular_economy_score`` as a
-    robustness check.
+    The result is an author-adapted diagnostic with declared mass fractions,
+    provided alongside ``compute_circular_economy_score``. It has not been
+    validated as an EMF-conformant material-circularity assessment.
 
     Parameters
     ----------

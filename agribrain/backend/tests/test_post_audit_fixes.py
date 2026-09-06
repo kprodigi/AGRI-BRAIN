@@ -1,19 +1,9 @@
-"""Regression tests for the post-2026-04 deep-audit fixes.
+"""Regression tests for audited statistical and simulation contracts.
 
-Each test pins one of the fixes applied after the 20-seed HPC run
-revealed:
-
-  - HIGH-1: ``mann_whitney_pvalue`` returned silent p=1.0 on scipy
-    failure, nullifying the headline AgriBrain-vs-Static and
-    AgriBrain-vs-Hybrid-RL significance claims in
-    ``benchmark_significance.json``.
-  - MEDIUM-2/3: ``constraint_violation_rate`` mixed mode-agnostic
-    operational checks with MCP-only FDA compliance, making MCP-active
-    modes appear to violate constraints 22-45 percentage points more
-    than non-MCP modes.
-  - MEDIUM-5: ``mcp_only`` and ``pirag_only`` produced identical action
-    distributions in 4 of 5 scenarios because the bare feature mask was
-    not sensitive enough; an ablation bias differentiator was added.
+These tests preserve fail-loud statistical fallbacks, separate the common
+synthetic operating-envelope metric from channel-specific tool use, and pin
+the structural MCP/RAG ablations without carrying numerical claims from a
+superseded result set.
 """
 from __future__ import annotations
 
@@ -92,7 +82,7 @@ def test_constraint_violation_separated_from_compliance_in_simulator_source():
     incremented only on ``temp_violation or quality_violation`` —
     compliance is reported separately via ``compliance_violation_rate``
     so MCP-active modes do not appear to violate constraints more than
-    non-MCP modes purely because they invoke the FDA compliance check
+    non-MCP modes purely because they invoke the operating-envelope tool
     while non-MCP modes don't.
 
     This test pins the source-line invariant rather than running the
@@ -108,8 +98,8 @@ def test_constraint_violation_separated_from_compliance_in_simulator_source():
     needle_old = "if temp_violation or quality_violation or compliance_violation:\n            constraint_violation_steps += 1"
     needle_new = "if temp_violation or quality_violation:\n            constraint_violation_steps += 1"
     assert needle_old not in src, (
-        "Old constraint_violation_steps assignment (which mixes in "
-        "compliance and inflates MCP-mode rates by 22-45pp) is back in "
+        "Old constraint_violation_steps assignment (which mixes a "
+        "channel-specific tool output into a common metric) is back in "
         "generate_results.py; revert."
     )
     assert needle_new in src, (
@@ -120,7 +110,7 @@ def test_constraint_violation_separated_from_compliance_in_simulator_source():
 
 
 # ---------------------------------------------------------------------------
-# MEDIUM-5: mcp_only / pirag_only ablation bias differentiates them
+# MEDIUM-5: structural MCP-only / Retrieval-only gating differentiates inputs
 # ---------------------------------------------------------------------------
 
 def test_compute_context_modifier_differentiates_mcp_only_vs_pirag_only():
@@ -134,7 +124,7 @@ def test_compute_context_modifier_differentiates_mcp_only_vs_pirag_only():
     that added asymmetric mode-specific bias vectors on top of the
     masked modifier. The bias has been retired (it was an author-knob
     engineering the ablation difference). The structural gating in
-    coordinator._compute_step_context (commit 1d9caf0) skips the
+    coordinator._compute_step_context skips the
     gated-out channel entirely, so the realistic ablation input has
     only the active channel populated; the feature mask + the
     asymmetric channel inputs together produce the differentiation.
@@ -264,33 +254,21 @@ def test_coordinator_structural_gating_in_source():
 
 
 # ---------------------------------------------------------------------------
-# MEDIUM-2: FDA spinach temperature ceiling must match the dataset's
-# regulatory_temp_max (8 degC), not the previous strict-FDA 5 degC.
+# MEDIUM-2: the synthetic envelope must match the dataset's declared maximum.
 # ---------------------------------------------------------------------------
 
-def test_fda_spinach_threshold_matches_dataset_regulatory_max():
-    """The compliance tool ships ``temp_max_c=8.0`` for spinach so the
-    MCP ``check_compliance`` agrees with ``temp_violation`` in
-    generate_results.py (both gate on the dataset column
-    ``regulatory_temp_max``, default 8 degC for leafy greens). The
-    earlier 5 degC strict-FDA ceiling produced 65-70 percent compliance
-    violation rates that read as alarming on the bench summary even
-    when the cold-chain truck was operating well within the dataset's
-    stated regulatory limit."""
+def test_spinach_benchmark_envelope_matches_dataset_declared_max():
+    """The legacy compliance API uses the dataset's declared 8 C benchmark
+    envelope. The value is not labelled as an FDA or legal threshold."""
     AGRI_BACKEND = Path(__file__).resolve().parents[1].parent / "agribrain" / "backend"
     sys.path.insert(0, str(AGRI_BACKEND))
-    from pirag.mcp.tools.compliance import _FDA_LIMITS
-    assert _FDA_LIMITS["spinach"]["temp_max_c"] == 8.0, (
-        f"Expected spinach temp_max_c == 8.0 to match the dataset's "
-        f"regulatory_temp_max; got {_FDA_LIMITS['spinach']['temp_max_c']}. "
-        f"Reverting to 5 degC re-creates the MCP-vs-non-MCP definitional "
-        f"asymmetry the post-audit fix was meant to eliminate."
+    from pirag.mcp.tools.compliance import _BENCHMARK_ENVELOPES
+    assert _BENCHMARK_ENVELOPES["spinach"]["temp_max_c"] == 8.0, (
+        "Expected the spinach synthetic benchmark envelope to match the "
+        "dataset's declared 8 C maximum."
     )
-    # Lettuce shares the leafy-green ceiling.
-    assert _FDA_LIMITS["lettuce"]["temp_max_c"] == 8.0
-    # Berries remain stricter at 4 degC (different commodity, different
-    # cold-chain calibration).
-    assert _FDA_LIMITS["berries"]["temp_max_c"] == 4.0
+    assert _BENCHMARK_ENVELOPES["lettuce"]["temp_max_c"] == 8.0
+    assert _BENCHMARK_ENVELOPES["berries"]["temp_max_c"] == 4.0
 
 
 # ---------------------------------------------------------------------------
@@ -306,8 +284,8 @@ def test_compliance_check_uniform_across_modes_in_simulator_source():
     static / hybrid_rl modes silently reported
     ``compliance_violation_rate=0.0`` while AgriBrain / mcp_only ran
     the actual check. That asymmetry made the metric incomparable
-    across modes and was the root cause of the 22-45pp inflation of
-    the previous (compliance-mixed) ``constraint_violation_rate``."""
+    across modes; the channel-specific tool result is now reported
+    separately from the common environmental signature."""
     src_path = (Path(__file__).resolve().parents[3] / "mvp" / "simulation" /
                 "generate_results.py")
     src = src_path.read_text(encoding="utf-8")
@@ -332,36 +310,31 @@ def test_compliance_check_uniform_across_modes_in_simulator_source():
 
 # ---------------------------------------------------------------------------
 # MEDIUM-4: rho-conditional hierarchy weighting routes Recovery=1.00
-# in the non-marketable band (rho > 0.50). Without this, AgriBrain's
-# RHO_RECOVERY_KNEE produces a *lower* RLE than Hybrid RL on heat
-# scenarios because Recovery scores 0.40 while LR scores 1.00 — the
-# wrong ordering under EU 2008/98/EC for non-marketable produce.
+# in the author-declared high-risk band (rho > 0.50).
 # ---------------------------------------------------------------------------
 
-def test_hierarchy_weight_rho_conditional_marketable_band():
-    """Clearly *inside* the marketable band (rho <= cutoff - halfwidth),
-    redistribution to humans is safe so the table is LR=1.00,
+def test_hierarchy_weight_rho_conditional_low_risk_band():
+    """Clearly inside the lower-risk band (rho <= cutoff - halfwidth),
+    the declared low-risk table is LR=1.00,
     Recovery=0.40, CC=0.00."""
     AGRI_BACKEND = Path(__file__).resolve().parents[1].parent / "agribrain" / "backend"
     sys.path.insert(0, str(AGRI_BACKEND))
-    from src.models.resilience import hierarchy_weight, RHO_MARKETABLE_CUTOFF
-    rho = 0.30  # well inside marketable band, below transition window
+    from src.models.resilience import hierarchy_weight
+    rho = 0.30  # well inside lower-risk band, below transition window
     assert hierarchy_weight("local_redistribute", rho) == 1.00
     assert hierarchy_weight("recovery", rho) == 0.40
     assert hierarchy_weight("cold_chain", rho) == 0.00
 
 
-def test_hierarchy_weight_rho_conditional_non_marketable_band():
-    """Clearly *inside* the non-marketable band (rho >= cutoff +
-    halfwidth), redistribution to humans is no longer safe; the table
-    inverts to LR=0.00, Recovery=1.00, CC=0.00. This is the EU
-    2008/98/EC Article 4 ordering for non-marketable produce:
-    Recovery (animal feed / energy) becomes the hierarchically-
-    preferred option once human consumption is unsafe."""
+def test_hierarchy_weight_rho_conditional_high_risk_band():
+    """Clearly inside the higher-risk band (rho >= cutoff +
+    halfwidth), the author-declared table is LR=0.00, Recovery=1.00,
+    CC=0.00. This is a synthetic modeled-risk rule, not a food-safety or
+    regulatory determination."""
     AGRI_BACKEND = Path(__file__).resolve().parents[1].parent / "agribrain" / "backend"
     sys.path.insert(0, str(AGRI_BACKEND))
     from src.models.resilience import hierarchy_weight
-    rho = 0.70  # well inside non-marketable band, above transition window
+    rho = 0.70  # well inside higher-risk band, above transition window
     assert hierarchy_weight("local_redistribute", rho) == 0.00
     assert hierarchy_weight("recovery", rho) == 1.00
     assert hierarchy_weight("cold_chain", rho) == 0.00
@@ -371,8 +344,8 @@ def test_hierarchy_weight_smooth_transition_band():
     """Across the [cutoff - halfwidth, cutoff + halfwidth] transition
     window, weights are linearly interpolated. At the cutoff itself
     (rho=0.50), LR weight is the midpoint = 0.5 and Recovery weight
-    is the midpoint = 0.7 (mean of marketable-band 0.4 and non-
-    marketable-band 1.0). The smoothing eliminates the step
+    is the midpoint = 0.7 (mean of lower-risk 0.4 and higher-risk
+    1.0). The smoothing eliminates the step
     discontinuity that produced non-monotonic RLE under stochastic
     rho noise (a seed whose mean rho sat at ~0.50 +/- noise would
     otherwise jump LR weight 1.00 -> 0.00 across an epsilon shift).
@@ -380,16 +353,16 @@ def test_hierarchy_weight_smooth_transition_band():
     AGRI_BACKEND = Path(__file__).resolve().parents[1].parent / "agribrain" / "backend"
     sys.path.insert(0, str(AGRI_BACKEND))
     from src.models.resilience import (
-        hierarchy_weight, RHO_MARKETABLE_CUTOFF, RHO_TRANSITION_HALFWIDTH,
+        hierarchy_weight, RHO_ACTION_WEIGHT_CUTOFF, RHO_TRANSITION_HALFWIDTH,
     )
-    cutoff = RHO_MARKETABLE_CUTOFF
+    cutoff = RHO_ACTION_WEIGHT_CUTOFF
     h = RHO_TRANSITION_HALFWIDTH
 
-    # Lower edge: full marketable weights.
+    # Lower edge: full lower-risk weights.
     assert hierarchy_weight("local_redistribute", cutoff - h) == 1.00
     assert hierarchy_weight("recovery", cutoff - h) == 0.40
 
-    # Upper edge: full non-marketable weights.
+    # Upper edge: full higher-risk weights.
     assert hierarchy_weight("local_redistribute", cutoff + h) == 0.00
     assert hierarchy_weight("recovery", cutoff + h) == 1.00
 
@@ -399,7 +372,7 @@ def test_hierarchy_weight_smooth_transition_band():
     assert abs(hierarchy_weight("recovery", cutoff) - 0.7) < 1e-9
 
     # Quarter point inside transition: LR weight at cutoff - h/2 should
-    # be 0.75 (3/4 marketable + 1/4 non-marketable).
+    # be 0.75 (3/4 lower-risk + 1/4 higher-risk).
     assert abs(hierarchy_weight("local_redistribute",
                                 cutoff - h / 2) - 0.75) < 1e-9
 
@@ -409,13 +382,13 @@ def test_hierarchy_weight_step_recovers_with_zero_halfwidth():
     behaviour for backward-compatible / strict-mode test paths."""
     AGRI_BACKEND = Path(__file__).resolve().parents[1].parent / "agribrain" / "backend"
     sys.path.insert(0, str(AGRI_BACKEND))
-    from src.models.resilience import hierarchy_weight, RHO_MARKETABLE_CUTOFF
-    # Step at exactly the cutoff (<=  -> marketable).
+    from src.models.resilience import hierarchy_weight, RHO_ACTION_WEIGHT_CUTOFF
+    # Step at exactly the cutoff selects the lower-risk table.
     assert hierarchy_weight("local_redistribute",
-                            RHO_MARKETABLE_CUTOFF, halfwidth=0.0) == 1.00
-    # Step just above the cutoff -> non-marketable.
+                            RHO_ACTION_WEIGHT_CUTOFF, halfwidth=0.0) == 1.00
+    # Step just above the cutoff selects the higher-risk table.
     assert hierarchy_weight("local_redistribute",
-                            RHO_MARKETABLE_CUTOFF + 1e-9,
+                            RHO_ACTION_WEIGHT_CUTOFF + 1e-9,
                             halfwidth=0.0) == 0.00
 
 
@@ -491,10 +464,9 @@ def test_benjamini_hochberg_step_up_monotone():
 
 def test_bca_ci_handles_degenerate_bootstraps():
     """``_bca_ci_from_boots`` must fall back to percentile when all
-    bootstrap replicates equal theta_hat (p0 in {0, 1}) without
-    crashing or returning NaN. Increments the
-    fallback_p0_degenerate counter so the aggregator's _meta block
-    surfaces a non-zero fallback rate."""
+    bootstrap replicates and jackknife estimates are degenerate, without
+    crashing or returning NaN. The legacy fallback counter remains populated
+    so the aggregator's metadata surfaces the non-BCa path."""
     SIM_BENCH = Path(__file__).resolve().parents[3] / "mvp" / "simulation" / "benchmarks"
     sys.path.insert(0, str(SIM_BENCH))
     from aggregate_seeds import _bca_ci_from_boots, _reset_bca_fallback_stats, _bca_fallback_stats_snapshot
@@ -555,6 +527,29 @@ def test_bca_fallback_rate_zero_on_real_variance():
     )
 
 
+def test_aggregate_ci_cells_use_cell_keys_and_honest_method_labels():
+    """Pin the publication summary call-site and per-cell CI labels."""
+    SIM_BENCH = Path(__file__).resolve().parents[3] / "mvp" / "simulation" / "benchmarks"
+    sys.path.insert(0, str(SIM_BENCH))
+    import aggregate_seeds as aggregate
+
+    source = (SIM_BENCH / "aggregate_seeds.py").read_text(encoding="utf-8")
+    assert "bootstrap_ci(vals, cell_key=(sc, mode, met))" in source
+
+    aggregate._reset_bca_fallback_stats()
+    before = dict(aggregate._BCA_STATS)
+    lo, hi = aggregate.bootstrap_ci([1.0] * 20, cell_key=("s", "m", "x"))
+    assert (lo, hi) == (1.0, 1.0)
+    assert aggregate._ci_method_since(before, lo, hi) == "deterministic"
+
+    before = dict(aggregate._BCA_STATS)
+    lo, hi = aggregate.bootstrap_ci(
+        np.linspace(0.1, 1.0, 20), n_boot=1000,
+        cell_key=("s", "m", "variable"),
+    )
+    assert aggregate._ci_method_since(before, lo, hi) == "BCa"
+
+
 def test_manifest_dirty_check_filters_results_path():
     """Pin the post-2026-04 fix that ``build_artifact_manifest.py``'s
     dirty-tree refusal filters out paths inside
@@ -597,11 +592,11 @@ def test_rho_transition_halfwidth_pinned():
     see indirect breakage downstream."""
     AGRI_BACKEND = Path(__file__).resolve().parents[1].parent / "agribrain" / "backend"
     sys.path.insert(0, str(AGRI_BACKEND))
-    from src.models.resilience import RHO_TRANSITION_HALFWIDTH, RHO_MARKETABLE_CUTOFF
+    from src.models.resilience import RHO_TRANSITION_HALFWIDTH, RHO_ACTION_WEIGHT_CUTOFF
     assert RHO_TRANSITION_HALFWIDTH == 0.05, (
         f"RHO_TRANSITION_HALFWIDTH changed from 0.05 to "
         f"{RHO_TRANSITION_HALFWIDTH}. The value is the half-width of "
-        f"the smooth-transition band centred on RHO_MARKETABLE_CUTOFF "
+        f"the smooth-transition band centred on RHO_ACTION_WEIGHT_CUTOFF "
         f"(0.50); bumping it widens or narrows the [cutoff-h, "
         f"cutoff+h] linear-interpolation window which directly "
         f"affects RLE values for any rho near the boundary. If this "
@@ -610,10 +605,11 @@ def test_rho_transition_halfwidth_pinned():
         f"midpoint and quarter-point assertions, which currently pin "
         f"the weights at cutoff and cutoff-h/2 under halfwidth=0.05."
     )
-    assert RHO_MARKETABLE_CUTOFF == 0.50, (
-        f"RHO_MARKETABLE_CUTOFF changed from 0.50 to {RHO_MARKETABLE_CUTOFF}; "
-        f"this is the EU 2008/98/EC marketable / non-marketable boundary "
-        f"and should not be moved without manuscript co-update."
+    assert RHO_ACTION_WEIGHT_CUTOFF == 0.50, (
+        f"RHO_ACTION_WEIGHT_CUTOFF changed from 0.50 to "
+        f"{RHO_ACTION_WEIGHT_CUTOFF}; "
+        f"this is the author-declared synthetic band center and should not "
+        f"be moved without a protocol and manuscript co-update."
     )
 
 
@@ -671,39 +667,15 @@ def test_context_modes_aligned_across_simulator_and_coordinator():
     )
 
 
-def test_pinn_modes_includes_section_47_ablations():
-    """Pin that ``_PINN_MODES`` covers all §4.7 ablation modes
-    (agribrain_cold_start, agribrain_pert_*, agribrain_pert_*_static,
-    agribrain_no_bonus, agribrain_theta_pert_*). Earlier this set
-    excluded those variants, which silently routed them through
-    plain Arrhenius spoilage while agribrain ran with PINN -
-    conflating the §4.7 contrast (cold-start / perturbation /
-    bonus / theta) with the PINN axis."""
+def test_no_pinn_is_present_as_the_declared_one_factor_ablation():
+    """The clean ablation must be configured and use the locked mode order."""
     SIM_DIR = Path(__file__).resolve().parents[3] / "mvp" / "simulation"
     sys.path.insert(0, str(SIM_DIR))
-    from generate_results import _PINN_MODES, _CONTEXT_ENABLED_MODES
-    section_47_variants = {
-        "agribrain_cold_start",
-        "agribrain_pert_10", "agribrain_pert_25", "agribrain_pert_50",
-        "agribrain_pert_10_static", "agribrain_pert_25_static",
-        "agribrain_pert_50_static",
-        "agribrain_no_bonus",
-        "agribrain_theta_pert_10", "agribrain_theta_pert_25",
-        "agribrain_theta_pert_50",
-    }
-    missing = section_47_variants - _PINN_MODES
-    assert not missing, (
-        f"_PINN_MODES is missing §4.7 ablation modes: {missing}. "
-        f"These variants must run on the same PINN spoilage path as "
-        f"the agribrain baseline so the ablation contrast measures "
-        f"the variable under test, not a confounded-with-PINN "
-        f"difference."
-    )
-    # Sanity: every §4.7 variant is also in _CONTEXT_ENABLED_MODES.
-    missing_ctx = section_47_variants - _CONTEXT_ENABLED_MODES
-    assert not missing_ctx, (
-        f"_CONTEXT_ENABLED_MODES is missing: {missing_ctx}"
-    )
+    import generate_results as gr
+
+    assert not hasattr(gr, "_PINN_MODES")
+    assert "no_pinn" in gr.MODES
+    assert "no_pinn" in gr.PRIMARY_MODES
 
 
 def test_companion_metrics_are_retired():
@@ -744,7 +716,7 @@ def test_rletracker_uses_rho_conditional_weight():
     assert "w = hierarchy_weight(action, rho)" in src, (
         "RLETracker.update no longer uses rho-conditional "
         "hierarchy_weight(action, rho); the tracker has regressed to "
-        "the constant marketable-band table and will mis-score Recovery "
+        "the constant lower-risk table and will mis-score Recovery "
         "routing at rho > 0.50."
     )
 
@@ -779,127 +751,40 @@ def test_constraint_violation_rate_marked_environmental():
 # literature range [1/3, 3].
 # ---------------------------------------------------------------------------
 
-def test_per_step_ari_uses_dataset_rho_with_documented_rationale():
-    """Pin the deliberate choice that per-step ARI is computed against
-    the dataset-cumulative ``rho`` and NOT the BatchInventory's
-    retail-pool effective rho.
-
-    A 2026-04 audit pass prototyped switching to pool_rho (which
-    would have given mode-specific (1-rho) and post-stress recovery)
-    but reverted because under the simulator's actual pool_rho
-    profiles (panel B of fig 2) AgriBrain has the *highest* pool_rho
-    (LR routing factor 0.45 vs CC's 0.15-1.00), so plugging
-    pool_rho into ARI would multiply AgriBrain's (1-waste)*SLCA
-    advantages down by a (1-rho_AB) smaller than (1-rho_static),
-    flipping the panel D ranking the wrong way. The dataset-
-    cumulative form is the principled choice: it captures permanent
-    thermal damage (correct physics for "supply chain quality
-    assuming inventory has been held since hour 0"), it is
-    identical across modes so policy contribution propagates
-    cleanly through (1-waste)*SLCA, and aggregate ARI mean across
-    the episode is the right summary measure for the manuscript.
-    """
+def test_per_step_ari_uses_latent_environmental_rho():
+    """The primary endpoint must not be computed from its policy observation."""
     src_path = (Path(__file__).resolve().parents[3] / "mvp" / "simulation" /
                 "generate_results.py")
     src = src_path.read_text(encoding="utf-8")
-    # The per-step ARI must use the dataset rho (not pool_rho).
-    assert "ari = compute_ari(waste, slca_c, rho)" in src, (
-        "Per-step ARI no longer reads the dataset rho; it has been "
-        "swapped to pool_rho or removed. If you intend that swap, "
-        "first verify with a full HPC slice that the panel D mode "
-        "ranking is preserved, since pool_rho favours Static."
+    assert (
+        "ari = compute_ari(waste, slca_c, rho_outcome_environmental)"
+        in src
     )
-    # The pool_rho variant must NOT have been (re)inserted.
-    assert "rho_for_ari = float(batch_summary[\"effective_rho\"])" not in src, (
-        "Pool_rho variant of ARI has been re-inserted into "
-        "generate_results.py. This was reverted in the 2026-04 audit "
-        "because under the simulator's actual pool_rho profile it "
-        "flips the panel D ranking the wrong way."
-    )
-    # The docstring rationale block must be present so a future maintainer
-    # who sees this test failing knows WHY pool_rho was rejected.
-    assert "pool_rho variant was prototyped" in src or "pool_rho variant" in src, (
-        "The docstring explaining why pool_rho was rejected is missing "
-        "from generate_results.py. Without it, a future maintainer may "
-        "re-attempt the same swap without learning from the 2026-04 audit."
-    )
+    assert "rho_effective_retail_pool" not in src
+    assert '"rho_policy_observed_trace"' in src
+    assert '"rho_outcome_environmental_trace"' in src
 
 
-def test_compute_ari_dataset_rho_preserves_mode_ranking_under_load():
-    """Numeric regression: the dataset-cumulative rho choice for ARI
-    should preserve the mode ranking AgriBrain > Hybrid RL > Static
-    even under heavy thermal load (high cumulative rho).
-
-    Constructs synthetic per-step (waste, slca, rho) traces that
-    reflect each mode's known characteristic profile during a
-    heatwave (Static: high waste / low SLCA; AgriBrain: low waste /
-    high SLCA; rho identical across modes per the dataset-cumulative
-    convention). Verifies that the resulting per-step ARI vector
-    preserves the ranking. This is the substantive numeric guard
-    against a future regression that swaps to pool_rho without
-    realising it flips the ranking.
-    """
+def test_compute_ari_responds_monotonically_to_each_component():
+    """ARI properties are tested without imposing a preferred mode ranking."""
     AGRI_BACKEND = Path(__file__).resolve().parents[1].parent / "agribrain" / "backend"
     sys.path.insert(0, str(AGRI_BACKEND))
     from src.models.resilience import compute_ari
 
-    # 8-step trace at heavy thermal load (rho ~ 0.5, well into the
-    # at-risk band but not saturated).
-    rho_trace = [0.30, 0.35, 0.40, 0.45, 0.48, 0.50, 0.50, 0.50]
-
-    # Mode-specific (waste, slca) per the published mode_eff +
-    # SLCA-bonus profile. Numbers chosen to match the band in
-    # benchmark_summary.json for heatwave: static waste ~0.05,
-    # hybrid_rl ~0.04, agribrain ~0.025; SLCA static ~0.55,
-    # hybrid_rl ~0.65, agribrain ~0.72.
-    waste_static = [0.05] * 8
-    waste_hybrid = [0.040] * 8
-    waste_agribrain = [0.025] * 8
-    slca_static = [0.55] * 8
-    slca_hybrid = [0.65] * 8
-    slca_agribrain = [0.72] * 8
-
-    ari_static = [compute_ari(w, s, r) for w, s, r in
-                   zip(waste_static, slca_static, rho_trace)]
-    ari_hybrid = [compute_ari(w, s, r) for w, s, r in
-                   zip(waste_hybrid, slca_hybrid, rho_trace)]
-    ari_agribrain = [compute_ari(w, s, r) for w, s, r in
-                      zip(waste_agribrain, slca_agribrain, rho_trace)]
-
-    mean_st = float(np.mean(ari_static))
-    mean_hr = float(np.mean(ari_hybrid))
-    mean_ab = float(np.mean(ari_agribrain))
-
-    # Mode ranking must hold: agribrain > hybrid_rl > static.
-    assert mean_ab > mean_hr, (
-        f"agribrain ({mean_ab:.4f}) <= hybrid_rl ({mean_hr:.4f}); "
-        f"the dataset-rho ARI formulation must preserve the mode "
-        f"ranking under load. Did you accidentally swap to pool_rho?"
-    )
-    assert mean_hr > mean_st, (
-        f"hybrid_rl ({mean_hr:.4f}) <= static ({mean_st:.4f}); "
-        f"the dataset-rho ARI formulation must preserve the mode "
-        f"ranking under load."
-    )
-
-    # The gap between agribrain and hybrid_rl must be meaningful
-    # (>= 0.02 absolute, ~3% relative). Below this the mode
-    # differentiation has collapsed.
-    gap_ab_hr = mean_ab - mean_hr
-    assert gap_ab_hr >= 0.02, (
-        f"agribrain - hybrid_rl gap of {gap_ab_hr:.4f} is below the "
-        f"0.02 floor; ARI formulation has lost mode resolution."
-    )
+    base = compute_ari(0.10, 0.70, 0.20)
+    assert 0.0 <= base <= 1.0
+    assert compute_ari(0.20, 0.70, 0.20) < base
+    assert compute_ari(0.10, 0.60, 0.20) < base
+    assert compute_ari(0.10, 0.70, 0.30) < base
 
 
-def test_coordinator_exposes_anomaly_defense_flags():
-    """The coordinator must expose three per-step anomaly-defense
-    flags consumed by fig 4 panel C (Cumulative Anomaly Defenses
-    Triggered): ``_step_cooperative_veto``, ``_step_fault_recovery``,
+def test_coordinator_exposes_diagnostic_activation_flags():
+    """The coordinator exposes three per-step diagnostic mechanism flags:
+    ``_step_cooperative_veto``, ``_step_fault_recovery``,
     ``_step_physics_gate``. All three default to False after a fresh
     instantiation; modes that skip the context channel (static /
     hybrid_rl / no_context) leave them at False every step, which is
-    the structural-zero baseline panel C plots them at.
+    structural zeros in those modes.
     """
     AGRI_BACKEND = Path(__file__).resolve().parents[1].parent / "agribrain" / "backend"
     sys.path.insert(0, str(AGRI_BACKEND))
@@ -907,15 +792,15 @@ def test_coordinator_exposes_anomaly_defense_flags():
     coord = AgentCoordinator()
     assert hasattr(coord, "_step_cooperative_veto"), (
         "AgentCoordinator missing _step_cooperative_veto attribute - "
-        "fig 4 panel C cannot read the cooperative-veto defense trace."
+        "diagnostics cannot read the legacy-keyed cooperative adjustment trace."
     )
     assert hasattr(coord, "_step_fault_recovery"), (
         "AgentCoordinator missing _step_fault_recovery attribute - "
-        "fig 4 panel C cannot read the fault-recovery defense trace."
+        "diagnostics cannot read the fault-recovery activation trace."
     )
     assert hasattr(coord, "_step_physics_gate"), (
         "AgentCoordinator missing _step_physics_gate attribute - "
-        "fig 4 panel C cannot read the physics-gate defense trace."
+        "diagnostics cannot read the physics-gate activation trace."
     )
     # All three default to False so the panel C cumulative count
     # starts at zero on episode init for every mode.
@@ -923,7 +808,7 @@ def test_coordinator_exposes_anomaly_defense_flags():
     assert coord._step_fault_recovery is False
     assert coord._step_physics_gate is False
     # reset() must also clear them so episode boundaries do not bleed
-    # defense triggers from a previous episode into the next.
+    # diagnostic activations from a previous episode into the next.
     coord._step_cooperative_veto = True
     coord._step_fault_recovery = True
     coord._step_physics_gate = True
@@ -939,34 +824,32 @@ def test_coordinator_exposes_anomaly_defense_flags():
     )
 
 
-def test_simulator_emits_anomaly_defense_traces_in_result_dict():
-    """The simulator's per-episode result dict must carry the three
-    anomaly-defense traces. Source-line invariant: the keys
+def test_simulator_emits_diagnostic_activation_traces_in_result_dict():
+    """The simulator's per-episode result dict carries three diagnostic
+    mechanism-activation traces. Source-line invariant: the legacy keys
     ``cooperative_veto_trace``, ``fault_recovery_trace``, and
     ``physics_gate_trace`` must all be present in the result dict
-    emitted by run_episode. Without these, fig 4 panel C falls back
-    to the zero-defaults sentinel and the panel reads as flat-zero
-    for every mode.
+    emitted by run_episode.
     """
     src_path = (Path(__file__).resolve().parents[3] / "mvp" / "simulation" /
                 "generate_results.py")
     src = src_path.read_text(encoding="utf-8")
     assert '"cooperative_veto_trace": cooperative_veto_trace' in src, (
         "cooperative_veto_trace not emitted in run_episode result dict; "
-        "fig 4 panel C cannot read cooperative-veto defenses."
+        "diagnostics cannot read cooperative operating-envelope activations."
     )
     assert '"fault_recovery_trace": fault_recovery_trace' in src, (
         "fault_recovery_trace not emitted in run_episode result dict; "
-        "fig 4 panel C cannot read fault-recovery defenses."
+        "diagnostics cannot read fault-recovery activations."
     )
     assert '"physics_gate_trace": physics_gate_trace' in src, (
         "physics_gate_trace not emitted in run_episode result dict; "
-        "fig 4 panel C cannot read physics-gate defenses."
+        "diagnostics cannot read physics-gate activations."
     )
 
 
 def test_panel_c_plots_defensive_reroutes_under_risk():
-    """Pin fig 4 as the 1x4 "Outage -> Behavior -> Outcome" causality
+    """Pin fig 4 as the 1x4 "Outage -> Behavior -> Outcome" descriptive
     layout introduced in 2026-05.
 
     Design history (newest first):
@@ -976,16 +859,14 @@ def test_panel_c_plots_defensive_reroutes_under_risk():
         delta construction inverted the Service ranking on a
         saturation artefact (a system already near-ceiling pre-outage
         had little headroom and looked worse than a system that
-        started lower and shifted further). Levels are unambiguous:
-        AgriBrain holds the highest ARI / lowest Waste / highest
-        Service during the outage on every seed.
+        started lower and shifted further). Absolute levels avoid that
+        headroom artefact without presupposing a cross-method ranking.
       * 2026-05 redesign: fig 4 is a 1x4 layout. Panel C = per-method
         reroute rate (mean(action != cold_chain)) under pre vs during
         outage -- the *behavior change* signal. Panel D plotted
         deltaARI / deltaWaste / deltaService bars (the *outcome*
-        signal). Together panels B + C + D make the cyber-resilience
-        causality argument explicit ("outage forced behavior change;
-        behavior change drove KPI shift").
+        signal). Together panels B + C + D provide aligned descriptive
+        mechanism and outcome views; they do not identify a causal effect.
       * 2026-05 (intermediate): a 2-row gridspec inside the third
         column. Replaced because legends and bars overlapped within
         the cramped sub-panel real estate.
@@ -995,14 +876,14 @@ def test_panel_c_plots_defensive_reroutes_under_risk():
         consequence on the same figure as the behavior change.
       * 2026-04: time-resolved RLE numerator (cumulative count of
         steps where rho > RLE_THRESHOLD AND action != cold_chain).
-      * pre-2026-04: anomaly-defense trace cumsum
+      * pre-2026-04: diagnostic mechanism-activation trace cumsum
         (cooperative_veto + physics_gate + fault_recovery), which
         was structurally zero under the published flag config and
         conveyed no information.
 
-    The simulator still emits the three anomaly-defense traces
-    (`test_simulator_emits_anomaly_defense_traces_in_result_dict`
-    pins that data path) for any future feature-flag-on rendering;
+    The simulator still emits the three diagnostic activation traces
+    (`test_simulator_emits_diagnostic_activation_traces_in_result_dict`
+    pins that data path) for trace inspection;
     the canonical fig 4 just doesn't consume them under the
     published flag config.
     """
@@ -1035,7 +916,8 @@ def test_panel_c_plots_defensive_reroutes_under_risk():
             f"level panel cannot render without it."
         )
     # Service-level definition lives in the panel-D during-window
-    # block and must be the documented "retail-dispatch * sellable"
+    # block and must be the documented
+    # "retail-dispatch * modeled retained/non-waste fraction"
     # form. Renamed 2026-05 from pre-window (waste_pre / actions_arr[pm])
     # to during-window (waste_dur / actions_arr[dm]) when the panel
     # switched to absolute levels.

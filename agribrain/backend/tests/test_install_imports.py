@@ -11,12 +11,39 @@ from __future__ import annotations
 
 import importlib
 import importlib.metadata as md
+import importlib.resources as resources
 import os
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 import pytest
+
+_BACKEND_ROOT = Path(__file__).resolve().parents[1]
+_EXPECTED_BRANDING = {"custom.v2.css", "favicon.png", "logo.png"}
+_EXPECTED_KNOWLEDGE_DOCUMENTS = {
+    "animal_feed_diversion_standards.txt",
+    "blockchain_audit_requirements.txt",
+    "carbon_accounting_transport.txt",
+    "composting_bioenergy_requirements.txt",
+    "cooperative_governance_policy.txt",
+    "cyber_outage_contingency.txt",
+    "demand_volatility_response.txt",
+    "emergency_rerouting_sop.txt",
+    "green_ai_reporting.txt",
+    "heatwave_contingency_plan.txt",
+    "iot_sensor_spec.txt",
+    "redistribution_food_bank_protocol.txt",
+    "regulatory_fda_leafy_greens.txt",
+    "slca_community_resilience_metrics.txt",
+    "slca_guidelines.txt",
+    "slca_labor_fairness_standards.txt",
+    "slca_price_transparency_framework.txt",
+    "sop_cold_chain.txt",
+    "temperature_excursion_protocol.txt",
+    "waste_hierarchy_protocol.txt",
+}
 
 
 def test_distribution_metadata_advertises_both_packages():
@@ -45,6 +72,77 @@ def test_packages_import_directly():
     # Sanity: one canonical module from each package surfaces.
     importlib.import_module("src.app")
     importlib.import_module("pirag.mcp.registry")
+
+
+def test_runtime_resources_are_package_local_and_readable():
+    """Wheel-required data must resolve from its owning import package."""
+
+    src_root = resources.files("src")
+    dataset = src_root.joinpath("data_spinach.csv")
+    assert dataset.is_file()
+    assert dataset.read_text(encoding="utf-8").startswith("timestamp,tempC,RH,")
+
+    branding_root = src_root.joinpath("static", "branding")
+    observed_branding = {
+        entry.name for entry in branding_root.iterdir() if entry.is_file()
+    }
+    assert observed_branding == _EXPECTED_BRANDING
+    assert branding_root.joinpath("custom.v2.css").read_text(
+        encoding="utf-8"
+    ).startswith("/* 1) Color the top bar */")
+
+    pirag_root = resources.files("pirag")
+    policy = pirag_root.joinpath("configs", "policy.yaml")
+    assert policy.is_file()
+    assert "rate_limits:" in policy.read_text(encoding="utf-8")
+    knowledge_root = pirag_root.joinpath("knowledge_base")
+    observed_knowledge = {
+        entry.name
+        for entry in knowledge_root.iterdir()
+        if entry.is_file() and entry.name.endswith(".txt")
+    }
+    assert observed_knowledge == _EXPECTED_KNOWLEDGE_DOCUMENTS
+
+
+def test_pyproject_declares_every_runtime_resource_family():
+    """Lock the wheel package-data rules that editable installs can mask."""
+
+    metadata = tomllib.loads(
+        (_BACKEND_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    )
+    setuptools = metadata["tool"]["setuptools"]
+    assert setuptools["include-package-data"] is True
+    package_data = setuptools["package-data"]
+    assert set(package_data["src"]) == {
+        "data_spinach.csv",
+        "static/branding/*",
+    }
+    assert set(package_data["pirag"]) == {
+        "configs/*.yaml",
+        "configs/*.yml",
+        "knowledge_base/*.txt",
+        "knowledge_base/*.json",
+        "knowledge_base/*.csv",
+    }
+
+
+def test_app_mounts_package_local_static_directory():
+    """Import-time StaticFiles setup must use the wheel-owned directory."""
+
+    from fastapi.testclient import TestClient
+
+    app = importlib.import_module("src.app")
+    expected = (
+        Path(importlib.import_module("src").__file__).resolve().parent / "static"
+    )
+    assert app._STATIC_DIR == expected.resolve()
+    assert (app._STATIC_DIR / "branding" / "favicon.png").is_file()
+    client = TestClient(app.API)
+    css = client.get("/static/branding/custom.v2.css")
+    assert css.status_code == 200
+    assert css.text.startswith("/* 1) Color the top bar */")
+    assert client.get("/static/branding/logo.png").status_code == 200
+    assert client.get("/favicon.ico").status_code == 200
 
 
 @pytest.mark.parametrize("module", ["src", "pirag", "src.app", "pirag.mcp.registry"])

@@ -53,7 +53,7 @@ describe("PolicyStore", function () {
 
   // ---- Matrix-shaped policy parameters (Theta, Theta_context) ----
 
-  // Paper-correct THETA_CONTEXT row entries from §3.8 (milli-scaled).
+  // Declared THETA_CONTEXT row entries (milli-scaled).
   // cold_chain row: [-0.80, -0.60, -0.15, -0.30, +0.25]
   // local_redist : [+0.50, +0.40, +0.20, +0.25, +0.10]
   // recovery     : [+0.30, +0.20, -0.05, +0.05, -0.35]
@@ -63,7 +63,7 @@ describe("PolicyStore", function () {
     300, 200, -50, 50, -350,
   ];
 
-  it("registers THETA and THETA_CONTEXT matrix keys with the paper-spec shapes", async function () {
+  it("registers THETA and THETA_CONTEXT matrix keys with the declared shapes", async function () {
     const thetaCtxKey = ethers.id("THETA_CONTEXT");
     const thetaKey = ethers.id("THETA");
 
@@ -167,7 +167,7 @@ describe("PolicyStore", function () {
 
   it("registerMatrixKey rejects matrices over MAX_MATRIX_CELLS=256", async function () {
     // 17 * 17 = 289 cells, above the 256 cap. The cap exists to
-    // prevent gas-DoS via setPolicyMatrix's per-cell loop. Paper's
+    // prevent gas-DoS via setPolicyMatrix's per-cell loop. The declared
     // largest matrix is THETA at (3, 10) = 30 cells, so 256 leaves
     // generous headroom while keeping the loop bounded.
     const key = ethers.id("OVERSIZE_MATRIX");

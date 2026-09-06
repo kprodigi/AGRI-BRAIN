@@ -6,13 +6,9 @@ waste fraction — the proportion of produce lost to spoilage at each timestep.
 
 Physical basis
 --------------
-Waste follows a power-law (Michaelis–Menten-type saturation) relationship
-with the instantaneous decay rate, reflecting diminishing returns on
-recovery efficiency. The saturating-power-law form is the same family
-used in the generic shelf-life models of Tijskens & Polderdijk (1996)
-and the keeping-quality framework of van Boekel (2008); the exponent
-α < 1 is the standard sub-linear-stress assumption from biological
-materials degradation (Briassoulis, 2004):
+Waste follows a bounded, sub-linear power-law mapping from the instantaneous
+decay rate. This is a stylised simulation outcome model, not a fitted spinach
+loss model:
 
     waste_raw = (k_inst × W_SCALE)^W_ALPHA
 
@@ -25,21 +21,19 @@ where:
               shorter transit, and triage partially compensate as decay
               rate increases.
 
-Calibration (fresh spinach, South Dakota cooperative)
------------------------------------------------------
-W_SCALE and W_ALPHA were chosen so the model reproduces the FAO
-fresh-produce loss range:
+Synthetic parameterization
+--------------------------
+W_SCALE and W_ALPHA were selected to place the two declared benchmark anchors
+at approximately:
 
     Baseline static (T ≈ 4 °C, k ≈ 0.00274):  waste_raw ≈ 0.07  (7 %)
     Heatwave  static (mean k ≈ 0.00596):       waste_raw ≈ 0.13 (13 %)
 
-Both values fall within the 2–15 % range FAO (2019) reports for fresh
-produce supply-chain losses, with 7 % matching the Parfitt et al.
-(2010) lower bound for refrigerated developed-country losses and 13 %
-matching the upper-temperate-stress estimates in Gustavsson et al.
-(2011). The constants are *calibrated to the FAO range*, not derived
-from first principles; rounding to W_SCALE=10.30, W_ALPHA=0.73 leaves
-both calibration anchors within FAO bounds (see test_metric_variants).
+These anchors are modelling assumptions used to give the synthetic case study
+an interpretable range. FAO and related aggregate loss reports motivate the
+order of magnitude only; they do not provide a two-point spinach dataset from
+which these parameters could be estimated. Accordingly, absolute waste values
+are simulation outputs rather than externally validated estimates.
 
 Inventory surplus waste penalty
 -------------------------------
@@ -51,23 +45,19 @@ This follows from the inventory mass balance (conservation of goods):
 
 Save factor model
 -----------------
-Each routing action and operating mode has a characteristic ability to
-prevent waste:
+Each routing action has a fixed, mode-independent ability to prevent waste:
 
-    save_factor = floor[action] + (ceil[action] − floor[action]) × mode_eff
-    net_waste = waste_raw × (1 − save_factor × save_capacity)
+    action_save = {cold_chain: 0.00, local_redistribute: 0.45,
+                   recovery: 0.25}[action]
+    net_waste = waste_raw × (1 − action_save × save_capacity)
 
-where save_capacity degrades under surplus (Michaelis–Menten saturation):
+where save_capacity degrades under a declared reciprocal saturation rule:
     save_capacity = 1 / (1 + SURPLUS_SAVE_PENALTY × surplus_ratio)
 
-Floor values represent the inherent physical benefit of each routing
-choice without any optimisation. Ceiling values represent the maximum
-achievable with perfect optimisation. Mode effectiveness captures how
-much of this gap each system mode can realise. The capability-additive
-decomposition of MODE_EFF (see ``_mode_eff_from_capabilities``) makes
-the *structure* of the ablation ordering an architectural claim; the
-absolute deltas are calibration constants whose sensitivity is
-exercised in ``tests/test_metric_variants.py``.
+The benchmark uses these exact action coefficients; there is no interpolation
+to an action ceiling or mode-specific efficacy. Identical actions under
+identical physical conditions therefore have identical outcomes; architectural
+comparisons can differ only because their policies select different actions.
 
 References
 ----------
@@ -82,9 +72,6 @@ References
     - van Boekel, M.A.J.S. (2008). Kinetic modeling of food quality:
       a critical review. Comprehensive Reviews in Food Science and
       Food Safety, 7(1), 144–158.
-    - Briassoulis, D. (2004). An overview on the mechanical behaviour
-      of biodegradable agricultural films. Journal of Polymers and the
-      Environment, 12(2), 65–81.
     - Parfitt, J., Barthel, M. & Macnaughton, S. (2010). Food waste
       within food supply chains: quantification and potential for
       change to 2050. Philosophical Transactions of the Royal
@@ -92,37 +79,36 @@ References
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 import numpy as np
 
 from .action_aliases import resolve_action as _resolve_action
-
+from .mode_capabilities import PUBLICATION_BENCHMARK_MODES
 
 # ---------------------------------------------------------------------------
-# Waste rate parameters (calibrated for fresh spinach)
+# Waste-rate parameters for the synthetic spinach case study
 # ---------------------------------------------------------------------------
 W_SCALE: float = 10.2976
 """Effective batch exposure converting Arrhenius k (h⁻¹) to batch spoilage.
 
-Calibrated by least-squares fit against two anchor points so that
-``compute_waste_rate`` reproduces the FAO (2019) and Gustavsson et al.
-(2011) ranges for fresh-produce supply-chain loss:
+Algebraically fitted to two declared simulation anchors:
 
     (k=0.00274 h⁻¹, waste≈0.07)  → developed-country refrigerated baseline
     (k=0.00596 h⁻¹, waste≈0.13)  → temperate heatwave stress
 
-The fitted precision (4 d.p.) is retained for run-to-run reproducibility
-of the published benchmark; the calibration target is robust to ±0.005
-on either anchor (see tests/test_metric_variants.py).
+The fitted precision is retained for run-to-run reproducibility. The anchors
+are not field measurements and do not constitute external validation.
 """
 
 W_ALPHA: float = 0.7339
 """Sub-linear compression exponent (< 1 → diminishing marginal spoilage).
 
-Co-fitted with ``W_SCALE`` to the FAO anchor points above. Falls within
-the 0.5–0.9 range reported for biological-degradation power-laws in
-Briassoulis (2004) and the saturating shelf-life forms catalogued in
-van Boekel (2008, Table 2).
+Co-fitted with ``W_SCALE`` to the two declared simulation anchors above.
 """
+
+WASTE_CAP: float = 0.15
+"""Declared upper bound applied after the inventory-surplus multiplier."""
 
 # ---------------------------------------------------------------------------
 # Inventory surplus parameters
@@ -145,268 +131,19 @@ SAVE_FLOOR: dict[str, float] = {
     "local_redistribute": 0.45,
     "recovery": 0.25,
 }
-"""Inherent physical waste prevention of each routing choice (no optimisation).
+"""Exact action-specific waste-saving coefficients for the synthetic case.
 
-- Cold chain (120 km): product simply transits → no inherent prevention.
-- Local redistribute (45 km): shorter transit + community markets → 45 %.
-- Recovery (80 km): diversion to processing/composting → 25 %.
+``SAVE_FLOOR`` is a legacy public name retained for compatibility; there is no
+paired ceiling in the live equation. The values are modelling assumptions, not
+measured intervention effects.
 """
 
-SAVE_CEIL: dict[str, float] = {
-    "cold_chain": 0.30,
-    "local_redistribute": 0.95,
-    "recovery": 0.70,
-}
-"""Maximum achievable save with perfect optimisation.
-
-- Cold chain: optimal temp control and timing → up to 30 %.
-- Local redistribute: optimal matching and timing → up to 95 %.
-- Recovery: optimal triage and routing → up to 70 %.
-"""
-
-# Capability-additive MODE_EFF derivation.
-# ----------------------------------------------------------------
-# Each mode's save efficiency is the additive sum of the capabilities
-# the mode has, so the cross-mode ordering is a transparent
-# consequence of the capability composition rather than a tuned
-# constant. The methodology is the additive Shapley attribution
-# (Shapley, 1953) commonly used in capability-decomposition analyses.
-# Each capability contribution is a single design parameter exposed
-# for sensitivity analysis.
-#
-# Capability contributions:
-#   _BASE_COMPETENCE      = 0.45  # RL policy with linear features
-#   _PINN_DELTA           = 0.15  # +PINN predictive routing
-#   _SLCA_DELTA           = 0.15  # +SLCA social shaping
-#   _CONTEXT_DELTA        = 0.08  # +MCP/piRAG context channel
-#
-# Calibration provenance (2026-04 audit-grade):
-#   The four deltas are calibration constants positioned within the
-#   [0.0, 1.0] capability-contribution space such that the full-stack
-#   sum (0.45 + 0.15 + 0.15 + 0.08 = 0.83) matches the empirical full-
-#   stack save factor observed in independent simulator runs at
-#   ablation_seed-fixed conditions. The individual contributions are
-#   informed by the published cold-chain literature on each capability:
-#     - 15-20 % reduction from PINN predictive temperature control
-#       (Shabir & Ali 2022 §4 reports 12-18 % loss reduction from
-#       predictive thermal modelling in fresh-produce cold chains;
-#       Lopez & Velazquez 2024 IoT-cold-chain meta-analysis reports
-#       a 14-19 % range from physics-informed routing).
-#     - 12-18 % reduction from social-pillar shaping (consistent with
-#       Garcia-Garcia 2017 Table 5 estimating 10-20 % loss reduction
-#       from food-bank-prioritised redistribution policies).
-#     - 5-12 % reduction from real-time context augmentation (no
-#       single published source; calibrated to the lower end of the
-#       full-stack RAG-augmented agentic-system literature, e.g.
-#       Lewis et al. 2020 RAG benchmarks +6-15 % task-completion
-#       improvements over no-RAG baselines).
-#   The 0.08 _CONTEXT_DELTA replaced an earlier 0.04 calibration
-#   when the context channel's responsibilities expanded in 2026-04
-#   to include the food-safety override signal and predictive
-#   recovery reweighting at ambient transitions; the new value sits
-#   inside the published 5-12 % band cited above.
-#
-# Honest scope:
-#   - The four deltas are calibration constants positioned against
-#     the published per-capability literature ranges, NOT direct
-#     empirical measurements. A measurement-grade replacement would
-#     re-run the ablation grid with save-factor logging enabled and
-#     replace each delta with the empirical mean save factor observed
-#     in the corresponding ablation arm with bootstrap CIs.
-#   - The load-bearing claim is the *capability composition* (which
-#     capabilities each mode has), not the absolute deltas.
-#     Sensitivity to the four deltas at +/-25 % is exercised in
-#     tests/test_metric_variants.py::test_mode_eff_ranking_invariant
-#     and a wider sweep at +/-50 % is exercised in
-#     tests/test_metric_variants.py::test_mode_eff_ranking_invariant_wide
-#     to confirm the rank ordering is robust beyond the +/-25 % band.
-#
-# References:
-#   Shapley, L.S. (1953). A value for n-person games. Contributions
-#     to the Theory of Games II, Princeton UP, 307-317.
-#   Garcia-Garcia, G. et al. (2017). A methodology for sustainable
-#     management of food waste. Waste & Biomass Valorization, 8(6).
-#   Shabir, I. & Ali, A. (2022). Multi-criteria route optimisation
-#     in cold-chain logistics. Transportation Research Part D.
-#   Lopez, E. & Velazquez, M.A. (2024). IoT-enabled cold-chain
-#     monitoring: a meta-analysis of 2018-2023 deployments.
-#     Computers & Industrial Engineering, 188.
-#   Lewis, P. et al. (2020). Retrieval-augmented generation for
-#     knowledge-intensive NLP tasks. NeurIPS 2020.
-_BASE_COMPETENCE = 0.45
-_PINN_DELTA = 0.15
-_SLCA_DELTA = 0.15
-_CONTEXT_DELTA = 0.08
-
-
-def _mode_eff_from_capabilities(has_rl: bool, has_pinn: bool,
-                                  has_slca: bool, has_context: bool) -> float:
-    """Capability-additive save efficiency.
-
-    Returns 0 when the mode is the always-cold-chain static baseline
-    (which has no optimisation and therefore no save efficiency).
-    Otherwise sums the base RL competence with the deltas for each
-    enabled capability.
-    """
-    if not has_rl:
-        return 0.0
-    eff = _BASE_COMPETENCE
-    if has_pinn:
-        eff += _PINN_DELTA
-    if has_slca:
-        eff += _SLCA_DELTA
-    if has_context:
-        eff += _CONTEXT_DELTA
-    return float(eff)
-
-
-# Mode -> capability flags (derived once from the published ablation
-# definitions). The dict below is now the single audit-trail of which
-# mode has which capability; MODE_EFF is computed mechanically from it.
-_MODE_CAPABILITIES: dict[str, tuple[bool, bool, bool, bool]] = {
-    # mode:                  (rl,    pinn, slca, context)
-    "static":                (False, False, False, False),
-    "hybrid_rl":             (True,  False, False, False),
-    "no_pinn":               (True,  False, True,  True),
-    "no_slca":               (True,  True,  False, True),
-    "no_context":            (True,  True,  True,  False),
-    "mcp_only":              (True,  True,  True,  True),
-    "pirag_only":            (True,  True,  True,  True),
-    "agribrain":             (True,  True,  True,  True),
-    "agribrain_cold_start":  (True,  True,  True,  True),
-    "agribrain_pert_10":     (True,  True,  True,  True),
-    "agribrain_pert_25":     (True,  True,  True,  True),
-    "agribrain_pert_50":     (True,  True,  True,  True),
-    "agribrain_pert_10_static": (True, True, True, True),
-    "agribrain_pert_25_static": (True, True, True, True),
-    "agribrain_pert_50_static": (True, True, True, True),
-    # 2026-04 sensitivity modes share full agribrain capabilities; they
-    # perturb policy weights / SLCA bonuses, not the capability stack.
-    # Without these entries, MODE_EFF.get returns 0.0 (Static-equivalent)
-    # and MODE_CARBON_EFF.get returns 1.00, silently downgrading these
-    # modes to baseline efficiency.
-    "agribrain_no_bonus":        (True, True, True, True),
-    "agribrain_theta_pert_10":   (True, True, True, True),
-    "agribrain_theta_pert_25":   (True, True, True, True),
-    "agribrain_theta_pert_50":   (True, True, True, True),
-}
-
-MODE_EFF: dict[str, float] = {
-    mode: _mode_eff_from_capabilities(*caps)
-    for mode, caps in _MODE_CAPABILITIES.items()
-}
-"""Fraction of the (ceil − floor) gap each mode achieves.
-
-Computed mechanically from `_MODE_CAPABILITIES` so the ordering reflects
-the architectural composition, not a hand-tuned conclusion. Resulting
-values (with default deltas):
-
-  static       0.00   (no RL)
-  hybrid_rl    0.45   (base RL only)
-  no_slca      0.68   (RL + PINN + context, missing SLCA)
-  no_pinn      0.68   (RL + SLCA + context, missing PINN)
-  no_context   0.75   (RL + PINN + SLCA, no context channel)
-  mcp_only     0.83   (full system, MCP-only context features)
-  pirag_only   0.83   (full system, piRAG-only context features)
-  agribrain    0.83   (full system)
-  pert_*       0.83   (full system, perturbed priors)
-
-Note that mcp_only / pirag_only / agribrain share the same MODE_EFF —
-they differ only in *which* context features inform routing, not in
-total capability count, so any save-curve advantage between them must
-arise from the policy's action selection, not from MODE_EFF. This is
-the desired behaviour: per-mode waste differences within the
-context-enabled family are now driven by behaviour, not by a constant
-multiplier.
-"""
-
-
-# ---------------------------------------------------------------------------
-# Carbon efficiency: capability-additive multiplier on transport CO2
-# ---------------------------------------------------------------------------
-# Mirrors the MODE_EFF structure but applied to carbon emissions. The
-# load-bearing claim is: a mode that has PINN forecasting + SLCA
-# carbon-aware shaping + MCP/piRAG real-time context can route through
-# lower-carbon partner organisations (rail, EV, biogas), time dispatches
-# into cooler ambient windows (PINN-anticipated), and select carbon-
-# scored alternatives within the same nominal route distance. None of
-# these levers exist for a context-blind RL agent, so carbon footprint
-# is genuinely lower for context-aware modes at fixed route choice.
-#
-# The factor is applied multiplicatively to the GHG-Protocol activity-
-# based base emission inside compute_transport_carbon, so a mode with
-# MODE_CARBON_EFF[m] = 0.85 emits 15 % less per dispatch than the
-# baseline (Static / Hybrid RL) at the same km × carbon_per_km and the
-# same thermal_stress.
-#
-# Capability contributions (additive deltas; calibrated within the
-# 5-15 % per-capability range that the predictive-routing and
-# context-aware-cold-chain literature supports — Tassou et al. 2009 on
-# COP-aware dispatch reducing energy 5-10 %, Hamilton 2021 on IoT
-# integration reducing transport carbon 3-7 %, Shabir & Ali 2022 on
-# multi-criteria route optimisation reducing carbon 2-5 %):
-#   _CARBON_BASE             = 1.00  (no optimisation = full baseline)
-#   _CARBON_PINN_DELTA       = -0.06 (PINN-timed dispatch in cool windows)
-#   _CARBON_SLCA_DELTA       = -0.04 (SLCA prefers lower-carbon partners)
-#   _CARBON_CONTEXT_DELTA    = -0.05 (real-time carbon-intensity lookup)
-#
-# Honest scope: same as MODE_EFF — these are calibration constants, not
-# measurements. test_metric_variants.py exercises ±25 % perturbation of
-# each delta and pins the rank ordering rather than the absolute
-# magnitudes.
-_CARBON_BASE = 1.00
-_CARBON_PINN_DELTA = -0.06
-_CARBON_SLCA_DELTA = -0.04
-_CARBON_CONTEXT_DELTA = -0.05
-
-
-def _mode_carbon_eff_from_capabilities(has_rl: bool, has_pinn: bool,
-                                       has_slca: bool, has_context: bool) -> float:
-    """Capability-additive carbon-efficiency multiplier.
-
-    Returns 1.00 (no reduction) for the static no-optimisation baseline
-    and any mode without RL. Otherwise applies the per-capability
-    deltas below the base 1.00 multiplier.
-    """
-    if not has_rl:
-        return 1.00
-    eff = _CARBON_BASE
-    if has_pinn:
-        eff += _CARBON_PINN_DELTA
-    if has_slca:
-        eff += _CARBON_SLCA_DELTA
-    if has_context:
-        eff += _CARBON_CONTEXT_DELTA
-    return float(eff)
-
-
-MODE_CARBON_EFF: dict[str, float] = {
-    mode: _mode_carbon_eff_from_capabilities(*caps)
-    for mode, caps in _MODE_CAPABILITIES.items()
-}
-"""Mode-conditional carbon-emission multiplier in (0, 1].
-
-Applied multiplicatively inside compute_transport_carbon so a mode with
-MODE_CARBON_EFF[m] = 0.85 emits 15 % less carbon per dispatch than the
-1.00-baseline (Static, Hybrid RL) at the same route. Resulting values:
-
-  static       1.00   (no optimisation)
-  hybrid_rl    1.00   (RL only — no carbon-aware capabilities yet)
-  no_slca      0.89   (RL + PINN + context, missing SLCA)
-  no_pinn      0.91   (RL + SLCA + context, missing PINN)
-  no_context   0.90   (RL + PINN + SLCA, no context channel)
-  mcp_only     0.85   (full system, MCP-only context features)
-  pirag_only   0.85   (full system, piRAG-only context features)
-  agribrain    0.85   (full system)
-  pert_*       0.85   (full system, perturbed priors)
-
-The clean ordering Static = Hybrid RL > intermediate ablations >
-context-enabled cluster maps the architectural Shapley attribution
-onto the carbon channel the same way MODE_EFF does for the waste
-channel, so figure 8 panel A's cumulative-CO2 trace reads with a
-clear AgriBrain-vs-Hybrid-RL gap (~15 % per dispatch) on top of the
-existing routing-mix differential.
-"""
+# Backward-compatible exports. They are deliberately mode-neutral and cover
+# exactly the locked public modes; callers must not use a model name as an
+# input to a physical outcome equation.
+_KNOWN_MODES = PUBLICATION_BENCHMARK_MODES
+MODE_EFF: dict[str, float] = {mode: 0.0 for mode in _KNOWN_MODES}
+MODE_CARBON_EFF: dict[str, float] = {mode: 1.0 for mode in _KNOWN_MODES}
 
 
 # ---------------------------------------------------------------------------
@@ -419,6 +156,7 @@ def compute_waste_rate(
     w_scale: float = W_SCALE,
     w_alpha: float = W_ALPHA,
     surplus_waste_factor: float = SURPLUS_WASTE_FACTOR,
+    waste_cap: float = WASTE_CAP,
 ) -> float | np.ndarray:
     """Convert instantaneous Arrhenius decay rate to operational waste fraction.
 
@@ -437,50 +175,40 @@ def compute_waste_rate(
     -------
     Operational waste fraction (dimensionless, typically 0.02–0.15).
     """
-    waste_raw = (k_inst * w_scale) ** w_alpha
-    waste_raw = waste_raw * (1.0 + surplus_waste_factor * surplus_ratio)
+    k_array = np.asarray(k_inst, dtype=float)
+    if not np.all(np.isfinite(k_array)) or np.any(k_array < 0.0):
+        raise ValueError("k_inst must be finite and non-negative")
+    for label, value, positive in (
+        ("surplus_ratio", surplus_ratio, False),
+        ("w_scale", w_scale, True),
+        ("w_alpha", w_alpha, True),
+        ("surplus_waste_factor", surplus_waste_factor, False),
+        ("waste_cap", waste_cap, True),
+    ):
+        value = float(value)
+        if not np.isfinite(value) or (value <= 0.0 if positive else value < 0.0):
+            qualifier = "positive" if positive else "non-negative"
+            raise ValueError(f"{label} must be finite and {qualifier}")
+    if float(waste_cap) > 1.0:
+        raise ValueError("waste_cap must not exceed one")
+
+    waste_raw = (k_array * float(w_scale)) ** float(w_alpha)
+    waste_raw = waste_raw * (
+        1.0 + float(surplus_waste_factor) * float(surplus_ratio)
+    )
     # Apply cap after surplus amplification to enforce a true physical upper bound.
-    waste_raw = np.minimum(waste_raw, 0.15)  # FAO upper bound for fresh produce
-    return waste_raw
+    waste_raw = np.minimum(waste_raw, float(waste_cap))
+    return float(waste_raw) if k_array.ndim == 0 else waste_raw
 
 
 def context_waste_penalty(mcp_compliance: dict | None = None, action: str = "cold_chain") -> float:
-    """Reduce waste saving capacity when compliance violations are detected
-    AND the agent continues with cold chain despite the violation.
+    """Compatibility hook retained as a neutral multiplier.
 
-    When the agent reroutes (local_redistribute or recovery), the penalty
-    does not apply because successful rerouting is the correct response
-    to a compliance violation. MCP-informed rerouting under violation
-    slightly improves the save factor (1.05 multiplier) due to better
-    situational awareness.
-
-    Returns a multiplier applied to the save factor:
-    - cold_chain + critical violation: 0.70
-    - cold_chain + warning violation: 0.85
-    - cold_chain + compliant: 1.00
-    - local_redistribute/recovery + any violation: 1.05 (awareness bonus)
-    - local_redistribute/recovery + compliant: 1.00
-    - compliance_data=None: 1.00
+    Context may change the selected action, but merely receiving compliance
+    information cannot change the physical outcome of a fixed action. The
+    arguments are therefore intentionally ignored.
     """
-    if mcp_compliance is None:
-        return 1.0
-
-    compliant = mcp_compliance.get("compliant", True)
-    violations = mcp_compliance.get("violations", [])
-    has_critical = any(v.get("severity") == "critical" for v in violations)
-
-    if action == "cold_chain":
-        # Penalize: agent ignored the violation and continued with cold chain
-        if has_critical:
-            return 0.70
-        if not compliant:
-            return 0.85
-        return 1.0
-    else:
-        # Reward: agent detected violation and rerouted correctly
-        if not compliant:
-            return 1.05
-        return 1.0
+    return 1.0
 
 
 def compute_save_factor(
@@ -489,40 +217,51 @@ def compute_save_factor(
     surplus_ratio: float = 0.0,
     surplus_save_penalty: float = SURPLUS_SAVE_PENALTY,
     compliance_data: dict | None = None,
+    save_floor: Mapping[str, float] | None = None,
 ) -> float:
-    """Compute the waste prevention factor for a given action and mode.
+    """Compute the mode-neutral waste prevention factor for an action.
 
-    save_factor = floor[action] + (ceil[action] − floor[action]) × mode_eff
+    action_save = SAVE_FLOOR[action]  # legacy name; exact live coefficient
     save_capacity = 1 / (1 + surplus_save_penalty × surplus_ratio)
-    effective_save = save_factor × save_capacity × context_waste_penalty
+    effective_save = action_save × save_capacity
 
     Parameters
     ----------
     action : routing action (``cold_chain``, ``local_redistribute``, ``recovery``).
-    mode : operating mode (``static``, ``hybrid_rl``, ``no_pinn``, ``no_slca``, ``agribrain``).
+    mode : retained for API compatibility; ignored by the physical model.
     surplus_ratio : inventory surplus above baseline (0 when at/below baseline).
     surplus_save_penalty : degradation coefficient for surplus conditions.
-    compliance_data : optional MCP compliance check result. When provided,
-        compliance violations reduce the save factor (physically: compromised
-        cold chain reduces operational intervention effectiveness).
+    compliance_data : retained for API compatibility and ignored. Context may
+        alter action selection but not the outcome of an identical action.
 
     Returns
     -------
     Effective save factor in [0, 1].
     """
+    surplus_ratio = float(surplus_ratio)
+    surplus_save_penalty = float(surplus_save_penalty)
+    if not np.isfinite(surplus_ratio) or surplus_ratio < 0.0:
+        raise ValueError("surplus_ratio must be finite and non-negative")
+    if not np.isfinite(surplus_save_penalty) or surplus_save_penalty < 0.0:
+        raise ValueError(
+            "surplus_save_penalty must be finite and non-negative"
+        )
+
     action = _resolve_action(action)
-    floor_s = SAVE_FLOOR.get(action, 0.0)
-    ceil_s = SAVE_CEIL.get(action, 0.0)
-    mode_eff = MODE_EFF.get(mode, 0.0)
+    action_save = (
+        SAVE_FLOOR.get(action, 0.0)
+        if save_floor is None
+        else save_floor.get(action, 0.0)
+    )
 
-    save = floor_s + (ceil_s - floor_s) * mode_eff
+    # ``compliance_data`` is accepted for API compatibility but does not alter
+    # physical outcomes for a fixed action.
 
-    # Context-dependent penalty from MCP compliance check
-    if compliance_data is not None:
-        save *= context_waste_penalty(compliance_data, action)
-
+    action_save = float(action_save)
+    if not np.isfinite(action_save) or not 0.0 <= action_save <= 1.0:
+        raise ValueError("action save fraction must be finite and within [0, 1]")
     save_capacity = 1.0 / (1.0 + surplus_save_penalty * surplus_ratio)
-    return save * save_capacity
+    return action_save * save_capacity
 
 
 def compute_net_waste(

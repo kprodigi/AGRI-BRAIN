@@ -25,11 +25,13 @@ Explainable Perishable Supply Chains**
 Perishable agri-food supply chains stay fragile because sensing,
 forecasting, compliance, and routing are optimized in isolation. AGRI-BRAIN
 treats **communication as an explicit decision variable**: five role agents
-(farm, processor, cooperative, distributor, recovery) fuse three channels —
-typed peer messages, **Model Context Protocol (MCP)** tool calls, and
-**physics-informed retrieval-augmented generation (piRAG)** — into a
-five-dimensional context vector that directly shifts a softmax routing
-policy through a learned, sign-constrained logit modifier. A
+(farm, processor, cooperative, distributor, recovery) admit external evidence
+through **Model Context Protocol (MCP)** tool calls and **physics-informed
+retrieval-augmented generation (piRAG)**, which together populate a
+five-dimensional context vector that shifts a softmax routing policy through a
+learned, sign-constrained logit modifier. Typed peer messages reach the policy
+on a separate path, as a bounded logit bias, and are not a coordinate of that
+vector. A
 physics-informed (Arrhenius–Baranyi + bounded neural residual) spoilage
 estimator supplies the physical state, online REINFORCE adapts the context
 weights, and every decision is serialized to a Merkle-anchored audit ledger,
@@ -56,55 +58,34 @@ outage, adaptive-pricing shock) plus an unperturbed baseline, against an
 - **Explainability by construction** — BECAUSE/WITHOUT causal narratives,
   per-component attribution, counterfactuals, and Merkle-rooted provenance
   from the same vector that drove the decision.
-- **Statistically defended benchmark** — 800-episode crossed design with
-  8 stochastic perturbation sources, paired permutation tests, BCa
-  bootstrap, and Holm–Bonferroni correction, validated end-to-end in CI.
+- **Statistically defended benchmark** — 800-cell crossed design over 2,900
+  episodes with 7 active stochastic perturbation sources, directional paired
+  Wilcoxon signed-rank tests, BCa bootstrap, and Holm–Bonferroni correction,
+  validated end-to-end in CI.
 
 
 
 ## Key Results
 
-Evaluated on 5 perturbation scenarios × 8 routing modes × 20 stochastic
-seeds × 288 hourly steps = 230,400 decisions per HPC re-run. Source:
-[`benchmark_summary.json`](mvp/simulation/results/benchmark_summary.json)
-and [`paper_benchmark_table.json`](mvp/simulation/results/paper_benchmark_table.json)
-(BCa-bootstrap CIs, Holm–Bonferroni FWER control, paired permutation tests).
+The confirmatory benchmark is a crossed design over 5 scenarios (four
+disruptions and an unperturbed baseline) x 8 modes x 20 seeds = 800 retained
+evaluation cells, drawn from 2,900 executed 72-hour episodes of 288
+fifteen-minute steps. Effects are tested with directional paired Wilcoxon
+signed-rank tests over the within-scenario seed pairing, with BCa bootstrap
+intervals and Holm-Bonferroni correction.
 
-| Hypothesis | Effect | Significance |
-|---|---|---|
-| **H1 — Integration superiority.** AGRI-BRAIN ARI beats no-context across all 5 scenarios. | ΔARI **+0.012 to +0.032** | Cohen's d_pooled **0.96–2.01**, p_adj < 0.001 |
-| **H2 — Channel complementarity.** piRAG is the dominant standalone router; MCP integrates **synergistically** and adds an exclusive discrete-safety layer (governance overrides, compliance reroutes, outage resilience). | Context decisive on **10.3%** of decisions (41% where active); piRAG-necessary **7.7%**, MCP-necessary **1.7%**, MCP-necessity doubling on its governed events | **Non-redundancy 75.0%** (95% CI [72.2, 77.7]); necessity coupling **φ = +0.26** (p < 10⁻³); each channel beats no-context (p_adj < 0.001) |
-| **H3 — Communication robustness.** Performance degrades < 1% under sensor noise, missing data, telemetry delay, and MCP tool fault. | \|ΔARI\| < **0.01** all five stressors (worst single cell 0.0091) | Pre-specified ≤ 0.01 threshold met |
+| Hypothesis | Result |
+|---|---|
+| **H1 - Integration superiority.** The integrated system beats the context-blind control in all five scenarios. | ΔARI **+0.010 to +0.018**; paired Cohen's d_z **3.25 to 4.60**; Holm-adjusted p = **4.77 x 10⁻⁶** in every scenario |
+| **H2 - Channel contribution.** Both external channels contribute positively in all five scenarios, and which one leads depends on the disruption. | All 20 directional contrasts supported. **No evidence of synergy**: the superadditivity term is a null, Holm-adjusted p = 1.00 in all five |
+| **H3 - Robustness.** Resilience stays within the prespecified tolerance under every stressor. | All 25 scenario-stressor cells equivalent within the declared ±0.01 ARI margin |
 
-<details>
-<summary><b>H2 in full — the decision-level channel decomposition</b></summary>
+The study also reports negative and null results, including an ablation in
+which conventional similarity retrieval outperforms the physics-conditioned
+ranking. Full numbers, confidence intervals and the ablation tables are in the
+paper; this repository holds the source that produced them, not the result
+artifacts.
 
-The linear logit modifier (m_MCP + m_piRAG ≡ m_full) cannot be
-super-additive, so channel value is measured at the non-linear argmax via
-per-decision drop-one counterfactuals. Context is decisive on **10.3%** of
-agribrain decisions (up to **33%** under cyber outage) — and on **41%** of
-the decisions where the context layer is *active*, with the influence highly
-concentrated (Gini **0.804**; the decisive 10.3% carry **48.3%** of all
-decision movement). piRAG-necessary **7.7%**, MCP-necessary **1.7%** (almost
-entirely synergistic — MCP-only **0.1%** of context-changed decisions),
-emergent synergy **1.7%** of all decisions (n = 19,200, 20 seeds).
-
-The **non-redundancy index is 75.0%** (bootstrap 95% CI [72.2, 77.7]) — most
-context-changed decisions are attributable to a single channel or to synergy
-(> 0.5); note this does **not** exceed the channel-independence baseline
-(0.79; permutation p = 1.0), so the channels are not *more* separable than
-chance. The significant structure is the **positive necessity coupling**
-(φ = +0.26, permutation p < 10⁻³) and each channel independently beating
-no-context (p_adj < 0.001). Each channel adds ARI (mcp-only 0.592,
-pirag-only 0.591 vs no-context 0.581; full 0.598). MCP's discrete value:
-governance overrides, compliance-decisive reroutes (10.9% of compliance
-events), MCP-necessity doubling on its governed events (compliance ψ₀>0:
-**1.7%→3.0%**; cyber-outage **5.3%→9.9%**), and cyber-outage edge resilience
-(reroute P 0.63→0.73). Source:
-[`channel_attribution_aggregate.json`](mvp/simulation/results/channel_attribution_aggregate.json),
-[`channel_complementarity_test.json`](mvp/simulation/results/channel_complementarity_test.json).
-
-</details>
 
 ## Repository Structure
 
@@ -189,7 +170,7 @@ curl http://localhost:8100/health                # {"ok":true}
 
 ```bash
 cd mvp/simulation
-python generate_results.py    # 5 scenarios × 19 modes (95 episodes: 8 canonical + 11 §4.7 ablations)
+python generate_results.py    # every configured mode across the five scenarios
 python generate_figures.py    # publication figures (PNG + PDF)
 ```
 
@@ -201,10 +182,10 @@ python mvp/simulation/reproduce_core.py
 
 ### HPC benchmark (20 seeds)
 
-The 20-seed stochastic benchmark (5 scenarios × 8 canonical modes × 20 seeds
-= 800 episodes for the headline ablation, plus the 11 §4.7 sensitivity modes
-which add another 5 × 11 × 20 = 1,100 episodes when run, plus aggregation and
-figure generation) is submitted through three SLURM scripts in the
+The 20-seed stochastic benchmark (5 scenarios × 8 confirmatory modes × 20
+seeds = 800 retained cells drawn from 2,900 episodes, with three further
+diagnostic modes, plus aggregation and figure generation) is submitted through
+three SLURM scripts in the
 `hpc/` directory. From the HPC login node, in the repo root:
 
 ```bash
@@ -355,7 +336,7 @@ defaults.
 | Task | Time |
 |------|------|
 | Quick validation run (`DETERMINISTIC_MODE=true`, 1 seed) | ~5 min |
-| Single full run (5 scenarios × 19 modes — 8 canonical + 11 §4.7 ablations) | ~80 min (deterministic) |
+| Single full run (5 scenarios, all configured modes) | ~80 min (deterministic) |
 | Full 20-seed benchmark pipeline | ~90 min (local) / 3-5 h (HPC array) |
 | Complete reproduction including stress tests | ~2 h (local) / 6-10 h (HPC end-to-end) |
 
@@ -410,8 +391,9 @@ This project is released under the [MIT License](LICENSE).
 
 If you use AGRI-BRAIN in your research, please cite it via
 [`CITATION.cff`](CITATION.cff) or the BibTeX below. For paper-grade
-reproducibility, also report the exact `git_commit` recorded in
-[`mvp/simulation/results/artifact_manifest.json`](mvp/simulation/results/artifact_manifest.json).
+reproducibility, also report the simulation source commit and run tag recorded
+in [`SOURCE_PROVENANCE.json`](SOURCE_PROVENANCE.json), which pins the tagged
+source tree this repository publishes.
 
 ```bibtex
 @software{sarker2026agribrain,

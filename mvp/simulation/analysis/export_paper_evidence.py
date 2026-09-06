@@ -1,34 +1,150 @@
 #!/usr/bin/env python3
-"""Export paper-ready evidence tables from decision traces.
+"""Export the canonical paper-ready benchmark evidence table.
 
-Reads trace JSON files produced by generate_results.py and generates
-formatted outputs for the paper:
+The publication path reads only the completed multi-seed benchmark summary
+and significance files. Older single-run trace reports remain available as
+an explicitly requested diagnostic because the parallel seed runner can leave
+top-level trace files from whichever worker finished last; they must never be
+silently mixed into the canonical publication evidence.
 
 1. Role x information table (which MCP tools / piRAG docs each role uses)
-2. Sample decision explanations with provenance chains
+2. Sample decision explanations with local Merkle commitment records
 3. Context feature activation heatmap data (role x feature x scenario)
-4. MCP interoperability protocol trace examples
-5. Provenance chain examples with Merkle roots
+4. In-process project JSON-RPC/MCP-style dispatcher trace examples
+5. Local Merkle commitment-record examples
 
-Standalone usage:
-    cd mvp/simulation
-    python export_paper_evidence.py
+Standalone publication usage:
+    cd <repository-root>
+    python mvp/simulation/analysis/export_paper_evidence.py
 """
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+import sys
 from typing import Any
 
 import numpy as np
 
 RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
+REPO_ROOT = Path(__file__).resolve().parents[3]
 SCENARIOS = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing", "baseline"]
 
 FEATURE_NAMES = [
     "compliance_severity", "forecast_urgency",
     "retrieval_confidence", "regulatory_pressure", "recovery_saturation",
 ]
+
+
+def _publication_export_identity_errors(
+    bench_payload: dict[str, Any],
+    sig_payload: dict[str, Any],
+) -> list[str]:
+    """Return source/run identity errors before writing a canonical artifact."""
+
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT))
+    from hpc.validate_source_checkout import validation_errors
+
+    errors: list[str] = []
+    declared_commit = os.environ.get("AGRIBRAIN_GIT_COMMIT", "").strip()
+    declared_run_tag = os.environ.get("RUN_TAG", "").strip()
+    if not declared_run_tag:
+        errors.append("RUN_TAG must identify the publication run")
+
+    recovery_path = os.environ.get("AGRIBRAIN_RECOVERY_RECEIPT", "").strip()
+    simulation_commit = declared_commit
+    publication_commit = declared_commit
+    expected_dual = False
+    checkout_environment = dict(os.environ)
+    if recovery_path:
+        simulation_commit = os.environ.get(
+            "AGRIBRAIN_SIMULATION_COMMIT", ""
+        ).strip()
+        publication_commit = os.environ.get(
+            "AGRIBRAIN_PUBLICATION_CODE_COMMIT", ""
+        ).strip()
+        original_receipt = os.environ.get(
+            "CORE_SUBMISSION_RECEIPT", ""
+        ).strip()
+        actual_job_id = os.environ.get("SLURM_JOB_ID", "").strip()
+        if not original_receipt:
+            errors.append(
+                "CORE_SUBMISSION_RECEIPT is required for publication recovery"
+            )
+        elif not actual_job_id:
+            errors.append("SLURM_JOB_ID is required for publication recovery")
+        else:
+            try:
+                from hpc.publication_recovery_receipt import (
+                    validate_recovery_receipt_file,
+                )
+
+                # The recovery launcher exports these receipt paths relative
+                # to the repository root, but this stage runs from
+                # mvp/simulation, so a bare Path() would resolve them against
+                # the wrong base directory.
+                recovery_receipt_file = Path(recovery_path)
+                if not recovery_receipt_file.is_absolute():
+                    recovery_receipt_file = REPO_ROOT / recovery_receipt_file
+                original_receipt_file = Path(original_receipt)
+                if not original_receipt_file.is_absolute():
+                    original_receipt_file = REPO_ROOT / original_receipt_file
+                validate_recovery_receipt_file(
+                    recovery_receipt_file,
+                    original_receipt_path=original_receipt_file,
+                    expected_kind="core",
+                    expected_run_tag=declared_run_tag,
+                    expected_simulation_commit=simulation_commit,
+                    expected_publication_commit=publication_commit,
+                    expected_recovery_job_id=actual_job_id,
+                )
+            except (OSError, RuntimeError, TypeError, ValueError) as exc:
+                errors.append(f"publication recovery receipt is invalid: {exc}")
+        if not simulation_commit or not publication_commit:
+            errors.append("publication recovery commit identities are missing")
+        if declared_commit != simulation_commit:
+            errors.append(
+                "AGRIBRAIN_GIT_COMMIT must retain the simulation commit in recovery"
+            )
+        if simulation_commit == publication_commit:
+            errors.append(
+                "publication recovery requires distinct simulation and publication commits"
+            )
+        checkout_environment["AGRIBRAIN_GIT_COMMIT"] = publication_commit
+        expected_dual = simulation_commit != publication_commit
+
+    errors = validation_errors(
+        environ=checkout_environment,
+        repo_root=REPO_ROOT,
+        allow_run_artifacts=True,
+    ) + errors
+
+    for label, payload in (
+        ("benchmark_summary.json", bench_payload),
+        ("benchmark_significance.json", sig_payload),
+    ):
+        meta = payload.get("_meta") if isinstance(payload, dict) else None
+        if not isinstance(meta, dict):
+            errors.append(f"{label} lacks _meta source identity")
+            continue
+        expected_identity = {
+            "git_commit": simulation_commit,
+            "source_commit": simulation_commit,
+            "simulation_source_commit": simulation_commit,
+            "analysis_code_commit": publication_commit,
+            "dual_provenance": expected_dual,
+        }
+        for key, expected in expected_identity.items():
+            if meta.get(key) != expected:
+                errors.append(
+                    f"{label} {key} does not equal the authorized "
+                    "simulation/publication identity"
+                )
+        if meta.get("run_tag") != declared_run_tag:
+            errors.append(f"{label} run_tag does not equal RUN_TAG")
+    return errors
 
 
 def load_traces(scenario: str) -> list:
@@ -81,12 +197,12 @@ def export_role_table() -> None:
 
 
 def export_sample_explanation() -> None:
-    """Print a sample decision trace with full provenance chain."""
+    """Print a sample trace with its local Merkle commitment record."""
     print("\n" + "=" * 80)
-    print("Sample Decision Trace with Provenance Chain")
+    print("Sample Decision Trace with Local Merkle Commitment Record")
     print("=" * 80)
 
-    # Find a trace with provenance and compliance violation
+    # Prefer a trace outside the declared synthetic operating envelope.
     for scenario in ["heatwave", "cyber_outage", "baseline"]:
         traces = load_traces(scenario)
         for t in traces:
@@ -104,7 +220,7 @@ def export_sample_explanation() -> None:
                 _print_trace(t, scenario)
                 return
 
-    print("  No provenance-ready traces found.")
+    print("  No traces with local Merkle commitments found.")
 
 
 def _print_trace(t: dict, scenario: str) -> None:
@@ -124,8 +240,8 @@ def _print_trace(t: dict, scenario: str) -> None:
     print("MCP Tool Outputs:")
     if m.get("compliance"):
         comp = m["compliance"]
-        status = "COMPLIANT" if comp.get("compliant") else "VIOLATION"
-        print(f"  check_compliance -> {status}")
+        status = "within declared synthetic envelope" if comp.get("compliant") else "outside declared synthetic envelope"
+        print(f"  operating-envelope check -> {status}")
         for v in comp.get("violations", []):
             print(f"    {v.get('parameter', '?')}: {v.get('value', '?')} "
                   f"(limit {v.get('limit', '?')}, {v.get('severity', '?')})")
@@ -164,15 +280,18 @@ def _print_trace(t: dict, scenario: str) -> None:
               f"Rec={probs.get('Recovery', 0):.3f})")
 
     if s.get("governance_override"):
-        print("[GOVERNANCE OVERRIDE: MCP compliance + forecast mandate rerouting]")
+        print(
+            "[AUTHOR-DECLARED PROBABILITY-GAP OVERRIDE: pi(cold_chain) < 0.005 and "
+            "pi(local_redistribute) - pi(cold_chain) > 0.80]"
+        )
 
-    print("\nProvenance Chain:")
-    print(f"  Evidence items: {prov.get('total_evidence_items', 0)}")
+    print("\nLocal Merkle Commitment Record:")
+    print(f"  Committed evidence items: {prov.get('total_evidence_items', 0)}")
     for h in prov.get("evidence_hashes", [])[:3]:
         print(f"  SHA-256: {h[:16]}...")
     if prov.get("merkle_root"):
         print(f"  Merkle root: {prov['merkle_root'][:16]}...")
-    print(f"  Provenance ready: {prov.get('provenance_ready', False)}")
+    print(f"  Local commitment present: {prov.get('provenance_ready', False)}")
 
 
 def export_feature_heatmap_data() -> None:
@@ -223,9 +342,9 @@ def export_feature_heatmap_data() -> None:
 
 
 def export_interop_summary() -> None:
-    """Print MCP interoperability protocol summary."""
+    """Print the in-process project JSON-RPC/MCP-style trace summary."""
     print("\n" + "=" * 80)
-    print("MCP Interoperability Protocol Traces")
+    print("In-Process Project JSON-RPC/MCP-Style Dispatcher Traces")
     print("=" * 80)
 
     for scenario in SCENARIOS:
@@ -248,9 +367,9 @@ def export_interop_summary() -> None:
 
 
 def export_provenance_summary() -> None:
-    """Print provenance chain summary across all scenarios."""
+    """Print local Merkle commitment-record summary across scenarios."""
     print("\n" + "=" * 80)
-    print("Provenance Chain Summary")
+    print("Local Merkle Commitment-Record Summary")
     print("=" * 80)
 
     total_chains = 0
@@ -261,9 +380,12 @@ def export_provenance_summary() -> None:
         n_hashes = sum(t["provenance"]["total_evidence_items"] for t in chains)
         total_chains += len(chains)
         total_hashes += n_hashes
-        print(f"  {scenario:<20s}: {len(chains)} chains, {n_hashes} evidence hashes")
+        print(f"  {scenario:<20s}: {len(chains)} records, {n_hashes} committed evidence hashes")
 
-    print(f"\n  Total: {total_chains} verifiable provenance chains, {total_hashes} evidence items")
+    print(
+        f"\n  Total: {total_chains} local Merkle commitment records, "
+        f"{total_hashes} committed evidence items"
+    )
 
 
 def export_robustness_and_benchmark() -> None:
@@ -297,7 +419,11 @@ def export_robustness_and_benchmark() -> None:
     bench_path = RESULTS_DIR / "benchmark_summary.json"
     if bench_path.exists():
         print("\n  Multi-seed benchmark (from benchmark_summary.json):")
-        data = json.loads(bench_path.read_text(encoding="utf-8"))
+        payload = json.loads(bench_path.read_text(encoding="utf-8"))
+        data = (
+            payload.get("summary", payload)
+            if isinstance(payload, dict) else {}
+        )
         for scenario in SCENARIOS:
             if scenario not in data:
                 continue
@@ -346,20 +472,27 @@ def export_stress_and_significance() -> None:
 
         pf = pd.read_csv(stress_pf_path)
         if not pf.empty:
-            total = len(pf)
-            passed = int((pf["Pass"] == True).sum())  # noqa: E712
-            print(f"\n  Stress pass/fail checks: {passed}/{total} PASS")
+            formal = pf[
+                (pf["Method"] == "agribrain")
+                & (pf.get("comparison_type", "") != "cross_mode_under_stress")
+            ]
+            total = len(formal)
+            passed = int((formal["Pass_Equivalence"] == True).sum())  # noqa: E712
+            print(f"\n  Formal H3 equivalence cells: {passed}/{total} equivalent")
 
     sig_path = RESULTS_DIR / "benchmark_significance.json"
     if sig_path.exists():
-        data = json.loads(sig_path.read_text(encoding="utf-8"))
+        payload = json.loads(sig_path.read_text(encoding="utf-8"))
+        data = (
+            payload.get("significance", payload)
+            if isinstance(payload, dict) else {}
+        )
         # Tolerant of n=1 degenerate-sample fallback records: when an
         # aggregator skips inferential tests, p_value / CIs come back
         # as null. Format those as "n/a" rather than crashing the
-        # f-string. Also tolerate the post-2026-04 schema where
-        # cohens_d is the canonical pooled-d (the previous report
-        # printed cohens_dz with cohens_d as fallback; we now show
-        # both columns explicitly).
+        # f-string. The matched-design effect is d_z; pooled d is retained as
+        # a separate descriptive standardization, so print the two explicitly
+        # rather than relying on the legacy ``cohens_d`` alias.
         def _f(v: Any, fmt: str = "+.4f", default: str = "  n/a ") -> str:
             if v is None:
                 return default
@@ -368,20 +501,27 @@ def export_stress_and_significance() -> None:
             except (TypeError, ValueError):
                 return default
 
-        print("\n  Benchmark significance (ARI):")
+        print("\n  Confirmatory directional benchmark tests (ARI):")
+        confirmatory = (
+            ("agribrain_vs_no_context", "H1", "p_value_adj_holm"),
+            ("mcp_only_vs_no_context", "H2", "p_value_adj_holm_h2_directional"),
+            ("pirag_only_vs_no_context", "H2", "p_value_adj_holm_h2_directional"),
+            ("agribrain_vs_mcp_only", "H2", "p_value_adj_holm_h2_directional"),
+            ("agribrain_vs_pirag_only", "H2", "p_value_adj_holm_h2_directional"),
+        )
         for scenario in SCENARIOS:
             sc = data.get(scenario, {})
-            for comp in ("agribrain_vs_mcp_only", "agribrain_vs_pirag_only", "agribrain_vs_no_context"):
+            for comp, family, adjusted_field in confirmatory:
                 rec = sc.get(comp, {}).get("ari")
                 if not rec:
                     continue
                 degen = " [degen]" if rec.get("_degenerate") else ""
                 print(
-                    f"    {scenario:<18s} {comp:<26s} "
-                    f"p={_f(rec.get('p_value'), '.4f')} "
-                    f"q={_f(rec.get('p_value_adj') or rec.get('p_value'), '.4f')} "
-                    f"d={_f(rec.get('cohens_d'), '+.3f')} "
+                    f"    {scenario:<18s} {family:<2s} {comp:<26s} "
+                    f"p_dir={_f(rec.get('p_value_directional_greater'), '.4f')} "
+                    f"p_holm={_f(rec.get(adjusted_field), '.4f')} "
                     f"dz={_f(rec.get('cohens_dz'), '+.3f')} "
+                    f"d_pooled={_f(rec.get('cohens_d_pooled'), '+.3f')} "
                     f"dMean={_f(rec.get('mean_diff'), '+.4f')} "
                     f"CI=[{_f(rec.get('mean_diff_ci_low'), '+.4f')},"
                     f"{_f(rec.get('mean_diff_ci_high'), '+.4f')}]{degen}"
@@ -397,7 +537,11 @@ def export_latex_benchmark_table() -> None:
     bench_path = RESULTS_DIR / "benchmark_summary.json"
     sig_path = RESULTS_DIR / "benchmark_significance.json"
     if not bench_path.exists():
-        print("  benchmark_summary.json not found — run aggregate_seeds.py (or the full reproduce_core.py pipeline).")
+        print(
+            "  benchmark_summary.json not found — run the canonical "
+            "hpc/hpc_run.sh workflow; its dependent hpc/hpc_publish.sh "
+            "stage invokes aggregate_seeds.py."
+        )
         return
 
     bench_payload = json.loads(bench_path.read_text(encoding="utf-8"))
@@ -410,20 +554,30 @@ def export_latex_benchmark_table() -> None:
         else bench_payload
     )
     sig_payload = json.loads(sig_path.read_text(encoding="utf-8")) if sig_path.exists() else {}
+    identity_errors = _publication_export_identity_errors(
+        bench_payload, sig_payload,
+    )
+    if identity_errors:
+        raise RuntimeError(
+            "Publication export blocked by source/run identity errors:\n  - "
+            + "\n  - ".join(identity_errors)
+        )
     sig = (
         sig_payload.get("significance", sig_payload)
         if isinstance(sig_payload, dict)
         else {}
     )
 
-    # Core H2 comparison + paper §4.7 ablation modes (cold-start and the
-    # three perturbation sensitivities). Cold-start and pert rows are
-    # reported alongside the four core rows so the supplementary paper
-    # evidence table covers the full learner-defense story without
-    # re-running the aggregator.
-    methods = ["agribrain", "mcp_only", "pirag_only", "no_context",
-               "agribrain_cold_start",
-               "agribrain_pert_10", "agribrain_pert_25", "agribrain_pert_50"]
+    # Exact locked eleven-arm benchmark panel: eight primary modes followed by
+    # three secondary one-factor ablations. The action-specific b_tau
+    # coordinates belong to the separate structural-sensitivity design, not
+    # to additional benchmark rows.
+    methods = [
+        "static", "hybrid_rl", "no_pinn", "no_slca", "no_context",
+        "mcp_only", "pirag_only", "agribrain",
+        "agribrain_standard_rag", "agribrain_no_peer",
+        "agribrain_sign_unconstrained",
+    ]
     metrics = ["ari", "waste", "slca", "rle", "carbon", "equity"]
 
     # Print human-readable table
@@ -452,25 +606,45 @@ def export_latex_benchmark_table() -> None:
                 print(f"  {scenario:<18s} {method:<14s} {metric:>6s} "
                       f"{mean_str:>8s} {ci_str:>18s} {std_str:>8s}")
 
-    # Print significance summary
+    # Print only the prespecified confirmatory directional tests. Generic
+    # two-sided p-values remain in the machine-readable artifact for secondary
+    # analyses, but labeling those as the paper-ready H1/H2 evidence would be
+    # statistically incorrect.
     if sig:
-        print(f"\n  {'Scenario':<18s} {'Comparison':<30s} {'p-value':>8s} {'Cohen d':>8s} {'Mean diff':>10s}")
-        print("  " + "-" * 78)
+        print(
+            f"\n  {'Scenario':<18s} {'Family':<6s} {'Comparison':<30s} "
+            f"{'p-dir':>8s} {'p-Holm':>8s} {'Cohen dz':>8s} {'Mean diff':>10s}"
+        )
+        print("  " + "-" * 103)
+        confirmatory = (
+            ("agribrain_vs_no_context", "H1", "p_value_adj_holm"),
+            ("mcp_only_vs_no_context", "H2", "p_value_adj_holm_h2_directional"),
+            ("pirag_only_vs_no_context", "H2", "p_value_adj_holm_h2_directional"),
+            ("agribrain_vs_mcp_only", "H2", "p_value_adj_holm_h2_directional"),
+            ("agribrain_vs_pirag_only", "H2", "p_value_adj_holm_h2_directional"),
+        )
         for scenario in SCENARIOS:
             sc = sig.get(scenario, {})
-            for comp_key, comp_data in sc.items():
+            for comp_key, family, adjusted_field in confirmatory:
+                comp_data = sc.get(comp_key, {})
                 ari = comp_data.get("ari", {})
                 if not ari:
                     continue
-                # Same null-tolerance as above for the n=1 fallback.
-                p_val = ari.get("p_value")
+                p_val = ari.get("p_value_directional_greater")
                 p_str = f"{p_val:8.4f}" if isinstance(p_val, (int, float)) else "  n/a  "
-                d_val = ari.get("cohens_d")
+                adjusted = ari.get(adjusted_field)
+                adjusted_str = (
+                    f"{adjusted:8.4f}"
+                    if isinstance(adjusted, (int, float)) else "  n/a  "
+                )
+                d_val = ari.get("cohens_dz")
                 d_str = f"{d_val:+8.3f}" if isinstance(d_val, (int, float)) else "  n/a   "
                 md_val = ari.get("mean_diff", 0.0)
                 md_str = f"{md_val:+10.4f}" if isinstance(md_val, (int, float)) else "  n/a    "
-                print(f"  {scenario:<18s} {comp_key:<30s} "
-                      f"{p_str} {d_str} {md_str}")
+                print(
+                    f"  {scenario:<18s} {family:<6s} {comp_key:<30s} "
+                    f"{p_str} {adjusted_str} {d_str} {md_str}"
+                )
 
     # Save as JSON for downstream LaTeX generation. The 2026-05 audit
     # caught that this file shipped without a top-level ``_meta`` block,
@@ -494,11 +668,21 @@ def export_latex_benchmark_table() -> None:
     export = {
         "_meta": {
             "git_commit": upstream_meta.get("git_commit"),
+            "source_commit": upstream_meta.get("source_commit"),
+            "simulation_source_commit": upstream_meta.get(
+                "simulation_source_commit"
+            ),
+            "analysis_code_commit": upstream_meta.get(
+                "analysis_code_commit"
+            ),
+            "dual_provenance": upstream_meta.get("dual_provenance"),
+            "run_tag": upstream_meta.get("run_tag"),
             "n_seeds": upstream_meta.get("n_seeds"),
             "seeds_loaded": upstream_meta.get("seeds_loaded"),
             "bootstrap_alpha": upstream_meta.get("bootstrap_alpha"),
             "n_boot": upstream_meta.get("n_boot"),
             "n_perm": upstream_meta.get("n_perm"),
+            "std_ddof": upstream_meta.get("std_ddof"),
             "bca_fallback_stats": upstream_meta.get("bca_fallback_stats"),
             "generated_at": datetime.now(timezone.utc).isoformat(
                 timespec="seconds"
@@ -506,6 +690,7 @@ def export_latex_benchmark_table() -> None:
             "source_artifacts": [
                 "mvp/simulation/results/benchmark_summary.json",
                 "mvp/simulation/results/benchmark_significance.json",
+                "mvp/simulation/results/h2_directional_evidence.csv",
             ],
             # Significance correction families are documented in
             # benchmark_significance.json's _meta. Carrying through the
@@ -513,20 +698,93 @@ def export_latex_benchmark_table() -> None:
             # not have to open both files to learn which correction
             # family each p_value_adj belongs to.
             "significance_correction_meta": {
-                k: sig_meta.get(k)
-                for k in (
-                    "primary_h1_holm_adjusted",
-                    "channel_decomposition_holm_adjusted",
-                    "extended_h1_holm_adjusted",
-                    "by_fdr_within_scenario",
-                )
-                if k in sig_meta
+                "primary_h1_family": sig_meta.get("primary_h1_family"),
+                "primary_h1_correction": sig_meta.get("primary_h1_correction"),
+                "h2_directional_family": sig_meta.get(
+                    "h2_directional_family"
+                ),
+                "h2_directional_correction": sig_meta.get(
+                    "h2_directional_correction"
+                ),
+                "h2_directional_canonical_field": sig_meta.get(
+                    "h2_directional_canonical_field"
+                ),
+                "h2_global_support_rule": sig_meta.get(
+                    "h2_global_support_rule"
+                ),
+                "h2_synergy_status": sig_meta.get("h2_synergy_status"),
+                "confirmatory_test": sig_meta.get("confirmatory_test"),
+                "n_perm_scope": sig_meta.get("n_perm_scope"),
+                "channel_decomposition_family": sig_meta.get(
+                    "channel_decomposition_family"
+                ),
+                "channel_decomposition_correction": sig_meta.get(
+                    "channel_decomposition_correction"
+                ),
+                "channel_decomposition_status": sig_meta.get(
+                    "channel_decomposition_status"
+                ),
+                "secondary_correction": sig_meta.get("secondary_correction"),
+                "secondary_family_scope": sig_meta.get("secondary_family_scope"),
+                "primary_h1_holm_adjusted": (
+                    sig_payload.get("primary_h1_holm_adjusted")
+                    if isinstance(sig_payload, dict) else None
+                ),
+                "primary_h1_supported_by_cell": (
+                    sig_payload.get("primary_h1_supported_by_cell")
+                    if isinstance(sig_payload, dict) else None
+                ),
+                "primary_h1_supported_all_cells": (
+                    sig_payload.get("primary_h1_supported_all_cells")
+                    if isinstance(sig_payload, dict) else None
+                ),
+                "pinn_ablation_family": sig_meta.get("pinn_ablation_family"),
+                "pinn_ablation_correction": sig_meta.get(
+                    "pinn_ablation_correction"
+                ),
+                "pinn_ablation_scope": sig_meta.get("pinn_ablation_scope"),
+                "pinn_ablation_holm_adjusted": (
+                    sig_payload.get("pinn_ablation_holm_adjusted")
+                    if isinstance(sig_payload, dict) else None
+                ),
+                "pinn_ablation_supported_by_cell": (
+                    sig_payload.get("pinn_ablation_supported_by_cell")
+                    if isinstance(sig_payload, dict) else None
+                ),
+                "pinn_ablation_supported_all_cells": (
+                    sig_payload.get("pinn_ablation_supported_all_cells")
+                    if isinstance(sig_payload, dict) else None
+                ),
+                "h2_directional_holm_adjusted": (
+                    sig_payload.get("h2_directional_holm_adjusted")
+                    if isinstance(sig_payload, dict) else None
+                ),
+                "h2_directional_supported_by_cell": (
+                    sig_payload.get("h2_directional_supported_by_cell")
+                    if isinstance(sig_payload, dict) else None
+                ),
+                "h2_directional_supported_all_cells": (
+                    sig_payload.get("h2_directional_supported_all_cells")
+                    if isinstance(sig_payload, dict) else None
+                ),
+                # Historical two-contrast subset retained for audit only;
+                # never use it as the confirmatory H2 correction.
+                "channel_decomposition_holm_adjusted": (
+                    sig_payload.get("channel_decomposition_holm_adjusted")
+                    if isinstance(sig_payload, dict) else None
+                ),
             },
         },
         "benchmark": bench,
         "significance": sig,
+        "h2_directional_evidence": (
+            sig_payload.get("h2_directional_evidence")
+            if isinstance(sig_payload, dict) else None
+        ),
     }
-    out_path.write_text(json.dumps(export, indent=2), encoding="utf-8")
+    out_path.write_text(
+        json.dumps(export, indent=2, allow_nan=False), encoding="utf-8"
+    )
     print(f"\n  Saved combined export: {out_path}")
     _commit = export["_meta"]["git_commit"]
     _nseeds = export["_meta"]["n_seeds"]
@@ -538,13 +796,19 @@ if __name__ == "__main__":
     print("AGRI-BRAIN Paper Evidence Export")
     print("=" * 80)
 
-    export_role_table()
-    export_sample_explanation()
-    export_feature_heatmap_data()
-    export_interop_summary()
-    export_provenance_summary()
-    export_robustness_and_benchmark()
-    export_stress_and_significance()
+    import os
+    if os.environ.get("EXPORT_LEGACY_SINGLE_RUN_TRACES", "0") == "1":
+        print(
+            "WARNING: exporting non-canonical single-run trace diagnostics; "
+            "do not cite them as 20-seed publication evidence."
+        )
+        export_role_table()
+        export_sample_explanation()
+        export_feature_heatmap_data()
+        export_interop_summary()
+        export_provenance_summary()
+        export_robustness_and_benchmark()
+        export_stress_and_significance()
     export_latex_benchmark_table()
 
     print("\nDone.")

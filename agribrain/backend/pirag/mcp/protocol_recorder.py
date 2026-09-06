@@ -3,12 +3,13 @@
 Wraps the ``MCPServer.handle_message`` method to capture every
 ``(request, response)`` pair that flows through the in-process
 dispatcher. The recorded records are *in-process dispatch traces*: the
-``MCPMessage`` dataclasses are real, the JSON-RPC method/params are
-real, the dispatched return values are real — but they were never
+project ``MCPMessage`` dataclasses are instantiated, and the JSON-RPC
+method/params and dispatched return values are recorded — but they were never
 serialized to a network socket. The previous version of this module
 (and its docstring) called this "genuine protocol traffic over the
-wire", which was inaccurate. The accurate framing is "real MCP
-dispatcher invocations recorded in-process". When the simulator wants
+wire", which was inaccurate. The accurate framing is "project MCP-style
+dispatcher invocations recorded in-process". This custom subset has not
+undergone official MCP-conformance or client-interoperability testing. When the simulator wants
 serialization round-trip behaviour, it should drive
 ``MCPClient(InProcessTransport(server))``, which JSON-roundtrips
 inside ``InProcessTransport.send`` (see ``transport.py``). The
@@ -37,7 +38,7 @@ _log = logging.getLogger(__name__)
 class ProtocolRecorder:
     """Records MCP dispatcher invocations in-process."""
 
-    def __init__(self, server: MCPServer, max_records: int = 200) -> None:
+    def __init__(self, server: MCPServer, max_records: int = 4096) -> None:
         self._server = server
         self._original_handler = server.handle_message
         self._records: List[Dict[str, Any]] = []
@@ -67,6 +68,16 @@ class ProtocolRecorder:
             if not self._enabled:
                 return response
 
+            if len(self._records) >= self.max_records:
+                if self._dropped == 0:
+                    _log.warning(
+                        "ProtocolRecorder reached max_records=%d; subsequent "
+                        "interactions will be absent from the exported trace.",
+                        self.max_records,
+                    )
+                self._dropped += 1
+                return response
+
             # JSON-RPC 2.0 notification: server returned None. Record
             # the request as a notification and return None so the
             # transport / caller honors the spec.
@@ -87,17 +98,6 @@ class ProtocolRecorder:
                     "latency_ms": round(elapsed_ms, 3),
                 })
                 return None
-
-            if len(self._records) >= self.max_records:
-                if self._dropped == 0:
-                    _log.warning(
-                        "ProtocolRecorder reached max_records=%d; further "
-                        "records will be dropped silently. Increase "
-                        "max_records or rotate to disk.",
-                        self.max_records,
-                    )
-                self._dropped += 1
-                return response
 
             # Assign a monotonic local id when the caller forgot to set
             # one (notably the simulator's tool_dispatch, which used to
@@ -146,14 +146,11 @@ class ProtocolRecorder:
         with open(filepath, "w") as f:
             json.dump(data, f, indent=2, default=str)
 
-    # Tool errors that are documented as "by design" rather than real
-    # tool failures. Each entry is (tool_name, error_kind_substring).
-    # The simulator runs MCP without a live FastAPI app, so
-    # chain_query intentionally returns state_unavailable; counting
-    # that as a tool failure inflates the fig9(b) reliability bar.
-    _BY_DESIGN_TOOL_ERRORS: tuple[tuple[str, str], ...] = (
-        ("chain_query", "state_unavailable"),
-    )
+    # Compatibility hook for an explicitly documented non-failure that a tool
+    # must encode as ``isError``. There are currently no such cases. In
+    # particular, chain_query reads the active same-episode audit ledger during
+    # simulation; failure to reach any local audit source is a real error.
+    _BY_DESIGN_TOOL_ERRORS: tuple[tuple[str, str], ...] = ()
 
     def summary(self) -> Dict[str, Any]:
         with self._lock:
@@ -182,8 +179,9 @@ class ProtocolRecorder:
                 result = resp.get("result")
                 if isinstance(result, dict) and result.get("isError") is True:
                     tool_iserror += 1
-                    # Recover the tool name + error kind so the figure
-                    # consumer can subtract by-design failures.
+                    # Recover the tool name + error kind so any explicitly
+                    # documented non-failure can be separated without hiding
+                    # ordinary tool errors.
                     tool_name = ""
                     params = r["request"].get("params") or {}
                     if isinstance(params, dict):
@@ -205,23 +203,63 @@ class ProtocolRecorder:
                             tool_iserror_by_design += 1
                             break
             tool_iserror_real = tool_iserror - tool_iserror_by_design
+            real_error_responses = jsonrpc_errors + tool_iserror_real
             return {
                 "total_interactions": len(self._records),
                 "dropped_interactions": self._dropped,
                 "methods": methods,
                 "jsonrpc_errors": jsonrpc_errors,
                 "tool_iserror_responses": tool_iserror,
-                # 2026-05: split the by-design simulator errors out so
-                # fig9(b) reliability bar can use *_real (genuine tool
-                # failures) rather than the raw count. Older consumers
-                # keep reading tool_iserror_responses for backward
-                # compatibility.
+                # Retain the real/by-design split for output-schema backward
+                # compatibility. With no documented exclusions, *_real equals
+                # the raw count and *_by_design is zero.
                 "tool_iserror_responses_real": tool_iserror_real,
                 "tool_iserror_responses_by_design": tool_iserror_by_design,
                 "tool_iserror_breakdown": tool_iserror_breakdown,
                 "notifications": notifications,
                 "has_errors": jsonrpc_errors > 0 or tool_iserror > 0,
+                "real_error_responses": real_error_responses,
+                "has_real_errors": real_error_responses > 0,
             }
+
+    def finalize_episode(
+        self,
+        *,
+        strict_validation: bool = False,
+        episode_label: str = "",
+    ) -> Dict[str, Any]:
+        """Return the episode summary and fail closed in strict runs.
+
+        JSON-RPC errors and project MCP-style ``result.isError`` tool responses are
+        treatment-changing failures: the dispatcher falls back to missing
+        context after them.  A strict publication run therefore cannot retain
+        an episode containing either.  Recorder truncation is also fatal in
+        strict mode because a truncated trace cannot establish a zero-error
+        count.  Deliberate H3 result drops occur *after* a successful protocol
+        response and consequently do not increment any of these counters.
+        """
+        summary = self.summary()
+        if not strict_validation:
+            return summary
+
+        label = f" for {episode_label}" if episode_label else ""
+        dropped = int(summary.get("dropped_interactions", 0))
+        if dropped:
+            raise RuntimeError(
+                "incomplete MCP protocol record"
+                f"{label}: {dropped} interaction(s) exceeded recorder capacity"
+            )
+
+        jsonrpc_errors = int(summary.get("jsonrpc_errors", 0))
+        real_tool_errors = int(summary.get("tool_iserror_responses_real", 0))
+        if jsonrpc_errors or real_tool_errors:
+            raise RuntimeError(
+                "MCP protocol/tool failure"
+                f"{label}: jsonrpc_errors={jsonrpc_errors}, "
+                f"real_tool_isError_responses={real_tool_errors}, "
+                f"tool_breakdown={summary.get('tool_iserror_breakdown', {})}"
+            )
+        return summary
 
     def reset(self) -> None:
         with self._lock:

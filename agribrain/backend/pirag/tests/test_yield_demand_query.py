@@ -42,16 +42,26 @@ def test_query_yield_no_history_returns_empty_computed():
     assert out["uncertainty"] == 0.0
 
 
-def test_query_yield_with_history_runs_holts_linear():
+def test_query_yield_with_history_uses_confirmatory_persistence():
     from pirag.mcp.tools.yield_query import query_yield
     history = [100.0, 102.0, 104.0, 106.0, 108.0]
     out = query_yield(inventory_history=history, horizon=3)
     assert out["source"] == "computed"
+    assert out["method"] == "persistence"
     assert len(out["forecast"]) == 3
-    # Trend is +2 per step, so the forecast should be monotone-ish
-    assert out["forecast"][0] <= out["forecast"][-1] + 0.5
+    assert out["forecast"] == [108.0, 108.0, 108.0]
     assert 0.0 <= out["uncertainty"] <= 1.0
     assert out["std"] >= 0.0
+
+
+def test_query_yield_holt_linear_is_explicit_diagnostic():
+    from pirag.mcp.tools.yield_query import query_yield
+    history = [100.0, 102.0, 104.0, 106.0, 108.0]
+    out = query_yield(
+        inventory_history=history, horizon=3, method="holt_linear",
+    )
+    assert out["method"] == "holt_linear"
+    assert out["forecast"][0] <= out["forecast"][-1] + 0.5
 
 
 # --- demand_query ---------------------------------------------------
@@ -75,13 +85,23 @@ def test_query_demand_no_history_returns_empty():
     assert out["forecast"] == []
 
 
-def test_query_demand_lstm_default():
+def test_query_demand_holt_linear_confirmatory_default():
     from pirag.mcp.tools.demand_query import query_demand
     history = [80.0, 90.0, 110.0, 95.0, 100.0, 105.0, 108.0, 95.0]
     out = query_demand(demand_history=history, horizon=2)
     assert out["source"] == "computed"
+    assert out["method"] == "holt_linear"
     assert len(out["forecast"]) == 2
     assert out["uncertainty"] >= 0.0
+
+
+def test_query_demand_lstm_is_explicit_diagnostic():
+    from pirag.mcp.tools.demand_query import query_demand
+    history = [80.0, 90.0, 110.0, 95.0, 100.0, 105.0, 108.0, 95.0]
+    out = query_demand(demand_history=history, horizon=2, method="lstm")
+    assert out["source"] == "computed"
+    assert out["method"] == "lstm"
+    assert len(out["forecast"]) == 2
 
 
 def test_query_demand_holts_alias_runs_holts_linear():
@@ -91,7 +111,18 @@ def test_query_demand_holts_alias_runs_holts_linear():
     # the implementation is not seasonal Holt-Winters.
     out = query_demand(demand_history=history, horizon=1, method="holt_winters")
     assert out["source"] == "computed"
+    assert out["method"] == "holt_linear"
     assert len(out["forecast"]) == 1
+
+
+def test_queries_reject_unknown_method_instead_of_silent_fallback():
+    from pirag.mcp.tools.demand_query import query_demand
+    from pirag.mcp.tools.yield_query import query_yield
+
+    with pytest.raises(ValueError, match="demand forecast method"):
+        query_demand(demand_history=[1.0, 2.0], method="mystery")
+    with pytest.raises(ValueError, match="supply forecast method"):
+        query_yield(inventory_history=[1.0, 2.0], method="mystery")
 
 
 # --- registry registration -----------------------------------------

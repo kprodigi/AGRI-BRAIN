@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "AGRI-BRAIN: A Protocol-Mediated Physics-Informed Interoperable Multi-Agent Framework for Explainable Perishable Supply Chains"
+title: "AGRI-BRAIN: A Coordinator-Mediated Heterogeneous Multi-Agent Framework for Simulation of Perishable Supply Chains"
 type: software
 authors:
   - family-names: Sarker
@@ -9,17 +9,16 @@ authors:
   - family-names: Kazi
     given-names: Monzure-Khoda
     affiliation: "Karen M. Swindler Department of Chemical and Biological Engineering, South Dakota School of Mines and Technology, Rapid City, SD 57701, USA"
-version: "1.2.0"
-date-released: "2026-05-04"
+version: "1.3.0"
 # Versioning policy: the pinned ``version`` here must match
 # ``[project] version`` in agribrain/backend/pyproject.toml. The
 # tests/test_metadata_consistency.py guard fails the build if they
-# drift. ``date-released`` is set to the date the v<X.Y.Z> tag is
-# pushed; bump both together with the tag.
+# drift. Add ``date-released`` only when the corresponding v<X.Y.Z>
+# tag is actually pushed; this methodology-aligned source is pre-results.
 #
-# Active maintenance through 2026-Q2. Cite the version + commit SHA
-# from `mvp/simulation/results/artifact_manifest.json` for paper-grade
-# reproducibility.
+# After either accepted evidence mode completes, cite the version, run tag,
+# manifest checksum, and simulation source commit. For authorized recovery,
+# also cite the distinct publication code commit recorded by the manifest.
 license: MIT
 repository-code: "https://github.com/kprodigi/AGRI-BRAIN"
 
@@ -30,16 +29,15 @@ repository-code: "https://github.com/kprodigi/AGRI-BRAIN"
 keywords:
   - multi-agent systems
   - agri-food supply chain
-  - blockchain
   - reinforcement learning
-  - physics-informed neural networks
-  - sustainability
-  - SLCA
+  - mechanistic spoilage modelling
+  - sustainability simulation
+  - social-performance proxy
   - Model Context Protocol
   - MCP
-  - retrieval-augmented generation
-  - physics-informed RAG
-  - explainable AI
-  - interoperability
-  - causal explanation
-  - governance override
+  - institutional retrieval
+  - mechanistic retrieval reranking
+  - context-to-policy traceability
+  - typed peer messaging
+  - local Merkle provenance
+  - policy-input decomposition

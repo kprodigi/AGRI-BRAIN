@@ -1,11 +1,12 @@
 
 from __future__ import annotations
-from dataclasses import dataclass, field
-from typing import List, Dict, Any, Tuple, Optional
+
+import hashlib
 import math
 import re
-import hashlib
 from collections import Counter
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Tuple
 
 try:
     from sentence_transformers import SentenceTransformer
@@ -15,6 +16,7 @@ except Exception:
 
 from ..ingestion.embedder import TFIDFEmbedder
 from ..ingestion.vector_store import VectorStore
+
 
 @dataclass
 class Document:
@@ -186,12 +188,19 @@ class HybridRetriever:
             items.append({
                 "id": rec["doc"].id,
                 "score": score,
+                # Explicit compatibility-safe provenance fields. ``score``
+                # remains the policy-facing fused score; the additions expose
+                # every component already computed above without changing
+                # ordering or performing another retrieval.
+                "fused_score": score,
                 "text": rec["doc"].text,
                 "metadata": rec["doc"].metadata,
                 "sparse_rank": rec["sparse_rank"],
                 "sparse_score": rec["sparse_score"],
+                "sparse_rrf": rec["sparse_rrf"],
                 "dense_rank": rec["dense_rank"],
                 "dense_score": rec["dense_score"],
+                "dense_rrf": rec["dense_rrf"],
                 "fusion": "rrf",
             })
         items.sort(key=lambda x: x["score"], reverse=True)

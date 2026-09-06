@@ -1,12 +1,10 @@
-"""ProtocolRecorder.summary() reliability-counter split.
+"""ProtocolRecorder.summary() reliability-counter behavior.
 
 Fig 9(b) of the paper reports MCP tool reliability across a benchmark
-run. The pre-2026-05 recorder counted every ``isError=True`` response
-into ``tool_iserror_responses``, including chain_query's deliberate
-``state_unavailable`` errors when the simulator runs without a live
-FastAPI app. The 2026-05 fix adds ``tool_iserror_responses_real``
-and ``tool_iserror_responses_by_design`` so the figure can use the
-clean count without losing the raw total.
+run. ``chain_query`` now reads the active same-episode audit ledger during
+simulation, so inability to reach any local audit source is a real tool error,
+not a normal consequence of running without FastAPI. The legacy real/by-design
+summary fields remain stable, with no current by-design exclusions.
 """
 from __future__ import annotations
 
@@ -64,16 +62,18 @@ def _record(recorder, request, response):
         recorder._records.append({"request": request, "response": response})
 
 
-def test_chain_query_state_unavailable_counted_as_by_design(recorder):
+def test_chain_query_missing_local_audit_source_counted_as_real(recorder):
     _record(
         recorder,
         _request("tools/call", "chain_query"),
-        _tool_error_response('{"_error_kind": "state_unavailable", "_status": "error"}'),
+        _tool_error_response(
+            '{"_error_kind": "no_source_reachable", "_status": "error"}'
+        ),
     )
     summary = recorder.summary()
     assert summary["tool_iserror_responses"] == 1
-    assert summary["tool_iserror_responses_by_design"] == 1
-    assert summary["tool_iserror_responses_real"] == 0
+    assert summary["tool_iserror_responses_by_design"] == 0
+    assert summary["tool_iserror_responses_real"] == 1
     assert summary["tool_iserror_breakdown"] == {"chain_query": 1}
 
 
@@ -90,8 +90,8 @@ def test_other_tool_error_counted_as_real(recorder):
     assert summary["tool_iserror_breakdown"] == {"calculator": 1}
 
 
-def test_chain_query_non_state_error_counted_as_real(recorder):
-    """A genuine chain_query failure (not state_unavailable) counts as real."""
+def test_chain_query_other_error_counted_as_real(recorder):
+    """Every chain_query failure counts as a real tool error."""
     _record(
         recorder,
         _request("tools/call", "chain_query"),
@@ -104,17 +104,17 @@ def test_chain_query_non_state_error_counted_as_real(recorder):
 
 def test_mixed_records_split_correctly(recorder):
     _record(recorder, _request("tools/call", "chain_query"),
-            _tool_error_response('"_error_kind": "state_unavailable"'))
+            _tool_error_response('"_error_kind": "no_source_reachable"'))
     _record(recorder, _request("tools/call", "calculator"),
             _tool_error_response('{"error": "boom"}'))
     _record(recorder, _request("tools/call", "pirag_query"),
             _tool_success_response())
     _record(recorder, _request("tools/call", "chain_query"),
-            _tool_error_response('{"_error_kind": "state_unavailable"}'))
+            _tool_error_response('{"error": "malformed local audit ledger"}'))
     summary = recorder.summary()
     assert summary["tool_iserror_responses"] == 3
-    assert summary["tool_iserror_responses_by_design"] == 2
-    assert summary["tool_iserror_responses_real"] == 1
+    assert summary["tool_iserror_responses_by_design"] == 0
+    assert summary["tool_iserror_responses_real"] == 3
     assert summary["tool_iserror_breakdown"] == {"chain_query": 2, "calculator": 1}
 
 

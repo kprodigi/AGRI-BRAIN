@@ -45,7 +45,7 @@ const hexToDec = (h) => (h ? parseInt(h, 16) : 0);
 
 // ===================== Policy Tab =====================
 function PolicyTab() {
-  const [form, setForm] = useState({ min_shelf_reroute: 0.70, min_shelf_expedite: 0.50, carbon_per_km: 0.12, eta: 0.50 });
+  const [form, setForm] = useState({ carbon_per_km: 0.12, eta: 0.50 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -53,7 +53,7 @@ function PolicyTab() {
     (async () => {
       try {
         const p = await jget("/governance/policy");
-        setForm({ min_shelf_reroute: p.min_shelf_reroute ?? 0.70, min_shelf_expedite: p.min_shelf_expedite ?? 0.50, carbon_per_km: p.carbon_per_km ?? 0.12, eta: p.eta ?? 0.50 });
+        setForm({ carbon_per_km: p.carbon_per_km ?? 0.12, eta: p.eta ?? 0.50 });
       } catch {}
       setLoading(false);
     })();
@@ -67,10 +67,8 @@ function PolicyTab() {
   };
 
   const fields = [
-    { key: "min_shelf_reroute", label: "Min Shelf for Reroute", unit: "fraction", desc: "Minimum shelf-life fraction before triggering reroute (0-1)", group: "Routing Parameters" },
-    { key: "min_shelf_expedite", label: "Min Shelf for Expedite", unit: "fraction", desc: "Minimum shelf-life fraction before expedited delivery (0-1)", group: "Routing Parameters" },
-    { key: "carbon_per_km", label: "Carbon per km", unit: "kg CO₂/km", desc: "Carbon emission factor per kilometer of transport", group: "Carbon Parameters" },
-    { key: "eta", label: "Waste Penalty (\u03b7)", unit: "weight", desc: "Weight of waste penalty in the objective function (0-1)", group: "SLCA Weights" },
+    { key: "carbon_per_km", label: "Modeled emissions factor", unit: "kg CO2-eq/km", desc: "Declared synthetic transport-emissions proxy per route kilometer", group: "Modeled Emissions Parameters" },
+    { key: "eta", label: "Waste Penalty (\u03b7)", unit: "weight", desc: "Weight of waste penalty in the objective function (0-1)", group: "Social-performance Weights" },
   ];
 
   if (loading) return <div className="space-y-4">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16" />)}</div>;
@@ -312,9 +310,10 @@ function AuditTab() {
               <TableRow>
                 <TableHead>Timestamp</TableHead>
                 <TableHead>Agent</TableHead>
+                <TableHead>Evidence status</TableHead>
                 <TableHead>Action</TableHead>
-                <TableHead>SLCA</TableHead>
-                <TableHead>Carbon</TableHead>
+                <TableHead>Social-performance proxy</TableHead>
+                <TableHead>Modeled emissions (kg CO2-eq)</TableHead>
                 <TableHead>Tx Hash</TableHead>
               </TableRow>
             </TableHeader>
@@ -322,17 +321,29 @@ function AuditTab() {
               {loading ? (
                 [...Array(5)].map((_, i) => (
                   <TableRow key={i}>
-                    {[...Array(6)].map((_, j) => <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>)}
+                    {[...Array(7)].map((_, j) => <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>)}
                   </TableRow>
                 ))
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No audit events found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No audit events found.</TableCell></TableRow>
               ) : (
                 filtered.map((it, i) => (
                   <React.Fragment key={i}>
                     <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => setExpandedRow(expandedRow === i ? null : i)}>
                       <TableCell className="font-mono text-xs">{it.time || it.timestamp || "\u2014"}</TableCell>
                       <TableCell className="text-sm">{it.agent || "\u2014"}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={cn(
+                          "text-[10px]",
+                          it.publication_evidence === true
+                            ? "text-emerald-600 border-emerald-500/40"
+                            : "text-amber-700 border-amber-500/40",
+                        )}>
+                          {it.publication_evidence === true
+                            ? "publication evidence"
+                            : (it.evidence_status || "unverified_runtime_output").replaceAll("_", " ")}
+                        </Badge>
+                      </TableCell>
                       <TableCell><Badge variant="secondary" className="text-xs">{it.decision || it.action || "\u2014"}</Badge></TableCell>
                       <TableCell className="font-mono text-sm">{fmt(it.slca ?? it.slca_score, 3)}</TableCell>
                       <TableCell className="font-mono text-sm">{fmt(it.carbon_kg, 1)}</TableCell>
@@ -340,7 +351,7 @@ function AuditTab() {
                     </TableRow>
                     {expandedRow === i && (
                       <TableRow>
-                        <TableCell colSpan={6} className="bg-muted/30">
+                        <TableCell colSpan={7} className="bg-muted/30">
                           <pre className="text-xs font-mono overflow-x-auto p-2">{JSON.stringify(it, null, 2)}</pre>
                         </TableCell>
                       </TableRow>
@@ -358,11 +369,11 @@ function AuditTab() {
 
 // ===================== Scenarios Tab =====================
 const SCENARIO_CARDS = [
-  { id: "heatwave", name: "Heatwave", desc: "72h heatwave; accelerated spoilage; reconfigure routes.", icon: Flame, color: "#D55E00" },
-  { id: "overproduction", name: "Overproduction", desc: "Glut / overproduction; trigger redistribution and recovery.", icon: Layers, color: "#E67E22" },
-  { id: "cyber_outage", name: "Cyber Outage", desc: "Processor offline; unauthorized tx blocked; reroute flows.", icon: ShieldAlert, color: "#7570B3" },
-  { id: "adaptive_pricing", name: "Adaptive Pricing", desc: "Learned pricing; equity-aware redistribution when saturated.", icon: DollarSign, color: "#0072B2" },
-  { id: "baseline", name: "Baseline", desc: "Normal operating conditions for reference comparison.", icon: Shield, color: "#808080" },
+  { id: "heatwave", name: "Heatwave", desc: "+20°C exponential approach 1-exp[-0.5(h-24)] from hour 24, recovery tail after hour 48, and +10 percentage-point RH rise.", icon: Flame, color: "#D55E00" },
+  { id: "overproduction", name: "Overproduction", desc: "Inventory ×2.5 during hours 12–60 with a progressive +8°C cold-storage excursion.", icon: Layers, color: "#E67E22" },
+  { id: "cyber_outage", name: "Cyber Outage", desc: "From hour 24: MCP is unavailable while processor-stage decisions continue; demand falls to 15% and refrigeration approaches a +10°C disturbance.", icon: ShieldAlert, color: "#7570B3" },
+  { id: "adaptive_pricing", name: "Adaptive Pricing", desc: "Oscillatory demand plus Gaussian noise and a modest demand-linked thermal disturbance; pricing is not a policy action.", icon: DollarSign, color: "#0072B2" },
+  { id: "baseline", name: "Baseline", desc: "Original synthetic sensor trace with no scenario perturbation.", icon: Shield, color: "#808080" },
 ];
 
 function ScenariosTab() {
@@ -497,12 +508,12 @@ function QuickDecisionTab() {
                     <Badge variant="teal">{result.decision ?? result.action ?? "\u2014"}</Badge>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">SLCA</span>
+                    <span className="text-muted-foreground">Social-performance proxy</span>
                     <span className="font-mono font-semibold">{fmt(result.slca ?? result.slca_score, 3)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Carbon</span>
-                    <span className="font-mono">{fmt(result.carbon_kg ?? result.carbon, 1)} kg</span>
+                    <span className="text-muted-foreground">Modeled transport emissions</span>
+                    <span className="font-mono">{fmt(result.carbon_kg ?? result.carbon, 1)} kg CO2-eq</span>
                   </div>
                   {(result.tx_hash || result.tx) && (
                     <div className="flex justify-between">

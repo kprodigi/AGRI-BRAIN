@@ -1,20 +1,20 @@
-"""Arrhenius-Baranyi ODE forward integration for spoilage prediction.
+"""Arrhenius ODE integration with a declared rational lag factor.
 
 Wraps the physics model as an MCP tool so agents can request forward-looking
 spoilage forecasts without circular imports to ``src.models.spoilage``.
-Uses the same calibrated parameters as the backend model.
+Uses the same declared synthetic parameters as the backend model.
 """
 from __future__ import annotations
 
 import math
 from typing import Any, Dict, List
 
-# Calibrated parameters (spinach — identical to src.models.spoilage)
+# Declared synthetic benchmark parameters (identical to src.models.spoilage)
 K_REF: float = 0.0021      # h^-1 at T_ref
 EA_R: float = 8000.0        # E_a / R  (K)
 T_REF: float = 277.15       # 4 °C in Kelvin
 BETA: float = 0.25           # humidity coupling
-LAMBDA_LAG: float = 12.0     # Baranyi lag phase (h)
+LAMBDA_LAG: float = 12.0     # declared rational lag parameter (h)
 DT: float = 0.25             # integration step (15 min)
 
 
@@ -27,7 +27,7 @@ def _arrhenius_k(temp_c: float, humidity_frac: float) -> float:
 
 
 def _baranyi_alpha(t_hours: float) -> float:
-    """Baranyi lag-phase adjustment alpha(t) = t / (t + lambda)."""
+    """Declared rational lag adjustment alpha(t) = t / (t + lambda)."""
     return t_hours / (t_hours + LAMBDA_LAG) if (t_hours + LAMBDA_LAG) > 0 else 0.0
 
 
@@ -36,8 +36,9 @@ def forecast_spoilage(
     temperature: float,
     humidity: float,
     hours_ahead: int = 6,
+    age_hours: float = 0.0,
 ) -> Dict[str, Any]:
-    """Integrate Arrhenius-Baranyi ODE forward from current state.
+    """Integrate the Arrhenius-lag ODE forward from current state.
 
     Parameters
     ----------
@@ -45,6 +46,9 @@ def forecast_spoilage(
     temperature : ambient temperature in Celsius.
     humidity : relative humidity in percent (0–100).
     hours_ahead : forecast horizon in hours.
+    age_hours : elapsed hours since the start of the quality trajectory.
+        The lag clock continues from this age; it is not restarted on every
+        tool invocation.
 
     Returns
     -------
@@ -58,7 +62,7 @@ def forecast_spoilage(
     steps = max(1, int(hours_ahead / DT))
 
     trajectory: List[float] = [round(rho, 4)]
-    elapsed = 0.0
+    elapsed = max(0.0, float(age_hours))
 
     for _ in range(steps):
         elapsed += DT
@@ -85,6 +89,7 @@ def forecast_spoilage(
         "quality_trajectory": trajectory,
         "urgency": urgency,
         "hours_ahead": hours_ahead,
+        "age_hours": float(age_hours),
         "k_effective": round(k_base, 6),
         "parameters": {
             "temperature_c": temperature,

@@ -1,5 +1,5 @@
 """
-Holt's linear (double exponential smoothing) forecaster with horizon tiling.
+Holt's ordinary undamped linear (double exponential smoothing) forecaster.
 
 This module implements only the level + trend recurrence; no seasonal
 indices are computed, so the algorithm is Holt's method (Holt, 1957),
@@ -12,12 +12,12 @@ Implements the approach from Section 4.2.2 of the AGRI-BRAIN paper:
          l_t = alpha * x_t + (1 - alpha) * (l_{t-1} + b_{t-1})
          b_t = beta * (l_t - l_{t-1}) + (1 - beta) * b_{t-1}
      (Holt, 1957; Winters, 1960)
-  2. Tile the one-step-ahead estimate across the full horizon:
+  2. Compute the ordinary undamped multi-step forecast:
          y_hat[t+h] = l_t + h * b_t  (h = 1, ..., horizon)
-     For short horizons used in real-time routing, the dampened trend
-     provides sufficient accuracy without seasonal decomposition.
-  3. Return the forecast array and a simple confidence band based on
-     rolling standard deviation.
+     No damping or seasonal component is applied. The locked publication
+     protocol uses this demand model only for its one-step forecast.
+  3. Return the forecast array and a descriptive variability band based on
+     rolling-series standard deviation. This is not a calibrated prediction interval.
 
 References:
     - Holt, C.C. (1957). Forecasting seasonals and trends by exponentially
@@ -42,7 +42,7 @@ def yield_demand_forecast(
     series_col: str = "demand_units",
     trend_beta: float = 0.2,
 ) -> Dict[str, object]:
-    """Produce a horizon-tiled forecast with confidence interval.
+    """Produce an ordinary undamped Holt-linear forecast and descriptive interval.
 
     Uses Holt's double exponential smoothing (level + trend) for more
     responsive forecasts under demand volatility.
@@ -54,7 +54,8 @@ def yield_demand_forecast(
     ema_alpha : level smoothing factor (0 < alpha <= 1). Default 0.5 matches
         the yield/supply forecaster parameters documented in Section 4.4.
     lookback : number of most-recent observations used to seed the smoother.
-    ci_z : z-score multiplier for the confidence interval (default 1.96 = 95%).
+    ci_z : multiplier for the descriptive rolling-standard-deviation band
+        (default 1.96; not a calibrated coverage claim).
     series_col : column name to forecast.
     trend_beta : trend smoothing factor (0 < beta <= 1). Default 0.2.
 
@@ -62,9 +63,9 @@ def yield_demand_forecast(
     -------
     dict with keys:
         ``forecast``   - list[float] of length *horizon* (point forecast)
-        ``ci_lower``   - list[float] lower bound of CI
-        ``ci_upper``   - list[float] upper bound of CI
-        ``std``        - float, historical rolling std used for CI
+        ``ci_lower``   - compatibility key for the descriptive lower band
+        ``ci_upper``   - compatibility key for the descriptive upper band
+        ``std``        - historical rolling std used for the band
     """
     d = df[series_col].astype(float).to_numpy()
 
@@ -94,13 +95,13 @@ def yield_demand_forecast(
 
     # Holt's linear h-step forecast (Holt, 1957):
     #   F(t+h) = L(t) + h * T(t)
-    # Multi-step: l_t + h * b_t (with dampening for longer horizons)
+    # Multi-step: l_t + h * b_t (ordinary undamped Holt-linear extrapolation)
     forecast = []
     for h in range(1, horizon + 1):
         y_hat = max(0.0, level + h * trend)
         forecast.append(round(y_hat, 4))
 
-    # --- confidence interval from rolling std ---
+    # --- descriptive variability band from rolling-series std ---
     if len(d) >= 2:
         std = float(np.std(tail))
     else:

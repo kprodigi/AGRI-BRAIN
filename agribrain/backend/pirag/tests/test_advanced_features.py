@@ -1,6 +1,6 @@
-"""Tests for advanced MCP/piRAG features (Task 29).
+"""Tests for optional MCP/institutional-retrieval diagnostics.
 
-8 tests covering blockchain feedback, agent capabilities, message
+Tests cover decision-history ingestion, agent capabilities, message
 enrichment, temporal window, context evaluator, learner convergence,
 stdio transport format, and full pipeline integration.
 """
@@ -29,8 +29,8 @@ class _Obs:
         self.raw = kwargs
 
 
-# ---- Test 1: Blockchain feedback ingestion ----
-def test_blockchain_feedback_ingestion():
+# ---- Test 1: Optional decision-history ingestion ----
+def test_decision_history_document_synthesis():
     from pirag.dynamic_knowledge import synthesize_decision_document
 
     decisions = [
@@ -45,13 +45,16 @@ def test_blockchain_feedback_ingestion():
     assert doc["metadata"]["n_decisions"] == 3
 
 
-def test_ingest_decision_history_falls_back_to_memory(monkeypatch):
-    """When the chain is not configured, ingest_decision_history must
-    fall back to the in-memory decision list and tag the synthesised
-    document with source_kind='memory'."""
+def test_ingest_decision_history_defaults_to_memory(monkeypatch):
+    """Default ingestion must not attempt the optional event-log adapter."""
     from pirag import dynamic_knowledge
 
-    monkeypatch.setattr(dynamic_knowledge, "_read_decisions_from_chain", lambda n: None)
+    def _unexpected_chain_read(_n):
+        raise AssertionError("default ingestion must not read a chain")
+
+    monkeypatch.setattr(
+        dynamic_knowledge, "_read_decisions_from_chain", _unexpected_chain_read,
+    )
 
     captured = []
     class _Pipe:
@@ -67,6 +70,10 @@ def test_ingest_decision_history_falls_back_to_memory(monkeypatch):
     assert n == 1
     assert captured[0]["metadata"]["source_kind"] == "memory"
     assert captured[0]["metadata"]["source"] == "decision_feedback"
+    assert captured[0]["metadata"]["source_label"] == (
+        "decision_history_diagnostic"
+    )
+    assert captured[0]["metadata"]["source_is_legacy_alias"] is True
 
 
 def test_ingest_decision_history_prefers_on_chain(monkeypatch):
@@ -90,7 +97,9 @@ def test_ingest_decision_history_prefers_on_chain(monkeypatch):
         {"action": "cold_chain", "role": "farm", "slca": 0.5, "carbon_kg": 9.0, "waste": 0.10, "hour": 0.0}
     ]
 
-    n = dynamic_knowledge.ingest_decision_history(_Pipe(), in_memory, "baseline", block_size=24)
+    n = dynamic_knowledge.ingest_decision_history(
+        _Pipe(), in_memory, "baseline", block_size=24, prefer_chain=True,
+    )
     assert n == 1
     assert captured[0]["metadata"]["source_kind"] == "on_chain"
     # The synthesised text should reflect the on-chain records (mostly
@@ -126,7 +135,12 @@ def test_message_enrichment():
         msg_type=MessageType.SPOILAGE_ALERT,
         payload={"rho": 0.30}, hour=5.0,
     )
-    rag = {"regulatory_guidance": "FDA requires temperature below 5C for spinach storage."}
+    rag = {
+        "regulatory_guidance": (
+            "The synthetic benchmark note specifies temperature below 5C "
+            "for this parser fixture."
+        )
+    }
     mcp = {"check_compliance": {"compliant": False}}
 
     enriched = enrich_message(msg, rag, mcp)

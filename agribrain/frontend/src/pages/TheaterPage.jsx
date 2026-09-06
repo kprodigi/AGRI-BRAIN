@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { cn, fmt, short, jpost, jget } from "@/lib/utils";
+import { cn, fmt, short, jpost } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
+import { provenanceGuardState } from "@/lib/provenance.js";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
   Play, Loader2, CheckCircle2, AlertTriangle, BookOpen, Truck, Warehouse, Recycle,
-  Send, ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp,
 } from "lucide-react";
 
 const API = getApiBase();
@@ -24,11 +25,11 @@ const AGENTS = [
 ];
 
 const SCENARIOS = [
-  { id: "baseline",         label: "Baseline",         trigger: "Normal operating conditions — routine check-in" },
-  { id: "heatwave",         label: "Heatwave",         trigger: "SPOILAGE_ALERT: Temperature spike detected (+20°C), accelerated decay" },
-  { id: "overproduction",   label: "Overproduction",   trigger: "SURPLUS_ALERT: Inventory at 2.5× baseline, redistribution needed" },
-  { id: "cyber_outage",     label: "Cyber Outage",     trigger: "CAPACITY_UPDATE: Demand dropped to 15%, refrigeration degraded" },
-  { id: "adaptive_pricing", label: "Adaptive Pricing", trigger: "REROUTE_REQUEST: Demand oscillation detected, pricing volatility" },
+  { id: "baseline",         label: "Baseline",         description: "Unmodified synthetic operating trace" },
+  { id: "heatwave",         label: "Heatwave",         description: "Exponential +20°C approach from hour 24, +10-point humidity rise, and recovery tail after hour 48" },
+  { id: "overproduction",   label: "Overproduction",   description: "2.5× inventory window with progressive cold-storage excursion" },
+  { id: "cyber_outage",     label: "Cyber Outage",     description: "From hour 24, MCP is unavailable while processor decisions continue under demand and refrigeration disturbances" },
+  { id: "adaptive_pricing", label: "Adaptive Pricing", description: "Oscillatory demand with noise and a modest demand-linked thermal disturbance" },
 ];
 
 const ACTION_META = {
@@ -37,22 +38,16 @@ const ACTION_META = {
   recovery:            { icon: Recycle,     color: "#D55E00", label: "Recovery",             short: "REC" },
 };
 
-const OUTGOING_MESSAGES = {
-  cold_chain:         "CAPACITY_UPDATE: Routed via long-haul refrigerated transport",
-  local_redistribute: "REROUTE_REQUEST: Redirecting to local markets / food banks",
-  recovery:           "ACK: Diverted to composting / animal feed / food bank recovery",
-};
-
 const FEATURE_LABELS = [
-  { key: "compliance_severity", label: "Compliance", color: "#ef4444" },
+  { key: "compliance_severity", label: "Envelope", color: "#ef4444" },
   { key: "forecast_urgency",   label: "Forecast",   color: "#f97316" },
   { key: "retrieval_confidence",label: "Retrieval",  color: "#3b82f6" },
-  { key: "regulatory_pressure", label: "Regulatory", color: "#a855f7" },
+  { key: "regulatory_pressure", label: "Guidance", color: "#a855f7" },
   { key: "recovery_saturation", label: "Recovery",   color: "#22c55e" },
 ];
 
 // ── Agent Chat Bubble ──
-function AgentBubble({ agent, memo, isTyping, scenarioTrigger, isFirst }) {
+function AgentBubble({ agent, memo, isTyping, scenarioDescription, isFirst }) {
   const [expanded, setExpanded] = useState(false);
   if (!memo && !isTyping) return null;
 
@@ -101,7 +96,7 @@ function AgentBubble({ agent, memo, isTyping, scenarioTrigger, isFirst }) {
             {isFirst && (
               <div className="flex items-start gap-2 mb-2 pb-2 border-b border-dashed">
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
-                <p className="text-[11px] text-amber-700 dark:text-amber-400">{scenarioTrigger}</p>
+                <p className="text-[11px] text-amber-700 dark:text-amber-400">{scenarioDescription}</p>
               </div>
             )}
 
@@ -154,17 +149,19 @@ function AgentBubble({ agent, memo, isTyping, scenarioTrigger, isFirst }) {
                       {comp.compliant !== undefined && (
                         <div className="flex items-center gap-1.5 mt-1">
                           <Badge className={cn("text-[8px] border-0", comp.compliant ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-600")}>
-                            {comp.compliant ? "\u2713 Compliant" : "\u2717 Violation"}
+                            {comp.compliant
+                              ? "Within declared synthetic benchmark envelope"
+                              : "Outside declared synthetic benchmark envelope"}
                           </Badge>
                           <span className="text-[9px] text-muted-foreground">T={comp.readings?.temperature}°C max={comp.thresholds?.temp_max_c}°C</span>
                         </div>
                       )}
                     </div>
 
-                    {/* piRAG */}
+                    {/* Institutional retrieval */}
                     {ex.pirag_top_doc && (
                       <div>
-                        <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">piRAG Retrieval</p>
+                        <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Institutional Retrieval</p>
                         <div className="flex items-center gap-1.5">
                           <BookOpen className="w-3 h-3 text-blue-500" />
                           <span className="font-mono text-[10px]">{ex.pirag_top_doc}</span>
@@ -200,10 +197,10 @@ function AgentBubble({ agent, memo, isTyping, scenarioTrigger, isFirst }) {
                     {/* Impact */}
                     <div className="grid grid-cols-4 gap-1.5">
                       {[
-                        ["SLCA", fmt(memo.slca, 3)],
-                        ["CO₂", `${fmt(memo.carbon_kg, 1)}kg`],
-                        ["Waste", `${fmt(memo.waste * 100, 1)}%`],
-                        ["Circular", fmt(memo.circular_economy_score, 2)],
+                        ["Social-performance proxy", fmt(memo.slca, 3)],
+                        ["Modeled emissions indicator", `${fmt(memo.carbon_kg, 1)} kg CO2-eq`],
+                        ["Waste fraction", `${fmt(memo.waste * 100, 1)}%`],
+                        ["Route-circularity indicator", fmt(memo.circular_economy_score, 2)],
                       ].map(([k, v]) => (
                         <div key={k} className="text-center bg-muted/30 rounded p-1">
                           <p className="text-[8px] text-muted-foreground">{k}</p>
@@ -212,17 +209,13 @@ function AgentBubble({ agent, memo, isTyping, scenarioTrigger, isFirst }) {
                       ))}
                     </div>
 
-                    {/* Causal snippet */}
-                    {ex.causal_text && (
+                    {/* Policy-trace snippet */}
+                    {(ex.policy_trace_text || ex.causal_text) && (
                       <div>
-                        <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Causal Reasoning</p>
+                        <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Policy Trace</p>
                         <p className="text-[10px] text-muted-foreground leading-relaxed">
-                          {ex.causal_text.split("\n\n")[0]?.slice(0, 200).split(/(BECAUSE|WITHOUT)/g).map((p, i) =>
-                            p === "BECAUSE" ? <span key={i} className="font-bold text-teal-600">BECAUSE</span> :
-                            p === "WITHOUT" ? <span key={i} className="font-bold text-amber-600">WITHOUT</span> :
-                            <span key={i}>{p}</span>
-                          )}
-                          {(ex.causal_text?.length || 0) > 200 && "..."}
+                          {(ex.policy_trace_text || ex.causal_text).split("\n\n")[0]?.slice(0, 200)}
+                          {((ex.policy_trace_text || ex.causal_text)?.length || 0) > 200 && "..."}
                         </p>
                       </div>
                     )}
@@ -230,7 +223,13 @@ function AgentBubble({ agent, memo, isTyping, scenarioTrigger, isFirst }) {
                     {/* Provenance */}
                     {ex.provenance?.merkle_root && (
                       <div className="flex items-center gap-2">
-                        <Badge className="bg-emerald-500/10 text-emerald-600 border-0 text-[8px]">Guards Passed</Badge>
+                        {provenanceGuardState(ex.provenance?.guards_passed) === "passed" ? (
+                          <Badge className="bg-emerald-500/10 text-emerald-600 border-0 text-[8px]">Guards Passed</Badge>
+                        ) : provenanceGuardState(ex.provenance?.guards_passed) === "failed" ? (
+                          <Badge className="bg-amber-500/10 text-amber-600 border-0 text-[8px]">Guards Failed</Badge>
+                        ) : (
+                          <Badge className="bg-slate-500/10 text-slate-600 border-0 text-[8px]">Guards Not Evaluated</Badge>
+                        )}
                         <span className="font-mono text-[9px] text-muted-foreground">Merkle: {short(ex.provenance.merkle_root)}</span>
                       </div>
                     )}
@@ -239,10 +238,9 @@ function AgentBubble({ agent, memo, isTyping, scenarioTrigger, isFirst }) {
               )}
             </AnimatePresence>
 
-            {/* Outgoing message */}
+            {/* This endpoint does not execute the coordinator peer bus. */}
             <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-dashed">
-              <Send className="w-3 h-3 text-muted-foreground shrink-0" />
-              <p className="text-[10px] text-muted-foreground italic">{OUTGOING_MESSAGES[action] || "ACK: Decision recorded"}</p>
+              <p className="text-[10px] text-muted-foreground italic">Independent role-profile call; no peer message was emitted.</p>
             </div>
           </div>
         )}
@@ -269,10 +267,13 @@ export default function TheaterPage() {
     setScenarioSummary(null);
 
     try {
-      // Load data + apply scenario
-      await jpost(API, "/case/load").catch(() => {});
-      if (scenario !== "baseline") {
-        await jpost(API, "/scenarios/run", { name: scenario, intensity: 1.0 }).catch(() => {});
+      // Fail closed: never replace a failed request with cached data.
+      await jpost(API, "/case/load");
+      const applied = scenario === "baseline"
+        ? await jpost(API, "/scenarios/reset")
+        : await jpost(API, "/scenarios/run", { name: scenario, intensity: 1.0 });
+      if (!applied?.ok) {
+        throw new Error(`scenario ${scenario} was not applied`);
       }
 
       const memos = [];
@@ -286,18 +287,17 @@ export default function TheaterPage() {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 
         // Make decision
-        let memo;
-        try {
-          const res = await jpost(API, "/decide", { agent_id: agent.role, role: agent.role });
-          memo = res.memo || res;
-        } catch {
-          // Fallback to cached
-          const fallback = await jget(API, "/decisions").catch(() => null);
-          const decs = fallback?.decisions || fallback || [];
-          memo = decs.find(d => d.role === agent.role) || decs[0];
+        const res = await jpost(API, "/decide", {
+          agent_id: agent.role, role: agent.role, mode: "agribrain",
+          deterministic: true,
+        });
+        const memo = res.memo || res;
+        if (!memo?.action || memo.role !== agent.role
+          || memo.scenario !== scenario
+          || memo.evidence_status !== "development_only"
+          || memo.publication_evidence !== false) {
+          throw new Error(`${agent.label} response did not bind this role/scenario`);
         }
-
-        if (!memo) { toast.error(`No data for ${agent.label}`); continue; }
         memos.push(memo);
 
         // Replace typing with actual memo
@@ -312,13 +312,13 @@ export default function TheaterPage() {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
       }
 
-      // Reset scenario
-      if (scenario !== "baseline") {
-        await jpost(API, "/scenarios/reset").catch(() => {});
+      const reset = await jpost(API, "/scenarios/reset");
+      if (!reset?.ok) {
+        throw new Error("scenario cleanup failed");
       }
 
-      // Summary
-      if (memos.length > 0) {
+      // Descriptive summary of five independent calls, never an episode metric.
+      if (memos.length === AGENTS.length) {
         const avgSlca = memos.reduce((s, m) => s + (m.slca || 0), 0) / memos.length;
         const totalCarbon = memos.reduce((s, m) => s + (m.carbon_kg || 0), 0);
         const avgWaste = memos.reduce((s, m) => s + (m.waste || 0), 0) / memos.length;
@@ -326,7 +326,10 @@ export default function TheaterPage() {
         setScenarioSummary({ avgSlca, totalCarbon, avgWaste, actions, count: memos.length });
       }
     } catch (e) {
-      toast.error(`Multi-agent run failed: ${e.message}`);
+      setAgentStates([]);
+      setScenarioSummary(null);
+      await jpost(API, "/scenarios/reset").catch(() => {});
+      toast.error(`Independent role-profile illustration failed without fallback data: ${e.message}`);
     }
 
     setRunning(false);
@@ -359,7 +362,7 @@ export default function TheaterPage() {
             </div>
             <Button onClick={runTheater} disabled={running} size="lg" className="bg-teal-600 hover:bg-teal-700 text-white">
               {running ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
-              {running ? "Running..." : "Start Run"}
+              {running ? "Running..." : "Run Independent Profiles"}
             </Button>
             {agentStates.length > 0 && (
               <div className="flex-1 min-w-32">
@@ -369,7 +372,7 @@ export default function TheaterPage() {
                     transition={{ duration: 0.3 }} />
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-1 text-right">
-                  {agentStates.filter(s => s.memo).length} / {AGENTS.length} agents
+                  {agentStates.filter(s => s.memo).length} / {AGENTS.length} role calls
                 </p>
               </div>
             )}
@@ -383,7 +386,7 @@ export default function TheaterPage() {
           <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
             <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
             <span className="text-xs font-medium text-amber-700 dark:text-amber-400">{sc.label}:</span>
-            <span className="text-xs text-amber-600 dark:text-amber-500">{sc.trigger}</span>
+            <span className="text-xs text-amber-600 dark:text-amber-500">{sc.description}</span>
           </div>
         </motion.div>
       )}
@@ -396,7 +399,7 @@ export default function TheaterPage() {
             agent={AGENTS[i]}
             memo={state.memo}
             isTyping={state.typing}
-            scenarioTrigger={sc.trigger}
+            scenarioDescription={sc.description}
             isFirst={i === 0}
           />
         ))}
@@ -411,24 +414,24 @@ export default function TheaterPage() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-teal-600" />
-                  Scenario Complete: {sc.label}
+                  Independent Role Profiles Complete: {sc.label}
                 </CardTitle>
                 <CardDescription>
-                  {scenarioSummary.count} agents processed the {sc.label.toLowerCase()} scenario
+                  {scenarioSummary.count} deterministic role-selected calls; no peer bus or publication episode was executed. Aggregates below are descriptive only.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="text-center bg-muted/30 rounded-lg p-3">
-                    <p className="text-[10px] text-muted-foreground uppercase">Avg SLCA</p>
+                    <p className="text-[10px] text-muted-foreground uppercase">Mean social-performance proxy</p>
                     <p className="text-xl font-bold text-teal-600">{fmt(scenarioSummary.avgSlca, 3)}</p>
                   </div>
                   <div className="text-center bg-muted/30 rounded-lg p-3">
-                    <p className="text-[10px] text-muted-foreground uppercase">Total CO₂</p>
-                    <p className="text-xl font-bold text-amber-600">{fmt(scenarioSummary.totalCarbon, 1)} kg</p>
+                    <p className="text-[10px] text-muted-foreground uppercase">Sum of emissions indicator across example calls</p>
+                    <p className="text-xl font-bold text-amber-600">{fmt(scenarioSummary.totalCarbon, 1)} kg CO2-eq</p>
                   </div>
                   <div className="text-center bg-muted/30 rounded-lg p-3">
-                    <p className="text-[10px] text-muted-foreground uppercase">Avg Waste</p>
+                    <p className="text-[10px] text-muted-foreground uppercase">Avg waste fraction</p>
                     <p className="text-xl font-bold text-red-500">{fmt(scenarioSummary.avgWaste * 100, 2)}%</p>
                   </div>
                   <div className="text-center bg-muted/30 rounded-lg p-3">

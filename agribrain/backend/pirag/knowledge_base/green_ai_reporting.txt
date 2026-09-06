@@ -1,11 +1,19 @@
-Green AI Reporting Requirements for Agricultural Decision Systems
+Green-AI Accounting Boundary for the AGRI-BRAIN Synthetic Benchmark
+Status: Executable-method companion note; all coefficients are author-declared proxies, not measured deployment data.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, are contextual references only; the executable code and locked protocol govern all benchmark values.
 
-Energy Metering: All AI inference operations in the supply chain decision pipeline must track energy consumption per forward pass. The baseline energy budget is 50 millijoules (0.050 joules) per inference step for edge-deployed models. Cloud-deployed models have a higher baseline of 200 millijoules per step due to network and datacenter overhead.
+Confirmatory activity-based estimate: For each timed action-selection call, the implementation records caller-supplied elapsed wall time in seconds. Estimated energy is
 
-Efficiency Thresholds: Systems exceeding the baseline energy budget by more than 100 percent (above 100 millijoules per step for edge, 400 millijoules for cloud) must undergo an efficiency review. The review evaluates model architecture, quantization opportunities, and batch processing options.
+    energy_J = elapsed_seconds * 10 W,
 
-Carbon Equivalence: Energy consumption is converted to carbon emissions using the regional grid factor. The default conversion factor is 1 kilowatt-hour equals 0.42 kilograms of CO2 equivalent. For renewable-powered facilities, the factor may be reduced to 0.05 kilograms CO2 equivalent per kilowatt-hour with appropriate certification.
+and estimated water is
 
-Water Footprint: AI inference indirectly consumes water through datacenter cooling. The estimated water footprint is 1.8 microlitres per inference step for edge deployment and 18 microlitres per step for cloud deployment. Cumulative water usage must be reported alongside energy metrics.
+    water_L = elapsed_seconds * 1.8e-06 L per server-second.
 
-Edge Versus Cloud Trade-offs: Edge deployment reduces latency (sub-10 millisecond response) and energy per step but limits model complexity. Cloud deployment supports larger models but adds network latency (50 to 200 milliseconds) and higher energy and water costs. The decision pipeline should prefer edge inference for time-critical routing decisions and reserve cloud inference for batch analytics and model retraining.
+The 10-watt active-power rate and 1.8e-06-litre-per-server-second water rate are declared assumptions. The resulting quantities are activity-based estimates, not hardware, power, carbon, or cooling telemetry. The timed boundary is the action-selection path supplied by the caller; it excludes forecast preparation, outcome scoring, learner post-step updates, artifact input/output, and idle allocation.
+
+Separately labelled step-count proxies: The code also retains fixed historical proxies of 0.05 joule and 1.8e-06 litre per caller-declared proxy step. In the benchmark, one proxy step is one standardized routing decision. These counters are sensitivity and backward-compatibility quantities only. They are not substituted for elapsed-time estimates and must not be described as neural forward-pass counts.
+
+Legacy MCP query: The query_footprint tool has no elapsed-time input, so it returns only the fixed step-count proxies. It converts proxy energy to kilowatt-hours and, for a monitoring example, applies the declared 0.42 kg CO2-equivalent per kWh grid-intensity proxy. That coefficient is not a measured regional or execution-site factor. Its efficiency flag is based only on the supplied energy-per-step proxy: normal at or below 0.05 J, above_baseline above 0.05 J through 0.10 J, and review_required above 0.10 J.
+
+Claim boundary: The benchmark does not measure cloud-versus-edge performance, neural inference energy, whole-system energy, whole-system water, or site-specific computational carbon emissions. No retrieved passage may turn these proxy calculations into an empirical sustainability or deployment-comparison claim.

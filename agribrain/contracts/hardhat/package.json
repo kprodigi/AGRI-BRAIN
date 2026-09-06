@@ -2,6 +2,10 @@
   "name": "agri-brain-hardhat",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=10"
+  },
   "type": "commonjs",
   "scripts": {
     "test": "hardhat test",
@@ -11,7 +15,10 @@
     "lint": "hardhat compile --force"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.1.2",
+    "@nomicfoundation/hardhat-network-helpers": "^1.1.2",
     "hardhat": "^2.22.5",
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0"
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "chai": "^4.5.0"
   }
 }

@@ -6,10 +6,10 @@ Runs ONLY the 3 core methods (static, hybrid_rl, agribrain) across all 5
 scenarios with 5 seeds.  Skips the 5 ablation modes to keep runtime manageable.
 
 Reports:
-  1. Whether method ordering (agribrain > hybrid_rl > static) holds per seed
+  1. Descriptive method comparisons without a preferred-outcome gate
   2. Mean +/- std of key metrics across seeds
   3. Comparison against the deterministic baseline
-  4. Whether values stay within physically realistic ranges
+  4. Whether values stay within their mathematical construct domains
 """
 from __future__ import annotations
 
@@ -46,9 +46,9 @@ MAX_ROWS = 50 if _QUICK else 0  # 0 = full data
 
 BOUNDS = {
     "ari":   (0.0, 1.0),
-    "waste": (0.0, 0.30),
+    "waste": (0.0, 1.0),
     "rle":   (0.0, 1.0),
-    "slca":  (0.20, 1.0),
+    "slca":  (0.0, 1.0),
 }
 
 
@@ -134,8 +134,6 @@ def main():
     print("COMPARISON: Baseline vs Stochastic (mean +/- std across 5 seeds)")
     print("=" * 70)
 
-    ordering_violations = 0
-    total_checks = 0
     bound_violations = 0
 
     for sc in SCENARIOS:
@@ -159,17 +157,15 @@ def main():
                       f"{mean:10.4f}  {std:10.6f}  {vmin:10.4f}  {vmax:10.4f}  "
                       f"{'OK' if ok else 'FAIL':>5s}")
 
-        # Ordering check per seed
+        # Descriptive ARI comparison per seed.  The observed ordering is an
+        # output of the experiment and is never a software-validity condition.
         for i, seed in enumerate(SEEDS):
             run = all_runs[i]
             a = run[sc]["agribrain"]["ari"]
             h = run[sc]["hybrid_rl"]["ari"]
             s = run[sc]["static"]["ari"]
-            total_checks += 1
-            if not (a >= h >= s):
-                ordering_violations += 1
-                print(f"  ** ORDERING VIOLATION seed={seed}: "
-                      f"agribrain={a:.4f}  hybrid={h:.4f}  static={s:.4f}")
+            print(f"  ARI seed={seed}: agribrain={a:.4f}  "
+                  f"hybrid={h:.4f}  static={s:.4f}")
 
     # --- Summary ---
     print()
@@ -190,21 +186,20 @@ def main():
     print(f"Stochastic variation: {'YES' if any_diff else 'NO (perturbations not working!)'}")
     print(f"Mean max-deviation from baseline: {np.mean(diffs):.6f}")
     print(f"Largest single deviation: {np.max(diffs):.6f}")
-    print(f"Ordering: {total_checks - ordering_violations}/{total_checks} passed")
     print(f"Bounds: {'ALL OK' if bound_violations == 0 else f'{bound_violations} VIOLATIONS'}")
 
     print()
-    if ordering_violations == 0 and bound_violations == 0 and any_diff:
+    if bound_violations == 0 and any_diff:
         print("VERDICT: FEASIBLE")
         print("Stochastic mode produces varied but defensible results.")
     elif not any_diff:
         print("VERDICT: BROKEN")
         print("Perturbations have no effect. Check wiring.")
     else:
-        print("VERDICT: NEEDS TUNING")
-        print(f"{ordering_violations} ordering violations, {bound_violations} bound violations.")
+        print("VERDICT: INVALID")
+        print(f"{bound_violations} construct-bound violations.")
 
-    return ordering_violations == 0 and bound_violations == 0 and any_diff
+    return bound_violations == 0 and any_diff
 
 
 if __name__ == "__main__":

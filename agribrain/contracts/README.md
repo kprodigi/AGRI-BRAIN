@@ -1,112 +1,49 @@
-# AGRI-BRAIN smart contracts
+# Optional EVM research prototypes
 
-This directory contains the Solidity smart contracts and Hardhat test
-suite for the AGRI-BRAIN audit-trail prototype.
+This directory contains Solidity prototypes and a Hardhat test suite. They are
+optional development tooling: the locked AGRI-BRAIN publication benchmark uses
+local Merkle commitments and sets `CHAIN_SUBMIT=0`.
 
-## Scope
+## Verified scope
 
-These contracts target a **permissioned EVM consortium** — the same
-deployment posture as the manuscript's §3.15 / §4.13 framing. The
-Hardhat config now ships three networks:
+The repository verifies compilation and contract behavior only in the local
+Hardhat test environment. The tests exercise role grants and revocation,
+proposal lifecycle logic, bounded policy storage, decision-record events, local
+Merkle-root storage, and the reward/slash bookkeeping API.
 
-* `localhost` — single-node Hardhat for the dev quickstart in
-  `HOW_TO_RUN.md` §7. Used by the test matrix.
-* `hardhat`   — in-process VM for the unit tests.
-* `permissioned` — template that picks up
-  `PERMISSIONED_RPC_URL`, `PERMISSIONED_CHAIN_ID`,
-  `PERMISSIONED_PRIVKEYS`, `EXTRA_LOGGERS`, and `EXTRA_ANCHORERS`
-  from the environment. Deploys cleanly against Hyperledger Besu
-  QBFT / IBFT-2.0, Quorum, or a Geth Clique consortium. The deploy
-  script (`hardhat/scripts/deploy.js`) grants `LOGGER_ROLE` /
-  `ANCHORER_ROLE` to every address in the EXTRA_* lists in the same
-  transaction batch as deployment, so the consortium validator set
-  is on-chain from block 1.
+No public, consortium, or production network was used to validate these
+contracts. The presence of a configurable `permissioned` Hardhat network entry
+is a template, not evidence of compatibility with Besu, Quorum, Geth, or any
+particular deployment. This code has not received a production security audit
+and makes no regulatory, legal, interoperability, immutability, or operational
+readiness claim.
 
-The contracts are research code; production deployments should run
-the Slither analysis and the rest of the production checklist below.
+## Local test
 
-## Access-control posture (post 2026-04 hardening)
-
-| Contract              | Access model                                                        |
-|-----------------------|---------------------------------------------------------------------|
-| `AgentRegistry`       | role registry (proposer / voter membership)                         |
-| `AgriDAO`             | proposer / voter roles + Pending → Active lifecycle (VOTING_DELAY)  |
-| `DecisionLogger`      | **role-based** (ADMIN_ROLE / LOGGER_ROLE) with `setAuthorized` shim |
-| `PolicyStore`         | owner + AgriDAO authorized writer                                   |
-| `ProvenanceRegistry`  | **role-based** (ADMIN_ROLE / ANCHORER_ROLE) with legacy `onlyOwner` |
-| `SLCARewards`         | **role-based** (ADMIN/REWARDER/SLASHER)                             |
-
-The 2026-04 cleanup's "single-key Ownable" finding for `DecisionLogger`
-and `ProvenanceRegistry` is closed: both contracts now expose
-`grantRole`/`revokeRole`/`hasRole` mirrored on the SLCARewards
-pattern. The deployer is granted ADMIN + functional roles at
-construction so existing operational scripts keep working; additional
-keys (per-agent service accounts, the AgriDAO contract) are granted
-through `EXTRA_LOGGERS` / `EXTRA_ANCHORERS` at deploy time. The
-legacy `setAuthorized(addr, allowed)` and `onlyOwner` surfaces are
-retained as thin shims over the role layer so that backend chain
-wrappers and existing scripts work unchanged while every state
-change is visible on-chain through `RoleGranted` / `RoleRevoked`
-events.
-
-Tests:
-
-* `hardhat/test/DecisionLogger.test.js` covers role grants, revocation,
-  the `setAuthorized` shim, and unauthorized-caller revert.
-* `hardhat/test/ProvenanceRegistry.test.js` covers ADMIN-granted
-  ANCHORER delegation and the immutable append-only audit trail.
-* `hardhat/test/SLCARewards.test.js` covers ADMIN-mediated role grants
-  and the reward / slash paths.
-
-## On-chain anchoring posture
-
-`agribrain/backend/src/chain/decision_ledger.py` produces a per-episode Merkle
-root. The publish path is gated by `CHAIN_SUBMIT=1` and the chain
-config is supplied via `CHAIN_CFG_JSON`. The 2026-04 cleanup found
-that `submit_onchain` previously swallowed every exception silently —
-operators believed an anchoring had happened when it had not. The
-fixed implementation **logs at WARN/ERROR and re-raises by default**;
-set `CHAIN_BEST_EFFORT=true` to restore the previous swallow-and-
-return-None behaviour for long-running simulation loops where
-anchoring is best-effort. The simulator (`mvp/simulation/generate_results.py`)
-defaults to `CHAIN_BEST_EFFORT=true` for HPC runs but records the
-outcome in `decision_ledger_tx_status` so the count of how many
-submissions actually landed is auditable.
-
-Anchored roots are verified by
-`mvp/simulation/analysis/verify_anchored_root.py`, which reads the
-on-chain root back and compares it against the local ledger.
-
-## Production checklist
-
-- [x] Permissioned EVM network entry in `hardhat/hardhat.config.cjs`
-      (`permissioned`); the deployer accepts validator keys via
-      `PERMISSIONED_PRIVKEYS` and grants role permissions via
-      `EXTRA_LOGGERS` / `EXTRA_ANCHORERS`.
-- [x] Role-based access control on `DecisionLogger`,
-      `ProvenanceRegistry`, and `SLCARewards`.
-- [x] Per-tx anchoring receipt verifier
-      (`mvp/simulation/analysis/verify_anchored_root.py`).
-- [ ] OpenZeppelin `ReentrancyGuard` import in `AgriDAO.sol`. The
-      hand-rolled `_LocalReentrancyGuard` is functionally equivalent
-      and Slither passes, but the canonical import is preferable.
-      Replacing it requires adding OpenZeppelin as an npm
-      dependency and is queued for a follow-up.
-- [ ] CI workflow that compiles and runs Solidity tests against a
-      live Besu network (the current CI runs against localhost
-      Hardhat only).
-
-When operating against a permissioned chain, set the env vars listed
-in `hardhat/hardhat.config.cjs` and run **from the `hardhat/`
-subdirectory** (Hardhat resolves its config from the working
-directory):
+From `agribrain/contracts/hardhat`:
 
 ```bash
-cd agribrain/contracts/hardhat
-EXTRA_LOGGERS=0xagent1,0xagent2 \
-EXTRA_ANCHORERS=0xexplainerService \
-PERMISSIONED_RPC_URL=https://validator-1.consortium.example \
-PERMISSIONED_CHAIN_ID=2025 \
-PERMISSIONED_PRIVKEYS=0x... \
-npx hardhat run scripts/deploy.js --network permissioned
+npm ci
+npx hardhat test
 ```
+
+The local configuration exposes:
+
+- `AgentRegistry`: prototype address-to-role records;
+- `AgriDAO`: prototype proposal and voting lifecycle;
+- `PolicyStore`: bounded scalar and matrix storage;
+- `DecisionLogger`: optional decision and episode-root event records;
+- `ProvenanceRegistry`: optional Merkle-root records; and
+- `SLCARewards`: prototype integer reward/slash bookkeeping.
+
+## Optional local anchoring demonstration
+
+`agribrain/backend/src/chain/decision_ledger.py` can submit an episode Merkle
+root only when `CHAIN_SUBMIT=1` and a matching local chain configuration is
+provided. This is separate from publication evidence. A transaction receipt
+shows only that the configured development chain accepted a call; it does not
+verify the underlying scientific result, expose Merkle inclusion paths, or
+establish real-world deployment.
+
+Keep `CHAIN_SUBMIT=0` for the publication benchmark. Any experiment that enables
+submission must be identified separately as an optional local demonstration.

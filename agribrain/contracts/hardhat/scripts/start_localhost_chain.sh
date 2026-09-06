@@ -53,28 +53,11 @@ fi
 echo "[start_localhost_chain] deploying contracts..."
 npx hardhat run scripts/deploy.js --network localhost
 
-# Hardhat's deterministic accounts. Account 0 is the deployer.
-#
-# !! SECURITY NOTICE !!
-# The literal below is the well-known Hardhat / @nomicfoundation
-# default test account-0 private key. It is deterministic, public,
-# and shared by every Hardhat installation on the planet. Anyone
-# running `npx hardhat node` reproduces this exact key on their own
-# machine, so it is safe (and correct) to embed in this localhost-
-# only helper.
-#
-# Secret scanners (TruffleHog, GitGuardian, GitHub secret scanning)
-# may flag this string as a leaked private key on first scan. The
-# match is real but the key has zero confidentiality value because
-# it controls only test-network funds (chain id 31337) on a node
-# that is freshly reseeded each time it starts.
-#
-# DO NOT use this key on any non-localhost chain. Production
-# CHAIN_PRIVKEY must come from a real key-management system (HSM,
-# AWS Secrets Manager, etc.), never from this script.
-DEPLOYER_PRIVKEY="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+# Do not embed even a public localhost test key in the release: automated
+# secret scanners cannot reliably distinguish it from a real credential.
+# Hardhat prints the freshly seeded localhost account keys in its own terminal.
 
-cat <<EOF
+cat <<'EOF'
 
 [start_localhost_chain] DONE.
 
@@ -85,8 +68,8 @@ Addresses written to:
 To anchor decisions on chain, export the deployer key and (re)start
 the FastAPI backend:
 
-  export CHAIN_PRIVKEY=${DEPLOYER_PRIVKEY}
-  export PROVENANCE_ADDR=\$(jq -r .ProvenanceRegistry agribrain/backend/runtime/chain/deployed-addresses.localhost.json)
+  export CHAIN_PRIVKEY="<copy the localhost-only account-0 key printed by hardhat node>"
+  export PROVENANCE_ADDR=$(jq -r .ProvenanceRegistry agribrain/backend/runtime/chain/deployed-addresses.localhost.json)
   python -m uvicorn src.app:API --host 127.0.0.1 --port 8100 --app-dir agribrain/backend
 
 Then verify a fresh decision is anchored:

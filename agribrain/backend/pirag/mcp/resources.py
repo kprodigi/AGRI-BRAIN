@@ -1,6 +1,6 @@
-"""MCP Resources: URI-addressable live state endpoints.
+"""MCP resources: URI-addressable in-process benchmark state.
 
-Exposes real-time supply chain telemetry, quality metrics, forecasts,
+Exposes current synthetic benchmark state, modeled quality metrics, forecasts,
 and policy parameters as MCP resources. Each resource has a URI following
 the ``agribrain://`` scheme and a ``read_fn`` that returns the current
 value from the agent's observable state.
@@ -68,7 +68,7 @@ def register_agent_resources(
 
         ("agribrain://footprint/cumulative",
          "Cumulative Footprint",
-         "Cumulative green AI footprint (energy, water, CO2)",
+         "Declared fixed-rate Green-AI proxy counters (energy, water, CO2); not telemetry",
          lambda: agent_state_fn().get("cumulative_footprint", {})),
     ]
 
@@ -94,7 +94,7 @@ def register_agent_resources(
              "modifier"),
             ("agribrain://context/explanation",
              "Latest Decision Explanation",
-             "Most recent causal decision explanation with provenance",
+             "Most recent context-to-policy trace with provenance",
              "explanation"),
             ("agribrain://context/robustness",
              "Context Robustness",

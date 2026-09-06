@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Multi-seed context-ablation aggregator with bootstrap CIs.
+"""Development-only context-ablation smoke aggregator.
 
 Ingests per-seed JSONs produced by run_single_seed.py (files named
 ``seed_<seed>.json`` under the seeds directory) and computes summary
@@ -9,10 +9,15 @@ never re-runs run_all() itself; the HPC pipeline produces the seed JSONs
 in parallel via a SLURM job array, and this aggregator assembles them
 afterwards.
 
-The MODES tuple is imported from ``generate_results`` so the aggregator
-automatically picks up any ablation mode added to the simulator (e.g.
-the paper-§4.7 cold-start and perturbation modes) without a second
-hardcoded list drifting out of sync.
+This legacy analysis is retained only as a development smoke utility. Its
+unadjusted exploratory tests are not the locked H1/H2/H3 analyses, and every
+output explicitly declares ``publication_evidence=false``. It refuses to
+write under the canonical ``mvp/simulation/results`` tree. Publication runs
+must use ``aggregate_seeds.py`` through the validated HPC pipeline.
+
+The MODES tuple is imported from ``generate_results`` so the development
+diagnostic follows the exact eight primary and three secondary modes without a
+second hardcoded list drifting out of sync.
 
 In stochastic mode (default), different seeds produce genuinely different
 results, yielding meaningful CIs, p-values, and effect sizes. In
@@ -39,13 +44,15 @@ from stochastic import DETERMINISTIC_MODE
 from generate_results import SCENARIOS, MODES as _SIM_MODES
 
 
-DEFAULT_RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
-DEFAULT_SEEDS_DIR = DEFAULT_RESULTS_DIR / "benchmark_seeds"
+CANONICAL_RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
+DEFAULT_RESULTS_DIR = (
+    Path(__file__).resolve().parent.parent
+    / "development_results" / "benchmark_suite"
+)
+DEFAULT_SEEDS_DIR = CANONICAL_RESULTS_DIR / "benchmark_seeds"
 
 # Canonical mode list comes from generate_results so the aggregator
-# automatically covers every mode the simulator exposes. Keeping a
-# second hardcoded tuple here was the bug that dropped cold_start and
-# the three pert_* sensitivity modes from every bootstrap CI.
+# automatically covers exactly the eight primary and three secondary modes.
 MODES = tuple(_SIM_MODES)
 # Single canonical RLE: EU-hierarchy + severity-weighted form.
 METRICS = ("ari", "waste", "rle", "slca", "carbon", "equity")
@@ -68,37 +75,32 @@ def _bootstrap_ci(values: List[float], n_boot: int = 10_000, alpha: float = 0.05
 
 
 def _mean_diff_pvalue(a: List[float], b: List[float], n_perm: int = 10_000) -> float:
-    """Two-sided permutation p-value for difference in means, 10,000 permutations."""
-    if not a or not b:
+    """Two-sided paired sign-flip diagnostic over aligned seed differences."""
+    if not a or not b or len(a) != len(b):
         return 1.0
-    x = np.array(a, dtype=float)
-    y = np.array(b, dtype=float)
-    observed = abs(float(np.mean(x) - np.mean(y)))
-    pooled = np.concatenate([x, y])
-    n_x = len(x)
+    diff = np.asarray(a, dtype=float) - np.asarray(b, dtype=float)
+    observed = abs(float(np.mean(diff)))
     rng = np.random.default_rng(123)
     ge = 0
     for _ in range(n_perm):
-        perm = rng.permutation(pooled)
-        diff = abs(float(np.mean(perm[:n_x]) - np.mean(perm[n_x:])))
-        if diff >= observed:
+        signs = rng.choice((-1.0, 1.0), size=len(diff), replace=True)
+        permuted = abs(float(np.mean(diff * signs)))
+        if permuted >= observed:
             ge += 1
     return float((ge + 1) / (n_perm + 1))
 
 
 def _cohens_d(a: List[float], b: List[float]) -> float:
-    if not a or not b:
+    """Paired standardized mean difference (Cohen's d_z)."""
+    if not a or not b or len(a) != len(b):
         return 0.0
-    x = np.array(a, dtype=float)
-    y = np.array(b, dtype=float)
-    nx, ny = len(x), len(y)
-    if nx < 2 or ny < 2:
+    difference = np.asarray(a, dtype=float) - np.asarray(b, dtype=float)
+    if len(difference) < 2:
         return 0.0
-    sx2, sy2 = np.var(x, ddof=1), np.var(y, ddof=1)
-    pooled = ((nx - 1) * sx2 + (ny - 1) * sy2) / max(nx + ny - 2, 1)
-    if pooled <= 0:
+    sd = float(np.std(difference, ddof=1))
+    if sd <= 0.0:
         return 0.0
-    return float((np.mean(x) - np.mean(y)) / np.sqrt(pooled))
+    return float(np.mean(difference) / sd)
 
 
 def _parse_seeds_env() -> List[int]:
@@ -131,7 +133,8 @@ def _discover_seed_files(seeds_dir: Path, seeds: List[int]) -> Dict[int, Path]:
 def _load_collected(seed_files: Dict[int, Path]) -> Dict[str, Dict[str, Dict[str, List[float]]]]:
     collected: Dict[str, Dict[str, Dict[str, List[float]]]] = {}
     for seed, path in sorted(seed_files.items()):
-        data = json.loads(path.read_text(encoding="utf-8"))
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        data = payload.get("scenarios", payload)
         for scenario in SCENARIOS:
             scenario_data = data.get(scenario, {})
             scenario_bucket = collected.setdefault(scenario, {})
@@ -196,16 +199,17 @@ def _build_significance(
                 significance[scenario][comp_key][metric] = {
                     "p_value": _mean_diff_pvalue(a_vals, b_vals),
                     "cohens_d": _cohens_d(a_vals, b_vals),
+                    "cohens_dz": _cohens_d(a_vals, b_vals),
                     "mean_diff": float(np.mean(a_vals) - np.mean(b_vals)) if a_vals and b_vals else 0.0,
                 }
     return significance
 
 
 def _load_from_table2(table2_path: Path) -> Dict[str, Dict[str, Dict[str, List[float]]]]:
-    """Legacy single-run fallback used when BENCHMARK_USE_TABLES=true."""
+    """Load one table for an explicitly requested development smoke run."""
     t2 = pd.read_csv(table2_path)
-    print("  WARNING: BENCHMARK_USE_TABLES=true loads single-run data from CSV.")
-    print("  CIs and p-values will be degenerate (n=1). Use multi-seed runs for meaningful statistics.")
+    print("  DEVELOPMENT ONLY: loading a single-run table; publication_evidence=false.")
+    print("  CIs and p-values are degenerate (n=1) and cannot support paper claims.")
     collected: Dict[str, Dict[str, Dict[str, List[float]]]] = {}
     for scenario in SCENARIOS:
         collected.setdefault(scenario, {})
@@ -238,24 +242,51 @@ def main() -> None:
         "--output-dir",
         type=Path,
         default=DEFAULT_RESULTS_DIR,
-        help="Directory to write aggregator outputs "
-             "(default: mvp/simulation/results).",
+        help="Development-only output directory (default: "
+             "mvp/simulation/development_results/benchmark_suite).",
+    )
+    parser.add_argument(
+        "--single-run-table",
+        type=Path,
+        default=None,
+        help="Explicitly run a degenerate one-table development smoke. "
+             "Never accepted as publication evidence.",
     )
     args = parser.parse_args()
 
+    output_dir = args.output_dir.resolve()
+    canonical_dir = CANONICAL_RESULTS_DIR.resolve()
+    if output_dir == canonical_dir or canonical_dir in output_dir.parents:
+        raise SystemExit(
+            "BLOCK: run_benchmark_suite.py is development-only and refuses "
+            "to write under mvp/simulation/results. Use aggregate_seeds.py "
+            "through the validated HPC publication pipeline."
+        )
+    if os.environ.get("BENCHMARK_USE_TABLES", "").lower() == "true":
+        raise SystemExit(
+            "BLOCK: BENCHMARK_USE_TABLES is retired. Use --single-run-table "
+            "for an explicitly labelled development smoke."
+        )
+    if os.environ.get("BENCHMARK_WRITE_COMPAT", "").lower() == "true":
+        raise SystemExit(
+            "BLOCK: BENCHMARK_WRITE_COMPAT is retired because it could "
+            "create publication-like benchmark_summary.json files."
+        )
+
     mode_label = "STOCHASTIC" if not DETERMINISTIC_MODE else "DETERMINISTIC"
-    print(f"Benchmark suite aggregator, mode: {mode_label}")
+    print(f"Development benchmark smoke aggregator, mode: {mode_label}")
+    print("  publication_evidence=false")
     if DETERMINISTIC_MODE:
         print("  WARNING: deterministic mode, all seeds produce identical results.")
         print("  Set DETERMINISTIC_MODE=false for meaningful statistics.")
 
     seeds = _parse_seeds_env()
-    use_tables = os.environ.get("BENCHMARK_USE_TABLES", "false").lower() == "true"
+    use_tables = args.single_run_table is not None
 
     if use_tables:
-        t2_path = args.output_dir / "table2_ablation.csv"
+        t2_path = args.single_run_table
         if not t2_path.exists():
-            raise FileNotFoundError(f"Missing {t2_path}; run generate_results.py first.")
+            raise FileNotFoundError(f"Missing development table: {t2_path}")
         collected = _load_from_table2(t2_path)
         loaded_seeds: List[int] = []
     else:
@@ -263,8 +294,8 @@ def main() -> None:
         if not seed_files:
             raise SystemExit(
                 f"BLOCK: no per-seed JSONs found under {args.seeds_dir}. "
-                f"Run run_single_seed.py for each seed first, or set "
-                f"BENCHMARK_USE_TABLES=true for the single-run fallback."
+                f"Run run_single_seed.py for development inputs, or pass "
+                f"--single-run-table for an explicitly labelled smoke."
             )
         missing = sorted(set(seeds) - set(seed_files))
         if missing:
@@ -308,15 +339,15 @@ def main() -> None:
             agribrain_data = collected.get(sc, {}).get("agribrain", {})
             if not agribrain_data:
                 continue
-            for baseline in ("static", "hybrid_rl", "no_pinn", "no_slca",
+            for baseline in ("static", "hybrid_rl", "no_slca",
                               "no_context", "mcp_only", "pirag_only"):
                 base_data = collected.get(sc, {}).get(baseline, {})
                 if not base_data:
                     continue
                 comp: Dict[str, Any] = {
-                    "is_paired_design": baseline in {"no_context", "mcp_only", "pirag_only"},
+                    "is_paired_design": True,
                     "test_type": "skipped_degenerate_sample",
-                    "effect_size_primary": "cohens_d_pooled",
+                    "effect_size_primary": "cohens_dz",
                 }
                 for met in ("ari", "rle", "waste", "slca", "carbon", "equity"):
                     a = list(agribrain_data.get(met, []))
@@ -333,7 +364,7 @@ def main() -> None:
                         "p_value_adj_by": None,
                         "p_value_adj_bh": None,
                         "p_value_legacy_signflip": None,
-                        "cohens_d": d_pooled,
+                        "cohens_d": dz,
                         "cohens_dz": dz,
                         "cohens_d_pooled": d_pooled,
                         "hedges_g": d_pooled,
@@ -355,33 +386,37 @@ def main() -> None:
         significance = _build_significance(collected)
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    out = args.output_dir / "benchmark_context_summary.json"
-    sig_out = args.output_dir / "benchmark_context_significance.json"
+    out = args.output_dir / "development_benchmark_summary.json"
+    sig_out = args.output_dir / "development_benchmark_significance.json"
+    evidence_scope = (
+        "single_seed_development_smoke"
+        if use_tables else "development_multi_seed_exploration"
+    )
+    metadata = {
+        "source": "run_benchmark_suite.py",
+        "scope": evidence_scope,
+        "publication_evidence": False,
+        "confirmatory_inference": False,
+        "statistical_method": "exploratory_unadjusted_not_locked_h1_h2_h3",
+        "modes": list(MODES),
+        "mode_label": mode_label,
+        "seeds_requested": seeds,
+        "seeds_loaded": loaded_seeds,
+        "seeds_dir": str(args.seeds_dir),
+        "single_run_table": str(args.single_run_table) if use_tables else None,
+    }
     payload = {
-        "_meta": {
-            "source": "run_benchmark_suite.py",
-            "modes": list(MODES),
-            "mode_label": mode_label,
-            "seeds_requested": seeds,
-            "seeds_loaded": loaded_seeds,
-            "seeds_dir": str(args.seeds_dir),
-            "use_tables": use_tables,
-        },
+        "_meta": metadata,
         "summary": summary,
     }
+    significance_payload = {
+        "_meta": metadata,
+        "significance": significance,
+    }
     out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    sig_out.write_text(json.dumps(significance, indent=2), encoding="utf-8")
-    print(f"Saved benchmark summary: {out}")
-    print(f"Saved benchmark significance: {sig_out}")
-
-    write_compat = os.environ.get("BENCHMARK_WRITE_COMPAT", "false").lower() == "true"
-    if write_compat:
-        compat_out = args.output_dir / "benchmark_summary.json"
-        compat_sig_out = args.output_dir / "benchmark_significance.json"
-        compat_out.write_text(json.dumps(summary, indent=2), encoding="utf-8")
-        compat_sig_out.write_text(json.dumps(significance, indent=2), encoding="utf-8")
-        print(f"Saved benchmark summary (compat): {compat_out}")
-        print(f"Saved benchmark significance (compat): {compat_sig_out}")
+    sig_out.write_text(json.dumps(significance_payload, indent=2), encoding="utf-8")
+    print(f"Saved development summary: {out}")
+    print(f"Saved development significance: {sig_out}")
 
 
 if __name__ == "__main__":

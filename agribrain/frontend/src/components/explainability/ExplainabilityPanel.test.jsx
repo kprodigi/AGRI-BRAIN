@@ -3,9 +3,9 @@
  *
  * The Decisions page renders an ExplainabilityPanel when an
  * explainability blob is present on a decision memo. The panel is the
- * primary user-visible rendering of the paper's causal-reasoning
- * claims (BECAUSE/WITHOUT highlighting, [KB:] citations, 5-axis
- * context feature radar, Merkle-rooted provenance). These tests pin
+ * primary user-visible rendering of the paper's policy-trace
+ * contracts ([KB:] citation rendering, 5-axis context feature radar,
+ * and a local Merkle commitment). These tests pin
  * the contracts that drove those claims so a refactor cannot silently
  * remove or rename any of them.
  */
@@ -25,10 +25,10 @@ const memoFixture = {
 
 const explainabilityFixture = {
   context_features: {
-    compliance_severity: 0.7,
+    operating_envelope_severity: 0.7,
     forecast_urgency: 0.4,
-    retrieval_confidence: 0.85,
-    regulatory_pressure: 0.5,
+    normalized_fused_rank_strength: 0.85,
+    source_labelled_guidance_flag: 0.5,
     recovery_saturation: 0.2,
   },
   logit_adjustment: {
@@ -37,12 +37,12 @@ const explainabilityFixture = {
     recovery: 0.2,
   },
   mcp_tools_invoked: ["check_compliance", "spoilage_forecast", "pirag_query"],
-  compliance: { compliant: false, violations: [{ severity: "warning" }] },
+  operating_envelope: { compliant: false, violations: [{ severity: "warning" }] },
   forecast: { urgency: "critical", forecast_rho: 0.42 },
-  pirag_top_doc: "kb_fda_temp_excursion",
-  pirag_top_score: 0.812,
+  institutional_retrieval_top_doc: "constructed_temperature_excursion_note",
+  institutional_retrieval_top_score: 0.0312,
   keywords: {
-    regulatory: ["FDA cold-chain", "temperature excursion"],
+    institutional_guidance: ["declared cold-chain envelope", "temperature excursion"],
     sop: ["redirect to local market"],
   },
   provenance: {
@@ -51,45 +51,41 @@ const explainabilityFixture = {
     guard_breakdown: { unit: true, range: true, retrieval: true },
     merkle_root: "abc123def4567890",
   },
-  causal_text:
-    "BECAUSE compliance_severity=0.7 [KB:fda_temp_excursion] AND forecast_urgency=0.4 " +
-    "WITHOUT cold_chain capacity available local_redistribute is selected.",
-  attribution_chain: { primary_cause: "compliance_severity" },
+  policy_trace_text:
+    "The largest recorded calculation component was the operating-envelope signal " +
+    "[KB:synthetic_temp_excursion]. The context-ablation delta was also recorded.",
+  attribution_chain: { primary_cause: "operating-envelope exceedance" },
   ablation_delta: { cold_chain: -0.3 },
-  causal_chain: { primary_cause: "compliance_severity" },
-  counterfactual: { action: "cold_chain", probs: { cold_chain: 0.6 } },
-  summary: "Compliance violation triggered local redistribution.",
+  summary: "An operating-envelope excursion triggered local redistribution.",
 };
 
 describe("ExplainabilityPanel", () => {
-  it("renders the causal narrative with BECAUSE / WITHOUT emphasis", () => {
+  it("renders cautious calculation-trace prose", () => {
     render(<ExplainabilityPanel explainability={explainabilityFixture} memo={memoFixture} />);
-    // BECAUSE and WITHOUT appear as visually-emphasised tokens.
-    expect(screen.getByText("BECAUSE")).toBeInTheDocument();
-    expect(screen.getByText("WITHOUT")).toBeInTheDocument();
+    expect(screen.getByText(/largest recorded calculation component/i)).toBeInTheDocument();
   });
 
   it("renders [KB:] citations as badges", () => {
     render(<ExplainabilityPanel explainability={explainabilityFixture} memo={memoFixture} />);
-    // The narrative contains [KB:fda_temp_excursion]; the panel breaks
+    // The narrative contains a [KB:] tag; the panel breaks
     // those out into recognisable citation badges.
-    expect(screen.getByText(/KB:fda_temp_excursion/i)).toBeInTheDocument();
+    expect(screen.getByText(/KB:synthetic_temp_excursion/i)).toBeInTheDocument();
   });
 
-  it("surfaces each invoked MCP tool in the provenance chain", () => {
+  it("surfaces each invoked project MCP-style tool in the calculation trace", () => {
     render(<ExplainabilityPanel explainability={explainabilityFixture} memo={memoFixture} />);
-    // The provenance chain renders tool steps as "MCP: <name>" plus
-    // (where applicable) a piRAG step "piRAG: <doc>". Assert both
+    // The local calculation trace renders tool steps as "MCP: <name>" plus
+    // (where applicable) an institutional retrieval step. Assert both
     // shapes so a refactor that drops the prefix or the steps
     // surfaces here.
-    expect(screen.getAllByText(/MCP:\s*check_compliance/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/MCP:\s*operating-envelope check/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/MCP:\s*spoilage_forecast/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/MCP:\s*pirag_query/i).length).toBeGreaterThan(0);
-    // piRAG top doc step
-    expect(screen.getAllByText(/piRAG:\s*kb_fda_temp_excursion/i).length).toBeGreaterThan(0);
+    // Institutional retrieval top document step
+    expect(screen.getAllByText(/Institutional retrieval:\s*constructed_temperature_excursion_note/i).length).toBeGreaterThan(0);
   });
 
-  it("renders the Merkle root for provenance verification", () => {
+  it("renders the local Merkle commitment root", () => {
     render(<ExplainabilityPanel explainability={explainabilityFixture} memo={memoFixture} />);
     // The panel shows a truncated form of the merkle root; we only
     // assert the prefix is reachable to lock the contract that the
@@ -98,7 +94,7 @@ describe("ExplainabilityPanel", () => {
   });
 
   it("falls back to an explicit 'unavailable' state when the narrative is missing", () => {
-    const stripped = { ...explainabilityFixture, causal_text: "", summary: "" };
+    const stripped = { ...explainabilityFixture, policy_trace_text: "", summary: "" };
     render(<ExplainabilityPanel explainability={stripped} memo={memoFixture} />);
     // Fail-loud: an empty narrative must be visible, not silently
     // absent from the panel. (Paper § 4.10 honesty claim.)
@@ -109,7 +105,24 @@ describe("ExplainabilityPanel", () => {
     render(<ExplainabilityPanel explainability={explainabilityFixture} memo={memoFixture} />);
     // The 5-axis radar uses these labels (matches the paper figure
     // and the FEATURE_LABELS array in the component).
-    for (const label of ["Compliance", "Forecast", "Retrieval", "Regulatory", "Recovery"]) {
+    for (const label of ["Envelope", "Forecast", "Retrieval", "Guidance", "Recovery"]) {
+      expect(screen.getAllByText(label).length).toBeGreaterThan(0);
+    }
+  });
+
+  it("keeps legacy stored feature keys as compatibility aliases", () => {
+    const legacy = {
+      ...explainabilityFixture,
+      context_features: {
+        compliance_severity: 0.7,
+        forecast_urgency: 0.4,
+        retrieval_confidence: 0.85,
+        regulatory_pressure: 0.5,
+        recovery_saturation: 0.2,
+      },
+    };
+    render(<ExplainabilityPanel explainability={legacy} memo={memoFixture} />);
+    for (const label of ["Envelope", "Forecast", "Retrieval", "Guidance", "Recovery"]) {
       expect(screen.getAllByText(label).length).toBeGreaterThan(0);
     }
   });

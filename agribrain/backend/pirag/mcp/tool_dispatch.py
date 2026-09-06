@@ -7,7 +7,8 @@ so agents can reuse results published by upstream agents.
 
 When an ``mcp_server`` is provided, tool invocations are routed through
 the MCP JSON-RPC protocol layer so that the ProtocolRecorder captures
-every interaction as genuine protocol traffic.
+each in-process dispatcher invocation. This records real JSON-RPC request and
+response objects but does not imply network-socket transport.
 
 Trigger functions receive ``(obs, prior_results, shared_context)`` and
 return True when the tool should be invoked. Argument functions receive
@@ -16,6 +17,7 @@ the same triple and return a kwargs dict for the tool.
 from __future__ import annotations
 
 import json
+import os
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ..mcp.registry import ToolRegistry
@@ -53,6 +55,7 @@ def _spoilage_forecast_args(obs: Any, prior: Dict[str, Any], shared: Any) -> Dic
         "temperature": obs.temp,
         "humidity": obs.rh,
         "hours_ahead": 6,
+        "age_hours": float(getattr(obs, "hour", 0.0)),
     }
 
 
@@ -74,8 +77,10 @@ def _calculator_surplus_args(obs: Any, prior: Dict[str, Any], shared: Any) -> Di
 
 def _yield_query_args(obs: Any, prior: Dict[str, Any], shared: Any) -> Dict[str, Any]:
     """Pull pre-computed uncertainty from obs.raw when the simulator has
-    already run Holt's linear this step. Falls back to inv_history when
-    no cached value is present (e.g., FastAPI /decide path).
+    already run the configured supply-proxy forecaster this step. The locked
+    confirmatory method is persistence; Holt-linear is diagnostic only.
+    Falls back to ``inv_history`` when no cached value is present (for
+    example, the FastAPI ``/decide`` path).
     """
     raw = getattr(obs, "raw", {}) or {}
     cached_unc = raw.get("supply_uncertainty")
@@ -223,7 +228,7 @@ def reset_dispatch_id_counter() -> None:
 
     Called by ``AgentCoordinator.reset`` so per-episode protocol
     traces use comparable id ranges (otherwise the counter grows
-    unboundedly across the simulator's 5-scenario × 20-mode loop and
+    unboundedly across the simulator's 5-scenario × 11-mode loop and
     comparing two scenario runs surfaces disjoint id ranges).
     """
     global _dispatch_id_counter
@@ -311,7 +316,11 @@ def dispatch_tools(
         layer so the ProtocolRecorder captures genuine interactions.
 
     Returns a dict mapping tool names to their results, plus metadata keys:
-    ``_tools_invoked``, ``_tools_failed``, ``_tools_skipped``.
+    ``_tools_invoked``, ``_tools_failed``, ``_tool_failure_details``, and
+    ``_tools_skipped``. Under ``STRICT_VALIDATION=1``, any genuine trigger,
+    argument-building, registry, invocation, or conditional follow-up failure raises
+    after the workflow is summarized. Explicit False predicates remain
+    structural skips.
     """
     cfg = dispatch_config or {}
     workflow = _select_workflow(role, registry, cfg)
@@ -319,25 +328,51 @@ def dispatch_tools(
     invoked: List[str] = []
     failed: List[str] = []
     skipped: List[str] = []
+    failure_details: List[Dict[str, str]] = []
+
+    def _record_failure(tool_name: str, stage: str, exc: Any) -> None:
+        failed.append(tool_name)
+        failure_details.append({
+            "tool": tool_name,
+            "stage": stage,
+            "error_type": type(exc).__name__,
+            "message": str(exc),
+        })
 
     def _execute(tool_name: str, trigger_fn, args_fn) -> None:
         """Run a single workflow step: trigger -> args -> invoke."""
         try:
             should_invoke = trigger_fn(obs, results, shared_context)
-        except Exception:
-            should_invoke = False
+        except Exception as exc:
+            # A broken predicate is not the same as a legitimate False
+            # predicate. Record it as a genuine dispatcher failure so strict
+            # publication runs cannot silently convert code errors to skips.
+            _record_failure(tool_name, "trigger", exc)
+            results[tool_name] = None
+            return
 
         if not should_invoke:
+            # Explicit False is a structural workflow skip, not a failure.
             skipped.append(tool_name)
             return
 
         spec = registry.get(tool_name)
         if spec is None:
-            skipped.append(tool_name)
+            _record_failure(
+                tool_name,
+                "registry_lookup",
+                KeyError(f"workflow tool {tool_name!r} is not registered"),
+            )
+            results[tool_name] = None
             return
 
         try:
             kwargs = args_fn(obs, results, shared_context)
+        except Exception as exc:
+            _record_failure(tool_name, "arguments", exc)
+            results[tool_name] = None
+            return
+        try:
             result = _invoke_with_reliability(
                 registry=registry,
                 mcp_server=mcp_server,
@@ -347,28 +382,25 @@ def dispatch_tools(
             )
             results[tool_name] = result
             invoked.append(tool_name)
-        except Exception:
-            failed.append(tool_name)
+        except Exception as exc:
+            _record_failure(tool_name, "invoke", exc)
             results[tool_name] = None
 
     # Pass 1 — static role workflow.
     for step in workflow:
         _execute(*step)
 
-    # Pass 2 — observe-then-decide loop (real ReAct closed loop).
-    # If the static workflow surfaced a critical compliance violation
-    # but the agent has not yet looked up forward spoilage risk, invoke
-    # spoilage_forecast as a follow-up. Then if the forecast says the
-    # produce will be at high risk in the next 6 hours, re-run
-    # compliance with a tightened temperature target so the next-step
-    # decision sees the escalated state. This is the only place in the
-    # dispatcher where one tool's *result* drives whether another tool
-    # runs and with what arguments — i.e. an actual "perceive ->
-    # think -> act -> observe" iteration.
-    react_iterations = 0
-    react_max_iter = int(cfg.get("react_max_iter", 2))
-    while react_iterations < react_max_iter:
-        react_iterations += 1
+    # One bounded result-conditioned follow-up check. If the role workflow
+    # surfaced a critical compliance result but did not already request the
+    # spoilage forecast, call that forecast once. This is a one-way conditional
+    # composition, not a multi-turn ReAct loop: the forecast result does not
+    # trigger another compliance invocation or a second refinement pass.
+    refinement_checks = 0
+    followup_invocations = 0
+    # ``react_max_iter`` is a retained compatibility key; this implementation
+    # treats it as an on/off budget for exactly one conditional check.
+    if int(cfg.get("react_max_iter", 1)) > 0:
+        refinement_checks = 1
         compliance = results.get("check_compliance") or {}
         is_critical = (
             isinstance(compliance, dict)
@@ -378,73 +410,57 @@ def dispatch_tools(
                 for v in compliance.get("violations", []) or []
             )
         )
-        if not is_critical:
-            break
-        # Followup A: ensure spoilage_forecast was run with the actual
-        # observed conditions; if not, run it now.
-        spec_sf = registry.get("spoilage_forecast")
-        if spec_sf is not None and "spoilage_forecast" not in invoked:
-            try:
-                sf = _invoke_with_reliability(
-                    registry=registry,
-                    mcp_server=mcp_server,
-                    tool_name="spoilage_forecast",
-                    kwargs={
-                        "current_rho": float(getattr(obs, "rho", 0.0)),
-                        "temperature": float(getattr(obs, "temp", 8.0)),
-                        "humidity": float(getattr(obs, "rh", 90.0)),
-                        "hours_ahead": 6,
-                    },
-                    cfg=cfg,
+        if is_critical:
+            spec_sf = registry.get("spoilage_forecast")
+            if spec_sf is None:
+                _record_failure(
+                    "spoilage_forecast",
+                    "conditional_followup_registry_lookup",
+                    KeyError("critical conditional follow-up tool is not registered"),
                 )
-                results["spoilage_forecast"] = sf
-                invoked.append("spoilage_forecast")
-            except Exception:
-                failed.append("spoilage_forecast")
-                results["spoilage_forecast"] = None
-        # Observe: did spoilage_forecast confirm the threat?
-        sf = results.get("spoilage_forecast") or {}
-        forecast_high = isinstance(sf, dict) and sf.get("urgency") in {"high", "critical"}
-        # Followup B: if both compliance is critical AND forecast is
-        # high, escalate by re-running compliance with the tightened
-        # FDA target threshold (4 C, the leafy-greens tighter floor).
-        # This produces a fresh `check_compliance` result tagged
-        # `_react_iteration` so downstream consumers can audit which
-        # call actually drove the decision.
-        if forecast_high and "check_compliance_react" not in results:
-            spec_cc = registry.get("check_compliance")
-            if spec_cc is not None:
+            elif "spoilage_forecast" not in invoked:
                 try:
-                    cc2 = _invoke_with_reliability(
+                    sf = _invoke_with_reliability(
                         registry=registry,
                         mcp_server=mcp_server,
-                        tool_name="check_compliance",
+                        tool_name="spoilage_forecast",
                         kwargs={
+                            "current_rho": float(getattr(obs, "rho", 0.0)),
                             "temperature": float(getattr(obs, "temp", 8.0)),
                             "humidity": float(getattr(obs, "rh", 90.0)),
-                            "product_type": "spinach_tightened",
+                            "hours_ahead": 6,
+                            "age_hours": float(getattr(obs, "hour", 0.0)),
                         },
                         cfg=cfg,
                     )
-                    if isinstance(cc2, dict):
-                        cc2["_react_iteration"] = react_iterations
-                    results["check_compliance_react"] = cc2
-                    invoked.append("check_compliance_react")
-                except Exception:
-                    failed.append("check_compliance_react")
-                    results["check_compliance_react"] = None
-            # Loop terminates here: we have the escalated compliance
-            # result; further iterations would not produce new
-            # information given the static argument schema.
-            break
-        # No new tool to call; exit the loop.
-        break
+                    results["spoilage_forecast"] = sf
+                    invoked.append("spoilage_forecast")
+                    followup_invocations = 1
+                except Exception as exc:
+                    _record_failure(
+                        "spoilage_forecast", "conditional_followup_invoke", exc,
+                    )
+                    results["spoilage_forecast"] = None
 
     results["_tools_invoked"] = invoked
     results["_tools_failed"] = failed
+    results["_tool_failure_details"] = failure_details
     results["_tools_skipped"] = skipped
     results["_dispatch_profile"] = cfg.get("qos_profile", "legacy")
-    results["_react_iterations"] = react_iterations
+    # Backward-compatible alias: this counts conditional checks, not tool-loop
+    # turns. New fields state the semantics explicitly.
+    results["_react_iterations"] = refinement_checks
+    results["_conditional_followup_checks"] = refinement_checks
+    results["_conditional_followup_invocations"] = followup_invocations
+    if failed and os.environ.get("STRICT_VALIDATION", "0") == "1":
+        raise RuntimeError(
+            "MCP dispatcher failure(s) under STRICT_VALIDATION=1: "
+            + "; ".join(
+                f"{item['tool']}[{item['stage']}]: "
+                f"{item['error_type']}: {item['message']}"
+                for item in failure_details
+            )
+        )
     return results
 
 
@@ -498,7 +514,7 @@ def _invoke_with_reliability(
         _CB = CircuitBreaker()
 
     if not _CB.allow(tool_name):
-        return None
+        raise RuntimeError(f"circuit breaker open for tool {tool_name!r}")
 
     def _do_call() -> Any:
         if mcp_server is not None:

@@ -102,10 +102,10 @@ export const Scenarios = {
         // Fallback — match the backend shape {scenarios: [...], active: ...}
         return {
             scenarios: [
-                { id: 'heatwave', label: 'Climate-Induced Heatwave' },
-                { id: 'overproduction', label: 'Overproduction / Glut' },
-                { id: 'cyber_outage', label: 'Cyber Threat & Node Outage' },
-                { id: 'adaptive_pricing', label: 'Adaptive Pricing & Demand Oscillation' },
+                { id: 'heatwave', label: 'Synthetic Heatwave' },
+                { id: 'overproduction', label: 'Synthetic Overproduction' },
+                { id: 'cyber_outage', label: 'Synthetic Cyber-Outage' },
+                { id: 'adaptive_pricing', label: 'Synthetic Adaptive-Pricing Oscillation' },
                 { id: 'baseline', label: 'Baseline' },
             ],
             active: null,

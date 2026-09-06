@@ -1,18 +1,6 @@
-# Gitleaks configuration for AGRI-BRAIN.
-#
-# The only secret-shaped string in the tracked tree is the canonical,
-# publicly known Hardhat account-0 deterministic TEST key used by
-# agribrain/contracts/hardhat/scripts/start_localhost_chain.sh for the
-# localhost (chain id 31337) dev quickstart. It has zero
-# confidentiality value — every Hardhat installation ships it — and
-# the script's SECURITY NOTICE forbids non-localhost use. Allowlist it
-# so secret scanners don't raise a false positive on first scan.
+# Gitleaks configuration for AGRI-BRAIN. No repository-specific secret
+# allowlist is maintained: scanner findings must be removed or reviewed
+# explicitly rather than suppressed by a literal credential pattern.
 
 [extend]
 useDefault = true
-
-[allowlist]
-description = "Well-known Hardhat account-0 deterministic test key (public, localhost-only)"
-regexes = [
-  '''ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80''',
-]

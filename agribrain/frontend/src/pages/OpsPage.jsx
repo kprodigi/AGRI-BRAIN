@@ -11,123 +11,10 @@ import {
 } from "recharts";
 import {
   Thermometer, Activity, Recycle, BarChart3, AlertTriangle, TrendingUp,
-  TrendingDown, RefreshCw, Sparkles, X, ArrowRight,
+  TrendingDown, RefreshCw,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 
 const API = getApiBase();
-
-// --------------------------------------------------------------------
-// Results headline banner. Surfaces the canonical 20-seed paper claims
-// to a first-time guest landing on the ops dashboard. Numbers are pinned
-// against the manuscript's Table 7 / §5.8 — they should match
-// mvp/simulation/results/paper_benchmark_table.json and
-// mvp/simulation/results/channel_attribution_aggregate.json. Update the
-// HEADLINE_CLAIMS list below whenever a new canonical HPC re-run lands.
-//
-// The banner is dismissable. State persists in localStorage under
-// `ops.showcaseBanner.dismissed` so returning operators don't see it,
-// but a guest opening a fresh browser will.
-// --------------------------------------------------------------------
-const HEADLINE_CLAIMS = [
-  {
-    label: "Integration superiority (H1)",
-    value: "+0.012 to +0.032",
-    unit: "ΔARI vs no-context",
-    detail: "All 5 scenarios, Cohen's d_pooled 0.96–2.01, p_adj < 0.001",
-  },
-  {
-    label: "Complementarity & synergy (H2)",
-    value: "75%",
-    unit: "non-redundant decisions",
-    detail: "piRAG drives routing; MCP synergistic (φ=+0.26, p<1e-3) + safety layer (n = 19,200)",
-  },
-  {
-    label: "Provenance integrity",
-    value: "100%",
-    unit: "verifiable Merkle roots",
-    detail: "On-chain anchor via ProvenanceRegistry.sol",
-  },
-];
-
-function ShowcaseBanner() {
-  const [dismissed, setDismissed] = useState(() => {
-    try { return localStorage.getItem("ops.showcaseBanner.dismissed") === "1"; }
-    catch { return false; }
-  });
-  if (dismissed) return null;
-  const dismiss = () => {
-    setDismissed(true);
-    try { localStorage.setItem("ops.showcaseBanner.dismissed", "1"); } catch {}
-  };
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="relative rounded-xl border border-teal-500/30 bg-gradient-to-br from-teal-500/8 via-blue-500/5 to-purple-500/8 p-4 sm:p-5"
-    >
-      <button
-        onClick={dismiss}
-        aria-label="Dismiss results banner"
-        className="absolute top-2 right-2 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition"
-      >
-        <X className="w-4 h-4" />
-      </button>
-      <div className="flex items-start gap-3">
-        <div className="rounded-lg p-2 bg-teal-500/15">
-          <Sparkles className="w-5 h-5 text-teal-600" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-sm sm:text-base font-semibold">
-              AGRI-BRAIN — adaptive supply-chain intelligence, evidence-anchored.
-            </h2>
-            <span className="text-[10px] uppercase tracking-wider rounded-full px-2 py-0.5 bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/20">
-              canonical 20-seed run
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-            5 perturbation scenarios × 8 routing modes × 20 stochastic seeds × 288 hourly steps =
-            230,400 evaluated decisions. Three hypotheses established:
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
-            {HEADLINE_CLAIMS.map((c) => (
-              <div key={c.label} className="rounded-lg border border-border/50 bg-background/60 p-3">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
-                  {c.label}
-                </div>
-                <div className="text-lg sm:text-xl font-bold tabular-nums mt-0.5">
-                  {c.value}{" "}
-                  <span className="text-xs font-normal text-muted-foreground">{c.unit}</span>
-                </div>
-                <div className="text-[10px] text-muted-foreground mt-1 leading-tight">
-                  {c.detail}
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-wrap items-center gap-2 mt-3">
-            <Link to="/mcp-pirag" className="inline-flex items-center gap-1 text-xs font-semibold text-teal-700 dark:text-teal-300 hover:underline">
-              See H2 mechanism evidence
-              <ArrowRight className="w-3 h-3" />
-            </Link>
-            <span className="text-muted-foreground/50 text-xs">·</span>
-            <Link to="/demo" className="inline-flex items-center gap-1 text-xs font-semibold text-teal-700 dark:text-teal-300 hover:underline">
-              Walkthrough demo
-              <ArrowRight className="w-3 h-3" />
-            </Link>
-            <span className="text-muted-foreground/50 text-xs">·</span>
-            <Link to="/analytics" className="inline-flex items-center gap-1 text-xs font-semibold text-teal-700 dark:text-teal-300 hover:underline">
-              Cross-scenario benchmark
-              <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
 
 // Animated counter component
 function AnimatedCounter({ value, decimals = 0, duration = 1.2, prefix = "", suffix = "" }) {
@@ -234,6 +121,25 @@ const TIME_RANGES = [
   { label: "All", hours: Infinity },
 ];
 
+function timestampMillis(value) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value < 1e12 ? value * 1000 : value;
+  }
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function filterRowsByElapsedHours(rows, hours) {
+  if (hours === Infinity) return rows;
+  const withTimes = rows
+    .map((row) => ({ row, ms: timestampMillis(row.ts) }))
+    .filter(({ ms }) => ms !== null);
+  if (withTimes.length === 0) return [];
+  const latestMs = Math.max(...withTimes.map(({ ms }) => ms));
+  const cutoffMs = latestMs - hours * 60 * 60 * 1000;
+  return withTimes.filter(({ ms }) => ms >= cutoffMs).map(({ row }) => row);
+}
+
 export default function OpsPage() {
   const [kpis, setKpis] = useState(null);
   const [tel, setTel] = useState(null);
@@ -297,7 +203,6 @@ export default function OpsPage() {
   const anomalies = n(kpis?.anomaly_points) ?? 0;
   const wasteBaseline = n(kpis?.waste_rate_baseline ?? kpis?.waste_baseline_pct) ?? 0;
   const wasteAgri = n(kpis?.waste_rate_agri ?? kpis?.waste_agri_pct) ?? 0;
-  const wasteReduction = wasteBaseline > 0 ? ((wasteBaseline - wasteAgri) / wasteBaseline * 100) : 0;
 
   const telRows = useMemo(() => {
     if (!tel?.timestamp) return [];
@@ -315,13 +220,18 @@ export default function OpsPage() {
   const filteredTelRows = useMemo(() => {
     const range = TIME_RANGES.find((r) => r.label === timeRange);
     if (!range || range.hours === Infinity) return telRows;
-    return telRows.slice(-range.hours);
+    return filterRowsByElapsedHours(telRows, range.hours);
   }, [telRows, timeRange]);
 
-  const shelfSeries = useMemo(
-    () => (pred?.shelf_left || []).map((v, i) => ({ i, shelf_left: v })),
-    [pred]
-  );
+  const shelfSeries = useMemo(() => {
+    const rows = (pred?.shelf_left || []).map((v, i) => ({
+      i,
+      ts: pred?.timestamp?.[i],
+      shelf_left: v,
+    }));
+    const range = TIME_RANGES.find((r) => r.label === timeRange);
+    return !range ? rows : filterRowsByElapsedHours(rows, range.hours);
+  }, [pred, timeRange]);
 
   if (loading) {
     return (
@@ -352,9 +262,6 @@ export default function OpsPage() {
 
   return (
     <div className="space-y-1">
-      {/* Results headline — paper claims at a glance (dismissable; see ShowcaseBanner) */}
-      <ShowcaseBanner />
-
       {/* KPI summary grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
@@ -371,7 +278,7 @@ export default function OpsPage() {
           suffix=" °C"
           icon={Thermometer}
           tone={avgTemp > 8 ? "critical" : avgTemp > 6 ? "warn" : "good"}
-          description={avgTemp > 8 ? "Above critical threshold" : avgTemp > 6 ? "Above warning threshold" : "Within safe range (2–8°C)"}
+          description={avgTemp > 8 ? "Above declared benchmark envelope" : avgTemp > 6 ? "Within upper benchmark band" : "Within declared 2–8°C benchmark band"}
           delay={1}
         />
         <KPICard
@@ -401,7 +308,7 @@ export default function OpsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Cold Chain</p>
-                <CardTitle className="text-lg font-bold">Telemetry Streams</CardTitle>
+                <CardTitle className="text-lg font-bold">Benchmark State Series</CardTitle>
               </div>
               <div className="flex items-center gap-1">
                 {TIME_RANGES.map((r) => (
@@ -476,7 +383,7 @@ export default function OpsPage() {
           <CardHeader className="pb-0">
             <div>
               <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Model Output</p>
-              <CardTitle className="text-lg font-bold">Spoilage & Yield Preview</CardTitle>
+              <CardTitle className="text-lg font-bold">Mechanistic Quality & Forecast Preview</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="pt-0 px-4 pb-3">
@@ -485,17 +392,17 @@ export default function OpsPage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={shelfSeries}>
                     <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                    <XAxis dataKey="i" tick={{ fontSize: 19 }} label={{ value: "Timestep", position: "insideBottom", offset: -5, fontSize: 13 }} />
-                    <YAxis domain={[0, 1]} tick={{ fontSize: 19 }} label={{ value: "Shelf Left", angle: -90, position: "insideLeft", fontSize: 13 }} />
+                    <XAxis dataKey="ts" tick={{ fontSize: 19 }} label={{ value: "Timestamp", position: "insideBottom", offset: -5, fontSize: 13 }} />
+                    <YAxis domain={[0, 1]} tick={{ fontSize: 19 }} label={{ value: "Modeled quality remaining", angle: -90, position: "insideLeft", fontSize: 13 }} />
                     <ReTooltip content={<ChartTooltip />} />
-                    <Area dataKey="shelf_left" name="Shelf Life Remaining" stroke="#00796B" fill="#009688" fillOpacity={0.25} strokeWidth={3.5} />
+                    <Area dataKey="shelf_left" name="Modeled Quality Remaining" stroke="#00796B" fill="#009688" fillOpacity={0.25} strokeWidth={3.5} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
               <Card className="bg-muted/30">
                 <CardContent className="p-3 space-y-1.5">
                   <div>
-                    <p className="text-xs text-muted-foreground">Last shelf_left</p>
+                    <p className="text-xs text-muted-foreground">Latest modeled quality remaining</p>
                     <p className="text-xl font-bold font-mono">{fmt(last(pred?.shelf_left))}</p>
                   </div>
                   <div>

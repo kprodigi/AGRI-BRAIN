@@ -12,8 +12,8 @@ State + context shapes:
   psi. Supply and demand forecast information now lives strictly on
   the state side, where it belongs.
 - Theta has shape (3, 10); Theta_context has shape (3, 5).
-- yield_query is a useful MCP tool that supplies the Holt's linear
-  (level + trend) forecast and its residual-std uncertainty; its
+- yield_query is an MCP contract around the validation-selected persistence
+  supply proxy (with Holt-linear retained as a diagnostic); its
   output is consumed by the state vector via ``build_feature_vector``,
   not by the context modifier.
 """
@@ -136,7 +136,7 @@ class TestContextFiveFeatures:
         assert _PIRAG_FEATURE_MASK.shape == (5,)
         # MCP features: compliance, forecast urgency, recovery saturation.
         assert np.allclose(_MCP_FEATURE_MASK, [1.0, 1.0, 0.0, 0.0, 1.0])
-        # piRAG features: retrieval confidence, regulatory pressure.
+        # piRAG features: normalized retrieval-score and retrieved-policy signals.
         assert np.allclose(_PIRAG_FEATURE_MASK, [0.0, 0.0, 1.0, 1.0, 0.0])
 
     def test_context_mode_accepts_three_values(self):
@@ -276,7 +276,7 @@ class TestStateNineFeatures:
 # 4. Residual-std uncertainty in the forecasters
 # ---------------------------------------------------------------------------
 class TestForecasterResidualStd:
-    """Both forecasters now emit residual-std under the ``std`` key."""
+    """Diagnostic forecast implementations emit an error scale as ``std``."""
 
     def test_lstm_residual_std_nonnegative(self):
         from src.models.lstm_demand import lstm_demand_forecast
@@ -289,7 +289,7 @@ class TestForecasterResidualStd:
         assert "series_std" in out
         assert out["std"] >= 0.0
 
-    def test_holt_winters_residual_std_nonnegative(self):
+    def test_diagnostic_holt_linear_supply_std_nonnegative(self):
         from src.models.yield_forecast import yield_supply_forecast
         import pandas as pd
         df = pd.DataFrame({
@@ -300,7 +300,7 @@ class TestForecasterResidualStd:
         assert "series_std" in out
         assert out["std"] >= 0.0
 
-    def test_holt_winters_std_grows_with_volatility(self):
+    def test_diagnostic_holt_linear_supply_std_grows_with_volatility(self):
         from src.models.yield_forecast import yield_supply_forecast
         import pandas as pd
         stable = pd.DataFrame({"inventory_units": [12000.0] * 30})

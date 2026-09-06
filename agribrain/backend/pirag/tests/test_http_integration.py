@@ -22,11 +22,21 @@ pytest.importorskip("httpx", reason="httpx required for FastAPI TestClient")
 
 @pytest.fixture(scope="module")
 def client():
+    from dataclasses import replace
     from fastapi.testclient import TestClient
     from src.app import API
+    import src.security as security
 
-    with TestClient(API) as c:
-        yield c
+    # Other security tests deliberately mutate the singleton settings object.
+    # Isolate this protocol-contract module from their execution order; API-key
+    # enforcement itself is covered by the dedicated security tests.
+    previous = security.SETTINGS
+    security.SETTINGS = replace(previous, require_api_key=False)
+    try:
+        with TestClient(API) as c:
+            yield c
+    finally:
+        security.SETTINGS = previous
 
 
 def test_health_endpoint(client):

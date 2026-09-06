@@ -1,4 +1,10 @@
-"""Evaluation metrics for retrieval/evidence quality."""
+"""Retrieval diagnostics.
+
+The lexical-overlap functions below do not test factual faithfulness, evidence
+support, or retrieval relevance. Retrieval-quality claims require the separate
+independently judged evaluation and fail closed when those judgments are absent.
+Legacy function/output names are retained only for schema compatibility.
+"""
 from __future__ import annotations
 
 from typing import Any, Dict, Iterable, List, Sequence, Tuple
@@ -26,7 +32,10 @@ def recall_at_k(pred_ids: Sequence[str], true_ids: Sequence[str], k: int = 3) ->
     return len(p & t) / float(len(t))
 
 
-def faithfulness_at_k(answer: str, citations: List[Dict[str, Any]], k: int = 3) -> float:
+def citation_token_overlap_at_k(
+    answer: str, citations: List[Dict[str, Any]], k: int = 3
+) -> float:
+    """Fraction of top-k excerpts sharing any of the first 20 answer tokens."""
     if not citations:
         return 0.0
     top = citations[:k]
@@ -41,6 +50,12 @@ def faithfulness_at_k(answer: str, citations: List[Dict[str, Any]], k: int = 3) 
     return ok / max(1, min(k, len(top)))
 
 
+def faithfulness_at_k(answer: str, citations: List[Dict[str, Any]], k: int = 3) -> float:
+    """Legacy misnamed alias for :func:`citation_token_overlap_at_k`."""
+
+    return citation_token_overlap_at_k(answer, citations, k=k)
+
+
 def attribution_precision_recall(pred_cites: List[str], true_cites: List[str]) -> Tuple[float, float]:
     ps = set(pred_cites)
     ts = set(true_cites)
@@ -50,7 +65,10 @@ def attribution_precision_recall(pred_cites: List[str], true_cites: List[str]) -
     return prec, rec
 
 
-def evidence_coverage(answer: str, citations: List[Dict[str, Any]]) -> float:
+def sentence_token_overlap_coverage(
+    answer: str, citations: List[Dict[str, Any]]
+) -> float:
+    """Fraction of answer sentences with a simple token substring overlap."""
     sents = [s.strip() for s in answer.split(".") if s.strip()]
     if not sents:
         return 1.0
@@ -62,6 +80,12 @@ def evidence_coverage(answer: str, citations: List[Dict[str, Any]]) -> float:
         if any(tok in cited_text for tok in _tokenize(s)[:5]):
             covered += 1
     return covered / len(sents)
+
+
+def evidence_coverage(answer: str, citations: List[Dict[str, Any]]) -> float:
+    """Legacy misnamed alias for :func:`sentence_token_overlap_coverage`."""
+
+    return sentence_token_overlap_coverage(answer, citations)
 
 
 def expected_calibration_error(
@@ -104,11 +128,15 @@ def summarize_retrieval_quality(
 ) -> Dict[str, float]:
     conf_list = list(confs)
     corr_list = list(correct)
+    citation_overlap = citation_token_overlap_at_k(answer, citations, k=3)
+    sentence_overlap = sentence_token_overlap_coverage(answer, citations)
     return {
         "p_at_3": precision_at_k(pred_ids, true_ids, k=3),
         "r_at_3": recall_at_k(pred_ids, true_ids, k=3),
-        "faithfulness_at_3": faithfulness_at_k(answer, citations, k=3),
-        "evidence_coverage": evidence_coverage(answer, citations),
+        "citation_token_overlap_at_3": citation_overlap,
+        "sentence_token_overlap_coverage": sentence_overlap,
+        "faithfulness_at_3": citation_overlap,  # legacy schema alias
+        "evidence_coverage": sentence_overlap,  # legacy schema alias
         "ece_10bin": expected_calibration_error(
             [i / 10 for i in range(11)],
             conf_list,

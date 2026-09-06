@@ -1,41 +1,29 @@
-CYBER AND COMMUNICATIONS OUTAGE CONTINGENCY
+SYNTHETIC CYBER-OUTAGE SCENARIO CONTRACT
+Status: Constructed benchmark input; it is a controlled simulation perturbation, not an incident-response standard.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, motivate topic selection only; the executable code and locked protocol govern all benchmark values.
 Document ID: KB-COC-010
-Effective Date: 2025-09-01
-Regulatory Basis: NIST Cybersecurity Framework (CSF) v2.0; FSMA Preventive Controls Rule
+Executable sources: agribrain/backend/src/models/scenario_engine.py, src/agents/coordinator.py, and pirag/context_provider.py
 
-1. SCOPE AND ACTIVATION
+1. EXECUTABLE SCENARIO PERTURBATION
 
-This protocol applies when the central decision engine, sensor telemetry network, or
-blockchain ledger becomes unavailable due to communications failure, cyberattack, or
-infrastructure outage. Activation occurs automatically when the system health monitor
-detects no successful heartbeat response for 3 consecutive polling cycles (default cycle
-interval: 60 seconds, so activation at approximately 3 minutes of sustained failure).
+At the nominal intensity, the cyber_outage scenario starts at simulation hour 24. For
+h >= 24, demand is multiplied by 0.15 and temperature receives the additive excursion
 
-2. FALLBACK OPERATING PROCEDURES
+  10*(1 - exp(-0.2*(h-24))) degrees Celsius.
 
-During a communications outage, all field agents and routing operators must fall back
-to cached routing policies. The local policy cache stores the most recent 48 hours of
-validated routing decisions and SLCA parameters. Operators must record all product
-movements, temperature readings, and routing decisions using manual timestamps on
-paper-based Outage Operations Logs (OOL-600).
+Inventory is not directly overwritten by this scenario transform. The common scenario
+state is recomputed and supplied to every paired experimental mode.
 
-Within 2 hours of communications restoration, all manual records must be digitized and
-synchronized with the central decision engine. The sync process must reconcile cached
-decisions with any conflicting updates issued during the outage window.
+2. EXECUTABLE CHANNEL AVAILABILITY
 
-3. BLOCKCHAIN TRANSACTION HANDLING
+For context-enabled policies, the MCP tool channel is marked unavailable from hour 24
+onward. Institutional retrieval is not automatically disabled by this scenario, and the
+normal policy distribution continues to operate using the channels available to its
+mode. The benchmark records channel availability and decisions for later validation.
 
-Blockchain audit transactions that cannot be submitted during the outage must be queued
-locally and batch-submitted upon restoration. Each batched transaction must include the
-original decision timestamp, the outage flag indicator, and a hash linking it to the
-corresponding manual log entry.
+3. EXCLUDED CLAIMS
 
-4. REQUIRED ACTIONS
-
-Action 1: Conduct a post-outage incident review within 24 hours of restoration per NIST
-CSF Respond (RS) function requirements. Document outage duration, root cause, data gaps,
-and any decisions made under degraded conditions.
-
-Action 2: Verify integrity of all batch-submitted blockchain transactions by comparing
-on-chain records against manual Outage Operations Logs. Flag and investigate any
-discrepancies within 48 hours. Report findings to the cooperative governance board.
+The code does not implement heartbeat polling, a 48-hour cached-policy store, paper
+outage logs, two-hour reconciliation, post-incident deadlines, or queued blockchain
+transactions. It does not simulate a real cyberattack or validate operational recovery.
+Those procedures require a separately designed and tested deployment plan.

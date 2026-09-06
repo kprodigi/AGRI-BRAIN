@@ -2,12 +2,12 @@
 
 This module reranks retrieval hits using a mix of lexical evidence
 (temperature numbers extracted by regex, keyword sets for spoilage /
-freshness / urgency) and a single genuine-physics component
+freshness / urgency) and a single Arrhenius-derived consistency heuristic
 (Arrhenius-consistency: agreement between the temperature mentioned in
 the passage and the current ``k_eff`` derived from the simulator's
 upstream Arrhenius rate). Honest framing: most of the bonus is
 keyword-density based and would not survive a vocabulary swap; only
-the Arrhenius-consistency term has a thermodynamic basis.
+the Arrhenius-consistency term has a mechanistic thermodynamic basis.
 
 Two mechanisms:
 
@@ -128,8 +128,8 @@ def lexical_arrhenius_rerank(
       compares the temperature(s) mentioned in the passage to the
       current Arrhenius rate ``k_eff``. Passages whose mentioned
       temperature implies a vastly different decay rate are
-      down-ranked. This is the only ranker component that uses real
-      physics rather than keywords.
+      down-ranked. This is the only ranker component with a mechanistic
+      thermodynamic basis rather than a keyword match.
 
     Parameters
     ----------
@@ -151,7 +151,12 @@ def lexical_arrhenius_rerank(
     scored = []
     for passage in passages:
         text = passage.get("text", "")
-        base_score = passage.get("score", 0.0)
+        # ``score`` is the raw fused-retrieval strength on entry.  Preserve it
+        # explicitly before replacing ``score`` with the post-rerank value.
+        # The downstream normalized fused-rank feature and author-declared
+        # RRF-floor gate operate on the RRF scale and must never consume the
+        # lexical/Arrhenius bonus.
+        base_score = float(passage.get("fused_score", passage.get("score", 0.0)))
         lexical_bonus = 0.0
         consistency = 1.0
         arrhenius_consistency = 1.0
@@ -185,8 +190,8 @@ def lexical_arrhenius_rerank(
         # k_passage = k_ref * exp(Ea_R * (1/T_ref - 1/T_pass)) (without
         # humidity coupling, for a clean term-by-term audit). We
         # compare it to the current k_eff from the simulator and
-        # penalise the bonus when the magnitudes differ by more than
-        # a factor of 2 (one order of magnitude in log space).
+        # penalise the bonus once the magnitudes differ by more than a factor
+        # of 2, reaching zero Arrhenius consistency at a factor-of-10 gap.
         if k_eff > 0.0 and mentioned_temps:
             import math as _math
             k_ref = 0.0021
@@ -226,7 +231,9 @@ def lexical_arrhenius_rerank(
 
         scored.append({
             **passage,
+            "fused_score": base_score,
             "score": adjusted_score,
+            "rerank_score": adjusted_score,
             "lexical_bonus": round(lexical_bonus, 4),
             "arrhenius_consistency": round(arrhenius_consistency, 4),
             # Backward-compatible aggregate field; some downstream

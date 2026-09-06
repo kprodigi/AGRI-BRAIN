@@ -1,12 +1,10 @@
-"""Tests for cross-scenario learner state persistence.
+"""Tests for explicit within-block learner-cache persistence.
 
-``run_all`` threads a ``learner_state_cache`` dict into every
-``run_episode`` call so the policy-delta and context learners keep
-accumulating updates across scenarios. Without this, each 48-step
-episode starts from zero-delta and the learner cannot saturate. This
-test locks in the save/restore contract end-to-end by calling
-``run_episode`` twice with the same cache and checking that the second
-call's delta strictly dominates the first.
+The publication driver creates a fresh cache for each scenario-mode-seed block,
+uses it across that block's adaptation episodes, and freezes the retained
+evaluation episode. These unit tests exercise the lower-level save/restore
+mechanism by calling ``run_episode`` twice with one explicitly shared cache;
+they do not authorize or test persistence across scenarios, modes, or seeds.
 """
 from __future__ import annotations
 
@@ -54,7 +52,7 @@ def test_delta_is_zero_without_cache(sim_runtime, short_df):
     assert summary["n_updates"] == 16
 
 
-def test_cache_preserves_updates_across_calls(sim_runtime, short_df):
+def test_explicit_cache_preserves_updates_across_calls(sim_runtime, short_df):
     """Two episodes with a shared cache produce a learner state whose
     n_updates sums across calls; the final delta frobenius norm is
     strictly greater than after the first call alone."""

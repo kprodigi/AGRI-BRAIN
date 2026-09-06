@@ -7,74 +7,51 @@ This module implements a stylised social-performance scoring rule that
 sits in the same conceptual space as a Social Life-Cycle Assessment
 (SLCA) but is *not* a UNEP/SETAC SLCA. UNEP/SETAC (2020) and the
 Roundtable for Product Social Metrics (Goedkoop et al., 2018) require
-indicator-level measurement against an audited inventory; we instead
-score each routing action against four expert-elicited base values that
-encode the *qualitative ordering* established in the SLCA literature
-for short-chain redistribution vs. centralised cold-chain distribution
-(Arcese et al., 2018; Iofrida et al., 2018; Petti et al., 2018).
+indicator-level measurement against an audited inventory; we instead score
+each routing action against four author-declared base values. The literature
+motivates attention to social indicators but does not establish the numerical
+route ordering used here.
 
-The base values below therefore make a defensible *ranking* claim
-(local_redistribute > recovery > cold_chain on every social pillar)
-but should not be read as *measurements*. The manuscript reports a
-sensitivity analysis showing the AGRI-BRAIN method-ranking is
-invariant under ±25 % perturbation of each base value (see
-``tests/test_metric_variants.py::test_slca_ranking_invariant``). For
-work that requires absolute social-performance levels rather than
-ranks, the values should be replaced with PSILCA v4 database scores
-(Eisfeldt & Ciroth, 2017; GreenDelta, 2025) for the relevant NACE
-rev. 2 sector codes:
-
-    cold_chain         → NACE H49.41 "Freight transport by road"
-    local_redistribute → NACE G47.21 / Q88 "Retail of food / Social work"
-    recovery           → NACE E38 "Waste collection, treatment, disposal"
-
-PSILCA's worker-hour or direct-impact method (the latter introduced in
-the 2024 PSILCA update; Krüger et al., 2024) would replace each L/R/P
-prior with a measured risk-hour score. A PSILCA-grounded calibration
-requires a licensed copy of the database; the present scoring is
-labelled a "social-performance proxy" in the manuscript.
+The base values below encode an explicit *scenario assumption*
+(``local_redistribute > recovery > cold_chain`` on every social pillar) and
+should not be read as measurements or as values reported by the cited reviews.
+Fresh-result reporting must include the prespecified sensitivity analysis;
+``tests/test_metric_variants.py::test_slca_scores_remain_bounded_under_weight_swap``
+checks software boundedness under one weight swap but is not empirical
+sensitivity evidence. For
+work that requires absolute social-performance levels, these priors must be
+replaced with an inventory-backed assessment appropriate to the geography,
+sector, stakeholders, and functional unit. The present scoring is labelled a
+"sustainability/social-performance proxy" in the manuscript.
 
 Components
 ----------
-C  - Carbon reduction      : C = max(0, 1 - carbon_kg / carbon_cap)
-     Normalised inverse carbon footprint. Carbon_kg is computed by
-     ``carbon.py`` from the action's transport distance and a tonne-km
-     emission factor consistent with the GHG Protocol Corporate
-     Standard (WRI/WBCSD, 2004) and the EPA Emission Factors Hub
-     (US EPA, 2023, Table 8 — refrigerated freight).
+C  - Inverse modeled-emissions term: C = max(0, 1 - carbon_kg / carbon_cap)
+     Normalised inverse modeled-emissions proxy evaluated for one standardized routing
+     opportunity. Carbon_kg is computed by ``carbon.py`` from the selected
+     action's route distance, an author-declared vehicle-kilometre emission
+     factor, and a thermal multiplier. ``carbon_cap`` has the same per-routing-
+     opportunity time basis; it is not an episode cap. No payload or tonne-
+     kilometre term is modelled. The factor is a benchmark assumption, not a
+     value attributed to a specific EPA table.
 
-L  - Labour fairness       : Expert-elicited base score per action,
-     reflecting the qualitative ordering of working conditions in
-     short-chain redistribution vs. long-haul cold-chain distribution
-     reported in Arcese et al. (2018) Tables 3-4. Magnitudes are
-     ranked, not measured.
-     - cold_chain (0.60): long-haul driving, isolated work, shift pressure
-     - local_redistribute (0.82): community-embedded work, shorter hours,
-       cooperative labour practices (food banks, local markets)
-     - recovery (0.70): processing/composting work, moderate conditions
+L  - Labour-practice prior : Author-declared route constants only:
+     cold_chain=0.60, local_redistribute=0.82, recovery=0.70.
+     No labour inventory or observed labour outcome is modeled.
 
-R  - Community resilience  : Expert-elicited base score per action,
-     reflecting local food security and network redundancy. Ordering
-     follows Iofrida et al. (2018) and Petti et al. (2018) reviews of
-     SLCA in food systems.
-     - cold_chain (0.55): centralised retail, modest local benefit
-     - local_redistribute (0.78): strengthens local food networks,
-       reduces food deserts, builds community capacity
-     - recovery (0.72): prevents total loss, supports circular economy
+R  - Community-network prior: Author-declared route constants only:
+     cold_chain=0.55, local_redistribute=0.78, recovery=0.72.
+     No community-level effect is estimated.
 
-P  - Price transparency    : Expert-elicited base score per action,
-     reflecting traceability and consumer information.
-     - cold_chain (0.55): standard retail markup, moderate transparency
-     - local_redistribute (0.78): direct-to-community pricing, clear
-       provenance, blockchain-verified transactions
-     - recovery (0.68): secondary market pricing, moderate transparency
+P  - Price-information prior: Author-declared route constants only:
+     cold_chain=0.55, local_redistribute=0.78, recovery=0.68.
+     No price-transparency audit or consumer outcome is modeled.
 
 Composite:
     S = w_c*C + w_l*L + w_r*R + w_p*P
 with default weights  w_c=0.30, w_l=0.20, w_r=0.25, w_p=0.25.
-The weights follow the equal-pillar convention (≈0.25 each) of
-Benoît-Norris et al. (2011), with a small upweight on Carbon
-reflecting that it is the only directly measured component.
+The weights are author-specified and close to equal. Carbon is modelled from
+transport activity; none of the four pillars is a field measurement.
 
 References
 ----------
@@ -115,38 +92,22 @@ References
 """
 from __future__ import annotations
 
-from typing import Dict, Optional
+from math import isfinite
+from typing import Dict, Mapping, Optional
 
 from .action_aliases import resolve_action as _resolve_action
 
 
+DEFAULT_CARBON_CAP_KG_PER_ROUTING_OPPORTUNITY: float = 50.0
+"""Author-declared carbon normalizer for one routing opportunity, not an episode."""
+
+
 # Per-action base scores keyed by canonical action family.
-# See module docstring for physical justification of each value.
+# See module docstring for the declared synthetic definition of each value.
 #
-# Implementation note: realism recalibration (2025-04).
-# The previous spread (CC L=0.50 vs LR L=0.92, an +84 % labour-fairness
-# advantage for local redistribution) was the single largest hand-picked
-# driver of the AgriBrain SLCA composite gap. Readers asking "where is
-# the +84 % gap from?" had narrative justification only; the cited
-# UNEP/SETAC, Benoît, and Arcese references frame the indicators
-# qualitatively but do not give magnitudes that strong. The values below
-# tighten each pairwise advantage to roughly the +20-35 % range that
-# UNEP/SETAC's worker-conditions and community-engagement subindicators
-# typically separate centralised distribution from short-chain
-# redistribution at, leaving recovery between the two extremes.
-#
-# Net effect on the SLCA composite (with default w_c=0.30, w_l=0.20,
-# w_r=0.25, w_p=0.25):
-#   - cold_chain composite drops from ~0.53 to ~0.59 (small lift)
-#   - local_redistribute composite drops from ~0.88 to ~0.81
-#   - recovery composite stays around ~0.72
-# So the LR vs CC gap shrinks from ~0.35 to ~0.22 SLCA points, which
-# matches the empirical short-chain vs long-chain SLCA differentials
-# reported in Arcese et al. (2018) Table 3 and Benoît et al. (2010)
-# case-study data more closely than the original 0.35-point gap did.
-# The rank ordering (LR > Recovery > CC on every component) is preserved
-# everywhere, so the AgriBrain advantage story still holds — it is just
-# expressed at a more credible magnitude.
+# These values are an explicit synthetic scenario design. UNEP/SETAC and the
+# cited reviews motivate inventory-based social assessment but do not prescribe
+# these numerical gaps. Deployment requires measured, inventory-backed inputs.
 _ACTION_BASES: Dict[str, Dict[str, float]] = {
     "cold_chain":         {"L": 0.60, "R": 0.55, "P": 0.55},
     "local_redistribute": {"L": 0.82, "R": 0.78, "P": 0.78},
@@ -162,19 +123,22 @@ def slca_score(
     w_l: float = 0.20,
     w_r: float = 0.25,
     w_p: float = 0.25,
-    carbon_cap: float = 50.0,
+    carbon_cap: float = DEFAULT_CARBON_CAP_KG_PER_ROUTING_OPPORTUNITY,
     fairness: Optional[float] = None,
     resilience: Optional[float] = None,
     transparency: Optional[float] = None,
+    action_bases: Mapping[str, Mapping[str, float]] | None = None,
 ) -> Dict[str, float]:
-    """Compute the full 4-component SLCA score.
+    """Compute the four-component sustainability/social-performance proxy.
 
     Parameters
     ----------
-    carbon_kg : total carbon footprint for the action in kg CO2-eq.
+    carbon_kg : modelled kg CO2-eq for the action at one standardized routing
+        opportunity. This is not cumulative episode emissions.
     action : routing decision string (resolved via alias table).
     w_c, w_l, w_r, w_p : component weights (should sum to 1).
-    carbon_cap : denominator for carbon normalisation (default 50 kg).
+    carbon_cap : per-routing-opportunity denominator for carbon normalisation
+        (default 50 kg).
         Provides good dynamic range across action distances:
         cold_chain (120 km × 0.12 = 14.4 kg) → C ≈ 0.71,
         local_redistribute (45 km × 0.12 = 5.4 kg) → C ≈ 0.89,
@@ -186,19 +150,27 @@ def slca_score(
     -------
     dict with keys ``C``, ``L``, ``R``, ``P``, ``composite``, ``action_family``.
     """
-    family = _resolve_action(action)
-    bases = _ACTION_BASES[family]
+    carbon_kg = float(carbon_kg)
+    carbon_cap = float(carbon_cap)
+    if not isfinite(carbon_kg) or carbon_kg < 0.0:
+        raise ValueError("carbon_kg must be finite and non-negative")
+    if not isfinite(carbon_cap) or carbon_cap <= 0.0:
+        raise ValueError("carbon_cap must be finite and positive")
 
-    # GHG Protocol activity-based emissions (WRI/WBCSD, 2004):
-    # Carbon reduction score = 1 - normalized carbon footprint
+    family = _resolve_action(action)
+    if action_bases is None:
+        bases = _ACTION_BASES[family]
+    else:
+        bases = action_bases[family]
+
+    # Author-defined carbon-normalization term.
     C = max(0.0, 1.0 - carbon_kg / carbon_cap)
     L = fairness if fairness is not None else bases["L"]
     R = resilience if resilience is not None else bases["R"]
     P = transparency if transparency is not None else bases["P"]
 
-    # Social LCA scoring: UNEP/SETAC Guidelines (2009)
-    #   SLCA_score = sum_c(w_c * sum_i(w_i * indicator_i_c))
-    # Composite: S = w_c*C + w_l*L + w_r*R + w_p*P
+    # Author-defined weighted composite. The UNEP S-LCA guidelines do not
+    # prescribe these pillars, weights, or route-specific base scores.
     composite = w_c * C + w_l * L + w_r * R + w_p * P
     composite = float(max(0.0, min(1.0, composite)))
 

@@ -19,20 +19,20 @@ from .protocol import MCPPrompt, MCPServer
 # so BM25/TF-IDF retrieval can discriminate between scenarios.
 SCENARIO_SEARCH_TERMS: Dict[str, str] = {
     "heatwave": (
-        "heatwave contingency ambient temperature exceedance thermal stress "
-        "cooling capacity reduced transport distance"
+        "synthetic heatwave perturbation hour 24 temperature humidity "
+        "mechanistic spoilage thermal stress"
     ),
     "cyber_outage": (
-        "communications outage fallback cached routing manual override "
-        "offline decision-making reconnection synchronization"
+        "synthetic cyber outage hour 24 demand multiplier temperature excursion "
+        "MCP channel unavailable institutional retrieval remains"
     ),
     "overproduction": (
-        "demand volatility surplus redistribution excess inventory "
-        "food bank diversion Bollinger band threshold"
+        "synthetic overproduction hour 12 inventory multiplier surplus ratio "
+        "temperature excursion Bollinger volatility"
     ),
     "adaptive_pricing": (
-        "price transparency cooperative pricing demand surge demand trough "
-        "volatile market pricing audit"
+        "synthetic adaptive pricing demand sinusoid keyed noise volatility "
+        "price transparency proxy not measured market outcome"
     ),
     "baseline": "",
 }
@@ -50,13 +50,13 @@ def _regulatory_compliance_template(
     humidity: str = "90.0",
     scenario: str = "baseline",
 ) -> str:
-    """Generate a regulatory compliance query."""
+    """Generate a source-labelled operating-envelope guidance query."""
     base = (
-        f"FDA cold chain compliance requirements for {product_type} "
+        f"Source-scope and synthetic operating-envelope context relevant to {product_type} "
         f"at {temperature} degrees Celsius and {humidity} percent relative humidity. "
-        f"Include FSMA Produce Safety Rule thresholds, traceability requirements, "
-        f"corrective action procedures including temperature excursion severity classification, "
-        f"and IoT sensor calibration standards for continuous monitoring."
+        f"Return the simulator's author-declared 8 degree Celsius spinach ceiling, "
+        f"85-to-95-percent humidity envelope, and mechanistic-model limitations. "
+        f"Do not infer current law, food safety, traceability certification, or legal compliance."
     )
     return base + _scenario_suffix(scenario)
 
@@ -69,10 +69,10 @@ def _waste_hierarchy_template(
 ) -> str:
     """Generate a waste hierarchy assessment query."""
     base = (
-        f"Food waste hierarchy assessment for {product_type} with spoilage risk {spoilage_risk} "
-        f"and {hours_remaining} hours remaining shelf life. "
-        f"Evaluate redistribution to food banks, animal feed diversion, composting, "
-        f"and anaerobic digestion pathways per EU Waste Framework Directive 2008/98/EC."
+        f"Synthetic food-waste-hierarchy proxy for {product_type} with modeled spoilage risk {spoilage_risk} "
+        f"and {hours_remaining} modeled hours remaining. "
+        f"Return the executable continuous food-bank, animal-feed, and composting heuristic equations "
+        f"and state that they do not determine safety, eligibility, or product disposition."
     )
     return base + _scenario_suffix(scenario)
 
@@ -84,11 +84,11 @@ def _emergency_rerouting_template(
 ) -> str:
     """Generate an emergency rerouting query."""
     base = (
-        f"Emergency rerouting standard operating procedure under {scenario} conditions. "
+        f"Synthetic scenario-aware routing context under {scenario} conditions. "
         f"Current routing action is {current_action} with {urgency} urgency. "
-        f"Include notification chain requirements, transport time adjustments, "
-        f"fallback procedures for degraded connectivity, "
-        f"and carbon accounting for refrigerated transport emission factors."
+        f"Return the exact scenario perturbation, channel availability, fixed route distances, "
+        f"and modeled transport-emissions equation. Do not infer notifications, operational "
+        f"fallback procedures, safety eligibility, or mandatory rerouting."
     )
     return base + _scenario_suffix(scenario)
 
@@ -99,14 +99,13 @@ def _slca_routing_template(
     product_type: str = "spinach",
     scenario: str = "baseline",
 ) -> str:
-    """Generate an SLCA routing guidance query."""
+    """Generate a social-performance-proxy routing query."""
     base = (
-        f"SLCA scoring methodology for {action} routing of {product_type} "
+        f"Author-declared social-performance-proxy methodology for {action} routing of {product_type} "
         f"with surplus ratio {surplus_ratio}. "
-        f"Evaluate labour fairness including shift duration standards, "
-        f"community resilience, price transparency, "
-        f"and carbon footprint impact of the proposed routing decision. "
-        f"Include energy consumption reporting and green AI efficiency metrics."
+        f"Identify the declared labour, community, transparency, and modeled-emissions proxy inputs. "
+        f"Do not describe the numerical proxy as a measured labour, equity, community, or life-cycle effect. "
+        f"Include separately labelled computational-footprint assumptions."
     )
     return base + _scenario_suffix(scenario)
 
@@ -116,13 +115,13 @@ def _governance_policy_template(
     agent_role: str = "cooperative",
     scenario: str = "baseline",
 ) -> str:
-    """Generate a governance policy lookup query."""
+    """Generate a coordinator-mediated cooperative-overlay query."""
     base = (
-        f"Cooperative governance policy for {decision_type} decisions "
-        f"by {agent_role} agent. Include quorum thresholds, voting periods, "
-        f"SLCA reward and slashing criteria, parameter bounds for "
-        f"autonomous decision-making authority, "
-        f"and blockchain audit trail requirements including immutable decision hash."
+        f"Coordinator-mediated cooperative-overlay assumptions for {decision_type} decisions "
+        f"involving the {agent_role} role. Identify the declared overlay window and context blend, "
+        f"and distinguish off-chain calculation-trace hashes from optional external anchoring. "
+        f"State that the benchmark has no institutional quorum, stakeholder voting, deployed "
+        f"governance, independent organizational control, or immutable publication evidence."
     )
     return base + _scenario_suffix(scenario)
 
@@ -137,7 +136,7 @@ def register_prompts(server: MCPServer) -> None:
 
     server.register_prompt(MCPPrompt(
         name="regulatory_compliance_check",
-        description="Generate a regulatory compliance query for FDA cold chain requirements",
+        description="Generate a source-labelled operating-envelope and traceability guidance query",
         arguments=[
             {"name": "product_type", "description": "Produce type (e.g. spinach)", "required": False},
             {"name": "temperature", "description": "Current temperature in Celsius", "required": False},
@@ -172,7 +171,7 @@ def register_prompts(server: MCPServer) -> None:
 
     server.register_prompt(MCPPrompt(
         name="slca_routing_guidance",
-        description="Generate an SLCA scoring methodology query for routing decisions",
+        description="Generate a declared social-performance-proxy methodology query",
         arguments=[
             {"name": "action", "description": "Proposed routing action", "required": False},
             {"name": "surplus_ratio", "description": "Current surplus ratio", "required": False},
@@ -184,7 +183,7 @@ def register_prompts(server: MCPServer) -> None:
 
     server.register_prompt(MCPPrompt(
         name="governance_policy_lookup",
-        description="Generate a cooperative governance policy query",
+        description="Generate a coordinator-mediated cooperative-overlay query",
         arguments=[
             {"name": "decision_type", "description": "Type of decision requiring governance", "required": False},
             {"name": "agent_role", "description": "Role of the requesting agent", "required": False},

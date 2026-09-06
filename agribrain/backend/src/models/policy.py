@@ -5,39 +5,35 @@ Backward-compatible with the original fields (max_temp_c, min_shelf_reroute,
 min_shelf_expedite, carbon_per_km, km_farm_to_dc, km_dc_to_retail,
 km_expedited, msrp) while adding all paper-derived parameters.
 
-Every parameter has a brief comment explaining:
-  - Physical / economic meaning
-  - Realistic range
-  - Why the default was chosen
+Defaults define a synthetic case study unless explicitly supplied by a user.
+They are not field-calibrated estimates or regulatory thresholds.
 """
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
+
+from .slca import DEFAULT_CARBON_CAP_KG_PER_ROUTING_OPPORTUNITY
 
 
 class Policy(BaseModel):
     # ---- original fields (backward compatible) ----
     max_temp_c: float = Field(
         8.0,
-        description="Max acceptable cold-chain temperature (°C). "
-        "FDA recommends ≤5°C for leafy greens; 8°C is the upper bound "
-        "before accelerated spoilage. Range: 5-10°C.",
+        description="Declared synthetic cold-chain warning threshold (°C); "
+        "not a legal limit or product-validation result.",
     )
     min_shelf_reroute: float = Field(
         0.70,
-        description="Remaining shelf fraction triggering reroute consideration. "
-        "At 70% quality, produce should be diverted to local markets. Range: 0.50-0.80.",
+        description="Declared synthetic remaining-quality trigger for reroute consideration.",
     )
     min_shelf_expedite: float = Field(
         0.50,
-        description="Remaining shelf fraction triggering expedited delivery. "
-        "At 50% quality, produce needs immediate processing or recovery. Range: 0.30-0.60.",
+        description="Declared synthetic remaining-quality trigger for expedited handling.",
     )
     carbon_per_km: float = Field(
         0.12,
-        description="kg CO2-eq per km for refrigerated truck transport. "
-        "Based on EPA emission factors for medium-duty refrigerated vehicles "
-        "(0.10-0.15 kg/km including refrigeration). Range: 0.08-0.18.",
+        description="Declared synthetic kg CO2-eq per vehicle-km; replace with a "
+        "fleet- and region-specific inventory factor before deployment.",
     )
     km_farm_to_dc: float = Field(
         280.0, description="Farm-to-distribution-center distance (km). Legacy field."
@@ -50,20 +46,19 @@ class Policy(BaseModel):
     )
     msrp: float = Field(1.50, description="Manufacturer suggested retail price (USD/unit).")
 
-    # ---- SLCA weights ----
-    # Based on stakeholder analysis for perishable produce supply chains.
-    # Carbon gets the highest weight (0.30) reflecting climate priorities.
-    # Social components split the remaining 0.70 roughly equally.
-    w_c: float = Field(0.30, description="SLCA weight: carbon reduction. Range: 0.20-0.40.")
-    w_l: float = Field(0.20, description="SLCA weight: labour fairness. Range: 0.10-0.30.")
-    w_r: float = Field(0.25, description="SLCA weight: community resilience. Range: 0.15-0.35.")
-    w_p: float = Field(0.25, description="SLCA weight: price transparency. Range: 0.15-0.35.")
+    # ---- sustainability/social-proxy weights ----
+    # These are author-declared synthetic policy weights, not values estimated
+    # from stakeholders or prescribed by an S-LCA standard.
+    w_c: float = Field(0.30, description="Proxy weight: carbon reduction. Range: 0.20-0.40.")
+    w_l: float = Field(0.20, description="Proxy weight: labour fairness. Range: 0.10-0.30.")
+    w_r: float = Field(0.25, description="Proxy weight: community resilience. Range: 0.15-0.35.")
+    w_p: float = Field(0.25, description="Proxy weight: price transparency. Range: 0.15-0.35.")
 
     # ---- waste penalty ----
     eta: float = Field(
         0.50,
         description="Waste penalty coefficient in the reward function. "
-        "Controls the trade-off between SLCA improvement and waste reduction. "
+        "Controls the trade-off between social-proxy improvement and waste reduction. "
         "Range: 0.3-1.0. Higher values make the policy more waste-averse.",
     )
 
@@ -96,26 +91,16 @@ class Policy(BaseModel):
 
     # ---- volatility tilt parameters ----
     # When volatility is detected (tau=1), these shift the softmax logits.
-    # Positive gamma_coldchain encourages safe routing during uncertainty.
+    # Positive gamma_coldchain tilts toward cold-chain continuation during
+    # volatility in this synthetic policy.
     #
-    # Implementation note: provenance.
-    # The (+0.25, +0.05, -0.25) triple encodes a sign-pattern claim:
-    # cold-chain is the safest option under demand uncertainty (Dixit &
-    # Pindyck 1994, real-options literature), local redistribution is
-    # adaptable enough to be roughly neutral, and recovery is irreversible
-    # so it is disfavoured under uncertainty. The specific magnitudes
-    # (0.25 / 0.05 / 0.25) are domain priors at the modest-tilt end of
-    # the cited Field "Range:" bounds; they were chosen so the volatility
-    # tilt does not dominate the policy under low-spoilage operating
-    # conditions where rho-driven routing should still drive the decision.
-    # The load-bearing defence is the sign pattern, which is supported by
-    # the cited literature; the magnitudes are tunable parameters that
-    # the sensitivity ablations (THETA_CONTEXT pert_*) operate around.
+    # The signs and magnitudes are declared synthetic policy priors. They are
+    # not coefficients estimated from the real-options literature.
     gamma_coldchain: float = Field(
         0.25,
         description="Volatility tilt toward cold-chain (positive = prefer CC under volatility). "
         "Kept small to avoid over-conservative routing during demand noise, which "
-        "would degrade SLCA scores and ARI. Range: 0.1-0.8.",
+        "would degrade social-proxy scores and ARI. Range: 0.1-0.8.",
     )
     gamma_local: float = Field(
         0.05,
@@ -128,82 +113,60 @@ class Policy(BaseModel):
         "since recovery capacity may be strained). Range: -1.5 to 0.0.",
     )
 
-    # ---- PINN spoilage parameters (Arrhenius form) ----
+    # ---- Mechanistic spoilage-risk parameters (Arrhenius form) ----
     # The Arrhenius model k(T) = k_ref * exp[Ea_R * (1/T_ref - 1/T_K)] is
     # the standard in food science for temperature-dependent quality loss
     # (Labuza & Riboh, 1982; Giannakourou & Taoukis, 2003).
     k_ref: float = Field(
         0.0021,
-        description="Reference decay rate at T_ref_K (h^-1). Calibrated for "
-        "fresh spinach so that quality loss reaches ~12% over 72h at 4°C with "
-        "lag phase. Range: 0.001-0.01 for leafy greens.",
+        description="Declared synthetic reference rate at T_ref_K (h^-1); not "
+        "fitted to observed spinach quality labels.",
     )
     Ea_R: float = Field(
         8000.0,
         description="Arrhenius activation energy / gas constant (K). "
         "Ea_R = Ea/R where Ea is in J/mol and R = 8.314 J/(mol·K). "
-        "8000 K corresponds to Ea ≈ 66.5 kJ/mol, consistent with enzymatic "
-        "browning and microbial growth in leafy greens (typical range: "
-        "5000-12000 K for produce spoilage reactions).",
+        "8000 K corresponds to Ea ≈ 66.5 kJ/mol and is a declared benchmark "
+        "parameter rather than a fitted spinach-specific value.",
     )
     T_ref_K: float = Field(
         277.15,
-        description="Reference temperature in Kelvin (= 4.0°C). "
-        "Standard cold storage temperature for leafy greens per FDA guidelines.",
+        description="Declared reference temperature in Kelvin (= 4.0°C).",
     )
     beta_humidity: float = Field(
         0.25,
-        description="Humidity coupling coefficient. Higher water activity (a_w ≈ RH/100) "
-        "accelerates microbial growth and enzymatic degradation. At RH=89% "
-        "(typical cold storage), this increases the effective rate by ~22%. "
-        "Range: 0.10-0.50.",
+        description="Declared synthetic humidity-coupling coefficient for the "
+        "modelled-risk equation.",
     )
     lag_lambda: float = Field(
         12.0,
-        description="Baranyi lag phase parameter (hours). Fresh produce has an "
-        "initial lag before exponential quality loss begins, due to microbial "
-        "adaptation time. 12h is typical for spinach at 4°C with standard "
-        "post-harvest handling. Range: 6-24h depending on initial microbial "
-        "load and temperature.",
-    )
-
-    # ---- Legacy PINN parameters (kept for backward compatibility) ----
-    k0: float = Field(0.04, description="Legacy: PINN base decay rate (h^-1). Use k_ref instead.")
-    alpha_decay: float = Field(
-        0.12, description="Legacy: PINN thermal sensitivity (°C^-1). Use Ea_R instead."
-    )
-    T0: float = Field(
-        4.0, description="Legacy: PINN reference temperature (°C). Use T_ref_K instead."
+        description="Declared synthetic lag-shape parameter (hours); not fitted "
+        "to spinach observations.",
     )
 
     # ---- route distances ----
-    # Based on typical South Dakota cooperative cold chain logistics.
-    # Farm-to-DC-to-retail via standard cold chain: ~120 km total.
-    # Local redistribution to food banks / community markets: ~45 km.
-    # Recovery (composting, bioenergy, animal feed facilities): ~80 km.
+    # Declared synthetic network distances; replace with a study-region network.
     km_coldchain: float = Field(
         120.0,
-        description="Cold-chain route distance (km). Typical farm-to-DC-to-retail "
-        "distance for a South Dakota cooperative. Range: 80-200 km.",
+        description="Declared synthetic cold-chain route distance (km).",
     )
     km_local: float = Field(
         45.0,
-        description="Local redistribution distance (km). Distance to nearby food "
-        "banks, community markets, or secondary outlets. Range: 20-80 km.",
+        description="Declared synthetic local-redistribution distance (km).",
     )
     km_recovery: float = Field(
         80.0,
-        description="Recovery route distance (km). Distance to composting, "
-        "bioenergy, or animal feed facilities. Range: 40-120 km.",
+        description="Declared synthetic recovery-route distance (km).",
     )
 
     # ---- SLCA carbon normalization ----
     # Implementation note: provenance.
-    # The 50 kg cap is a normalization constant for the SLCA carbon
-    # component; it is NOT an emissions claim. It was chosen so a
-    # cold-chain step (~14.4 kg CO2eq) maps to C ~= 0.71, a local
-    # redistribution step (~5.4 kg) maps to C ~= 0.89, and a recovery
-    # step (~9.6 kg) maps to C ~= 0.81 — i.e., so the C component
+    # The 50 kg cap is a per-standardized-routing-opportunity normalization
+    # constant for the SLCA carbon component; it is NOT an emissions claim or
+    # an episode cap. It was chosen so a cold-chain opportunity (~14.4 kg
+    # CO2eq) maps to C ~= 0.71, a local-redistribution opportunity (~5.4 kg)
+    # maps to C ~= 0.89, and a recovery opportunity (~9.6 kg) maps to C ~=
+    # 0.81 — i.e., so the C component
     # produces a ~20-percentage-point spread across actions, comparable
     # to the L/R/P components. The "why 50?" question is answered by:
     # the absolute value is a sensitivity-free monotone rescaling of
@@ -211,9 +174,11 @@ class Policy(BaseModel):
     # preserves both the rank order and the qualitative gap between
     # actions. Verified via spot-check at 30 and 80.
     carbon_cap: float = Field(
-        50.0,
-        description="Carbon normalization cap (kg CO2-eq per step) for SLCA "
-        "carbon component. C = max(0, 1 - carbon_kg/carbon_cap). "
+        DEFAULT_CARBON_CAP_KG_PER_ROUTING_OPPORTUNITY,
+        gt=0.0,
+        description="Carbon normalization cap (kg CO2-eq per standardized "
+        "routing opportunity) for the SLCA carbon component; not an episode "
+        "cap. C = max(0, 1 - carbon_kg/carbon_cap). "
         "Default 50 provides good dynamic range across actions. "
         "Range: 20-100.",
     )
@@ -229,7 +194,11 @@ class Policy(BaseModel):
     )
     enable_pirag_counterfactual_eval: bool = Field(
         False,
-        description="Enable counterfactual retrieval-impact evaluation.",
+        description=(
+            "Enable the alternative-query retrieval diagnostic; the legacy "
+            "field name does not denote removal of a retrieved document or a "
+            "causal counterfactual."
+        ),
     )
     enable_physics_consistency_gate: bool = Field(
         False,

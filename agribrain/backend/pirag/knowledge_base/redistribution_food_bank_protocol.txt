@@ -1,37 +1,22 @@
-FOOD BANK REDISTRIBUTION PROTOCOL
+LOCAL-REDISTRIBUTION PROXY (LEGACY FOOD-BANK CORPUS LABEL)
+Status: Constructed benchmark input; it does not determine fitness for donation or human consumption.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, are contextual references only; the executable code and locked protocol govern all benchmark values.
 Document ID: KB-RFB-002
-Effective Date: 2025-09-01
-Regulatory Basis: FDA FSMA (21 CFR Parts 112, 117); Feeding America Food Safety Guidelines
+Executable sources: agribrain/backend/src/models/policy.py, slca.py, waste.py, and reverse_logistics.py
 
-1. ELIGIBILITY CRITERIA
+local_redistribute is one of three canonical policy actions. Its nominal modeled route
+distance is 45 km before the keyed stochastic transport multiplier. Its author-declared
+social priors are L=0.82, R=0.78, and P=0.78. Its action-specific waste-saving coefficient
+is 0.45, scaled by 1/(1+0.10*surplus_ratio). These are synthetic outcome coefficients,
+not measured benefits.
 
-Product is eligible for food bank redistribution when the spoilage index rho is below
-0.30. This threshold represents product that remains safe and nutritious for human
-consumption. Products with rho at or above 0.30 must be diverted to alternative recovery
-channels such as animal feed or composting.
+The descriptive recovery-option module computes
+food_bank_raw=max(0,1-2*rho), halved when temperature exceeds 10 degrees Celsius, then
+normalizes it with animal-feed and composting heuristic scores. This is a circularity
+proxy only. It does not certify safety or eligibility, and rho=0.30 is a policy logit
+knee rather than a donation or consumption boundary.
 
-Temperature at the point of transfer to the food bank receiving dock must be at or below
-7 degrees Celsius for all refrigerated commodities. Any product arriving above this
-threshold must be rejected and logged as a temperature non-conformance.
-
-2. TRANSPORT CONSTRAINTS
-
-For leafy greens and cut produce, transport from the originating facility to the food
-bank must be completed within 4 hours of initial loading. Refrigerated vehicles must
-maintain continuous temperature logging with readings recorded at minimum 5-minute
-intervals throughout transit.
-
-3. REQUIRED ACTIONS
-
-Action 1: Complete the Redistribution Transfer Form (RTF-200) including lot number,
-commodity description, rho value at time of decision, temperature at loading, estimated
-transit duration, and receiving facility identifier. Both the shipping and receiving
-parties must sign.
-
-Action 2: Conduct a visual and organoleptic inspection at the receiving dock. Record
-results in the Food Bank Intake Log. Reject any units showing visible mold, off-odors,
-or packaging compromise. Notify the originating facility of rejections within 24 hours.
-
-Feeding America member organizations must additionally verify compliance with their
-Product Sourcing and Safety Standards, including traceability documentation linking
-each lot to its origin farm or packing house.
+The benchmark does not inspect food, accept or reject a lot, identify a receiving
+organization, impose a transfer time, collect signatures, create transfer forms, or
+verify traceability and cold-storage capability. Operational redistribution requires an
+independent product-safety, recipient, logistics, and legal assessment.

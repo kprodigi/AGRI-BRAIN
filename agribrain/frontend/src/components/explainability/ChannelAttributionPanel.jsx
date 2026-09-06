@@ -7,19 +7,14 @@
 // from the instrumented 20-seed agribrain run. Fetched at runtime via
 // /results/figures/<filename>.
 //
-// Why decision-level, not logit-shift level: the context modifier is
-// linear-additive (modifier_mcp + modifier_piRAG == modifier_full by
-// construction), so "super-additivity in logit space" is impossible and
-// the old metric's median was 0.000. The softmax/argmax is non-linear,
-// so the honest place to measure two channels' value is whether removing
-// a channel FLIPS the routing decision. This panel reports, per decision:
-//   - context decisive : P(argmax changes vs no-context)
-//   - MCP / piRAG necessary : P(dropping that channel changes the decision)
-//   - synergy : neither channel alone moves it, both together do (emergent)
-//   - attribution of each context-changed decision to a single channel,
-//     redundancy, or synergy -> complementarity index
+// The observed context modifier is linear-additive in logit space. This panel
+// therefore reports conditional argmax sensitivity after algebraically
+// masking MCP-derived or retrieval-derived feature groups in each recorded
+// full-context state. Retrieval results, guards, and all other state remain
+// fixed. These are feature-group reconstructions, not interventions that
+// disable a communication channel and not causal effect estimates.
 //   - activation orthogonality + conditional magnitude
-//   - MCP-exclusive governance / compliance / cyber-resilience value
+//   - MCP-derived operating-envelope and tool-feature contribution
 import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +50,8 @@ const SCENARIO_LABELS = {
 const SCENARIO_ORDER = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing", "baseline"];
 
 function pct(x, d = 1) {
-  return `${(100 * (x || 0)).toFixed(d)}%`;
+  const value = Number(x);
+  return Number.isFinite(value) ? `${(100 * value).toFixed(d)}%` : "unavailable";
 }
 
 function StatTile({ label, value, hint, accent }) {
@@ -100,13 +96,31 @@ export default function ChannelAttributionPanel() {
         const resp = await authFetch(`${API}/results/figures/channel_attribution_aggregate.json`);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const json = await resp.json();
+        const meta = json?._meta;
+        const seedCount = Number(meta?.seed_count ?? meta?.n_seeds);
+        const expectedScenarios = Object.keys(SCENARIO_LABELS);
+        const actualScenarios = Object.keys(json?.by_scenario_mode || {});
+        if (seedCount !== 20 || Number(meta?.n_bootstrap) !== 2000) {
+          throw new Error("channel attribution is not the canonical 20-seed, 2,000-bootstrap panel");
+        }
+        if (actualScenarios.length !== expectedScenarios.length
+            || expectedScenarios.some((scenario) => !actualScenarios.includes(scenario))) {
+          throw new Error("channel attribution does not contain the exact five-scenario panel");
+        }
+        for (const scenario of expectedScenarios) {
+          const cell = json.by_scenario_mode?.[scenario]?.agribrain;
+          if (!cell || Number(cell.n_seeds) !== 20) {
+            throw new Error(`channel attribution cell ${scenario}/agribrain is incomplete`);
+          }
+        }
         if (!cancelled) setData(json);
       } catch (err) {
         if (!cancelled) setError(err.message || String(err));
       } finally {
         if (!cancelled) setLoading(false);
       }
-      // Authoritative §5.8 complementarity (dedicated permutation test);
+      // Dedicated seed-cluster inference for the conditional distinctness
+      // index; optional because the aggregate also carries its point value.
       // optional — falls back to the aggregate pooled value if absent.
       try {
         const r2 = await authFetch(`${API}/results/figures/channel_complementarity_test.json`);
@@ -118,11 +132,9 @@ export default function ChannelAttributionPanel() {
 
   const bsm = useMemo(() => data?.by_scenario_mode || {}, [data]);
   const pooled = data?.agribrain_perturbed_pooled || null;
-  // Headline complementarity prefers the dedicated §5.8 permutation test so the
-  // dashboard matches the paper; falls back to the aggregate pool if absent.
-  const compIndex = (compTest?.complementarity_index != null)
-    ? compTest.complementarity_index
-    : (pooled?.complementarity_index ?? null);
+  const compIndex = (compTest?.conditional_distinctness_index != null)
+    ? compTest.conditional_distinctness_index
+    : (pooled?.conditional_distinctness_index ?? null);
   const compCi = compTest?.bootstrap_ci || null;
   const scenarios = useMemo(
     () => SCENARIO_ORDER.filter((s) => bsm[s]?.agribrain),
@@ -135,23 +147,27 @@ export default function ChannelAttributionPanel() {
     // val in percent; err is the asymmetric seed-cluster bootstrap 95% CI
     // (also in percent), centered on the displayed fraction.
     const cell = (rawKey) => {
-      const frac = a[rawKey] || 0;
+      const frac = Number(a[rawKey]);
+      if (!Number.isFinite(frac)) return { val: null, err: undefined };
       const c = aci[rawKey];
       const err = (c && c.ci_low != null && c.ci_high != null)
         ? [100 * (frac - c.ci_low), 100 * (c.ci_high - frac)]
         : undefined;
       return { val: 100 * frac, err };
     };
-    const p = cell("pirag_sufficient_only"), m = cell("mcp_sufficient_only"),
-          sy = cell("synergy"), rd = cell("redundant");
+    const p = cell("pirag_group_matches_observed_only"),
+          m = cell("mcp_group_matches_observed_only"),
+          sy = cell("neither_group_matches_observed"),
+          rd = cell("both_groups_match_observed");
     const row = {
       scenario: SCENARIO_LABELS[s] || s,
-      "piRAG-only": p.val, "MCP-only": m.val, synergy: sy.val, redundant: rd.val,
+      "Retrieval group only": p.val, "MCP group only": m.val,
+      "Neither single group": sy.val, "Both single groups": rd.val,
     };
-    if (p.err) row["piRAG-only_err"] = p.err;
-    if (m.err) row["MCP-only_err"] = m.err;
-    if (sy.err) row["synergy_err"] = sy.err;
-    if (rd.err) row["redundant_err"] = rd.err;
+    if (p.err) row["Retrieval group only_err"] = p.err;
+    if (m.err) row["MCP group only_err"] = m.err;
+    if (sy.err) row["Neither single group_err"] = sy.err;
+    if (rd.err) row["Both single groups_err"] = rd.err;
     return row;
   }), [scenarios, bsm]);
 
@@ -174,9 +190,9 @@ export default function ChannelAttributionPanel() {
             <div>
               <p className="font-semibold text-sm">Channel-attribution data unavailable</p>
               <p className="text-xs text-muted-foreground mt-1">
-                The backend did not serve <code>channel_attribution_aggregate.json</code>. Produce it with the
-                instrumented 20-seed run (<code>mvp/simulation/_run_h2_all.py</code>) then
-                <code className="ml-1">python mvp/simulation/benchmarks/aggregate_channel_attribution.py</code>.
+                The backend did not serve <code>channel_attribution_aggregate.json</code>. Launch the canonical
+                treatment with <code>hpc/hpc_run.sh</code>; its dependent <code>hpc/hpc_publish.sh</code> stage
+                consolidates the normal per-seed ledgers and produces this validated artifact.
               </p>
               {error && <p className="text-xs text-rose-500 mt-2 font-mono">{error}</p>}
             </div>
@@ -195,61 +211,57 @@ export default function ChannelAttributionPanel() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-teal-600" />
-            <CardTitle className="text-lg">H2 — MCP and piRAG integrate synergistically</CardTitle>
+            <CardTitle className="text-lg">H2 — Conditional context-feature sensitivity</CardTitle>
             <Badge variant="outline" className="text-[10px]">§5.8</Badge>
           </div>
           <CardDescription>
-            Per-decision drop-one counterfactuals across the instrumented 20-seed benchmark
+            Algebraic feature-group masking across the instrumented {meta.seed_count ?? meta.n_seeds}-seed benchmark
             {pooled ? ` (n = ${pooled.n_instrumented_decisions.toLocaleString()} agribrain decisions, 4 perturbed scenarios)` : ""}.
-            The two channels are <strong>non-redundant</strong> ({compIndex != null ? pct(compIndex, 0) : "75%"} complementarity index): piRAG is the
-            dominant standalone router, while MCP rarely flips routing alone but is a <em>significant
-            synergistic co-signal</em> (jointly necessary with piRAG far more than chance, φ = +0.26,
-            permutation p &lt; 10⁻³) — the two-channel consensus — plus an exclusive discrete-safety layer.
+            The conditional distinctness index is {compIndex != null ? pct(compIndex, 0) : "unavailable"}.
+            It summarizes how often the two single-feature-group reconstructions do not both reproduce
+            the observed modal route. It does not estimate what would happen if a live channel were disabled.
           </CardDescription>
         </CardHeader>
         {pooled && (
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <StatTile accent="ctx" label="Context decisive"
-                value={pct(pooled.context_decisive_rate)}
-                hint="routing changes vs no-context" />
-              <StatTile accent="mcp" label="MCP necessary"
-                value={pct(pooled.mcp_necessary_rate)}
-                hint="drop MCP → decision changes" />
-              <StatTile accent="pirag" label="piRAG necessary"
-                value={pct(pooled.pirag_necessary_rate)}
-                hint="drop piRAG → decision changes" />
-              <StatTile accent="syn" label="Emergent synergy"
-                value={pct(pooled.synergy_rate)}
-                hint="needs both channels jointly" />
+              <StatTile accent="ctx" label="Observed vs zeroed"
+                value={pct(pooled.context_route_change_rate)}
+                hint="modal route differs" />
+              <StatTile accent="mcp" label="Mask MCP features"
+                value={pct(pooled.mcp_feature_group_mask_effect_rate)}
+                hint="modal route differs" />
+              <StatTile accent="pirag" label="Mask retrieval features"
+                value={pct(pooled.pirag_feature_group_mask_effect_rate)}
+                hint="modal route differs" />
+              <StatTile accent="syn" label="Joint-only route change"
+                value={pct(pooled.joint_only_route_change_rate)}
+                hint="neither single group reproduces it" />
             </div>
             <Separator />
             <div className="text-xs leading-relaxed text-muted-foreground">
-              <strong>Complementarity index {pct(compIndex)}{compCi ? ` (95% CI [${pct(compCi[0])}, ${pct(compCi[1])}])` : ""}</strong> — the share of
-              context-changed decisions that are carried by a single channel or by synergy (i.e. <em>not</em>
-              redundantly produced by both). The context modifier is linear-additive in logit space, so the two
-              channels' value is measured where the policy is non-linear: at the argmax. MCP's distinctive
-              contribution is concentrated in verified, discrete interventions — governance overrides,
-              compliance-driven reroutes, and cyber-outage edge resilience — while piRAG supplies the
-              continuous regulatory grounding that shapes routine routing.
+              <strong>Conditional distinctness {pct(compIndex)}{compCi ? ` (seed-cluster bootstrap 95% CI [${pct(compCi[0])}, ${pct(compCi[1])}])` : ""}</strong> — the share of
+              observed context-changed modal routes for which the two single-group reconstructions do not
+              both match the observed route. This analysis holds the retrieved documents, guards, state,
+              and tool outputs fixed; the separate MCP-only, retrieval-only, and No-external-context experimental
+              arms provide the actual channel-arm comparisons.
             </div>
             {pooled.decision_movement_concentration &&
-              pooled.context_decisive_given_active_rate != null && (
+              pooled.context_route_change_given_active_rate != null && (
               <div className="text-xs leading-relaxed text-muted-foreground">
-                <strong>Selective, not weak.</strong> The {pct(pooled.context_decisive_rate)} unconditional
-                rate is diluted by the ~75% of decisions where the retrieval guard withholds the modifier
-                (it is exactly 0 there). Conditioned on the decisions where the layer is <em>active</em>,
-                context is decisive on{" "}
-                <strong>{pct(pooled.context_decisive_given_active_rate)}</strong>, and its influence is
+                <strong>Conditional concentration.</strong> The {pct(pooled.context_route_change_rate)} unconditional
+                rate includes decisions where the combined MCP/piRAG modifier is negligible. Retrieval guards
+                withhold only the piRAG term; MCP evidence can remain active. Conditioned on decisions where the
+                combined layer is <em>active</em>,
+                the observed and zeroed modal routes differ on{" "}
+                <strong>{pct(pooled.context_route_change_given_active_rate)}</strong>, and probability movement is
                 highly concentrated (Gini{" "}
-                <strong>{pooled.decision_movement_concentration.gini.toFixed(3)}</strong>: the decisive{" "}
-                {pct(pooled.context_decisive_rate)} of decisions carry{" "}
+                <strong>{pooled.decision_movement_concentration.gini.toFixed(3)}</strong>: the route-changing{" "}
+                {pct(pooled.context_route_change_rate)} of decisions carry{" "}
                 <strong>{pct(pooled.decision_movement_concentration.share_carried_by_decisive)}</strong> of
-                all decision movement). MCP-necessity likewise concentrates on its governed events
-                {pooled.mcp_necessary_given_compliance_rate != null && (
-                  <>: it roughly doubles on compliance-relevant decisions
-                    ({pct(pooled.mcp_necessary_rate)} → {pct(pooled.mcp_necessary_given_compliance_rate)},
-                    up to ~10% under cyber-outage)</>
+                all movement). The MCP-feature mask effect can also be inspected when the declared operating-envelope feature is active
+                {pooled.mcp_feature_group_mask_effect_given_compliance_rate != null && (
+                  <> ({pct(pooled.mcp_feature_group_mask_effect_rate)} overall → {pct(pooled.mcp_feature_group_mask_effect_given_compliance_rate)} conditionally)</>
                 )}.
               </div>
             )}
@@ -257,15 +269,15 @@ export default function ChannelAttributionPanel() {
         )}
       </Card>
 
-      {/* Per-scenario necessity table */}
+      {/* Per-scenario conditional masking table */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
             <Layers className="w-5 h-5 text-primary" />
-            <CardTitle className="text-base">Per-scenario decision-level necessity</CardTitle>
+            <CardTitle className="text-base">Per-scenario conditional masking sensitivity</CardTitle>
           </div>
           <CardDescription>
-            agribrain mode, pooled over {meta.n_seeds ?? 20} seeds × 288 steps. Rates are fractions of
+            agribrain mode, pooled over {meta.seed_count ?? meta.n_seeds} seeds × 288 steps. Rates are fractions of
             instrumented decisions with seed-cluster bootstrap 95% CIs.
           </CardDescription>
         </CardHeader>
@@ -276,11 +288,11 @@ export default function ChannelAttributionPanel() {
                 <TableRow>
                   <TableHead className="font-semibold">Scenario</TableHead>
                   <TableHead className="text-right">n</TableHead>
-                  <TableHead><span style={{ color: C_CTX }}>Context decisive</span></TableHead>
-                  <TableHead><span style={{ color: C_MCP }}>MCP necessary</span></TableHead>
-                  <TableHead><span style={{ color: C_PIRAG }}>piRAG necessary</span></TableHead>
-                  <TableHead><span style={{ color: C_SYN }}>Synergy</span></TableHead>
-                  <TableHead className="text-right">Complementarity</TableHead>
+                  <TableHead><span style={{ color: C_CTX }}>Observed vs zeroed</span></TableHead>
+                  <TableHead><span style={{ color: C_MCP }}>Mask MCP features</span></TableHead>
+                  <TableHead><span style={{ color: C_PIRAG }}>Mask retrieval features</span></TableHead>
+                  <TableHead><span style={{ color: C_SYN }}>Joint-only change</span></TableHead>
+                  <TableHead className="text-right">Distinctness</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -294,14 +306,14 @@ export default function ChannelAttributionPanel() {
                         {isBaseline && <Badge variant="outline" className="ml-2 text-[9px]">baseline</Badge>}
                       </TableCell>
                       <TableCell className="text-right font-mono tabular-nums text-xs">
-                        {(c.n_instrumented_decisions || 0).toLocaleString()}
+                        {Number.isFinite(Number(c.n_instrumented_decisions)) ? Number(c.n_instrumented_decisions).toLocaleString() : "Unavailable"}
                       </TableCell>
-                      <TableCell className="text-xs"><RateCi node={c.context_decisive} /></TableCell>
-                      <TableCell className="text-xs"><RateCi node={c.mcp_necessary} /></TableCell>
-                      <TableCell className="text-xs"><RateCi node={c.pirag_necessary} /></TableCell>
-                      <TableCell className="text-xs"><RateCi node={c.synergy} /></TableCell>
+                      <TableCell className="text-xs"><RateCi node={c.context_route_change} /></TableCell>
+                      <TableCell className="text-xs"><RateCi node={c.mcp_feature_group_mask_effect} /></TableCell>
+                      <TableCell className="text-xs"><RateCi node={c.pirag_feature_group_mask_effect} /></TableCell>
+                      <TableCell className="text-xs"><RateCi node={c.joint_only_route_change} /></TableCell>
                       <TableCell className="text-right text-xs font-semibold">
-                        {pct(c.complementarity_index)}
+                        {pct(c.conditional_distinctness_index)}
                       </TableCell>
                     </TableRow>
                   );
@@ -317,14 +329,13 @@ export default function ChannelAttributionPanel() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Brain className="w-5 h-5 text-primary" />
-            <CardTitle className="text-base">Who carries each context-changed decision?</CardTitle>
+            <CardTitle className="text-base">Which single-group reconstruction matches the observed route?</CardTitle>
           </div>
           <CardDescription>
-            Attribution of every decision the context layer changed, into the channel solely responsible,
-            emergent synergy, or redundant (both channels would have changed it). Each bar is the fraction of
-            context-changed decisions in that class (per scenario), with seed-cluster bootstrap 95% CIs. A
-            dominant piRAG-only bar plus a substantial synergy bar — with a near-zero MCP-only bar — shows piRAG
-            drives standalone routing while MCP's routing influence is synergistic (jointly necessary with piRAG).
+            Each bar partitions observed-versus-zeroed route changes by whether the MCP-feature reconstruction,
+            retrieval-feature reconstruction, both, or neither reproduces the observed modal route. Error bars
+            are seed-cluster bootstrap 95% confidence intervals. These conditional reconstructions do not assign
+            causal responsibility to either communication channel.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -336,17 +347,17 @@ export default function ChannelAttributionPanel() {
                 <YAxis tick={{ fontSize: 11 }} unit="%" domain={[0, "auto"]} />
                 <ReTooltip formatter={(v) => `${(v || 0).toFixed(1)}%`} />
                 <Legend />
-                <Bar dataKey="piRAG-only" fill={C_PIRAG} radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                  <ErrorBar dataKey="piRAG-only_err" width={5} strokeWidth={2} stroke="#1f2937" />
+                <Bar dataKey="Retrieval group only" fill={C_PIRAG} radius={[2, 2, 0, 0]} isAnimationActive={false}>
+                  <ErrorBar dataKey="Retrieval group only_err" width={5} strokeWidth={2} stroke="#1f2937" />
                 </Bar>
-                <Bar dataKey="MCP-only" fill={C_MCP} radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                  <ErrorBar dataKey="MCP-only_err" width={5} strokeWidth={2} stroke="#1f2937" />
+                <Bar dataKey="MCP group only" fill={C_MCP} radius={[2, 2, 0, 0]} isAnimationActive={false}>
+                  <ErrorBar dataKey="MCP group only_err" width={5} strokeWidth={2} stroke="#1f2937" />
                 </Bar>
-                <Bar dataKey="synergy" fill={C_SYN} radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                  <ErrorBar dataKey="synergy_err" width={5} strokeWidth={2} stroke="#1f2937" />
+                <Bar dataKey="Neither single group" fill={C_SYN} radius={[2, 2, 0, 0]} isAnimationActive={false}>
+                  <ErrorBar dataKey="Neither single group_err" width={5} strokeWidth={2} stroke="#1f2937" />
                 </Bar>
-                <Bar dataKey="redundant" fill={C_RED} radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                  <ErrorBar dataKey="redundant_err" width={5} strokeWidth={2} stroke="#1f2937" />
+                <Bar dataKey="Both single groups" fill={C_RED} radius={[2, 2, 0, 0]} isAnimationActive={false}>
+                  <ErrorBar dataKey="Both single groups_err" width={5} strokeWidth={2} stroke="#1f2937" />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -354,16 +365,16 @@ export default function ChannelAttributionPanel() {
         </CardContent>
       </Card>
 
-      {/* MCP governance / safety value */}
+      {/* MCP policy-rule and operating-envelope signals */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-rose-600" />
-            <CardTitle className="text-base">MCP-exclusive safety &amp; governance value</CardTitle>
+            <CardTitle className="text-base">Observed policy-rule and operating-envelope context</CardTitle>
           </div>
           <CardDescription>
-            MCP's distinctive contribution is verified, discrete intervention that piRAG retrieval cannot
-            produce: governance overrides, compliance-driven reroutes, and cyber-outage edge resilience.
+            Descriptive rates from the recorded synthetic policy. They identify where author-declared
+            threshold features were present; they are not compliance determinations and do not isolate a channel effect.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -376,9 +387,9 @@ export default function ChannelAttributionPanel() {
                     <Zap className="w-3 h-3 text-amber-500" /> {SCENARIO_LABELS[scn]}
                   </div>
                   <div className="text-[11px] text-muted-foreground mt-1 space-y-0.5">
-                    <div>governance override: <span className="font-mono">{pct(g.governance_override_rate, 2)}</span></div>
-                    <div>compliance active: <span className="font-mono">{pct(g.compliance_active_rate)}</span></div>
-                    <div>compliance decisive: <span className="font-mono">{pct(g.compliance_decisive_rate)}</span></div>
+                    <div>probability-gap override: <span className="font-mono">{pct(g.governance_override_rate, 2)}</span></div>
+                    <div>operating-envelope feature active: <span className="font-mono">{pct(g.compliance_active_rate)}</span></div>
+                    <div>route differs when feature-active: <span className="font-mono">{pct(g.compliance_decisive_rate)}</span></div>
                   </div>
                 </div>
               );
@@ -398,7 +409,7 @@ export default function ChannelAttributionPanel() {
         <GitBranch className="w-3 h-3 inline" />
         <code>{(meta.git_commit || "unknown").slice(0, 12)}</code>
         <span>·</span>
-        <span>{(meta.n_seeds ?? 20)} seeds, {meta.n_bootstrap ?? 2000}-sample bootstrap</span>
+        <span>{meta.seed_count ?? meta.n_seeds} seeds, {meta.n_bootstrap}-sample bootstrap</span>
       </div>
     </div>
   );

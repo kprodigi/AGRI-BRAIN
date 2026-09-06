@@ -1,7 +1,7 @@
 """MCP tool inventory drift guard.
 
-The README advertises "14 statically registered tools and 5 additional
-runtime role-capability tools". The inventory document at
+The inventory defines 13 default tools, one conditional tool, and five
+runtime role-capability tools. The inventory document at
 ``agribrain/backend/pirag/mcp/TOOL_INVENTORY.md`` lists each by name.
 This test asserts the documented set matches what
 ``get_default_registry()`` plus ``register_role_capabilities()``
@@ -95,3 +95,16 @@ def test_documented_runtime_tools_appear_in_capabilities_module():
     assert not missing, (
         f"Runtime tools documented but not defined in agent_capabilities.py: {missing}"
     )
+
+
+def test_chain_query_is_local_audit_history_not_blockchain():
+    """The legacy tool name must not overstate its local audit read path."""
+    from pirag.mcp.registry import get_default_registry
+
+    spec = get_default_registry().get("chain_query")
+    assert spec is not None
+    assert "audit" in spec.description.lower()
+    assert "same-episode" in spec.description.lower()
+    assert "blockchain" not in spec.description.lower()
+    assert "blockchain" not in spec.capabilities
+    assert {"audit", "history"}.issubset(set(spec.capabilities))

@@ -55,7 +55,7 @@ def register_farm_capabilities(server: MCPServer, farm_agent: Any) -> None:
             "model_profile": getattr(farm_agent, "profile", {}),
         }
 
-    server.registry.register(ToolSpec(
+    server.registry.replace(ToolSpec(
         name="farm_freshness_assessment",
         description="Assess current freshness risk from farm agent state",
         capabilities=["freshness", "quality", "farm"],
@@ -86,7 +86,7 @@ def register_recovery_capabilities(server: MCPServer, recovery_agent: Any) -> No
             "model_profile": getattr(recovery_agent, "profile", {}),
         }
 
-    server.registry.register(ToolSpec(
+    server.registry.replace(ToolSpec(
         name="recovery_capacity_check",
         description="Check recovery agent remaining capacity and preferred pathway",
         capabilities=["recovery", "capacity", "waste"],
@@ -108,7 +108,7 @@ def register_cooperative_capabilities(server: MCPServer, cooperative_agent: Any)
             "model_profile": getattr(cooperative_agent, "profile", {}),
         }
 
-    server.registry.register(ToolSpec(
+    server.registry.replace(ToolSpec(
         name="cooperative_coordination_status",
         description="Check cooperative agent coordination broadcast capacity",
         capabilities=["coordination", "cooperative"],
@@ -138,7 +138,7 @@ def register_processor_capabilities(server: MCPServer, processor_agent: Any) -> 
             "model_profile": getattr(processor_agent, "profile", {}),
         }
 
-    server.registry.register(ToolSpec(
+    server.registry.replace(ToolSpec(
         name="processor_throughput_status",
         description="Check processor agent throughput and waste status",
         capabilities=["processing", "throughput"],
@@ -163,7 +163,7 @@ def register_distributor_capabilities(server: MCPServer, distributor_agent: Any)
             "model_profile": getattr(distributor_agent, "profile", {}),
         }
 
-    server.registry.register(ToolSpec(
+    server.registry.replace(ToolSpec(
         name="distributor_route_feasibility",
         description="Check distributor route feasibility and reroute history",
         capabilities=["routing", "distribution"],

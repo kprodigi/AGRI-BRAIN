@@ -7,9 +7,11 @@ from pathlib import Path
 from typing import Dict, Any
 import uuid
 
+import copy
 import inspect
 import logging
 import os
+import re
 import time as _time
 import numpy as np
 import pandas as pd
@@ -42,28 +44,38 @@ from .models.spoilage import compute_spoilage, volatility_flags, arrhenius_k
 from .models.forecast import yield_demand_forecast
 from .models.lstm_demand import lstm_demand_forecast
 from .models.yield_forecast import yield_supply_forecast
+from .models.persistence_forecast import persistence_forecast
 from .models.slca import slca_score
 from .models.policy import Policy
 from .models.governance_models import ChainConfig
-from .models.footprint import compute_footprint, footprint_meter
+from .models.footprint import FootprintMeter
 from .models.resilience import RLE_THRESHOLD
 from .models.action_selection import (
     ACTIONS, ACTION_KM_KEYS, PRICE_FACTOR,
     select_action, compute_thermal_stress, compute_slca_attenuation,
 )
-from .models.waste import (
-    INV_BASELINE, MODE_CARBON_EFF,
-    compute_waste_rate, compute_save_factor,
-)
+from .models.waste import INV_BASELINE, compute_waste_rate, compute_save_factor
 from .models.carbon import compute_transport_carbon
 from .models.reverse_logistics import evaluate_recovery_options, compute_circular_economy_score
+from .models.reward import compute_reward
 from .models.policy_learner import PolicyLearner
-from .chain.eth import log_decision_onchain
+from .models.mode_capabilities import capabilities_for
 
 logger = logging.getLogger(__name__)
 
-# Forecast method selection (default: LSTM, fallback: Holt's linear level+trend)
+_DECISION_FOOTPRINT_SCOPE = (
+    "REST context construction plus select_action wall time; excludes "
+    "forecasting, outcome scoring, learner post-step updates, persistence, "
+    "artifact I/O, and idle allocation"
+)
+footprint_meter = FootprintMeter(
+    measurement_scope=_DECISION_FOOTPRINT_SCOPE,
+    proxy_step_unit="REST decision request",
+)
+
+# Locked confirmatory methods were selected on the validation segment only.
 FORECAST_METHOD = SETTINGS.forecast_method
+SUPPLY_FORECAST_METHOD = SETTINGS.supply_forecast_method
 
 
 def _demand_forecast(df, horizon=1, **kwargs):
@@ -78,10 +90,38 @@ def _demand_forecast(df, horizon=1, **kwargs):
         from pirag.mcp.tools.demand_query import query_demand
         series = df["demand_units"].astype(float).tolist()
         return query_demand(demand_history=series, horizon=horizon, method=FORECAST_METHOD)
-    except Exception:
-        if FORECAST_METHOD == "holt_winters":
+    except ImportError:
+        if FORECAST_METHOD in {"holt_linear", "holt_winters"}:
             return yield_demand_forecast(df, horizon=horizon, **kwargs)
-        return lstm_demand_forecast(df, horizon=horizon, **kwargs)
+        if FORECAST_METHOD == "lstm":
+            return lstm_demand_forecast(df, horizon=horizon, **kwargs)
+        if FORECAST_METHOD == "persistence":
+            return persistence_forecast(
+                df, horizon=horizon, series_col="demand_units",
+            )
+        raise ValueError(f"unsupported demand forecast method: {FORECAST_METHOD!r}")
+
+
+def _supply_forecast(df, horizon=1):
+    """Supply-proxy forecast routed through the same MCP contract as simulation."""
+    try:
+        from pirag.mcp.tools.yield_query import query_yield
+        series = df["inventory_units"].astype(float).tolist()
+        return query_yield(
+            inventory_history=series,
+            horizon=horizon,
+            method=SUPPLY_FORECAST_METHOD,
+        )
+    except ImportError:
+        if SUPPLY_FORECAST_METHOD == "persistence":
+            return persistence_forecast(
+                df, horizon=horizon, series_col="inventory_units",
+            )
+        if SUPPLY_FORECAST_METHOD in {"holt_linear", "holt_winters"}:
+            return yield_supply_forecast(df, horizon=horizon)
+        raise ValueError(
+            f"unsupported supply forecast method: {SUPPLY_FORECAST_METHOD!r}"
+        )
 
 # ---------------------------------------------------------------------------
 # FastAPI app
@@ -215,9 +255,10 @@ API.include_router(
 
 # ---------------------------------------------------------------------------
 # Static + Swagger branding (logo, favicon, CSS)
-# Resolves: .../backend/src/app.py  -> static at .../backend/static
+# Package-local resources are included in both editable installs and wheels.
+# Resolves: .../site-packages/src/app.py -> .../site-packages/src/static
 # ---------------------------------------------------------------------------
-_STATIC_DIR = (Path(__file__).resolve().parent.parent / "static").resolve()
+_STATIC_DIR = (Path(__file__).resolve().parent / "static").resolve()
 API.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 
 @API.get("/docs", include_in_schema=False)
@@ -275,60 +316,6 @@ state: Dict[str, Any] = {
     },
 }
 
-
-# ---------------------------------------------------------------------------
-# PINN overlay cache for the /predictions endpoint.
-# Keyed on (df_signature, policy_signature) so a stable telemetry +
-# policy combination only trains the PINN once per backend lifetime.
-# Cleared explicitly on case_load() because the dataframe shape and
-# content fully define df_signature anyway.
-# ---------------------------------------------------------------------------
-_PINN_OVERLAY_CACHE: Dict[Any, Any] = {}
-
-
-def _df_signature(df) -> str:
-    """Stable, cheap signature of the loaded telemetry dataframe.
-
-    Uses pandas's internal index hash plus the (rows, cols) shape and
-    the first/last timestamp + temperature so two distinct CSV loads
-    are guaranteed to produce different signatures even when row count
-    matches. Avoids hashing the full dataframe (slow on every poll).
-
-    Best-effort: a malformed dataframe (missing columns, empty index,
-    non-numeric tempC) degrades to a no-cache signature, which is the
-    correct fallback. Narrow the catch to the realistic shapes we
-    encounter; an unexpected exception type now propagates.
-    """
-    try:
-        first_ts = str(df["timestamp"].iloc[0])
-        last_ts = str(df["timestamp"].iloc[-1])
-        first_t = float(df["tempC"].iloc[0])
-        last_t = float(df["tempC"].iloc[-1])
-        return f"{df.shape[0]}x{df.shape[1]}|{first_ts}|{last_ts}|{first_t:.4f}|{last_t:.4f}"
-    except (KeyError, AttributeError, IndexError, ValueError, TypeError) as exc:
-        logger.debug("PINN cache signature fell back to nosig: %s", exc)
-        return f"{getattr(df, 'shape', '?')}|nosig"
-
-
-def _policy_signature(p) -> str:
-    """Signature of the policy parameters that feed the PINN/ODE model.
-
-    Only the kinetic parameters matter (k_ref, Ea_R, T_ref_K,
-    beta_humidity, lag_lambda) — changing carbon factors or SLCA
-    weights does not change the spoilage trajectory, so they are
-    excluded from the cache key.
-
-    Best-effort: a missing attribute on the policy object falls back
-    to a no-cache signature (correct fallback). Narrow the catch.
-    """
-    try:
-        return (
-            f"k={p.k_ref:.6g}|Ea_R={p.Ea_R:.6g}|Tref={p.T_ref_K:.6g}|"
-            f"beta={p.beta_humidity:.6g}|lam={p.lag_lambda:.6g}"
-        )
-    except (AttributeError, TypeError, ValueError) as exc:
-        logger.debug("policy signature fell back to nosig: %s", exc)
-        return "policy:nosig"
 
 # ---------------------------------------------------------------------------
 # Role-specific profiles for the live REST decision endpoint.
@@ -389,7 +376,7 @@ def health() -> Dict[str, Any]:
 # Data endpoints
 # ---------------------------------------------------------------------------
 def case_load():
-    """Load data_spinach.csv, compute PINN spoilage and volatility flags."""
+    """Load data_spinach.csv and compute mechanistic spoilage and volatility."""
     p = state["policy"]
     df = pd.read_csv(DATA, parse_dates=["timestamp"])
     df = compute_spoilage(
@@ -403,9 +390,6 @@ def case_load():
     df["volatility"] = volatility_flags(df, window=p.boll_window, k=p.boll_k)
     state["df"] = df
     state["df_original"] = df.copy()
-    # Drop the PINN overlay cache so the next /predictions call recomputes
-    # against the freshly loaded telemetry.
-    _PINN_OVERLAY_CACHE.clear()
     return {"ok": True, "records": len(df)}
 
 @API.get("/kpis")
@@ -414,8 +398,10 @@ def kpis():
         case_load()
     df = state["df"]
     p = state["policy"]
-    # Compute realistic waste rates using the Arrhenius-based waste model
-    # across all timesteps for static (baseline) and agribrain modes.
+    # Compute two explicitly fixed-action modeled waste indicators using
+    # the canonical physical model. These are not policy-mode evaluations:
+    # ``waste_rate_agri`` is a compatibility key for the fixed local-
+    # redistribution calculation, not a measured AGRI-BRAIN endpoint.
     _waste_baseline_vals = []
     _waste_agri_vals = []
     for _, row in df.iterrows():
@@ -464,13 +450,24 @@ def kpis():
         "anomaly_points": int((df["volatility"] == "anomaly").sum()),
         "waste_rate_baseline": waste_baseline,
         "waste_rate_agri": waste_agri,
+        "waste_rate_basis": (
+            "fixed cold-chain versus fixed local-redistribution "
+            "modeled scenarios on loaded telemetry; not benchmark mode results"
+        ),
         # --- new KPIs ---
         "mean_ari": round(float(np.mean(ari_vals)), 4) if ari_vals else 0.0,
         "mean_rle": round(rle_routed / max(rle_at_risk, 1), 4),
         "mean_slca_composite": round(float(np.mean(slca_vals)), 4) if slca_vals else 0.0,
         "total_carbon_kg": round(total_carbon, 4),
+        "carbon_basis": (
+            "sum of modelled per-routing-opportunity transport-emissions "
+            "proxies in the decision log"
+        ),
         "total_energy_J": fp_summary["cumulative_energy_J"],
         "total_water_L": fp_summary["cumulative_water_L"],
+        "compute_footprint_basis": fp_summary["estimate_basis"],
+        "compute_footprint_status": fp_summary["estimation_status"],
+        "compute_footprint_scope": fp_summary["measurement_scope"],
     }
 
 @API.get("/telemetry")
@@ -494,82 +491,18 @@ def predictions():
         case_load()
     df = state["df"]
     demand_fc = _demand_forecast(df, horizon=24)
-    supply_fc = yield_supply_forecast(df, horizon=24)
+    supply_fc = _supply_forecast(df, horizon=24)
 
-    # PINN vs ODE comparison (Section 4.13, Figure 13b).
-    # `df["shelf_left"]` is the ODE-only Arrhenius-Baranyi integral.
-    # The PINN-corrected trajectory is the same ODE plus a bounded
-    # neural residual (compute_spoilage_pinn). We surface both so the
-    # Quality panel can render the real overlay instead of synthesising
-    # an ODE baseline client-side.
-    p = state["policy"]
+    # The submission exposes only the common mechanistic trajectory. There are
+    # no independent product-quality labels from which to identify or validate
+    # a neural residual.
     shelf_ode = df["shelf_left"].round(4).tolist()
     risk_ode = df["spoilage_risk"].round(4).tolist() if "spoilage_risk" in df.columns else []
 
-    # PINN overlay cache. compute_spoilage_pinn trains a small NN from
-    # scratch on every call (~1-3 s for 200 epochs over 288 timesteps),
-    # so the QualityPage's 5-second poll would race the training and
-    # waste compute. The cache is keyed on (df_hash, policy_hash) so any
-    # change to the loaded telemetry (case_load) or the policy
-    # parameters that feed the kinetic model (k_ref, Ea_R, T_ref_K,
-    # beta_humidity, lag_lambda) busts the entry; pure UI re-polls hit
-    # the cache and return in microseconds.
-    df_key = _df_signature(df)
-    pol_key = _policy_signature(p)
-    cache_key = (df_key, pol_key)
-    cached = _PINN_OVERLAY_CACHE.get(cache_key)
-    if cached is not None:
-        shelf_pinn, risk_pinn, pinn_available = cached
-    else:
-        shelf_pinn = list(shelf_ode)
-        risk_pinn = list(risk_ode)
-        pinn_available = False
-        try:
-            from .models.spoilage import compute_spoilage_pinn
-            df_pinn = compute_spoilage_pinn(
-                df,
-                k_ref=p.k_ref,
-                Ea_R=p.Ea_R,
-                T_ref_K=p.T_ref_K,
-                beta=p.beta_humidity,
-                lag_lambda=p.lag_lambda,
-                pinn_epochs=200,  # cheaper than the simulator's 1000
-            )
-            shelf_pinn = df_pinn["shelf_left"].round(4).tolist()
-            risk_pinn = df_pinn["spoilage_risk"].round(4).tolist()
-            pinn_available = True
-        except (ImportError, RuntimeError, ValueError, KeyError) as exc:
-            # ImportError -> torch not installed; RuntimeError -> training
-            # divergence or shape mismatch; ValueError/KeyError -> bad
-            # dataframe shape. The /predictions response sets
-            # pinn_available=false so the frontend already conveys this
-            # to the user; we log at INFO with structured cause for
-            # operators reading server logs.
-            logger.info(
-                "predictions.pinn_overlay_skipped exception_type=%s exception=%s",
-                type(exc).__name__, exc,
-            )
-        _PINN_OVERLAY_CACHE[cache_key] = (shelf_pinn, risk_pinn, pinn_available)
-        # Keep the cache bounded — at most a handful of (df, policy)
-        # combinations per session in practice (case_load happens once,
-        # policy edits in the Admin panel are rare).
-        if len(_PINN_OVERLAY_CACHE) > 16:
-            # Evict the oldest entry to keep behaviour deterministic.
-            _PINN_OVERLAY_CACHE.pop(next(iter(_PINN_OVERLAY_CACHE)))
-
     return {
         "timestamp": df["timestamp"].astype(str).tolist(),
-        # Headline series (PINN-corrected when available, ODE-only otherwise).
-        # `shelf_left` and `spoilage_risk` keep their pre-existing semantics
-        # for backward compatibility with the Decisions / Ops dashboards.
-        "shelf_left": shelf_pinn,
-        "spoilage_risk": risk_pinn,
-        # Explicit PINN vs ODE channels for the Quality panel overlay.
-        "shelf_left_pinn": shelf_pinn,
-        "spoilage_risk_pinn": risk_pinn,
-        "shelf_left_ode": shelf_ode,
-        "spoilage_risk_ode": risk_ode,
-        "pinn_available": pinn_available,
+        "shelf_left": shelf_ode,
+        "spoilage_risk": risk_ode,
         "volatility": df["volatility"].tolist(),
         "demand_forecast": demand_fc,
         "yield_forecast": supply_fc,
@@ -605,34 +538,35 @@ _ACTION_LABELS = {
 
 _ROLE_CONTEXT = {
     "farm": (
-        "As a farm-level agent, this decision prioritizes minimizing post-harvest "
-        "losses through proximity-based redistribution and fair labor practices. "
-        "Local redistribution keeps produce within regional markets, supporting "
-        "smallholder income and reducing food miles."
+        "For the farm role, the policy uses modeled spoilage, distance, and "
+        "author-declared labor-proxy terms when comparing routes. These synthetic "
+        "terms do not measure fair labor conditions, producer income, or realized "
+        "regional-market effects."
     ),
     "processor": (
         "As a processing facility agent, this decision prioritizes product quality "
-        "preservation and cold chain integrity. Maintaining unbroken refrigeration "
-        "ensures compliance with FDA leafy greens safety guidelines and maximizes "
-        "shelf life for downstream retailers."
+        "preservation and cold chain integrity. The synthetic benchmark checks "
+        "temperature and humidity against its declared operating envelope; this "
+        "is not an FDA, legal, or food-safety compliance determination."
     ),
     "cooperative": (
-        "As a cooperative agent, this decision balances equity across all supply "
-        "chain stakeholders. The cooperative model weighs carbon, labor, resilience, "
-        "and transparency equally, ensuring no single SLCA pillar is sacrificed for "
-        "short-term efficiency gains."
+        "For the cooperative overlay, the policy combines an inverse modeled-emissions "
+        "term, a labour-practice prior, a community-network prior, and a "
+        "price-information prior. The resulting social-performance proxy is an "
+        "author-defined simulation signal, not measured stakeholder equity or "
+        "evidence that competing interests were balanced in practice."
     ),
     "distributor": (
-        "As a distribution agent, this decision optimizes logistics efficiency and "
-        "transport carbon cost. The distributor manages the longest transport legs "
-        "in the supply chain and must balance delivery speed against emissions and "
-        "thermal degradation risk during transit."
+        "For the distributor role, the policy compares route distance, a modeled "
+        "transport-emissions indicator, and mechanistic thermal-degradation risk. "
+        "The indicator is not a measured lifecycle footprint and the benchmark does "
+        "not establish real-world delivery performance."
     ),
     "recovery": (
-        "As a recovery agent, this decision prioritizes diverting at-risk produce "
-        "from landfill into composting, animal feed, or food bank channels. Recovery "
-        "pathways capture residual value from spoiled or surplus inventory while "
-        "reducing the environmental burden of organic waste."
+        "For the recovery role, the policy evaluates modeled diversion options for "
+        "at-risk inventory. A selected recovery route is a simulation action; it does "
+        "not verify delivery to composting, animal-feed, or food-assistance channels "
+        "or quantify a realized environmental benefit."
     ),
 }
 
@@ -645,19 +579,24 @@ def _build_memo_text(
     slca_composite: float, slca_result: dict,
     circular_score: float, reward_total: float,
     energy_penalty: float, water_penalty: float, waste_penalty: float,
+    rho_penalty: float,
     recovery_opts: dict, rag_context: dict,
 ) -> str:
     """Build a detailed, multi-paragraph decision memo."""
 
     # --- risk level ---
     if rho < 0.3:
-        risk_label, risk_desc = "low", "well within acceptable limits"
+        risk_label, risk_desc = (
+            "low", "below the declared synthetic intervention threshold",
+        )
     elif rho < 0.6:
         risk_label, risk_desc = "moderate", "approaching the rerouting threshold"
     else:
-        risk_label, risk_desc = "high", "exceeding safe thresholds and requiring immediate intervention"
+        risk_label, risk_desc = (
+            "high", "above the declared synthetic intervention threshold",
+        )
 
-    shelf_hours = max(shelf * 72, 0)  # shelf_left is fraction of 72h window
+    quality_remaining_pct = max(min(shelf, 1.0), 0.0) * 100.0
     regime = "anomalous (Bollinger band breach)" if tau > 0.5 else "normal"
 
     # --- paragraph 1: observation ---
@@ -665,9 +604,9 @@ def _build_memo_text(
         f"Current conditions indicate {risk_label} spoilage risk "
         f"(\u03c1 = {rho:.3f}), {risk_desc}. "
         f"Cold chain temperature is {temp:.1f} \u00b0C with "
-        f"{shelf_hours:.1f} hours of estimated shelf life remaining. "
+        f"{quality_remaining_pct:.1f}% modeled quality remaining. "
         f"Inventory stands at {inv:.0f} units against a forecasted demand "
-        f"of {y_hat:.1f} units (LSTM). "
+        f"of {y_hat:.1f} units ({FORECAST_METHOD}). "
         f"The demand regime is {regime} (Bollinger z = {boll_z:+.2f})."
     )
 
@@ -688,22 +627,27 @@ def _build_memo_text(
             "shifting probability mass toward redistribution and recovery channels. "
         )
     if vol == "anomaly":
-        rationale += "Volatility flags indicate abnormal sensor readings in this window. "
+        rationale += "Volatility flags indicate an unusual synthetic input window. "
 
     # --- paragraph 3: impact assessment ---
     sc = slca_result
     impact = (
-        f"This routing decision covers {km:.0f} km of transport, producing "
-        f"{carbon:.2f} kg CO\u2082-eq in emissions. "
-        f"The projected waste rate is {waste:.4f} ({waste*100:.2f}%), "
+        f"This standardized routing opportunity represents {km:.0f} km of "
+        f"transport and yields a modelled transport-emissions proxy of "
+        f"{carbon:.2f} kg CO\u2082-eq. "
+        f"The modeled waste fraction per routing opportunity is {waste:.4f} "
+        f"({waste*100:.2f}%), "
         f"with a unit price of ${price:.2f}. "
-        f"SLCA composite score: {slca_composite:.3f} "
-        f"(Carbon {sc['C']:.2f}, Labor {sc['L']:.2f}, "
-        f"Resilience {sc['R']:.2f}, Transparency {sc['P']:.2f}). "
-        f"Circular economy score: {circular_score:.3f}. "
-        f"Net reward after penalties (energy {energy_penalty:.4f}, "
-        f"water {water_penalty:.6f}, waste {waste_penalty:.4f}): "
-        f"{reward_total:.4f}."
+        f"Author-declared social-performance proxy: {slca_composite:.3f} "
+        f"(inverse modeled-emissions term {sc['C']:.2f}, "
+        f"labour-practice prior {sc['L']:.2f}, community-network prior "
+        f"{sc['R']:.2f}, price-information prior {sc['P']:.2f}). "
+        f"Modeled route-circularity indicator: {circular_score:.3f}. "
+        f"Canonical reward after waste ({waste_penalty:.4f}) and "
+        f"environmental-risk ({rho_penalty:.4f}) penalties: "
+        f"{reward_total:.4f}. Descriptive footprint-weighted terms "
+        f"(energy {energy_penalty:.4f}, water {water_penalty:.6f}) are "
+        f"reported but are not included in that reward."
     )
 
     # --- paragraph 4: role context ---
@@ -713,7 +657,7 @@ def _build_memo_text(
     rag_text = ""
     guidance = (rag_context or {}).get("regulatory_guidance", "")
     if guidance:
-        rag_text = f"\n\nRegulatory guidance: {guidance}"
+        rag_text = f"\n\nSource-labelled institutional guidance: {guidance}"
 
     return f"{obs}\n\n{rationale}\n\n{impact}\n\n{role_text}{rag_text}"
 
@@ -721,18 +665,20 @@ def _build_memo_text(
 # Decisions — regime-aware contextual softmax policy  (Section 5)
 # ---------------------------------------------------------------------------
 class DecideIn(BaseModel):
+    """Development-only, role-selected single-step policy demonstration.
+
+    ``mode`` selects a policy surface but does not execute the publication
+    protocol's three adaptation episodes or the coordinator peer overlay.
+    Responses are therefore never publication evidence or mode estimates.
+    """
+
     agent_id: str
     role: str
     step: int | None = None          # optional row index (None → last row)
     deterministic: bool = True       # argmax when True, sample when False
     # Mode is validated at request time against ``action_selection.VALID_MODES``
-    # (the single source of truth used by the simulator). The previous
-    # ``Literal[...]`` only listed the 8 canonical modes -- the §4.7
-    # ablation modes (cold_start, pert_*, theta_pert_*, no_bonus) returned
-    # 422 from REST even though the simulator runs them happily, which
-    # broke the "REST mirrors simulator" claim a paper reviewer would
-    # expect. Validating against VALID_MODES instead keeps the two paths
-    # in lock-step automatically.
+    # (the same eleven-mode source of truth used by the simulator), keeping the
+    # REST and benchmark paths in lock-step.
     mode: str = "agribrain"
 
     @field_validator("mode")
@@ -748,6 +694,7 @@ class DecideIn(BaseModel):
 
 @API.post("/decide")
 def decide(d: DecideIn):
+    """Emit one deterministic-or-stochastic development demonstration step."""
     if state["df"] is None:
         case_load()
 
@@ -774,18 +721,26 @@ def decide(d: DecideIn):
     rho = float(row.get("spoilage_risk", 1.0 - row["shelf_left"]))
     inv = float(row.get("inventory_units", _INV_BASELINE))
     temp = float(row["tempC"])
+    rh_val = float(row.get("RH", 50.0))
+    surplus_ratio = max(0.0, inv / INV_BASELINE - 1.0)
+    # ``idx`` is a 15-minute row index, not elapsed hours. Prefer timestamps
+    # so the live cyber-outage boundary and explanation age match the model.
+    _elapsed_hours = float(idx) * 0.25
+    try:
+        _t0 = pd.Timestamp(df.iloc[0]["timestamp"])
+        _t_now = pd.Timestamp(row["timestamp"])
+        _timestamp_hours = (_t_now - _t0).total_seconds() / 3600.0
+        if np.isfinite(_timestamp_hours) and _timestamp_hours >= 0.0:
+            _elapsed_hours = float(_timestamp_hours)
+    except (KeyError, TypeError, ValueError):
+        pass
 
     # Demand and supply forecasts both routed through the MCP tools so
     # this endpoint shares the simulator's forecasting code path.
     demand_fc = _demand_forecast(df.iloc[: idx + 1], horizon=1)
     y_hat = float(demand_fc["forecast"][0]) if demand_fc["forecast"] else _BASELINE_DEMAND
     demand_std = float(demand_fc.get("std", 0.0) or 0.0)
-    try:
-        from pirag.mcp.tools.yield_query import query_yield
-        _inv_hist = df["inventory_units"].iloc[: idx + 1].astype(float).tolist()
-        supply_fc = query_yield(inventory_history=_inv_hist, horizon=1)
-    except Exception:
-        supply_fc = yield_supply_forecast(df.iloc[: idx + 1], horizon=1)
+    supply_fc = _supply_forecast(df.iloc[: idx + 1], horizon=1)
     _supply_forecast_list = supply_fc.get("forecast") if isinstance(supply_fc, dict) else None
     supply_hat = (
         float(_supply_forecast_list[0])
@@ -816,68 +771,105 @@ def decide(d: DecideIn):
     km_ov = profile.get("km_overrides", {})
     slca_w = profile.get("slca_weights", {})
 
-    # ---- RAG context (best effort) — computed before action selection -----
+    # ---- External context — computed before and applied to selection -------
+    # This is the live endpoint's declared timed decision block. It mirrors the
+    # simulator's coordinator.step boundary by including context construction
+    # and policy selection but excluding forecasting, outcome scoring, learner
+    # post-step updates, persistence, and idle allocation.
+    _decision_path_t0 = _time.perf_counter()
     # The active scenario flows in from /scenarios/run via the scenarios
     # router's ACTIVE container. Earlier this was hardcoded to "baseline",
     # which kept compliance/regulatory retrieval pointed at the
     # baseline-scenario corpus even after operators selected heatwave /
     # cyber_outage / etc. via the Admin panel -- explainability and
     # decision logits could then disagree about the operating context.
-    rag_context = {}
+    rag_context: dict[str, Any] = {}
+    _context_modifier: np.ndarray | None = None
     try:
-        from pirag.context_provider import get_policy_context
+        from src.routers.scenarios import ACTIVE as _SCN_ACTIVE
+        _scenario_name = (_SCN_ACTIVE.get("name") or "baseline")
+    except (ImportError, AttributeError):
+        _scenario_name = "baseline"
+    _caps = capabilities_for(d.mode)
+    if _caps.context_kind is not None:
         try:
-            from src.routers.scenarios import ACTIVE as _SCN_ACTIVE
-            _scenario_name = (_SCN_ACTIVE.get("name") or "baseline")
-        except (ImportError, AttributeError):
-            _scenario_name = "baseline"
-        rag_context = get_policy_context(
-            scenario=_scenario_name, spoilage_risk=rho, temperature=temp,
-        )
-    except Exception as _exc:
-        logger.debug("RAG policy context skipped: %s", _exc)
+            from pirag.context_provider import get_policy_context
+            rag_context = get_policy_context(
+                scenario=_scenario_name,
+                spoilage_risk=rho,
+                temperature=temp,
+                role=role_key,
+                humidity=rh_val,
+                inventory=inv,
+                surplus_ratio=surplus_ratio,
+                tau=tau,
+                hour=_elapsed_hours,
+                y_hat=y_hat,
+                context_mode=_caps.context_kind,
+                retrieval_kind=_caps.retrieval_kind,
+            )
+            raw_modifier = rag_context.get("context_modifier")
+            _context_modifier = np.asarray(raw_modifier, dtype=float)
+            if (
+                _context_modifier.shape != (3,)
+                or not np.all(np.isfinite(_context_modifier))
+            ):
+                raise ValueError("context modifier must be a finite 3-vector")
+        except Exception as _exc:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "External context construction failed; no context-enabled "
+                    "decision was emitted"
+                ),
+            ) from _exc
 
     # ---- action selection via canonical select_action() -------------------
     rng = np.random.default_rng()
+    _pre_action_rng_state = copy.deepcopy(rng.bit_generator.state)
     action_idx, probs = select_action(
         mode=d.mode, rho=rho, inv=inv, y_hat=y_hat, temp=temp,
         tau=tau, policy=p, rng=rng,
+        scenario=_scenario_name, hour=_elapsed_hours,
         role_bias=role_bias, deterministic=d.deterministic,
+        context_modifier=_context_modifier,
         supply_hat=supply_hat, supply_std=supply_std,
         demand_std=demand_std, price_signal=price_signal,
     )
+    _decision_path_elapsed_seconds = _time.perf_counter() - _decision_path_t0
 
     action = ACTIONS[action_idx]
     km_key = ACTION_KM_KEYS[action]
     km = km_ov.get(km_key, getattr(p, km_key))
 
     # ---- carbon with COP degradation (Eq. 18) ----------------------------
-    # Mode-conditional eff_factor (waste.MODE_CARBON_EFF) scales emissions
-    # down for context-aware modes that route through lower-carbon
-    # partners and PINN-time dispatches into cooler windows.
+    # Physical outcome is mode-neutral; architecture affects emissions only
+    # through the selected route and its distance.
     thermal_stress = compute_thermal_stress(temp)
     carbon = compute_transport_carbon(
         km, p.carbon_per_km, thermal_stress,
-        eff_factor=MODE_CARBON_EFF.get(d.mode, 1.0),
+        eff_factor=1.0,
     )
 
     # ---- SLCA with stress attenuation (Eq. 12) ---------------------------
-    surplus_ratio = max(0.0, inv / INV_BASELINE - 1.0)
     slca_result = slca_score(
         carbon, action,
         w_c=slca_w.get("w_c", p.w_c),
         w_l=slca_w.get("w_l", p.w_l),
         w_r=slca_w.get("w_r", p.w_r),
         w_p=slca_w.get("w_p", p.w_p),
+        carbon_cap=p.carbon_cap,
     )
     slca_quality = compute_slca_attenuation(thermal_stress, surplus_ratio)
     slca_composite = slca_result["composite"] * slca_quality
 
     # ---- footprint -------------------------------------------------------
-    fp = compute_footprint(steps=1)
+    fp = footprint_meter.compute_footprint(
+        steps=1,
+        elapsed_seconds=_decision_path_elapsed_seconds,
+    )
 
     # ---- waste (full model matching generate_results.py) -----------------
-    rh_val = float(row.get("RH", 50.0))
     k_inst = arrhenius_k(temp, p.k_ref, p.Ea_R, p.T_ref_K,
                          rh_val / 100.0, p.beta_humidity)
     waste_raw = compute_waste_rate(k_inst, surplus_ratio)
@@ -889,12 +881,21 @@ def decide(d: DecideIn):
     recovery_opts = evaluate_recovery_options(rho, inv, temp)
     circular_score = compute_circular_economy_score(action, recovery_opts)
 
-    # ---- composite reward ------------------------------------------------
-    # R = w_c*C + w_l*L + w_r*R + w_p*P  - alpha_E*E - beta_W*W - eta*waste
+    # ---- canonical benchmark reward --------------------------------------
+    # R = S_proxy - eta_w*waste - eta_rho*rho_environmental.
+    # Compute energy/water terms remain descriptive and are not optimized by
+    # the confirmatory learner or included in the reported reward.
     energy_penalty = p.alpha_E * fp["energy_J"]
     water_penalty = p.beta_W * fp["water_L"]
     waste_penalty = p.eta * waste
-    reward_total = slca_composite - energy_penalty - water_penalty - waste_penalty
+    rho_penalty = p.eta_rho * rho
+    reward_total = compute_reward(
+        slca_composite,
+        waste,
+        rho,
+        eta=p.eta,
+        eta_rho=p.eta_rho,
+    )
 
     shelf = float(row["shelf_left"])
     vol = str(row.get("volatility", "normal"))
@@ -903,9 +904,15 @@ def decide(d: DecideIn):
         "time": datetime.now(timezone.utc).isoformat(),
         "ts": int(_time.time()),
         "step": idx,
+        "elapsed_hours": round(_elapsed_hours, 6),
         "agent": d.agent_id,
         "role": d.role,
         "mode": d.mode,
+        "scenario": _scenario_name,
+        "evidence_status": "development_only",
+        "publication_evidence": False,
+        "execution_contract": "role_selected_single_step_without_peer_overlay",
+        "context_applied_to_action": _context_modifier is not None,
         "decision": action,
         "action": action,
         "shelf_left": round(shelf, 4),
@@ -932,6 +939,11 @@ def decide(d: DecideIn):
         "footprint": {
             "energy_J": fp["energy_J"],
             "water_L": fp["water_L"],
+            "elapsed_seconds": fp["elapsed_seconds"],
+            "estimate_basis": fp["estimate_basis"],
+            "estimation_status": fp["estimation_status"],
+            "measurement_scope": fp["measurement_scope"],
+            "proxy_step_unit": fp["proxy_step_unit"],
         },
         "regime": {
             "tau": tau,
@@ -940,8 +952,13 @@ def decide(d: DecideIn):
         "reward_decomposition": {
             "slca": round(slca_composite, 4),
             "energy_penalty": round(energy_penalty, 6),
+            "energy_penalty_descriptive_only": True,
             "water_penalty": round(water_penalty, 8),
+            "water_penalty_descriptive_only": True,
             "waste_penalty": round(waste_penalty, 4),
+            "rho_penalty": round(rho_penalty, 4),
+            "footprint_terms_in_total": False,
+            "formula": "SLCA - eta_w*waste - eta_rho*rho_environmental",
             "total": round(reward_total, 4),
         },
         "circular_economy_score": circular_score,
@@ -952,7 +969,13 @@ def decide(d: DecideIn):
             "source_documents": rag_context.get("source_documents", []),
         },
         "demand_forecast": {"method": FORECAST_METHOD, "y_hat": round(y_hat, 4)},
-        "yield_forecast": {"y_hat": round(float(supply_fc["forecast"][0]) if supply_fc["forecast"] else 0.0, 4)},
+        "yield_forecast": {
+            "method": SUPPLY_FORECAST_METHOD,
+            "y_hat": round(
+                float(supply_fc["forecast"][0]) if supply_fc["forecast"] else 0.0,
+                4,
+            ),
+        },
         "note": (
             f"Softmax policy: action={action} "
             f"P={probs[action_idx]:.3f} rho={rho:.3f} tau={tau}"
@@ -966,7 +989,7 @@ def decide(d: DecideIn):
             slca_composite=slca_composite, slca_result=slca_result,
             circular_score=circular_score, reward_total=reward_total,
             energy_penalty=energy_penalty, water_penalty=water_penalty,
-            waste_penalty=waste_penalty,
+            waste_penalty=waste_penalty, rho_penalty=rho_penalty,
             recovery_opts=recovery_opts, rag_context=rag_context,
         ),
     }
@@ -980,7 +1003,7 @@ def decide(d: DecideIn):
 
     # --- Explainability enrichment (best-effort) ---
     try:
-        from pirag.context_to_logits import extract_context_features, THETA_CONTEXT
+        from pirag.context_to_logits import extract_context_features
         from pirag.keyword_extractor import extract_keywords_by_type
         from pirag.explain_decision import explain_decision
 
@@ -992,20 +1015,24 @@ def decide(d: DecideIn):
         _obs.rh = rh_val
         _obs.inv = inv
         _obs.tau = tau
-        _obs.hour = float(idx)
+        _obs.hour = _elapsed_hours
         _obs.surplus_ratio = surplus_ratio
         _obs.y_hat = y_hat
 
         _mcp_res = rag_context.get("mcp_results", {})
-        _ctx_mod = rag_context.get("context_modifier")
-
         _psi = extract_context_features(_mcp_res, rag_context, _obs)
-        _modifier = THETA_CONTEXT @ _psi if _ctx_mod is None else np.array(_ctx_mod)
+        _modifier = (
+            np.zeros(3, dtype=float)
+            if _context_modifier is None else _context_modifier.copy()
+        )
 
-        # Counterfactual (probs without context)
+        # Paired counterfactual: exact same pre-action RNG state, no context.
+        _cf_rng = np.random.default_rng()
+        _cf_rng.bit_generator.state = copy.deepcopy(_pre_action_rng_state)
         _, _cf_probs = select_action(
             mode=d.mode, rho=rho, inv=inv, y_hat=y_hat, temp=temp,
-            tau=tau, policy=p, rng=np.random.default_rng(),
+            tau=tau, policy=p, rng=_cf_rng,
+            scenario=_scenario_name, hour=_elapsed_hours,
             role_bias=role_bias, deterministic=d.deterministic,
             supply_hat=supply_hat, supply_std=supply_std,
             demand_std=demand_std, price_signal=price_signal,
@@ -1021,7 +1048,7 @@ def decide(d: DecideIn):
                 _kw[_kt] = extract_keywords_by_type(_txt)
 
         _expl = explain_decision(
-            action=action, role=role_key, hour=float(idx), obs=_obs,
+            action=action, role=role_key, hour=_elapsed_hours, obs=_obs,
             mcp_results=_mcp_res, rag_context=rag_context,
             slca_score=slca_composite, carbon_kg=carbon, waste=waste,
             context_features=_psi, logit_adjustment=_modifier,
@@ -1049,13 +1076,32 @@ def decide(d: DecideIn):
             "pirag_top_score": round(rag_context.get("top_citation_score", 0), 3),
             "keywords": _kw,
             "provenance": {
-                "evidence_hashes": rag_context.get("evidence_hashes", [])[:5],
-                "guards_passed": rag_context.get("guards_passed", True),
+                # Complete ordered leaves for the displayed local Merkle
+                # commitment. This is intentionally not called an inclusion
+                # proof: no per-leaf Merkle paths are emitted by this endpoint.
+                "evidence_hashes": _expl.get("evidence_hashes", []),
+                "retrieval_evidence_hashes": _expl.get(
+                    "retrieval_evidence_hashes", []
+                ),
+                "mcp_evidence_hashes": _expl.get("mcp_evidence_hashes", {}),
+                "evidence_hash_count": _expl.get("evidence_hash_count", 0),
+                "evidence_hashes_complete": _expl.get(
+                    "evidence_hashes_complete", False
+                ),
+                "commitment_type": _expl.get(
+                    "commitment_type", "local_merkle_root"
+                ),
+                "merkle_inclusion_paths_exposed": _expl.get(
+                    "merkle_inclusion_paths_exposed", False
+                ),
+                "merkle_root_anchored_on_chain": False,
+                "guards_passed": rag_context.get("guards_passed"),
                 "guard_breakdown": rag_context.get("guard_breakdown", {}),
                 "merkle_root": _expl.get("merkle_root", ""),
             },
+            "policy_trace_text": _expl.get("full_explanation", ""),
+            # Legacy field names remain for backward compatibility only.
             "causal_text": _expl.get("full_explanation", ""),
-            # New honest field names + legacy aliases for backward compat.
             "attribution_chain": _expl.get("attribution_chain", {}),
             "ablation_delta": _expl.get("ablation_delta", {}),
             "causal_chain": _expl.get("causal_chain", {}),
@@ -1089,7 +1135,8 @@ def decide(d: DecideIn):
         _learner.record(phi, action_idx, reward_total)
 
     # Apply the deployment-phase semantics:
-    #   * autonomous  -> finalise immediately (chain log, broadcast, mirror)
+    #   * autonomous  -> finalise immediately (local broadcast/mirror and an
+    #                    optional best-effort chain-log attempt when configured)
     #   * monitoring  -> compute and return; no side effects
     #   * advisory    -> queue for operator approve / reject; on approve we
     #                    re-run the same finaliser
@@ -1114,14 +1161,14 @@ def _finalize_decision_side_effects(memo: Dict[str, Any]) -> Dict[str, Any]:
     """
     # tx_hash semantics:
     #   None  : chain not configured / submission failed (default)
-    #   "0x0" : legacy sentinel from older deployments (treated as
-    #           "not anchored" by the frontend's verification logic)
+    #   "0x0" : legacy sentinel from older deployments (treated as no
+    #           submitted decision record by the frontend)
     #   "0x..": real on-chain transaction hash
     #
     # Best-effort posture is governed by CHAIN_BEST_EFFORT (default
     # false outside dev). When false, an on-chain submission failure
-    # propagates so operators do not silently believe an anchor
-    # happened when it did not. When true, the failure is logged at
+    # propagates so operators do not silently believe a decision record
+    # was submitted when it was not. When true, the failure is logged at
     # WARNING with structured fields for monitoring counters and
     # tx remains None.
     tx = None
@@ -1130,9 +1177,17 @@ def _finalize_decision_side_effects(memo: Dict[str, Any]) -> Dict[str, Any]:
         "true" if SETTINGS.env == "dev" else "false",
     ).strip().lower() in {"1", "true", "yes", "on"}
     try:
-        txh = log_decision_onchain(memo, state.get("chain", {}))
-        if txh:
-            tx = txh
+        chain_cfg = state.get("chain", {})
+        if chain_cfg:
+            # Web3 is an optional deployment dependency and the confirmatory
+            # benchmark keeps chain submission disabled. Import it only for an
+            # explicitly configured chain so ordinary API/simulation imports
+            # do not initialize network/TLS machinery or imply submission.
+            from .chain.eth import log_decision_onchain
+
+            txh = log_decision_onchain(memo, chain_cfg)
+            if txh:
+                tx = txh
     except (ConnectionError, TimeoutError, ValueError) as exc:
         # Network / RPC failures and explicit revert ValueErrors. Reraise
         # in strict mode so /decide returns 500 rather than silently
@@ -1147,8 +1202,7 @@ def _finalize_decision_side_effects(memo: Dict[str, Any]) -> Dict[str, Any]:
     except RuntimeError as exc:
         # On-chain transaction reverted (raised by log_decision_onchain
         # itself). Same posture: surface in strict mode so the operator
-        # cannot mistake "0x0 / null tx_hash" for "the anchor went
-        # through and I just missed seeing it".
+        # cannot mistake "0x0 / null tx_hash" for a submitted record.
         logger.warning(
             "chain.log_decision_onchain tx_reverted exception=%s best_effort=%s",
             exc, chain_best_effort,
@@ -1157,6 +1211,13 @@ def _finalize_decision_side_effects(memo: Dict[str, Any]) -> Dict[str, Any]:
             raise
     memo["tx"] = tx
     memo["tx_hash"] = tx
+    # The live endpoint submits selected decision fields through
+    # DecisionLogger.logDecision.  That transaction is separate from the
+    # local explanation Merkle root and must never be presented as anchoring
+    # that root. Publication episode-ledger root submission, when explicitly
+    # enabled, uses the separate logEpisode path.
+    memo["on_chain_record_type"] = "decision_fields" if tx else None
+    memo["merkle_root_anchored_on_chain"] = False
 
     # append to in-memory log, capped at MAX_DECISION_LOG entries.
     # Pre-2026-05 the log was unbounded, so a long-running deployment
@@ -1208,13 +1269,39 @@ def decision_take(agent: str = "farm", role: str = "farm"):
 def last_decision():
     """Return the most recent decision memo."""
     log = state.get("log", [])
-    return log[-1] if log else {}
+    return _with_public_evidence_label(log[-1]) if log else {}
+
+
+def _with_public_evidence_label(memo: Dict[str, Any]) -> Dict[str, Any]:
+    """Return a memo copy with a fail-closed evidence classification.
+
+    New live decisions already carry these fields. The fallback prevents an
+    older in-memory memo from losing its non-publication status merely because
+    it predates the explicit evidence contract.
+    """
+    labelled = dict(memo)
+    publication_evidence = labelled.get("publication_evidence") is True
+    labelled["publication_evidence"] = publication_evidence
+    if not labelled.get("evidence_status"):
+        labelled["evidence_status"] = (
+            "publication_evidence"
+            if publication_evidence
+            else "unverified_runtime_output"
+        )
+    if not labelled.get("execution_contract"):
+        labelled["execution_contract"] = "unspecified_runtime_contract"
+    return labelled
 
 
 @API.get("/decisions")
 def list_decisions():
     """Return recent decision memos (newest first)."""
-    return {"decisions": list(reversed(state.get("log", [])[-500:]))}
+    return {
+        "decisions": [
+            _with_public_evidence_label(memo)
+            for memo in reversed(state.get("log", [])[-500:])
+        ]
+    }
 
 # ---------------------------------------------------------------------------
 # Chain config (local)
@@ -1278,17 +1365,29 @@ def chain_config(cfg: ChainConfig):
 # ---------------------------------------------------------------------------
 # Simple PDF
 # ---------------------------------------------------------------------------
+def _select_report_memo(
+    logs: list[Dict[str, Any]], role: str = ""
+) -> tuple[Dict[str, Any], str, bool]:
+    """Select the latest memo for a report without mapping ``all`` to farm."""
+    requested_role = (role or "").strip().lower()
+    all_roles = requested_role in {"", "all"}
+    if all_roles:
+        selected = logs[-1] if logs else {}
+    else:
+        role_logs = [m for m in logs if m.get("role", "") == requested_role]
+        selected = role_logs[-1] if role_logs else {}
+    return selected, requested_role, all_roles
+
+
 @API.get("/report/pdf")
 def report_pdf(role: str = ""):
     if state["df"] is None:
         case_load()
     kp = kpis()
     logs = state.get("log") or []
-    if role:
-        role_logs = [m for m in logs if m.get("role", "") == role]
-        last = role_logs[-1] if role_logs else {}
-    else:
-        last = logs[-1] if logs else {}
+    last, requested_role, all_roles = _select_report_memo(logs, role)
+    if last:
+        last = _with_public_evidence_label(last)
 
     from io import BytesIO
     from reportlab.platypus import (
@@ -1319,9 +1418,30 @@ def report_pdf(role: str = ""):
     story.append(Paragraph("AGRI-BRAIN Decision Memo", title_style))
     ts_str = last.get("time", "N/A")
     agent_str = f"{last.get('agent', 'N/A')} ({last.get('role', 'N/A')})"
+    scope_str = (
+        "latest recorded decision across all roles"
+        if all_roles
+        else f"latest recorded {requested_role} decision"
+    )
+    evidence_status = last.get("evidence_status", "development_only")
+    publication_evidence = last.get("publication_evidence") is True
     story.append(Paragraph(f"<b>Timestamp:</b> {ts_str} &nbsp;&nbsp; "
                             f"<b>Agent:</b> {agent_str} &nbsp;&nbsp; "
                             f"<b>Mode:</b> {last.get('mode', 'N/A')}", small_style))
+    story.append(Paragraph(
+        f"<b>Scope:</b> {scope_str}. <b>Evidence status:</b> "
+        f"{str(evidence_status).replace('_', ' ')}. "
+        f"<b>Publication evidence:</b> "
+        f"{'yes' if publication_evidence else 'no'}.",
+        small_style,
+    ))
+    if not publication_evidence:
+        story.append(Paragraph(
+            "This runtime memo is not a publication result. The live endpoint "
+            "does not execute the full adaptation, retained-episode, and "
+            "peer-overlay benchmark protocol.",
+            small_style,
+        ))
     story.append(Spacer(1, 4*mm))
 
     def _table(headers, rows, col_widths=None):
@@ -1364,7 +1484,7 @@ def report_pdf(role: str = ""):
             ["Parameter", "Value"],
             [
                 ["Temperature", f"{kp.get('avg_tempC', 'N/A')} \u00b0C"],
-                ["Shelf Life Remaining", f"{float(last.get('shelf_left', 0)) * 72:.1f} hours ({float(last.get('shelf_left', 0)):.3f})"],
+                ["Modeled Quality Remaining", f"{float(last.get('shelf_left', 0)):.3f} (dimensionless)"],
                 ["Spoilage Risk (\u03c1)", f"{last.get('spoilage_risk', 'N/A')}"],
                 ["Volatility", f"{last.get('volatility', 'N/A')}"],
                 ["Regime Trigger (\u03c4)", f"{regime.get('tau', 'N/A')}"],
@@ -1388,31 +1508,31 @@ def report_pdf(role: str = ""):
             col_widths=[55*mm, 80*mm],
         ))
 
-        # --- Impact Assessment ---
-        story.append(Paragraph("Impact Assessment", heading_style))
+        # --- Modeled benchmark indicators ---
+        story.append(Paragraph("Modeled Benchmark Indicators", heading_style))
         story.append(_table(
             ["Metric", "Value"],
             [
-                ["Carbon Emissions", f"{last.get('carbon_kg', 'N/A')} kg CO2-eq"],
-                ["Waste Rate", f"{last.get('waste', 'N/A')}"],
+                ["Modelled Transport-Emissions Proxy", f"{last.get('carbon_kg', 'N/A')} kg CO2-eq"],
+                ["Waste Fraction per Routing Opportunity", f"{last.get('waste', 'N/A')}"],
                 ["Unit Price", f"${last.get('unit_price', 'N/A')}"],
-                ["SLCA Composite", f"{last.get('slca', 'N/A')}"],
-                ["Circular Economy Score", f"{last.get('circular_economy_score', 'N/A')}"],
+                ["Author-Declared Social-Performance Proxy", f"{last.get('slca', 'N/A')}"],
+                ["Modeled Route-Circularity Indicator", f"{last.get('circular_economy_score', 'N/A')}"],
             ],
             col_widths=[55*mm, 80*mm],
         ))
 
-        # --- SLCA Breakdown ---
+        # --- Author-declared proxy components ---
         sc = last.get("slca_components", {})
         if sc:
-            story.append(Paragraph("SLCA Breakdown", heading_style))
+            story.append(Paragraph("Social-Performance Proxy Components", heading_style))
             story.append(_table(
-                ["Pillar", "Score"],
+                ["Declared Component", "Value"],
                 [
-                    ["Carbon (C)", f"{sc.get('carbon', 'N/A')}"],
-                    ["Labor (L)", f"{sc.get('labor', 'N/A')}"],
-                    ["Resilience (R)", f"{sc.get('resilience', 'N/A')}"],
-                    ["Transparency (P)", f"{sc.get('transparency', 'N/A')}"],
+                    ["Inverse Modeled-Emissions Term (C)", f"{sc.get('carbon', 'N/A')}"],
+                    ["Labour-Practice Prior (L)", f"{sc.get('labor', 'N/A')}"],
+                    ["Community-Network Prior (R)", f"{sc.get('resilience', 'N/A')}"],
+                    ["Price-Information Prior (P)", f"{sc.get('transparency', 'N/A')}"],
                     ["Composite", f"{sc.get('composite', 'N/A')}"],
                 ],
                 col_widths=[55*mm, 80*mm],
@@ -1425,20 +1545,26 @@ def report_pdf(role: str = ""):
             story.append(_table(
                 ["Component", "Value"],
                 [
-                    ["SLCA Reward", f"{rd.get('slca', 'N/A')}"],
-                    ["Energy Penalty", f"{rd.get('energy_penalty', 'N/A')}"],
-                    ["Water Penalty", f"{rd.get('water_penalty', 'N/A')}"],
-                    ["Waste Penalty", f"{rd.get('waste_penalty', 'N/A')}"],
-                    ["Net Total", f"{rd.get('total', 'N/A')}"],
+                    ["Social-Proxy Term", f"{rd.get('slca', 'N/A')}"],
+                    ["Energy Term (descriptive; excluded)", f"{rd.get('energy_penalty', 'N/A')}"],
+                    ["Water Term (descriptive; excluded)", f"{rd.get('water_penalty', 'N/A')}"],
+                    ["Waste Penalty (included)", f"{rd.get('waste_penalty', 'N/A')}"],
+                    ["Spoilage-Risk Penalty (included)", f"{rd.get('rho_penalty', 'N/A')}"],
+                    ["Canonical Net Reward", f"{rd.get('total', 'N/A')}"],
                 ],
                 col_widths=[55*mm, 80*mm],
             ))
 
-        # --- Blockchain ---
+        # --- Optional on-chain decision record ---
         tx = last.get("tx_hash") or last.get("tx", "")
-        if tx and tx != "0x0":
-            story.append(Paragraph("Blockchain Verification", heading_style))
-            story.append(Paragraph(f"Transaction hash: <font face='Courier'>{tx}</font>", body_style))
+        if isinstance(tx, str) and re.fullmatch(r"0x[0-9a-fA-F]{64}", tx):
+            story.append(Paragraph("Optional On-Chain Decision Record", heading_style))
+            story.append(Paragraph(
+                f"Transaction hash: <font face='Courier'>{tx}</font>. This "
+                "transaction records selected decision fields; it does not "
+                "anchor the local explanation Merkle root.",
+                body_style,
+            ))
 
     # --- KPI Summary ---
     story.append(Paragraph("System KPI Summary", heading_style))
@@ -1448,10 +1574,10 @@ def report_pdf(role: str = ""):
             ["Records Loaded", str(kp.get("records", 0))],
             ["Avg Temperature", f"{kp.get('avg_tempC', 0):.2f} \u00b0C"],
             ["Anomaly Points", str(kp.get("anomaly_points", 0))],
-            ["Waste Rate (Baseline)", f"{kp.get('waste_rate_baseline', 0):.4f}"],
-            ["Waste Rate (AGRI-BRAIN)", f"{kp.get('waste_rate_agri', 0):.4f}"],
-            ["Mean ARI", f"{kp.get('mean_ari', 0)}"],
-            ["Total Carbon", f"{kp.get('total_carbon_kg', 0)} kg"],
+            ["Modeled Waste (Fixed Cold-Chain Action)", f"{kp.get('waste_rate_baseline', 0):.4f}"],
+            ["Modeled Waste (Fixed Local-Redistribution Action)", f"{kp.get('waste_rate_agri', 0):.4f}"],
+            ["Mean Modeled ARI in Recorded Runtime Decisions", f"{kp.get('mean_ari', 0)}"],
+            ["Sum of Modeled Transport-Emissions Indicator", f"{kp.get('total_carbon_kg', 0)} kg CO2-eq"],
         ],
         col_widths=[55*mm, 80*mm],
     ))

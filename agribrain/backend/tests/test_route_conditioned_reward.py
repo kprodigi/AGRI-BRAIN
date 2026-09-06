@@ -5,11 +5,10 @@ The reward used to penalise ``rho`` directly with no reference to the
 chosen action - which meant the policy gradient on the rho channel was
 identical regardless of whether the agent chose cold_chain or
 local_redistribute. The reward is now route-conditioned with a
-*temperature-conditional* cold-chain factor: at nominal ambient
-(T < 30 degC) cold chain has the smallest factor (0.15) because
-real refrigerated trucks maintain ~85% temperature integrity; the
-factor steps to 0.40 (stressed) at 30-35 degC and to 1.00
-(overwhelmed) above 35 degC. LR is fixed at 0.45, Recovery at 0.00.
+*temperature-conditional* cold-chain factor. These exploratory factors are
+author-declared synthetic assumptions: 0.15 below 30 degC, 0.40 from
+30-35 degC, and 1.00 above 35 degC. They are not field-calibrated. The
+confirmatory publication path uses common environmental rho instead.
 
 These tests pin the new semantics:
 
@@ -37,8 +36,8 @@ from src.models.reward import compute_reward, compute_reward_extended
 
 def test_cold_chain_pays_smallest_rho_penalty_at_nominal():
     """At nominal ambient (T < 30 degC), cold chain has the smallest
-    route factor (0.15) so it pays the smallest rho penalty - matching
-    the real-world fact that refrigerated trucks insulate produce."""
+    route factor (0.15) so it pays the smallest rho penalty under the
+    declared exploratory table."""
     T = 4.0
     cc = compute_reward(0.70, 0.05, rho=0.40,
                         route_factor=route_rho_factor("cold_chain", T))
@@ -86,8 +85,8 @@ def test_route_factor_omitted_equals_legacy_form():
 
 def test_per_action_ranking_below_30c_cold_chain_preferred():
     """At T < 30 degC, the policy gradient on rho prefers Recovery > CC > LR.
-    Cold chain BEATS local-redistribute on the rho channel because
-    refrigerated trucks have higher temperature integrity."""
+    Cold chain exceeds local redistribution on this exploratory rho term
+    because its declared factor is smaller."""
     T = 25.0
     rho = 0.40
     rewards = {
@@ -98,10 +97,8 @@ def test_per_action_ranking_below_30c_cold_chain_preferred():
 
 
 def test_per_action_ranking_in_stress_band_cc_above_lr():
-    """At 30-35 degC the CC and LR factors are 0.40 vs 0.65 — CC stays
-    refrigerated while LR's warehouse staging heats up. CC therefore
-    wins the rho-channel reward over LR in the stress band; Recovery
-    still dominates on the rho channel."""
+    """At 30-35 degC the declared CC and LR factors are 0.40 vs 0.65,
+    so CC exceeds LR on this exploratory rho term; Recovery remains highest."""
     T = 32.0
     rho = 0.40
     cc = compute_reward(0.70, 0.05, rho, route_factor=route_rho_factor("cold_chain", T))
@@ -115,9 +112,8 @@ def test_per_action_ranking_in_stress_band_cc_above_lr():
 
 
 def test_per_action_ranking_above_35c_lr_beats_cc():
-    """Above 35 degC, cold chain is overwhelmed (factor 1.00) and LR
-    in the hot band (0.85) provides marginally better thermal
-    exposure (no compressor-failure excursion risk). LR therefore
+    """Above 35 degC, the declared CC factor is 1.00 and LR factor is 0.85.
+    LR therefore
     beats CC on the rho channel above 35 degC."""
     T = 38.0
     rho = 0.40

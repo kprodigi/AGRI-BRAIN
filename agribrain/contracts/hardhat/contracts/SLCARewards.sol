@@ -1,28 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-/// @title SLCARewards - Token-based incentive layer for Social LCA performance
-/// @notice Rewards agents whose routing decisions achieve high SLCA composite
-///         scores (UNEP/SETAC Social LCA Guidelines, 2009). Slashes agents
-///         whose decisions produce excessive waste or carbon emissions.
-///         Reward amounts are proportional to the multi-objective reward:
-///         R(t) = SLCA_composite - eta * waste_penalty (see policy.py).
-///
-/// @dev    PROTOTYPE — research code, not deployed to a permissioned EVM in
-///         the published runs. See `agribrain/contracts/README.md`
-///         for the security issues the 2026-04 hardening addresses:
-///
-///         - Replaces single-key Ownable with role-based access control:
-///           ADMIN_ROLE manages role grants; REWARDER_ROLE can mint
-///           rewards; SLASHER_ROLE can deduct from balances. The admin
-///           cannot mint directly without first granting itself
-///           REWARDER_ROLE — visible on-chain.
-///         - The on-chain governance contract (AgriDAO) should be
-///           granted REWARDER_ROLE in production so reward issuance is
-///           gated by DAO proposals, not the deployer key.
-///         - Production deployments must run on a permissioned EVM
-///           (Hyperledger Besu QBFT / IBFT-2.0); the only deployment
-///           target wired today is localhost Hardhat.
+/// @title SLCARewards - Optional local integer-bookkeeping prototype
+/// @notice Implements role-gated additions and deductions to an integer balance.
+///         Inputs are caller supplied; this contract does not evaluate social
+///         outcomes, waste, emissions, entitlement, or real-world performance.
+/// @dev    Research code tested only with the local Hardhat suite. It is not a
+///         token standard, payment system, production incentive layer, or audited
+///         deployment component.
 contract SLCARewards {
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant REWARDER_ROLE = keccak256("REWARDER_ROLE");
@@ -38,9 +23,7 @@ contract SLCARewards {
 
     constructor() {
         _grantRole(ADMIN_ROLE, msg.sender);
-        // The deployer also gets REWARDER_ROLE / SLASHER_ROLE for
-        // initial bring-up; production should revoke these and grant
-        // them to the DAO contract.
+        // Local fixture convenience: the creator receives all three roles.
         _grantRole(REWARDER_ROLE, msg.sender);
         _grantRole(SLASHER_ROLE, msg.sender);
     }

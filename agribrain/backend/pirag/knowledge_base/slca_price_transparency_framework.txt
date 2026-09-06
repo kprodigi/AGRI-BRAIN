@@ -1,40 +1,35 @@
-SOCIAL LIFE CYCLE ASSESSMENT: PRICE TRANSPARENCY FRAMEWORK
+SOCIAL-PERFORMANCE PROXY: PRICE TRANSPARENCY (LEGACY SLCA LABEL)
+Status: Constructed benchmark input; the values below are author-declared priors, not measured price transparency.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, motivate topic selection only; the executable code and locked protocol govern all benchmark values.
 Document ID: KB-SPT-007
-Effective Date: 2025-09-01
-Regulatory Basis: Fair Trade USA Standards; UNEP-SETAC Social LCA Guidelines
+Executable source: agribrain/backend/src/models/slca.py
 
-1. TRANSPARENCY SCORES BY PATHWAY
+1. EXECUTABLE PRICE-TRANSPARENCY PRIORS
 
-Each routing pathway is assigned a price transparency score reflecting the degree to
-which pricing information is accessible and verifiable by cooperative members and
-external auditors:
+The simulator uses one fixed price-transparency prior P for each canonical routing
+action:
 
-  - Cold chain (conventional retail): transparency score 0.45. Pricing is partially
-    opaque due to multi-tier wholesale intermediaries and confidential retailer margins.
-  - Redistribution (food bank/community): transparency score 0.85. Pricing is highly
-    visible because transactions occur at or near cost with documented subsidies and
-    donation valuations.
-  - Recovery (animal feed/composting): transparency score 0.70. Commodity-based pricing
-    with publicly available feed ingredient indices, though processing fees introduce
-    moderate variability.
+  - cold_chain: P = 0.55
+  - local_redistribute: P = 0.78
+  - recovery: P = 0.68
 
-2. COOPERATIVE AUDIT RIGHTS
+These values encode a synthetic ordering, local_redistribute greater than recovery
+greater than cold_chain. They were not calculated from prices, margins, invoices,
+transaction records, subsidy records, donation valuations, or external audits.
 
-All cooperative member organizations retain the right to request a full price
-transparency audit for any routing decision made within the preceding 30 days.
-Audit requests must be acknowledged within 5 business days and completed within
-20 business days of acknowledgment. This provision aligns with Fair Trade criteria
-for producer pricing access and ensures that no member is disadvantaged by opaque
-margin structures.
+2. ROLE IN THE SOCIAL-PERFORMANCE PROXY
 
-3. REQUIRED ACTIONS
+P receives the author-declared weight w_P = 0.25 in
 
-Action 1: Publish a quarterly Price Transparency Report detailing the average
-transparency score per pathway, the number of transactions per pathway, total revenue
-and cost breakdowns, and any audit findings. Distribute to all cooperative members
-within 30 days of quarter close.
+  S = 0.30*C + 0.20*L + 0.25*R + 0.25*P.
 
-Action 2: Implement automated price transparency score calculation within the routing
-decision engine. The engine must attach the applicable transparency score to each
-routing recommendation and flag any transaction where the effective margin deviates
-more than 15 percent from the pathway benchmark for manual review.
+The route-level P prior is evaluated by the outcome equation for the selected action.
+Institutional retrieval can supply context to a context-enabled policy, but retrieved
+text does not replace the executable score table.
+
+3. EXCLUDED CLAIMS
+
+The benchmark has no price-audit workflow, transaction-level margin test, member audit
+right, response deadline, quarterly price report, or measured consumer-information
+outcome. A real transparency assessment would require independently collected and
+validated transaction evidence outside this benchmark.

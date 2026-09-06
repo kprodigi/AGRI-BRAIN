@@ -12,6 +12,10 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn, fmt, short, jget, mcpCall, mcpRaw, mcpLog, authFetch } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
+import {
+  PRIMARY_PUBLICATION_MODES, SECONDARY_PUBLICATION_MODES, canonicalH2Evidence,
+} from "@/lib/publicationEvidence.js";
+import { isAnchoredTransactionHash, provenanceGuardState } from "@/lib/provenance.js";
 import { motion, useInView } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -26,7 +30,7 @@ import {
 } from "lucide-react";
 // Lazy-load the heavier H2-mechanism panel (§5.8 evidence): it fetches the
 // channel_attribution_aggregate.json on mount and renders the decision-level
-// per-channel necessity / synergy / complementarity charts; keeping it lazy
+// conditional observed-state feature-group sensitivity charts; keeping it lazy
 // avoids inflating the initial McpPiragPage bundle.
 const ChannelAttributionPanel = React.lazy(() =>
   import("@/components/explainability/ChannelAttributionPanel.jsx"),
@@ -37,11 +41,11 @@ const API = getApiBase();
 const COLORS = { agri: "#009688", pirag: "#2196F3", mcp: "#FF9800" };
 
 const FEATURE_LABELS = [
-  { key: "compliance_severity", label: "Compliance", color: "#ef4444", desc: "Regulatory violation severity from MCP compliance checks (0 = compliant, 1 = critical)" },
-  { key: "forecast_urgency", label: "Forecast", color: "#f97316", desc: "Spoilage risk urgency from physics-informed Arrhenius forecasting" },
-  { key: "retrieval_confidence", label: "Retrieval", color: "#3b82f6", desc: "piRAG document retrieval confidence score (normalized BM25+TF-IDF)" },
-  { key: "regulatory_pressure", label: "Regulatory", color: "#a855f7", desc: "Binary regulatory pressure flag from piRAG keyword extraction" },
-  { key: "recovery_saturation", label: "Recovery", color: "#22c55e", desc: "Capacity saturation of recovery/composting channels" },
+  { key: "compliance_severity", label: "Envelope", color: "#ef4444", desc: "Severity from the declared benchmark operating-envelope check (0 = within envelope, 1 = critical)" },
+  { key: "forecast_urgency", label: "Forecast", color: "#f97316", desc: "Spoilage-risk urgency from the common mechanistic Arrhenius-lag model" },
+  { key: "retrieval_confidence", label: "Retrieval score", color: "#3b82f6", desc: "Normalized reciprocal-rank-fusion signal; not a calibrated probability or confidence" },
+  { key: "regulatory_pressure", label: "Guidance", color: "#a855f7", desc: "Binary flag for a retrieved source-labelled guidance note (legacy field name)" },
+  { key: "recovery_saturation", label: "Recovery", color: "#22c55e", desc: "Fraction of recent ledger decisions routed to recovery" },
 ];
 
 const LOGIT_ENTRIES = [
@@ -50,72 +54,17 @@ const LOGIT_ENTRIES = [
   { key: "recovery", label: "Recovery", color: "#D55E00" },
 ];
 
-// Ablation data — loaded dynamically from table2_ablation.csv via API
-const ABLATION_DATA_FALLBACK = [];
+const SCENARIO_LABELS = { heatwave: "Heatwave", overproduction: "Overproduction", cyber_outage: "Cyber Outage", adaptive_pricing: "Pricing", baseline: "Baseline" };
 
-function parseAblationCSV(text, metric = "ARI") {
-  const lines = text.trim().split("\n");
-  const headers = lines[0].split(",").map((h) => h.trim());
-  const rows = lines.slice(1).map((line) => {
-    const vals = line.split(",").map((v) => v.trim());
-    const obj = {};
-    headers.forEach((h, i) => { const n = +vals[i]; obj[h] = Number.isFinite(n) && vals[i] !== "" ? n : vals[i]; });
-    return obj;
-  });
-  const scenarioNames = { heatwave: "Heatwave", overproduction: "Overproduction", cyber_outage: "Cyber Outage", adaptive_pricing: "Pricing", baseline: "Baseline" };
-  const scenarios = [...new Set(rows.map((r) => r.Scenario))];
-  return scenarios.map((sc) => {
-    const scRows = rows.filter((r) => r.Scenario === sc);
-    const get = (v) => scRows.find((r) => r.Variant === v)?.[metric] ?? 0;
-    return {
-      scenario: scenarioNames[sc] || sc,
-      no_context: get("no_context"),
-      mcp_only: get("mcp_only"),
-      pirag_only: get("pirag_only"),
-      agribrain: get("agribrain"),
-    };
-  });
-}
-
-// Store raw CSV text for re-parsing with different metrics
-let _rawAblationCSV = "";
-
-const KB_DOCUMENTS = [
-  { id: "regulatory_fda_leafy_greens", category: "Regulatory", title: "FDA Guidelines for Leafy Greens Storage" },
-  { id: "regulatory_usda_organic", category: "Regulatory", title: "USDA Organic Cold Chain Standards" },
-  { id: "regulatory_fsma_produce", category: "Regulatory", title: "FSMA Produce Safety Rule" },
-  { id: "regulatory_codex_alimentarius", category: "Regulatory", title: "Codex Alimentarius Food Hygiene" },
-  { id: "sop_cold_chain_transport", category: "SOP", title: "Cold Chain Transport Standard Procedure" },
-  { id: "sop_quality_inspection", category: "SOP", title: "Incoming Quality Inspection Protocol" },
-  { id: "sop_warehouse_storage", category: "SOP", title: "Warehouse Storage Temperature Management" },
-  { id: "sop_last_mile_delivery", category: "SOP", title: "Last Mile Delivery Guidelines" },
-  { id: "temperature_excursion_protocol", category: "SOP", title: "Temperature Excursion Response Protocol" },
-  { id: "iot_sensor_spec", category: "Technical", title: "IoT Sensor Calibration Specifications" },
-  { id: "slca_methodology_leafy", category: "SLCA", title: "Social LCA Methodology for Leafy Greens" },
-  { id: "slca_labor_standards", category: "SLCA", title: "Labor Standards in Agricultural Supply Chains" },
-  { id: "carbon_footprint_transport", category: "Environmental", title: "Carbon Footprint of Refrigerated Transport" },
-  { id: "water_footprint_spinach", category: "Environmental", title: "Water Footprint Analysis for Spinach" },
-  { id: "waste_hierarchy_food", category: "Environmental", title: "Food Waste Hierarchy Best Practices" },
-  { id: "composting_guidelines", category: "Environmental", title: "Industrial Composting Guidelines" },
-  { id: "food_bank_redistribution", category: "Contingency", title: "Food Bank Redistribution Protocols" },
-  { id: "animal_feed_conversion", category: "Contingency", title: "Animal Feed Conversion Standards" },
-  { id: "emergency_recall_procedure", category: "Contingency", title: "Emergency Product Recall Procedure" },
-  { id: "demand_forecasting_guide", category: "Technical", title: "Demand Forecasting Methodology Guide" },
-];
-
-const CAT_COLORS = {
-  Regulatory: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-0",
-  SOP: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0",
-  SLCA: "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-0",
-  Environmental: "bg-green-500/10 text-green-600 dark:text-green-400 border-0",
-  Technical: "bg-gray-500/10 text-gray-600 dark:text-gray-400 border-0",
-  Contingency: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-0",
-};
+const RETRIEVAL_TOP_K = 4;
+const displayToolName = (name) => name === "check_compliance"
+  ? "Operating-envelope check (legacy key: check_compliance)"
+  : name;
 
 const PIPELINE_STEPS = [
-  { icon: Network, label: "Agent", sub: "5 roles", color: "text-gray-600 dark:text-gray-400", bg: "bg-gray-500/10" },
-  { icon: Wrench, label: "MCP Tools", sub: "14 tools", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-500/10" },
-  { icon: BookOpen, label: "piRAG", sub: "20 docs", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-500/10" },
+  { icon: Network, label: "Roles", sub: "4 owners + overlay", color: "text-gray-600 dark:text-gray-400", bg: "bg-gray-500/10" },
+  { icon: Wrench, label: "MCP Tools", sub: "13 default", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-500/10" },
+  { icon: BookOpen, label: "Institutional Retrieval", sub: "bundled corpus", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-500/10" },
   { icon: Layers, label: "Context", sub: "5D vector", color: "text-teal-600 dark:text-teal-400", bg: "bg-teal-500/10" },
   { icon: Brain, label: "Policy", sub: "Softmax", color: "text-purple-600 dark:text-purple-400", bg: "bg-purple-500/10" },
   { icon: CheckCircle2, label: "Decision", sub: "3 actions", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10" },
@@ -123,26 +72,23 @@ const PIPELINE_STEPS = [
 
 const TOOL_PRESETS = {
   check_compliance: { temperature: "14.0", humidity: "85.0", product_type: "spinach" },
-  pirag_query: { query: "FDA temperature violation corrective action", k: "4" },
+  pirag_query: { query: "leafy-green temperature guidance and traceability scope", k: "4" },
   explain: { action: "local_redistribute", role: "farm", scenario: "heatwave", rho: "0.35", temperature: "14.0" },
 };
 
 // ===================== Tab 1: Overview =====================
-function OverviewTab({ tools, ablationData = [], benchSummary = null }) {
+function OverviewTab({ tools, benchSummary = null, h2Payload = null }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true });
   const [ablationMetric, setAblationMetric] = useState("ARI");
 
-  const data = ablationData.length ? ablationData : ABLATION_DATA_FALLBACK;
-  const avgNoCtx = data.length ? data.reduce((s, d) => s + d.no_context, 0) / data.length : 0;
-  const avgFull = data.length ? data.reduce((s, d) => s + d.agribrain, 0) / data.length : 0;
-  const improvement = ((avgFull - avgNoCtx) / avgNoCtx * 100).toFixed(1);
+  const h2Evidence = canonicalH2Evidence(h2Payload);
 
   const metrics = [
-    { label: "MCP Tools", value: tools.length || 12, icon: Wrench, color: "text-orange-600", bg: "bg-orange-500/10" },
+    { label: "MCP Tools", value: tools.length || 13, icon: Wrench, color: "text-orange-600", bg: "bg-orange-500/10" },
     { label: "KB Documents", value: 20, icon: BookOpen, color: "text-blue-600", bg: "bg-blue-500/10" },
     { label: "Context Dims", value: "5D", icon: Layers, color: "text-teal-600", bg: "bg-teal-500/10" },
-    { label: "Operating Modes", value: 8, icon: Network, color: "text-purple-600", bg: "bg-purple-500/10" },
+    { label: "Modes (7 primary + 3 secondary)", value: PRIMARY_PUBLICATION_MODES.length + SECONDARY_PUBLICATION_MODES.length, icon: Network, color: "text-purple-600", bg: "bg-purple-500/10" },
   ];
 
   return (
@@ -199,17 +145,17 @@ function OverviewTab({ tools, ablationData = [], benchSummary = null }) {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-base">Context Integration Impact ({ablationMetric})</CardTitle>
-                <CardDescription>Ablation study: progressive context addition across 5 scenarios</CardDescription>
+                <CardDescription>Four prespecified channel-isolation arms across 5 scenarios; the arms are not a nested progression</CardDescription>
               </div>
               <div className="flex items-center gap-2">
-                <Badge className="bg-teal-500/10 text-teal-600 border-0">+{improvement}% avg ARI</Badge>
+                {ablationMetric === "ARI" && h2Evidence.supported && <Badge className="bg-teal-500/10 text-teal-600 border-0">Confirmatory H2 supported (ARI only)</Badge>}
                 <Select value={ablationMetric} onValueChange={(v) => {
                   setAblationMetric(v);
                 }}>
                   <SelectTrigger className="w-24 h-8"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {["ARI", "RLE", "Waste", "SLCA", "Carbon", "Equity"].map((m) => (
-                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                      <SelectItem key={m} value={m}>{({ RLE: "Severity-weighted RLE", Waste: "Waste fraction", SLCA: "Social-performance proxy", Carbon: "Modeled transport-emissions indicator (kg CO2-eq)", Equity: "Temporal social-performance stability proxy" })[m] || m}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -218,14 +164,9 @@ function OverviewTab({ tools, ablationData = [], benchSummary = null }) {
           </CardHeader>
           <CardContent>
             {(() => {
-              // Re-parse CSV data for the selected metric
-              const metricData = _rawAblationCSV ? parseAblationCSV(_rawAblationCSV, ablationMetric) : data;
-              const scenarioKeyMap = { "Heatwave": "heatwave", "Overproduction": "overproduction", "Cyber Outage": "cyber_outage", "Pricing": "adaptive_pricing", "Baseline": "baseline" };
               const metricKey = ablationMetric.toLowerCase();
-              // Add CI error data from benchmark
-              const chartData = metricData.map((d) => {
-                const sc = scenarioKeyMap[d.scenario] || d.scenario;
-                const out = { ...d };
+              const chartData = Object.keys(benchSummary || {}).filter((sc) => sc !== "_meta").map((sc) => {
+                const out = { scenario: SCENARIO_LABELS[sc] || sc };
                 for (const mode of ["no_context", "mcp_only", "pirag_only", "agribrain"]) {
                   const ci = benchSummary?.[sc]?.[mode]?.[metricKey];
                   if (ci && ci.ci_low != null && ci.ci_high != null) {
@@ -244,13 +185,13 @@ function OverviewTab({ tools, ablationData = [], benchSummary = null }) {
                       <YAxis tick={{ fontSize: 11 }} />
                       <ReTooltip contentStyle={{ fontSize: 12 }} />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
-                      <Bar dataKey="no_context" name="No Context" fill="#4CAF50" radius={[2, 2, 0, 0]} isAnimationActive={false}>
+                      <Bar dataKey="no_context" name="No-external-context" fill="#4CAF50" radius={[2, 2, 0, 0]} isAnimationActive={false}>
                         <ErrorBar dataKey="no_context_err" width={6} strokeWidth={2.5} stroke="#1f2937" />
                       </Bar>
-                      <Bar dataKey="mcp_only" name="MCP Only" fill={COLORS.mcp} radius={[2, 2, 0, 0]} isAnimationActive={false}>
+                      <Bar dataKey="mcp_only" name="MCP-only" fill={COLORS.mcp} radius={[2, 2, 0, 0]} isAnimationActive={false}>
                         <ErrorBar dataKey="mcp_only_err" width={6} strokeWidth={2.5} stroke="#1f2937" />
                       </Bar>
-                      <Bar dataKey="pirag_only" name="piRAG Only" fill={COLORS.pirag} radius={[2, 2, 0, 0]} isAnimationActive={false}>
+                      <Bar dataKey="pirag_only" name="Retrieval-only" fill={COLORS.pirag} radius={[2, 2, 0, 0]} isAnimationActive={false}>
                         <ErrorBar dataKey="pirag_only_err" width={6} strokeWidth={2.5} stroke="#1f2937" />
                       </Bar>
                       <Bar dataKey="agribrain" name="AGRI-BRAIN" fill={COLORS.agri} radius={[2, 2, 0, 0]} isAnimationActive={false}>
@@ -262,7 +203,13 @@ function OverviewTab({ tools, ablationData = [], benchSummary = null }) {
               );
             })()}
             <p className="text-xs text-muted-foreground mt-3 text-center">
-              Full AGRI-BRAIN (MCP + piRAG) consistently outperforms single-source ablations.
+              {ablationMetric !== "ARI"
+                ? `${ablationMetric} is shown descriptively; confirmatory H2 is prespecified only for ARI.`
+                : !h2Evidence.available
+                ? "Canonical 20-cell H2 evidence is unavailable; no channel-contribution claim is made."
+                : h2Evidence.supported
+                  ? "All 20 prespecified directional channel contrasts pass the canonical Holm-adjusted support rule."
+                  : "The canonical all-cells H2 support rule is not met; no universal channel-contribution claim is made."}
             </p>
           </CardContent>
         </Card>
@@ -395,7 +342,7 @@ function ContextFeaturesTab({ latestExplainability }) {
                 <AlertTriangle className="w-4 h-4 text-amber-600" /> Ablation comparison (psi := 0)
               </CardTitle>
               <CardDescription>
-                What the same policy would emit if the MCP/piRAG context modifier were
+                What the same policy would emit if the external-context modifier were
                 disabled, holding phi(s) and the RNG seed fixed. This is an ablation
                 delta, not a Pearl-style counterfactual.
               </CardDescription>
@@ -415,7 +362,7 @@ function ContextFeaturesTab({ latestExplainability }) {
                   ))}
                 </div>
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-amber-600">WITHOUT Context</p>
+                  <p className="text-xs font-semibold text-amber-600">Context modifier zeroed</p>
                   {["cold_chain", "local_redistribute", "recovery"].map((a, i) => (
                     <div key={a} className="flex items-center gap-2 text-xs">
                       <span className="w-24 text-muted-foreground capitalize">{a.replace("_", " ")}</span>
@@ -449,7 +396,7 @@ function KnowledgeBaseTab() {
   const [liveKb, setLiveKb] = useState(null);
 
   // Pull the live KB so synthesised entries (added by the
-  // dynamic-knowledge feedback loop every 24 timesteps) appear next to
+  // explicitly enabled decision-history ingestion diagnostic) appear next to
   // the static documents. Polled every 8s.
   useEffect(() => {
     let cancelled = false;
@@ -471,7 +418,7 @@ function KnowledgeBaseTab() {
     setSearching(true);
     try {
       const res = await mcpCall(API, "pirag_query", {
-        query: query.trim(), k: 5, role, temperature: 14.0, rho: 0.3,
+        query: query.trim(), k: RETRIEVAL_TOP_K, role, temperature: 14.0, rho: 0.3,
         physics_expansion: true, physics_reranking: true,
       });
       setResults(res);
@@ -481,35 +428,26 @@ function KnowledgeBaseTab() {
     setSearching(false);
   };
 
-  const liveDocs = liveKb?.documents || [];
-  const liveStaticCount = liveKb?.static_count ?? KB_DOCUMENTS.length;
-  const liveSynthCount = liveKb?.synthesised_count ?? 0;
-  const liveTotal = liveKb?.total ?? KB_DOCUMENTS.length;
-
-  // Map live entries by id so we can join the static catalogue's
-  // titles/categories with the live presence + synthesised entries.
-  const idToLive = new Map(liveDocs.map((d) => [d.id, d]));
-  const staticRows = KB_DOCUMENTS.map((doc) => ({
+  const kbAvailable = Array.isArray(liveKb?.documents);
+  const liveDocs = kbAvailable ? liveKb.documents : [];
+  const liveStaticCount = kbAvailable ? Number(liveKb.static_count) : null;
+  const liveSynthCount = kbAvailable ? Number(liveKb.synthesised_count) : null;
+  const liveTotal = kbAvailable ? Number(liveKb.total) : null;
+  // The backend's live retriever inventory is the only catalogue source.
+  // This avoids presenting filenames that are not actually loaded.
+  const allRows = liveDocs.map((doc) => ({
     id: doc.id,
-    kind: idToLive.get(doc.id) ? "static" : "static-missing",
-    category: doc.category,
-    title: doc.title,
+    kind: doc.kind,
+    source: doc.metadata?.source || (doc.kind === "synthesised" ? "decision feedback" : "—"),
+    title: doc.preview?.split(/\r?\n/).find((line) => line.trim())?.trim()
+      || "(empty preview)",
   }));
-  const synthesisedRows = liveDocs
-    .filter((d) => d.kind === "synthesised")
-    .map((d) => ({
-      id: d.id,
-      kind: "synthesised",
-      category: d.metadata?.scenario ? `synth: ${d.metadata.scenario}` : "synthesised",
-      title: d.preview?.slice(0, 90) || "(decision-feedback document)",
-    }));
-  const allRows = [...staticRows, ...synthesisedRows];
 
   const stats = [
-    { label: "Top-k", value: "4" },
+    { label: "Top-k", value: String(RETRIEVAL_TOP_K) },
     { label: "Retrieval", value: "BM25 + TF-IDF" },
-    { label: "Reranking", value: "Physics-Informed" },
-    { label: "Documents", value: `${liveTotal} (${liveStaticCount} static + ${liveSynthCount} synth)` },
+    { label: "Reranking", value: "Mechanistic" },
+    { label: "Documents", value: kbAvailable ? `${liveTotal} (${liveStaticCount} static + ${liveSynthCount} synth)` : "Unavailable" },
   ];
 
   return (
@@ -536,8 +474,9 @@ function KnowledgeBaseTab() {
               <Database className="w-4 h-4 text-blue-600" /> Knowledge Base Inventory
             </CardTitle>
             <CardDescription>
-              {liveStaticCount} static documents + {liveSynthCount} runtime-synthesised entries from the
-              dynamic-knowledge feedback loop (Section 3.7).
+              {kbAvailable
+                ? `${liveStaticCount} static documents + ${liveSynthCount} runtime-synthesised entries reported by the live backend inventory.`
+                : "Live backend inventory is unavailable; no fallback catalogue is displayed."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -546,9 +485,9 @@ function KnowledgeBaseTab() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-xs">Document ID</TableHead>
-                    <TableHead className="text-xs">Source</TableHead>
-                    <TableHead className="text-xs">Category</TableHead>
-                    <TableHead className="text-xs">Title</TableHead>
+                    <TableHead className="text-xs">Kind</TableHead>
+                    <TableHead className="text-xs">Source file</TableHead>
+                    <TableHead className="text-xs">Live preview</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -556,16 +495,21 @@ function KnowledgeBaseTab() {
                     <TableRow key={doc.id}>
                       <TableCell className="font-mono text-xs">{doc.id}</TableCell>
                       <TableCell>
-                        <Badge variant={doc.kind === "synthesised" ? "default" : doc.kind === "static-missing" ? "outline" : "secondary"} className="text-[10px]">
-                          {doc.kind === "synthesised" ? "synth" : doc.kind === "static-missing" ? "missing" : "static"}
+                        <Badge variant={doc.kind === "synthesised" ? "default" : "secondary"} className="text-[10px]">
+                          {doc.kind === "synthesised" ? "synth" : "static"}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <Badge className={cn("text-[10px]", CAT_COLORS[doc.category] || "bg-purple-100 text-purple-700")}>{doc.category}</Badge>
-                      </TableCell>
+                      <TableCell className="font-mono text-xs">{doc.source}</TableCell>
                       <TableCell className="text-xs">{doc.title}</TableCell>
                     </TableRow>
                   ))}
+                  {!allRows.length && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center text-xs text-muted-foreground">
+                        No live knowledge-base inventory is available.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </ScrollArea>
@@ -578,9 +522,9 @@ function KnowledgeBaseTab() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <Search className="w-4 h-4 text-blue-600" /> Live piRAG Search
+              <Search className="w-4 h-4 text-blue-600" /> Live Institutional Retrieval
             </CardTitle>
-            <CardDescription>Query the physics-informed retrieval pipeline with BM25+TF-IDF hybrid scoring and Arrhenius-based reranking</CardDescription>
+            <CardDescription>Query institutional retrieval with BM25+TF-IDF hybrid scoring and mechanistic Arrhenius-based reranking</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap items-end gap-3">
@@ -589,7 +533,7 @@ function KnowledgeBaseTab() {
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search the piRAG knowledge base..."
+                    placeholder="Search the institutional knowledge base..."
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && search()}
@@ -736,14 +680,14 @@ function ProtocolTab({ tools, decisions }) {
             <CardTitle className="text-base flex items-center gap-2">
               <Zap className="w-4 h-4 text-orange-600" /> Live MCP Tool Invocation
             </CardTitle>
-            <CardDescription>Invoke any of the 12 registered MCP tools via JSON-RPC 2.0</CardDescription>
+            <CardDescription>Invoke the live registered MCP tools via JSON-RPC 2.0 (13 by default; one optional simulation tool)</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-2">
               <Select value={selected} onValueChange={(v) => { setSelected(v); setArgs({}); setResult(null); }}>
                 <SelectTrigger className="flex-1"><SelectValue placeholder="Select a tool..." /></SelectTrigger>
                 <SelectContent>
-                  {tools.map((t) => <SelectItem key={t.name} value={t.name}>{t.name}</SelectItem>)}
+                  {tools.map((t) => <SelectItem key={t.name} value={t.name}>{displayToolName(t.name)}</SelectItem>)}
                 </SelectContent>
               </Select>
               {TOOL_PRESETS[selected] && <Button variant="outline" size="sm" onClick={applyPreset}>Preset</Button>}
@@ -777,7 +721,9 @@ function ProtocolTab({ tools, decisions }) {
                 {selected === "check_compliance" && result.compliant !== undefined ? (
                   <div className="space-y-2">
                     <Badge className={result.compliant ? "bg-emerald-500/10 text-emerald-600 border-0" : "bg-red-500/10 text-red-600 border-0"}>
-                      {result.compliant ? "Compliant" : "Violation"}
+                      {result.compliant
+                        ? "Within declared synthetic benchmark envelope"
+                        : "Outside declared synthetic benchmark envelope"}
                     </Badge>
                     <pre className="p-3 rounded-md bg-muted text-xs font-mono overflow-x-auto max-h-64">{JSON.stringify(result, null, 2)}</pre>
                   </div>
@@ -922,19 +868,21 @@ function ProtocolTab({ tools, decisions }) {
   );
 }
 
-// ===================== Tab 5: Causal Reasoning =====================
-function CausalReasoningTab({ latestExplainability, latestMemo }) {
+// ===================== Tab 5: Policy Trace =====================
+function PolicyTraceTab({ latestExplainability, latestMemo }) {
   if (!latestExplainability) {
     return (
       <Card className="p-8 text-center">
         <Brain className="w-8 h-8 mx-auto text-muted-foreground mb-3" />
-        <p className="text-sm text-muted-foreground">Take a decision on the Decisions page to see causal reasoning analysis.</p>
+        <p className="text-sm text-muted-foreground">Take a decision on the Decisions page to see the context-to-policy trace.</p>
       </Card>
     );
   }
 
-  const text = latestExplainability.causal_text || latestExplainability.summary || "";
-  const chain = latestExplainability.causal_chain;
+  const text = latestExplainability.policy_trace_text || latestExplainability.causal_text || latestExplainability.summary || "";
+  // ``causal_chain`` is a legacy compatibility alias; this UI displays the
+  // recorded linear feature allocation, not a causal estimate.
+  const chain = latestExplainability.attribution_chain || latestExplainability.causal_chain;
   const prov = latestExplainability.provenance;
   const keywords = latestExplainability.keywords;
   const toolsInvoked = latestExplainability.mcp_tools_invoked || [];
@@ -942,31 +890,25 @@ function CausalReasoningTab({ latestExplainability, latestMemo }) {
   const topScore = latestExplainability.pirag_top_score;
 
   const renderText = (raw) => {
-    const parts = raw.split(/(BECAUSE|WITHOUT|AND)/g);
-    return parts.map((part, i) => {
-      if (part === "BECAUSE") return <span key={i} className="font-bold text-teal-600 dark:text-teal-400">BECAUSE</span>;
-      if (part === "WITHOUT") return <span key={i} className="font-bold text-amber-600 dark:text-amber-400">WITHOUT</span>;
-      if (part === "AND") return <span key={i} className="font-semibold">AND</span>;
-      const withCites = part.split(/(\[KB:[^\]]+\])/g);
-      return withCites.map((seg, j) =>
+    const parts = raw.split(/(\[KB:[^\]]+\])/g);
+    return parts.map((seg, i) =>
         seg.startsWith("[KB:") ? (
-          <Badge key={`${i}-${j}`} variant="outline" className="mx-0.5 text-[10px] font-mono">{seg}</Badge>
-        ) : <span key={`${i}-${j}`}>{seg}</span>
-      );
-    });
+          <Badge key={i} variant="outline" className="mx-0.5 text-[10px] font-mono">{seg}</Badge>
+        ) : <span key={i}>{seg}</span>
+    );
   };
 
   // Build contribution data for bar chart
   const contributions = chain?.all_contributions || {};
   const contribData = Object.entries(contributions)
-    .map(([name, value]) => ({ name, value: +value, fill: name === chain?.primary_cause ? "#009688" : "#94a3b8" }))
+    .map(([name, value]) => ({ name, value: +value, fill: name === (chain?.primary_feature || chain?.primary_cause) ? "#009688" : "#94a3b8" }))
     .filter((d) => d.value !== 0)
     .sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
 
   // Flatten keywords
   const kwCategories = [
     { field: "thresholds", label: "Thresholds", cls: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0" },
-    { field: "regulations", label: "Regulations", cls: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-0" },
+    { field: "regulations", label: "Source-labelled guidance", cls: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-0" },
     { field: "required_actions", label: "Actions", cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-0" },
   ];
   const flatKw = { thresholds: [], regulations: [], required_actions: [] };
@@ -986,13 +928,13 @@ function CausalReasoningTab({ latestExplainability, latestMemo }) {
 
   return (
     <div className="space-y-6">
-      {/* Causal explanation */}
+      {/* Policy-trace explanation */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Brain className="w-4 h-4 text-teal-600" /> Causal Explanation
-              {chain?.primary_cause && <Badge className="bg-teal-500/10 text-teal-600 border-0 text-[10px]">Primary: {chain.primary_cause}</Badge>}
+              <Brain className="w-4 h-4 text-teal-600" /> Policy-Trace Explanation
+              {(chain?.primary_feature || chain?.primary_cause) && <Badge className="bg-teal-500/10 text-teal-600 border-0 text-[10px]">Largest recorded term: {chain.primary_feature || chain.primary_cause}</Badge>}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -1012,7 +954,7 @@ function CausalReasoningTab({ latestExplainability, latestMemo }) {
             <Card className="h-full">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-teal-600" /> Causal Contribution Breakdown
+                  <Layers className="w-4 h-4 text-teal-600" /> Context Contribution Breakdown
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1061,15 +1003,23 @@ function CausalReasoningTab({ latestExplainability, latestMemo }) {
         </motion.div>
       </div>
 
-      {/* Provenance chain */}
+      {/* Local evidence commitment */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Hash className="w-4 h-4 text-teal-600" /> Provenance Chain
-              {prov?.guards_passed !== false && <Badge className="bg-emerald-500/10 text-emerald-600 border-0 text-[10px]">Guards Passed</Badge>}
+              <Hash className="w-4 h-4 text-teal-600" /> Local Evidence Commitment
+              {provenanceGuardState(prov?.guards_passed) === "passed" ? (
+                <Badge className="bg-emerald-500/10 text-emerald-600 border-0 text-[10px]">Guards Passed</Badge>
+              ) : provenanceGuardState(prov?.guards_passed) === "failed" ? (
+                <Badge className="bg-amber-500/10 text-amber-600 border-0 text-[10px]">Guards Failed</Badge>
+              ) : (
+                <Badge className="bg-slate-500/10 text-slate-600 border-0 text-[10px]">Guards Not Evaluated</Badge>
+              )}
             </CardTitle>
-            <CardDescription>Cryptographic evidence trail from MCP tools and piRAG retrieval to Merkle-rooted provenance</CardDescription>
+            <CardDescription>
+              Local SHA-256 commitment over the exposed retrieval and selected MCP leaves; no Merkle inclusion paths or on-chain root anchor are claimed here
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="relative pl-6">
@@ -1083,22 +1033,25 @@ function CausalReasoningTab({ latestExplainability, latestMemo }) {
                   </div>
                   <div className="text-xs">
                     <span className="font-medium">MCP: {t}</span>
-                    {prov?.evidence_hashes?.[i] && (
-                      <span className="ml-2 font-mono text-[10px] text-muted-foreground/60">SHA: {short(prov.evidence_hashes[i])}</span>
+                    {prov?.mcp_evidence_hashes?.[t] && (
+                      <span className="ml-2 font-mono text-[10px] text-muted-foreground/60">SHA: {short(prov.mcp_evidence_hashes[t])}</span>
                     )}
                   </div>
                 </div>
               ))}
 
-              {/* piRAG step */}
+              {/* Institutional retrieval step */}
               {topDoc && (
                 <div className="relative pl-6 pb-3">
                   <div className="absolute left-0 top-0.5 w-4 h-4 rounded-full bg-background border-2 border-blue-500 flex items-center justify-center">
                     <BookOpen className="w-2.5 h-2.5 text-blue-500" />
                   </div>
                   <div className="text-xs">
-                    <span className="font-medium">piRAG: {topDoc}</span>
+                    <span className="font-medium">Institutional retrieval: {topDoc}</span>
                     <span className="ml-2 text-muted-foreground">score={fmt(topScore, 2)}</span>
+                    {prov?.retrieval_evidence_hashes?.[0] && (
+                      <span className="ml-2 font-mono text-[10px] text-muted-foreground/60">SHA: {short(prov.retrieval_evidence_hashes[0])}</span>
+                    )}
                   </div>
                 </div>
               )}
@@ -1110,7 +1063,7 @@ function CausalReasoningTab({ latestExplainability, latestMemo }) {
                     <GitBranch className="w-2.5 h-2.5 text-teal-500" />
                   </div>
                   <div className="text-xs">
-                    <span className="font-medium">Merkle Root</span>
+                    <span className="font-medium">Local Merkle commitment</span>
                     <button onClick={() => copyHash(prov.merkle_root)} className="ml-2 font-mono text-muted-foreground hover:text-primary">
                       {short(prov.merkle_root)} <Copy className="w-2.5 h-2.5 inline" />
                     </button>
@@ -1118,14 +1071,15 @@ function CausalReasoningTab({ latestExplainability, latestMemo }) {
                 </div>
               )}
 
-              {/* On-chain */}
-              {latestMemo?.tx_hash && latestMemo.tx_hash !== "0x0" && (
+              {/* Separate optional logDecision transaction; it does not
+                  anchor the local Merkle commitment displayed above. */}
+              {isAnchoredTransactionHash(latestMemo?.tx_hash) && (
                 <div className="relative pl-6">
                   <div className="absolute left-0 top-0.5 w-4 h-4 rounded-full bg-background border-2 border-emerald-500 flex items-center justify-center">
                     <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />
                   </div>
                   <div className="text-xs">
-                    <span className="font-medium">On-chain anchor</span>
+                    <span className="font-medium">Optional on-chain decision record (separate from Merkle root)</span>
                     <button onClick={() => copyHash(latestMemo.tx_hash)} className="ml-2 font-mono text-muted-foreground hover:text-primary">
                       {short(latestMemo.tx_hash)} <Copy className="w-2.5 h-2.5 inline" />
                     </button>
@@ -1145,8 +1099,8 @@ export default function McpPiragPage() {
   const [loading, setLoading] = useState(true);
   const [decisions, setDecisions] = useState([]);
   const [tools, setTools] = useState([]);
-  const [ablationData, setAblationData] = useState(ABLATION_DATA_FALLBACK);
   const [benchSummary, setBenchSummary] = useState(null);
+  const [h2Payload, setH2Payload] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
@@ -1158,23 +1112,19 @@ export default function McpPiragPage() {
       const decs = decData.decisions || decData;
       setDecisions(Array.isArray(decs) ? decs : []);
       setTools(toolsData.tools || []);
-      // Fetch live ablation data from CSV (with auth)
+      // Fetch the dedicated benchmark and canonical H2/channel evidence.
       try {
-        const resp = await authFetch(`${API}/results/figures/table2_ablation.csv`);
-        if (resp.ok) {
-          _rawAblationCSV = await resp.text();
-          setAblationData(parseAblationCSV(_rawAblationCSV));
-        }
-      } catch (e) { console.warn("Could not load ablation CSV:", e); }
-      // Fetch benchmark CI data (with auth)
-      try {
-        const resp = await authFetch(`${API}/results/figures/benchmark_summary.json`);
-        if (resp.ok) {
-          const bs = await resp.json();
+        const [summaryResp, h2Resp] = await Promise.all([
+          authFetch(`${API}/results/figures/benchmark_summary.json`),
+          authFetch(`${API}/results/figures/benchmark_significance.json`),
+        ]);
+        if (summaryResp.ok) {
+          const bs = await summaryResp.json();
           // Flatten the `summary` wrapper so benchSummary[scenario][mode] resolves.
           setBenchSummary(bs?.summary ? { ...bs.summary, _meta: bs._meta } : bs);
         }
-      } catch (e) { console.warn("Could not load benchmark data:", e); }
+        if (h2Resp.ok) setH2Payload(await h2Resp.json());
+      } catch (e) { console.warn("Could not load canonical H2/channel evidence:", e); }
       setLoading(false);
     };
     load();
@@ -1200,11 +1150,11 @@ export default function McpPiragPage() {
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex items-center gap-3 mb-1">
           <Brain className="w-6 h-6 text-primary" />
-          <h1 className="text-2xl font-bold">MCP/piRAG Context Integration</h1>
-          <Badge className="bg-teal-500/10 text-teal-600 border-0 text-xs">Research Contribution</Badge>
+          <h1 className="text-2xl font-bold">MCP and Institutional Retrieval</h1>
+          <Badge className="bg-teal-500/10 text-teal-600 border-0 text-xs">{canonicalH2Evidence(h2Payload).supported ? "H2 Supported" : "Evidence-gated"}</Badge>
         </div>
         <p className="text-sm text-muted-foreground">
-          Model Context Protocol interoperability and Physics-informed Retrieval-Augmented Generation pipeline
+          Recorded Model Context Protocol tool dispatch and institutional retrieval with mechanistic reranking
         </p>
       </motion.div>
 
@@ -1212,14 +1162,14 @@ export default function McpPiragPage() {
         <TabsList className="w-full justify-start flex-wrap">
           <TabsTrigger value="overview" className="flex items-center gap-1.5"><Network className="w-3.5 h-3.5" /> Overview</TabsTrigger>
           <TabsTrigger value="features" className="flex items-center gap-1.5"><Layers className="w-3.5 h-3.5" /> Context Features</TabsTrigger>
-          <TabsTrigger value="h2" className="flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> H2 Mechanism (§5.8)</TabsTrigger>
+          <TabsTrigger value="h2" className="flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> H2 Channel Diagnostics</TabsTrigger>
           <TabsTrigger value="knowledge" className="flex items-center gap-1.5"><BookOpen className="w-3.5 h-3.5" /> Knowledge Base</TabsTrigger>
           <TabsTrigger value="protocol" className="flex items-center gap-1.5"><Zap className="w-3.5 h-3.5" /> Protocol</TabsTrigger>
-          <TabsTrigger value="causal" className="flex items-center gap-1.5"><Brain className="w-3.5 h-3.5" /> Causal Reasoning</TabsTrigger>
+          <TabsTrigger value="causal" className="flex items-center gap-1.5"><Brain className="w-3.5 h-3.5" /> Policy Trace</TabsTrigger>
         </TabsList>
 
         <div className="mt-6">
-          <TabsContent value="overview"><OverviewTab tools={tools} ablationData={ablationData} benchSummary={benchSummary} /></TabsContent>
+          <TabsContent value="overview"><OverviewTab tools={tools} benchSummary={benchSummary} h2Payload={h2Payload} /></TabsContent>
           <TabsContent value="features"><ContextFeaturesTab latestExplainability={latestExplainability} /></TabsContent>
           <TabsContent value="h2">
             <React.Suspense fallback={<Skeleton className="h-96 rounded-lg" />}>
@@ -1228,7 +1178,7 @@ export default function McpPiragPage() {
           </TabsContent>
           <TabsContent value="knowledge"><KnowledgeBaseTab /></TabsContent>
           <TabsContent value="protocol"><ProtocolTab tools={tools} decisions={decisions} /></TabsContent>
-          <TabsContent value="causal"><CausalReasoningTab latestExplainability={latestExplainability} latestMemo={latestMemo} /></TabsContent>
+          <TabsContent value="causal"><PolicyTraceTab latestExplainability={latestExplainability} latestMemo={latestMemo} /></TabsContent>
         </div>
       </Tabs>
     </div>

@@ -1,15 +1,16 @@
-"""MCP protocol layer: JSON-RPC 2.0, capability negotiation, three primitives.
+"""Project MCP-style subset over JSON-RPC 2.0.
 
-Implements the Model Context Protocol server following the JSON-RPC 2.0
-specification. The advertised ``protocolVersion`` is ``2024-11-05``;
-the matching reference document is the MCP specification of that
-date. Supports all three MCP primitives:
+The layer exposes project implementations of tool, resource, and prompt
+primitives. The advertised ``protocolVersion`` compatibility token is
+``2024-11-05``, but this code has not passed an official MCP conformance
+suite or official-client interoperability validation. It must therefore be
+described as a custom MCP-style subset, not a full standards implementation:
 
 - **Tools**: callable functions with schema-based invocation
 - **Resources**: URI-addressable live state endpoints
 - **Prompts**: parameterized query templates
 
-Reference: https://modelcontextprotocol.io/specification/2024-11-05
+Design reference: https://modelcontextprotocol.io/specification/2024-11-05
 """
 from __future__ import annotations
 
@@ -84,7 +85,7 @@ _INTERNAL_ERROR = -32603
 
 
 class MCPServer:
-    """Full MCP server: tools (via registry), resources, prompts, JSON-RPC routing.
+    """Project subset: tools, resources, prompts, and JSON-RPC-style routing.
 
     Parameters
     ----------
@@ -138,14 +139,14 @@ class MCPServer:
     def handle_message(self, msg: MCPMessage) -> MCPMessage:
         """Route a JSON-RPC message to the appropriate handler.
 
-        Spec compliance (JSON-RPC 2.0 + MCP 2024-11-05):
+        Behavior implemented for the project's declared JSON-RPC/MCP-style
+        subset (not an official conformance claim):
 
         - ``jsonrpc`` field is validated to equal ``"2.0"``; anything
           else returns INVALID_REQUEST.
         - ``method`` is required.
         - Notifications (``id`` is None or omitted) are dispatched but
-          generate no response. Per JSON-RPC 2.0 §4.1, servers MUST
-          NOT respond to notifications. Callers must check
+          generate no response. Callers must check
           ``response is None`` before reading.
         - Batch dispatch is provided by :py:meth:`handle_batch` for
           callers that need to send multiple requests in one envelope.
@@ -191,14 +192,13 @@ class MCPServer:
         return response
 
     def handle_batch(self, messages):
-        """Dispatch a batch of MCPMessage requests, per JSON-RPC 2.0 §6.
+        """Dispatch the project's declared batch of ``MCPMessage`` requests.
 
         Returns:
         - A single ``MCPMessage`` carrying INVALID_REQUEST when the
           input batch itself is malformed (empty list).
         - ``None`` when the input is non-empty but every member is a
-          notification — per spec the server MUST NOT return an empty
-          array; the transport must serialize nothing at all.
+          notification; the transport then serializes no response.
         - A list of response messages otherwise, in input order, with
           notifications skipped.
         """
@@ -354,10 +354,12 @@ class MCPServer:
             if alt in arguments and canonical not in arguments:
                 arguments[canonical] = arguments.pop(alt)
 
-        # Public-facing transport: enforce policy.yaml rate_limits before
-        # dispatch. The simulator's in-process registry calls bypass this
-        # bucket (source="registry"); only requests that arrive over the
-        # MCP JSON-RPC envelope consume a token. See pirag.mcp.rate_limiter.
+        # JSON-RPC boundary: enforce policy.yaml rate_limits before dispatch
+        # in the default transport posture. Direct registry calls bypass this
+        # bucket (source="registry"), whereas the simulator's recorded
+        # in-process tools/call envelopes reach this boundary. Canonical
+        # publication therefore selects MCP_RATE_LIMITS=disabled so treatment
+        # availability cannot depend on wall time. See pirag.mcp.rate_limiter.
         try:
             from .rate_limiter import get_rate_limiter, RateLimitExceeded
             get_rate_limiter().check(name, source="transport")
@@ -375,12 +377,9 @@ class MCPServer:
 
         try:
             result = self._registry.invoke(name, **arguments)
-            # If the tool returned a structured error envelope (e.g.
-            # ``{"_status": "error", ...}`` from chain_query when the
-            # FastAPI state isn't populated under the simulator
-            # subprocess), surface it as ``isError`` so consumers and
-            # the ProtocolRecorder count it as an error rather than a
-            # successful payload.
+            # If a tool returns a structured error envelope, surface it as
+            # ``isError`` so consumers and the ProtocolRecorder count the
+            # failed invocation rather than treating the payload as success.
             is_error = (
                 isinstance(result, dict)
                 and (result.get("_status") == "error" or result.get("error"))

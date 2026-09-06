@@ -6,6 +6,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn, fmt, jget, jpost, authFetch } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
+import {
+  PRIMARY_PUBLICATION_MODES, SECONDARY_PUBLICATION_MODES, canonicalH1Evidence,
+  descriptiveCrossScenarioSummary, directionalAdvantagePercent,
+  withinPanelRelativeScore,
+} from "@/lib/publicationEvidence.js";
 import { motion, useInView } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -25,7 +30,6 @@ const COLORS = {
   static: "#808080",
   agri: "#009688",
   hybrid: "#E67E22",
-  noPinn: "#E91E63",
   noSlca: "#7570B3",
   noContext: "#4CAF50",
   mcpOnly: "#FF9800",
@@ -36,11 +40,10 @@ const METHOD_COLORS = {
   "Static": COLORS.static,
   "Hybrid RL": COLORS.hybrid,
   "AGRI-BRAIN": COLORS.agri,
-  "No PINN": COLORS.noPinn,
-  "No SLCA": COLORS.noSlca,
-  "No Context": COLORS.noContext,
-  "MCP Only": COLORS.mcpOnly,
-  "piRAG Only": COLORS.piragOnly,
+  "No social-proxy shaping": COLORS.noSlca,
+  "No-external-context": COLORS.noContext,
+  "MCP-only": COLORS.mcpOnly,
+  "Retrieval-only": COLORS.piragOnly,
 };
 
 // Map raw CSV method/variant names to display names
@@ -48,28 +51,44 @@ const METHOD_DISPLAY = {
   static: "Static",
   hybrid_rl: "Hybrid RL",
   agribrain: "AGRI-BRAIN",
-  no_pinn: "No PINN",
-  no_slca: "No SLCA",
-  no_context: "No Context",
-  mcp_only: "MCP Only",
-  pirag_only: "piRAG Only",
+  no_slca: "No social-proxy shaping",
+  no_context: "No-external-context",
+  mcp_only: "MCP-only",
+  pirag_only: "Retrieval-only",
   // Also handle already-formatted names (no-op)
   "Static": "Static",
   "Hybrid RL": "Hybrid RL",
   "AGRI-BRAIN": "AGRI-BRAIN",
-  "No PINN": "No PINN",
-  "No SLCA": "No SLCA",
-  "No Context": "No Context",
-  "MCP Only": "MCP Only",
-  "piRAG Only": "piRAG Only",
+  "No SLCA": "No social-proxy shaping",
+  "No-social-performance": "No social-proxy shaping",
+  "No social-proxy shaping": "No social-proxy shaping",
+  "No Context": "No-external-context",
+  "No-external-context": "No-external-context",
+  "MCP Only": "MCP-only",
+  "MCP-only": "MCP-only",
+  "Retrieval-only": "Retrieval-only",
 };
 const displayMethod = (m) => METHOD_DISPLAY[m] || m;
 
-const METHOD_KEY_MAP = { "Static": "static", "Hybrid RL": "hybrid_rl", "AGRI-BRAIN": "agribrain" };
-const VARIANT_KEY_MAP = {
-  "Static": "static", "Hybrid RL": "hybrid_rl", "No PINN": "no_pinn", "No SLCA": "no_slca",
-  "AGRI-BRAIN": "agribrain", "No Context": "no_context", "MCP Only": "mcp_only", "piRAG Only": "pirag_only",
+const METHOD_KEY_MAP = {
+  "Static": "static", "Hybrid RL": "hybrid_rl", "No social-proxy shaping": "no_slca",
+  "No-external-context": "no_context", "MCP-only": "mcp_only",
+  "Retrieval-only": "pirag_only", "AGRI-BRAIN": "agribrain",
 };
+const VARIANT_KEY_MAP = {
+  "Static": "static", "Hybrid RL": "hybrid_rl", "No social-proxy shaping": "no_slca",
+  "AGRI-BRAIN": "agribrain", "No-external-context": "no_context", "MCP-only": "mcp_only", "Retrieval-only": "pirag_only",
+};
+
+const METRIC_LABELS = {
+  ARI: "ARI",
+  RLE: "Severity-weighted RLE",
+  Waste: "Waste fraction",
+  SLCA: "Author-declared social-performance proxy",
+  Carbon: "Modeled transport-emissions indicator (kg CO2-eq)",
+  Equity: "Temporal social-performance stability proxy",
+};
+const metricLabel = (key) => METRIC_LABELS[key] || key;
 
 // Animated counter for the headline section
 function HeroCounter({ value, suffix = "", prefix = "", label, sublabel, delay = 0 }) {
@@ -150,18 +169,18 @@ function ChartTooltip({ active, payload, label }) {
 const SCENARIOS = [
   { id: "heatwave", name: "Heatwave", figure: "heatwave.png", icon: Flame, color: "#D55E00",
     findings: [
-      "AGRI-BRAIN maintained highest ARI under extreme thermal stress",
-      "PINN-enhanced spoilage model anticipated quality degradation",
-      "Policy shifted to local redistribution during peak stress",
-      "Carbon emissions reduced through shorter community routes",
+      "Temperature and humidity excursion over the declared stress window",
+      "Mechanistic Arrhenius-lag spoilage-risk trajectory",
+      "Policy probabilities and realized routing actions",
+      "ARI and emissions-indicator outcomes reported with benchmark uncertainty",
     ],
   },
   { id: "overproduction", name: "Overproduction", figure: "overproduction.png", icon: Layers, color: "#E67E22",
     findings: [
-      "Waste reduced via proactive recovery routing of surplus",
-      "Reverse logistics captured majority of surplus produce",
-      "Cooperative equity scores maintained above 0.85",
-      "Composting/bioenergy channels activated autonomously",
+      "Declared inventory surge and recovery-capacity saturation",
+      "Routing allocation among cold chain, redistribution, and recovery",
+      "Waste fraction per routing opportunity, severity-weighted RLE, and social-performance proxy",
+      "Cross-seed uncertainty from the canonical benchmark",
     ],
   },
   // Canonical scenario ids match the backend (agribrain/backend/src/routers/scenarios.py)
@@ -171,18 +190,18 @@ const SCENARIOS = [
   // emit the full "cyber_outage" / "adaptive_pricing" keys.
   { id: "cyber_outage", name: "Cyber Outage", figure: "cyber_outage.png", icon: ShieldAlert, color: "#7570B3",
     findings: [
-      "System maintained operations through processor outage",
-      "Autonomous rerouting avoided majority of potential spoilage",
-      "MCP governance overrides activated for compliance",
-      "Blockchain audit trail preserved transaction integrity",
+      "Declared demand and refrigeration disruption after outage onset",
+      "Pre/during-outage action-distribution comparison",
+      "Routing and outcome changes under the same scenario stream",
+      "Local Merkle provenance; on-chain anchoring remains optional",
     ],
   },
   { id: "adaptive_pricing", name: "Adaptive Pricing", figure: "adaptive_pricing.png", icon: DollarSign, color: "#0072B2",
     findings: [
-      "Highest ARI and SLCA scores across all scenarios",
-      "Equity-aware redistribution prevented price exploitation",
-      "Cooperative members received fair-share allocations",
-      "Context-aware policy adapted to demand oscillations",
+      "Declared oscillatory demand and price-pressure indicator",
+      "Policy response across low- and high-demand windows",
+      "ARI, waste fraction per routing opportunity, and social-performance proxy",
+      "Cross-seed uncertainty from the canonical benchmark",
     ],
   },
 ];
@@ -190,7 +209,9 @@ const SCENARIOS = [
 export default function AnalyticsPage() {
   const [table1, setTable1] = useState([]);
   const [table2, setTable2] = useState([]);
-  const [, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [publicationEvidenceReady, setPublicationEvidenceReady] = useState(false);
+  const [publicationEvidenceError, setPublicationEvidenceError] = useState("");
   const [selectedScenario, setSelectedScenario] = useState("heatwave");
   const [selectedMetric, setSelectedMetric] = useState("ARI");
   const [ablationMetric, setAblationMetric] = useState("ARI");
@@ -204,31 +225,60 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     const loadData = async () => {
+      const fetchText = async (name) => {
+        const response = await authFetch(`${API}/results/figures/${name}`);
+        if (!response.ok) throw new Error(`${name}: HTTP ${response.status}`);
+        return response.text();
+      };
+      const fetchJson = async (name) => {
+        const response = await authFetch(`${API}/results/figures/${name}`);
+        if (!response.ok) throw new Error(`${name}: HTTP ${response.status}`);
+        return response.json();
+      };
       try {
-        const [t1Text, t2Text] = await Promise.all([
-          authFetch(`${API}/results/figures/table1_summary.csv`).then((r) => r.text()),
-          authFetch(`${API}/results/figures/table2_ablation.csv`).then((r) => r.text()),
+        const [t1Text, t2Text, bs, bsig] = await Promise.all([
+          fetchText("table1_summary.csv"),
+          fetchText("table2_ablation.csv"),
+          fetchJson("benchmark_summary.json"),
+          fetchJson("benchmark_significance.json"),
         ]);
-        setTable1(parseCSV(t1Text));
-        setTable2(parseCSV(t2Text));
-      } catch (e) {
-        console.warn("Could not load CSV data:", e);
-      }
-      // Load benchmark CI/significance data
-      try {
-        const [bs, bsig] = await Promise.all([
-          authFetch(`${API}/results/figures/benchmark_summary.json`).then((r) => r.json()),
-          authFetch(`${API}/results/figures/benchmark_significance.json`).then((r) => r.json()),
-        ]);
+        const parsedTable1 = parseCSV(t1Text);
+        const parsedTable2 = parseCSV(t2Text);
+        if (parsedTable1.length !== 35 || parsedTable2.length !== 25) {
+          throw new Error(
+            `publication panel incomplete (Table 1=${parsedTable1.length}/35, Table 2=${parsedTable2.length}/25)`,
+          );
+        }
+        if (!bs?.summary || !bsig?.significance) {
+          throw new Error("canonical benchmark evidence schema is incomplete");
+        }
+        if (Number(bs?._meta?.n_seeds) !== 20) {
+          throw new Error("canonical benchmark evidence must contain exactly 20 seeds");
+        }
         // benchmark_summary.json nests scenarios under `summary` (with a top-level
         // `_meta`); flatten so the chart code can read benchSummary[scenario][mode].
-        setBenchSummary(bs?.summary ? { ...bs.summary, _meta: bs._meta } : bs);
+        const canonicalSummary = { ...bs.summary, _meta: bs._meta };
+        if (!descriptiveCrossScenarioSummary(canonicalSummary)) {
+          throw new Error("exact five-scenario AGRI-BRAIN/static summary cells are incomplete");
+        }
+        setTable1(parsedTable1);
+        setTable2(parsedTable2);
+        setBenchSummary(canonicalSummary);
         // benchmark_significance.json nests the per-scenario table under `significance`.
-        setBenchSignificance(bsig?.significance ?? bsig);
+        setBenchSignificance(bsig.significance);
+        setPublicationEvidenceReady(true);
+        setPublicationEvidenceError("");
       } catch (e) {
-        console.warn("Could not load benchmark data:", e);
+        console.warn("Validated publication evidence is unavailable:", e);
+        setTable1([]);
+        setTable2([]);
+        setBenchSummary(null);
+        setBenchSignificance(null);
+        setPublicationEvidenceReady(false);
+        setPublicationEvidenceError(e?.message || "validated artifact set not available");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     loadData();
   }, []);
@@ -281,13 +331,13 @@ export default function AnalyticsPage() {
     if (!rows.length) return [];
     const axes = ["ARI", "RLE", "Waste", "SLCA", "Carbon", "Equity"];
     return axes.map((axis) => {
-      const obj = { axis };
+      const panelValues = rows
+        .map((r) => Number(r[axis] ?? r[`${axis} (kg)`]))
+        .filter(Number.isFinite);
+      const obj = { axis: `${metricLabel(axis)} (relative)` };
       rows.forEach((r) => {
-        let val = r[axis] ?? r[`${axis} (kg)`] ?? 0;
-        // Normalize and invert where needed
-        if (axis === "Waste") val = 1 - Math.min(val, 1);
-        else if (axis === "Carbon") val = 1 - (val / 5000);
-        obj[r.Method] = Math.max(0, Math.min(1, +val || 0));
+        const val = r[axis] ?? r[`${axis} (kg)`];
+        obj[r.Method] = withinPanelRelativeScore(val, panelValues, axis);
       });
       return obj;
     });
@@ -298,12 +348,16 @@ export default function AnalyticsPage() {
     if (!table1.length) return [];
     const metrics = ["ARI", "RLE", "Waste", "SLCA", "Carbon", "Equity"];
     return metrics.map((metric) => {
-      const aVals = table1.filter((r) => r.Method === compareA).map((r) => r[metric] ?? r[`${metric} (kg)`] ?? 0);
-      const bVals = table1.filter((r) => r.Method === compareB).map((r) => r[metric] ?? r[`${metric} (kg)`] ?? 0);
-      const aAvg = aVals.length ? aVals.reduce((a, b) => a + b, 0) / aVals.length : 0;
-      const bAvg = bVals.length ? bVals.reduce((a, b) => a + b, 0) / bVals.length : 0;
-      const pct = bAvg !== 0 ? ((aAvg - bAvg) / Math.abs(bAvg)) * 100 : 0;
-      return { metric, a: aAvg, b: bAvg, pctChange: pct };
+      const valuesFor = (method) => table1
+        .filter((r) => r.Method === method)
+        .map((r) => Number(r[metric] ?? r[`${metric} (kg)`]))
+        .filter(Number.isFinite);
+      const aVals = valuesFor(compareA);
+      const bVals = valuesFor(compareB);
+      const aAvg = aVals.length ? aVals.reduce((a, b) => a + b, 0) / aVals.length : null;
+      const bAvg = bVals.length ? bVals.reduce((a, b) => a + b, 0) / bVals.length : null;
+      const advantagePct = directionalAdvantagePercent(aAvg, bAvg, metric);
+      return { metric, label: metricLabel(metric), a: aAvg, b: bAvg, advantagePct };
     });
   }, [table1, compareA, compareB]);
 
@@ -332,7 +386,7 @@ export default function AnalyticsPage() {
     try {
       // Kick off background job
       await jpost(API, "/results/generate");
-      toast.info("Simulation started (5 scenarios x 8 modes). Polling for completion...");
+      toast.info("Development run started: 55 retained endpoints, 205 executed episodes, and 59,040 simulated steps. Polling for completion...");
 
       // Poll /results/status until done
       let status = "running";
@@ -348,14 +402,7 @@ export default function AnalyticsPage() {
       const st = await jget(API, "/results/status");
       if (st.status === "error") throw new Error(st.error);
 
-      toast.success(`Simulation complete in ${st.duration_s || "?"}s`);
-      // Reload data
-      const [t1Text, t2Text] = await Promise.all([
-        authFetch(`${API}/results/figures/table1_summary.csv`).then((r) => r.text()),
-        authFetch(`${API}/results/figures/table2_ablation.csv`).then((r) => r.text()),
-      ]);
-      setTable1(parseCSV(t1Text));
-      setTable2(parseCSV(t2Text));
+      toast.success(`Development-only run complete in ${st.duration_s || "?"}s. Publication evidence was not changed.`);
     } catch (e) {
       toast.error(`Simulation failed: ${e.message || "Check backend logs."}`);
     }
@@ -364,8 +411,15 @@ export default function AnalyticsPage() {
 
   const exportTableCSV = (data, filename) => {
     if (!data.length) return;
-    const headers = Object.keys(data[0]).join(",") + "\n";
-    const rows = data.map((r) => Object.values(r).join(",")).join("\n");
+    const esc = (value) => {
+      const text = String(value ?? "");
+      return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    };
+    const columns = Object.keys(data[0]);
+    const headers = columns.map((key) => esc(metricLabel(key))).join(",") + "\n";
+    const rows = data
+      .map((row) => columns.map((key) => esc(row[key])).join(","))
+      .join("\n");
     const blob = new Blob([headers + rows], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -385,27 +439,56 @@ export default function AnalyticsPage() {
 
   const scenarioObj = SCENARIOS.find((s) => s.id === selectedScenario) || SCENARIOS[0];
 
-  // Compute executive summary KPIs dynamically from loaded CSV data
+  // Descriptive UI-only transform of the exact, unrounded JSON scenario means.
   const summaryKPIs = useMemo(() => {
-    if (!table1.length) return { ariPct: 0, wastePct: 0, carbonPct: 0, rleMean: 0, savings: 0, abWaste: 0, stWaste: 0, abCarbon: 0, stCarbon: 0 };
-    const ab = table1.filter((r) => r.Method === "AGRI-BRAIN" || r.Method === "agribrain");
-    const st = table1.filter((r) => r.Method === "Static" || r.Method === "static");
-    if (!ab.length || !st.length) return { ariPct: 0, wastePct: 0, carbonPct: 0, rleMean: 0, savings: 0, abWaste: 0, stWaste: 0, abCarbon: 0, stCarbon: 0 };
-    const mean = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
-    const abARI = mean(ab.map((r) => r.ARI));
-    const stARI = mean(st.map((r) => r.ARI));
-    const abWaste = mean(ab.map((r) => r.Waste));
-    const stWaste = mean(st.map((r) => r.Waste));
-    const abCarbon = mean(ab.map((r) => r.Carbon ?? r["Carbon (kg)"] ?? 0));
-    const stCarbon = mean(st.map((r) => r.Carbon ?? r["Carbon (kg)"] ?? 0));
-    const rleMean = mean(ab.map((r) => r.RLE));
-    const ariPct = stARI > 0 ? ((abARI - stARI) / stARI) * 100 : 0;
-    const wastePct = stWaste > 0 ? (1 - abWaste / stWaste) * 100 : 0;
-    const carbonPct = stCarbon > 0 ? (1 - abCarbon / stCarbon) * 100 : 0;
-    const wasteReductionKgWeek = (stWaste - abWaste) * 50000;
-    const savings = wasteReductionKgWeek * 52 * 1.5;
-    return { ariPct, wastePct, carbonPct, rleMean: rleMean * 100, savings: Math.round(savings), abWaste: (abWaste * 100).toFixed(1), stWaste: (stWaste * 100).toFixed(1), abCarbon: Math.round(abCarbon), stCarbon: Math.round(stCarbon) };
-  }, [table1]);
+    return descriptiveCrossScenarioSummary(benchSummary);
+  }, [benchSummary]);
+
+  if (loading) {
+    return (
+      <Card className="border-primary/20">
+        <CardContent className="p-8 text-center">
+          <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-primary" />
+          <h2 className="text-xl font-semibold">Verifying publication evidence</h2>
+          <p className="text-sm text-muted-foreground mt-2">Checking the validated manifest and exact artifact bytes.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!publicationEvidenceReady) {
+    return (
+      <div className="space-y-6 pb-12">
+        <Card className="border-amber-500/40 bg-amber-500/5">
+          <CardContent className="p-8 text-center">
+            <ShieldAlert className="w-10 h-10 mx-auto mb-3 text-amber-600" />
+            <Badge variant="outline" className="mb-3">Publication evidence unavailable</Badge>
+            <h2 className="text-xl font-semibold">No canonical benchmark values are displayed</h2>
+            <p className="text-sm text-muted-foreground mt-2 max-w-2xl mx-auto">
+              A complete schema-v2 manifest and its exact validated artifacts have not been loaded. Historical or development outputs are intentionally not shown as publication results.
+            </p>
+            <p className="text-xs font-mono text-muted-foreground mt-3">{publicationEvidenceError}</p>
+          </CardContent>
+        </Card>
+        <Card className="border-primary/20">
+          <CardContent className="p-6 text-center">
+            <FlaskConical className="w-10 h-10 mx-auto mb-3 text-primary" />
+            <h3 className="text-lg font-semibold mb-2">Run a development-only simulation</h3>
+            <p className="text-sm text-muted-foreground mb-4 max-w-lg mx-auto">
+              This one-seed local run exercises all {PRIMARY_PUBLICATION_MODES.length + SECONDARY_PUBLICATION_MODES.length} modes: 55 retained endpoints from 205 executed episodes (59,040 simulated steps). It cannot create or replace publication evidence.
+            </p>
+            <Button size="lg" onClick={runSimulation} disabled={simRunning}>
+              {simRunning ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Running simulation...</>
+              ) : (
+                <><Play className="w-4 h-4 mr-2" /> Generate development results</>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-12">
@@ -414,27 +497,17 @@ export default function AnalyticsPage() {
         <Card className="bg-gradient-to-br from-primary/5 via-background to-primary/5 border-primary/20">
           <CardContent className="py-8 px-6">
             <div className="text-center mb-8">
-              <Badge variant="teal" className="mb-2">Framework Validation Results</Badge>
-              <h2 className="text-2xl font-bold">AGRI-BRAIN Performance Summary</h2>
-              <p className="text-sm text-muted-foreground mt-1">Cross-scenario improvements vs. static logistics baseline</p>
+              <Badge variant="teal" className="mb-2">Backend-accepted artifact set · descriptive UI summary</Badge>
+              <h2 className="text-2xl font-bold">AGRI-BRAIN Five-Scenario Summary</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Unweighted arithmetic means of the five exact scenario-level means. Relative differences are descriptive transforms, not pooled confidence intervals or confirmatory effects.
+              </p>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-6 max-w-5xl mx-auto">
-              <HeroCounter value={+summaryKPIs.ariPct.toFixed(1)} suffix="%" label="ARI Improvement" sublabel="Adaptive Resilience Index" delay={0} />
-              <HeroCounter value={+summaryKPIs.wastePct.toFixed(1)} suffix="%" label="Waste Reduction" sublabel={`${summaryKPIs.abWaste}% vs ${summaryKPIs.stWaste}% produce lost`} delay={200} />
-              <HeroCounter value={+summaryKPIs.carbonPct.toFixed(1)} suffix="%" label="Carbon Reduction" sublabel={`${summaryKPIs.abCarbon} vs ${summaryKPIs.stCarbon} kg CO₂-eq`} delay={400} />
-              <HeroCounter value={+summaryKPIs.rleMean.toFixed(1)} suffix="%" label="Rerouting Efficiency" sublabel="At-risk batches diverted" delay={600} />
-              {/* Illustrative scenario: throughput and price are not measured;
-                  the dollar figure is derived from the user-facing waste delta
-                  multiplied by an editable cooperative-scale assumption. The
-                  badge below makes the assumption explicit so the projection
-                  is not mistaken for a measurement. */}
-              <HeroCounter
-                value={summaryKPIs.savings}
-                prefix="$"
-                label="Annual Savings (illustrative)"
-                sublabel="50,000 kg/wk × $1.50/kg — cooperative-scale projection, not a measurement"
-                delay={800}
-              />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+              <HeroCounter value={+summaryKPIs.ariRelativeDifferencePct.toFixed(1)} suffix="%" label="Descriptive ARI difference" sublabel="Ratio of unweighted means vs static" delay={0} />
+              <HeroCounter value={+summaryKPIs.wasteRelativeDifferencePct.toFixed(1)} suffix="%" label="Descriptive waste difference" sublabel={`${summaryKPIs.exactUnweightedMeans.waste.agribrain.toFixed(3)} vs ${summaryKPIs.exactUnweightedMeans.waste.static.toFixed(3)} mean fraction`} delay={200} />
+              <HeroCounter value={+summaryKPIs.carbonRelativeDifferencePct.toFixed(1)} suffix="%" label="Descriptive emissions difference" sublabel={`${summaryKPIs.exactUnweightedMeans.carbon.agribrain.toFixed(1)} vs ${summaryKPIs.exactUnweightedMeans.carbon.static.toFixed(1)} modeled kg CO2-eq`} delay={400} />
+              <HeroCounter value={+summaryKPIs.rleDisplayScore.toFixed(1)} label="RLE display score" sublabel="AGRI-BRAIN unweighted mean ×100; not a percentage" delay={600} />
             </div>
           </CardContent>
         </Card>
@@ -448,7 +521,7 @@ export default function AnalyticsPage() {
               <span className="text-xs font-medium tracking-wider uppercase text-muted-foreground mr-2">Table&nbsp;1</span>
               Cross-Scenario Performance
             </h3>
-            <p className="text-sm text-muted-foreground italic">Comparison of eight ablation variants across five stress scenarios (288 timesteps each). Context ablation modes share the same RNG seed to isolate MCP/piRAG contribution. Mirrors manuscript Table&nbsp;1 / <code>table1_summary.csv</code>.</p>
+            <p className="text-sm text-muted-foreground italic">Comparison of eight primary modes across five simulated scenarios (288 timesteps each). Paired modes share the declared environmental stream. Source artifact: <code>table1_summary.csv</code>.</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => exportTableCSV(table1, "table1_summary.csv")}>
@@ -465,7 +538,7 @@ export default function AnalyticsPage() {
               <TableHeader>
                 <TableRow>
                   {["Scenario", "Method", "ARI", "RLE", "Waste", "SLCA", "Carbon", "Equity"].map((h) => (
-                    <TableHead key={h} className="font-semibold whitespace-nowrap">{h === "Carbon" ? "Carbon (kg)" : h}</TableHead>
+                    <TableHead key={h} className="font-semibold whitespace-nowrap">{metricLabel(h)}</TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
@@ -502,7 +575,7 @@ export default function AnalyticsPage() {
               <span className="text-xs font-medium tracking-wider uppercase text-muted-foreground mr-2">Table&nbsp;2</span>
               Ablation Study
             </h3>
-            <p className="text-sm text-muted-foreground italic">Component contribution analysis showing marginal impact of each module across the eight canonical modes plus §4.7 sensitivity perturbations (with-learning + static). Mirrors manuscript Table&nbsp;2 / <code>table2_ablation.csv</code>.</p>
+            <p className="text-sm text-muted-foreground italic">Compact five-mode architectural ablation. Prior and weight sensitivities are separate diagnostics. Source artifact: <code>table2_ablation.csv</code>.</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => exportTableCSV(table2, "table2_ablation.csv")}>
@@ -516,7 +589,7 @@ export default function AnalyticsPage() {
               <TableHeader>
                 <TableRow>
                   {["Scenario", "Variant", "ARI", "RLE", "Waste", "SLCA"].map((h) => (
-                    <TableHead key={h} className="font-semibold">{h}</TableHead>
+                    <TableHead key={h} className="font-semibold">{metricLabel(h)}</TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
@@ -564,13 +637,13 @@ export default function AnalyticsPage() {
               <Select value={selectedMetric} onValueChange={setSelectedMetric}>
                 <SelectTrigger className="w-28 h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {["ARI", "RLE", "Waste", "SLCA"].map((m) => (
-                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                    {["ARI", "RLE", "Waste", "SLCA"].map((m) => (
+                      <SelectItem key={m} value={m}>{metricLabel(m)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <CardDescription>Performance by scenario and method ({selectedMetric})</CardDescription>
+            <CardDescription>Performance by scenario and method ({metricLabel(selectedMetric)})</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-72">
@@ -604,13 +677,13 @@ export default function AnalyticsPage() {
               <Select value={ablationMetric} onValueChange={setAblationMetric}>
                 <SelectTrigger className="w-28 h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {["ARI", "RLE", "Waste", "SLCA"].map((m) => (
-                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                    {["ARI", "RLE", "Waste", "SLCA"].map((m) => (
+                      <SelectItem key={m} value={m}>{metricLabel(m)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <CardDescription>Component contribution analysis ({ablationMetric})</CardDescription>
+            <CardDescription>Component contribution analysis ({metricLabel(ablationMetric)})</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-72">
@@ -627,11 +700,11 @@ export default function AnalyticsPage() {
                   <Bar dataKey="Hybrid RL" fill={COLORS.hybrid} radius={[2, 2, 0, 0]} isAnimationActive={false}>
                     <ErrorBar dataKey="Hybrid RL_err" width={5} strokeWidth={2.5} stroke="#1f2937" />
                   </Bar>
-                  <Bar dataKey="No PINN" fill={COLORS.noPinn} radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                    <ErrorBar dataKey="No PINN_err" width={5} strokeWidth={2.5} stroke="#1f2937" />
+                  <Bar dataKey="No-external-context" fill={COLORS.noContext} radius={[2, 2, 0, 0]} isAnimationActive={false}>
+                    <ErrorBar dataKey="No-external-context_err" width={5} strokeWidth={2.5} stroke="#1f2937" />
                   </Bar>
-                  <Bar dataKey="No SLCA" fill={COLORS.noSlca} radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                    <ErrorBar dataKey="No SLCA_err" width={5} strokeWidth={2.5} stroke="#1f2937" />
+                  <Bar dataKey="No social-proxy shaping" fill={COLORS.noSlca} radius={[2, 2, 0, 0]} isAnimationActive={false}>
+                    <ErrorBar dataKey="No social-proxy shaping_err" width={5} strokeWidth={2.5} stroke="#1f2937" />
                   </Bar>
                   <Bar dataKey="AGRI-BRAIN" fill={COLORS.agri} radius={[2, 2, 0, 0]} isAnimationActive={false}>
                     <ErrorBar dataKey="AGRI-BRAIN_err" width={5} strokeWidth={2.5} stroke="#1f2937" />
@@ -646,8 +719,8 @@ export default function AnalyticsPage() {
         {benchSignificance && (
           <Card className="mb-6 border-primary/20">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Statistical Significance ({benchSummary?._meta?.n_seeds ?? 20}-Seed Stochastic Benchmark)</CardTitle>
-              <CardDescription>Permutation test p-values and Cohen's d effect sizes for AGRI-BRAIN vs. baselines</CardDescription>
+              <CardTitle className="text-base">Confirmatory Directional Evidence ({benchSummary._meta.n_seeds}-Seed Stochastic Benchmark)</CardTitle>
+              <CardDescription>Canonical Holm-adjusted directional H1 inference; missing canonical fields fail closed</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -656,25 +729,27 @@ export default function AnalyticsPage() {
                     <tr className="border-b">
                       <th className="text-left py-2 px-3 font-semibold">Scenario</th>
                       <th className="text-left py-2 px-3 font-semibold">Comparison</th>
-                      <th className="text-right py-2 px-3 font-semibold">p-value</th>
-                      <th className="text-right py-2 px-3 font-semibold">Cohen's d</th>
+                      <th className="text-right py-2 px-3 font-semibold">Holm-adjusted p</th>
+                      <th className="text-right py-2 px-3 font-semibold">Paired d_z</th>
                       <th className="text-right py-2 px-3 font-semibold">ARI diff</th>
-                      <th className="text-center py-2 px-3 font-semibold">Sig.</th>
+                      <th className="text-center py-2 px-3 font-semibold">H1 support</th>
                     </tr>
                   </thead>
                   <tbody>
                     {Object.entries(benchSignificance).map(([scenario, comps]) =>
-                      Object.entries(comps).map(([comp, metrics]) => {
+                      Object.entries(comps).filter(([comp]) => comp === "agribrain_vs_no_context").map(([comp, metrics]) => {
                         const ari = metrics.ari || {};
-                        const sig = (ari.p_value || 1) < 0.05;
+                        const evidence = canonicalH1Evidence(ari);
+                        const pairedDz = Number(ari.cohens_dz);
+                        const meanDiff = Number(ari.mean_diff);
                         return (
                           <tr key={`${scenario}-${comp}`} className="border-b border-muted/50 hover:bg-muted/30">
                             <td className="py-1.5 px-3 font-mono text-xs">{scenario}</td>
                             <td className="py-1.5 px-3 text-xs">{comp.replace("agribrain_vs_", "vs ")}</td>
-                            <td className="py-1.5 px-3 text-right font-mono text-xs">{(ari.p_value || 1).toFixed(4)}</td>
-                            <td className="py-1.5 px-3 text-right font-mono text-xs">{(ari.cohens_d || 0).toFixed(2)}</td>
-                            <td className="py-1.5 px-3 text-right font-mono text-xs">{(ari.mean_diff || 0) > 0 ? "+" : ""}{(ari.mean_diff || 0).toFixed(4)}</td>
-                            <td className="py-1.5 px-3 text-center">{sig ? <Badge variant="default" className="text-[10px] px-1.5 py-0 bg-emerald-600">p&lt;0.05</Badge> : <Badge variant="outline" className="text-[10px] px-1.5 py-0">n.s.</Badge>}</td>
+                            <td className="py-1.5 px-3 text-right font-mono text-xs">{evidence.available ? evidence.adjustedP.toFixed(4) : "Unavailable"}</td>
+                            <td className="py-1.5 px-3 text-right font-mono text-xs">{Number.isFinite(pairedDz) ? pairedDz.toFixed(2) : "Unavailable"}</td>
+                            <td className="py-1.5 px-3 text-right font-mono text-xs">{Number.isFinite(meanDiff) ? `${meanDiff > 0 ? "+" : ""}${meanDiff.toFixed(4)}` : "Unavailable"}</td>
+                            <td className="py-1.5 px-3 text-center">{evidence.supported ? <Badge variant="default" className="text-[10px] px-1.5 py-0 bg-emerald-600">Supported</Badge> : <Badge variant="outline" className="text-[10px] px-1.5 py-0">{evidence.available ? "Not supported" : "Unavailable"}</Badge>}</td>
                           </tr>
                         );
                       })
@@ -701,6 +776,10 @@ export default function AnalyticsPage() {
                   </SelectContent>
                 </Select>
               </div>
+              <CardDescription>
+                Within-scenario display scores only: best observed method = 1 and worst = 0;
+                waste and emissions are reversed so higher is favorable. Distances are not effect sizes.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-72">
@@ -723,6 +802,10 @@ export default function AnalyticsPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Method Comparison</CardTitle>
+              <CardDescription>
+                Direction-adjusted relative advantage of the first method; positive is favorable,
+                with lower waste and emissions treated as better.
+              </CardDescription>
               <div className="flex items-center gap-2 mt-2">
                 <Select value={compareA} onValueChange={setCompareA}>
                   <SelectTrigger className="w-36 h-8"><SelectValue /></SelectTrigger>
@@ -747,24 +830,24 @@ export default function AnalyticsPage() {
               <div className="space-y-3 mt-2">
                 {comparison.map((c) => (
                   <div key={c.metric} className="flex items-center justify-between">
-                    <span className="text-sm font-medium w-16">{c.metric}</span>
+                    <span className="text-sm font-medium w-36">{c.label}</span>
                     <div className="flex-1 mx-4">
                       <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                        <span>{fmt(c.a, 3)}</span>
-                        <span>{fmt(c.b, 3)}</span>
+                        <span>{Number.isFinite(c.a) ? fmt(c.a, 3) : "Unavailable"}</span>
+                        <span>{Number.isFinite(c.b) ? fmt(c.b, 3) : "Unavailable"}</span>
                       </div>
                       <div className="h-2 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all"
                           style={{
-                            width: `${Math.min(100, Math.abs(c.pctChange))}%`,
-                            backgroundColor: c.pctChange > 0 ? "#10B981" : "#D55E00",
+                            width: `${Math.min(100, Math.abs(c.advantagePct ?? 0))}%`,
+                            backgroundColor: c.advantagePct > 0 ? "#10B981" : c.advantagePct < 0 ? "#D55E00" : "#808080",
                           }}
                         />
                       </div>
                     </div>
-                    <span className={cn("text-sm font-mono font-semibold w-20 text-right", c.pctChange > 0 ? "text-emerald-600" : "text-[#D55E00]")}>
-                      {c.pctChange > 0 ? "+" : ""}{c.pctChange.toFixed(1)}%
+                    <span className={cn("text-sm font-mono font-semibold w-24 text-right", c.advantagePct > 0 ? "text-emerald-600" : c.advantagePct < 0 ? "text-[#D55E00]" : "text-muted-foreground")}>
+                      {Number.isFinite(c.advantagePct) ? `${c.advantagePct > 0 ? "+" : ""}${c.advantagePct.toFixed(1)}%` : "Unavailable"}
                     </span>
                   </div>
                 ))}
@@ -815,7 +898,7 @@ export default function AnalyticsPage() {
                 <Card className="bg-primary/5 border-primary/20">
                   <CardContent className="p-4">
                     <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                      <Award className="w-4 h-4 text-primary" /> Key Findings
+                      <Award className="w-4 h-4 text-primary" /> Displayed Evidence
                     </h4>
                     <ul className="space-y-2">
                       {scenarioObj.findings.map((f, i) => (
@@ -833,21 +916,21 @@ export default function AnalyticsPage() {
         </Card>
       </section>
 
-      {/* 8.5 Carbon Footprint */}
+      {/* 8.5 Modeled transport emissions */}
       <section>
-        <h3 className="text-lg font-semibold mb-4">Carbon Footprint & Green AI</h3>
+        <h3 className="text-lg font-semibold mb-4">Modeled Transport-Emissions Indicator</h3>
         <div className="grid lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Carbon by Scenario</CardTitle>
+              <CardTitle className="text-base">Modeled Transport-Emissions Indicator by Scenario</CardTitle>
             </CardHeader>
             <CardContent>
               <img
-                src={`${API}/results/figures/fig8_green_ai.png`}
-                alt="Carbon footprint analysis"
+                src={`${API}/results/figures/transport_emissions.png`}
+                alt="Modeled transport-emissions analysis"
                 className="w-full rounded-lg border mb-4 cursor-pointer hover:opacity-90"
                 style={{ imageRendering: "auto" }}
-                onClick={() => setLightboxImg(`${API}/results/figures/fig8_green_ai.png`)}
+                onClick={() => setLightboxImg(`${API}/results/figures/transport_emissions.png`)}
                 onError={(e) => { e.target.style.display = "none"; }}
               />
               <div className="h-48">
@@ -855,7 +938,7 @@ export default function AnalyticsPage() {
                   <BarChart data={carbonData} barGap={2}>
                     <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                     <XAxis dataKey="scenario" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} label={{ value: "kg CO₂", angle: -90, position: "insideLeft", fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} label={{ value: "Modeled kg CO2-eq proxy", angle: -90, position: "insideLeft", fontSize: 11 }} />
                     <ReTooltip content={<ChartTooltip />} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                     <Bar dataKey="Static" fill={COLORS.static} radius={[2, 2, 0, 0]} isAnimationActive={false}>
@@ -877,25 +960,25 @@ export default function AnalyticsPage() {
             <CardContent className="p-6 flex flex-col justify-center h-full">
               <div className="text-center">
                 <Leaf className="w-12 h-12 mx-auto mb-4 text-emerald-600" />
-                <h4 className="text-xl font-bold mb-2">Green AI</h4>
-                <p className="text-sm text-muted-foreground mb-4">Computational footprint analysis</p>
+                <h4 className="text-xl font-bold mb-2">Interpretation Scope</h4>
+                <p className="text-sm text-muted-foreground mb-4">Synthetic modeled kg CO2-eq proxy</p>
               </div>
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-3 rounded-lg bg-background border">
-                  <span className="text-sm">Energy per episode</span>
-                  <span className="font-mono font-bold text-emerald-600">{table1.length ? `${(288 * 0.05).toFixed(1)} J` : "..."}</span>
+                  <span className="text-sm">Definition</span>
+                  <span className="font-mono font-bold text-emerald-600">distance × factor × thermal term</span>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-lg bg-background border">
-                  <span className="text-sm">Episode duration</span>
-                  <span className="font-mono font-bold">{table1.length ? "72 hours (288 steps)" : "..."}</span>
+                  <span className="text-sm">Payload model</span>
+                  <span className="font-mono font-bold">not included</span>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-lg bg-background border">
-                  <span className="text-sm">Carbon saved vs compute</span>
-                  <span className="font-mono font-bold text-emerald-600">{table1.length ? `${Math.round(summaryKPIs.stCarbon - summaryKPIs.abCarbon)} kg CO₂` : "..."}</span>
+                  <span className="text-sm">Use</span>
+                  <span className="font-mono font-bold text-emerald-600">relative scenario comparison</span>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mt-4 text-center italic">
-                The computational cost of running AGRI-BRAIN is negligible compared to the carbon savings achieved through optimized routing.
+                This modeled kg CO2-eq quantity is not a measured lifecycle-emissions footprint.
               </p>
             </CardContent>
           </Card>
@@ -907,9 +990,9 @@ export default function AnalyticsPage() {
         <Card className="border-primary/20">
           <CardContent className="p-6 text-center">
             <FlaskConical className="w-10 h-10 mx-auto mb-3 text-primary" />
-            <h3 className="text-lg font-semibold mb-2">Run Full Simulation</h3>
+            <h3 className="text-lg font-semibold mb-2">Run One Development Seed</h3>
             <p className="text-sm text-muted-foreground mb-4 max-w-lg mx-auto">
-              Runs all 5 scenarios x 8 modes, 288 timesteps each. Generates summary CSV tables with the latest model parameters.
+              Runs all 5 scenarios × {PRIMARY_PUBLICATION_MODES.length + SECONDARY_PUBLICATION_MODES.length} modes ({PRIMARY_PUBLICATION_MODES.length} primary + {SECONDARY_PUBLICATION_MODES.length} secondary): 55 retained endpoints, 205 executed episodes, and 59,040 simulated steps. It never replaces validated publication evidence.
             </p>
             <Button size="lg" onClick={runSimulation} disabled={simRunning}>
               {simRunning ? (

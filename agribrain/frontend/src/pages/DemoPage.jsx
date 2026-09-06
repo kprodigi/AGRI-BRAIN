@@ -5,8 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
-import { cn, fmt, short, jget, jpost } from "@/lib/utils";
+import { cn, fmt, short, jpost } from "@/lib/utils";
 import { getApiBase } from "@/mvp/api.js";
+import { REGIME_BIAS_VECTOR } from "@/lib/publicationEvidence.js";
+import { isAnchoredTransactionHash, provenanceGuardState } from "@/lib/provenance.js";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,47 +26,50 @@ import {
 const TheaterPage = React.lazy(() => import("./TheaterPage.jsx"));
 
 const API = getApiBase();
+const displayToolName = (name) => name === "check_compliance"
+  ? "Operating-envelope check (legacy key: check_compliance)"
+  : name;
 
 // ── Agent profiles ──
 const AGENT_PROFILES = {
-  farm:        { label: "Farm Agent",        stage: "[0, 18) hours",     bias: [+0.08, -0.03, -0.05], mandate: "Preserve freshness, minimize post-harvest loss", icon: "🌾" },
-  processor:   { label: "Processor Agent",   stage: "[18, 36) hours",    bias: [-0.02, +0.06, -0.04], mandate: "Processing efficiency, cold chain integrity",     icon: "🏭" },
-  cooperative: { label: "Cooperative Agent",  stage: "[12, 30) overlay",  bias: [+0.00, +0.04, -0.04], mandate: "Governance coordination, equity balancing",       icon: "🤝" },
-  distributor: { label: "Distributor Agent",  stage: "[36, 54) hours",    bias: [-0.05, +0.10, -0.05], mandate: "Community redistribution, minimize food miles",   icon: "🚛" },
-  recovery:    { label: "Recovery Agent",     stage: "[54, +∞) hours",    bias: [-0.06, -0.02, +0.08], mandate: "Waste valorization via composting/feed/food bank",icon: "♻️" },
+  farm:        { label: "Farm Agent",        stage: "[0, 18) hours",     bias: [+0.12, -0.05, -0.07], objective: "Declared freshness and loss-reduction objective", icon: "🌾" },
+  processor:   { label: "Processor Agent",   stage: "[18, 36) hours",    bias: [-0.06, +0.14, -0.08], objective: "Declared processing and cold-chain objective",     icon: "🏭" },
+  cooperative: { label: "Cooperative Overlay", stage: "[12, 30) overlay",  bias: [-0.04, +0.10, -0.06], objective: "Bounded coordination and proxy-aware routing", icon: "🤝" },
+  distributor: { label: "Distributor Agent", stage: "[36, 54) hours",    bias: [-0.12, +0.28, -0.16], objective: "Declared local-redistribution objective",   icon: "🚛" },
+  recovery:    { label: "Recovery Agent",    stage: "[54, +∞) hours",    bias: [-0.12, -0.05, +0.17], objective: "Modeled recovery via composting or animal feed", icon: "♻️" },
 };
 
 const FEATURE_LABELS = [
-  { key: "compliance_severity", label: "Compliance", color: "#ef4444" },
+  { key: "compliance_severity", label: "Envelope", color: "#ef4444" },
   { key: "forecast_urgency",   label: "Forecast",   color: "#f97316" },
-  { key: "retrieval_confidence",label: "Retrieval",  color: "#3b82f6" },
-  { key: "regulatory_pressure", label: "Regulatory", color: "#a855f7" },
+  { key: "retrieval_confidence",label: "Retrieval score",  color: "#3b82f6" },
+  { key: "regulatory_pressure", label: "Guidance", color: "#a855f7" },
   { key: "recovery_saturation", label: "Recovery",   color: "#22c55e" },
 ];
 
 const SCENARIOS = [
   { id: "baseline",         label: "Baseline",         desc: "Normal operating conditions" },
-  { id: "heatwave",         label: "Heatwave",         desc: "+20°C ramp, accelerated spoilage" },
+  { id: "heatwave",         label: "Heatwave",         desc: "Exponential thermal approach with humidity rise and recovery tail" },
   { id: "overproduction",   label: "Overproduction",   desc: "2.5× inventory surge" },
-  { id: "cyber_outage",     label: "Cyber Outage",     desc: "Demand drops to 15%, refrigeration degradation" },
+  { id: "cyber_outage",     label: "Cyber Outage",     desc: "MCP unavailable from hour 24; processor-stage decisions continue while demand drops to 15%" },
   { id: "adaptive_pricing", label: "Adaptive Pricing", desc: "Demand oscillation with noise" },
 ];
 
 const ROLES = ["farm", "processor", "cooperative", "distributor", "recovery"];
 
 const PHASES = [
-  { icon: Thermometer, label: "IoT Sensors",          color: "border-slate-400",   bg: "bg-slate-500/10",   desc: "Extract raw observation from IoT sensor array (temperature, humidity, inventory, shelf-life)" },
-  { icon: Zap,         label: "PINN Spoilage Model",  color: "border-rose-500",    bg: "bg-rose-500/10",    desc: "Arrhenius-Baranyi first-order ODE: dC/dt = −k(T,RH)·C with lag phase λ = 12 h" },
-  { icon: TrendingUp,  label: "Demand Forecast",      color: "border-amber-500",   bg: "bg-amber-500/10",   desc: "LSTM demand prediction (16 hidden, truncated BPTT) + Bollinger band regime detection" },
-  { icon: Network,     label: "Agent Dispatch",       color: "border-violet-500",  bg: "bg-violet-500/10",  desc: "AgentCoordinator selects role-specific agent based on hours since harvest" },
-  { icon: Wrench,      label: "MCP Tool Workflow",    color: "border-orange-500",  bg: "bg-orange-500/10",  desc: "JSON-RPC 2.0 tool dispatch: compliance, forecast, SLCA, chain query, footprint" },
-  { icon: BookOpen,    label: "piRAG Retrieval",      color: "border-blue-500",    bg: "bg-blue-500/10",    desc: "Physics-informed BM25+TF-IDF hybrid retrieval (k=4) with Arrhenius-based reranking" },
-  { icon: Layers,      label: "Context Features (ψ)", color: "border-teal-500",    bg: "bg-teal-500/10",    desc: "Extract 5D institutional context vector from MCP + piRAG outputs (compliance, forecast urgency, retrieval confidence, regulatory pressure, recovery saturation) → Θ_context × ψ → logit modifier" },
-  { icon: Brain,       label: "Policy Network",       color: "border-purple-500",  bg: "bg-purple-500/10",  desc: "Softmax contextual policy: logits = Θ×φ + γ·τ + SLCA bonus + role bias + context modifier" },
-  { icon: CheckCircle2,label: "Action Selection",     color: "border-emerald-500", bg: "bg-emerald-500/10", desc: "Softmax π(a|s) sampling from adjusted probability distribution over 3 routing actions" },
-  { icon: Shield,      label: "SLCA & Impact",        color: "border-cyan-500",    bg: "bg-cyan-500/10",    desc: "4-pillar Social Life-Cycle Assessment (Carbon, Labor, Resilience, Transparency) + footprint" },
-  { icon: FileText,    label: "Causal Explanation",   color: "border-teal-600",    bg: "bg-teal-600/10",    desc: "BECAUSE narrative + WITHOUT context ablation (psi := 0) with [KB:] citations and keyword extraction" },
-  { icon: GitBranch,   label: "Provenance & Chain",   color: "border-indigo-500",  bg: "bg-indigo-500/10",  desc: "SHA-256 evidence hashing → Merkle tree root → on-chain anchor via Hardhat/Solidity" },
+  { icon: Thermometer, label: "Synthetic Benchmark Inputs", color: "border-slate-400", bg: "bg-slate-500/10", desc: "Read the current replayed benchmark state (temperature, humidity, inventory, shelf-life)" },
+  { icon: Zap,         label: "Mechanistic Spoilage Model", color: "border-rose-500", bg: "bg-rose-500/10", desc: "Arrhenius first-order ODE with a declared rational lag factor" },
+  { icon: TrendingUp,  label: "Demand Forecast",      color: "border-amber-500",   bg: "bg-amber-500/10",   desc: "Validation-selected Holt-linear demand forecast + Bollinger band regime detection" },
+  { icon: Network,     label: "Role Profile",         color: "border-violet-500",  bg: "bg-violet-500/10",  desc: "Interactive illustration applies the explicitly selected role profile; publication simulations use hour-based AgentCoordinator dispatch" },
+  { icon: Wrench,      label: "MCP Tool Workflow",    color: "border-orange-500",  bg: "bg-orange-500/10",  desc: "JSON-RPC 2.0 dispatch: operating-envelope check, forecast, social-performance-proxy lookup, local trace query, footprint proxy" },
+  { icon: BookOpen,    label: "Institutional Retrieval", color: "border-blue-500", bg: "bg-blue-500/10", desc: "BM25+TF-IDF retrieval (k=4) with mechanistic Arrhenius-aware query expansion and reranking" },
+  { icon: Layers,      label: "Context Features (ψ)", color: "border-teal-500",    bg: "bg-teal-500/10",    desc: "Extract a 5D context vector from MCP and retrieval outputs (benchmark-envelope severity, modeled-forecast signal, normalized retrieval-score signal, source-labelled guidance flag, recovery-history fraction) → Θ_context × ψ → logit modifier" },
+  { icon: Brain,       label: "Policy Network",       color: "border-purple-500",  bg: "bg-purple-500/10",  desc: "Interactive role-selected policy: logits = Θ×φ + bτ·τ + social-proxy terms + role bias + context modifier; peer-overlay behavior is evaluated only in the batch simulator" },
+  { icon: CheckCircle2,label: "Action Selection",     color: "border-emerald-500", bg: "bg-emerald-500/10", desc: "Deterministic argmax of the displayed softmax distribution for this interactive illustration; publication episodes use stochastic categorical sampling" },
+  { icon: Shield,      label: "Social-Performance Proxy", color: "border-cyan-500", bg: "bg-cyan-500/10", desc: "Inverse modeled-emissions term plus labour-practice, community-network, and price-information priors; not measured social outcomes" },
+  { icon: FileText,    label: "Policy-Trace Explanation", color: "border-teal-600", bg: "bg-teal-600/10", desc: "Recorded context-to-logit calculation and context-ablation delta, with [KB:] references" },
+  { icon: GitBranch,   label: "Provenance & Optional Chain Log", color: "border-indigo-500", bg: "bg-indigo-500/10", desc: "SHA-256 evidence hashing → local Merkle commitment; the separate optional live on-chain transaction records decision fields and does not anchor that root" },
 ];
 
 // ── Helpers ──
@@ -110,10 +115,10 @@ function renderPhase(idx, m) {
   const profile = AGENT_PROFILES[m.role] || AGENT_PROFILES.farm;
 
   switch (idx) {
-    // 1. IoT Sensors
+    // 1. Synthetic benchmark inputs
     case 0: return (
       <div className="grid grid-cols-2 gap-3">
-        <IOCard label="Sensor Readings" className="bg-slate-50 dark:bg-slate-900/30">
+        <IOCard label="Benchmark Inputs" className="bg-slate-50 dark:bg-slate-900/30">
           <Kv k="Temperature" v={`${fmt(comp.readings?.temperature ?? 3.79, 2)} °C`} mono />
           <Kv k="Humidity" v={`${fmt(comp.readings?.humidity ?? 90, 1)} %`} mono />
           <Kv k="Shelf Remaining" v={fmt(m.shelf_left, 4)} mono />
@@ -139,17 +144,19 @@ function renderPhase(idx, m) {
       </div>
     );
 
-    // 2. PINN Spoilage
+    // 2. Mechanistic spoilage model
     case 1: return (
       <div className="space-y-3">
-        <IOCard label="Arrhenius-Baranyi ODE" className="bg-rose-50 dark:bg-rose-950/20">
+        <IOCard label="Arrhenius-lag ODE" className="bg-rose-50 dark:bg-rose-950/20">
           <pre className="text-[11px] font-mono text-rose-700 dark:text-rose-300 whitespace-pre-wrap leading-relaxed">
-{`dC/dt = −k_eff(T, RH) · C
-k(T) = k_ref · exp[Ea/R · (1/T_ref − 1/T)] · (1 + β·RH)
+{`dC/dt = −k_eff(t, T, RH) · C
+k_eff(t, T, RH) = k(T, RH) · α(t)
+k(T, RH) = k_ref · exp[Ea/R · (1/T_ref − 1/T)] · (1 + β·a_w)
+a_w ≈ RH/100     α(t) = t/(t + λ_lag)
 
 k_ref  = 0.0021 h⁻¹    Ea/R = 8000 K
 T_ref  = 277.15 K (4°C)  β    = 0.25
-λ_lag  = 12.0 h (Baranyi)`}</pre>
+λ_lag  = 12.0 h (declared rational lag)`}</pre>
         </IOCard>
         <div className="grid grid-cols-2 gap-3">
           <IOCard label="Input" className="border-dashed">
@@ -168,9 +175,10 @@ T_ref  = 277.15 K (4°C)  β    = 0.25
     case 2: return (
       <div className="grid grid-cols-2 gap-3">
         <IOCard label="Forecast Model" className="border-dashed">
-          <Kv k="Method" v={(m.demand_forecast?.method || "lstm").toUpperCase()} />
+          <Kv k="Method" v={(m.demand_forecast?.method || "holt_linear").toUpperCase()} />
           <Kv k="Bollinger z" v={fmt(m.regime?.bollinger_z, 3)} mono />
-          <Kv k="Regime τ" v={fmt(m.regime?.tau, 1)} mono />
+          <Kv k="Regime state τ" v={fmt(m.regime?.tau, 1)} mono />
+          <Kv k="bτ [CC, LR, Rec]" v={`[${REGIME_BIAS_VECTOR.join(", ")}]`} mono />
         </IOCard>
         <IOCard label="Prediction" className="border-amber-500/30">
           <Kv k="Demand ŷ" v={`${fmt(m.demand_forecast?.y_hat, 2)} units`} mono />
@@ -187,7 +195,7 @@ T_ref  = 277.15 K (4°C)  β    = 0.25
           <span className="text-3xl">{profile.icon}</span>
           <div>
             <p className="font-semibold">{profile.label}</p>
-            <p className="text-xs text-muted-foreground">{profile.mandate}</p>
+            <p className="text-xs text-muted-foreground">{profile.objective}</p>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-3">
@@ -220,13 +228,15 @@ T_ref  = 277.15 K (4°C)  β    = 0.25
             <CardContent className="p-2.5">
               <div className="flex items-center gap-2 mb-1">
                 <Wrench className="w-3 h-3 text-orange-500" />
-                <span className="font-mono text-xs font-semibold">{tool}</span>
+                <span className="font-mono text-xs font-semibold">{displayToolName(tool)}</span>
                 <Badge className="bg-emerald-500/10 text-emerald-600 border-0 text-[8px] ml-auto">success</Badge>
               </div>
               {tool === "check_compliance" && comp.compliant !== undefined && (
                 <div className="flex items-center gap-2 mt-1">
                   <Badge className={comp.compliant ? "bg-emerald-500/10 text-emerald-600 border-0 text-[9px]" : "bg-red-500/10 text-red-600 border-0 text-[9px]"}>
-                    {comp.compliant ? "✓ Compliant" : "✗ Violation"}
+                    {comp.compliant
+                      ? "Within declared synthetic benchmark envelope"
+                      : "Outside declared synthetic benchmark envelope"}
                   </Badge>
                   <span className="text-[10px] text-muted-foreground">
                     T={comp.readings?.temperature}°C, RH={comp.readings?.humidity}%, max={comp.thresholds?.temp_max_c}°C
@@ -239,14 +249,14 @@ T_ref  = 277.15 K (4°C)  β    = 0.25
       </div>
     );
 
-    // 6. piRAG Retrieval
+    // 6. Institutional retrieval
     case 5: return (
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <IOCard label="Retrieval Config" className="border-dashed">
             <Kv k="Method" v="BM25 + TF-IDF Hybrid" />
             <Kv k="Top-k" v="4" />
-            <Kv k="Reranking" v="Physics-Informed" />
+            <Kv k="Reranking" v="Mechanistic" />
             <Kv k="KB Size" v="20 documents" />
           </IOCard>
           <IOCard label="Top Result" className="border-blue-500/30">
@@ -282,7 +292,7 @@ T_ref  = 277.15 K (4°C)  β    = 0.25
             </ResponsiveContainer>
           </div>
           <div className="space-y-1.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">ψ = Θ_context × [features]</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">ψ = [features]ᵀ; Δz_context = separated, gated, clipped map of Θ_context ψ</p>
             {FEATURE_LABELS.map(f => (
               <div key={f.key} className="flex items-center gap-2 text-xs">
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: f.color }} />
@@ -310,9 +320,9 @@ T_ref  = 277.15 K (4°C)  β    = 0.25
         <div className="space-y-3">
           <IOCard label="Policy Computation" className="bg-purple-50 dark:bg-purple-950/20">
             <pre className="text-[10px] font-mono text-purple-700 dark:text-purple-300 whitespace-pre-wrap leading-relaxed">
-{`logits = Θ(3×10) × φ(10D) + γ·τ + SLCA_bonus + role_bias + Δz
-logits += context_modifier    ← from Θ_context × ψ
-π(a|s) = softmax(logits)`}</pre>
+{`logits = Θ(3×10) × φ(10D) + bτ·τ + social_performance_terms + role_bias
+logits += context_modifier    ← clipped, channel-separated map of ψ
+π(a|s) = softmax(logits); interactive action = argmax π`}</pre>
           </IOCard>
           <div className="space-y-1.5">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Context Modifier → Logit Shift</p>
@@ -373,13 +383,13 @@ logits += context_modifier    ← from Θ_context × ψ
       );
     }
 
-    // 10. SLCA & Impact
+    // 10. Social-performance and modeled impacts
     case 9: {
       const pillars = [
-        { k: "Carbon",       v: slca.carbon,       color: "#059669" },
-        { k: "Labor",        v: slca.labor,         color: "#2563eb" },
-        { k: "Resilience",   v: slca.resilience,    color: "#7c3aed" },
-        { k: "Transparency", v: slca.transparency,  color: "#d97706" },
+        { k: "Inverse modeled-emissions term", v: slca.carbon, color: "#059669" },
+        { k: "Labour-practice prior",          v: slca.labor, color: "#2563eb" },
+        { k: "Community-network prior",        v: slca.resilience, color: "#7c3aed" },
+        { k: "Price-information prior",         v: slca.transparency, color: "#d97706" },
       ];
       return (
         <div className="space-y-3">
@@ -393,31 +403,28 @@ logits += context_modifier    ← from Θ_context × ψ
           </div>
           <Separator />
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <IOCard label="SLCA Composite"><p className="text-center font-bold text-lg text-teal-600">{fmt(m.slca, 3)}</p></IOCard>
-            <IOCard label="Carbon"><p className="text-center font-bold text-lg">{fmt(m.carbon_kg, 1)} kg</p></IOCard>
-            <IOCard label="Waste Rate"><p className="text-center font-bold text-lg">{fmt(m.waste * 100, 2)}%</p></IOCard>
-            <IOCard label="Circular Econ"><p className="text-center font-bold text-lg">{fmt(m.circular_economy_score, 2)}</p></IOCard>
+            <IOCard label="Social-Performance Proxy"><p className="text-center font-bold text-lg text-teal-600">{fmt(m.slca, 3)}</p></IOCard>
+            <IOCard label="Transport-Emissions Indicator"><p className="text-center font-bold text-lg">{fmt(m.carbon_kg, 1)} kg CO2-eq</p></IOCard>
+            <IOCard label="Waste Fraction"><p className="text-center font-bold text-lg">{fmt(m.waste * 100, 2)}%</p></IOCard>
+            <IOCard label="Route-Circularity Indicator"><p className="text-center font-bold text-lg">{fmt(m.circular_economy_score, 2)}</p></IOCard>
           </div>
         </div>
       );
     }
 
-    // 11. Causal Explanation
+    // 11. Policy-trace explanation
     case 10: {
-      const text = ex.causal_text || ex.summary || "";
+      const text = ex.policy_trace_text || ex.causal_text || ex.summary || "";
       const firstPara = text.split("\n\n").slice(0, 2).join("\n\n");
-      const renderHighlighted = (raw) => raw.split(/(BECAUSE|WITHOUT|AND)/g).map((p, i) =>
-        p === "BECAUSE" ? <span key={i} className="font-bold text-teal-600 dark:text-teal-400">BECAUSE</span> :
-        p === "WITHOUT" ? <span key={i} className="font-bold text-amber-600 dark:text-amber-400">WITHOUT</span> :
-        p === "AND" ? <span key={i} className="font-semibold">AND</span> :
-        <span key={i}>{p.split(/(\[KB:[^\]]+\])/g).map((s, j) =>
-          s.startsWith("[KB:") ? <Badge key={`${i}-${j}`} variant="outline" className="mx-0.5 text-[9px] font-mono">{s}</Badge> : <span key={`${i}-${j}`}>{s}</span>
-        )}</span>
+      const renderTrace = (raw) => raw.split(/(\[KB:[^\]]+\])/g).map((part, i) =>
+        part.startsWith("[KB:")
+          ? <Badge key={i} variant="outline" className="mx-0.5 text-[9px] font-mono">{part}</Badge>
+          : <span key={i}>{part}</span>
       );
       return (
         <div className="space-y-3">
           <div className="text-xs leading-relaxed text-muted-foreground">
-            {firstPara.split("\n\n").map((para, i) => <p key={i} className={i > 0 ? "mt-2" : ""}>{renderHighlighted(para)}</p>)}
+            {firstPara.split("\n\n").map((para, i) => <p key={i} className={i > 0 ? "mt-2" : ""}>{renderTrace(para)}</p>)}
           </div>
           {ctf.probs_with_context && (
             <div className="grid grid-cols-2 gap-3">
@@ -426,7 +433,7 @@ logits += context_modifier    ← from Θ_context × ψ
                   <Kv key={a} k={a.replace("_", " ")} v={`${fmt((ctf.probs_with_context?.[i] ?? 0) * 100, 1)}%`} mono />
                 ))}
               </IOCard>
-              <IOCard label="WITHOUT Context" className="border-amber-500/30">
+              <IOCard label="Context modifier zeroed" className="border-amber-500/30">
                 {["cold_chain", "local_redistribute", "recovery"].map((a, i) => (
                   <Kv key={a} k={a.replace("_", " ")} v={`${fmt((ctf.probs_without_context?.[i] ?? 0) * 100, 1)}%`} mono />
                 ))}
@@ -437,25 +444,31 @@ logits += context_modifier    ← from Θ_context × ψ
       );
     }
 
-    // 12. Provenance & Blockchain
+    // 12. Provenance and separate optional on-chain decision record
     case 11: {
       const hashes = prov.evidence_hashes || [];
       return (
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2">
-            {prov.guards_passed !== false && <Badge className="bg-emerald-500/10 text-emerald-600 border-0 text-[10px]">Guards Passed</Badge>}
+            {provenanceGuardState(prov.guards_passed) === "passed" ? (
+              <Badge className="bg-emerald-500/10 text-emerald-600 border-0 text-[10px]">Guards Passed</Badge>
+            ) : provenanceGuardState(prov.guards_passed) === "failed" ? (
+              <Badge className="bg-amber-500/10 text-amber-600 border-0 text-[10px]">Guards Failed</Badge>
+            ) : (
+              <Badge className="bg-slate-500/10 text-slate-600 border-0 text-[10px]">Guards Not Evaluated</Badge>
+            )}
             <Badge className="bg-blue-500/10 text-blue-600 border-0 text-[10px]">{hashes.length} evidence items</Badge>
-            {/* Strict anchored check: only badge when tx_hash is a real
-                0x-prefixed 32-byte string. null = not attempted, "0x0"
-                = legacy sentinel from older runs (treated as not anchored). */}
-            {m.tx_hash && m.tx_hash !== "0x0" && /^0x[0-9a-fA-F]{2,}$/.test(m.tx_hash) && (
+            {/* Show a separate on-chain decision record only when tx_hash is
+                a real 0x-prefixed 32-byte string. null = not submitted and
+                "0x0" is a legacy sentinel from older runs. */}
+            {isAnchoredTransactionHash(m.tx_hash) && (
               <Badge className="bg-indigo-500/10 text-indigo-600 border-0 text-[10px]">
-                On-chain anchored
+                Optional on-chain decision record
               </Badge>
             )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <IOCard label="Merkle Root" className="border-indigo-500/30">
+            <IOCard label="Local Merkle Commitment" className="border-indigo-500/30">
               {prov.merkle_root ? (
                 <button onClick={() => { navigator.clipboard.writeText(prov.merkle_root); toast.success("Copied"); }}
                   className="font-mono text-[10px] text-muted-foreground hover:text-primary break-all">
@@ -463,14 +476,14 @@ logits += context_modifier    ← from Θ_context × ψ
                 </button>
               ) : <span className="text-xs text-muted-foreground">—</span>}
             </IOCard>
-            <IOCard label="Blockchain Tx" className="border-indigo-500/30">
+            <IOCard label="Optional On-Chain Decision Tx" className="border-indigo-500/30">
               <Kv
                 k="Hash"
                 v={
-                  m.tx_hash && m.tx_hash !== "0x0" && /^0x[0-9a-fA-F]{2,}$/.test(m.tx_hash)
+                  isAnchoredTransactionHash(m.tx_hash)
                     ? short(m.tx_hash)
                     : (m.tx_hash === null || m.tx_hash === undefined
-                       ? "(no anchor)"
+                       ? "(no on-chain decision record)"
                        : "0x0 (local sentinel)")
                 }
                 mono
@@ -507,54 +520,39 @@ export default function DemoPage() {
     setShowMemo(false);
 
     try {
-      // 1. Load data (best effort — may already be loaded)
-      await jpost(API, "/case/load").catch(() => {});
+      // Fail closed: a memo is displayed only when this exact scenario request
+      // succeeds. Cached decisions are never substituted.
+      await jpost(API, "/case/load");
 
-      // 2. Apply scenario if non-baseline
-      if (scenario !== "baseline") {
-        await jpost(API, "/scenarios/run", { name: scenario, intensity: 1.0 }).catch(() => {});
+      const applied = scenario === "baseline"
+        ? await jpost(API, "/scenarios/reset")
+        : await jpost(API, "/scenarios/run", { name: scenario, intensity: 1.0 });
+      if (!applied?.ok) {
+        throw new Error(`scenario ${scenario} was not applied`);
       }
 
-      // 3. Take decision
-      const res = await jpost(API, "/decide", { agent_id: role, role });
+      // Explicit deterministic argmax for this development-only illustration.
+      const res = await jpost(API, "/decide", {
+        agent_id: role, role, mode: "agribrain", deterministic: true,
+      });
       const m = res.memo || res;
-      if (!m || !m.action) {
-        // Fallback: try fetching latest existing decision
-        const fallback = await jget(API, "/decisions").catch(() => null);
-        const decs = fallback?.decisions || fallback || [];
-        if (decs.length > 0) {
-          setMemo(decs[0]);
-        } else {
-          toast.error("No decision data. Make sure the backend is running and data is loaded.");
-          setRunning(false);
-          return;
-        }
-      } else {
-        setMemo(m);
+      if (!m?.action || m.scenario !== scenario
+        || m.evidence_status !== "development_only"
+        || m.publication_evidence !== false) {
+        throw new Error("decision response does not bind the selected scenario and development-only contract");
       }
 
-      // Reset scenario
-      if (scenario !== "baseline") {
-        await jpost(API, "/scenarios/reset").catch(() => {});
+      const reset = await jpost(API, "/scenarios/reset");
+      if (!reset?.ok) {
+        throw new Error("scenario cleanup failed");
       }
+      setMemo(m);
     } catch (e) {
-      // Last resort: try to use cached decisions
-      try {
-        const fallback = await jget(API, "/decisions");
-        const decs = fallback?.decisions || fallback || [];
-        if (decs.length > 0) {
-          setMemo(decs[0]);
-          toast.info("Using cached decision data");
-        } else {
-          toast.error(`Demo failed: ${e.message}. Check backend at ${API}`);
-          setRunning(false);
-          return;
-        }
-      } catch {
-        toast.error(`Cannot reach backend at ${API}. Is it running on port 8100?`);
-        setRunning(false);
-        return;
-      }
+      setMemo(null);
+      await jpost(API, "/scenarios/reset").catch(() => {});
+      toast.error(`Demo failed without fallback data: ${e.message}. Check backend at ${API}`);
+      setRunning(false);
+      return;
     }
 
     // 4. Animate through phases
@@ -585,17 +583,17 @@ export default function DemoPage() {
           <h1 className="text-2xl font-bold">System Demo</h1>
         </div>
         <p className="text-sm text-muted-foreground">
-          Interactive walkthrough of the complete AGRI-BRAIN decision pipeline — from IoT sensors to blockchain provenance
+          Development-only role-selected deterministic walkthrough. It is not a publication episode, peer-overlay execution, or benchmark result.
         </p>
       </motion.div>
 
       <Separator />
 
-      {/* Tabs: System Walkthrough + Multi-Agent Run */}
+      {/* Tabs: one role-selected step + independent role-profile illustrations */}
       <Tabs defaultValue="pipeline">
         <TabsList className="w-full justify-start">
           <TabsTrigger value="pipeline" className="flex items-center gap-1.5"><Network className="w-3.5 h-3.5" /> System Walkthrough</TabsTrigger>
-          <TabsTrigger value="theater" className="flex items-center gap-1.5"><MessageCircle className="w-3.5 h-3.5" /> Multi-Agent Run</TabsTrigger>
+          <TabsTrigger value="theater" className="flex items-center gap-1.5"><MessageCircle className="w-3.5 h-3.5" /> Independent Role Profiles</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pipeline">
@@ -733,11 +731,11 @@ export default function DemoPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                   {[
                     { label: "ARI", value: fmt(ari, 3), color: "text-teal-600" },
-                    { label: "SLCA", value: fmt(memo.slca, 3), color: "text-blue-600" },
-                    { label: "Carbon", value: `${fmt(memo.carbon_kg, 1)} kg`, color: "text-amber-600" },
-                    { label: "Waste", value: `${fmt(memo.waste * 100, 2)}%`, color: "text-red-500" },
+                    { label: "Social-performance proxy", value: fmt(memo.slca, 3), color: "text-blue-600" },
+                    { label: "Modeled emissions indicator", value: `${fmt(memo.carbon_kg, 1)} kg CO2-eq`, color: "text-amber-600" },
+                    { label: "Waste fraction", value: `${fmt(memo.waste * 100, 2)}%`, color: "text-red-500" },
                     { label: "Reward", value: fmt(memo.reward_decomposition?.total, 3), color: "text-emerald-600" },
-                    { label: "Circular", value: fmt(memo.circular_economy_score, 2), color: "text-purple-600" },
+                    { label: "Route-circularity indicator", value: fmt(memo.circular_economy_score, 2), color: "text-purple-600" },
                   ].map(kpi => (
                     <div key={kpi.label} className="text-center rounded-lg bg-muted/30 p-3">
                       <p className="text-[10px] text-muted-foreground uppercase">{kpi.label}</p>

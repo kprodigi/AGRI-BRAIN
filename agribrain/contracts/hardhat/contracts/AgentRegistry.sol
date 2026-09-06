@@ -2,12 +2,9 @@
 pragma solidity ^0.8.28;
 
 /// @title AgentRegistry - Supply chain agent identity and capability registry
-/// @notice Registers agents (farm, processor, cooperative, distributor, recovery) with their
-///         roles and metadata. Active status controls participation in the multi-agent
-///         decision system. Registration is gated by an existing operator-tier agent
-///         (or the contract owner during bootstrap) to prevent Sybil capture of the
-///         AgriDAO quorum, addressing the previous risk that any address
-///         could self-register and immediately vote.
+/// @notice Optional local research prototype for address-to-role records.
+///         Local Hardhat tests cover the implemented admission checks; this
+///         contract is not a verified identity, Sybil-resistance, or deployment system.
 contract AgentRegistry {
     struct Agent {
         bytes32 id;
@@ -18,8 +15,7 @@ contract AgentRegistry {
 
     address public owner;
     mapping(address => Agent) public agents;
-    /// @notice Roles permitted to admit new agents. Set true during deploy.
-    /// `cooperative` is the canonical operator tier; the owner can grant to others.
+    /// @notice Prototype roles permitted to admit new records.
     mapping(string => bool) public adminRole;
 
     event Registered(address indexed agent, bytes32 id, string role, string meta);
@@ -80,8 +76,7 @@ contract AgentRegistry {
         _register(account, id, role, meta);
     }
 
-    /// @notice Sponsored registration: an existing active agent with an admin
-    /// role admits a new agent. This is the production path.
+    /// @notice Sponsored registration in the local prototype.
     function sponsorRegister(
         address account,
         bytes32 id,

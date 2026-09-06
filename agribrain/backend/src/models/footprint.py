@@ -1,51 +1,65 @@
-"""
-Green AI footprint meter.
+"""Activity-based Green-AI estimator with an explicit system boundary.
 
-Tracks cumulative energy (Joules) and water (Litres) consumed per inference
-step so the cost of running the decision engine is transparent.
+The estimator is not hardware telemetry. Time-based quantities multiply the
+measured decision-path wall time supplied by the caller by declared nominal
+rates. Historical per-step constants are retained only as separately named
+proxies; they are never reported as elapsed-time estimates.
 
-Default per-step estimates are based on published benchmarks for lightweight
-ML inference on CPU/edge hardware:
+Default declared assumptions:
 
-    energy_per_step_J  = 0.05 J   (~50 mJ per forward pass)
-        Based on Strubell et al. (2019) extrapolation for single-inference
-        neural network forward passes on CPU. A full BERT inference is
-        ~0.6 J; our lightweight softmax policy (6-feature, 3-action) is
-        roughly 12x cheaper.
-        Ref: Strubell, E., Ganesh, A., & McCallum, A. (2019). Energy and
-        Policy Considerations for Deep Learning in NLP. ACL 2019.
+``assumed_active_power_W = 10``
+    Nominal active CPU/edge power used to estimate energy from elapsed seconds.
 
-    water_per_step_L   = 1.8e-6 L (cooling water per server-second)
-        Based on Patterson et al. (2021) estimates for Google data center
-        cooling: ~3.8 L/kWh. At 0.05 J/step and typical server efficiency,
-        this corresponds to ~1.8 µL per inference step.
-        Ref: Patterson, D., et al. (2021). Carbon Emissions and Large
-        Neural Network Training. arXiv:2104.10350.
-        Ref: Li, P., Yang, J., Islam, M.A. & Ren, S. (2023). Making AI
-        less thirsty. arXiv:2304.03271.
+``water_per_server_second_L = 1.8e-6``
+    Nominal cooling-water rate used to estimate water from elapsed seconds.
 
-    Additional references:
-        - Schwartz et al. (2020). Green AI. Communications of the ACM.
-        - Henderson et al. (2020). Towards the Systematic Reporting of
-          the Energy and Carbon Footprints of Machine Learning. JMLR.
+``energy_per_step_proxy_J = 0.05`` and
+``water_per_step_proxy_L = 1.8e-6``
+    Legacy fixed-step proxies retained for sensitivity/backward compatibility.
+    The caller must declare what one proxy step represents. Output labels
+    always include ``per_step_proxy`` so these cannot be confused with
+    measured-time estimates or with counted hardware forward passes.
 """
 from __future__ import annotations
 
 import threading
 from dataclasses import dataclass, field
-from typing import Dict
+from math import isfinite
+from typing import Any, Dict
+
+
+DEFAULT_ASSUMED_ACTIVE_POWER_W: float = 10.0
+DEFAULT_WATER_RATE_L_PER_SERVER_SECOND: float = 1.8e-6
+DEFAULT_ENERGY_PER_PROXY_STEP_J: float = 0.05
+DEFAULT_WATER_PER_PROXY_STEP_L: float = 1.8e-6
 
 
 @dataclass
 class FootprintMeter:
-    """Session-scoped cumulative Green-AI meter."""
+    """Session-scoped activity estimator; not direct resource metering."""
 
-    energy_per_step_J: float = 0.05
-    water_per_step_L: float = 1.8e-6
+    assumed_active_power_W: float = DEFAULT_ASSUMED_ACTIVE_POWER_W
+    water_per_server_second_L: float = (
+        DEFAULT_WATER_RATE_L_PER_SERVER_SECOND
+    )
+    measurement_scope: str = "caller-supplied timed operation wall time"
+    proxy_step_unit: str = "caller-declared proxy activity unit"
+    # Explicitly named proxy coefficients. They do not feed the elapsed-time
+    # estimates below.
+    energy_per_step_proxy_J: float = DEFAULT_ENERGY_PER_PROXY_STEP_J
+    water_per_step_proxy_L: float = DEFAULT_WATER_PER_PROXY_STEP_L
 
     _total_energy_J: float = field(default=0.0, init=False, repr=False)
     _total_water_L: float = field(default=0.0, init=False, repr=False)
+    _total_elapsed_seconds: float = field(default=0.0, init=False, repr=False)
+    _total_energy_per_step_proxy_J: float = field(
+        default=0.0, init=False, repr=False,
+    )
+    _total_water_per_step_proxy_L: float = field(
+        default=0.0, init=False, repr=False,
+    )
     _step_count: int = field(default=0, init=False, repr=False)
+    _timed_call_count: int = field(default=0, init=False, repr=False)
     _lock: threading.Lock = field(default_factory=threading.Lock, init=False, repr=False)
 
     # -- public API --------------------------------------------------------
@@ -53,53 +67,156 @@ class FootprintMeter:
     def compute_footprint(
         self,
         steps: int = 1,
+        elapsed_seconds: float | None = None,
+        active_power_override_W: float | None = None,
+        water_rate_override_L_per_second: float | None = None,
         energy_override_J: float | None = None,
         water_override_L: float | None = None,
-    ) -> Dict[str, float]:
-        """Record *steps* inference steps and return per-call + cumulative totals.
+    ) -> Dict[str, Any]:
+        """Record decision activity and return estimates plus named proxies.
 
         Parameters
         ----------
-        steps : number of inference forward passes in this call.
-        energy_override_J : override the default energy-per-step (J).
-        water_override_L  : override the default water-per-step (L).
+        steps : number of caller-declared proxy activity units in this call.
+            The benchmark declares one unit per standardized routing decision;
+            the meter does not infer or measure neural forward-pass counts.
+        elapsed_seconds : measured wall time for the declared decision scope.
+            When omitted, time-based energy and water are unavailable; only
+            explicitly labelled per-step proxies are recorded.
+        active_power_override_W : nominal power rate for this timed call.
+        water_rate_override_L_per_second : nominal water rate for this timed
+            call.
+        energy_override_J : legacy override for the energy-per-step proxy.
+        water_override_L : legacy override for the water-per-step proxy.
 
         Returns
         -------
-        dict with per-call and cumulative metrics.
+        dict with per-call and cumulative estimates, measurement scope, and
+        explicitly labelled per-step proxies.
         """
-        e_step = energy_override_J if energy_override_J is not None else self.energy_per_step_J
-        w_step = water_override_L if water_override_L is not None else self.water_per_step_L
+        if isinstance(steps, bool) or int(steps) != steps or int(steps) < 0:
+            raise ValueError("steps must be a non-negative integer")
+        steps = int(steps)
+        if elapsed_seconds is not None:
+            elapsed_seconds = float(elapsed_seconds)
+            if not isfinite(elapsed_seconds) or elapsed_seconds < 0.0:
+                raise ValueError("elapsed_seconds must be finite and non-negative")
 
-        # Activity-based energy and water footprint (Strubell et al., 2019;
-        # Patterson et al., 2021): E = activity * EF per inference step
-        call_energy = e_step * steps
-        call_water = w_step * steps
+        active_power = (
+            self.assumed_active_power_W
+            if active_power_override_W is None
+            else float(active_power_override_W)
+        )
+        water_rate = (
+            self.water_per_server_second_L
+            if water_rate_override_L_per_second is None
+            else float(water_rate_override_L_per_second)
+        )
+        if not isfinite(active_power) or active_power < 0.0:
+            raise ValueError("active power must be finite and non-negative")
+        if not isfinite(water_rate) or water_rate < 0.0:
+            raise ValueError("water rate must be finite and non-negative")
+
+        energy_proxy_per_step = (
+            self.energy_per_step_proxy_J
+            if energy_override_J is None else float(energy_override_J)
+        )
+        water_proxy_per_step = (
+            self.water_per_step_proxy_L
+            if water_override_L is None else float(water_override_L)
+        )
+        for label, value in (
+            ("energy per-step proxy", energy_proxy_per_step),
+            ("water per-step proxy", water_proxy_per_step),
+        ):
+            if not isfinite(value) or value < 0.0:
+                raise ValueError(f"{label} must be finite and non-negative")
+
+        has_timing = elapsed_seconds is not None
+        call_energy = active_power * elapsed_seconds if has_timing else None
+        call_water = water_rate * elapsed_seconds if has_timing else None
+        call_energy_proxy = energy_proxy_per_step * steps
+        call_water_proxy = water_proxy_per_step * steps
 
         with self._lock:
-            self._total_energy_J += call_energy
-            self._total_water_L += call_water
+            if has_timing:
+                self._total_energy_J += float(call_energy)
+                self._total_water_L += float(call_water)
+                self._total_elapsed_seconds += float(elapsed_seconds)
+                self._timed_call_count += 1
+            self._total_energy_per_step_proxy_J += call_energy_proxy
+            self._total_water_per_step_proxy_L += call_water_proxy
             self._step_count += steps
             cum_e = self._total_energy_J
             cum_w = self._total_water_L
+            cum_seconds = self._total_elapsed_seconds
+            cum_e_proxy = self._total_energy_per_step_proxy_J
+            cum_w_proxy = self._total_water_per_step_proxy_L
             cnt = self._step_count
+            timed_calls = self._timed_call_count
 
         return {
             "steps": steps,
-            "energy_J": round(call_energy, 8),
-            "water_L": round(call_water, 10),
+            "elapsed_seconds": (
+                round(float(elapsed_seconds), 12) if has_timing else None
+            ),
+            "time_based_estimate_available": has_timing,
+            "estimate_basis": (
+                "measured_elapsed_seconds_x_declared_rates"
+                if has_timing else "unavailable_without_elapsed_seconds"
+            ),
+            "measurement_scope": self.measurement_scope,
+            "proxy_step_unit": self.proxy_step_unit,
+            "estimation_status": "activity-based estimate; not hardware telemetry",
+            "assumed_active_power_W": active_power,
+            "water_rate_L_per_server_second": water_rate,
+            "energy_J": round(float(call_energy), 8) if has_timing else None,
+            "water_L": round(float(call_water), 12) if has_timing else None,
             "cumulative_energy_J": round(cum_e, 8),
-            "cumulative_water_L": round(cum_w, 10),
+            "cumulative_water_L": round(cum_w, 12),
+            "cumulative_elapsed_seconds": round(cum_seconds, 12),
+            "energy_per_step_proxy_J": round(energy_proxy_per_step, 8),
+            "water_per_step_proxy_L": round(water_proxy_per_step, 12),
+            "step_count_energy_proxy_J": round(call_energy_proxy, 8),
+            "step_count_water_proxy_L": round(call_water_proxy, 12),
+            "cumulative_energy_per_step_proxy_J": round(cum_e_proxy, 8),
+            "cumulative_water_per_step_proxy_L": round(cum_w_proxy, 12),
             "total_steps": cnt,
+            "timed_call_count": timed_calls,
         }
 
-    def summary(self) -> Dict[str, float]:
+    def summary(self) -> Dict[str, Any]:
         """Return cumulative footprint without recording new steps."""
         with self._lock:
             return {
                 "cumulative_energy_J": round(self._total_energy_J, 8),
-                "cumulative_water_L": round(self._total_water_L, 10),
+                "cumulative_water_L": round(self._total_water_L, 12),
+                "cumulative_elapsed_seconds": round(
+                    self._total_elapsed_seconds, 12,
+                ),
+                "cumulative_energy_per_step_proxy_J": round(
+                    self._total_energy_per_step_proxy_J, 8,
+                ),
+                "cumulative_water_per_step_proxy_L": round(
+                    self._total_water_per_step_proxy_L, 12,
+                ),
                 "total_steps": self._step_count,
+                "timed_call_count": self._timed_call_count,
+                "time_based_estimate_available": self._timed_call_count > 0,
+                "estimate_basis": (
+                    "measured_elapsed_seconds_x_declared_rates"
+                    if self._timed_call_count > 0
+                    else "unavailable_without_elapsed_seconds"
+                ),
+                "measurement_scope": self.measurement_scope,
+                "proxy_step_unit": self.proxy_step_unit,
+                "estimation_status": (
+                    "activity-based estimate; not hardware telemetry"
+                ),
+                "assumed_active_power_W": self.assumed_active_power_W,
+                "water_rate_L_per_server_second": (
+                    self.water_per_server_second_L
+                ),
             }
 
     def reset(self) -> None:
@@ -107,13 +224,17 @@ class FootprintMeter:
         with self._lock:
             self._total_energy_J = 0.0
             self._total_water_L = 0.0
+            self._total_elapsed_seconds = 0.0
+            self._total_energy_per_step_proxy_J = 0.0
+            self._total_water_per_step_proxy_L = 0.0
             self._step_count = 0
+            self._timed_call_count = 0
 
 
 # Module-level singleton so the whole backend shares one meter
 footprint_meter = FootprintMeter()
 
 
-def compute_footprint(steps: int = 1, **kwargs) -> Dict[str, float]:
+def compute_footprint(steps: int = 1, **kwargs) -> Dict[str, Any]:
     """Convenience wrapper around the module-level meter."""
     return footprint_meter.compute_footprint(steps=steps, **kwargs)

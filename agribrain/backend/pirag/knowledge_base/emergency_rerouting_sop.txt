@@ -1,11 +1,19 @@
-Emergency Rerouting Standard Operating Procedure
+SCENARIO-AWARE ROUTING CONTEXT FOR THE SYNTHETIC BENCHMARK
+Status: Constructed benchmark input; it is not an emergency standard operating procedure.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, are contextual references only; the executable code and locked protocol govern all benchmark values.
 
-Notification Chain: Upon detection of a routing emergency (temperature excursion, equipment failure, or cyber incident), the responsible agent must initiate the notification chain within 30 minutes. Notification sequence: immediate supervisor, quality assurance team, logistics coordinator, and receiving facility. All notifications must be logged with timestamp and acknowledgement status.
+The policy selects among exactly three fixed action families: cold_chain,
+local_redistribute, and recovery. Their nominal modeled distances are 120, 45, and 80
+kilometres before the keyed stochastic transport multiplier. Scenario state, modeled
+spoilage risk, peer messages, MCP outputs, and institutional retrieval may alter logits
+only when the selected experimental mode activates the corresponding channel.
 
-Heatwave Protocol: During declared heatwave conditions (ambient temperature exceeding 30 degrees Celsius), maximum transport time must be reduced by 50 percent from standard limits. For leafy greens, this means maximum transport time drops from 4 hours to 2 hours. Additional ice packs or gel packs must be added at a rate of 1 unit per 10 kilograms of produce. Real-time temperature monitoring must increase from 15-minute to 5-minute intervals.
+An 8-degree-Celsius spinach operating-envelope ceiling and the remaining-quality trigger
+1-rho < 0.50 are mode-neutral outcome flags. They do not mandate a particular action.
+The heatwave and cyber_outage perturbations are defined in scenario_engine.py; neither
+changes nominal route distances or creates a deterministic emergency route.
 
-Cyber Outage Procedures: During a cyber outage affecting the central routing system, agents must fall back to locally cached routing tables. Cached tables are valid for 24 hours from last synchronization. If the outage exceeds 24 hours, agents must revert to manual routing using predetermined backup routes. All decisions made during outage must be documented for post-incident reconciliation.
-
-Equipment Failure Response: If refrigeration equipment fails during transport, the shipment must be rerouted to the nearest facility with cold storage within 1 hour. If no facility is reachable within the time window, the produce must be assessed for immediate diversion to local redistribution or animal feed based on current spoilage risk.
-
-Documentation Requirements: All emergency rerouting events require a post-incident report within 48 hours. The report must include: trigger event description, timeline of actions taken, temperature records during the event, final disposition of affected produce, and root cause analysis with corrective actions.
+The benchmark does not notify people, choose a nearest facility, schedule equipment,
+add cooling packs, change sensor cadence, use cached routing tables, or generate incident
+reports. Retrieved emergency language is a synthetic context input, not an executable
+operational instruction or evidence of deployment readiness.

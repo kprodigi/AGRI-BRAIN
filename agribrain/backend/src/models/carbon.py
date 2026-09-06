@@ -1,9 +1,11 @@
 """
 Carbon emissions model for cold chain transport.
 
-Implements activity-based carbon accounting following the GHG Protocol
-Corporate Standard (WRI/WBCSD, 2004) with refrigeration COP degradation
-under thermal stress (Tassou et al., 2009).
+Implements a stylized activity-based transport-emissions proxy. The GHG
+Protocol motivates the activity-times-emission-factor structure, and transport
+refrigeration literature motivates a thermal penalty. The route distances,
+emission factor, and penalty magnitude are declared simulation assumptions, not
+fleet measurements or factors extracted from those sources.
 
 Transport emissions
 -------------------
@@ -17,8 +19,9 @@ where:
                   transport, including both propulsion and baseline
                   refrigeration energy
 
-Default EF_vehicle = 0.12 kg CO₂-eq/km based on EPA emission factors
-for medium-duty refrigerated vehicles (range: 0.08–0.18).
+The benchmark default EF_vehicle = 0.12 kg CO₂-eq/km is author-specified and
+must be replaced with region-, vehicle-, load-, fuel-, and refrigeration-specific
+inventory data before deployment.
 
 COP degradation under thermal stress
 -------------------------------------
@@ -37,9 +40,7 @@ The actual carbon emission is then:
 
     E_actual = E_transport × (1 + β_COP × θ)
 
-This ensures carbon footprint increases during heatwave conditions,
-creating a physically realistic cascading effect through the SLCA
-carbon component and into the reward function.
+This makes the synthetic emissions proxy increase under modelled thermal stress.
 
 Cold chain energy model (Tassou et al., 2009):
     P_refrigeration = (UA × ΔT + Q_product) / COP
@@ -53,22 +54,16 @@ References
       refrigeration — Approaches to reduce energy consumption and
       environmental impacts of road transport. Applied Thermal
       Engineering, 29(8-9), 1467–1477.
-    - EPA (2021). Emission Factors for Greenhouse Gas Inventories.
 """
 from __future__ import annotations
 
+from math import isfinite
 
 # ---------------------------------------------------------------------------
 # COP degradation constant
 # ---------------------------------------------------------------------------
 REFRIG_COP_PENALTY: float = 0.40
-"""Fractional increase in carbon emissions at full thermal stress (θ = 1).
-
-Based on COP sensitivity analysis for transport refrigeration units
-(Tassou et al., 2009): COP degrades roughly linearly with ambient
-temperature above the design point, with up to ~40 % efficiency loss
-at extreme conditions (+20 °C above set point).
-"""
+"""Declared fractional emissions increase at full synthetic thermal stress."""
 
 
 def compute_transport_carbon(
@@ -80,9 +75,9 @@ def compute_transport_carbon(
 ) -> float:
     """Compute carbon emissions for a routing action.
 
-    Combines GHG Protocol activity-based transport emissions with
-    COP degradation under thermal stress and an optional mode-
-    conditional efficiency multiplier:
+    Combines an activity-based emissions proxy with a declared linear thermal
+    penalty and an optional physical
+    efficiency multiplier:
 
         E = km × carbon_per_km × eff_factor × (1 + cop_penalty × thermal_stress)
 
@@ -93,18 +88,53 @@ def compute_transport_carbon(
     thermal_stress : normalised thermal stress θ ∈ [0, 1].
         θ = clamp((T_ambient − T₀) / ΔT_max, 0, 1)
     cop_penalty : COP degradation coefficient (default 0.40).
-    eff_factor : mode-conditional efficiency multiplier in (0, 1].
-        1.0 means baseline (no optimisation); values < 1 represent the
-        per-dispatch carbon reduction from PINN-timed dispatching,
-        SLCA-shaped partner selection, and context-aware route
-        optimisation. See ``waste.MODE_CARBON_EFF`` for the per-mode
-        values and provenance. Default 1.0 preserves the previous
-        behaviour for any caller that has not migrated to the
-        mode-conditional API.
+    eff_factor : physical vehicle/fuel efficiency multiplier in (0, 1].
+        The confirmatory comparison holds this at 1.0 for every mode.
 
     Returns
     -------
     Total carbon emissions in kg CO₂-eq.
     """
-    base_carbon = km * carbon_per_km * float(eff_factor)
-    return base_carbon * (1.0 + cop_penalty * thermal_stress)
+    values = {
+        "km": float(km),
+        "carbon_per_km": float(carbon_per_km),
+        "thermal_stress": float(thermal_stress),
+        "cop_penalty": float(cop_penalty),
+        "eff_factor": float(eff_factor),
+    }
+    if any(not isfinite(value) for value in values.values()):
+        raise ValueError("transport-carbon inputs must all be finite")
+    if values["km"] < 0.0:
+        raise ValueError("km must be non-negative")
+    if values["carbon_per_km"] < 0.0:
+        raise ValueError("carbon_per_km must be non-negative")
+    if not 0.0 <= values["thermal_stress"] <= 1.0:
+        raise ValueError("thermal_stress must be within [0, 1]")
+    if values["cop_penalty"] < 0.0:
+        raise ValueError("cop_penalty must be non-negative")
+    if values["eff_factor"] <= 0.0:
+        raise ValueError("eff_factor must be positive")
+    base_carbon = (
+        values["km"] * values["carbon_per_km"] * values["eff_factor"]
+    )
+    return base_carbon * (
+        1.0 + values["cop_penalty"] * values["thermal_stress"]
+    )
+
+
+def compute_carbon_efficiency(mean_ari: float, episode_carbon_kg: float) -> float:
+    """Return resilience per episode emissions proxy in ARI·kg⁻¹ CO2e.
+
+    The numerator is the episode mean Adaptive Resilience Index and the
+    denominator is the episode sum of the standardized-routing-opportunity
+    emissions proxy. No factor of 1,000 is applied. The result is undefined
+    for a non-positive denominator, which is treated as invalid input rather
+    than silently reported as zero.
+    """
+    mean_ari = float(mean_ari)
+    episode_carbon_kg = float(episode_carbon_kg)
+    if not isfinite(mean_ari) or mean_ari < 0.0:
+        raise ValueError("mean_ari must be finite and non-negative")
+    if not isfinite(episode_carbon_kg) or episode_carbon_kg <= 0.0:
+        raise ValueError("episode_carbon_kg must be finite and positive")
+    return mean_ari / episode_carbon_kg

@@ -33,8 +33,8 @@ the same change as the deploy script edit.
 
 ## Production posture
 
-These addresses are NEVER used in production. Production contracts
-are deployed to a real chain and their addresses are written by the
-production deploy script into a separate runtime config (env var or
-secret store), never into a tracked file. The presence of this
-directory in the repo is a localhost-developer convenience only.
+These addresses are local Hardhat fixtures only. If a separate non-local
+deployment is performed, its addresses must be supplied through runtime
+configuration such as environment variables or a secret store. This
+repository provides no evidence of such a deployment. The presence of this
+directory is a localhost-developer convenience only.

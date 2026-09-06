@@ -20,7 +20,8 @@ def merkle_root(hashes_hex: List[str]) -> str:
     return nodes[0].hex()
 
 
-# Note: On-chain anchoring of Merkle roots is performed by the governance
-# router (contracts/hardhat/contracts/ProvenanceRegistry.sol), not by this
-# module directly. This module computes the root hash; the router calls
-# ProvenanceRegistry.anchor() when a decision rationale is finalized.
+# This module only computes a local root. The live ``/decide`` path may submit
+# selected decision fields through ``DecisionLogger.logDecision``; that
+# separate transaction does not anchor this root. Publication episode-ledger
+# roots are eligible for optional submission only through the explicit
+# ``DecisionLogger.logEpisode`` path when chain submission is configured.

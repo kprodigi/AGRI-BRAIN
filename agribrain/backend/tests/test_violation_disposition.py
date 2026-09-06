@@ -1,7 +1,7 @@
 """Unit tests for ``compute_violation_disposition`` in resilience.py.
 
 The function records what the policy chose to do on each timestep
-where the environment fired a safety-window violation (temperature
+where the environment fired a declared benchmark-envelope violation (temperature
 ceiling exceeded OR shelf-fraction below expedite floor — the same
 predicate the simulator uses for ``constraint_violation_rate``).
 
@@ -20,10 +20,9 @@ These tests pin the contract that:
   - canonical-action aliases resolved by ``action_aliases.resolve_action``
     are accepted by the disposition counter.
 
-The metric is the policy-quality answer to ConstraintViolationRate
-(which is environmental and method-invariant by construction); the
-ordering claim ``Static.downstream >> AgriBrain.downstream`` is
-asserted in the simulator-level integration test rather than here.
+The metric complements ConstraintViolationRate, which is environmental and
+method-invariant by construction. This unit-test module makes no empirical
+cross-method ordering claim.
 """
 from __future__ import annotations
 

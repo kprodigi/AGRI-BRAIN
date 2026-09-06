@@ -1,7 +1,7 @@
-"""Deployment-phase router.
+"""Development-runtime phase router.
 
-Implements the three deployment phases described in §1 and §4.13 of the
-AGRI-BRAIN manuscript:
+Implements three compatibility phases for the development ``/decide`` service.
+They are not publication benchmark modes or validated deployment states:
 
 * ``monitoring``  -- decisions are computed and surfaced to the operator,
                       but they do not mutate ledger state and they are
@@ -11,13 +11,14 @@ AGRI-BRAIN manuscript:
                       explicitly approve (or reject) each entry through
                       ``POST /phase/advisory/{decision_id}/approve`` (or
                       ``/reject``) before the decision is finalised
-                      (logged on-chain, broadcast, mirrored to case state).
+                      (mirrored and broadcast locally, with optional chain
+                      logging attempted only when configured).
                       Each pending entry expires after a TTL so that an
                       unattended operator does not silently block the
                       pipeline.
-* ``autonomous``  -- decisions are finalised immediately, matching the
-                      pre-existing behaviour and what the simulator and
-                      benchmark suites expect.
+* ``autonomous``  -- compatibility key for immediate development-time
+                      finalisation. Public surfaces label this
+                      "Auto-finalize (development)".
 
 Backend integration
 -------------------
@@ -81,8 +82,9 @@ def finalize_or_queue_decision(
 ) -> Dict[str, Any]:
     """Apply phase semantics to a freshly-computed decision memo.
 
-    ``finalize`` performs the side-effects of an autonomous decision
-    (chain logging, websocket broadcast, mirroring to case state). It is
+    ``finalize`` performs the side-effects of an auto-finalized development decision
+    (local mirroring and websocket broadcast, plus an optional best-effort
+    chain-log attempt when configured). It is
     passed in so this module does not need to import them and create a
     cycle.
 

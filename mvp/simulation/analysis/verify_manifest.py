@@ -2,19 +2,22 @@
 """Verify mvp/simulation/results/artifact_manifest.json.
 
 Re-hashes every artifact listed in the manifest and asserts the
-SHA-256 matches what is recorded. Optionally also asserts that the
-recorded `git_commit` is a non-empty 40-hex-char string. Exits 0 on
-clean verification, 1 on any mismatch or missing artifact.
+SHA-256 matches what is recorded. In strict fresh mode it also requires one
+clean, identical source commit for simulation, aggregation, and publication.
+Dual provenance is accepted only with a separately validated deterministic-
+recovery receipt that explicitly records ``simulation_rerun=false``. Exits 0
+on clean verification, 1 on any mismatch or missing artifact.
 
 Usage::
 
     python mvp/simulation/analysis/verify_manifest.py
     python mvp/simulation/analysis/verify_manifest.py --strict-commit
 
-This should be run on a fresh clone after `reproduce_core.py`
-to confirm the published artifacts' integrity. The 2026-04 cleanup
-flagged that the manifest was produced but never verified anywhere;
-this script closes that gap.
+The canonical ``hpc/hpc_run.sh`` workflow invokes this verifier from its
+dependent ``hpc/hpc_publish.sh`` stage. It can also be run against a
+transferred publication artifact set to reconfirm the published bytes. The
+2026-04 cleanup flagged that the manifest was produced but never verified
+anywhere; this script closes that gap.
 """
 from __future__ import annotations
 
@@ -25,37 +28,26 @@ import re
 import sys
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from mvp.simulation.analysis.recovery_provenance import (
+    validate_recovery_context,
+)
+
 RESULTS_DIR = REPO_ROOT / "mvp" / "simulation" / "results"
 MANIFEST_PATH = RESULTS_DIR / "artifact_manifest.json"
 
 _HEX40 = re.compile(r"^[0-9a-f]{40}$")
 
 
-_TEXT_EXTS = {".json", ".csv", ".txt", ".md", ".yaml", ".yml"}
-
-
 def _sha256(path: Path) -> str:
-    """SHA-256 of *path*, with line-ending normalisation for text files.
-
-    For text artifacts (JSON/CSV/TXT/MD/YAML) the working-tree bytes
-    differ between Windows (CRLF) and Linux (LF) checkouts even when
-    the git blob is identical. Normalising CRLF to LF before hashing
-    keeps the recorded SHA stable across platforms so the manifest
-    written on Windows verifies cleanly on a Linux CI runner. Binary
-    files (PNG/PDF/etc.) are hashed as-is.
-    """
+    """Return SHA-256 over the literal file bytes."""
     h = hashlib.sha256()
-    if path.suffix.lower() in _TEXT_EXTS:
-        # Read whole file (small enough; text artifacts in this manifest
-        # top out around a few MB) and normalise line endings.
-        data = path.read_bytes().replace(b"\r\n", b"\n")
-        h.update(data)
-    else:
-        with path.open("rb") as f:
-            for chunk in iter(lambda: f.read(1024 * 1024), b""):
-                h.update(chunk)
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
     return h.hexdigest()
 
 
@@ -64,7 +56,11 @@ def main() -> int:
     parser.add_argument(
         "--strict-commit",
         action="store_true",
-        help="Fail when manifest.git_commit is missing or not a 40-hex string.",
+        help=(
+            "Require a clean full-commit identity: one equal commit for a "
+            "fresh run, or two receipt-authorized commits for deterministic "
+            "recovery."
+        ),
     )
     parser.add_argument(
         "--allow-missing",
@@ -82,6 +78,14 @@ def main() -> int:
         "--manifest",
         default=str(MANIFEST_PATH),
         help="Path to artifact_manifest.json (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--recovery-receipt",
+        type=Path,
+        help=(
+            "Explicit run-scoped publication-recovery authorization. Required "
+            "for a dual-provenance manifest and rejected for a fresh manifest."
+        ),
     )
     parser.add_argument(
         "--require-tracked",
@@ -108,12 +112,107 @@ def main() -> int:
     payload = json.loads(manifest_path.read_text(encoding="utf-8"))
 
     git_commit = payload.get("git_commit")
+    simulation_commit = payload.get("simulation_source_commit", git_commit)
+    publication_commit = payload.get("publication_code_commit", git_commit)
+    dual_provenance = payload.get("dual_provenance")
+
+    if dual_provenance is True:
+        for label, value in (
+            ("git_commit", git_commit),
+            ("simulation_source_commit", simulation_commit),
+            ("publication_code_commit", publication_commit),
+        ):
+            if not isinstance(value, str) or not _HEX40.fullmatch(value):
+                print(f"FAIL: manifest.{label} is not a 40-hex SHA: {value!r}")
+                return 1
+        if git_commit != simulation_commit or simulation_commit == publication_commit:
+            print(
+                "FAIL: a recovery manifest must keep git_commit bound to its "
+                "distinct simulation source commit"
+            )
+            return 1
+        if payload.get("git_dirty") is not False:
+            print("FAIL: a recovery manifest cannot carry a dirty Git stamp")
+            return 1
+        if args.recovery_receipt is None:
+            print(
+                "FAIL: dual-provenance manifest requires --recovery-receipt"
+            )
+            return 1
+        try:
+            recovery_authorization = validate_recovery_context(
+                args.recovery_receipt,
+                results_dir=manifest_path.parent,
+                run_tag=payload.get("artifact_run_tag"),
+                simulation_commit=simulation_commit,
+                publication_commit=publication_commit,
+                expected_kind="core",
+            )
+        except (OSError, ValueError) as exc:
+            print(f"FAIL: invalid publication-recovery authorization: {exc}")
+            return 1
+        if payload.get("recovery_authorization") != recovery_authorization:
+            print(
+                "FAIL: manifest recovery_authorization differs from the "
+                "validated receipt and preserved-input binding"
+            )
+            return 1
+        recovery_records = {
+            record.get("file"): record
+            for record in payload.get("artifacts", [])
+            if isinstance(record, dict)
+        }
+        for path_key, digest_key in (
+            ("receipt_file", "receipt_literal_sha256"),
+            (
+                "preserved_raw_manifest_file",
+                "preserved_raw_manifest_literal_sha256",
+            ),
+            ("original_submission_receipt_file", None),
+        ):
+            name = recovery_authorization[path_key]
+            record = recovery_records.get(name)
+            if record is None:
+                print(f"FAIL: recovery evidence is not manifested: {name}")
+                return 1
+            if digest_key is not None and record.get(
+                "sha256"
+            ) != recovery_authorization[digest_key]:
+                print(f"FAIL: manifested recovery-evidence hash changed: {name}")
+                return 1
+    elif args.recovery_receipt is not None:
+        print("FAIL: --recovery-receipt is invalid for single-provenance evidence")
+        return 1
+
     if args.strict_commit:
         if not isinstance(git_commit, str) or not _HEX40.match(git_commit):
             print(
                 f"FAIL: manifest.git_commit is missing or not a "
                 f"40-hex SHA: {git_commit!r}"
             )
+            return 1
+        for label, value in (
+            ("simulation_source_commit", simulation_commit),
+            ("publication_code_commit", publication_commit),
+        ):
+            if not isinstance(value, str) or not _HEX40.match(value):
+                print(f"FAIL: manifest.{label} is not a 40-hex SHA: {value!r}")
+                return 1
+        if dual_provenance is not True:
+            if not git_commit == simulation_commit == publication_commit:
+                print(
+                    "FAIL: strict fresh publication evidence must use one "
+                    "identical git/simulation/publication commit"
+                )
+                return 1
+            if dual_provenance is not False:
+                print(
+                    "FAIL: manifest.dual_provenance must be false in strict "
+                    "fresh mode"
+                )
+                return 1
+        if payload.get("git_dirty") is not False:
+            print("FAIL: manifest.git_dirty must be false in strict mode")
             return 1
 
     artifacts = payload.get("artifacts", [])
@@ -157,7 +256,7 @@ def main() -> int:
         "adaptive_pricing.png", "adaptive_pricing.pdf",
         "cross_scenario.png", "cross_scenario.pdf",
         "ablation.png", "ablation.pdf",
-        "green_ai_carbon.png", "green_ai_carbon.pdf",
+        "transport_emissions.png", "transport_emissions.pdf",
         # 2026-06 H1/H2/H3 paper figures (generate_figures.py fig11/fig12/fig13):
         # performance_efficiency (H1), context_value (H2), stress_robustness (H3).
         "context_value.png", "context_value.pdf",
@@ -165,23 +264,21 @@ def main() -> int:
         "stress_robustness.png", "stress_robustness.pdf",
         "table1_summary.csv", "table2_ablation.csv",
         "benchmark_summary.json", "benchmark_significance.json",
+        "h2_directional_evidence.csv",
+        "secondary_ablation_analysis.json", "secondary_ablation_analysis.csv",
         "stress_summary.json", "stress_degradation.csv",
-        "feature_heatmap_data.json",
         # Paper-evidence artefacts added to the gitignore allowlist in
         # 2026-05 so reviewers cloning the repo can verify the cited
         # evidence without downloading the HPC tar.gz archive.
         "paper_benchmark_table.json",
         "stress_passfail.csv",
-        "temporal_stability_summary.json",
-        "temporal_stability_summary.csv",
-        "temporal_stability_deltas.csv",
+        "stress_h3_test.json", "explainability_metrics.json",
+        "forecast_validation_summary.json",
+        "forecast_validation_predictions.csv",
         # 2026-06 decision-level channel analysis (§5.8 / Fig 14)
         "channel_attribution_aggregate.json",
         "channel_complementarity_test.json",
         "channel_saturation_analysis.json",
-        "channel_spec_curve.json",
-        "over_steer_ablation.json",
-        "channel_hashseed_stability.json",
     )
 
     def _is_tracked(name: str) -> bool:

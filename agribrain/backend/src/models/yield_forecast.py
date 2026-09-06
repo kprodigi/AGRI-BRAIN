@@ -1,12 +1,12 @@
 """Short-term yield/supply forecaster using Holt's linear (double exponential smoothing) method.
 
-Operates on the inventory_units series as a supply/yield proxy, providing a
-distinct supply-side forecast separate from the LSTM demand forecaster.
+Operates on the inventory_units series as a supply/yield proxy.  It is retained
+as a diagnostic alternative; validation selected persistence for the
+confirmatory supply proxy, while non-seasonal Holt-linear is the confirmatory
+demand method.
 
 This module implements the "Short-term yield forecaster" component shown in the
-AGRI-BRAIN architectural figure, using the freed Holt's-linear (level + trend)
-method previously used for demand forecasting (now replaced by the LSTM demand
-model). No seasonal indices are computed, so this is Holt's method (Holt,
+AGRI-BRAIN architecture. No seasonal indices are computed, so this is Holt's method (Holt,
 1957) rather than the seasonal Holt-Winters extension.
 
 References

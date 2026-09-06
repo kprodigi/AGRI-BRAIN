@@ -7,8 +7,9 @@ The 2026-05 consolidation removed a parallel standalone implementation
 that re-derived feature vectors, SLCA composites, the waste model and
 the reward decomposition. Maintaining two policy paths in lock-step
 across feature-vector changes (the phi_6..phi_9 supply/demand
-extension, the SLCA stress-attenuation refit, the route_rho_factor
-update) was a perpetual source of subtle behavioural drift; the
+extension and the SLCA stress-attenuation refit) was a perpetual source of
+subtle behavioural drift. Legacy exploratory route-rho helpers are likewise
+kept outside this confirmatory request path. The
 duplicated path now delegates to :func:`src.app.decide` so both REST
 entry points share one source of truth.
 
@@ -38,7 +39,11 @@ class DecideRequest(BaseModel):
     role: str = ""
     step: int | None = None
     deterministic: bool = True
-    mode: Literal["static", "hybrid_rl", "no_pinn", "no_slca", "agribrain", "no_context", "mcp_only", "pirag_only"] = "agribrain"
+    mode: Literal[
+        "static", "hybrid_rl", "no_pinn", "no_slca", "no_context", "mcp_only",
+        "pirag_only", "agribrain", "agribrain_standard_rag",
+        "agribrain_no_peer", "agribrain_sign_unconstrained",
+    ] = "agribrain"
 
     # Optional knobs accepted from legacy QuickDecision payloads. The
     # canonical /decide handler does not consume them (it reads from the

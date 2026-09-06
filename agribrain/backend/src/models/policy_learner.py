@@ -28,6 +28,7 @@ class PolicyLearner:
     n_features : dimensionality of the feature vector.
     lr : learning rate for gradient updates.
     max_buffer : maximum replay buffer size.
+    freeze : if True, retain state but ignore future records and updates.
     """
 
     def __init__(
@@ -45,6 +46,7 @@ class PolicyLearner:
         lr: float = 0.001,
         max_buffer: int = 2000,
         is_clip: float = 10.0,
+        freeze: bool = False,
     ) -> None:
         self.n_actions = n_actions
         self.n_features = n_features
@@ -55,6 +57,7 @@ class PolicyLearner:
         # off-policy correction so a rare-under-behavior sample cannot destabilize
         # the gradient.
         self.is_clip = is_clip
+        self.frozen = bool(freeze)
 
         # Buffer holds (features, action, reward, behavior_prob); behavior_prob
         # is None for on-policy callers (weight 1).
@@ -92,6 +95,8 @@ class PolicyLearner:
         assertion fails loudly so feature-vector regressions surface
         at record-time rather than as silent learning drift.
         """
+        if self.frozen:
+            return
         if features.ndim != 1 or features.shape[0] != self.n_features:
             raise ValueError(
                 f"PolicyLearner.record expected features of shape "
@@ -149,7 +154,7 @@ class PolicyLearner:
         -------
         Updated theta matrix (does not modify the input).
         """
-        if not self._buffer:
+        if self.frozen or not self._buffer:
             return theta.copy()
 
         theta_new = theta.copy()
@@ -190,6 +195,21 @@ class PolicyLearner:
         self._buffer.clear()
 
         return theta_new
+
+    def freeze_updates(self) -> None:
+        """Disable future record/update mutations without clearing state."""
+
+        self.frozen = True
+
+    def freeze_summary(self) -> dict:
+        """Return auditable state for the retained-evaluation protocol."""
+
+        return {
+            "learner_frozen": bool(self.frozen),
+            "buffer_size": len(self._buffer),
+            "baseline": float(self._baseline),
+            "baseline_count": int(self._baseline_count),
+        }
 
     def reset(self) -> None:
         """Clear the replay buffer and reset baseline."""

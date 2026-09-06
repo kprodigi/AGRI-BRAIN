@@ -1,36 +1,36 @@
-SOCIAL LIFE CYCLE ASSESSMENT: COMMUNITY RESILIENCE METRICS
+SOCIAL-PERFORMANCE PROXY: COMMUNITY RESILIENCE (LEGACY SLCA LABEL)
+Status: Constructed benchmark input; the values below are author-declared priors, not measured community outcomes.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, motivate topic selection only; the executable code and locked protocol govern all benchmark values.
 Document ID: KB-SCR-006
-Effective Date: 2025-09-01
-Regulatory Basis: USDA Food Access Research Atlas; UNEP-SETAC Social LCA Guidelines
+Executable source: agribrain/backend/src/models/slca.py
 
-1. FOOD ACCESS SCORING
+1. EXECUTABLE COMMUNITY-RESILIENCE PRIORS
 
-Community resilience is assessed using the USDA Food Access Research Atlas to identify
-low-access census tracts. Routing decisions that deliver product to areas classified as
-low-income and low-access (more than 1 mile from a supermarket in urban areas, or more
-than 10 miles in rural areas) receive a food access bonus in the SLCA community
-resilience subscore.
+The simulator uses one fixed community-resilience prior R for each canonical routing
+action:
 
-Redistribution to underserved communities scores 0.88 on the normalized community
-benefit scale. Direct cold chain delivery to conventional retail outlets in well-served
-areas scores 0.35. These differential scores ensure the optimization engine prioritizes
-equitable food distribution when product quality and logistics constraints permit.
+  - cold_chain: R = 0.55
+  - local_redistribute: R = 0.78
+  - recovery: R = 0.72
 
-2. ECONOMIC MULTIPLIER EFFECT
+These values encode a synthetic ordering, local_redistribute greater than recovery
+greater than cold_chain. They are not observations of food access, household welfare,
+community capacity, or distributional equity. The benchmark does not load census-tract
+data or a USDA Food Access Research Atlas overlay.
 
-Local redistribution through food banks and community organizations generates an
-estimated economic multiplier of 1.3x, meaning each dollar of product value generates
-approximately 1.30 dollars of community economic activity through reduced household
-food expenditure, improved nutrition outcomes, and secondary local spending.
+2. ROLE IN THE SOCIAL-PERFORMANCE PROXY
 
-3. REQUIRED ACTIONS
+R receives the author-declared weight w_R = 0.25 in
 
-Action 1: Maintain an updated geographic overlay of USDA Food Access Research Atlas
-data within the routing decision engine. Refresh the overlay dataset at minimum annually
-or whenever the USDA publishes revised tract classifications.
+  S = 0.30*C + 0.20*L + 0.25*R + 0.25*P.
 
-Action 2: Calculate and report the aggregate community resilience impact score for each
-quarterly reporting period. The report must include total volume redistributed to
-low-access tracts, estimated meals provided, and the weighted community resilience
-subscore averaged across all routing decisions. Submit to the cooperative governance
-board and make available to member stakeholders within 30 days of quarter close.
+C is a modeled transport-emissions term. L, R, and P are action-level scenario priors.
+The resulting S is a social-performance proxy, not a Social Life-Cycle Assessment based
+on a stakeholder or geographic inventory.
+
+3. EXCLUDED CLAIMS
+
+No delivery-volume, meal-count, household-income, economic-multiplier, census-tract, or
+quarterly-report variable enters this score. Any deployment study would require an
+independently sourced geographic and stakeholder inventory and a separately validated
+assessment; those data and claims are outside this benchmark.

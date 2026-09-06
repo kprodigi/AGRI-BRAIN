@@ -1,6 +1,6 @@
-"""RAG context provider for the decision pipeline.
+"""Institutional-retrieval context provider for the decision pipeline.
 
-Queries the piRAG knowledge base for relevant policy guidance based on
+Queries the constructed piRAG knowledge base for source-labelled context based on
 the current scenario conditions, spoilage risk, and temperature, then
 returns a structured context dict for use in action selection and
 explanation generation.
@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Dict
+
+from .strict_validation import handle_unexpected_failure
 
 _log = logging.getLogger(__name__)
 
@@ -32,7 +34,10 @@ def _get_pipeline():
         pipeline = PiRAGPipeline()
 
         _PIPELINE = pipeline
-    except Exception:
+    except Exception as _exc:
+        handle_unexpected_failure(
+            "context-provider pipeline initialization", _exc, _log,
+        )
         _PIPELINE = None
 
     return _PIPELINE
@@ -48,8 +53,11 @@ def get_policy_context(
     surplus_ratio: float = 0.0,
     tau: float = 0.0,
     hour: float = 0.0,
+    y_hat: float = 100.0,
+    context_mode: str = "full",
+    retrieval_kind: str = "pirag",
 ) -> Dict[str, Any]:
-    """Query the knowledge base for relevant policy guidance.
+    """Query the constructed knowledge base for source-labelled context.
 
     Parameters
     ----------
@@ -62,12 +70,16 @@ def get_policy_context(
     surplus_ratio : inventory surplus above baseline.
     tau : volatility indicator.
     hour : simulation hour.
+    y_hat : demand point forecast used by MCP/context features.
+    context_mode : one of ``full``, ``mcp_only``, or ``pirag_only``.
+    retrieval_kind : ``pirag`` or the standard-RAG ablation.
 
     Returns
     -------
-    Dict with keys: regulatory_guidance, relevant_sops, risk_assessment,
-    source_documents, query, and (when new modules available) additional
-    guidance fields.
+    Dict with compatibility keys ``regulatory_guidance``, ``relevant_sops``,
+    and ``risk_assessment`` plus source documents, query, and diagnostics.
+    These legacy field names contain retrieved text; they do not assert legal,
+    regulatory, or independently validated risk status.
     """
     context: Dict[str, Any] = {
         "regulatory_guidance": "",
@@ -77,9 +89,13 @@ def get_policy_context(
         "query": "",
     }
 
-    pipeline = _get_pipeline()
-    if pipeline is None:
-        return context
+    if context_mode not in {"full", "mcp_only", "pirag_only"}:
+        raise ValueError(f"unsupported context_mode: {context_mode!r}")
+    pipeline = None
+    if context_mode != "mcp_only":
+        pipeline = _get_pipeline()
+        if pipeline is None:
+            return context
 
     # Try the new role-specific context builder first
     try:
@@ -91,24 +107,38 @@ def get_policy_context(
                 self.temp = temp
                 self.rh = rh
                 self.inv = inv
-                self.y_hat = 100.0
+                self.y_hat = y_hat
                 self.tau = tau_val
                 self.hour = hr
                 self.surplus_ratio = surplus
 
-        obs = _FakeObs(spoilage_risk, temperature, humidity, inventory, 100.0, tau, hour, surplus_ratio)
+        obs = _FakeObs(
+            spoilage_risk, temperature, humidity, inventory, y_hat, tau,
+            hour, surplus_ratio,
+        )
 
         # Dispatch MCP tools for this role
         mcp_results: Dict[str, Any] = {}
-        try:
-            from .mcp.tool_dispatch import dispatch_tools
-            from .mcp.registry import get_default_registry
-            registry = get_default_registry()
-            mcp_results = dispatch_tools(role, obs, registry)
-        except Exception as _exc:
-            _log.debug("MCP dispatch in context provider skipped for role %s: %s", role, _exc)
+        skip_mcp = context_mode == "pirag_only" or (
+            scenario == "cyber_outage" and hour >= 24.0
+        )
+        if not skip_mcp:
+            try:
+                from .mcp.tool_dispatch import dispatch_tools
+                from .mcp.registry import get_default_registry
+                registry = get_default_registry()
+                mcp_results = dispatch_tools(role, obs, registry)
+            except Exception as _exc:
+                handle_unexpected_failure(
+                    f"context-provider MCP dispatch for role {role}", _exc, _log,
+                )
 
-        result = retrieve_role_context(role, obs, scenario, mcp_results, pipeline)
+        result = {}
+        if context_mode != "mcp_only":
+            result = retrieve_role_context(
+                role, obs, scenario, mcp_results, pipeline,
+                retrieval_kind=retrieval_kind,
+            )
 
         context["regulatory_guidance"] = result.get("regulatory_guidance", "")
         context["relevant_sops"] = result.get("sop_guidance", "")
@@ -121,7 +151,8 @@ def get_policy_context(
         # breakdown so the live /decide path surfaces the same
         # diagnostics the simulator does.
         for key in ("waste_hierarchy_guidance", "governance_guidance",
-                     "top_citation_score", "top_doc_id", "guards_passed",
+                     "top_fused_score", "top_citation_score",
+                     "top_rerank_score", "top_doc_id", "guards_passed",
                      "guard_breakdown", "evidence_hashes"):
             if key in result:
                 context[key] = result[key]
@@ -129,15 +160,24 @@ def get_policy_context(
         # Compute context modifier for callers who want it
         try:
             from .context_to_logits import compute_context_modifier
-            modifier = compute_context_modifier(mcp_results, result, obs)
+            modifier = compute_context_modifier(
+                mcp_results, result, obs,
+                context_mode=context_mode,
+                retrieval_kind=retrieval_kind,
+            )
             context["context_modifier"] = modifier.tolist()
-        except Exception:
+        except Exception as _exc:
+            handle_unexpected_failure(
+                "context-provider logit-modifier calculation", _exc, _log,
+            )
             context["context_modifier"] = None
 
         return context
 
-    except ImportError:
-        pass
+    except ImportError as _exc:
+        handle_unexpected_failure(
+            "role-specific context-builder import", _exc, _log,
+        )
 
     # Fallback: original implementation
     conditions = []
@@ -158,7 +198,7 @@ def get_policy_context(
     context["query"] = query
 
     try:
-        response = pipeline.ask(query, k=3, anchor_on_chain=False)
+        response = pipeline.ask(query, k=4, anchor_on_chain=False)
 
         for citation in response.citations:
             doc_source = citation.meta.get("source", citation.doc_id)
@@ -175,6 +215,8 @@ def get_policy_context(
             context["regulatory_guidance"] = response.citations[0].passage[:200]
 
     except Exception as _exc:
-        _log.debug("context provider outer path skipped: %s", _exc)
+        handle_unexpected_failure(
+            "legacy context-provider retrieval", _exc, _log,
+        )
 
     return context
