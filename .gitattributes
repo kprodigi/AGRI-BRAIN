@@ -62,3 +62,10 @@
 *.woff2     binary
 *.ttf       binary
 *.eot       binary
+
+# Certified evidence is hashed byte-for-byte by artifact_manifest.json, so it
+# must survive checkout unchanged on every host. Some of it carries CRLF
+# exactly as the publication run wrote it; normalising those bytes shifts the
+# SHA-256 and makes verify_manifest.py fail on a fresh clone. This directory is
+# therefore exempt from line-ending translation. It is evidence, not source.
+mvp/simulation/results/** -text
