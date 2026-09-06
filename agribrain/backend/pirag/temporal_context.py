@@ -1,4 +1,4 @@
-"""Sliding context window for temporal piRAG retrieval history.
+"""Sliding context window for temporal piR retrieval history.
 
 Maintains a bounded window of recent retrieval events, enabling temporal
 awareness in context modulation. The continuity score measures whether
@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional
 
 
 class TemporalContextWindow:
-    """Sliding window of recent piRAG retrievals.
+    """Sliding window of recent piR retrievals.
 
     Parameters
     ----------
@@ -38,7 +38,7 @@ class TemporalContextWindow:
         top_score: float,
         guidance_type: str,
     ) -> None:
-        """Record a piRAG retrieval event."""
+        """Record a piR retrieval event."""
         self._entries.append({
             "hour": hour,
             "role": role,

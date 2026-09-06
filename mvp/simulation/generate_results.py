@@ -11,7 +11,7 @@ it cannot overwrite the canonical publication directory.
 Uses an AgentCoordinator with four lifecycle decision owners (farm,
 processor, distributor, recovery) and a non-owning cooperative overlay.
 
-MCP/piRAG context injection is enabled for the full and single-channel
+MCP/piR context injection is enabled for the full and single-channel
 variants. ``no_context`` initializes the same bounded learning components but
 bypasses both external context channels, so it provides the confirmatory
 channel-ablation comparator.
@@ -215,7 +215,7 @@ _EPISODE_ENVIRONMENT_FIELDS = (
     "FAILURE_INJECTION",
     "MCP_RELIABILITY",
     "MCP_QOS_ROUTING",
-    "PIRAG_COUNTERFACTUAL",
+    "PIR_COUNTERFACTUAL",
     "PHYSICS_CONSISTENCY_GATE",
     "HETEROGENEOUS_PROFILES",
     "RESEARCH_METRICS",
@@ -1463,7 +1463,7 @@ def _run_episode_impl(
         demand_regime_flag_trace.append(tau)
         price_signal_trace.append(price_signal)
 
-        # Context-enabled modes retrieve piRAG evidence inside the coordinator.
+        # Context-enabled modes retrieve piR evidence inside the coordinator.
         # Controls do not perform an unused retrieval pass.
         rag_context = None
 
@@ -1520,7 +1520,7 @@ def _run_episode_impl(
         # Latency is recorded as observed wall-clock time (descriptive
         # only across hardware-mixed seeds; treat as a profiling hint).
         # The deterministic complexity proxy is the count of MCP tool
-        # invocations and piRAG queries the step issued — those are
+        # invocations and piR queries the step issued — those are
         # bit-identical across machines for the same seed.
         decision_latency_ms.append((time.perf_counter() - step_t0) * 1000.0)
         action = ACTIONS[action_idx]
@@ -1529,7 +1529,7 @@ def _run_episode_impl(
         # modifier vector (THETA_CONTEXT @ psi); when it carries a meaningful
         # signal we ask whether the chosen action matches the action that the
         # context layer most strongly recommends. This is the "did the agent
-        # honor the context" metric the MCP+piRAG robustness story requires;
+        # honor the context" metric the MCP+piR robustness story requires;
         # protocol reliability alone does not answer it.
         _step_modifier = getattr(coordinator, "_step_context_modifier", None)
         # Influence is scored after coordinator.post_step(), when the paired
@@ -1545,7 +1545,7 @@ def _run_episode_impl(
                 # counts "the context layer ran on this step" regardless
                 # of whether either channel subsequently survives the
                 # CONTEXT_SIGNAL_THRESHOLD gate. Retrieval guards zero only
-                # the piRAG-derived term; separately computed MCP features
+                # the piR-derived term; separately computed MCP features
                 # may keep the combined modifier non-zero. A zero vector still
                 # enters this branch with _mod.size > 0, so dispatch attempts
                 # remain comparable across context arms.
@@ -2982,7 +2982,7 @@ def run_all(seed: int = SEED) -> dict:
     policy.enable_failure_injection = os.environ.get("FAILURE_INJECTION", "false").lower() == "true"
     policy.enable_mcp_reliability = os.environ.get("MCP_RELIABILITY", "false").lower() == "true"
     policy.enable_mcp_qos_routing = os.environ.get("MCP_QOS_ROUTING", "false").lower() == "true"
-    policy.enable_pirag_counterfactual_eval = os.environ.get("PIRAG_COUNTERFACTUAL", "false").lower() == "true"
+    policy.enable_pirag_counterfactual_eval = os.environ.get("PIR_COUNTERFACTUAL", "false").lower() == "true"
     policy.enable_physics_consistency_gate = os.environ.get("PHYSICS_CONSISTENCY_GATE", "false").lower() == "true"
     policy.enable_heterogeneous_profiles = os.environ.get("HETEROGENEOUS_PROFILES", "false").lower() == "true"
     policy.enable_research_metrics = os.environ.get("RESEARCH_METRICS", "false").lower() == "true"
@@ -3125,7 +3125,7 @@ def run_all(seed: int = SEED) -> dict:
                 evl = episode.get("evaluator_summary", {})
                 lrn = episode.get("learner_summary", {})
                 print(f"    Context: {ctx.get('total_mcp_tool_calls', 0)} MCP calls, "
-                      f"{ctx.get('total_pirag_queries', 0)} piRAG queries, "
+                      f"{ctx.get('total_pirag_queries', 0)} piR queries, "
                       f"modifier nonzero {ctx.get('nonzero_modifier_steps', 0)}/{ctx.get('total_context_steps', 0)} steps, "
                       f"guard failures {ctx.get('guard_failures', 0)}, "
                       f"probability-gap overrides {ctx.get('governance_overrides', 0)}")

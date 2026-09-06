@@ -1,7 +1,7 @@
 """Export structured decision traces for paper evidence.
 
 Captures the full information flow at each decision step:
-  Observation -> MCP tool outputs -> piRAG retrieved passages ->
+  Observation -> MCP tool outputs -> piR retrieved passages ->
   Context features -> Logit adjustment -> Action -> Explanation -> Local commitment
 
 Three export formats:
@@ -47,7 +47,7 @@ class DecisionTrace:
     slca_lookup: Optional[Dict] = None
     chain_query_summary: Optional[str] = None
 
-    # piRAG retrieval (actual text)
+    # piR retrieval (actual text)
     pirag_query: str = ""
     pirag_top_doc: str = ""
     pirag_top_score: float = 0.0

@@ -717,13 +717,13 @@ def _validate_forward_context_trace(
         retrieval_gate * temporal_scale * physics_scale,
         rel_tol=1e-12, abs_tol=1e-12,
     ):
-        raise RuntimeError(f"{where} piRAG scale does not reconstruct")
+        raise RuntimeError(f"{where} piR scale does not reconstruct")
     if expected_retrieval_kind == "standard" and not (
         math.isclose(temporal_scale, 1.0, rel_tol=0.0, abs_tol=1e-12)
         and math.isclose(physics_scale, 1.0, rel_tol=0.0, abs_tol=1e-12)
     ):
         raise RuntimeError(
-            f"{where} standard RAG applies a piRAG-only multiplier"
+            f"{where} standard RAG applies a piR-only multiplier"
         )
 
     mcp = [float(value) for value in trace["mcp_preclip_component"]]

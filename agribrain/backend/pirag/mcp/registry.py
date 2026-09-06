@@ -392,7 +392,7 @@ def get_default_registry() -> ToolRegistry:
         _log.warning("MCP tool 'footprint_query' not registered: %s", exc)
         registry._registration_failures["footprint_query"] = str(exc)
 
-    # piRAG, explanation, and context feature tools
+    # piR, explanation, and context feature tools
     try:
         from .tools.pirag_query import pirag_query
         registry.register(ToolSpec(
@@ -439,7 +439,7 @@ def get_default_registry() -> ToolRegistry:
         from .tools.context_features import read_context_features
         registry.register(ToolSpec(
             name="context_features",
-            description="Read the current MCP/piRAG context feature vector and logit modifier",
+            description="Read the current MCP/piR context feature vector and logit modifier",
             capabilities=["context", "monitoring", "transparency"],
             fn=read_context_features,
             schema={},

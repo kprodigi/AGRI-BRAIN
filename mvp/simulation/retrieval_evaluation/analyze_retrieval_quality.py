@@ -1,8 +1,8 @@
-"""Analyze a validated Standard-RAG versus piRAG retrieval study.
+"""Analyze a validated Standard-RAG versus piR retrieval study.
 
 The analysis unit is the fixed query.  Metrics are first computed separately
 for each independent assessor, then averaged within query.  Uncertainty for the
-paired piRAG-minus-Standard-RAG contrast is a seeded percentile bootstrap over
+paired piR-minus-Standard-RAG contrast is a seeded percentile bootstrap over
 queries.  Only the predeclared nDCG cutoff is inferential; other metrics are
 descriptive.
 
@@ -250,7 +250,7 @@ def analyze_bundle(bundle: ValidatedEvaluationBundle) -> Dict[str, object]:
         },
         "primary_inference": {
             "metric": primary_key,
-            "contrast": "piRAG_minus_Standard_RAG",
+            "contrast": "piR_minus_Standard_RAG",
             "interval_method": "paired_query_percentile_bootstrap",
             "interval_excludes_zero_in_declared_direction": supports_direction,
             "claim_scope": (
@@ -273,7 +273,7 @@ def analyze_bundle(bundle: ValidatedEvaluationBundle) -> Dict[str, object]:
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Analyze independently judged Standard-RAG versus piRAG rankings."
+        description="Analyze independently judged Standard-RAG versus piR rankings."
     )
     parser.add_argument("bundle", type=Path, help="validated evaluation bundle directory")
     parser.add_argument("--output", type=Path, required=True, help="JSON result path")

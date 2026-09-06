@@ -20,7 +20,7 @@ def explain(
 ) -> Dict[str, Any]:
     """Generate a policy-trace explanation for a routing decision.
 
-    Runs the in-process project MCP-style dispatch + piRAG retrieval + explanation pipeline
+    Runs the in-process project MCP-style dispatch + piR retrieval + explanation pipeline
     for the given conditions, producing a human-readable explanation
     with knowledge-base references, feature attribution, and provenance.
 
@@ -38,7 +38,7 @@ def explain(
     from pirag.context_builder import retrieve_role_context
     from pirag.context_to_logits import extract_context_features, compute_context_modifier
     from pirag.explain_decision import explain_decision
-    from pirag.agent_pipeline import PiRAGPipeline
+    from pirag.agent_pipeline import PiRPipeline
 
     # Build a minimal observation
     class _Obs:
@@ -55,12 +55,12 @@ def explain(
     obs.raw = {"rho": rho, "temp": temperature, "rh": humidity, "inv": inventory}
 
     registry = get_default_registry()
-    pipeline = PiRAGPipeline()
+    pipeline = PiRPipeline()
 
     # MCP dispatch
     mcp_results = dispatch_tools(role, obs, registry)
 
-    # piRAG retrieval
+    # piR retrieval
     rag_context = retrieve_role_context(role, obs, scenario, mcp_results, pipeline, None)
 
     # Context features

@@ -8,7 +8,7 @@ import requests
 
 _log = logging.getLogger(__name__)
 
-API = os.environ.get("PIRAG_API","http://127.0.0.1:8100/rag/ingest")
+API = os.environ.get("PIR_API","http://127.0.0.1:8100/rag/ingest")
 def load_texts(folder):
     for p in glob.glob(os.path.join(folder, "**", "*.*"), recursive=True):
         if p.lower().endswith((".txt",".md",".log",".csv",".json")):

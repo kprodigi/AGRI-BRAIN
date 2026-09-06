@@ -5,7 +5,7 @@ import hashlib
 from types import SimpleNamespace
 
 import numpy as np
-from pirag.agent_pipeline import Citation, PiRAGPipeline, PiRAGResponse
+from pirag.agent_pipeline import Citation, PiRPipeline, PiRResponse
 from pirag.context_to_logits import compute_context_modifier
 from pirag.pyrag.hybrid_retriever import Document, HybridRetriever
 from src.agents.coordinator import (
@@ -68,7 +68,7 @@ def test_hybrid_and_pipeline_expose_existing_score_components(monkeypatch) -> No
             self.calls.append((question, k))
             return hits
 
-    pipeline = object.__new__(PiRAGPipeline)
+    pipeline = object.__new__(PiRPipeline)
     pipeline.retriever = _Retriever()
     pipeline._answer_inference = lambda question, topk: "bounded answer"
     monkeypatch.setattr("pirag.agent_pipeline.units_consistent", lambda text: True)
@@ -148,7 +148,7 @@ def test_final_ranking_and_step_evidence_are_lossless_and_behavior_neutral(
         dense_rrf=1.0 / 61.0,
         fusion="rrf",
     )
-    response = PiRAGResponse(
+    response = PiRResponse(
         answer="answer",
         citations=[citation_a, citation_b],
         guards_passed=True,

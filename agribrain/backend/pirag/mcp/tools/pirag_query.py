@@ -1,4 +1,4 @@
-"""MCP tool: query the piRAG knowledge base.
+"""MCP tool: query the piR knowledge base.
 
 Enables external AI systems to retrieve domain-specific guidance from
 the AGRI-BRAIN knowledge base through the project's MCP-style interface.
@@ -15,8 +15,8 @@ _pipeline = None
 def _get_pipeline():
     global _pipeline
     if _pipeline is None:
-        from pirag.agent_pipeline import PiRAGPipeline
-        _pipeline = PiRAGPipeline()
+        from pirag.agent_pipeline import PiRPipeline
+        _pipeline = PiRPipeline()
     return _pipeline
 
 
@@ -30,7 +30,7 @@ def pirag_query(
     physics_expansion: bool = True,
     physics_reranking: bool = True,
 ) -> Dict[str, Any]:
-    """Query the piRAG knowledge base with optional physics-informed retrieval.
+    """Query the piR knowledge base with optional physics-informed retrieval.
 
     Parameters
     ----------

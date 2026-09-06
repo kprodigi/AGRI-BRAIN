@@ -1,4 +1,4 @@
-"""Integration tests for MCP + piRAG pipeline (Task 28).
+"""Integration tests for MCP + piR pipeline (Task 28).
 
 Tests covering registry discovery, MCP protocol, tool dispatch,
 shared context, role queries, physics reranking, context modifiers,
@@ -350,7 +350,7 @@ def test_live_pirag_tool_does_not_equate_nonempty_results_with_guard_pass(
 
 def test_pipeline_explicit_retrieval_depth_overrides_planner_default():
     """The benchmark's explicit k=4 must not be silently replaced by k=6."""
-    from pirag.agent_pipeline import PiRAGPipeline
+    from pirag.agent_pipeline import PiRPipeline
 
     class _Retriever:
         def __init__(self):
@@ -360,7 +360,7 @@ def test_pipeline_explicit_retrieval_depth_overrides_planner_default():
             self.calls.append((question, k))
             return []
 
-    pipeline = object.__new__(PiRAGPipeline)
+    pipeline = object.__new__(PiRPipeline)
     pipeline.retriever = _Retriever()
     pipeline.answer_engine = None
 
@@ -520,7 +520,7 @@ def test_retrieve_role_context_aggregates_three_guards(monkeypatch):
     from pirag import context_builder
     from pirag.context_builder import retrieve_role_context
 
-    # Stub the piRAG pipeline so the test does not depend on retrieval.
+    # Stub the piR pipeline so the test does not depend on retrieval.
     # SHA-256 hashes are computed from the actual passage so the test
     # exercises realistic provenance values instead of a placeholder
     # constant.
@@ -713,7 +713,7 @@ def test_standard_rag_skips_physics_expansion_and_reranking(monkeypatch):
     from pirag.context_builder import retrieve_role_context
 
     def _pirag_only_path_must_not_run(*args, **kwargs):
-        raise AssertionError("standard RAG invoked a piRAG-only transform")
+        raise AssertionError("standard RAG invoked a piR-only transform")
 
     monkeypatch.setattr(
         physics_reranker,
@@ -770,7 +770,7 @@ def test_standard_rag_skips_physics_expansion_and_reranking(monkeypatch):
 
 
 def test_standard_rag_modifier_has_no_temporal_or_physics_multiplier():
-    """Only the piRAG arm may scale retrieval by continuity or physics."""
+    """Only the piR arm may scale retrieval by continuity or physics."""
     from pirag.context_to_logits import compute_context_modifier
 
     class _TemporalPathMustNotRun:
@@ -1035,9 +1035,9 @@ def test_transport_in_process():
 def test_context_guards_pass_with_real_pipeline():
     """Verify that retrieve_role_context sets guards_passed=True when citations exist."""
     from pirag.context_builder import retrieve_role_context
-    from pirag.agent_pipeline import PiRAGPipeline
+    from pirag.agent_pipeline import PiRPipeline
 
-    pipeline = PiRAGPipeline()
+    pipeline = PiRPipeline()
 
     obs = _Obs(rho=0.30, temp=10.0, rh=88.0, tau=0.0,
                hour=10.0, surplus_ratio=0.2, inv=10000.0, y_hat=15.0)
@@ -1050,12 +1050,12 @@ def test_context_guards_pass_with_real_pipeline():
 
 # ---- Test 23: Full pipeline produces non-zero modifier (updated bounds) ----
 def test_full_pipeline_nonzero_modifier():
-    """End-to-end: MCP dispatch + piRAG retrieval + modifier computation = non-zero."""
+    """End-to-end: MCP dispatch + piR retrieval + modifier computation = non-zero."""
     from pirag.mcp.tool_dispatch import dispatch_tools
     from pirag.mcp.registry import get_default_registry
     from pirag.context_builder import retrieve_role_context
     from pirag.context_to_logits import compute_context_modifier
-    from pirag.agent_pipeline import PiRAGPipeline
+    from pirag.agent_pipeline import PiRPipeline
     import pirag.mcp.registry as _reg_mod
     _reg_mod._DEFAULT_REGISTRY = None
 
@@ -1063,7 +1063,7 @@ def test_full_pipeline_nonzero_modifier():
                hour=10.0, surplus_ratio=0.3, inv=10000.0, y_hat=15.0)
 
     reg = get_default_registry()
-    pipeline = PiRAGPipeline()
+    pipeline = PiRPipeline()
 
     mcp_results = dispatch_tools("farm", obs, reg)
     assert len(mcp_results.get("_tools_invoked", [])) > 0, "MCP tools should fire"
@@ -1196,10 +1196,10 @@ def test_feature_masking_ablation():
 
     # Full should have larger magnitude than either partial
     assert np.linalg.norm(mod_full) > np.linalg.norm(mod_mcp), "Full > MCP-only"
-    assert np.linalg.norm(mod_full) > np.linalg.norm(mod_pirag), "Full > piRAG-only"
+    assert np.linalg.norm(mod_full) > np.linalg.norm(mod_pirag), "Full > piR-only"
 
-    # MCP and piRAG should differ
-    assert not np.allclose(mod_mcp, mod_pirag), "MCP-only and piRAG-only should differ"
+    # MCP and piR should differ
+    assert not np.allclose(mod_mcp, mod_pirag), "MCP-only and piR-only should differ"
 
 
 def test_context_trace_allocation_reconstructs_after_clipping():

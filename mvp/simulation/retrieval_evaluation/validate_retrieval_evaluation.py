@@ -236,8 +236,8 @@ def _validate_metadata(metadata: Any, errors: List[str]) -> Dict[str, Any]:
         "control_system_id": CONTROL_SYSTEM_ID,
         "control_retrieval_label": "Standard RAG",
         "candidate_system_id": CANDIDATE_SYSTEM_ID,
-        "candidate_retrieval_label": "piRAG",
-        "contrast_direction": "piRAG_minus_Standard_RAG",
+        "candidate_retrieval_label": "piR",
+        "contrast_direction": "piR_minus_Standard_RAG",
     }
     _require_exact_keys(
         comparison, expected_comparison, "metadata.comparison", errors

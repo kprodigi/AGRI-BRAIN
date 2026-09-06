@@ -1,4 +1,4 @@
-"""TF-IDF vectorizer for piRAG dense retrieval (numpy-only).
+"""TF-IDF vectorizer for piR dense retrieval (numpy-only).
 
 Provides a lightweight embedding layer that converts document text into
 dense vectors without requiring external ML libraries. The TF-IDF approach

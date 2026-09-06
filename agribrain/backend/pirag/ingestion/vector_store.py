@@ -1,4 +1,4 @@
-"""In-memory vector store for piRAG dense retrieval.
+"""In-memory vector store for piR dense retrieval.
 
 Provides add, search, persist, and load operations for document vectors
 with metadata. Uses cosine similarity for nearest-neighbor search.
@@ -16,7 +16,7 @@ class VectorStore:
     """In-memory vector store with cosine similarity search.
 
     Stores document vectors alongside their text and metadata for
-    retrieval by the piRAG pipeline.
+    retrieval by the piR pipeline.
     """
 
     def __init__(self) -> None:

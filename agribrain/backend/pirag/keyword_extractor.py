@@ -1,4 +1,4 @@
-"""Extract actionable keywords, thresholds, and regulatory terms from piRAG passages.
+"""Extract actionable keywords, thresholds, and regulatory terms from piR passages.
 
 Three types of keywords:
 1. Regulatory references: "FSMA Section 204", "EU Directive 2008/98/EC"
@@ -12,7 +12,7 @@ from typing import Dict, List
 
 
 def extract_keywords(passage: str) -> List[str]:
-    """Extract actionable keywords from a single piRAG passage.
+    """Extract actionable keywords from a single piR passage.
 
     Returns a list of 3-8 keyword phrases, ordered by specificity
     (thresholds first, then actions, then regulatory references).

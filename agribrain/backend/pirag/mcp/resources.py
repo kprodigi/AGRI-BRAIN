@@ -86,11 +86,11 @@ def register_agent_resources(
         for uri, name, desc, key in [
             ("agribrain://context/features",
              "Context Feature Vector",
-             "Current 5D MCP/piRAG context feature vector",
+             "Current 5D MCP/piR context feature vector",
              "features"),
             ("agribrain://context/modifier",
              "Context Logit Modifier",
-             "Current 3D logit adjustment from MCP/piRAG context",
+             "Current 3D logit adjustment from MCP/piR context",
              "modifier"),
             ("agribrain://context/explanation",
              "Latest Decision Explanation",

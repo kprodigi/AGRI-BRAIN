@@ -41,7 +41,7 @@ class Citation:
     fusion: str = ""
 
 @dataclass
-class PiRAGResponse:
+class PiRResponse:
     answer: str
     citations: List[Citation]
     guards_passed: bool
@@ -51,7 +51,7 @@ class PiRAGResponse:
     guard_breakdown: Dict[str, Optional[bool]] = field(default_factory=dict)
     retrieval_metadata: Dict[str, Any] = field(default_factory=dict)
 
-class PiRAGPipeline:
+class PiRPipeline:
     def __init__(self, dense_model_name: Optional[str] = None):
         self._embedder = TFIDFEmbedder()
         self._vector_store = VectorStore()
@@ -106,7 +106,7 @@ class PiRAGPipeline:
     def _answer_inference(self, question: str, topk: List[Dict[str, Any]]) -> str:
         return self.answer_engine.synthesize(question, topk)
 
-    def ask(self, question: str, k: Optional[int] = None, anchor_on_chain: bool = False) -> PiRAGResponse:
+    def ask(self, question: str, k: Optional[int] = None, anchor_on_chain: bool = False) -> PiRResponse:
         plan = self._plan(question)
         # An explicit caller value is authoritative.  The planner supplies a
         # default only when the caller omits k; otherwise the simulator's
@@ -154,7 +154,7 @@ class PiRAGPipeline:
         if anchor_on_chain and root:
             tx = anchor_onchain(root, policy_uri=os.getenv("POLICY_URI",""))
 
-        return PiRAGResponse(
+        return PiRResponse(
             answer=answer,
             citations=citations,
             guards_passed=guards_ok,

@@ -1,7 +1,7 @@
 """MCP tool: read the current context feature vector and modifier.
 
 Enables external monitoring systems to observe what information the
-MCP/piRAG context layer is injecting into routing decisions.
+MCP/piR context layer is injecting into routing decisions.
 """
 from __future__ import annotations
 

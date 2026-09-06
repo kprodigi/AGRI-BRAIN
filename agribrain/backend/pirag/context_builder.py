@@ -1,4 +1,4 @@
-"""Role-specific piRAG query construction with MCP-informed refinements.
+"""Role-specific piR query construction with MCP-informed refinements.
 
 Each agent role has a base query template plus conditional expansions
 triggered by observation thresholds and MCP tool results. When an MCP
@@ -209,7 +209,7 @@ def build_role_query(
     mcp_results: Dict[str, Any],
     mcp_server: Optional[MCPServer] = None,
 ) -> str:
-    """Build a piRAG query string for the given role and conditions.
+    """Build a piR query string for the given role and conditions.
 
     If ``mcp_server`` is available and has a matching prompt, queries are
     built via ``prompts/get``. Otherwise, direct template expansion is used.
@@ -287,7 +287,7 @@ def _build_prompt_args(
 
     Every role now receives the ``scenario`` parameter so that prompt
     templates can append scenario-specific search terms for discriminative
-    piRAG retrieval.
+    piR retrieval.
     """
     base: Dict[str, str] = {"scenario": scenario}
 
@@ -331,12 +331,12 @@ def retrieve_role_context(
     mcp_server: Optional[MCPServer] = None,
     retrieval_kind: str = "pirag",
 ) -> Dict[str, Any]:
-    """Retrieve either piRAG or the declared standard-RAG comparator.
+    """Retrieve either piR or the declared standard-RAG comparator.
 
     Returns a dict with query, citations, guidance fields, scores, and
     guard/provenance metadata. ``standard`` retains the same corpus, base
     pipeline, citation guards, and downstream mapping but removes the three
-    piRAG additions declared by the protocol: state-conditioned query
+    piR additions declared by the protocol: state-conditioned query
     expansion, lexical/Arrhenius reranking, and (downstream) temporal
     continuity weighting.
     """
@@ -395,7 +395,7 @@ def retrieve_role_context(
     query_expansion_executed = False
     query_expansion_k_eff = None
 
-    # Physics-informed expansion belongs only to piRAG.  The standard-RAG
+    # Physics-informed expansion belongs only to piR.  The standard-RAG
     # comparator sends the same role query directly to the same base pipeline.
     if retrieval_kind == "pirag":
         query_expansion_attempted = True
@@ -450,7 +450,7 @@ def retrieve_role_context(
             ),
         }
 
-        # Base-pipeline order is the standard-RAG order. piRAG alone adds the
+        # Base-pipeline order is the standard-RAG order. piR alone adds the
         # lexical/Arrhenius reranker; both arms retain raw fused scores for the
         # same author-declared RRF-floor gate.
         base_ranked_citations = [
@@ -519,10 +519,10 @@ def retrieve_role_context(
                 )
 
         context["ranking_transform_metadata"] = {
-            "base_order_source": "PiRAGResponse.citations",
+            "base_order_source": "PiRResponse.citations",
             "final_order_source": (
                 "lexical_arrhenius_rerank"
-                if rerank_executed else "PiRAGResponse.citations"
+                if rerank_executed else "PiRResponse.citations"
             ),
             "rerank_attempted": rerank_attempted,
             "rerank_executed": rerank_executed,
@@ -611,7 +611,7 @@ def retrieve_role_context(
         # ``guards_passed``
         # flag. Any guard returning False causes
         # ``context_to_logits.compute_context_modifier`` to zero only the
-        # piRAG-derived term. Separately computed MCP operating-envelope,
+        # piR-derived term. Separately computed MCP operating-envelope,
         # modeled-forecast, and history features remain active. This does not prove that the
         # guards detect every bad input or that guarded performance cannot
         # degrade. The per-guard outcomes are surfaced so an operator (or the

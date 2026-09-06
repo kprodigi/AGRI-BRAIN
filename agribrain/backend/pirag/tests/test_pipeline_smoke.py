@@ -1,8 +1,8 @@
 
-from pirag.agent_pipeline import PiRAGPipeline
+from pirag.agent_pipeline import PiRPipeline
 
 def test_pipeline_smoke():
-    p = PiRAGPipeline()
+    p = PiRPipeline()
     p.ingest([
         {"id": "d1", "text": "Spinach shelf life at 4 C is approximately 10 days under proper cold chain conditions.", "metadata": {"source": "SOP"}},
         {"id": "d2", "text": "The Arrhenius model predicts accelerated decay above 8 C with activation energy Ea/R = 8000 K.", "metadata": {"source": "Spoilage Model Docs"}},
@@ -18,7 +18,7 @@ def test_pipeline_smoke():
     print("Pipeline smoke OK:", out.answer[:200])
 
 def test_pipeline_empty():
-    p = PiRAGPipeline()
+    p = PiRPipeline()
     out = p.ask("Unknown question with no corpus", k=1, anchor_on_chain=False)
     assert isinstance(out.answer, str)
     print("Empty corpus OK:", out.answer)

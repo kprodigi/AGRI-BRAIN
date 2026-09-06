@@ -75,7 +75,7 @@ def _get_mcp_server():
         server = MCPServer(registry=registry)
         register_prompts(server)
 
-        # Attach a process-wide ProtocolRecorder so the MCP/piRAG panel
+        # Attach a process-wide ProtocolRecorder so the MCP/piR panel
         # can render the live JSON-RPC 2.0 interaction stream that
         # Section 4.13 promises. Bounded buffer (the recorder enforces
         # max_records and drops the oldest when full).
@@ -231,7 +231,7 @@ def list_prompts(
 
 
 # ---------------------------------------------------------------------------
-# Live JSON-RPC 2.0 protocol log (Section 4.13's MCP/piRAG monitoring panel)
+# Live JSON-RPC 2.0 protocol log (Section 4.13's MCP/piR monitoring panel)
 # ---------------------------------------------------------------------------
 @router.get("/protocol/log")
 def protocol_log(

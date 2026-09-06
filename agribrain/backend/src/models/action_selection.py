@@ -146,7 +146,7 @@ VALID_MODES: list[str] = list(_DECLARED_VALID_MODES)
 ``no_context`` uses the same logits as ``agribrain`` but with
 ``context_modifier`` forced to None for ablation studies.
 ``mcp_only`` and ``pirag_only`` use agribrain logits with partial
-context (MCP features only or piRAG features only).
+context (MCP features only or piR features only).
 
 Supply and demand forecast information (both point estimates and
 uncertainties) now enters the state vector phi(s) symmetrically, so
@@ -676,7 +676,7 @@ def select_action(
     role_bias : optional per-role logit bias vector (3,).
     deterministic : if True, use argmax instead of sampling.
     context_modifier : optional logit modifier vector (3,) from the
-        MCP/piRAG context pipeline.  Added to logits after all other
+        MCP/piR context pipeline.  Added to logits after all other
         mode-specific and role-specific terms, before softmax.
         When ``None``, behavior is bit-identical to the original policy.
     supply_hat : supply-proxy point forecast (confirmatory: persistence;

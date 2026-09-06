@@ -1,4 +1,4 @@
-"""Centralized runtime settings for backend and MCP/piRAG services."""
+"""Centralized runtime settings for backend and MCP/piR services."""
 from __future__ import annotations
 
 import os

@@ -146,7 +146,7 @@ def test_compute_context_modifier_differentiates_mcp_only_vs_pirag_only():
 
     obs = _StubObs()
 
-    # mcp_only path: MCP results populated, piRAG retrieval skipped
+    # mcp_only path: MCP results populated, piR retrieval skipped
     # (coordinator gating returns the empty-string sentinel).
     mcp_mode_mcp = {
         "_tools_invoked": ["check_compliance", "spoilage_forecast"],
@@ -165,7 +165,7 @@ def test_compute_context_modifier_differentiates_mcp_only_vs_pirag_only():
         temporal_window=None, context_mode="mcp_only",
     )
 
-    # pirag_only path: MCP dispatch skipped, piRAG retrieval populated.
+    # pirag_only path: MCP dispatch skipped, piR retrieval populated.
     pirag_mode_mcp = {"_tools_invoked": [], "_ablation_skipped": "mcp"}
     pirag_mode_rag = {
         "top_citation_score": 0.6,
@@ -217,7 +217,7 @@ def test_ablation_bias_retired():
 
 
 # ---------------------------------------------------------------------------
-# MEDIUM-5 (structural): coordinator must skip MCP dispatch / piRAG retrieval
+# MEDIUM-5 (structural): coordinator must skip MCP dispatch / piR retrieval
 # according to context_mode so the two single-channel modes differ in the
 # *channel itself*, not just the modifier feature mask.
 # ---------------------------------------------------------------------------
@@ -227,7 +227,7 @@ def test_coordinator_structural_gating_in_source():
 
     The check is source-line invariant rather than a runtime fixture
     because instantiating the full coordinator requires a populated
-    registry, MCP server, piRAG pipeline, and shared context — all of
+    registry, MCP server, piR pipeline, and shared context — all of
     which are out of scope for a unit test. The source-line guard
     catches any future regression that re-merges the two channels.
     """
@@ -240,7 +240,7 @@ def test_coordinator_structural_gating_in_source():
         "is missing from coordinator._compute_step_context."
     )
     assert '_skip_rag = (context_mode == "mcp_only")' in src, (
-        "Structural ablation gating for mcp_only -> skip piRAG retrieval "
+        "Structural ablation gating for mcp_only -> skip piR retrieval "
         "is missing from coordinator._compute_step_context."
     )
     # The gating must guard BOTH the active-agent path and the

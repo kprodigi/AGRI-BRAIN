@@ -1,4 +1,4 @@
-"""Extractive question-answering engine for PiRAG.
+"""Extractive question-answering engine for PiR.
 
 Selects the most relevant sentence window from retrieved passages
 using keyword overlap scoring. Returns the top-scoring span as the

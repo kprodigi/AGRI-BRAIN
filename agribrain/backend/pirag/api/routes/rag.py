@@ -2,11 +2,11 @@
 from fastapi import APIRouter, HTTPException, Header, Request
 from pydantic import BaseModel
 from typing import List, Dict, Any
-from ...agent_pipeline import PiRAGPipeline
+from ...agent_pipeline import PiRPipeline
 from src.security import enforce_api_key
 
 router = APIRouter()
-_pipe = PiRAGPipeline()
+_pipe = PiRPipeline()
 
 class DocIn(BaseModel):
     id: str
@@ -36,7 +36,7 @@ def list_kb(
     request: Request,
     x_api_key: str | None = Header(default=None, alias="x-api-key"),
 ):
-    """Return the live piRAG knowledge base (static + dynamically synthesised entries).
+    """Return the live piR knowledge base (static + dynamically synthesised entries).
 
     Each document is tagged ``static`` (loaded from
     ``pirag/knowledge_base/`` at startup) or ``synthesised`` (added at
@@ -96,4 +96,4 @@ def ask(
             "chain_tx": out.chain_tx,
         }
     except Exception:
-        raise HTTPException(400, "PiRAG query failed")
+        raise HTTPException(400, "PiR query failed")

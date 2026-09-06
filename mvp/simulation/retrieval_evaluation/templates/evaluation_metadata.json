@@ -7,8 +7,8 @@
     "control_system_id": "agribrain_standard_rag",
     "control_retrieval_label": "Standard RAG",
     "candidate_system_id": "agribrain",
-    "candidate_retrieval_label": "piRAG",
-    "contrast_direction": "piRAG_minus_Standard_RAG"
+    "candidate_retrieval_label": "piR",
+    "contrast_direction": "piR_minus_Standard_RAG"
   },
   "systems": [
     {

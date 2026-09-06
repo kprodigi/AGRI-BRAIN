@@ -63,7 +63,7 @@ def test_crossfit_breaks_coupling_artifact():
     # Each mode is an INDEPENDENT noisy draw around base+gain -- this is what
     # creates the shared-term coupling: mcp_only appears in both x=(mcp-nc) and
     # y=(agri-mcp) as the *same* noisy draw, injecting a spurious -var(eps_mcp)
-    # into cov(x, y). The true piRAG marginal is a CONSTANT 0.008 across
+    # into cov(x, y). The true piR marginal is a CONSTANT 0.008 across
     # scenarios, so the genuine saturation slope is 0. The cross-fit removes the
     # coupling *in expectation*; we therefore verify the property over many
     # replications (a single 6-scenario draw is too noisy to assert on, which

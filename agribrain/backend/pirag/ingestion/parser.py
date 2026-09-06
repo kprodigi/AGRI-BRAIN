@@ -1,4 +1,4 @@
-"""Document parser for piRAG ingestion pipeline.
+"""Document parser for piR ingestion pipeline.
 
 Handles .txt, .json, .csv formats with optional .pdf support.
 Returns structured (doc_id, text, metadata) tuples for downstream

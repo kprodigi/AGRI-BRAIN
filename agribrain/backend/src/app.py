@@ -22,7 +22,7 @@ from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.responses import RedirectResponse, FileResponse, HTMLResponse
 from pydantic import BaseModel, field_validator
 
-# PiRAG / MCP routers
+# PiR / MCP routers
 from pirag.api.routes.rag import router as rag_router
 from pirag.mcp.server import router as mcp_router
 

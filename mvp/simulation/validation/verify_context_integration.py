@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Development smoke script for MCP + piRAG context integration.
+Development smoke script for MCP + piR context integration.
 
 Runs a short baseline trace with AGRI-BRAIN context on versus off and checks
 basic wiring. This is not a publication treatment or inferential result; the
@@ -154,7 +154,7 @@ def _run_short_episode(df, mode, context_enabled, n_steps=48):
 
 def main():
     print("=" * 70)
-    print("MCP + piRAG Context Integration Verification")
+    print("MCP + piR Context Integration Verification")
     print("=" * 70)
     print("  (set FAILURE_INJECTION=true to verify reliability under injected MCP faults)")
 
@@ -204,7 +204,7 @@ def main():
     print(f"  Nonzero modifier steps: {ctx_summary.get('nonzero_modifier_steps', 0)}")
     for role, stats in ctx_summary.get("per_role", {}).items():
         print(f"    [{role}] MCP calls: {stats.get('mcp_calls', 0)}, "
-              f"piRAG queries: {stats.get('pirag_queries', 0)}, "
+              f"piR queries: {stats.get('pirag_queries', 0)}, "
               f"mean modifier: {stats.get('mean_modifier_magnitude', 0):.4f}, "
               f"nonzero: {stats.get('nonzero_modifier_count', 0)}")
 

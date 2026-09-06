@@ -275,7 +275,7 @@ def _pretty_label(value: str) -> str:
     replacements = {
         "agribrain": "AGRI-BRAIN",
         "mcp": "MCP",
-        "pirag": "PIRAG",
+        "pirag": "PIR",
         "ari": "ARI",
     }
     words = value.replace("-", "_").split("_")

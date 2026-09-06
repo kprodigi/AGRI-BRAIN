@@ -46,7 +46,7 @@ def expand_query_with_physics(
     temperature: float,
     k_eff: float = 0.0,
 ) -> str:
-    """Expand a piRAG query with physics-informed terms.
+    """Expand a piR query with physics-informed terms.
 
     Parameters
     ----------

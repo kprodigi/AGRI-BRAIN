@@ -27,7 +27,7 @@ forecasting, compliance, and routing are optimized in isolation. AGRI-BRAIN
 treats **communication as an explicit decision variable**: five role agents
 (farm, processor, cooperative, distributor, recovery) admit external evidence
 through **Model Context Protocol (MCP)** tool calls and **physics-informed
-retrieval-augmented generation (piRAG)**, which together populate a
+retrieval-augmented generation (piR)**, which together populate a
 five-dimensional context vector that shifts a softmax routing policy through a
 learned, sign-constrained logit modifier. Typed peer messages reach the policy
 on a separate path, as a bounded logit bias, and are not a coordinate of that
@@ -49,7 +49,7 @@ outage, adaptive-pricing shock) plus an unperturbed baseline, against an
 - **MCP interoperability layer** — 14 statically registered tools + 5
   runtime role-capability tools behind one JSON-RPC 2.0 surface with three
   transports ([tool inventory](agribrain/backend/pirag/mcp/TOOL_INVENTORY.md)).
-- **Physics-informed retrieval (piRAG)** — hybrid BM25 + TF-IDF over a
+- **Physics-informed retrieval (piR)** — hybrid BM25 + TF-IDF over a
   20-document institutional corpus with thermal query expansion,
   physics-aware reranking, and quality guards.
 - **Context-fused routing policy** — a 5D context vector shifts the softmax
@@ -105,12 +105,12 @@ AGRI-BRAIN/
 │   ├── backend/
 │   │   ├── src/                    # FastAPI app, models (PINN, LSTM, SLCA, policy),
 │   │   │                           #   routers, chain integration, 5-agent coordinator
-│   │   ├── pirag/                  # piRAG pipeline, context fusion/learning, MCP
+│   │   ├── pirag/                  # piR pipeline, context fusion/learning, MCP
 │   │   │   ├── mcp/                #   protocol, registry, transports, 14 tools
 │   │   │   ├── knowledge_base/     #   20 domain documents
 │   │   │   ├── guards/             #   unit, feasibility, retrieval-quality guards
 │   │   │   ├── provenance/         #   Merkle tree + on-chain anchoring
-│   │   │   └── tests/              #   MCP/piRAG test suite
+│   │   │   └── tests/              #   MCP/piR test suite
 │   │   └── tests/                  # Backend test suite
 │   ├── frontend/                   # React 18 + shadcn/ui dashboard (8 pages)
 │   └── contracts/                  # Solidity suite (6 contracts) + Hardhat
@@ -228,7 +228,7 @@ fields, the stress pass/fail schema, and the per-claim threshold assertions.
 
 A React dashboard ships with the framework for operating the live system —
 eight pages covering operations, quality, decision explainability, mapping,
-analytics, MCP/piRAG inspection, demos, and admin (see
+analytics, MCP/piR inspection, demos, and admin (see
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#frontend) for the full page and
 tech-stack reference).
 
@@ -255,11 +255,11 @@ tech-stack reference).
 |:---:|:---:|:---:|
 | ![Explainability](docs/screenshots/decisions-explainability-light.png) | ![MCP Tools](docs/screenshots/admin-mcp-tools-light.png) | ![MCP Resources](docs/screenshots/admin-mcp-resources-light.png) |
 
-| MCP Invocation | piRAG Search |
+| MCP Invocation | piR Search |
 |:---:|:---:|
-| ![MCP Invoke](docs/screenshots/admin-mcp-invoke-light.png) | ![piRAG](docs/screenshots/admin-mcp-pirag-light.png) |
+| ![MCP Invoke](docs/screenshots/admin-mcp-invoke-light.png) | ![piR](docs/screenshots/admin-mcp-pirag-light.png) |
 
-| MCP/piRAG Overview | Context Features | Knowledge Base |
+| MCP/piR Overview | Context Features | Knowledge Base |
 |:---:|:---:|:---:|
 | ![Overview](docs/screenshots/mcp-pirag-overview-light.png) | ![Features](docs/screenshots/mcp-pirag-features-light.png) | ![KB](docs/screenshots/mcp-pirag-knowledge-light.png) |
 
@@ -296,7 +296,7 @@ tech-stack reference).
 | `ONLINE_LEARNING` | `false` | Enable REINFORCE policy gradient updates |
 | `LLM_PROVIDER` | `template` | RAG answer engine: `template` or `api` |
 | `DATA_CSV` | (auto) | Override path to spinach sensor CSV |
-| `RAG_CONTEXT_ENABLED` | `true` | Enable MCP/piRAG context integration in agribrain mode |
+| `RAG_CONTEXT_ENABLED` | `true` | Enable MCP/piR context integration in agribrain mode |
 | `SIM_API_BASE` | (empty) | Base URL for the optional simulation API; unset by default, which leaves the `simulate` MCP tool unregistered |
 | `DETERMINISTIC_MODE` | `false` | `true` = exact reproducibility (audit), `false` = 8-source stochastic perturbations (see HOW_TO_RUN.md for the canonical default values) |
 

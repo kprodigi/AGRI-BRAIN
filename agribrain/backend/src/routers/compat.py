@@ -57,7 +57,7 @@ async def legacy_any(req: Request):
 
 
 # ---------------------------------------------------------------------------
-# /sim/validate -- feasibility guard endpoint (piRAG feasibility_guard.py)
+# /sim/validate -- feasibility guard endpoint (piR feasibility_guard.py)
 # ---------------------------------------------------------------------------
 class SimValidateRequest(BaseModel):
     answer: str = ""
@@ -66,7 +66,7 @@ class SimValidateRequest(BaseModel):
 
 @router.post("/sim/validate")
 def sim_validate(req: SimValidateRequest):
-    """Basic feasibility check used by the piRAG feasibility guard.
+    """Basic feasibility check used by the piR feasibility guard.
 
     Returns feasible=true unless the answer contains obviously out-of-range
     numeric values relative to the context constraints.

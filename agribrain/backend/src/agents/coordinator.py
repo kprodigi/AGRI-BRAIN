@@ -770,7 +770,7 @@ class AgentCoordinator:
     ----------
     agents : optional pre-configured list of agents.  When *None*,
         one of each role is created with default biases.
-    context_enabled : whether to activate MCP/piRAG context injection.
+    context_enabled : whether to activate MCP/piR context injection.
     """
 
     def __init__(
@@ -959,7 +959,7 @@ class AgentCoordinator:
             self._init_policy_learning(mode)
 
     def _init_context_infrastructure(self) -> None:
-        """Initialize MCP/piRAG infrastructure. Fails gracefully."""
+        """Initialize MCP/piR infrastructure. Fails gracefully."""
         try:
             from pirag.context_eval import ContextEvaluator
             from pirag.context_learner import ContextMatrixLearner
@@ -1025,14 +1025,14 @@ class AgentCoordinator:
             self.context_enabled = False
 
         try:
-            from pirag.agent_pipeline import PiRAGPipeline
-            self._pirag_pipeline = PiRAGPipeline()
+            from pirag.agent_pipeline import PiRPipeline
+            self._pirag_pipeline = PiRPipeline()
         except ImportError as exc:
             if os.environ.get("STRICT_VALIDATION", "0") == "1":
                 raise RuntimeError(
-                    "publication-critical piRAG pipeline import failed"
+                    "publication-critical piR pipeline import failed"
                 ) from exc
-            _log.warning("piRAG pipeline unavailable: %s", exc)
+            _log.warning("piR pipeline unavailable: %s", exc)
 
         try:
             from pirag.trace_exporter import TraceExporter
@@ -1726,7 +1726,7 @@ class AgentCoordinator:
         context_mode: str = "full",
         retrieval_kind: str = "pirag",
     ) -> Optional[np.ndarray]:
-        """Compute MCP/piRAG context modifier for the current step."""
+        """Compute MCP/piR context modifier for the current step."""
         try:
             from pirag.context_builder import retrieve_role_context
             from pirag.context_to_logits import (
@@ -1802,7 +1802,7 @@ class AgentCoordinator:
                 self._protocol_recorder, _primary_mcp_cursor,
             )
 
-            # piRAG retrieval
+            # piR retrieval
             _primary_retrieval_cursor = _protocol_cursor(
                 self._protocol_recorder
             )
@@ -1880,7 +1880,7 @@ class AgentCoordinator:
             ).copy()
 
             # Physics-consistency gate detection. compute_context_modifier
-            # below will force the piRAG term to zero if the policy_flags
+            # below will force the piR term to zero if the policy_flags
             # have ``enable_physics_consistency_gate`` set AND the
             # retrieved-context physics_consistency_score is below 0.03
             # (the threshold below which the retrieval is treated as
@@ -1976,7 +1976,7 @@ class AgentCoordinator:
                     # Honor ablation gating in the cooperative overlay
                     # too — otherwise ``pirag_only`` would re-introduce
                     # MCP signals via the cooperative dispatch and
-                    # ``mcp_only`` would re-introduce piRAG via
+                    # ``mcp_only`` would re-introduce piR via
                     # cooperative retrieval, defeating the structural
                     # ablation the post-audit fix is meant to enforce.
                     _coop_stage = "mcp_dispatch"
@@ -2415,7 +2415,7 @@ class AgentCoordinator:
                     cooperative.generate_messages(coop_obs, action)
                 )
 
-        # Enrich messages with piRAG context if available
+        # Enrich messages with piR context if available
         if self.context_enabled and self._step_rag_context:
             try:
                 from pirag.message_enrichment import enrich_message
@@ -2791,7 +2791,7 @@ class AgentCoordinator:
         return {role: dict(agent.state) for role, agent in self.agents.items()}
 
     def context_summary(self) -> Dict[str, Any]:
-        """Summary of MCP and piRAG activity for paper reporting."""
+        """Summary of MCP and piR activity for paper reporting."""
         caps = (
             capabilities_for(self._learning_mode)
             if self._learning_mode is not None else None
@@ -2839,7 +2839,7 @@ class AgentCoordinator:
                 ))),
             ))
             if retrieval_count < 0:
-                raise RuntimeError("negative piRAG query count in context log")
+                raise RuntimeError("negative piR query count in context log")
             per_role[role]["pirag_queries"] += retrieval_count
             per_role[role]["modifier_magnitudes"].append(entry.get("modifier_norm", 0.0))
             if retrieval_attempted and not entry.get("guards_passed", False):

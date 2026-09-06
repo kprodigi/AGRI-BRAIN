@@ -1,4 +1,4 @@
-"""Template-based answer synthesis engine for PiRAG.
+"""Template-based answer synthesis engine for PiR.
 
 Composes retrieved passages into structured, source-cited answers
 without requiring an external LLM API. Suitable for reproducible

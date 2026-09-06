@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agribrain.example/schemas/independent-retrieval-evaluation-v1.json",
   "title": "AGRI-BRAIN independent retrieval-ranking evaluation metadata",
-  "description": "Metadata for a fixed-query, pooled, blinded human comparison of Standard RAG and piRAG. Cross-file constraints listed in x-cross-file-rules are enforced by validate_retrieval_evaluation.py.",
+  "description": "Metadata for a fixed-query, pooled, blinded human comparison of Standard RAG and piR. Cross-file constraints listed in x-cross-file-rules are enforced by validate_retrieval_evaluation.py.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -45,8 +45,8 @@
         "control_system_id": {"const": "agribrain_standard_rag"},
         "control_retrieval_label": {"const": "Standard RAG"},
         "candidate_system_id": {"const": "agribrain"},
-        "candidate_retrieval_label": {"const": "piRAG"},
-        "contrast_direction": {"const": "piRAG_minus_Standard_RAG"}
+        "candidate_retrieval_label": {"const": "piR"},
+        "contrast_direction": {"const": "piR_minus_Standard_RAG"}
       }
     },
     "systems": {

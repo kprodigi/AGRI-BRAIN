@@ -1,6 +1,6 @@
 """Institutional-retrieval context provider for the decision pipeline.
 
-Queries the constructed piRAG knowledge base for source-labelled context based on
+Queries the constructed piR knowledge base for source-labelled context based on
 the current scenario conditions, spoilage risk, and temperature, then
 returns a structured context dict for use in action selection and
 explanation generation.
@@ -22,16 +22,16 @@ _PIPELINE = None
 
 
 def _get_pipeline():
-    """Lazy-initialize the PiRAG pipeline with knowledge base documents."""
+    """Lazy-initialize the PiR pipeline with knowledge base documents."""
     global _PIPELINE
     if _PIPELINE is not None:
         return _PIPELINE
 
     try:
-        from .agent_pipeline import PiRAGPipeline
+        from .agent_pipeline import PiRPipeline
 
-        # PiRAGPipeline auto-ingests the knowledge_base/ directory on init
-        pipeline = PiRAGPipeline()
+        # PiRPipeline auto-ingests the knowledge_base/ directory on init
+        pipeline = PiRPipeline()
 
         _PIPELINE = pipeline
     except Exception as _exc:

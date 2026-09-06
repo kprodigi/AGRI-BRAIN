@@ -1,10 +1,10 @@
-"""Author-declared RRF-floor guard for the piRAG routing context pipeline.
+"""Author-declared RRF-floor guard for the piR routing context pipeline.
 
 Paper Section 3.7 declares three guards on the routing context pipeline:
 dimensional analysis (see ``unit_guard.py``), feasibility (see
 ``feasibility_guard.py``), and an RRF-score floor (this module). When any
 guard returns False the downstream context-to-logit integrator zeroes the
-piRAG-derived term only. Separately computed MCP signals remain active.
+piR-derived term only. Separately computed MCP signals remain active.
 This does not establish guard completeness or guarantee non-degradation of
 outcomes.
 

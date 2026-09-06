@@ -3,15 +3,15 @@ r"""Conditional observed-state feature-group analysis for H2.
 
 This supersedes the earlier logit-shift channel aggregator (removed 2026-06),
 which measured the *signed logit shift on the chosen action* and a
-"super-additivity" fraction defined as ``|joint| > max(|mcp|,|piRAG|)``.
+"super-additivity" fraction defined as ``|joint| > max(|mcp|,|piR|)``.
 That framing had three defects a referee would catch immediately:
 
   1. Before the total cap, the context layer is linear-additive across a
-     persistent MCP term and a separately gated piRAG term. The post-sum clip
+     persistent MCP term and a separately gated piR term. The post-sum clip
      makes independently masked recomputations non-additive at saturated rows,
      so they must be interpreted as policy-surface diagnostics rather than
      decomposed causal effects. Super-additivity is not a model parameter.
-  2. Retrieval guards regulate only piRAG-derived evidence. MCP operating-envelope,
+  2. Retrieval guards regulate only piR-derived evidence. MCP operating-envelope,
      modeled-forecast, and history terms can remain active when retrieval is withheld,
      so whole-layer activity must not be inferred from the retrieval gate.
   3. The "joint Delta-z on the chosen action" was measured on the *endogenous*
@@ -98,7 +98,7 @@ except Exception:  # pragma: no cover - defensive
     _CEIL, _ADV = 0.005, 0.80
 
 MCP_PSI = (0, 1, 4)    # envelope exceedance, forecast signal, recovery-history signal
-PIRAG_PSI = (2, 3)     # retrieval-score signal, retrieved-policy signal
+PIR_PSI = (2, 3)     # retrieval-score signal, retrieved-policy signal
 _RNG = np.random.default_rng(20260605)
 _N_BOOT = 2000
 
@@ -340,7 +340,7 @@ def _aggregate_cell(per_seed_records):
                 n_applied += 1
                 psi = np.asarray(psi, dtype=float)
                 mcp_on = bool(np.any(np.abs(psi[list(MCP_PSI)]) > 1e-9))
-                pir_on = bool(np.any(np.abs(psi[list(PIRAG_PSI)]) > 1e-9))
+                pir_on = bool(np.any(np.abs(psi[list(PIR_PSI)]) > 1e-9))
                 act_mcp += int(mcp_on)
                 act_pirag += int(pir_on)
                 act_both += int(mcp_on and pir_on)
@@ -640,7 +640,7 @@ def main(argv=None):
             "governance_advantage": _ADV,
             "n_bootstrap": _N_BOOT,
             "mcp_psi_indices": list(MCP_PSI),
-            "pirag_psi_indices": list(PIRAG_PSI),
+            "pirag_psi_indices": list(PIR_PSI),
             "analysis_kind": "conditional_observed_state_feature_group_masking",
             "estimand": (
                 "modal routing sensitivity to algebraically masking MCP-derived "

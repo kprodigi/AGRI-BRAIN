@@ -1,4 +1,4 @@
-"""LLM abstraction layer for piRAG explanation synthesis.
+"""LLM abstraction layer for piR explanation synthesis.
 
 Provides a pluggable engine interface that supports:
   - Template-based synthesis (default, no external dependencies)

@@ -27,7 +27,7 @@ EXPECTED = {
     "FAILURE_INJECTION": "false",
     "MCP_RELIABILITY": "false",
     "MCP_QOS_ROUTING": "false",
-    "PIRAG_COUNTERFACTUAL": "false",
+    "PIR_COUNTERFACTUAL": "false",
     "PHYSICS_CONSISTENCY_GATE": "false",
     "HETEROGENEOUS_PROFILES": "false",
     "RESEARCH_METRICS": "false",

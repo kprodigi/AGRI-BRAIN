@@ -104,7 +104,7 @@ def synthesize_decision_document(
     scenario: str,
     hour_range: tuple[float, float],
 ) -> Dict[str, Any]:
-    """Synthesize a piRAG-ingestible document from routing decisions.
+    """Synthesize a piR-ingestible document from routing decisions.
 
     Parameters
     ----------
@@ -114,7 +114,7 @@ def synthesize_decision_document(
 
     Returns
     -------
-    Dict with id, text, and metadata for piRAG ingestion.
+    Dict with id, text, and metadata for piR ingestion.
     """
     if not decisions:
         return {"id": "empty_block", "text": "", "metadata": {}}
@@ -175,7 +175,7 @@ def ingest_decision_history(
 
     Parameters
     ----------
-    pipeline : PiRAGPipeline instance.
+    pipeline : PiRPipeline instance.
     decisions : in-memory decision history from the coordinator. This is the
         default source for the explicitly enabled diagnostic.
     scenario : current scenario name.

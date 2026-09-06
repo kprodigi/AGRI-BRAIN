@@ -2,7 +2,7 @@
 
 This interface supports one narrow comparison: the rankings returned by
 `agribrain_standard_rag` (Standard RAG) versus the institutional-retrieval
-variant in `agribrain` (internal identifier: piRAG). It does **not** evaluate
+variant in `agribrain` (internal identifier: piR). It does **not** evaluate
 the Adaptive Resilience Index (ARI),
 routing outcomes, or operational performance. Retrieval-quality evidence and
 downstream simulation evidence must remain separate.

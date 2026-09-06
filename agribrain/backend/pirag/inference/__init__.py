@@ -1,1 +1,1 @@
-"""piRAG inference engines for explanation synthesis."""
+"""piR inference engines for explanation synthesis."""

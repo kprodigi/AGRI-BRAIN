@@ -431,7 +431,7 @@ def main(argv=None):
             "standalone_mcp": _mean_ci(m - n),
             "standalone_pirag": _mean_ci(p - n),
             "full_gain": _mean_ci(a - n),
-            # "add piRAG on top of MCP" and "add MCP on top of piRAG"
+            # "add piR on top of MCP" and "add MCP on top of piR"
             "add_pirag_on_mcp": _paired_tost(a - m),
             "add_mcp_on_pirag": _paired_tost(a - p),
         }
@@ -490,15 +490,15 @@ def main(argv=None):
     # Console summary.
     print("\nPer-scenario 'add the second channel' verdicts (TOST, SESOI=0.01):")
     for scn, c in by_scn.items():
-        print(f"  {scn:16s} +piRAG/MCP: {c['add_pirag_on_mcp']['verdict']:13s}"
+        print(f"  {scn:16s} +piR/MCP: {c['add_pirag_on_mcp']['verdict']:13s}"
               f" (Δ={c['add_pirag_on_mcp']['mean_diff']:+.4f})"
-              f"   +MCP/piRAG: {c['add_mcp_on_pirag']['verdict']:13s}"
+              f"   +MCP/piR: {c['add_mcp_on_pirag']['verdict']:13s}"
               f" (Δ={c['add_mcp_on_pirag']['mean_diff']:+.4f})")
     mo = moderation["pirag_marginal_vs_mcp_strength"]
     def _slope_text(value):
         return "not estimable" if value is None else f"{float(value):+.3f}"
     print(f"\nDescriptive four-scenario cross-fit moderation "
-          f"(piRAG marginal vs MCP strength): "
+          f"(piR marginal vs MCP strength): "
           f"slope={_slope_text(mo['crossfit']['slope'])} "
           f"(naive coupled comparator "
           f"{_slope_text(mo['naive_coupled_bound']['slope'])}; "

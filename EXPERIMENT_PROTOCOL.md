@@ -120,7 +120,7 @@ must not be described as “800 stochastic simulation episodes.”
 The same four-episode learned-arm budget applies to:
 
 - `agribrain_standard_rag`: no state-conditioned query expansion, no
-  lexical/Arrhenius reranking, and no piRAG temporal multiplier; the optional
+  lexical/Arrhenius reranking, and no piR temporal multiplier; the optional
   hard physics-consistency gate is disabled in both confirmatory arms;
 - `agribrain_no_peer`: peer-message generation and delivery disabled while the
   agent schedule and external channels remain unchanged;
@@ -128,7 +128,7 @@ The same four-episode learned-arm budget applies to:
   learning rate, shrinkage, and magnitude caps remain unchanged.
 
 These add 300 retained cells and 1,200 actual episode executions.  A claim that
-piRAG improves retrieval quality additionally requires a separately supplied,
+piR improves retrieval quality additionally requires a separately supplied,
 independently judged query set; downstream synthetic ARI alone is insufficient.
 
 ## Hypotheses and inference

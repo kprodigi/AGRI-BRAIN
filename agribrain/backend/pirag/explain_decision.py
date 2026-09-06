@@ -12,7 +12,7 @@ Generates human-readable explanations with:
    feature-attribution readout, which is what the code actually
    computes.
 2. **Ablation delta** — what the action probability would be if the
-   MCP/piRAG context modifier were zeroed (same RNG seed, same
+   MCP/piR context modifier were zeroed (same RNG seed, same
    environment). Earlier wording called this a "counterfactual"; in
    the Pearlian sense it is not (no twin-network, no abduction). The
    correct framing is a leave-one-out / ablation delta, which is
@@ -93,7 +93,7 @@ def explain_decision(
     hour : simulation hour.
     obs : current Observation.
     mcp_results : results from MCP tool dispatch.
-    rag_context : results from piRAG retrieval.
+    rag_context : results from piR retrieval.
     slca_score : composite SLCA score.
     carbon_kg : carbon emissions.
     waste : waste rate.
@@ -101,7 +101,7 @@ def explain_decision(
     logit_adjustment : 3D logit modifier (THETA_CONTEXT @ psi).
     action_probs : probability vector WITH context.
     ablation_action : action the same policy would have selected with
-        ``psi := 0`` (i.e. the MCP/piRAG context modifier zeroed). This
+        ``psi := 0`` (i.e. the MCP/piR context modifier zeroed). This
         is an ablation, not a Pearl-style counterfactual; see
         ``ablation_delta.kind`` in the returned dict for the explicit
         framing. The deprecated alias ``counterfactual_action`` is
@@ -125,7 +125,7 @@ def explain_decision(
         the legacy key ``cooperative_veto`` for the recorded cooperative
         operating-envelope adjustment.
     context_integration_trace : JSON-native forward trace that separates MCP
-        and piRAG components, gates, clipping, and the learner Jacobian.
+        and piR components, gates, clipping, and the learner Jacobian.
 
     Returns
     -------
@@ -264,14 +264,14 @@ def explain_decision(
 
     # --- Paragraph 3: Ablation comparison (psi := 0).
     # Honest framing: same policy, same phi(s), same RNG seed, with the
-    # MCP/piRAG context modifier zeroed. Not a Pearl-style counterfactual.
+    # MCP/piR context modifier zeroed. Not a Pearl-style counterfactual.
     # The comparison is explicitly labeled as a calculation-layer ablation so
     # it is not mistaken for a Pearlian intervention.
     para3 = ""
     if ablation_probs is not None and action_probs is not None:
         delta_lr = (action_probs[1] - ablation_probs[1]) * 100
         para3 = (
-            f"Ablation (psi := 0): with the MCP/piRAG modifier zeroed, the "
+            f"Ablation (psi := 0): with the MCP/piR modifier zeroed, the "
             f"calculated cold-chain probability is {ablation_probs[0]*100:.1f}% and redistribution "
             f"{ablation_probs[1]*100:.1f}% under the same policy, phi(s) and RNG seed. "
             f"Context injection shifted {abs(delta_lr):.1f} percentage points "
@@ -290,7 +290,7 @@ def explain_decision(
     n_pirag = len(pirag_hashes)
     para5 = (
         f"Local evidence commitment: {len(all_hashes)} exposed leaf hashes "
-        f"({n_mcp} MCP tool outputs + {n_pirag} piRAG citations)"
+        f"({n_mcp} MCP tool outputs + {n_pirag} piR citations)"
     )
     if merkle_root:
         para5 += f", local Merkle root: {merkle_root[:12]}..."
@@ -344,7 +344,7 @@ def explain_decision(
     # --- Ablation-delta structured data (formerly "counterfactual") ---
     # Honestly labelled: this is what the same policy, with the same
     # state vector phi(s) and the same RNG seed, would have selected if
-    # the final MCP/piRAG context modifier (derived from THETA_CONTEXT @ psi)
+    # the final MCP/piR context modifier (derived from THETA_CONTEXT @ psi)
     # had
     # been zero. It is *not* a Pearl-style counterfactual: there is no
     # twin-network and no abduction step. It is a leave-one-out ablation
@@ -353,7 +353,7 @@ def explain_decision(
         "kind": "ablation_psi_zero",
         "description": (
             "Action and probabilities the same policy would have produced "
-            "with psi := 0 (i.e. with the MCP/piRAG context modifier "
+            "with psi := 0 (i.e. with the MCP/piR context modifier "
             "disabled). Same RNG seed, same phi(s). This is an ablation "
             "delta, not a Pearl-style counterfactual."
         ),
@@ -588,13 +588,13 @@ def _build_contribution_phrase(
         )
     elif feature_idx == 2:
         return (
-            f"piRAG returned a normalized fused-rank signal from "
+            f"piR returned a normalized fused-rank signal from "
             f"{rag_context.get('top_doc_id', 'the knowledge base')} "
             f"(normalized policy input: {float(context_features[2]):.2f})"
         )
     elif feature_idx == 3:
         return (
-            f"piRAG retrieved a source-labelled guidance note from "
+            f"piR retrieved a source-labelled guidance note from "
             f"{rag_context.get('top_doc_id', 'the knowledge base')} "
             f"(raw fused-rank strength: {rag_context.get('top_citation_score', 0):.4f})"
         )

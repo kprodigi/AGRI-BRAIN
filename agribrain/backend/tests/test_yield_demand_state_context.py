@@ -130,14 +130,14 @@ class TestContextFiveFeatures:
 
     def test_masks_are_5d(self):
         from pirag.context_to_logits import (
-            _MCP_FEATURE_MASK, _PIRAG_FEATURE_MASK,
+            _MCP_FEATURE_MASK, _PIR_FEATURE_MASK,
         )
         assert _MCP_FEATURE_MASK.shape == (5,)
-        assert _PIRAG_FEATURE_MASK.shape == (5,)
+        assert _PIR_FEATURE_MASK.shape == (5,)
         # MCP features: compliance, forecast urgency, recovery saturation.
         assert np.allclose(_MCP_FEATURE_MASK, [1.0, 1.0, 0.0, 0.0, 1.0])
-        # piRAG features: normalized retrieval-score and retrieved-policy signals.
-        assert np.allclose(_PIRAG_FEATURE_MASK, [0.0, 0.0, 1.0, 1.0, 0.0])
+        # piR features: normalized retrieval-score and retrieved-policy signals.
+        assert np.allclose(_PIR_FEATURE_MASK, [0.0, 0.0, 1.0, 1.0, 0.0])
 
     def test_context_mode_accepts_three_values(self):
         from pirag.context_to_logits import compute_context_modifier
@@ -155,7 +155,7 @@ class TestContextFiveFeatures:
         full = compute_context_modifier(context_mode="full", **kwargs)
         mcp = compute_context_modifier(context_mode="mcp_only", **kwargs)
         pirag = compute_context_modifier(context_mode="pirag_only", **kwargs)
-        # mcp_only zeros the piRAG features; pirag_only zeros the MCP features.
+        # mcp_only zeros the piR features; pirag_only zeros the MCP features.
         # They should not be identical to full (compliance is on, retrieval is on).
         assert not np.allclose(mcp, full)
         assert not np.allclose(pirag, full)

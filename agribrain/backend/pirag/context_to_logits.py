@@ -1,20 +1,20 @@
 """Guard-gated, learnable context modifier using normalized retrieval rank strength.
 
-Converts MCP tool results and piRAG retrieval context into a logit modifier
+Converts MCP tool results and piR retrieval context into a logit modifier
 vector of shape (3,), one element per routing action
 ``[cold_chain, local_redistribute, recovery]``.
 
 Three-layer context integration:
 
-1. **Context feature vector**: MCP and piRAG outputs become structured
+1. **Context feature vector**: MCP and piR outputs become structured
    institutional / coordination features psi(context) in R^5 with weight
    matrix THETA_CONTEXT in R^(3x5).
 2. **Channel-separated guards**: the author-declared RRF floor applies only
-   to the piRAG-derived columns. The optional hard physics-consistency gate
-   also affects only piRAG when explicitly enabled, but it is disabled in the
+   to the piR-derived columns. The optional hard physics-consistency gate
+   also affects only piR when explicitly enabled, but it is disabled in the
    locked confirmatory run. A failed retrieval must not suppress separately
    computed MCP operating-envelope, modeled-forecast, or history features.
-3. **Retrieval-only temporal modulation**: piRAG evidence is stronger during
+3. **Retrieval-only temporal modulation**: piR evidence is stronger during
    regime transitions (low continuity) and weaker during stable periods (high
    continuity); MCP evidence is not a function of retrieval persistence.
 
@@ -89,16 +89,16 @@ independently calibrated or externally validated.
 """
 
 
-# Feature partitions for the separated MCP / piRAG formulation.  Retaining one
+# Feature partitions for the separated MCP / piR formulation.  Retaining one
 # learned 3x5 matrix is algebraically equivalent to two matrices whose columns
-# are ``MCP_FEATURE_INDICES`` and ``PIRAG_FEATURE_INDICES`` respectively.
+# are ``MCP_FEATURE_INDICES`` and ``PIR_FEATURE_INDICES`` respectively.
 MCP_FEATURE_INDICES: Tuple[int, ...] = (0, 1, 4)
-PIRAG_FEATURE_INDICES: Tuple[int, ...] = (2, 3)
+PIR_FEATURE_INDICES: Tuple[int, ...] = (2, 3)
 
 # Feature masks for ablation modes (5-element; supply and demand forecast
 # signals now live in the state vector phi, not here).
 _MCP_FEATURE_MASK = np.array([1.0, 1.0, 0.0, 0.0, 1.0])
-_PIRAG_FEATURE_MASK = np.array([0.0, 0.0, 1.0, 1.0, 0.0])
+_PIR_FEATURE_MASK = np.array([0.0, 0.0, 1.0, 1.0, 0.0])
 
 
 def apply_context_mode_feature_mask(
@@ -118,7 +118,7 @@ def apply_context_mode_feature_mask(
     if context_mode == "mcp_only":
         effective *= _MCP_FEATURE_MASK
     elif context_mode == "pirag_only":
-        effective *= _PIRAG_FEATURE_MASK
+        effective *= _PIR_FEATURE_MASK
     return effective
 
 
@@ -127,7 +127,7 @@ def extract_context_features(
     rag_context: Dict[str, Any],
     obs: Any,
 ) -> np.ndarray:
-    """Extract a 5D context feature vector from MCP and piRAG outputs.
+    """Extract a 5D context feature vector from MCP and piR outputs.
 
     Returns np.ndarray of shape (5,) with values in [0, 1].
 
@@ -252,15 +252,15 @@ def compute_context_modifier(
     ``context_mode`` accepts:
         - "full"       : all 5 features active.
         - "mcp_only"   : only MCP-derived features (psi_0, psi_1, psi_4).
-        - "pirag_only" : only piRAG-derived features (psi_2, psi_3).
+        - "pirag_only" : only piR-derived features (psi_2, psi_3).
 
     ``retrieval_kind='standard'`` retains the author-declared RRF-floor gate but
-    removes piRAG's physics-consistency and temporal-continuity multipliers.
+    removes piR's physics-consistency and temporal-continuity multipliers.
 
     Returns
     -------
     Modifier vector of shape (3,), clamped to [-1.0, +1.0] per element.
-    Failed retrieval guards zero only the piRAG component.  The whole vector is
+    Failed retrieval guards zero only the piR component.  The whole vector is
     zero only when the global scale is zero or both channels are empty.
     """
     if retrieval_kind not in ("pirag", "standard"):
@@ -366,7 +366,7 @@ def compute_context_modifier(
 
     # The aggregate retrieval guard combines the RRF floor, dimensional
     # consistency, and feasibility. It is fail-closed for retrieved evidence:
-    # a missing flag cannot authorize piRAG.
+    # a missing flag cannot authorize piR.
     retrieval_gate = float(bool(rag_context.get("guards_passed", False)))
     if retrieval_gate:
         retrieval_blocked_reason = None
@@ -383,7 +383,7 @@ def compute_context_modifier(
             if failed else "retrieval_guard"
         )
 
-    # Temporal continuity is a property of piRAG retrieval persistence.  Do not
+    # Temporal continuity is a property of piR retrieval persistence.  Do not
     # calculate or apply it for an MCP-only arm.
     temporal_mod = 1.0
     if temporal_gate_requested:
@@ -452,7 +452,7 @@ def compute_context_modifier(
     # channel-separated forward mapping before the single total clip.
     linear_feature_contributions = theta * psi[np.newaxis, :]
     feature_scales = np.ones(5, dtype=np.float64)
-    feature_scales[list(PIRAG_FEATURE_INDICES)] = rag_total_scale
+    feature_scales[list(PIR_FEATURE_INDICES)] = rag_total_scale
     jacobian_features = (
         float(CONTEXT_MODIFIER_SCALE) * feature_scales * psi
     )
@@ -465,7 +465,7 @@ def compute_context_modifier(
         :, list(MCP_FEATURE_INDICES)
     ].sum(axis=1)
     pirag_preclip_component = preclip_contributions[
-        :, list(PIRAG_FEATURE_INDICES)
+        :, list(PIR_FEATURE_INDICES)
     ].sum(axis=1)
     preclip_modifier = mcp_preclip_component + pirag_preclip_component
     modifier = np.clip(preclip_modifier, -_MODIFIER_CLAMP, _MODIFIER_CLAMP)

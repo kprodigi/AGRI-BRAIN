@@ -83,7 +83,7 @@ def configure_policy_feature_flags(policy: Any, *, failure_injection: bool = Fal
         os.environ.get("MCP_QOS_ROUTING", "false").lower() == "true"
     )
     policy.enable_pirag_counterfactual_eval = (
-        os.environ.get("PIRAG_COUNTERFACTUAL", "false").lower() == "true"
+        os.environ.get("PIR_COUNTERFACTUAL", "false").lower() == "true"
     )
     policy.enable_physics_consistency_gate = (
         os.environ.get("PHYSICS_CONSISTENCY_GATE", "false").lower() == "true"

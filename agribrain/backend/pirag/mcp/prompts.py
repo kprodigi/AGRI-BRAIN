@@ -1,7 +1,7 @@
-"""MCP Prompt Templates for piRAG query construction.
+"""MCP Prompt Templates for piR query construction.
 
 Exposes parameterized query templates as MCP prompts. Each prompt
-generates a role-relevant piRAG query string that can be used for
+generates a role-relevant piR query string that can be used for
 knowledge base retrieval.  When a non-baseline ``scenario`` is passed,
 scenario-specific search terms are appended so that BM25 retrieval
 surfaces the corresponding KB documents (e.g. heatwave_contingency_plan
@@ -127,7 +127,7 @@ def _governance_policy_template(
 
 
 def register_prompts(server: MCPServer) -> None:
-    """Register all piRAG prompt templates on the MCP server."""
+    """Register all piR prompt templates on the MCP server."""
     _scenario_arg = {
         "name": "scenario",
         "description": "Current scenario (baseline, heatwave, cyber_outage, overproduction, adaptive_pricing)",

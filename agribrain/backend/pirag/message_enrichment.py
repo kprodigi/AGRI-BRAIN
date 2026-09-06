@@ -1,6 +1,6 @@
-"""piRAG-enriched inter-agent messages.
+"""piR-enriched inter-agent messages.
 
-Attaches piRAG guidance and MCP status to outgoing inter-agent messages,
+Attaches piR guidance and MCP status to outgoing inter-agent messages,
 enriching coordination signals with context-aware intelligence. The
 enrichment is non-mutating: a new message is returned with an expanded
 payload.
@@ -17,7 +17,7 @@ def enrich_message(
     rag_context: Dict[str, Any],
     mcp_results: Dict[str, Any],
 ) -> InterAgentMessage:
-    """Attach piRAG guidance and MCP status to an outgoing message.
+    """Attach piR guidance and MCP status to an outgoing message.
 
     Enrichment rules by message type:
     - SPOILAGE_ALERT → regulatory or SOP guidance
@@ -31,7 +31,7 @@ def enrich_message(
     Parameters
     ----------
     msg : original inter-agent message.
-    rag_context : piRAG retrieval results.
+    rag_context : piR retrieval results.
     mcp_results : MCP tool dispatch results.
 
     Returns

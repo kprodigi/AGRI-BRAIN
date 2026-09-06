@@ -611,7 +611,7 @@ def test_decision_ledger_gate_rejects_tampered_record(tmp_path, monkeypatch):
         ),
         (
             _mutate_rag_total_scale_consistently,
-            "piRAG scale does not reconstruct",
+            "piR scale does not reconstruct",
         ),
         (
             lambda record: record[

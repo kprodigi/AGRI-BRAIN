@@ -1428,7 +1428,7 @@ def main(argv: list[str] | None = None):
 
     # Pass 1.5: Channel-decomposition family.
     # Direct tests for the C4 claim that each context channel (MCP,
-    # piRAG) contributes to quality improvements. The agribrain_vs_X
+    # piR) contributes to quality improvements. The agribrain_vs_X
     # family alone leaves C4 inferable only by transitivity; this loop
     # adds the single-channel-vs-no_context contrasts on the same
     # paired-seed design.

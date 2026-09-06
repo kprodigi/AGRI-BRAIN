@@ -44,7 +44,7 @@ class SupplyChainAgent(ABC):
     """
 
     CONTEXT_ENABLED: bool = True
-    """Whether this agent participates in MCP/piRAG context injection."""
+    """Whether this agent participates in MCP/piR context injection."""
 
     def __init__(
         self,
@@ -117,7 +117,7 @@ class SupplyChainAgent(ABC):
         }
 
     # ------------------------------------------------------------------
-    # MCP / piRAG context interface
+    # MCP / piR context interface
     # ------------------------------------------------------------------
 
     def invoke_mcp_tools(
@@ -147,9 +147,9 @@ class SupplyChainAgent(ABC):
         pipeline: Optional[Any] = None,
         mcp_server: Optional[Any] = None,
     ) -> Dict[str, Any]:
-        """Retrieve piRAG context for the current observation.
+        """Retrieve piR context for the current observation.
 
-        Returns empty dict if piRAG infrastructure is unavailable.
+        Returns empty dict if piR infrastructure is unavailable.
         """
         if pipeline is None:
             return {}

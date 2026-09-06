@@ -1,4 +1,4 @@
-"""Fail-closed handling for publication-critical piRAG operations."""
+"""Fail-closed handling for publication-critical piR operations."""
 from __future__ import annotations
 
 import logging

@@ -3017,7 +3017,7 @@ def fig12_context_channels(data=None):
     summ = json.loads(summ_p.read_text()); summ = summ.get("summary", summ)
     agg = json.loads(agg_p.read_text()); bsm = agg["by_scenario_mode"]
 
-    C_CTX, C_MCP, C_PIRAG = COLORS["agribrain"], COLORS["mcp_only"], COLORS["pirag_only"]
+    C_CTX, C_MCP, C_PIR = COLORS["agribrain"], COLORS["mcp_only"], COLORS["pirag_only"]
     C_SYN, C_RED, C_GOV = "#882255", "#4D4D4D", "#A66F00"
     SCEN = ["heatwave", "overproduction", "cyber_outage", "adaptive_pricing", "baseline"]
     SLAB = SCENARIO_LABELS
@@ -3034,7 +3034,7 @@ def fig12_context_channels(data=None):
     # the panel an incomplete visual representation of H2.
     CH = [
         ("mcp_only", "no_context", "MCP\n\u2212 No-context", C_MCP),
-        ("pirag_only", "no_context", "Retrieval\n\u2212 No-context", C_PIRAG),
+        ("pirag_only", "no_context", "Retrieval\n\u2212 No-context", C_PIR),
         ("agribrain", "mcp_only", "Full\n\u2212 MCP", C_CTX),
         ("agribrain", "pirag_only", "Full\n\u2212 Retrieval", C_SYN),
     ]
@@ -3087,7 +3087,7 @@ def fig12_context_channels(data=None):
     series = [
         ("Observed vs zeroed", "context_route_change", C_CTX, "xx"),
         ("MCP mask", "mcp_feature_group_mask_effect", C_MCP, "//"),
-        ("Retrieval mask", "pirag_feature_group_mask_effect", C_PIRAG, "oo"),
+        ("Retrieval mask", "pirag_feature_group_mask_effect", C_PIR, "oo"),
         ("Joint-only change", "joint_only_route_change", C_SYN, "\\\\"),
     ]
     for i, (lab, key, col, hatch) in enumerate(series):
@@ -3106,7 +3106,7 @@ def fig12_context_channels(data=None):
     _panel_key(axB, ncol=2)
 
     keys = [
-        ("pirag_group_matches_observed_only", "Retrieval only", C_PIRAG, "oo"),
+        ("pirag_group_matches_observed_only", "Retrieval only", C_PIR, "oo"),
         ("mcp_group_matches_observed_only", "MCP only", C_MCP, "//"),
         ("neither_group_matches_observed", "Neither", C_SYN, "\\\\"),
         ("both_groups_match_observed", "Both", C_RED, "xx"),

@@ -7,7 +7,7 @@ an explicitly requested diagnostic because the parallel seed runner can leave
 top-level trace files from whichever worker finished last; they must never be
 silently mixed into the canonical publication evidence.
 
-1. Role x information table (which MCP tools / piRAG docs each role uses)
+1. Role x information table (which MCP tools / piR docs each role uses)
 2. Sample decision explanations with local Merkle commitment records
 3. Context feature activation heatmap data (role x feature x scenario)
 4. In-process project JSON-RPC/MCP-style dispatcher trace examples
@@ -158,7 +158,7 @@ def load_traces(scenario: str) -> list:
 def export_role_table() -> None:
     """Print role x information table across all scenarios."""
     print("=" * 80)
-    print("Table: Role-Specific MCP Tool Usage and piRAG Retrieval Patterns")
+    print("Table: Role-Specific MCP Tool Usage and piR Retrieval Patterns")
     print("=" * 80)
 
     role_data: dict = {}
@@ -251,7 +251,7 @@ def _print_trace(t: dict, scenario: str) -> None:
               f"({fc.get('urgency', '?')})")
     print()
 
-    print("piRAG Retrieved Guidance:")
+    print("piR Retrieved Guidance:")
     print(f"  Top document: {p.get('top_document', 'none')} (score: {p.get('top_score', 0):.2f})")
     for gtype in ["regulatory_guidance", "sop_guidance", "waste_hierarchy", "governance"]:
         text = p.get(gtype, "")

@@ -35,7 +35,7 @@ import {
 const API = getApiBase();
 
 const C_MCP = "#F57C00";
-const C_PIRAG = "#1565C0";
+const C_PIR = "#1565C0";
 const C_SYN = "#8E24AA";
 const C_RED = "#9E9E9E";
 const C_CTX = "#009688";
@@ -250,8 +250,8 @@ export default function ChannelAttributionPanel() {
               pooled.context_route_change_given_active_rate != null && (
               <div className="text-xs leading-relaxed text-muted-foreground">
                 <strong>Conditional concentration.</strong> The {pct(pooled.context_route_change_rate)} unconditional
-                rate includes decisions where the combined MCP/piRAG modifier is negligible. Retrieval guards
-                withhold only the piRAG term; MCP evidence can remain active. Conditioned on decisions where the
+                rate includes decisions where the combined MCP/piR modifier is negligible. Retrieval guards
+                withhold only the piR term; MCP evidence can remain active. Conditioned on decisions where the
                 combined layer is <em>active</em>,
                 the observed and zeroed modal routes differ on{" "}
                 <strong>{pct(pooled.context_route_change_given_active_rate)}</strong>, and probability movement is
@@ -290,7 +290,7 @@ export default function ChannelAttributionPanel() {
                   <TableHead className="text-right">n</TableHead>
                   <TableHead><span style={{ color: C_CTX }}>Observed vs zeroed</span></TableHead>
                   <TableHead><span style={{ color: C_MCP }}>Mask MCP features</span></TableHead>
-                  <TableHead><span style={{ color: C_PIRAG }}>Mask retrieval features</span></TableHead>
+                  <TableHead><span style={{ color: C_PIR }}>Mask retrieval features</span></TableHead>
                   <TableHead><span style={{ color: C_SYN }}>Joint-only change</span></TableHead>
                   <TableHead className="text-right">Distinctness</TableHead>
                 </TableRow>
@@ -347,7 +347,7 @@ export default function ChannelAttributionPanel() {
                 <YAxis tick={{ fontSize: 11 }} unit="%" domain={[0, "auto"]} />
                 <ReTooltip formatter={(v) => `${(v || 0).toFixed(1)}%`} />
                 <Legend />
-                <Bar dataKey="Retrieval group only" fill={C_PIRAG} radius={[2, 2, 0, 0]} isAnimationActive={false}>
+                <Bar dataKey="Retrieval group only" fill={C_PIR} radius={[2, 2, 0, 0]} isAnimationActive={false}>
                   <ErrorBar dataKey="Retrieval group only_err" width={5} strokeWidth={2} stroke="#1f2937" />
                 </Bar>
                 <Bar dataKey="MCP group only" fill={C_MCP} radius={[2, 2, 0, 0]} isAnimationActive={false}>

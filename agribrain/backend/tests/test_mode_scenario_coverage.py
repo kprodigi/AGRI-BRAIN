@@ -39,7 +39,7 @@ def sim_runtime():
 @pytest.fixture(scope="module")
 def short_df(sim_runtime):
     """8-step dataframe (2 h of telemetry) keeps every smoke test under a
-    few seconds while still exercising the per-step MCP + piRAG + policy
+    few seconds while still exercising the per-step MCP + piR + policy
     path end-to-end."""
     gr, _ = sim_runtime
     df = pd.read_csv(gr.DATA_CSV, parse_dates=["timestamp"]).head(8)
@@ -119,7 +119,7 @@ def test_core_context_modes_wired_together(sim_runtime):
 
 # ---------------------------------------------------------------------------
 # Slow end-to-end matrix. Each test instantiates the full coordinator,
-# dispatches MCP tools and piRAG retrieval per step, and runs the real
+# dispatches MCP tools and piR retrieval per step, and runs the real
 # scoring pipeline. Opt-in via ``pytest -m slow``.
 # ---------------------------------------------------------------------------
 
