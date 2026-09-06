@@ -31,7 +31,7 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install backend
@@ -58,7 +58,7 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - name: Install test dependencies
@@ -91,7 +91,7 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - name: Install backend (with [dev] extras)
@@ -125,7 +125,7 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - name: Detect exact current-evidence manifest
@@ -223,7 +223,7 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - name: Install the committed lock
@@ -248,7 +248,7 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - name: Install ruff
@@ -335,7 +335,7 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - name: Install pip-audit
