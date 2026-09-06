@@ -1,0 +1,348 @@
+{
+  "_meta": {
+    "git_commit": "d3286aef28803c715045176008fae6b9c7e3367b",
+    "benchmark_run": "d3286ae_20260829_105800",
+    "n_seeds": 20,
+    "sesoi_ari": 0.01,
+    "alpha": 0.05,
+    "split_rng_seed": 20260606,
+    "source": "benchmark_seeds/seed_*.json (ari field)",
+    "seed_order": [
+      42,
+      1337,
+      2024,
+      7,
+      99,
+      101,
+      202,
+      303,
+      404,
+      505,
+      606,
+      707,
+      808,
+      909,
+      1010,
+      1111,
+      1212,
+      1313,
+      1414,
+      1515
+    ],
+    "multiplicity": "scenario-specific H2 TOST and two-sided diagnostics are exploratory and unadjusted; pooled estimates average the four perturbed scenarios within seed before inference",
+    "method": "TOST equivalence on paired add-second-channel diffs (SESOI=0.01 ARI) with seed-level scenario aggregation + descriptive four-scenario cross-fitted moderation slope"
+  },
+  "by_scenario": {
+    "heatwave": {
+      "n_seeds": 20,
+      "standalone_mcp": {
+        "mean": 0.007912190118811021,
+        "ci_low": 0.006580651419518611,
+        "ci_high": 0.009243728818103432,
+        "n": 20
+      },
+      "standalone_pirag": {
+        "mean": 0.008135076360721008,
+        "ci_low": 0.006850106037996709,
+        "ci_high": 0.009420046683445309,
+        "n": 20
+      },
+      "full_gain": {
+        "mean": 0.014984211005834585,
+        "ci_low": 0.013441938753945264,
+        "ci_high": 0.016526483257723906,
+        "n": 20
+      },
+      "add_pirag_on_mcp": {
+        "verdict": "positive_but_equivalent",
+        "n": 20,
+        "mean_diff": 0.007072020887023564,
+        "ci90_low": 0.006147520438583508,
+        "ci90_high": 0.00799652133546362,
+        "ci95_low": 0.00595296186275243,
+        "ci95_high": 0.008191079911294698,
+        "p_two_sided": 4.920293711269974e-11,
+        "p_tost": 1.3874054252856869e-05,
+        "sesoi": 0.01
+      },
+      "add_mcp_on_pirag": {
+        "verdict": "positive_but_equivalent",
+        "n": 20,
+        "mean_diff": 0.006849134645113578,
+        "ci90_low": 0.005933126495189244,
+        "ci90_high": 0.007765142795037911,
+        "ci95_low": 0.00574035510021626,
+        "ci95_high": 0.007957914190010896,
+        "p_two_sided": 7.280639349275869e-11,
+        "p_tost": 5.016198022717684e-06,
+        "sesoi": 0.01
+      }
+    },
+    "overproduction": {
+      "n_seeds": 20,
+      "standalone_mcp": {
+        "mean": 0.00794725577330015,
+        "ci_low": 0.006544455292187339,
+        "ci_high": 0.00935005625441296,
+        "n": 20
+      },
+      "standalone_pirag": {
+        "mean": 0.006554163382183997,
+        "ci_low": 0.005440793737847512,
+        "ci_high": 0.007667533026520483,
+        "n": 20
+      },
+      "full_gain": {
+        "mean": 0.013706473375663336,
+        "ci_low": 0.011733845467696902,
+        "ci_high": 0.01567910128362977,
+        "n": 20
+      },
+      "add_pirag_on_mcp": {
+        "verdict": "positive_but_equivalent",
+        "n": 20,
+        "mean_diff": 0.005759217602363187,
+        "ci90_low": 0.0049666491392037285,
+        "ci90_high": 0.006551786065522645,
+        "ci95_low": 0.004799855286695468,
+        "ci95_high": 0.006718579918030905,
+        "p_two_sided": 1.1869326048224681e-10,
+        "p_tost": 9.066966447485643e-09,
+        "sesoi": 0.01
+      },
+      "add_mcp_on_pirag": {
+        "verdict": "positive_but_equivalent",
+        "n": 20,
+        "mean_diff": 0.007152309993479339,
+        "ci90_low": 0.006051715933568968,
+        "ci90_high": 0.00825290405338971,
+        "ci95_low": 0.005820098941683657,
+        "ci95_high": 0.00848452104527502,
+        "p_two_sided": 7.793932886375023e-10,
+        "p_tost": 0.0001300514297470584,
+        "sesoi": 0.01
+      }
+    },
+    "cyber_outage": {
+      "n_seeds": 20,
+      "standalone_mcp": {
+        "mean": 0.0028526334722582146,
+        "ci_low": 0.002158807361914893,
+        "ci_high": 0.003546459582601536,
+        "n": 20
+      },
+      "standalone_pirag": {
+        "mean": 0.007521065524972853,
+        "ci_low": 0.006433645977420841,
+        "ci_high": 0.008608485072524864,
+        "n": 20
+      },
+      "full_gain": {
+        "mean": 0.010042870880653542,
+        "ci_low": 0.008811933713295023,
+        "ci_high": 0.011273808048012061,
+        "n": 20
+      },
+      "add_pirag_on_mcp": {
+        "verdict": "positive_but_equivalent",
+        "n": 20,
+        "mean_diff": 0.007190237408395328,
+        "ci90_low": 0.006482745707962643,
+        "ci90_high": 0.007897729108828013,
+        "ci95_low": 0.0063338560261017515,
+        "ci95_high": 0.008046618790688905,
+        "p_two_sided": 3.297762039098556e-13,
+        "p_tost": 7.481293931855378e-07,
+        "sesoi": 0.01
+      },
+      "add_mcp_on_pirag": {
+        "verdict": "positive_but_equivalent",
+        "n": 20,
+        "mean_diff": 0.0025218053556806896,
+        "ci90_low": 0.002054345968737435,
+        "ci90_high": 0.0029892647426239443,
+        "ci95_low": 0.0019559704268585646,
+        "ci95_high": 0.0030876402845028145,
+        "p_two_sided": 1.594076954247259e-08,
+        "p_tost": 4.0912453192975255e-17,
+        "sesoi": 0.01
+      }
+    },
+    "adaptive_pricing": {
+      "n_seeds": 20,
+      "standalone_mcp": {
+        "mean": 0.006507334908765772,
+        "ci_low": 0.0057114138637329856,
+        "ci_high": 0.007303255953798558,
+        "n": 20
+      },
+      "standalone_pirag": {
+        "mean": 0.012263193106900393,
+        "ci_low": 0.010778508167818826,
+        "ci_high": 0.013747878045981961,
+        "n": 20
+      },
+      "full_gain": {
+        "mean": 0.01841737590213664,
+        "ci_low": 0.01654437368767954,
+        "ci_high": 0.02029037811659374,
+        "n": 20
+      },
+      "add_pirag_on_mcp": {
+        "verdict": "positive_difference",
+        "n": 20,
+        "mean_diff": 0.011910040993370868,
+        "ci90_low": 0.0104554419844458,
+        "ci90_high": 0.013364640002295937,
+        "ci95_low": 0.010149325625000778,
+        "ci95_high": 0.01367075636174096,
+        "p_two_sided": 1.5140098529201305e-11,
+        "p_tost": 0.9825005463991947,
+        "sesoi": 0.01
+      },
+      "add_mcp_on_pirag": {
+        "verdict": "positive_but_equivalent",
+        "n": 20,
+        "mean_diff": 0.006154182795236246,
+        "ci90_low": 0.0053039617306343805,
+        "ci90_high": 0.0070044038598381115,
+        "ci95_low": 0.005125035046769989,
+        "ci95_high": 0.007183330543702503,
+        "p_two_sided": 1.2682555544223657e-10,
+        "p_tost": 1.1698983192206806e-07,
+        "sesoi": 0.01
+      }
+    },
+    "baseline": {
+      "n_seeds": 20,
+      "standalone_mcp": {
+        "mean": 0.005700310730988806,
+        "ci_low": 0.004820934939682847,
+        "ci_high": 0.006579686522294765,
+        "n": 20
+      },
+      "standalone_pirag": {
+        "mean": 0.007703634586764363,
+        "ci_low": 0.006526455313335595,
+        "ci_high": 0.00888081386019313,
+        "n": 20
+      },
+      "full_gain": {
+        "mean": 0.013680657700257115,
+        "ci_low": 0.012010619330591115,
+        "ci_high": 0.015350696069923115,
+        "n": 20
+      },
+      "add_pirag_on_mcp": {
+        "verdict": "positive_but_equivalent",
+        "n": 20,
+        "mean_diff": 0.007980346969268309,
+        "ci90_low": 0.007016352516157299,
+        "ci90_high": 0.008944341422379319,
+        "ci95_low": 0.00681348253570158,
+        "ci95_high": 0.009147211402835038,
+        "p_two_sided": 1.2496065231332794e-11,
+        "p_tost": 0.0009062111316490641,
+        "sesoi": 0.01
+      },
+      "add_mcp_on_pirag": {
+        "verdict": "positive_but_equivalent",
+        "n": 20,
+        "mean_diff": 0.005977023113492752,
+        "ci90_low": 0.005222534637099579,
+        "ci90_high": 0.006731511589885926,
+        "ci95_low": 0.005063754613038257,
+        "ci95_high": 0.006890291613947248,
+        "p_two_sided": 2.6877064887901786e-11,
+        "p_tost": 9.577173033605464e-09,
+        "sesoi": 0.01
+      }
+    }
+  },
+  "pooled_perturbed": {
+    "scenarios": [
+      "heatwave",
+      "overproduction",
+      "cyber_outage",
+      "adaptive_pricing"
+    ],
+    "inferential_unit": "seed",
+    "scenario_aggregation": "mean paired difference across four scenarios within seed",
+    "add_pirag_on_mcp": {
+      "verdict": "positive_but_equivalent",
+      "n": 20,
+      "mean_diff": 0.007982879222788236,
+      "ci90_low": 0.007436073864431607,
+      "ci90_high": 0.008529684581144864,
+      "ci95_low": 0.007321000181170364,
+      "ci95_high": 0.008644758264406107,
+      "p_two_sided": 4.452593834940469e-16,
+      "p_tost": 2.028262709638158e-06,
+      "sesoi": 0.01
+    },
+    "add_mcp_on_pirag": {
+      "verdict": "positive_but_equivalent",
+      "n": 20,
+      "mean_diff": 0.005669358197377463,
+      "ci90_low": 0.005153276872063056,
+      "ci90_high": 0.006185439522691869,
+      "ci95_low": 0.005044668977025679,
+      "ci95_high": 0.006294047417729247,
+      "p_two_sided": 8.111545894527927e-14,
+      "p_tost": 4.929739930908229e-12,
+      "sesoi": 0.01
+    }
+  },
+  "moderation": {
+    "pirag_marginal_vs_mcp_strength": {
+      "crossfit": {
+        "slope": -0.14727509948248188,
+        "intercept": 0.009230574280046238,
+        "p_value": null,
+        "r2": 0.01619675736346476,
+        "n": 4,
+        "estimable": true,
+        "inferential": false,
+        "unit": "scenario",
+        "interpretation_limit": "descriptive across four perturbed scenarios; no inferential moderation claim"
+      },
+      "naive_coupled_bound": {
+        "slope": -0.09191801320840214,
+        "intercept": 0.008562408836354788,
+        "p_value": null,
+        "r2": 0.0066738419628410385,
+        "n": 4,
+        "estimable": true,
+        "inferential": false,
+        "unit": "scenario",
+        "interpretation_limit": "descriptive across four perturbed scenarios; no inferential moderation claim"
+      },
+      "interpretation": "slope ~ -1 substitution/strong saturation; slope ~ 0 independent additivity; crossfit breaks the shared-term coupling, naive is a coupling-prone descriptive comparator, not a formal bound"
+    },
+    "mcp_marginal_vs_pirag_strength": {
+      "crossfit": {
+        "slope": 0.04590240595371846,
+        "intercept": 0.005125405777857777,
+        "p_value": null,
+        "r2": 0.0026035130897926,
+        "n": 4,
+        "estimable": true,
+        "inferential": false,
+        "unit": "scenario",
+        "interpretation_limit": "descriptive across four perturbed scenarios; no inferential moderation claim"
+      },
+      "naive_coupled_bound": {
+        "slope": 0.0837379949503045,
+        "intercept": 0.004947672789170835,
+        "p_value": null,
+        "r2": 0.00969275107068666,
+        "n": 4,
+        "estimable": true,
+        "inferential": false,
+        "unit": "scenario",
+        "interpretation_limit": "descriptive across four perturbed scenarios; no inferential moderation claim"
+      },
+      "interpretation": "slope ~ -1 substitution/strong saturation; slope ~ 0 independent additivity; crossfit breaks the shared-term coupling, naive is a coupling-prone descriptive comparator, not a formal bound"
+    }
+  }
+}

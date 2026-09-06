@@ -245,23 +245,13 @@ def main() -> int:
     # explicitly removes the ambiguity.
     import fnmatch as _fnmatch_v
     _TRACKED_PATTERNS = (
-        "fig*.png", "fig*.pdf",
-        # 2026-05 manuscript figure renames dropped the ``fig`` prefix
-        # (see the .gitignore results allowlist); list them explicitly so
-        # the --require-tracked gate still protects them. Keep in lockstep
-        # with the .gitignore allowlist.
-        "heatwave.png", "heatwave.pdf",
-        "overproduction.png", "overproduction.pdf",
-        "cyber_outage.png", "cyber_outage.pdf",
-        "adaptive_pricing.png", "adaptive_pricing.pdf",
-        "cross_scenario.png", "cross_scenario.pdf",
-        "ablation.png", "ablation.pdf",
-        "transport_emissions.png", "transport_emissions.pdf",
-        # 2026-06 H1/H2/H3 paper figures (generate_figures.py fig11/fig12/fig13):
-        # performance_efficiency (H1), context_value (H2), stress_robustness (H3).
-        "context_value.png", "context_value.pdf",
-        "performance_efficiency.png", "performance_efficiency.pdf",
-        "stress_robustness.png", "stress_robustness.pdf",
+        # Rendered figures are deliberately absent from this list, and
+        # from the .gitignore allowlist. The manuscript prints a
+        # presentation-only re-render of the certified numbers, and the
+        # renderer in this tree reproduces that set; committing the
+        # publication run's own images would ship figures this code no
+        # longer produces. They remain manifest artifacts, so a missing
+        # figure is an allow-missing warning rather than a hard failure.
         "table1_summary.csv", "table2_ablation.csv",
         "benchmark_summary.json", "benchmark_significance.json",
         "h2_directional_evidence.csv",

@@ -125,6 +125,8 @@ mvp/simulation/results/*
 !mvp/simulation/results/stress_summary.json
 !mvp/simulation/results/stress_degradation.csv
 !mvp/simulation/results/artifact_manifest.json
+!mvp/simulation/results/publication_validation_receipt.json
+!mvp/simulation/results/figure_provenance.json
 # Small canonical authorization documents needed to validate a public
 # dual-provenance manifest. Raw episode outputs remain ignored/archive-only.
 !mvp/simulation/results/publication_recovery_receipts/
@@ -136,35 +138,14 @@ mvp/simulation/results/preserved_raw_manifests/*
 !mvp/simulation/results/core_submission_receipts/
 mvp/simulation/results/core_submission_receipts/*
 !mvp/simulation/results/core_submission_receipts/*.json
-!mvp/simulation/results/fig*.png
-!mvp/simulation/results/fig*.pdf
+# Rendered figures are not committed. The manuscript prints a
+# presentation-only re-render of the certified numbers, and the renderer
+# in this tree reproduces that set, so committing the publication run's
+# own images would ship figures this code no longer produces. The images
+# stay in the evidence deposit, hashed by artifact_manifest.json.
 # FOCAPO conference results figures (separate folder, rendered on HPC)
 !mvp/simulation/results/focapo/
 !mvp/simulation/results/focapo/*.png
-# 2026-05 manuscript figure renames (commits c06bc26 + b73a084):
-# old fig2_heatwave -> heatwave, fig3_overproduction -> overproduction, etc.
-!mvp/simulation/results/heatwave.png
-!mvp/simulation/results/heatwave.pdf
-!mvp/simulation/results/overproduction.png
-!mvp/simulation/results/overproduction.pdf
-!mvp/simulation/results/cyber_outage.png
-!mvp/simulation/results/cyber_outage.pdf
-!mvp/simulation/results/adaptive_pricing.png
-!mvp/simulation/results/adaptive_pricing.pdf
-!mvp/simulation/results/cross_scenario.png
-!mvp/simulation/results/cross_scenario.pdf
-!mvp/simulation/results/ablation.png
-!mvp/simulation/results/ablation.pdf
-!mvp/simulation/results/transport_emissions.png
-!mvp/simulation/results/transport_emissions.pdf
-# 2026-06 H1/H2/H3 paper figures (generate_figures.py fig11/fig12/fig13):
-# performance_efficiency (H1), context_value (H2), stress_robustness (H3).
-!mvp/simulation/results/context_value.png
-!mvp/simulation/results/context_value.pdf
-!mvp/simulation/results/performance_efficiency.png
-!mvp/simulation/results/performance_efficiency.pdf
-!mvp/simulation/results/stress_robustness.png
-!mvp/simulation/results/stress_robustness.pdf
 # Canonical paper-evidence artifacts produced by the publication pipeline.
 !mvp/simulation/results/paper_benchmark_table.json
 !mvp/simulation/results/stress_passfail.csv

@@ -1,0 +1,81 @@
+{
+  "analysis_label": "core stochastic publication evidence",
+  "deterministic_mode": false,
+  "execution_scope": "core_publication_evidence",
+  "locked_core_accounting": {
+    "executed_episodes": 6100,
+    "simulated_steps": 1756800,
+    "unique_retained_cells": 1600
+  },
+  "partition": "compute",
+  "receipt_scope": "submission_only_not_scheduler_completion",
+  "receipt_sha256": "2c4d28e281ca1711a06fb37ff4510d0fea4629c08b22d9c234fe7ff1282e866d",
+  "run_tag": "d3286ae_20260829_105800",
+  "scheduler_completion_attested": false,
+  "schema_version": 2,
+  "slurm_dag": {
+    "publisher": {
+      "afterok_job_ids": [
+        "14473469",
+        "14473470"
+      ],
+      "array_indices": null,
+      "dependency_type": "afterok",
+      "job_id": "14473471",
+      "script": "hpc/hpc_publish.sh",
+      "task_count": 1
+    },
+    "seed_array": {
+      "afterok_job_ids": [],
+      "array_indices": "0-19",
+      "dependency_type": null,
+      "job_id": "14473469",
+      "script": "hpc/hpc_seed.sh",
+      "seeds": [
+        42,
+        1337,
+        2024,
+        7,
+        99,
+        101,
+        202,
+        303,
+        404,
+        505,
+        606,
+        707,
+        808,
+        909,
+        1010,
+        1111,
+        1212,
+        1313,
+        1414,
+        1515
+      ],
+      "task_count": 20
+    },
+    "stress_array": {
+      "afterok_job_ids": [
+        "14473469"
+      ],
+      "array_indices": "0-4",
+      "dependency_type": "afterok",
+      "job_id": "14473470",
+      "scenarios": [
+        "heatwave",
+        "overproduction",
+        "cyber_outage",
+        "adaptive_pricing",
+        "baseline"
+      ],
+      "script": "hpc/hpc_stress.sh",
+      "task_count": 5
+    }
+  },
+  "source_commit": "d3286aef28803c715045176008fae6b9c7e3367b",
+  "source_snapshot_mode": "detached_readonly_git_worktree_v1",
+  "source_tree_clean_at_submission": true,
+  "source_tree_sha256": "895499b04b129be62c6f15bb47147ca1d44e2bf4cc48035fb7b38278a545f040",
+  "submitted_at_utc": "2026-08-29T15:58:55.083394+00:00"
+}

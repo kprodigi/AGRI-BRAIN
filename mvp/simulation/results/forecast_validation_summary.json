@@ -1,0 +1,192 @@
+{
+  "schema_version": 1,
+  "validation_scope": "internal synthetic benchmark only",
+  "external_validation": false,
+  "dataset": {
+    "path": "agribrain/backend/src/data_spinach.csv",
+    "sha256": "fee9e231da3e236c7ca56af4a24c55e299d9c17a03c6bdbf31a30a1a5a29777c",
+    "n_rows": 288,
+    "temporal_split": {
+      "development": "first 60 percent",
+      "validation": "next 20 percent",
+      "test": "final 20 percent"
+    }
+  },
+  "rolling_origin": {
+    "horizon_steps": 1,
+    "lookback_steps": 48,
+    "origin_stride": 1,
+    "retrained_at_each_origin": true,
+    "targets_seen_during_fit": false
+  },
+  "models": {
+    "lstm_demand": {
+      "hidden_units": 16,
+      "optimizer": "full-sequence gradient descent",
+      "learning_rate": 0.005,
+      "epochs": 80,
+      "batch_size": "one rolling sequence",
+      "early_stopping": false,
+      "initialization_seed": 42
+    },
+    "holt_linear_supply_proxy": {
+      "series": "inventory_units",
+      "ema_alpha": 0.5,
+      "trend_beta": 0.2,
+      "seasonal_component": false
+    },
+    "holt_linear_demand_candidate": {
+      "series": "demand_units",
+      "ema_alpha": 0.5,
+      "trend_beta": 0.2,
+      "seasonal_component": false
+    },
+    "persistence": {
+      "point_forecast": "last observed value",
+      "uncertainty": "standard deviation of last eight one-step differences",
+      "multi_step_scaling": "square root of horizon"
+    }
+  },
+  "baseline": "one-step persistence",
+  "selection_rule": {
+    "criterion": "minimum validation-segment RMSE",
+    "test_segment_used_for_selection": false,
+    "selected_demand_method": "holt_linear",
+    "selected_demand_model_id": "holt_linear_demand_candidate",
+    "selected_supply_proxy_method": "persistence",
+    "selected_supply_proxy_model_id": "persistence_supply_proxy"
+  },
+  "metrics": {
+    "holt_linear_demand_candidate": {
+      "validation": {
+        "n": 58,
+        "mae": 4.850777586206896,
+        "rmse": 7.569343255721136,
+        "mean_error": -0.4081017241379309,
+        "persistence_mae": 5.4655172413793105,
+        "persistence_rmse": 7.704678381705316,
+        "mae_improvement_vs_persistence_fraction": 0.11247602523659314,
+        "interval_coverage": 0.8275862068965517,
+        "mean_interval_width": 22.034053448275863
+      },
+      "test": {
+        "n": 58,
+        "mae": 4.738170689655173,
+        "rmse": 8.070505493408572,
+        "mean_error": 0.2651741379310346,
+        "persistence_mae": 4.672413793103448,
+        "persistence_rmse": 8.449648023683467,
+        "mae_improvement_vs_persistence_fraction": -0.014073431734317481,
+        "interval_coverage": 0.9310344827586207,
+        "mean_interval_width": 20.54868275862069
+      }
+    },
+    "holt_linear_supply_proxy": {
+      "validation": {
+        "n": 58,
+        "mae": 216.89709310344824,
+        "rmse": 634.9944108360346,
+        "mean_error": 4.290699999999905,
+        "persistence_mae": 94.56896551724138,
+        "persistence_rmse": 536.628828893864,
+        "mae_improvement_vs_persistence_fraction": -1.293533527803099,
+        "interval_coverage": 0.8620689655172413,
+        "mean_interval_width": 1016.0152413793104
+      },
+      "test": {
+        "n": 58,
+        "mae": 9.198691379310354,
+        "rmse": 12.374766581365298,
+        "mean_error": -3.588394827586289,
+        "persistence_mae": 16.24137931034483,
+        "persistence_rmse": 20.738935562749166,
+        "mae_improvement_vs_persistence_fraction": 0.4336262208067935,
+        "interval_coverage": 0.6724137931034483,
+        "mean_interval_width": 24.981858620689653
+      }
+    },
+    "lstm_demand": {
+      "validation": {
+        "n": 58,
+        "mae": 12.342446551724137,
+        "rmse": 16.26714464694573,
+        "mean_error": -6.796722413793103,
+        "persistence_mae": 5.4655172413793105,
+        "persistence_rmse": 7.704678381705316,
+        "mae_improvement_vs_persistence_fraction": -1.258239432176656,
+        "interval_coverage": 0.41379310344827586,
+        "mean_interval_width": 19.455889655172413
+      },
+      "test": {
+        "n": 58,
+        "mae": 13.11456551724138,
+        "rmse": 14.548911296109718,
+        "mean_error": 9.014910344827587,
+        "persistence_mae": 4.672413793103448,
+        "persistence_rmse": 8.449648023683467,
+        "mae_improvement_vs_persistence_fraction": -1.8068073800738007,
+        "interval_coverage": 0.3620689655172414,
+        "mean_interval_width": 19.682777586206893
+      }
+    },
+    "persistence_demand": {
+      "validation": {
+        "n": 58,
+        "mae": 5.4655172413793105,
+        "rmse": 7.704678381705316,
+        "mean_error": -0.603448275862069,
+        "persistence_mae": 5.4655172413793105,
+        "persistence_rmse": 7.704678381705316,
+        "mae_improvement_vs_persistence_fraction": 0.0,
+        "interval_coverage": 0.8620689655172413,
+        "mean_interval_width": 23.489048275862068
+      },
+      "test": {
+        "n": 58,
+        "mae": 4.672413793103448,
+        "rmse": 8.449648023683467,
+        "mean_error": 0.5,
+        "persistence_mae": 4.672413793103448,
+        "persistence_rmse": 8.449648023683467,
+        "mae_improvement_vs_persistence_fraction": 0.0,
+        "interval_coverage": 0.896551724137931,
+        "mean_interval_width": 21.383875862068965
+      }
+    },
+    "persistence_supply_proxy": {
+      "validation": {
+        "n": 58,
+        "mae": 94.56896551724138,
+        "rmse": 536.628828893864,
+        "mean_error": -46.1551724137931,
+        "persistence_mae": 94.56896551724138,
+        "persistence_rmse": 536.628828893864,
+        "mae_improvement_vs_persistence_fraction": 0.0,
+        "interval_coverage": 0.20689655172413793,
+        "mean_interval_width": 753.7478310344828
+      },
+      "test": {
+        "n": 58,
+        "mae": 16.24137931034483,
+        "rmse": 20.738935562749166,
+        "mean_error": 16.24137931034483,
+        "persistence_mae": 16.24137931034483,
+        "persistence_rmse": 20.738935562749166,
+        "mae_improvement_vs_persistence_fraction": 0.0,
+        "interval_coverage": 0.1896551724137931,
+        "mean_interval_width": 21.031155172413868
+      }
+    }
+  },
+  "provenance": {
+    "scope": "publication",
+    "source_commit": "d3286aef28803c715045176008fae6b9c7e3367b",
+    "run_tag": "d3286ae_20260829_105800"
+  },
+  "predictions_artifact": {
+    "file": "forecast_validation_predictions.csv",
+    "row_count": 580,
+    "bytes": 63717,
+    "sha256": "37ae6f937703ed2d382a8d538e0273c4656e46284c9cc1ebdb11fa82aed5dc89"
+  }
+}

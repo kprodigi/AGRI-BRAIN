@@ -1,0 +1,74 @@
+{
+  "authorized_deterministic_recovery": true,
+  "exact_manifest_inventory": {
+    "benchmark_seed_envelopes": 20,
+    "core_slurm_submission_receipts": 1,
+    "h3_retained_stressed_decision_ledgers": 500,
+    "preserved_raw_manifests": 1,
+    "primary_retained_decision_ledgers": 1100,
+    "publication_recovery_receipts": 1,
+    "raw_stress_task_files": 20,
+    "top_level_artifacts_excluding_receipt": 40
+  },
+  "fresh_single_commit_run": false,
+  "generated_at_utc": "2026-09-02T17:32:30.088057+00:00",
+  "git_commit": "d3286aef28803c715045176008fae6b9c7e3367b",
+  "locked_accounting": {
+    "core_executed_episodes": 6100,
+    "core_simulated_steps": 1756800,
+    "core_unique_retained_cells": 1600,
+    "h1_directional_tests": 5,
+    "h2_directional_tests": 20,
+    "h3_equivalence_cells": 25
+  },
+  "protocol": {
+    "bytes": 14549,
+    "file": "mvp/simulation/experiment_protocol.json",
+    "sha256": "f8df18adc037a5a8ff765c93409044b1f1bd49ac16498a5e398993645dd7619c"
+  },
+  "publication_code_commit": "675bdb2d43efd2ef46b6db78df337dbb5892d059",
+  "recovery_authorization": {
+    "original_submission_receipt_file": "core_submission_receipts/d3286ae_20260829_105800.json",
+    "preserved_raw_manifest_file": "preserved_raw_manifests/d3286ae_20260829_105800.json",
+    "preserved_raw_manifest_literal_sha256": "d2e692543a6ed19d7576fddf6f9f0f91616d432f790e09c2eea8d522761256f3",
+    "preserved_raw_payload_merkle_root": "a31b54f6f111ceca20dd48c56c79faaf62d0c49fa4a7b6206d77d5ae345bc446",
+    "publication_repair_tree": "e049e93ed01723035e14a18833ba2c44b916a048",
+    "receipt_file": "publication_recovery_receipts/d3286ae_20260829_105800.json",
+    "receipt_literal_sha256": "b253610602a71195fa9d8d9de8c5db01a343b05a48364171fee7e06ab5997328",
+    "receipt_self_hash": "3facb14e4fa8b7e8754a845ab13ca631e9088178ae24f7778be1121502e049c7",
+    "simulation_rerun": false,
+    "validated": true
+  },
+  "run_tag": "d3286ae_20260829_105800",
+  "schema_version": 1,
+  "semantic_artifact_set": {
+    "artifact_count_excluding_receipt": 1683,
+    "excluded_from_root": [
+      "publication_validation_receipt.json"
+    ],
+    "hash_semantics": "manifested literal bytes",
+    "merkle_root": "e9ad0fc3c536de873de4bd8d419170423ba0652c614e2b50803ebfd9bc254293"
+  },
+  "simulation_rerun": false,
+  "simulation_source_commit": "d3286aef28803c715045176008fae6b9c7e3367b",
+  "structural_sensitivity": {
+    "included_in_core_receipt": false,
+    "required_for_full_submission_evidence": true,
+    "required_separate_receipt": "structural_sensitivity_archive_receipt.json"
+  },
+  "validated_checks": [
+    "core_slurm_submission_dag",
+    "exact_H1_H2_seed_panels_and_inference",
+    "deterministic_core_statistical_reaggregation",
+    "exact_H3_panel_TOST_and_treatment_exposure",
+    "raw_endpoint_and_decision_ledger_recomputation",
+    "table_and_paper_export_semantic_projection",
+    "forecast_selection_and_predictions",
+    "deterministic_derived_artifact_and_H3_replay",
+    "figure_provenance_and_exact_inventory",
+    "environment_source_and_run_identity",
+    "literal_byte_manifest_integrity"
+  ],
+  "validation_scope": "core_publication_evidence",
+  "validation_status": "PASS"
+}

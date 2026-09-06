@@ -1,0 +1,103 @@
+{
+  "created_at_utc": "2026-09-02T15:51:37.903160+00:00",
+  "failed_publisher": {
+    "accounting_record": {
+      "accounting_sha256": "7fdf16441c778c3118d2a8868c8ddb0b404ccfc0868a224c79012de75605d809",
+      "bytes": 1392,
+      "file": "14473471.json",
+      "literal_sha256": "989b0d83347d4bc9c3c55000d0c1283371f0604ce64bd4473ce2ca04f484786a",
+      "record": {
+        "accounting_sha256": "7fdf16441c778c3118d2a8868c8ddb0b404ccfc0868a224c79012de75605d809",
+        "captured_at_utc": "2026-09-02T15:46:18.748869+00:00",
+        "exit_code": "1:0",
+        "job_id": "14473471",
+        "receipt_type": "failed_declared_publisher_slurm_accounting",
+        "rows": [
+          {
+            "Cluster": "slurm",
+            "ElapsedRaw": "28",
+            "Eligible": "2026-08-29T12:14:39",
+            "End": "2026-08-29T12:15:07",
+            "ExitCode": "1:0",
+            "JobID": "14473471",
+            "JobIDRaw": "14473471",
+            "JobName": "agribrain-publish",
+            "NodeList": "node016",
+            "Partition": "compute",
+            "Start": "2026-08-29T12:14:39",
+            "State": "FAILED",
+            "Submit": "2026-08-29T10:58:54"
+          }
+        ],
+        "scheduler": {
+          "command": [
+            "sacct",
+            "--noheader",
+            "--parsable2",
+            "--allocations",
+            "--local",
+            "--jobs",
+            "14473471",
+            "--format",
+            "JobID,JobIDRaw,JobName,State,ExitCode,Submit,Eligible,Start,End,ElapsedRaw,NodeList,Partition,Cluster"
+          ],
+          "raw_stderr": "",
+          "raw_stdout": "14473471|14473471|agribrain-publish|FAILED|1:0|2026-08-29T10:58:54|2026-08-29T12:14:39|2026-08-29T12:14:39|2026-08-29T12:15:07|28|node016|compute|slurm\n",
+          "raw_stdout_sha256": "5cd727d503ac092affa166a510f8561c6a2ce763d9fcbedc8fa0ccf3b43f9033",
+          "sacct_version_stdout": "slurm 24.05.4\n"
+        },
+        "schema_version": 1,
+        "terminal_state": "FAILED"
+      },
+      "record_utf8": "{\n  \"accounting_sha256\": \"7fdf16441c778c3118d2a8868c8ddb0b404ccfc0868a224c79012de75605d809\",\n  \"captured_at_utc\": \"2026-09-02T15:46:18.748869+00:00\",\n  \"exit_code\": \"1:0\",\n  \"job_id\": \"14473471\",\n  \"receipt_type\": \"failed_declared_publisher_slurm_accounting\",\n  \"rows\": [\n    {\n      \"Cluster\": \"slurm\",\n      \"ElapsedRaw\": \"28\",\n      \"Eligible\": \"2026-08-29T12:14:39\",\n      \"End\": \"2026-08-29T12:15:07\",\n      \"ExitCode\": \"1:0\",\n      \"JobID\": \"14473471\",\n      \"JobIDRaw\": \"14473471\",\n      \"JobName\": \"agribrain-publish\",\n      \"NodeList\": \"node016\",\n      \"Partition\": \"compute\",\n      \"Start\": \"2026-08-29T12:14:39\",\n      \"State\": \"FAILED\",\n      \"Submit\": \"2026-08-29T10:58:54\"\n    }\n  ],\n  \"scheduler\": {\n    \"command\": [\n      \"sacct\",\n      \"--noheader\",\n      \"--parsable2\",\n      \"--allocations\",\n      \"--local\",\n      \"--jobs\",\n      \"14473471\",\n      \"--format\",\n      \"JobID,JobIDRaw,JobName,State,ExitCode,Submit,Eligible,Start,End,ElapsedRaw,NodeList,Partition,Cluster\"\n    ],\n    \"raw_stderr\": \"\",\n    \"raw_stdout\": \"14473471|14473471|agribrain-publish|FAILED|1:0|2026-08-29T10:58:54|2026-08-29T12:14:39|2026-08-29T12:14:39|2026-08-29T12:15:07|28|node016|compute|slurm\\n\",\n    \"raw_stdout_sha256\": \"5cd727d503ac092affa166a510f8561c6a2ce763d9fcbedc8fa0ccf3b43f9033\",\n    \"sacct_version_stdout\": \"slurm 24.05.4\\n\"\n  },\n  \"schema_version\": 1,\n  \"terminal_state\": \"FAILED\"\n}\n"
+    },
+    "job_id": "14473471",
+    "stderr": {
+      "bytes": 1678,
+      "file": "publish_14473471.err",
+      "hash_semantics": "literal_bytes",
+      "sha256": "1f56c3ba948946002733a40850252a31683ff385642942578f71715cd51bd636"
+    },
+    "stdout": {
+      "bytes": 2387,
+      "file": "publish_14473471.out",
+      "hash_semantics": "literal_bytes",
+      "sha256": "310142307f60a6eab2fc95e9ef35fb037662b55edefc81013cff87fb84a434ec"
+    }
+  },
+  "original_submission_receipt": {
+    "file": "d3286ae_20260829_105800.json",
+    "literal_sha256": "89fa0907eb4c7288a724d9e92592dcf3440762914cc3251ea7f0ea2fe488ec73",
+    "preserved_without_mutation": true,
+    "publisher_job_id": "14473471",
+    "receipt_sha256": "2c4d28e281ca1711a06fb37ff4510d0fea4629c08b22d9c234fe7ff1282e866d"
+  },
+  "preserved_raw_outputs": {
+    "bytes": 3349863,
+    "file": "d3286ae_20260829_105800.json",
+    "hash_semantics": "preserved_simulation_raw_output_manifest_v1",
+    "literal_sha256": "d2e692543a6ed19d7576fddf6f9f0f91616d432f790e09c2eea8d522761256f3",
+    "manifest_self_hash": "4a45158e08c509391480159ee2ae6f0dcab2f487dbd23c5a8533fa25631cfb13",
+    "normalized_record_set_sha256": "dc36829273f7e79713271ac6833d4c7cacf35e55f7cfd6e6d86e2ecea071cec5",
+    "payload_merkle_root": "a31b54f6f111ceca20dd48c56c79faaf62d0c49fa4a7b6206d77d5ae345bc446",
+    "record_count": 13591
+  },
+  "reason_code": "terminal_failed_publisher_publication_only_recovery",
+  "receipt_sha256": "3facb14e4fa8b7e8754a845ab13ca631e9088178ae24f7778be1121502e049c7",
+  "receipt_type": "publication_recovery_authorization",
+  "recovery_kind": "core",
+  "recovery_publisher": {
+    "authorization_workflow": "sbatch_hold_then_receipt_then_release",
+    "held_at_receipt_creation": true,
+    "job_id": "14482387"
+  },
+  "run_tag": "d3286ae_20260829_105800",
+  "schema_version": 1,
+  "simulation_rerun": false,
+  "source_identity": {
+    "publication_repair_checkout_clean": true,
+    "publication_repair_commit": "675bdb2d43efd2ef46b6db78df337dbb5892d059",
+    "publication_repair_tree": "e049e93ed01723035e14a18833ba2c44b916a048",
+    "simulation_commit": "d3286aef28803c715045176008fae6b9c7e3367b"
+  }
+}

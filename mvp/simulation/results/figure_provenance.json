@@ -1,0 +1,578 @@
+{
+  "schema_version": 3,
+  "source_commit": "d3286aef28803c715045176008fae6b9c7e3367b",
+  "source_commit_semantics": "raw_input_simulation_commit",
+  "simulation_source_commit": "d3286aef28803c715045176008fae6b9c7e3367b",
+  "renderer_code_commit": "675bdb2d43efd2ef46b6db78df337dbb5892d059",
+  "dual_provenance": true,
+  "run_tag": "d3286ae_20260829_105800",
+  "seed_root": "/mmfs1/scratch/tmp/agribrain_101198337_d3286ae_20260829_105500/publication_recovery_675bdb2_20260902_retry7/publication_source_core/mvp/simulation/results/benchmark_seeds",
+  "render_input_isolated_snapshot": true,
+  "seed_panel": [
+    7,
+    42,
+    99,
+    101,
+    202,
+    303,
+    404,
+    505,
+    606,
+    707,
+    808,
+    909,
+    1010,
+    1111,
+    1212,
+    1313,
+    1337,
+    1414,
+    1515,
+    2024
+  ],
+  "n_seed_envelopes_loaded": 20,
+  "seed_input_artifacts": [
+    {
+      "file": "benchmark_seeds/seed_7.json",
+      "bytes": 5457872,
+      "sha256": "6a3ec8b6206556ac4148855bcb48343425aa3153d61fb3058c7d12a235021a3f",
+      "seed": 7
+    },
+    {
+      "file": "benchmark_seeds/seed_42.json",
+      "bytes": 5457486,
+      "sha256": "25780159e1fd65a6b6e6ddcc1f920a3c49dda57b66bbb9ccc8c963f5bb75e4ba",
+      "seed": 42
+    },
+    {
+      "file": "benchmark_seeds/seed_99.json",
+      "bytes": 5458221,
+      "sha256": "040904ae5bb4785e566403dd81ade4739c062c8f7b8892007aabeace6d67f896",
+      "seed": 99
+    },
+    {
+      "file": "benchmark_seeds/seed_101.json",
+      "bytes": 5458327,
+      "sha256": "509bedd22f114ceb9a2937683fbceb4155249bfcf68f3cef9e73c0a7c25e8f00",
+      "seed": 101
+    },
+    {
+      "file": "benchmark_seeds/seed_202.json",
+      "bytes": 5456229,
+      "sha256": "037edc62b4c8b5013fd7ea14116b38dc87fc4672c38399b83baee9a5d42218e9",
+      "seed": 202
+    },
+    {
+      "file": "benchmark_seeds/seed_303.json",
+      "bytes": 5456678,
+      "sha256": "fd109fd0dd2b8938c78e8283c88394cfaea905e7ea1ba80cc58b089ceae72575",
+      "seed": 303
+    },
+    {
+      "file": "benchmark_seeds/seed_404.json",
+      "bytes": 5457862,
+      "sha256": "eac92a6f1abe1c381365222824b58922e6f74ab467e339eb9bb1e9e24a699ad0",
+      "seed": 404
+    },
+    {
+      "file": "benchmark_seeds/seed_505.json",
+      "bytes": 5456620,
+      "sha256": "183391fe4722ef3f49dec214dfb5d50c7ef5d60f81927ea7cc8a71bbdcf279e1",
+      "seed": 505
+    },
+    {
+      "file": "benchmark_seeds/seed_606.json",
+      "bytes": 5459097,
+      "sha256": "939986bce2b786b2def3eb55db40f7e618634aff86e08b21b8eedb5fe9e2279d",
+      "seed": 606
+    },
+    {
+      "file": "benchmark_seeds/seed_707.json",
+      "bytes": 5453127,
+      "sha256": "9fa4f4a1a8042dcd7373b965c1f134224311670f947431faf87b2176e9e216d5",
+      "seed": 707
+    },
+    {
+      "file": "benchmark_seeds/seed_808.json",
+      "bytes": 5459375,
+      "sha256": "c69f1d9e6bfe8914106a644cd6715f73d78c057e672877d079138d6977d09571",
+      "seed": 808
+    },
+    {
+      "file": "benchmark_seeds/seed_909.json",
+      "bytes": 5461791,
+      "sha256": "36d2ba1f781589da418b72110b73a5d172324dacce9c03a764916a724b414614",
+      "seed": 909
+    },
+    {
+      "file": "benchmark_seeds/seed_1010.json",
+      "bytes": 5457942,
+      "sha256": "6c73a81b3f3259d13d5e1d33efdb63709d4ce30f8969cf00068881060ada809a",
+      "seed": 1010
+    },
+    {
+      "file": "benchmark_seeds/seed_1111.json",
+      "bytes": 5454328,
+      "sha256": "dd92b8108d5c4e5a03f473f55ba3a255aa9c29436fe0e4b88409958963484783",
+      "seed": 1111
+    },
+    {
+      "file": "benchmark_seeds/seed_1212.json",
+      "bytes": 5461451,
+      "sha256": "a7e0f7581104959a7da5c814f9998a03d5505feb9efabe40a9e0e7d4ce06d7dc",
+      "seed": 1212
+    },
+    {
+      "file": "benchmark_seeds/seed_1313.json",
+      "bytes": 5454535,
+      "sha256": "652df8580d42e5f7fa4d803fec6c4f16968667c91b599bec838389c25d31df02",
+      "seed": 1313
+    },
+    {
+      "file": "benchmark_seeds/seed_1337.json",
+      "bytes": 5458923,
+      "sha256": "010df9975b80cf40fa42a06a494ddb75ba1dbab8fac33aa0c2c00216e2fe9ad3",
+      "seed": 1337
+    },
+    {
+      "file": "benchmark_seeds/seed_1414.json",
+      "bytes": 5461451,
+      "sha256": "b1899acbcf3f55f3a35f8f52384d526e8065383789596c4246c80299f7a50ce5",
+      "seed": 1414
+    },
+    {
+      "file": "benchmark_seeds/seed_1515.json",
+      "bytes": 5456582,
+      "sha256": "76ee0ce750eb4db8890115be4013cd5a89525356e1b8851407d2730483496a8f",
+      "seed": 1515
+    },
+    {
+      "file": "benchmark_seeds/seed_2024.json",
+      "bytes": 5455110,
+      "sha256": "476b943a8eee09b550a3df33776fcd3640d740283d0e82a655a5fccc81d5ef65",
+      "seed": 2024
+    }
+  ],
+  "aggregate_input_artifacts": [
+    {
+      "file": "benchmark_summary.json",
+      "bytes": 489392,
+      "sha256": "1725d04aff92a3a280467ef8b095a61c91ed195e388919b013f9d417b0dd094d"
+    },
+    {
+      "file": "benchmark_significance.json",
+      "bytes": 502387,
+      "sha256": "de598e853bfbe6acf450de25538d7bb5ab05e9cfb939236298b8ea70f8395fe5"
+    },
+    {
+      "file": "channel_attribution_aggregate.json",
+      "bytes": 30355,
+      "sha256": "4dcc9e1e2873185202768bc2d71959b5c8e9c0a4a8b8b548b8c9ba6bb203001b"
+    },
+    {
+      "file": "stress_passfail.csv",
+      "bytes": 32746,
+      "sha256": "2732bd95bbfcf4575a1f07ea515057455464a3fc5f838ce1c4e9c68890f26ed7"
+    }
+  ],
+  "illustrative_seed": 42,
+  "illustrative_seed_posture": "predeclared trace illustration only; population summaries and uncertainty use the complete seed panel",
+  "publication_style": {
+    "schema_version": 1,
+    "png": {
+      "dpi": 800,
+      "minimum_dpi": 400,
+      "background": "#FFFFFF",
+      "transparent": false
+    },
+    "pdf": {
+      "fonttype": 42,
+      "use_14_core_fonts": false,
+      "one_page_per_figure": true,
+      "vector_primitives_required": true
+    },
+    "accessibility": {
+      "minimum_series_contrast_against_white": 3.0,
+      "redundant_series_encodings": {
+        "line_series": [
+          "color",
+          "marker",
+          "linestyle"
+        ],
+        "bar_series": [
+          "color",
+          "hatch",
+          "position"
+        ]
+      },
+      "semantic_colors": {
+        "static": "#4D4D4D",
+        "hybrid_rl": "#A66F00",
+        "no_pinn": "#117733",
+        "no_slca": "#CC79A7",
+        "agribrain": "#0072B2",
+        "no_context": "#009E73",
+        "mcp_only": "#D55E00",
+        "pirag_only": "#007C91",
+        "agribrain_standard_rag": "#882255",
+        "agribrain_no_peer": "#332288",
+        "agribrain_sign_unconstrained": "#999933"
+      },
+      "semantic_markers": {
+        "static": "o",
+        "hybrid_rl": "s",
+        "no_pinn": "<",
+        "no_slca": "D",
+        "agribrain": "^",
+        "no_context": "P",
+        "mcp_only": "X",
+        "pirag_only": "d",
+        "agribrain_standard_rag": "v",
+        "agribrain_no_peer": "h",
+        "agribrain_sign_unconstrained": "*"
+      },
+      "semantic_hatches": {
+        "static": "",
+        "hybrid_rl": "//",
+        "no_pinn": "--",
+        "no_slca": "\\\\",
+        "agribrain": "xx",
+        "no_context": "..",
+        "mcp_only": "++",
+        "pirag_only": "oo",
+        "agribrain_standard_rag": "**",
+        "agribrain_no_peer": "OO",
+        "agribrain_sign_unconstrained": "||"
+      },
+      "semantic_linestyles": {
+        "static": "-",
+        "hybrid_rl": "--",
+        "no_pinn": [
+          0,
+          [
+            2,
+            1,
+            2,
+            1,
+            6,
+            1
+          ]
+        ],
+        "no_slca": ":",
+        "agribrain": "-.",
+        "no_context": [
+          0,
+          [
+            5,
+            2
+          ]
+        ],
+        "mcp_only": [
+          0,
+          [
+            3,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "pirag_only": [
+          0,
+          [
+            1,
+            1
+          ]
+        ],
+        "agribrain_standard_rag": [
+          0,
+          [
+            6,
+            2,
+            1,
+            2
+          ]
+        ],
+        "agribrain_no_peer": [
+          0,
+          [
+            8,
+            2
+          ]
+        ],
+        "agribrain_sign_unconstrained": [
+          0,
+          [
+            4,
+            2,
+            1,
+            2
+          ]
+        ]
+      }
+    },
+    "typography": {
+      "default_weight": "normal",
+      "external_tex": false,
+      "axis_labels": "normal",
+      "tick_labels": "normal",
+      "legend": "normal",
+      "panel_titles": "bold",
+      "figure_titles": "bold"
+    }
+  },
+  "renderer_environment": {
+    "matplotlib": "3.10.9",
+    "numpy": "2.4.4",
+    "pillow": "12.2.0",
+    "resolved_font": {
+      "file": "DejaVuSans.ttf",
+      "bytes": 756072,
+      "sha256": "3fdf69cabf06049ea70a00b5919340e2ce1e6d02b0cc3c4b44fb6801bd1e0d22",
+      "resolved_family": "DejaVu Sans",
+      "resolved_path": "/mmfs1/scratch/tmp/agribrain_101198337_d3286ae_20260829_105500/publication_recovery_675bdb2_20260902_retry7/publication_source_core/.publication_venvs/d3286ae_20260829_105800/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf"
+    }
+  },
+  "rendered_artifacts": [
+    {
+      "file": "ablation.pdf",
+      "bytes": 42095,
+      "sha256": "d3032acccdd11be6546bc33421ac8b385712067fcd279d60eadfe673ea0d93f5"
+    },
+    {
+      "file": "ablation.png",
+      "bytes": 2314955,
+      "sha256": "ba12709b192d803bac19848131acaefbf5680b0c03ec10a842f18550d4d13949"
+    },
+    {
+      "file": "adaptive_pricing.pdf",
+      "bytes": 55926,
+      "sha256": "ac39bf693d45913581409665699fce02679f4264f368cf9c7e84b013ecbfe9c8"
+    },
+    {
+      "file": "adaptive_pricing.png",
+      "bytes": 4347006,
+      "sha256": "a2d131adb85127694c77bf68820bfa2c5cdd45f41bd5956fb263a535c6780687"
+    },
+    {
+      "file": "context_value.pdf",
+      "bytes": 84636,
+      "sha256": "204db24d8a5a52681fa6fda5ebe21e2961a129cbca5d017b29227473be4657fe"
+    },
+    {
+      "file": "context_value.png",
+      "bytes": 4109879,
+      "sha256": "120b8cc858cc0d7f18ddb520fb6e3e5894b8c5ea2ad80c15b6f757d6792d75d1"
+    },
+    {
+      "file": "cross_scenario.pdf",
+      "bytes": 30481,
+      "sha256": "05809f70e4ff7d7e3841766635e49a01632524e39f3edd14b36404405670e219"
+    },
+    {
+      "file": "cross_scenario.png",
+      "bytes": 3283522,
+      "sha256": "fef3cd78afb58bf140c35095102bcc79eae8b9eab6c20c9c8e278391594bf0d8"
+    },
+    {
+      "file": "cyber_outage.pdf",
+      "bytes": 44381,
+      "sha256": "9263a744d60852506a410c20230f6783dfec18376ab69151408a7b508136487f"
+    },
+    {
+      "file": "cyber_outage.png",
+      "bytes": 4223118,
+      "sha256": "cdd31b8ed303bdb1f9e29a6ad679dcda68c5742fe024ae2606ba21bb8f58ffaa"
+    },
+    {
+      "file": "heatwave.pdf",
+      "bytes": 63420,
+      "sha256": "d8bdbb6d8fd96e9886bd92d7b8206d91b49f8ec7294cde4c94bd18a524b35e6b"
+    },
+    {
+      "file": "heatwave.png",
+      "bytes": 4673565,
+      "sha256": "f65ed9cea41055bd2dfecf265b5b00fbcfe0bd5ac098f4e1c93bc89dbc9bc51e"
+    },
+    {
+      "file": "overproduction.pdf",
+      "bytes": 52279,
+      "sha256": "87270ac4557d0edbcfbcfe4dd1a1b958086a256194240d86c1be5309337c0ee8"
+    },
+    {
+      "file": "overproduction.png",
+      "bytes": 4425428,
+      "sha256": "7d5b8fd21e87770d916d46c536f31947777dce3ee885d5d4d34e424d2f13e6d1"
+    },
+    {
+      "file": "performance_efficiency.pdf",
+      "bytes": 49115,
+      "sha256": "a91127220c62893c3f6184010ccfe77b3c51272eeff38b7f49c48877879f2e5b"
+    },
+    {
+      "file": "performance_efficiency.png",
+      "bytes": 2463038,
+      "sha256": "53e099a761a8fbef245151704791d4a8b71842a17b3374726db513b6a4e26e33"
+    },
+    {
+      "file": "stress_robustness.pdf",
+      "bytes": 46057,
+      "sha256": "ca99ca7d865d6c8247307913871a9bf130f42e56d5fbc8448745cd373cde3bcb"
+    },
+    {
+      "file": "stress_robustness.png",
+      "bytes": 2997804,
+      "sha256": "8e59eec35da57d97c17969574ef51bafba08bebec22ac92d9d265324044e2094"
+    },
+    {
+      "file": "transport_emissions.pdf",
+      "bytes": 37589,
+      "sha256": "52650613b4af3abbc5822da1dde768edacac0782e075538dd9c8349a74eb0035"
+    },
+    {
+      "file": "transport_emissions.png",
+      "bytes": 2075947,
+      "sha256": "171be57077d64c14d038a22181dd6955e814eaa5f478223acf16665da8b63276"
+    }
+  ],
+  "panels": {
+    "heatwave": {
+      "a": {
+        "fields": [
+          "temp_outcome_environmental_trace",
+          "rh_outcome_environmental_trace"
+        ],
+        "aggregation": "illustrative seed, raw",
+        "n_seeds": 1
+      },
+      "b": {
+        "fields": [
+          "rho_outcome_environmental_trace",
+          "rho_policy_observed_trace"
+        ],
+        "aggregation": "illustrative seed, raw",
+        "n_seeds": 1
+      },
+      "c": {
+        "fields": [
+          "prob_trace",
+          "rho_policy_observed_trace"
+        ],
+        "aggregation": "illustrative seed, raw action probabilities with RLE-event guide",
+        "n_seeds": 1
+      },
+      "d": {
+        "fields": [
+          "ari_trace"
+        ],
+        "aggregation": "per-step seed mean, edge-truncated 3-hour display smoother",
+        "n_seeds": 20
+      }
+    },
+    "overproduction": {
+      "a": {
+        "fields": [
+          "inventory_outcome_environmental_trace",
+          "demand_outcome_environmental_trace"
+        ],
+        "aggregation": "illustrative seed, raw",
+        "n_seeds": 1
+      },
+      "b": {
+        "fields": [
+          "waste_trace"
+        ],
+        "aggregation": "illustrative seed per method, edge-truncated 3-hour rolling mean",
+        "n_seeds": 1
+      },
+      "c": {
+        "fields": [
+          "rho_outcome_environmental_trace",
+          "action_trace"
+        ],
+        "aggregation": "illustrative seed per method, trailing 3-hour RLE",
+        "n_seeds": 1
+      },
+      "d": {
+        "fields": [
+          "slca_component_trace"
+        ],
+        "aggregation": "per-seed component means with cross-seed uncertainty",
+        "n_seeds": 20
+      }
+    },
+    "cyber_outage": {
+      "a": {
+        "fields": [
+          "ari_trace"
+        ],
+        "aggregation": "illustrative seed, edge-truncated 3-hour rolling mean",
+        "n_seeds": 1
+      },
+      "b": {
+        "fields": [
+          "action_trace"
+        ],
+        "aggregation": "pre/during proportions",
+        "n_seeds": 20
+      },
+      "c": {
+        "fields": [
+          "action_trace"
+        ],
+        "aggregation": "seed-level pre/during behavior",
+        "n_seeds": 20
+      },
+      "d": {
+        "fields": [
+          "ari_trace",
+          "waste_trace",
+          "action_trace"
+        ],
+        "aggregation": "outage-window seed means",
+        "n_seeds": 20
+      }
+    },
+    "adaptive_pricing": {
+      "a": {
+        "fields": [
+          "demand_trace"
+        ],
+        "aggregation": "illustrative seed policy-observed demand forecast, trailing policy Bollinger window",
+        "n_seeds": 1
+      },
+      "b": {
+        "fields": [
+          "action_trace"
+        ],
+        "aggregation": "illustrative seed, twelve equal time bins",
+        "n_seeds": 1
+      },
+      "c": {
+        "fields": [
+          "equity_trace"
+        ],
+        "aggregation": "illustrative seed per method, edge-truncated 3-hour rolling mean",
+        "n_seeds": 1
+      },
+      "d": {
+        "fields": [
+          "reward_trace"
+        ],
+        "aggregation": "illustrative seed per method, edge-truncated 3-hour rolling mean",
+        "n_seeds": 1
+      }
+    },
+    "cross_scenario_and_secondary": {
+      "fields": [
+        "benchmark_summary.json",
+        "benchmark_significance.json",
+        "channel_attribution_aggregate.json",
+        "stress_passfail.csv"
+      ],
+      "aggregation": "validated seed-level summaries; see each source artifact metadata",
+      "n_seeds": 20
+    }
+  }
+}
