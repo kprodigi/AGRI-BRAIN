@@ -24,29 +24,37 @@ def _load_renderer():
 
 def test_per_figure_font_bump_survives_shared_axes_and_legend_helpers():
     renderer = _load_renderer()
+    # Read the base sizes before entering the bump: panel_fonts raises the
+    # module globals for the duration, so these have to be captured first.
     expected_tick = renderer.TICK_FONT_SIZE + 2
     expected_axis = renderer.AXIS_LABEL_SIZE + 2
     expected_title = renderer.SUBPLOT_TITLE_SIZE + 2
     expected_legend = renderer.LEGEND_FONT_SIZE + 2
-    saved = renderer._font_bump(2)
-    figure, axes = renderer.plt.subplots()
-    try:
-        axes.plot([0, 1], [0, 1], label="Series")
-        axes.set(title="Panel", xlabel="Step", ylabel="Score")
-        renderer._apply_style(axes)
-        legend = renderer._legend(axes)
-        figure.canvas.draw()
-        assert axes.title.get_fontsize() == expected_title
-        assert axes.xaxis.label.get_fontsize() == expected_axis
-        assert axes.yaxis.label.get_fontsize() == expected_axis
-        assert all(label.get_fontsize() == expected_tick for label in axes.get_xticklabels())
-        assert all(text.get_fontsize() == expected_legend for text in legend.get_texts())
-        assert axes.title.get_fontweight() == "bold"
-        assert axes.xaxis.label.get_fontweight() == "normal"
-        assert all(text.get_fontweight() == "normal" for text in legend.get_texts())
-    finally:
-        renderer.plt.close(figure)
-        renderer._font_restore(saved)
+    with renderer.panel_fonts(2):
+        figure, axes = renderer.plt.subplots()
+        try:
+            axes.plot([0, 1], [0, 1], label="Series")
+            axes.set(title="Panel", xlabel="Step", ylabel="Score")
+            renderer._apply_style(axes)
+            legend = renderer._legend(axes)
+            figure.canvas.draw()
+            assert axes.title.get_fontsize() == expected_title
+            assert axes.xaxis.label.get_fontsize() == expected_axis
+            assert axes.yaxis.label.get_fontsize() == expected_axis
+            assert all(
+                label.get_fontsize() == expected_tick
+                for label in axes.get_xticklabels()
+            )
+            assert all(
+                text.get_fontsize() == expected_legend
+                for text in legend.get_texts()
+            )
+            # The set is printed bold throughout; hierarchy is carried by size.
+            assert axes.title.get_fontweight() == "bold"
+            assert axes.xaxis.label.get_fontweight() == "bold"
+            assert all(text.get_fontweight() == "bold" for text in legend.get_texts())
+        finally:
+            renderer.plt.close(figure)
 
 
 def test_renderer_uses_pattern_redundancy_and_vector_accessible_heatmaps():

@@ -118,7 +118,6 @@ AGRI-BRAIN/
 │   ├── generate_results.py         # Scenario × mode simulation runner
 │   ├── generate_figures.py         # Publication figure generator
 │   ├── stochastic.py               # 8-source perturbation engine
-│   ├── reproduce_core.py           # One-command full reproduction
 │   ├── benchmarks/                 # Multi-seed benchmark, stress, attribution suites
 │   ├── validation/                 # Result validation + regression guards
 │   ├── analysis/                   # Diagnostics, manifest builder, evidence export
@@ -174,11 +173,9 @@ python generate_results.py    # every configured mode across the five scenarios
 python generate_figures.py    # publication figures (PNG + PDF)
 ```
 
-Or run the one-command end-to-end pipeline:
-
-```bash
-python mvp/simulation/reproduce_core.py
-```
+Publication runs are defined only by the commit-bound SLURM chain below;
+the former one-command local runner is retired and refuses to execute, so an
+old command cannot produce noncanonical results.
 
 ### HPC benchmark (20 seeds)
 
@@ -375,8 +372,8 @@ regenerable from it:
   sensor dataset is tracked at `agribrain/backend/src/data_spinach.csv`.
   `mvp/simulation/results/` is scratch
   space — treat the committed allowlisted files above as canonical. Reproduce the
-  full set with `python mvp/simulation/reproduce_core.py` (end-to-end) or
-  `bash hpc/hpc_run.sh` (20-seed benchmark), pinning `PYTHONHASHSEED=0`; the
+  full set with `bash hpc/hpc_run.sh` (20-seed benchmark), pinning
+  `PYTHONHASHSEED=0`; the
   §5.8 ledgers come from `mvp/simulation/_run_h2_all.py` then
   `mvp/simulation/benchmarks/aggregate_channel_attribution.py`.
 - **Reproduction guide:** see [`HOW_TO_RUN.md`](HOW_TO_RUN.md) and
@@ -402,7 +399,7 @@ source tree this repository publishes.
   author  = {Sarker, Nahid and Kazi, Monzure-Khoda},
   year    = {2026},
   url     = {https://github.com/kprodigi/AGRI-BRAIN},
-  version = {1.2.0},
+  version = {1.3.0},
   license = {MIT}
 }
 ```

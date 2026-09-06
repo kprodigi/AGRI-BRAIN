@@ -242,15 +242,15 @@ def test_complete_structural_panels_use_legible_redundant_encoding() -> None:
         assert figure._suptitle.get_fontweight() == "bold"
         for axis in figure.axes:
             assert axis.title.get_fontweight() == "bold"
-            assert axis.xaxis.label.get_fontweight() == "normal"
+            assert axis.xaxis.label.get_fontweight() == "bold"
             assert all(
-                label.get_fontweight() == "normal"
+                label.get_fontweight() == "bold"
                 for label in (*axis.get_xticklabels(), *axis.get_yticklabels())
             )
             legend = axis.get_legend()
             if legend is not None:
                 assert all(
-                    text.get_fontweight() == "normal"
+                    text.get_fontweight() == "bold"
                     for text in legend.get_texts()
                 )
 

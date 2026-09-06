@@ -318,9 +318,8 @@ def _panel_key(axis: Any, *, ncol: int | None = None) -> None:
         frameon=False, borderaxespad=0.0, handlelength=1.8,
         handletextpad=0.5, columnspacing=1.6, labelspacing=0.3,
     )
-    if legend is not None:
-        for text in legend.get_texts():
-            text.set_fontweight("normal")
+    # The key inherits the shared bold weight; the figure is printed bold
+    # throughout and the hierarchy is carried by size.
     # These panels title with loc="left"; get_title() defaults to the centre
     # slot and would hand back an empty string, silently dropping the title.
     axis.set_title(axis.get_title(loc="left"), loc="left", fontweight="bold",

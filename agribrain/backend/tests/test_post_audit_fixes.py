@@ -931,9 +931,11 @@ def test_panel_c_plots_defensive_reroutes_under_risk():
     # figures; late-May 2026 the layout was rebalanced to 2x2 (18 x 13)
     # with the same four panels in row-major order: (a) ARI / (b)
     # action distribution / (c) behavior shift / (d) outage impact.
-    assert "plt.subplots(2, 2, figsize=(18, 13))" in src, (
+    assert "plt.subplots(2, 2, figsize=GRID_FIGSIZE)" in src, (
         "fig 4 is no longer the canonical 2x2 layout; the layout was "
-        "rebalanced from 1x4 to match figs 2/3/5 in late-May 2026."
+        "rebalanced from 1x4 to match figs 2/3/5 in late-May 2026. The "
+        "size is the shared GRID_FIGSIZE constant, so every 2x2 paper "
+        "figure changes together or not at all."
     )
     # Title pins for the 2x2 layout:
     #   * (c) "Behavior Shift"           -- per-method reroute rate pre/during outage

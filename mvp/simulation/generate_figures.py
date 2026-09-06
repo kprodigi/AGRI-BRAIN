@@ -34,7 +34,7 @@ import numpy as np
 from analysis.publication_figure_style import (
     ANNOT_FONT_SIZE,
     AXIS_LABEL_SIZE,
-    BODY_FONT_SIZE,
+    BODY_FONT_SIZE,  # noqa: F401  read by name in _SCALED_NAMES/_SCALED_RC
     FIG_TITLE_SIZE,
     LEGEND_FONT_SIZE,
     PANEL_KEY_FONT_CAP,
