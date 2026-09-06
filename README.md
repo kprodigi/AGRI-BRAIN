@@ -354,6 +354,15 @@ The system uses IoT sensor telemetry from fresh spinach cold-chain storage, incl
 | `quality_preference` | Buyer-side quality preference signal |
 | `regulatory_temp_max` | FDA cold-chain temperature ceiling (°C) |
 
+### What the reported quantities are
+
+The benchmark is synthetic. Waste fraction per routing opportunity, the modeled
+emissions indicator, the social-performance proxy and severity-weighted RLE are
+model outputs, not field measurements, and the social-performance proxy is a
+decision-ranking indicator rather than a measure of demographic equity. The
+sensor telemetry above is real; everything downstream of the routing policy is
+simulated.
+
 ## Data Availability
 
 All artifacts needed to verify the paper's claims are in this repository or
