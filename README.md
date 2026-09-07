@@ -27,7 +27,7 @@ forecasting, compliance, and routing are optimized in isolation. AGRI-BRAIN
 treats **communication as an explicit decision variable**: five role agents
 (farm, processor, cooperative, distributor, recovery) admit external evidence
 through **Model Context Protocol (MCP)** tool calls and **physics-informed
-retrieval-augmented generation (piR)**, which together populate a
+retrieval (piR)**, which together populate a
 five-dimensional context vector that shifts a softmax routing policy through a
 learned, sign-constrained logit modifier. Typed peer messages reach the policy
 on a separate path, as a bounded logit bias, and are not a coordinate of that
