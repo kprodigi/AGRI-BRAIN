@@ -377,15 +377,54 @@ def test_recovery_endpoint_rejects_missing_tampered_or_linked_authorization_rece
     assert exc.value.status_code == 503
 
 
-def test_recovery_endpoint_rejects_wrong_publication_checkout(tmp_path, monkeypatch):
+def test_recovery_endpoint_serves_from_a_later_serving_commit(tmp_path, monkeypatch):
+    """The serving checkout may move past the commit that published the evidence.
+
+    The evidence records the commit that re-aggregated it, which ran on a
+    machine whose history was never published; requiring ``HEAD`` to equal that
+    commit made the endpoint unsatisfiable for every clone.  Provenance stays in
+    the manifest and is still validated against the recovery receipt; it is no
+    longer a claim about which code is running.
+    """
     artifact = tmp_path / "benchmark_significance.json"
     artifact.write_bytes(b"recovered-publication")
-    _manifest, _authorization = _write_valid_recovery_release(tmp_path, artifact)
+    manifest, authorization = _write_valid_recovery_release(tmp_path, artifact)
     monkeypatch.setattr(results, "_RESULTS_DIR", tmp_path)
     monkeypatch.setattr(results, "_current_source_commit", lambda: "c" * 40)
+    monkeypatch.setattr(
+        "mvp.simulation.analysis.recovery_provenance.validate_recovery_context",
+        lambda receipt, **kwargs: authorization,
+    )
+    monkeypatch.setattr(
+        results, "_validate_canonical_release_contract", lambda receipt=None: None,
+    )
 
-    with pytest.raises(HTTPException, match="serving-code commit"):
-        results._publication_artifact(artifact.name)
+    assert manifest["publication_code_commit"] != "c" * 40
+    verified = results._publication_artifact(artifact.name)
+
+    assert verified.content == b"recovered-publication"
+
+
+def test_committed_evidence_passes_the_audit():
+    """The real manifest is tracked at HEAD and unmodified, so it audits clean."""
+    results._require_published_evidence("artifact_manifest.json")
+
+
+def test_evidence_missing_from_the_serving_commit_is_rejected():
+    with pytest.raises(HTTPException, match="not committed in the serving checkout"):
+        results._require_published_evidence("not_a_tracked_artifact.json")
+
+
+def test_evidence_outside_the_repository_is_not_audited(tmp_path, monkeypatch):
+    """Git cannot speak for a results root mounted outside the checkout.
+
+    Skipping is what lets a packaged deployment serve evidence at all; the
+    manifest hash chain is the guarantee there, and every test above that points
+    ``_RESULTS_DIR`` at ``tmp_path`` depends on this branch.
+    """
+    monkeypatch.setattr(results, "_RESULTS_DIR", tmp_path)
+
+    results._require_published_evidence("anything_at_all.json")
 
 
 @pytest.mark.parametrize("dual", [False, True])
@@ -506,7 +545,15 @@ def test_publication_endpoint_rejects_nonfresh_or_split_provenance(
     assert exc.value.status_code == 503
 
 
-def test_publication_endpoint_rejects_results_from_other_commit(tmp_path, monkeypatch):
+def test_publication_endpoint_serves_a_fresh_release_from_a_later_commit(
+    tmp_path, monkeypatch,
+):
+    """A single-commit release is served after the checkout moves on too.
+
+    Pinning ``HEAD`` to the commit that produced the evidence broke the endpoint
+    on the next commit of any kind, including one that touched nothing the
+    evidence depends on.
+    """
     commit = "a" * 40
     payload = b"canonical"
     artifact = tmp_path / "benchmark_significance.json"
@@ -514,10 +561,11 @@ def test_publication_endpoint_rejects_results_from_other_commit(tmp_path, monkey
     _write_valid_release(tmp_path, commit, artifact)
     monkeypatch.setattr(results, "_RESULTS_DIR", tmp_path)
     monkeypatch.setattr(results, "_current_source_commit", lambda: "b" * 40)
+    monkeypatch.setattr(
+        results, "_validate_canonical_release_contract", lambda receipt=None: None,
+    )
 
-    with pytest.raises(HTTPException) as exc:
-        results._publication_artifact(artifact.name)
-    assert exc.value.status_code == 503
+    assert results._publication_artifact(artifact.name).content == payload
 
 
 def test_publication_endpoint_requires_hash_bound_semantic_receipt(
