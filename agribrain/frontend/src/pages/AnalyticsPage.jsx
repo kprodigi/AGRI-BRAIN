@@ -81,6 +81,8 @@ const VARIANT_KEY_MAP = {
 };
 
 const METRIC_LABELS = {
+  decision_latency_ms: "Decision latency (ms)",
+  constraint_violation_rate: "Constraint violation rate",
   ARI: "ARI",
   RLE: "Severity-weighted RLE",
   Waste: "Waste fraction",
@@ -207,6 +209,8 @@ const SCENARIOS = [
 ];
 
 export default function AnalyticsPage() {
+  const [developmentReady, setDevelopmentReady] = useState(false);
+  const [loadVersion, setLoadVersion] = useState(0);
   const [table1, setTable1] = useState([]);
   const [table2, setTable2] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -225,13 +229,15 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     const loadData = async () => {
+      setLoading(true);
+      setDevelopmentReady(false);
       const fetchText = async (name) => {
-        const response = await authFetch(`${API}/results/figures/${name}`);
+        const response = await authFetch(`${API}/results/figures/${name}`, { signal: AbortSignal.timeout(5000) });
         if (!response.ok) throw new Error(`${name}: HTTP ${response.status}`);
         return response.text();
       };
       const fetchJson = async (name) => {
-        const response = await authFetch(`${API}/results/figures/${name}`);
+        const response = await authFetch(`${API}/results/figures/${name}`, { signal: AbortSignal.timeout(5000) });
         if (!response.ok) throw new Error(`${name}: HTTP ${response.status}`);
         return response.json();
       };
@@ -244,9 +250,9 @@ export default function AnalyticsPage() {
         ]);
         const parsedTable1 = parseCSV(t1Text);
         const parsedTable2 = parseCSV(t2Text);
-        if (parsedTable1.length !== 35 || parsedTable2.length !== 25) {
+        if (parsedTable1.length !== 40 || parsedTable2.length !== 30) {
           throw new Error(
-            `publication panel incomplete (Table 1=${parsedTable1.length}/35, Table 2=${parsedTable2.length}/25)`,
+            `publication panel incomplete (Table 1=${parsedTable1.length}/40, Table 2=${parsedTable2.length}/30)`,
           );
         }
         if (!bs?.summary || !bsig?.significance) {
@@ -276,12 +282,40 @@ export default function AnalyticsPage() {
         setBenchSignificance(null);
         setPublicationEvidenceReady(false);
         setPublicationEvidenceError(e?.message || "validated artifact set not available");
+        try {
+          const result = await jget(API, "/results/summary");
+          if (result?.ok === true && result.development_summary) {
+            const modes = [...PRIMARY_PUBLICATION_MODES, ...SECONDARY_PUBLICATION_MODES];
+            const rows = Object.entries(result.development_summary).flatMap(([Scenario, values]) =>
+              modes.filter((mode) => values?.[mode]).map((mode) => {
+                const metrics = values[mode];
+                return {
+                  Scenario, Method: displayMethod(mode),
+                  ARI: metrics.ari, RLE: metrics.rle, Waste: metrics.waste,
+                  SLCA: metrics.slca, Carbon: metrics.carbon, Equity: metrics.equity,
+                  decision_latency_ms: metrics.decision_latency_ms,
+                  constraint_violation_rate: metrics.constraint_violation_rate,
+                };
+              }),
+            );
+            if (rows.length) {
+              setTable1(rows);
+              setTable2(rows.filter((row) => PRIMARY_PUBLICATION_MODES.some(
+                (mode) => displayMethod(mode) === row.Method,
+              )).map(({ Method, ...row }) => ({ ...row, Variant: Method })));
+              setRadarScenario(rows[0].Scenario);
+              setDevelopmentReady(true);
+            }
+          }
+        } catch (developmentError) {
+          console.warn("Development results are unavailable:", developmentError);
+        }
       } finally {
         setLoading(false);
       }
     };
     loadData();
-  }, []);
+  }, [loadVersion]);
 
   // Grouped bar chart data with CI error bars from benchmark
   const barChartData = useMemo(() => {
@@ -402,6 +436,7 @@ export default function AnalyticsPage() {
       const st = await jget(API, "/results/status");
       if (st.status === "error") throw new Error(st.error);
 
+      setLoadVersion((version) => version + 1);
       toast.success(`Development-only run complete in ${st.duration_s || "?"}s. Publication evidence was not changed.`);
     } catch (e) {
       toast.error(`Simulation failed: ${e.message || "Check backend logs."}`);
@@ -456,7 +491,7 @@ export default function AnalyticsPage() {
     );
   }
 
-  if (!publicationEvidenceReady) {
+  if (!publicationEvidenceReady && !developmentReady) {
     return (
       <div className="space-y-6 pb-12">
         <Card className="border-amber-500/40 bg-amber-500/5">
@@ -492,8 +527,17 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-8 pb-12">
+      {developmentReady && (
+        <Card role="status" className="border-amber-500 bg-amber-500/10">
+          <CardContent className="p-6">
+            <Badge variant="outline" className="mb-2">Development results only</Badge>
+            <h2 className="text-xl font-bold">One seed; not the certified 20-seed panel; not publication evidence</h2>
+            <p className="mt-2 text-sm">Local simulation values from /results/summary. Confidence intervals and significance estimates are not available.</p>
+          </CardContent>
+        </Card>
+      )}
       {/* 8.1 Executive Summary Banner */}
-      <section>
+      {publicationEvidenceReady && <section>
         <Card className="bg-gradient-to-br from-primary/5 via-background to-primary/5 border-primary/20">
           <CardContent className="py-8 px-6">
             <div className="text-center mb-8">
@@ -511,7 +555,7 @@ export default function AnalyticsPage() {
             </div>
           </CardContent>
         </Card>
-      </section>
+      </section>}
 
       {/* 8.2 Interactive Performance Tables */}
       <section>
@@ -521,10 +565,10 @@ export default function AnalyticsPage() {
               <span className="text-xs font-medium tracking-wider uppercase text-muted-foreground mr-2">Table&nbsp;1</span>
               Cross-Scenario Performance
             </h3>
-            <p className="text-sm text-muted-foreground italic">Comparison of eight primary modes across five simulated scenarios (288 timesteps each). Paired modes share the declared environmental stream. Source artifact: <code>table1_summary.csv</code>.</p>
+            <p className="text-sm text-muted-foreground italic">{developmentReady ? "One-seed development results for all 11 modes (8 primary + 3 secondary). Source: /results/summary." : <>Comparison of eight primary modes across five simulated scenarios (288 timesteps each). Paired modes share the declared environmental stream. Source artifact: <code>table1_summary.csv</code>.</>}</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => exportTableCSV(table1, "table1_summary.csv")}>
+            <Button variant="outline" size="sm" onClick={() => exportTableCSV(table1, developmentReady ? "development_summary.csv" : "table1_summary.csv")}>
               <Download className="w-4 h-4 mr-1" /> CSV
             </Button>
             <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(JSON.stringify(table1, null, 2)); toast.success("Copied"); }}>
@@ -537,7 +581,7 @@ export default function AnalyticsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  {["Scenario", "Method", "ARI", "RLE", "Waste", "SLCA", "Carbon", "Equity"].map((h) => (
+                  {["Scenario", "Method", "ARI", "RLE", "Waste", "SLCA", "Carbon", "Equity", ...(developmentReady ? ["decision_latency_ms", "constraint_violation_rate"] : [])].map((h) => (
                     <TableHead key={h} className="font-semibold whitespace-nowrap">{metricLabel(h)}</TableHead>
                   ))}
                 </TableRow>
@@ -551,7 +595,7 @@ export default function AnalyticsPage() {
                       <TableCell>
                         <Badge variant={isAgri ? "teal" : "secondary"} className="text-xs">{row.Method}</Badge>
                       </TableCell>
-                      {["ARI", "RLE", "Waste", "SLCA", "Carbon", "Equity"].map((col) => {
+                      {["ARI", "RLE", "Waste", "SLCA", "Carbon", "Equity", ...(developmentReady ? ["decision_latency_ms", "constraint_violation_rate"] : [])].map((col) => {
                         const val = row[col] ?? row[`${col} (kg)`];
                         const ci = fmtCI(row.Scenario, row.Method, col);
                         return (
@@ -575,10 +619,10 @@ export default function AnalyticsPage() {
               <span className="text-xs font-medium tracking-wider uppercase text-muted-foreground mr-2">Table&nbsp;2</span>
               Ablation Study
             </h3>
-            <p className="text-sm text-muted-foreground italic">Compact six-mode architectural ablation. Prior and weight sensitivities are separate diagnostics. Source artifact: <code>table2_ablation.csv</code>.</p>
+            <p className="text-sm text-muted-foreground italic">{developmentReady ? "One-seed development comparison of the eight primary modes." : <>Compact six-mode architectural ablation. Prior and weight sensitivities are separate diagnostics. Source artifact: <code>table2_ablation.csv</code>.</>}</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => exportTableCSV(table2, "table2_ablation.csv")}>
+            <Button variant="outline" size="sm" onClick={() => exportTableCSV(table2, developmentReady ? "development_primary_modes.csv" : "table2_ablation.csv")}>
               <Download className="w-4 h-4 mr-1" /> CSV
             </Button>
           </div>
@@ -655,13 +699,13 @@ export default function AnalyticsPage() {
                   <ReTooltip content={<ChartTooltip />} />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
                   <Bar dataKey="Static" fill={COLORS.static} radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                    <ErrorBar dataKey="Static_err" width={7} strokeWidth={2.5} stroke="#1f2937" />
+                    {publicationEvidenceReady && <ErrorBar dataKey="Static_err" width={7} strokeWidth={2.5} stroke="#1f2937" />}
                   </Bar>
                   <Bar dataKey="Hybrid RL" fill={COLORS.hybrid} radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                    <ErrorBar dataKey="Hybrid RL_err" width={7} strokeWidth={2.5} stroke="#1f2937" />
+                    {publicationEvidenceReady && <ErrorBar dataKey="Hybrid RL_err" width={7} strokeWidth={2.5} stroke="#1f2937" />}
                   </Bar>
                   <Bar dataKey="AGRI-BRAIN" fill={COLORS.agri} radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                    <ErrorBar dataKey="AGRI-BRAIN_err" width={7} strokeWidth={2.5} stroke="#1f2937" />
+                    {publicationEvidenceReady && <ErrorBar dataKey="AGRI-BRAIN_err" width={7} strokeWidth={2.5} stroke="#1f2937" />}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -695,19 +739,19 @@ export default function AnalyticsPage() {
                   <ReTooltip content={<ChartTooltip />} />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
                   <Bar dataKey="Static" fill={COLORS.static} radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                    <ErrorBar dataKey="Static_err" width={5} strokeWidth={2.5} stroke="#1f2937" />
+                    {publicationEvidenceReady && <ErrorBar dataKey="Static_err" width={5} strokeWidth={2.5} stroke="#1f2937" />}
                   </Bar>
                   <Bar dataKey="Hybrid RL" fill={COLORS.hybrid} radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                    <ErrorBar dataKey="Hybrid RL_err" width={5} strokeWidth={2.5} stroke="#1f2937" />
+                    {publicationEvidenceReady && <ErrorBar dataKey="Hybrid RL_err" width={5} strokeWidth={2.5} stroke="#1f2937" />}
                   </Bar>
                   <Bar dataKey="No-external-context" fill={COLORS.noContext} radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                    <ErrorBar dataKey="No-external-context_err" width={5} strokeWidth={2.5} stroke="#1f2937" />
+                    {publicationEvidenceReady && <ErrorBar dataKey="No-external-context_err" width={5} strokeWidth={2.5} stroke="#1f2937" />}
                   </Bar>
                   <Bar dataKey="No social-proxy shaping" fill={COLORS.noSlca} radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                    <ErrorBar dataKey="No social-proxy shaping_err" width={5} strokeWidth={2.5} stroke="#1f2937" />
+                    {publicationEvidenceReady && <ErrorBar dataKey="No social-proxy shaping_err" width={5} strokeWidth={2.5} stroke="#1f2937" />}
                   </Bar>
                   <Bar dataKey="AGRI-BRAIN" fill={COLORS.agri} radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                    <ErrorBar dataKey="AGRI-BRAIN_err" width={5} strokeWidth={2.5} stroke="#1f2937" />
+                    {publicationEvidenceReady && <ErrorBar dataKey="AGRI-BRAIN_err" width={5} strokeWidth={2.5} stroke="#1f2937" />}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -858,7 +902,7 @@ export default function AnalyticsPage() {
       </section>
 
       {/* 8.4 Scenario Deep-Dive Gallery */}
-      <section>
+      {publicationEvidenceReady && <section>
         <h3 className="text-lg font-semibold mb-4">Scenario Deep-Dive Gallery</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           {SCENARIOS.map((s) => (
@@ -914,7 +958,7 @@ export default function AnalyticsPage() {
             </div>
           </CardContent>
         </Card>
-      </section>
+      </section>}
 
       {/* 8.5 Modeled transport emissions */}
       <section>
@@ -925,14 +969,14 @@ export default function AnalyticsPage() {
               <CardTitle className="text-base">Modeled Transport-Emissions Indicator by Scenario</CardTitle>
             </CardHeader>
             <CardContent>
-              <img
+              {publicationEvidenceReady && <img
                 src={`${API}/results/figures/transport_emissions.png`}
                 alt="Modeled transport-emissions analysis"
                 className="w-full rounded-lg border mb-4 cursor-pointer hover:opacity-90"
                 style={{ imageRendering: "auto" }}
                 onClick={() => setLightboxImg(`${API}/results/figures/transport_emissions.png`)}
                 onError={(e) => { e.target.style.display = "none"; }}
-              />
+              />}
               <div className="h-48">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={carbonData} barGap={2}>
@@ -942,13 +986,13 @@ export default function AnalyticsPage() {
                     <ReTooltip content={<ChartTooltip />} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                     <Bar dataKey="Static" fill={COLORS.static} radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                      <ErrorBar dataKey="Static_err" width={7} strokeWidth={2.5} stroke="#1f2937" />
+                      {publicationEvidenceReady && <ErrorBar dataKey="Static_err" width={7} strokeWidth={2.5} stroke="#1f2937" />}
                     </Bar>
                     <Bar dataKey="Hybrid RL" fill={COLORS.hybrid} radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                      <ErrorBar dataKey="Hybrid RL_err" width={7} strokeWidth={2.5} stroke="#1f2937" />
+                      {publicationEvidenceReady && <ErrorBar dataKey="Hybrid RL_err" width={7} strokeWidth={2.5} stroke="#1f2937" />}
                     </Bar>
                     <Bar dataKey="AGRI-BRAIN" fill={COLORS.agri} radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                      <ErrorBar dataKey="AGRI-BRAIN_err" width={7} strokeWidth={2.5} stroke="#1f2937" />
+                      {publicationEvidenceReady && <ErrorBar dataKey="AGRI-BRAIN_err" width={7} strokeWidth={2.5} stroke="#1f2937" />}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
