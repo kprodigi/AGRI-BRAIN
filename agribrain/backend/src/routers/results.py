@@ -136,6 +136,7 @@ def _safe_manifest_payload(filename: str) -> Path:
 
 def _manifest_payload_metadata(
     records: dict[str, dict],
+    published: frozenset[str],
 ) -> tuple[tuple[object, ...], ...]:
     """Cheap all-payload mutation fingerprint used after one full audit.
 
@@ -145,7 +146,7 @@ def _manifest_payload_metadata(
     """
 
     snapshot: list[tuple[object, ...]] = []
-    for filename in sorted(records):
+    for filename in sorted(published):
         path = _safe_manifest_payload(filename)
         info = path.stat(follow_symlinks=False)
         snapshot.append((
@@ -160,11 +161,15 @@ def _manifest_payload_metadata(
     return tuple(snapshot)
 
 
-def _manifest_payload_snapshot(records: dict[str, dict]) -> dict[str, tuple[int, str]]:
-    """Hash every manifested payload through the shared safe-path boundary."""
+def _manifest_payload_snapshot(
+    records: dict[str, dict],
+    published: frozenset[str],
+) -> dict[str, tuple[int, str]]:
+    """Hash every published payload through the shared safe-path boundary."""
 
     snapshot: dict[str, tuple[int, str]] = {}
-    for filename, record in records.items():
+    for filename in sorted(published):
+        record = records.get(filename)
         if not isinstance(filename, str) or not isinstance(record, dict):
             raise HTTPException(status_code=503, detail="Publication manifest record is invalid")
         expected_size = record.get("bytes")
@@ -345,6 +350,51 @@ def _require_published_evidence(*relative_names: str) -> None:
                 status_code=503,
                 detail=f"Publication evidence differs from the serving commit: {name}",
             )
+
+
+def _published_evidence_subset(records: dict[str, dict]) -> frozenset[str]:
+    """The manifested artifacts this checkout actually publishes.
+
+    Tracking, not mere presence, defines the subset: a committed artifact must
+    be on disk and must hash-match, while one that was deliberately left to the
+    deposit is simply not servable here.  Deleting a committed artifact
+    therefore fails the audit rather than quietly shrinking the set.
+
+    Where git cannot answer -- a packaged deployment, or evidence mounted
+    outside the checkout -- presence on disk defines it instead, which is the
+    same tolerance ``verify_manifest.py --allow-missing`` applies.
+    """
+    repo_root = _TRUSTED_REPO_ROOT.resolve()
+    try:
+        evidence_reldir = _RESULTS_DIR.resolve().relative_to(repo_root).as_posix()
+    except (OSError, ValueError):
+        evidence_reldir = ""
+
+    tracked: set[str] | None = None
+    if evidence_reldir:
+        try:
+            listed = subprocess.run(
+                ["git", "ls-tree", "-r", "-z", "--name-only", "HEAD", "--", evidence_reldir],
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError):
+            listed = None
+        if listed is not None and listed.returncode == 0:
+            prefix = evidence_reldir + "/"
+            tracked = {
+                entry[len(prefix):]
+                for entry in listed.stdout.split("\x00")
+                if entry.startswith(prefix)
+            }
+
+    if tracked is not None:
+        return frozenset(name for name in records if name in tracked)
+    return frozenset(
+        name for name in records if (_RESULTS_DIR / PurePosixPath(name)).is_file()
+    )
 
 
 def _artifact_set_root(records: list[dict]) -> str:
@@ -678,6 +728,15 @@ def _publication_artifact(filename: str) -> _VerifiedPublicationArtifact:
     rec = records.get(filename)
     if rec is None:
         raise HTTPException(status_code=404, detail=f"Artifact is not in the publication manifest: {filename}")
+    published = _published_evidence_subset(records)
+    if filename not in published:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Artifact is certified but not committed to this repository; "
+                f"it is in the evidence deposit: {filename}"
+            ),
+        )
 
     recovery_receipt: Path | None = None
     if dual_provenance is True:
@@ -698,7 +757,7 @@ def _publication_artifact(filename: str) -> _VerifiedPublicationArtifact:
     manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
     results_root = str(_RESULTS_DIR.resolve(strict=True))
     with _PUBLICATION_CACHE_LOCK:
-        metadata_before = _manifest_payload_metadata(records)
+        metadata_before = _manifest_payload_metadata(records, published)
         expected_cache = _PublicationVerificationCache(
             results_root=results_root,
             manifest_sha256=manifest_sha256,
@@ -709,7 +768,7 @@ def _publication_artifact(filename: str) -> _VerifiedPublicationArtifact:
             # Hash every payload before opening even the semantic receipt. This
             # rejects symlinks, path swaps, and coherent receipt edits before
             # the expensive validator is allowed to trust any result file.
-            before = _manifest_payload_snapshot(records)
+            before = _manifest_payload_snapshot(records, published)
             recovery_authorization = None
             if recovery_receipt is not None:
                 recovery_authorization = _validate_recovery_authorization(
@@ -727,17 +786,26 @@ def _publication_artifact(filename: str) -> _VerifiedPublicationArtifact:
                 run_tag,
                 recovery_authorization=recovery_authorization,
             )
-            if recovery_receipt is None:
-                _validate_canonical_release_contract()
-            else:
+            # The full-tree contract replays ledger, figure, environment and
+            # DAG gates that only mean anything when every manifested artifact
+            # is present. A repository checkout publishes a subset on purpose --
+            # the tables, statistics and receipts, so the paper's values can be
+            # checked against a clone -- and leaves the 1,600 per-seed ledgers
+            # and the run's own figure renders to the evidence deposit. That
+            # contract is therefore unreachable here rather than being skipped:
+            # what governs a subset is what CI runs on every push, which is
+            # every published payload hashed against the manifest, each one
+            # tracked at the serving commit, and the hash-bound semantic
+            # receipt validated above.
+            if len(published) == len(records):
                 _validate_canonical_release_contract(recovery_receipt)
             if manifest_path.read_bytes() != manifest_bytes:
                 raise HTTPException(
                     status_code=503,
                     detail="Publication manifest changed during semantic validation",
                 )
-            after = _manifest_payload_snapshot(records)
-            metadata_after = _manifest_payload_metadata(records)
+            after = _manifest_payload_snapshot(records, published)
+            metadata_after = _manifest_payload_metadata(records, published)
             if after != before or metadata_after != metadata_before:
                 raise HTTPException(
                     status_code=503,

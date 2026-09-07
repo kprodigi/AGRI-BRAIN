@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 import sys
 import types
 
@@ -487,7 +488,7 @@ def test_full_release_audit_is_cached_but_any_payload_metadata_change_invalidate
     monkeypatch.setattr(
         results,
         "_validate_canonical_release_contract",
-        lambda: calls.append("full-audit"),
+        lambda receipt=None: calls.append("full-audit"),
     )
 
     assert results._publication_artifact(artifact.name).content == b"canonical"
@@ -650,3 +651,31 @@ def test_summary_never_falls_back_to_publication_named_tables(tmp_path, monkeypa
     assert response["ok"] is False
     assert response["publication_evidence"] is False
     assert "tables" not in response
+
+
+def test_repository_subset_serves_committed_evidence_and_defers_the_rest(monkeypatch):
+    """The committed evidence serves; the deposit-only remainder answers 404.
+
+    This runs against the real results tree rather than a fixture, because the
+    behaviour under test is a property of that tree: ``results/README.md``
+    commits the tables, statistics and receipts so the paper's values can be
+    checked against a clone, and leaves the 1,600 per-seed ledgers and the run's
+    own figure renders to the evidence deposit.  Demanding all 1,684 payloads
+    before serving any of them made every clone fail on the first one missing.
+
+    The serving commit is stood in for so the assertion is about evidence rather
+    than about whether this particular checkout happens to be clean.
+    """
+    head = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"],
+        cwd=results._TRUSTED_REPO_ROOT,
+        text=True,
+    ).strip()
+    monkeypatch.setattr(results, "_current_source_commit", lambda: head)
+
+    for name in ("table1_summary.csv", "benchmark_summary.json"):
+        assert results._publication_artifact(name).content
+
+    with pytest.raises(HTTPException, match="evidence deposit") as exc:
+        results._publication_artifact("ablation.pdf")
+    assert exc.value.status_code == 404
