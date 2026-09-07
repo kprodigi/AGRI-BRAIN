@@ -2088,7 +2088,16 @@ def _run_episode_impl(
                 )
             protocol_method_deltas[method] = delta
             previous_protocol_method_counts[method] = current_count
-        if protocol_method_deltas["tools/call"] != mcp_tool_call_count_step:
+        # The protocol recorder counts every dispatched tools/call, including
+        # calls that then raised. ``mcp_tool_call_count_step`` deliberately
+        # counts only invocations that returned, because it feeds the reported
+        # per-episode call metric. Reconcile the two by adding the dispatcher's
+        # failure count rather than by redefining either quantity; skipped
+        # tools are never dispatched and so appear in neither.
+        expected_protocol_tool_calls = (
+            mcp_tool_call_count_step + dispatcher_tool_failure_count_step
+        )
+        if protocol_method_deltas["tools/call"] != expected_protocol_tool_calls:
             raise RuntimeError(
                 "MCP tool activity does not match protocol tools/call traffic"
             )

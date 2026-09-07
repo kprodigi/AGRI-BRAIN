@@ -418,10 +418,24 @@ def reconstruct_episode_evidence(
                 f"{row_where}/pirag_query_count_step does not equal the "
                 "primary plus cooperative attempts"
             )
-        if record["protocol_tools_call_count_step"] != expected_mcp_calls:
+        # The protocol counter records every dispatched tools/call, so it
+        # includes calls that raised after dispatch. The invocation lists hold
+        # only calls that returned. The difference between them is exactly the
+        # dispatcher's failure count, which the record carries for this
+        # reconciliation. Skipped tools are never dispatched and appear in
+        # none of the three.
+        failed_calls = record.get("dispatcher_tool_failure_count_step", 0)
+        if not isinstance(failed_calls, int) or failed_calls < 0:
+            raise ValueError(
+                f"{row_where}/dispatcher_tool_failure_count_step is not a "
+                "non-negative integer"
+            )
+        if record["protocol_tools_call_count_step"] != (
+            expected_mcp_calls + failed_calls
+        ):
             raise ValueError(
                 f"{row_where}/protocol_tools_call_count_step disagrees with "
-                "MCP invocation evidence"
+                "MCP invocation evidence plus dispatched calls that failed"
             )
         if record["protocol_prompts_get_count_step"] != (
             int(primary_query) + int(cooperative_query)

@@ -123,3 +123,53 @@ def test_episode_evidence_rejects_parameter_substitution() -> None:
         validate_episode_evidence_contract(
             substituted, expected_contract=expected,
         )
+
+
+def _record_with_failed_dispatch(failures: int) -> dict:
+    """A step where some dispatched tools returned and some raised.
+
+    ``primary_mcp_tools_invoked_step`` lists only calls that returned, and
+    ``mcp_tool_call_count_step`` counts those, because that quantity feeds the
+    reported per-episode call metric. The protocol recorder counts every
+    dispatched ``tools/call``, so it is larger by exactly the failure count.
+    """
+    record = _record(
+        latency=1.0, modifier=[0.2, 0.0, 0.0], action=1, changed=True,
+        protocol_calls=2,
+    )
+    record["dispatcher_tool_failure_count_step"] = failures
+    record["protocol_tools_call_count_step"] = 2 + failures
+    record["protocol_interaction_count_step"] = 2 + failures + 1
+    return record
+
+
+def test_dispatched_call_that_failed_reconciles_against_the_protocol_count():
+    """A tool that raised after dispatch is still tools/call traffic.
+
+    Before this was reconciled, a single failed dispatch made the protocol
+    count exceed the invocation lists by one and the contract rejected an
+    otherwise valid step, which aborted every development run that happened to
+    hit a failing tool.
+    """
+    contract = build_episode_evidence_contract()
+    reconstruct_episode_evidence([_record_with_failed_dispatch(1)], contract)
+    reconstruct_episode_evidence([_record_with_failed_dispatch(3)], contract)
+
+
+def test_protocol_count_still_rejects_an_unexplained_surplus():
+    """The tolerance is exactly the failure count, not a free allowance."""
+    record = _record_with_failed_dispatch(1)
+    record["protocol_tools_call_count_step"] += 1
+    record["protocol_interaction_count_step"] += 1
+    contract = build_episode_evidence_contract()
+    with pytest.raises(ValueError, match="protocol_tools_call_count_step"):
+        reconstruct_episode_evidence([record], contract)
+
+
+def test_negative_failure_count_is_rejected():
+    """The failure count is a count; a negative one cannot excuse a shortfall."""
+    record = _record_with_failed_dispatch(1)
+    record["dispatcher_tool_failure_count_step"] = -1
+    contract = build_episode_evidence_contract()
+    with pytest.raises(ValueError, match="dispatcher_tool_failure_count_step"):
+        reconstruct_episode_evidence([record], contract)
