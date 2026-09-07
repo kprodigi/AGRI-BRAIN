@@ -10,6 +10,7 @@ import csv
 import hashlib
 import importlib.util
 import json
+import math
 import os
 import re
 import subprocess
@@ -427,6 +428,53 @@ def _validate_h1_h2_against_raw() -> None:
     )
 
 
+# Reaggregating on a different numeric stack reproduces every value to about
+# 1e-12 relative, but not to the last bit: bootstrap interval bounds and
+# multiple-comparison adjusted p-values depend on summation order inside the
+# numeric libraries. Measured worst case across the full core artifact set is
+# 8.9e-13 relative, with no structural, categorical or integer difference at
+# all. Exact equality would therefore make this check unsatisfiable anywhere
+# except the machine that produced the artifacts, which is the opposite of what
+# it exists to test.
+#
+# Floats are compared with a tolerance a thousand times looser than that
+# measured drift and still far tighter than any real defect: a wrong statistic
+# differs in the leading digits, not the twelfth. Everything else -- keys,
+# structure, list lengths, strings, booleans and integers -- stays exact.
+_REAGGREGATION_REL_TOL = 1e-9
+_REAGGREGATION_ABS_TOL = 1e-12
+
+
+def _payloads_agree(canonical: object, regenerated: object) -> bool:
+    """Compare two reaggregation payloads, exact except for float drift."""
+    if isinstance(canonical, bool) or isinstance(regenerated, bool):
+        return canonical is regenerated
+    if isinstance(canonical, float) or isinstance(regenerated, float):
+        if not isinstance(canonical, (int, float)):
+            return False
+        if not isinstance(regenerated, (int, float)):
+            return False
+        return math.isclose(
+            float(canonical), float(regenerated),
+            rel_tol=_REAGGREGATION_REL_TOL, abs_tol=_REAGGREGATION_ABS_TOL,
+        )
+    if isinstance(canonical, dict) and isinstance(regenerated, dict):
+        if set(canonical) != set(regenerated):
+            return False
+        return all(
+            _payloads_agree(canonical[key], regenerated[key])
+            for key in canonical
+        )
+    if isinstance(canonical, list) and isinstance(regenerated, list):
+        if len(canonical) != len(regenerated):
+            return False
+        return all(
+            _payloads_agree(left, right)
+            for left, right in zip(canonical, regenerated)
+        )
+    return canonical == regenerated
+
+
 def _compare_reaggregated_core_artifacts(regenerated_dir: Path) -> None:
     """Require deterministic reaggregation to reproduce all core statistics."""
 
@@ -479,7 +527,7 @@ def _compare_reaggregated_core_artifacts(regenerated_dir: Path) -> None:
                 "recovery_authorization",
             ):
                 regenerated_meta[key] = canonical_meta.get(key)
-        if regenerated != canonical:
+        if not _payloads_agree(canonical, regenerated):
             _fail(
                 f"{name} is not the deterministic reaggregation of the raw "
                 "20-seed envelopes"
