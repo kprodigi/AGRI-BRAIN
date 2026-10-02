@@ -1,0 +1,30 @@
+{
+  "farm": {
+    "decisions": 7200,
+    "primary_tool_calls": 11556,
+    "peer_consumed_decisions": 410,
+    "nonzero_peer_bias_decisions": 0,
+    "cooperative_overlay_decisions": 2400
+  },
+  "processor": {
+    "decisions": 7200,
+    "primary_tool_calls": 17824,
+    "peer_consumed_decisions": 1151,
+    "nonzero_peer_bias_decisions": 0,
+    "cooperative_overlay_decisions": 4800
+  },
+  "distributor": {
+    "decisions": 7200,
+    "primary_tool_calls": 14713,
+    "peer_consumed_decisions": 7200,
+    "nonzero_peer_bias_decisions": 7200,
+    "cooperative_overlay_decisions": 0
+  },
+  "recovery": {
+    "decisions": 7200,
+    "primary_tool_calls": 17280,
+    "peer_consumed_decisions": 99,
+    "nonzero_peer_bias_decisions": 1,
+    "cooperative_overlay_decisions": 0
+  }
+}

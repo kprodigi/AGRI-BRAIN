@@ -1,0 +1,19 @@
+SCENARIO-AWARE ROUTING CONTEXT FOR THE SYNTHETIC BENCHMARK
+Status: Constructed benchmark input; it is not an emergency standard operating procedure.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, are contextual references only; the executable code and locked protocol govern all benchmark values.
+
+The policy selects among exactly three fixed action families: cold_chain,
+local_redistribute, and recovery. Their nominal modeled distances are 120, 45, and 80
+kilometres before the keyed stochastic transport multiplier. Scenario state, modeled
+spoilage risk, peer messages, MCP outputs, and institutional retrieval may alter logits
+only when the selected experimental mode activates the corresponding channel.
+
+An 8-degree-Celsius spinach operating-envelope ceiling and the remaining-quality trigger
+1-rho < 0.50 are mode-neutral outcome flags. They do not mandate a particular action.
+The heatwave and cyber_outage perturbations are defined in scenario_engine.py; neither
+changes nominal route distances or creates a deterministic emergency route.
+
+The benchmark does not notify people, choose a nearest facility, schedule equipment,
+add cooling packs, change sensor cadence, use cached routing tables, or generate incident
+reports. Retrieved emergency language is a synthetic context input, not an executable
+operational instruction or evidence of deployment readiness.

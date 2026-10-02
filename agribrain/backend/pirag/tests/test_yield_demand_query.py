@@ -1,0 +1,159 @@
+"""Unit tests for the yield_query and demand_query MCP tools.
+
+The previous test suite covered neither tool directly; integration
+checks were limited to "the registry exposes the names". These tests
+exercise both code paths (cached short-circuit and computed) and pin
+the contract that the protocol traces expose.
+"""
+from __future__ import annotations
+
+import pytest
+
+
+# --- yield_query ----------------------------------------------------
+
+
+def test_query_yield_cached_returns_cached_payload():
+    from pirag.mcp.tools.yield_query import query_yield
+    out = query_yield(
+        cached_uncertainty=0.42,
+        cached_forecast=[100.0, 101.0],
+        cached_std=2.5,
+    )
+    assert out["source"] == "cached"
+    assert out["uncertainty"] == 0.42
+    assert out["forecast"] == [100.0, 101.0]
+    assert out["std"] == 2.5
+
+
+def test_query_yield_cached_clamps_to_unit_interval():
+    from pirag.mcp.tools.yield_query import query_yield
+    out = query_yield(cached_uncertainty=1.5)
+    assert 0.0 <= out["uncertainty"] <= 1.0
+    out_neg = query_yield(cached_uncertainty=-0.2)
+    assert out_neg["uncertainty"] >= 0.0
+
+
+def test_query_yield_no_history_returns_empty_computed():
+    from pirag.mcp.tools.yield_query import query_yield
+    out = query_yield(inventory_history=[])
+    assert out["source"] == "computed"
+    assert out["forecast"] == []
+    assert out["uncertainty"] == 0.0
+
+
+def test_query_yield_with_history_uses_confirmatory_persistence():
+    from pirag.mcp.tools.yield_query import query_yield
+    history = [100.0, 102.0, 104.0, 106.0, 108.0]
+    out = query_yield(inventory_history=history, horizon=3)
+    assert out["source"] == "computed"
+    assert out["method"] == "persistence"
+    assert len(out["forecast"]) == 3
+    assert out["forecast"] == [108.0, 108.0, 108.0]
+    assert 0.0 <= out["uncertainty"] <= 1.0
+    assert out["std"] >= 0.0
+
+
+def test_query_yield_holt_linear_is_explicit_diagnostic():
+    from pirag.mcp.tools.yield_query import query_yield
+    history = [100.0, 102.0, 104.0, 106.0, 108.0]
+    out = query_yield(
+        inventory_history=history, horizon=3, method="holt_linear",
+    )
+    assert out["method"] == "holt_linear"
+    assert out["forecast"][0] <= out["forecast"][-1] + 0.5
+
+
+# --- demand_query ---------------------------------------------------
+
+
+def test_query_demand_cached_returns_cached_payload():
+    from pirag.mcp.tools.demand_query import query_demand
+    out = query_demand(
+        cached_uncertainty=0.33,
+        cached_forecast=[80.0],
+        cached_std=4.0,
+    )
+    assert out["source"] == "cached"
+    assert out["uncertainty"] == 0.33
+
+
+def test_query_demand_no_history_returns_empty():
+    from pirag.mcp.tools.demand_query import query_demand
+    out = query_demand(demand_history=[])
+    assert out["source"] == "computed"
+    assert out["forecast"] == []
+
+
+def test_query_demand_holt_linear_confirmatory_default():
+    from pirag.mcp.tools.demand_query import query_demand
+    history = [80.0, 90.0, 110.0, 95.0, 100.0, 105.0, 108.0, 95.0]
+    out = query_demand(demand_history=history, horizon=2)
+    assert out["source"] == "computed"
+    assert out["method"] == "holt_linear"
+    assert len(out["forecast"]) == 2
+    assert out["uncertainty"] >= 0.0
+
+
+def test_query_demand_lstm_is_explicit_diagnostic():
+    from pirag.mcp.tools.demand_query import query_demand
+    history = [80.0, 90.0, 110.0, 95.0, 100.0, 105.0, 108.0, 95.0]
+    out = query_demand(demand_history=history, horizon=2, method="lstm")
+    assert out["source"] == "computed"
+    assert out["method"] == "lstm"
+    assert len(out["forecast"]) == 2
+
+
+def test_query_demand_holts_alias_runs_holts_linear():
+    from pirag.mcp.tools.demand_query import query_demand
+    history = [80.0, 90.0, 110.0, 95.0, 100.0, 105.0]
+    # The legacy `holt_winters` alias selects Holt's linear (level+trend);
+    # the implementation is not seasonal Holt-Winters.
+    out = query_demand(demand_history=history, horizon=1, method="holt_winters")
+    assert out["source"] == "computed"
+    assert out["method"] == "holt_linear"
+    assert len(out["forecast"]) == 1
+
+
+def test_queries_reject_unknown_method_instead_of_silent_fallback():
+    from pirag.mcp.tools.demand_query import query_demand
+    from pirag.mcp.tools.yield_query import query_yield
+
+    with pytest.raises(ValueError, match="demand forecast method"):
+        query_demand(demand_history=[1.0, 2.0], method="mystery")
+    with pytest.raises(ValueError, match="supply forecast method"):
+        query_yield(inventory_history=[1.0, 2.0], method="mystery")
+
+
+# --- registry registration -----------------------------------------
+
+
+def test_both_tools_are_registered():
+    from pirag.mcp.registry import get_default_registry
+    reg = get_default_registry()
+    names = {t["name"] for t in reg.list_tools()}
+    assert "yield_query" in names
+    assert "demand_query" in names
+
+
+def test_registry_status_reports_no_failures():
+    from pirag.mcp.registry import get_default_registry, mcp_registration_status
+    get_default_registry()  # ensure populated
+    status = mcp_registration_status()
+    # 13 always-registered core tools + an optional ``simulate`` tool
+    # that is only registered when SIM_API_BASE is configured. The
+    # 2026-05 settings change reverted SIM_API_BASE to empty by default
+    # (the simulator subprocess does not expose a REST endpoint), so
+    # the canonical post-startup count is 13 with simulate listed as a
+    # configuration-driven non-failure under "failed".
+    assert status["registered_count"] >= 13
+    # On a clean install no optional tools should fail to *import*. The
+    # configuration-gated entries (currently only ``simulate`` when
+    # SIM_API_BASE is empty) appear in ``failed`` with a reason string
+    # that begins with the parameter name -- they are intentional
+    # opt-outs, not import errors.
+    real_failures = {
+        name: reason for name, reason in status["failed"].items()
+        if not (name == "simulate" and "SIM_API_BASE" in reason)
+    }
+    assert real_failures == {}, f"unexpected MCP tool failures: {real_failures}"

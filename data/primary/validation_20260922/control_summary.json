@@ -1,0 +1,335 @@
+{
+  "scope": "Exploratory frozen-checkpoint rollouts, not separately adapted alternative modes",
+  "seed_count": 20,
+  "scenarios": [
+    "heatwave",
+    "overproduction",
+    "cyber_outage",
+    "adaptive_pricing",
+    "baseline"
+  ],
+  "episodes": 400,
+  "steps": 115200,
+  "reference_reproductions": 100,
+  "intervention_episodes": 300,
+  "reference_action_matches": true,
+  "max_reference_step_ari_error": 2.3314683517128287e-15,
+  "means": [
+    {
+      "scenario": "heatwave",
+      "control": "live",
+      "mean": 0.5477518499015419,
+      "low": 0.5343973510670188,
+      "high": 0.5581028389963245
+    },
+    {
+      "scenario": "heatwave",
+      "control": "fixed",
+      "mean": 0.5476819101676773,
+      "low": 0.5341406553393371,
+      "high": 0.5582535955668948
+    },
+    {
+      "scenario": "heatwave",
+      "control": "shuffled",
+      "mean": 0.5478156227578321,
+      "low": 0.5345494963600492,
+      "high": 0.5582214148679079
+    },
+    {
+      "scenario": "heatwave",
+      "control": "zero",
+      "mean": 0.5255666383922617,
+      "low": 0.5123786309331151,
+      "high": 0.5359405217441526
+    },
+    {
+      "scenario": "overproduction",
+      "control": "live",
+      "mean": 0.5634918925756391,
+      "low": 0.5577958552882465,
+      "high": 0.5684558217168847
+    },
+    {
+      "scenario": "overproduction",
+      "control": "fixed",
+      "mean": 0.5630773885784633,
+      "low": 0.5567318768421328,
+      "high": 0.5684094716198209
+    },
+    {
+      "scenario": "overproduction",
+      "control": "shuffled",
+      "mean": 0.5632791694295338,
+      "low": 0.557171823969066,
+      "high": 0.5683856484709517
+    },
+    {
+      "scenario": "overproduction",
+      "control": "zero",
+      "mean": 0.5414186981839468,
+      "low": 0.5353814543450072,
+      "high": 0.5464603199409493
+    },
+    {
+      "scenario": "cyber_outage",
+      "control": "live",
+      "mean": 0.6030807258663564,
+      "low": 0.5954666532033608,
+      "high": 0.6103308451490338
+    },
+    {
+      "scenario": "cyber_outage",
+      "control": "fixed",
+      "mean": 0.5987952118466943,
+      "low": 0.5911500522963776,
+      "high": 0.6065658502578163
+    },
+    {
+      "scenario": "cyber_outage",
+      "control": "shuffled",
+      "mean": 0.5994246131647164,
+      "low": 0.5919818896964706,
+      "high": 0.6072543892212147
+    },
+    {
+      "scenario": "cyber_outage",
+      "control": "zero",
+      "mean": 0.5823519084458748,
+      "low": 0.5751223344228149,
+      "high": 0.5895971913695546
+    },
+    {
+      "scenario": "adaptive_pricing",
+      "control": "live",
+      "mean": 0.6565053686277498,
+      "low": 0.6489677853485191,
+      "high": 0.663977964898225
+    },
+    {
+      "scenario": "adaptive_pricing",
+      "control": "fixed",
+      "mean": 0.6537887388660623,
+      "low": 0.6459984075138555,
+      "high": 0.6614789523636966
+    },
+    {
+      "scenario": "adaptive_pricing",
+      "control": "shuffled",
+      "mean": 0.6538596705156754,
+      "low": 0.646291082652752,
+      "high": 0.6612220660167111
+    },
+    {
+      "scenario": "adaptive_pricing",
+      "control": "zero",
+      "mean": 0.6291899484494161,
+      "low": 0.6218406200738523,
+      "high": 0.6369315868245286
+    },
+    {
+      "scenario": "baseline",
+      "control": "live",
+      "mean": 0.6832029938841042,
+      "low": 0.6777232358123235,
+      "high": 0.6888019471909738
+    },
+    {
+      "scenario": "baseline",
+      "control": "fixed",
+      "mean": 0.6826036490254523,
+      "low": 0.6769214801495704,
+      "high": 0.6882791614425309
+    },
+    {
+      "scenario": "baseline",
+      "control": "shuffled",
+      "mean": 0.6829352014150086,
+      "low": 0.6777781914585403,
+      "high": 0.6885030537530338
+    },
+    {
+      "scenario": "baseline",
+      "control": "zero",
+      "mean": 0.6534783770398429,
+      "low": 0.6479598880808639,
+      "high": 0.659635898545211
+    }
+  ],
+  "contrasts": [
+    {
+      "scenario": "heatwave",
+      "contrast": "live_minus_fixed",
+      "mean": 6.993973386450192e-05,
+      "low": -0.0007475618036911667,
+      "high": 0.0007690621849126416,
+      "positive_seeds": 10,
+      "p_two_sided": 0.8983173370361328,
+      "p_holm_15": 1
+    },
+    {
+      "scenario": "heatwave",
+      "contrast": "live_minus_shuffled",
+      "mean": -6.377285629020901e-05,
+      "low": -0.0012012212508444083,
+      "high": 0.0008639239758476318,
+      "positive_seeds": 11,
+      "p_two_sided": 0.8123550415039062,
+      "p_holm_15": 1
+    },
+    {
+      "scenario": "heatwave",
+      "contrast": "live_minus_zero",
+      "mean": 0.022185211509280225,
+      "low": 0.020515373816410023,
+      "high": 0.024196963591171978,
+      "positive_seeds": 20,
+      "p_two_sided": 1.9073486328125e-06,
+      "p_holm_15": 2.86102294921875e-05
+    },
+    {
+      "scenario": "overproduction",
+      "contrast": "live_minus_fixed",
+      "mean": 0.0004145039971758413,
+      "low": -0.00030673094747506353,
+      "high": 0.0012146253385678072,
+      "positive_seeds": 11,
+      "p_two_sided": 0.34881019592285156,
+      "p_holm_15": 1
+    },
+    {
+      "scenario": "overproduction",
+      "contrast": "live_minus_shuffled",
+      "mean": 0.0002127231461053314,
+      "low": -0.0007758982442536021,
+      "high": 0.0011398380725091898,
+      "positive_seeds": 13,
+      "p_two_sided": 0.6215133666992188,
+      "p_holm_15": 1
+    },
+    {
+      "scenario": "overproduction",
+      "contrast": "live_minus_zero",
+      "mean": 0.022073194391692263,
+      "low": 0.019592739146744847,
+      "high": 0.024833973020300153,
+      "positive_seeds": 20,
+      "p_two_sided": 1.9073486328125e-06,
+      "p_holm_15": 2.86102294921875e-05
+    },
+    {
+      "scenario": "cyber_outage",
+      "contrast": "live_minus_fixed",
+      "mean": 0.004285514019662151,
+      "low": 0.003277497378519903,
+      "high": 0.005257253823045588,
+      "positive_seeds": 20,
+      "p_two_sided": 1.9073486328125e-06,
+      "p_holm_15": 2.86102294921875e-05
+    },
+    {
+      "scenario": "cyber_outage",
+      "contrast": "live_minus_shuffled",
+      "mean": 0.003656112701640102,
+      "low": 0.0025296987164154247,
+      "high": 0.004750518837240676,
+      "positive_seeds": 18,
+      "p_two_sided": 1.33514404296875e-05,
+      "p_holm_15": 0.0001201629638671875
+    },
+    {
+      "scenario": "cyber_outage",
+      "contrast": "live_minus_zero",
+      "mean": 0.020728817420481722,
+      "low": 0.019258051681150915,
+      "high": 0.022272815211311765,
+      "positive_seeds": 20,
+      "p_two_sided": 1.9073486328125e-06,
+      "p_holm_15": 2.86102294921875e-05
+    },
+    {
+      "scenario": "adaptive_pricing",
+      "contrast": "live_minus_fixed",
+      "mean": 0.0027166297616875333,
+      "low": 0.0016008583540814848,
+      "high": 0.003879853985359825,
+      "positive_seeds": 17,
+      "p_two_sided": 0.0003223419189453125,
+      "p_holm_15": 0.0022563934326171875
+    },
+    {
+      "scenario": "adaptive_pricing",
+      "contrast": "live_minus_shuffled",
+      "mean": 0.002645698112074474,
+      "low": 0.001645215112212401,
+      "high": 0.0036337806967245874,
+      "positive_seeds": 18,
+      "p_two_sided": 0.000133514404296875,
+      "p_holm_15": 0.001068115234375
+    },
+    {
+      "scenario": "adaptive_pricing",
+      "contrast": "live_minus_zero",
+      "mean": 0.027315420178333733,
+      "low": 0.024928340804791945,
+      "high": 0.02932012693108592,
+      "positive_seeds": 20,
+      "p_two_sided": 1.9073486328125e-06,
+      "p_holm_15": 2.86102294921875e-05
+    },
+    {
+      "scenario": "baseline",
+      "contrast": "live_minus_fixed",
+      "mean": 0.0005993448586517957,
+      "low": -0.00015786826347703953,
+      "high": 0.0016721834926445626,
+      "positive_seeds": 14,
+      "p_two_sided": 0.20244979858398438,
+      "p_holm_15": 1
+    },
+    {
+      "scenario": "baseline",
+      "contrast": "live_minus_shuffled",
+      "mean": 0.00026779246909550136,
+      "low": -0.0008891604425815965,
+      "high": 0.001321805670464971,
+      "positive_seeds": 11,
+      "p_two_sided": 0.5458755493164062,
+      "p_holm_15": 1
+    },
+    {
+      "scenario": "baseline",
+      "contrast": "live_minus_zero",
+      "mean": 0.029724616844261302,
+      "low": 0.026761478631365868,
+      "high": 0.03162275993671168,
+      "positive_seeds": 20,
+      "p_two_sided": 1.9073486328125e-06,
+      "p_holm_15": 2.86102294921875e-05
+    }
+  ],
+  "aggregate": {
+    "fixed": {
+      "mean": 0.001617186474208365,
+      "ci95": [
+        0.0012739244475116506,
+        0.0019396216871992301
+      ]
+    },
+    "shuffled": {
+      "mean": 0.00134371071452504,
+      "ci95": [
+        0.0010564519530835465,
+        0.001710679871624435
+      ]
+    },
+    "zero": {
+      "mean": 0.024405452068809848,
+      "ci95": [
+        0.022836153913509395,
+        0.025826581112939583
+      ]
+    }
+  },
+  "uncertainty": "95% BCa; 10,000 resamples of independent seed-level paired differences; exploratory two-sided Wilcoxon with Holm across 15 scenario/contrast tests; no equivalence claim"
+}

@@ -1,0 +1,808 @@
+{
+  "design": "Tested project MCP-style subset; two local transport paths and separately authored test provider; explicit unit adapter is a test fixture, not automatic production unit inference. Fixed-state probability agreement, not autonomous retraining or official-client conformance.",
+  "tolerance": 1e-12,
+  "equivalence": {
+    "json_roundtrip": {
+      "cases": 19200,
+      "feature_matches": 19200,
+      "modifier_matches": 19200,
+      "probability_matches": 19200,
+      "sampled_action_matches": 19200,
+      "max_feature_error": 0.0,
+      "max_modifier_error": 0.0,
+      "max_probability_error": 0.0
+    },
+    "separate_process": {
+      "cases": 19200,
+      "feature_matches": 19200,
+      "modifier_matches": 19200,
+      "probability_matches": 19200,
+      "sampled_action_matches": 19200,
+      "max_feature_error": 0.0,
+      "max_modifier_error": 0.0,
+      "max_probability_error": 0.0
+    },
+    "alternate_provider": {
+      "cases": 19200,
+      "feature_matches": 19200,
+      "modifier_matches": 19200,
+      "probability_matches": 19200,
+      "sampled_action_matches": 19200,
+      "max_feature_error": 0.0,
+      "max_modifier_error": 0.0,
+      "max_probability_error": 0.0
+    },
+    "unit_adapter": {
+      "cases": 19200,
+      "feature_matches": 19200,
+      "modifier_matches": 19200,
+      "probability_matches": 19200,
+      "sampled_action_matches": 19200,
+      "max_feature_error": 0.0,
+      "max_modifier_error": 0.0,
+      "max_probability_error": 0.0
+    }
+  },
+  "scenarios": {
+    "adaptive_pricing": 4320,
+    "baseline": 4320,
+    "cyber_outage": 1920,
+    "heatwave": 4320,
+    "overproduction": 4320
+  },
+  "roles": {
+    "farm": 7200,
+    "processor": 6240,
+    "distributor": 5760
+  },
+  "fault_checks": [
+    {
+      "test": "unknown tool",
+      "path": "in-process",
+      "rejected": true,
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "error": {
+          "code": -32601,
+          "message": "Unknown tool: missing"
+        }
+      }
+    },
+    {
+      "test": "unknown tool",
+      "path": "separate-process",
+      "rejected": true,
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "error": {
+          "code": -32601,
+          "message": "Unknown tool: missing"
+        }
+      }
+    },
+    {
+      "test": "missing argument",
+      "path": "in-process",
+      "rejected": true,
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"error\": \"check_compliance() missing 1 required positional argument: 'temperature'\"}"
+            }
+          ],
+          "isError": true
+        }
+      }
+    },
+    {
+      "test": "missing argument",
+      "path": "separate-process",
+      "rejected": true,
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"error\": \"check_compliance() missing 1 required positional argument: 'temperature'\"}"
+            }
+          ],
+          "isError": true
+        }
+      }
+    },
+    {
+      "test": "wrong value type",
+      "path": "in-process",
+      "rejected": true,
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"error\": \"'>' not supported between instances of 'str' and 'float'\"}"
+            }
+          ],
+          "isError": true
+        }
+      }
+    },
+    {
+      "test": "wrong value type",
+      "path": "separate-process",
+      "rejected": true,
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"error\": \"'>' not supported between instances of 'str' and 'float'\"}"
+            }
+          ],
+          "isError": true
+        }
+      }
+    },
+    {
+      "test": "invalid version",
+      "path": "in-process",
+      "rejected": true,
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "error": {
+          "code": -32600,
+          "message": "Invalid jsonrpc version: '1.0'"
+        }
+      }
+    },
+    {
+      "test": "invalid version",
+      "path": "separate-process",
+      "rejected": true,
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "error": {
+          "code": -32600,
+          "message": "Invalid jsonrpc version: '1.0'"
+        }
+      }
+    },
+    {
+      "test": "NaN temperature",
+      "path": "in-process",
+      "rejected": false,
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"compliant\": true, \"assessment_type\": \"synthetic_benchmark_operating_envelope\", \"is_regulatory_determination\": false, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 8.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": NaN, \"humidity\": 90}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "test": "NaN temperature",
+      "path": "separate-process",
+      "rejected": false,
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"compliant\": true, \"assessment_type\": \"synthetic_benchmark_operating_envelope\", \"is_regulatory_determination\": false, \"product_type\": \"spinach\", \"violations\": [], \"thresholds\": {\"temp_max_c\": 8.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": NaN, \"humidity\": 90}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "test": "infinite temperature",
+      "path": "in-process",
+      "rejected": false,
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"compliant\": false, \"assessment_type\": \"synthetic_benchmark_operating_envelope\", \"is_regulatory_determination\": false, \"product_type\": \"spinach\", \"violations\": [{\"parameter\": \"temperature\", \"value\": Infinity, \"limit\": 8.0, \"severity\": \"critical\", \"message\": \"Temperature infC exceeds limit of 8.0C\"}], \"thresholds\": {\"temp_max_c\": 8.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": Infinity, \"humidity\": 90}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "test": "infinite temperature",
+      "path": "separate-process",
+      "rejected": false,
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"compliant\": false, \"assessment_type\": \"synthetic_benchmark_operating_envelope\", \"is_regulatory_determination\": false, \"product_type\": \"spinach\", \"violations\": [{\"parameter\": \"temperature\", \"value\": Infinity, \"limit\": 8.0, \"severity\": \"critical\", \"message\": \"Temperature infC exceeds limit of 8.0C\"}], \"thresholds\": {\"temp_max_c\": 8.0, \"rh_min\": 85.0, \"rh_max\": 95.0}, \"readings\": {\"temperature\": Infinity, \"humidity\": 90}}"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "sweep": [
+    {
+      "temperature": 4.0,
+      "path": "direct",
+      "severity": 0.0,
+      "modifier": [
+        -0.22073366966200922,
+        0.275430398877416,
+        -0.07749326351050174
+      ],
+      "probabilities": [
+        0.13915051627247974,
+        0.8143254537549629,
+        0.04652402997255733
+      ]
+    },
+    {
+      "temperature": 4.0,
+      "path": "json_roundtrip",
+      "severity": 0.0,
+      "modifier": [
+        -0.22073366966200922,
+        0.275430398877416,
+        -0.07749326351050174
+      ],
+      "probabilities": [
+        0.13915051627247974,
+        0.8143254537549629,
+        0.04652402997255733
+      ]
+    },
+    {
+      "temperature": 4.0,
+      "path": "separate_process",
+      "severity": 0.0,
+      "modifier": [
+        -0.22073366966200922,
+        0.275430398877416,
+        -0.07749326351050174
+      ],
+      "probabilities": [
+        0.13915051627247974,
+        0.8143254537549629,
+        0.04652402997255733
+      ]
+    },
+    {
+      "temperature": 4.0,
+      "path": "unit_adapter",
+      "severity": 0.0,
+      "modifier": [
+        -0.22073366966200922,
+        0.275430398877416,
+        -0.07749326351050174
+      ],
+      "probabilities": [
+        0.13915051627247974,
+        0.8143254537549629,
+        0.04652402997255733
+      ]
+    },
+    {
+      "temperature": 7.9,
+      "path": "direct",
+      "severity": 0.0,
+      "modifier": [
+        -0.22073366966200922,
+        0.275430398877416,
+        -0.07749326351050174
+      ],
+      "probabilities": [
+        0.13915051627247974,
+        0.8143254537549629,
+        0.04652402997255733
+      ]
+    },
+    {
+      "temperature": 7.9,
+      "path": "json_roundtrip",
+      "severity": 0.0,
+      "modifier": [
+        -0.22073366966200922,
+        0.275430398877416,
+        -0.07749326351050174
+      ],
+      "probabilities": [
+        0.13915051627247974,
+        0.8143254537549629,
+        0.04652402997255733
+      ]
+    },
+    {
+      "temperature": 7.9,
+      "path": "separate_process",
+      "severity": 0.0,
+      "modifier": [
+        -0.22073366966200922,
+        0.275430398877416,
+        -0.07749326351050174
+      ],
+      "probabilities": [
+        0.13915051627247974,
+        0.8143254537549629,
+        0.04652402997255733
+      ]
+    },
+    {
+      "temperature": 7.9,
+      "path": "unit_adapter",
+      "severity": 0.0,
+      "modifier": [
+        -0.22073366966200922,
+        0.275430398877416,
+        -0.07749326351050174
+      ],
+      "probabilities": [
+        0.13915051627247974,
+        0.8143254537549629,
+        0.04652402997255733
+      ]
+    },
+    {
+      "temperature": 8.0,
+      "path": "direct",
+      "severity": 0.0,
+      "modifier": [
+        -0.22073366966200922,
+        0.275430398877416,
+        -0.07749326351050174
+      ],
+      "probabilities": [
+        0.13915051627247974,
+        0.8143254537549629,
+        0.04652402997255733
+      ]
+    },
+    {
+      "temperature": 8.0,
+      "path": "json_roundtrip",
+      "severity": 0.0,
+      "modifier": [
+        -0.22073366966200922,
+        0.275430398877416,
+        -0.07749326351050174
+      ],
+      "probabilities": [
+        0.13915051627247974,
+        0.8143254537549629,
+        0.04652402997255733
+      ]
+    },
+    {
+      "temperature": 8.0,
+      "path": "separate_process",
+      "severity": 0.0,
+      "modifier": [
+        -0.22073366966200922,
+        0.275430398877416,
+        -0.07749326351050174
+      ],
+      "probabilities": [
+        0.13915051627247974,
+        0.8143254537549629,
+        0.04652402997255733
+      ]
+    },
+    {
+      "temperature": 8.0,
+      "path": "unit_adapter",
+      "severity": 0.0,
+      "modifier": [
+        -0.22073366966200922,
+        0.275430398877416,
+        -0.07749326351050174
+      ],
+      "probabilities": [
+        0.13915051627247974,
+        0.8143254537549629,
+        0.04652402997255733
+      ]
+    },
+    {
+      "temperature": 8.1,
+      "path": "direct",
+      "severity": 0.5,
+      "modifier": [
+        -0.4451222256778372,
+        0.45818674742925514,
+        -0.010880442994124467
+      ],
+      "probabilities": [
+        0.1087923904010348,
+        0.8466155811401046,
+        0.044592028458860546
+      ]
+    },
+    {
+      "temperature": 8.1,
+      "path": "json_roundtrip",
+      "severity": 0.5,
+      "modifier": [
+        -0.4451222256778372,
+        0.45818674742925514,
+        -0.010880442994124467
+      ],
+      "probabilities": [
+        0.1087923904010348,
+        0.8466155811401046,
+        0.044592028458860546
+      ]
+    },
+    {
+      "temperature": 8.1,
+      "path": "separate_process",
+      "severity": 0.5,
+      "modifier": [
+        -0.4451222256778372,
+        0.45818674742925514,
+        -0.010880442994124467
+      ],
+      "probabilities": [
+        0.1087923904010348,
+        0.8466155811401046,
+        0.044592028458860546
+      ]
+    },
+    {
+      "temperature": 8.1,
+      "path": "unit_adapter",
+      "severity": 0.5,
+      "modifier": [
+        -0.4451222256778372,
+        0.45818674742925514,
+        -0.010880442994124467
+      ],
+      "probabilities": [
+        0.1087923904010348,
+        0.8466155811401046,
+        0.044592028458860546
+      ]
+    },
+    {
+      "temperature": 10.9,
+      "path": "direct",
+      "severity": 0.5,
+      "modifier": [
+        -0.4451222256778372,
+        0.45818674742925514,
+        -0.010880442994124467
+      ],
+      "probabilities": [
+        0.1087923904010348,
+        0.8466155811401046,
+        0.044592028458860546
+      ]
+    },
+    {
+      "temperature": 10.9,
+      "path": "json_roundtrip",
+      "severity": 0.5,
+      "modifier": [
+        -0.4451222256778372,
+        0.45818674742925514,
+        -0.010880442994124467
+      ],
+      "probabilities": [
+        0.1087923904010348,
+        0.8466155811401046,
+        0.044592028458860546
+      ]
+    },
+    {
+      "temperature": 10.9,
+      "path": "separate_process",
+      "severity": 0.5,
+      "modifier": [
+        -0.4451222256778372,
+        0.45818674742925514,
+        -0.010880442994124467
+      ],
+      "probabilities": [
+        0.1087923904010348,
+        0.8466155811401046,
+        0.044592028458860546
+      ]
+    },
+    {
+      "temperature": 10.9,
+      "path": "unit_adapter",
+      "severity": 0.5,
+      "modifier": [
+        -0.4451222256778372,
+        0.45818674742925514,
+        -0.010880442994124467
+      ],
+      "probabilities": [
+        0.1087923904010348,
+        0.8466155811401046,
+        0.044592028458860546
+      ]
+    },
+    {
+      "temperature": 11.0,
+      "path": "direct",
+      "severity": 0.5,
+      "modifier": [
+        -0.4451222256778372,
+        0.45818674742925514,
+        -0.010880442994124467
+      ],
+      "probabilities": [
+        0.1087923904010348,
+        0.8466155811401046,
+        0.044592028458860546
+      ]
+    },
+    {
+      "temperature": 11.0,
+      "path": "json_roundtrip",
+      "severity": 0.5,
+      "modifier": [
+        -0.4451222256778372,
+        0.45818674742925514,
+        -0.010880442994124467
+      ],
+      "probabilities": [
+        0.1087923904010348,
+        0.8466155811401046,
+        0.044592028458860546
+      ]
+    },
+    {
+      "temperature": 11.0,
+      "path": "separate_process",
+      "severity": 0.5,
+      "modifier": [
+        -0.4451222256778372,
+        0.45818674742925514,
+        -0.010880442994124467
+      ],
+      "probabilities": [
+        0.1087923904010348,
+        0.8466155811401046,
+        0.044592028458860546
+      ]
+    },
+    {
+      "temperature": 11.0,
+      "path": "unit_adapter",
+      "severity": 0.5,
+      "modifier": [
+        -0.4451222256778372,
+        0.45818674742925514,
+        -0.010880442994124467
+      ],
+      "probabilities": [
+        0.1087923904010348,
+        0.8466155811401046,
+        0.044592028458860546
+      ]
+    },
+    {
+      "temperature": 11.1,
+      "path": "direct",
+      "severity": 1.0,
+      "modifier": [
+        -0.6695107816936652,
+        0.6409430959810942,
+        0.055732377522252796
+      ],
+      "probabilities": [
+        0.08438372148867021,
+        0.8732145473215923,
+        0.042401731189737536
+      ]
+    },
+    {
+      "temperature": 11.1,
+      "path": "json_roundtrip",
+      "severity": 1.0,
+      "modifier": [
+        -0.6695107816936652,
+        0.6409430959810942,
+        0.055732377522252796
+      ],
+      "probabilities": [
+        0.08438372148867021,
+        0.8732145473215923,
+        0.042401731189737536
+      ]
+    },
+    {
+      "temperature": 11.1,
+      "path": "separate_process",
+      "severity": 1.0,
+      "modifier": [
+        -0.6695107816936652,
+        0.6409430959810942,
+        0.055732377522252796
+      ],
+      "probabilities": [
+        0.08438372148867021,
+        0.8732145473215923,
+        0.042401731189737536
+      ]
+    },
+    {
+      "temperature": 11.1,
+      "path": "unit_adapter",
+      "severity": 1.0,
+      "modifier": [
+        -0.6695107816936652,
+        0.6409430959810942,
+        0.055732377522252796
+      ],
+      "probabilities": [
+        0.08438372148867021,
+        0.8732145473215923,
+        0.042401731189737536
+      ]
+    },
+    {
+      "temperature": 14.0,
+      "path": "direct",
+      "severity": 1.0,
+      "modifier": [
+        -0.6695107816936652,
+        0.6409430959810942,
+        0.055732377522252796
+      ],
+      "probabilities": [
+        0.08438372148867021,
+        0.8732145473215923,
+        0.042401731189737536
+      ]
+    },
+    {
+      "temperature": 14.0,
+      "path": "json_roundtrip",
+      "severity": 1.0,
+      "modifier": [
+        -0.6695107816936652,
+        0.6409430959810942,
+        0.055732377522252796
+      ],
+      "probabilities": [
+        0.08438372148867021,
+        0.8732145473215923,
+        0.042401731189737536
+      ]
+    },
+    {
+      "temperature": 14.0,
+      "path": "separate_process",
+      "severity": 1.0,
+      "modifier": [
+        -0.6695107816936652,
+        0.6409430959810942,
+        0.055732377522252796
+      ],
+      "probabilities": [
+        0.08438372148867021,
+        0.8732145473215923,
+        0.042401731189737536
+      ]
+    },
+    {
+      "temperature": 14.0,
+      "path": "unit_adapter",
+      "severity": 1.0,
+      "modifier": [
+        -0.6695107816936652,
+        0.6409430959810942,
+        0.055732377522252796
+      ],
+      "probabilities": [
+        0.08438372148867021,
+        0.8732145473215923,
+        0.042401731189737536
+      ]
+    },
+    {
+      "temperature": 18.0,
+      "path": "direct",
+      "severity": 1.0,
+      "modifier": [
+        -0.6695107816936652,
+        0.6409430959810942,
+        0.055732377522252796
+      ],
+      "probabilities": [
+        0.08438372148867021,
+        0.8732145473215923,
+        0.042401731189737536
+      ]
+    },
+    {
+      "temperature": 18.0,
+      "path": "json_roundtrip",
+      "severity": 1.0,
+      "modifier": [
+        -0.6695107816936652,
+        0.6409430959810942,
+        0.055732377522252796
+      ],
+      "probabilities": [
+        0.08438372148867021,
+        0.8732145473215923,
+        0.042401731189737536
+      ]
+    },
+    {
+      "temperature": 18.0,
+      "path": "separate_process",
+      "severity": 1.0,
+      "modifier": [
+        -0.6695107816936652,
+        0.6409430959810942,
+        0.055732377522252796
+      ],
+      "probabilities": [
+        0.08438372148867021,
+        0.8732145473215923,
+        0.042401731189737536
+      ]
+    },
+    {
+      "temperature": 18.0,
+      "path": "unit_adapter",
+      "severity": 1.0,
+      "modifier": [
+        -0.6695107816936652,
+        0.6409430959810942,
+        0.055732377522252796
+      ],
+      "probabilities": [
+        0.08438372148867021,
+        0.8732145473215923,
+        0.042401731189737536
+      ]
+    }
+  ],
+  "sweep_state": {
+    "hour": 24.0,
+    "scenario": "overproduction",
+    "role": "processor",
+    "base_logits": [
+      0.23993100956340255,
+      1.5105708493057366,
+      -0.9988966420246254
+    ],
+    "policy_temperature": 1.0,
+    "seed": 101,
+    "composition": "cooperative_blend",
+    "scope": "Primary tool temperature sweep; base state, other context inputs, cooperative modifier and peer state held fixed"
+  }
+}

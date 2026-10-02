@@ -1,0 +1,14 @@
+[
+  {
+    "file": "data/primary/routing_time_analysis.json",
+    "original_sha256": "73282604e95b9fe3eecf4c38f306166a29310765b34b57c85cc1c9a23d6cab0c",
+    "distributed_sha256": "27ba769a05601ef99d405c15538997900e3fc3eddd0a03e12a68719fd5f42d71",
+    "previous_path": "data/primary/figure4_routing_time_analysis.json"
+  },
+  {
+    "file": "data/primary/pricing_analysis.json",
+    "original_sha256": "605c3d0746c2b0996036d7e7b2cdca01e3fe45537499d4810795159c188c8c34",
+    "distributed_sha256": "880e8d8a1fee4532adc09b7b546ebb39831962b387850caa5fda15e2d3a5beee",
+    "previous_path": "data/primary/figure5_pricing_analysis.json"
+  }
+]

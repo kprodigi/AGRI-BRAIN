@@ -1,0 +1,60 @@
+[
+  {
+    "file": "ari_performance_by_scenario.png",
+    "title": "ARI performance across scenarios",
+    "caption": "Resilience across scenarios: (a) mean ARI and (b) paired gain over No-Context, with relative gains labeled. Whiskers show 95% BCa intervals across 20 seeds; 0.01 is a descriptive reference.",
+    "data": [
+      "data/primary/three_mode_endpoints.csv",
+      "data/primary/plotted_estimates.csv",
+      "data/primary/paired_seed_ARI.csv"
+    ],
+    "regenerated_by": "analysis/make_figures.py"
+  },
+  {
+    "file": "protocol_preserved_context.png",
+    "title": "Protocol-preserved context and decision response",
+    "caption": "Interface invariance and policy influence. (a) Equivalent tool inputs preserve severity across tested interfaces. (b) Routing probabilities under a primary-tool temperature sweep at one fixed state; other inputs and the cooperative modifier are held fixed.",
+    "data": [
+      "data/primary/validation_20260922/protocol_validation.json"
+    ],
+    "regenerated_by": null
+  },
+  {
+    "file": "executed_routing_choices.png",
+    "title": "Executed routing choices across scenarios",
+    "caption": "Executed routes in the separately adapted policies, averaged in two-hour bins across 20 seeds. Annotations show matched-action disagreement with 95% BCa intervals.",
+    "data": [
+      "data/primary/routing_time_analysis.json"
+    ],
+    "regenerated_by": null
+  },
+  {
+    "file": "routing_decision_explanations.png",
+    "title": "Explaining individual routing decisions",
+    "caption": "Verified cold-chain-to-redistribution switches with base policy, peer state, and random draw fixed, without overrides.",
+    "data": [
+      "data/primary/selected_decision_examples.json"
+    ],
+    "regenerated_by": null
+  },
+  {
+    "file": "disturbance_and_policy_timing.png",
+    "title": "Timing of disturbance and policy response",
+    "caption": "Redistribution probabilities (left axes), disturbance signals (right axes), and context contributions below. Lines show 20-seed means; ribbons show pointwise 95% bootstrap intervals.",
+    "data": [
+      "data/primary/time_series_estimates.csv",
+      "data/primary/pricing_analysis.json"
+    ],
+    "regenerated_by": null
+  },
+  {
+    "file": "weight_sensitivity.png",
+    "title": "Sensitivity to weight magnitudes",
+    "caption": "Weight sensitivity: (a) paired ARI gain over No-Context and (b) change from nominal, with pointwise 95% BCa intervals across 20 seeds. The 0.01 line is descriptive.",
+    "data": [
+      "data/sensitivity/paired_ari_sensitivity.csv",
+      "data/sensitivity/seed_endpoints.csv"
+    ],
+    "regenerated_by": "analysis/make_figures.py"
+  }
+]

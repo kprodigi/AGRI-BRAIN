@@ -1,0 +1,26 @@
+FOOD-WASTE-HIERARCHY CONTEXT FOR THE SYNTHETIC BENCHMARK
+Status: Constructed benchmark input; it is a routing and circularity proxy, not a product-disposition protocol.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, are contextual references only; the executable code and locked protocol govern all benchmark values.
+
+The policy chooses among cold_chain, local_redistribute, and aggregate recovery. The
+literature-motivated qualitative ordering informs author-declared priors, but the code
+does not map rho bands to legally or physically eligible end uses. Its only 0.30 routing
+knee is a synthetic logit prior that raises recovery and lowers redistribution above the
+knee for non-hybrid rho-shaped policies; it is not a safety threshold.
+
+The recovery-option heuristic uses continuous scores:
+
+  food_bank_raw=max(0,1-2*rho), halved when T>10 C;
+  animal_feed_raw=min(1,0.3+0.8*rho), with a capped 1.2 inventory multiplier
+                  when inventory>15000;
+  composting_raw=min(1,0.2+rho).
+
+After normalization, the largest score is a descriptive recommendation. The
+circular-economy proxy returns 0 for cold_chain, 0.4+0.6*food_bank for
+local_redistribute (capped at 1), and 0.5+0.5*the largest normalized score for recovery
+(capped at 1). These are synthetic indicators, not measured circularity or disposition
+decisions.
+
+No time window, product inspection, feed or compost eligibility, anaerobic-digestion
+process, pathogen-control rule, or documentation duty is implemented. Operational
+disposition requires independent product and facility evidence outside the benchmark.

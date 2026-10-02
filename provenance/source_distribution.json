@@ -1,0 +1,43 @@
+{
+  "base_commit": "83c91ce8592c1d40234e5a6bb2a8ce342412f383",
+  "changes": [
+    {
+      "file": "agribrain/backend/src/models/mode_capabilities.py",
+      "original_sha256": "e9b3ba3cd8a2f47aff8e6e38a592d89f8242ec0f51f02c81ae051fab7241c110",
+      "distributed_sha256": "78e798c8268ba9cf9e2869f7d963eb7c298c07806581f6f0cb597306cb6e76f2",
+      "change": "Restrict public registry to static, no_context and agribrain; retained capability expressions unchanged."
+    }
+  ],
+  "source_selection": "reproduction/source: computational backend, simulation, frozen predictor artifacts, HPC validation dependencies and the primary-run submission scripts; earlier-study results, dashboard and modes are not part of that copy.",
+  "repository_root": "The repository root also holds the application source (backend, frontend, contracts) and the evaluated-commit files used by the primary run, unmodified, with the full mode registry. Earlier-study results, figures, publication tooling and its documentation are not distributed. Comments in .env.example and .env.prod.example were revised.",
+  "unmodified_files_match_original": true,
+  "additional_files": {
+    "note": "Primary-run scripts copied unmodified from the evaluated source. They are not listed in reproduction/SOURCE_MANIFEST.json, the integrity record used by the completed sensitivity study, which is therefore unchanged.",
+    "files": [
+      {
+        "file": "hpc/submit_context_pair.sh",
+        "sha256": "aa389b53940afa661f4d9fae2b38cdf630c7e621bc28a9446bed5920a3f6ba81"
+      },
+      {
+        "file": "hpc/no_context_rerun.sh",
+        "sha256": "d1cb71883369a155f298e969ac7f73d74859d062074a8c2fbf3b19f1eead1ad0"
+      },
+      {
+        "file": "hpc/collect_context_pair.sh",
+        "sha256": "0a8d9575f42c79c1b78d8152fc1474ff753afb6ba7b8287feb253ae30a4e8146"
+      },
+      {
+        "file": "hpc/ensure_git_available.sh",
+        "sha256": "ce2ba88f727b626f615cee65b5e29234644ce60afa413b5094ebf1e60c21dc6b"
+      },
+      {
+        "file": "mvp/simulation/benchmarks/rerun_no_context.py",
+        "sha256": "220aff273c81cc21fbcd6ae8d4ccf6e7b9a782c8a6c458705bef400d1996d41f"
+      },
+      {
+        "file": "mvp/simulation/benchmarks/verify_context_pair.py",
+        "sha256": "10ca8a0dc1f76830071d2cddf67c6226a3bf0395accf42bc7b4751c162a30caf"
+      }
+    ]
+  }
+}

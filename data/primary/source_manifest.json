@@ -1,0 +1,13 @@
+{
+  "run": "context_pair_20260914_193548_83c91ce",
+  "revision": "83c91ce8592c1d40234e5a6bb2a8ce342412f383",
+  "source_sha256": {
+    "agribrain/backend/src/data_spinach.csv": "fee9e231da3e236c7ca56af4a24c55e299d9c17a03c6bdbf31a30a1a5a29777c",
+    "mvp/simulation/pinn/artifacts/spoilage_pinn_v1.npz": "6b16d11b455271c58c4917eae3db5114c38e791ec5a82a80925f1bef53f7d8a5",
+    "agribrain/backend/src/models/mode_capabilities.py": "e9b3ba3cd8a2f47aff8e6e38a592d89f8242ec0f51f02c81ae051fab7241c110",
+    "agribrain/backend/pirag/context_builder.py": "41176568f1529316c8f9d1448ba242cf3355cdc8cf861b8c409f2ce22525093f",
+    "agribrain/backend/pirag/context_to_logits.py": "0a5acc56691c7c08d0353b30eb07d384d3333a932837c1b8ab93c38d4947b89c",
+    "agribrain/backend/src/models/waste.py": "fe21cd34c759ea6960ba1dc0374f05d784f0f6c0e63f3a913b45689b57812b90",
+    "agribrain/backend/src/models/resilience.py": "7c6408df7397ce9f932160997cc1f1b4f489feb048bff747c26ca89b54f6b43a"
+  }
+}

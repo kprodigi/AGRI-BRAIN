@@ -1,0 +1,1029 @@
+{
+ "meta": {
+  "seeds": 20,
+  "scenarios": [
+   "heatwave",
+   "overproduction",
+   "cyber_outage",
+   "adaptive_pricing",
+   "baseline"
+  ],
+  "modes": [
+   "static",
+   "no_context",
+   "agribrain"
+  ],
+  "primary_evaluations": 300,
+  "sensitivity": {
+   "settings": 23,
+   "tasks": 2300,
+   "episodes": 20700,
+   "adaptation": 13800,
+   "evaluations": 6900,
+   "evaluation_routing_choices": 1987200
+  },
+  "intervals": "95% BCa across seeds; sensitivity intervals are pointwise"
+ },
+ "overall": {
+  "ari": {
+   "label": "Adaptive Resilience Index",
+   "static": {
+    "mean": 0.455982,
+    "low": 0.452555,
+    "high": 0.459023
+   },
+   "no_context": {
+    "mean": 0.586972,
+    "low": 0.583122,
+    "high": 0.590448
+   },
+   "agribrain": {
+    "mean": 0.610807,
+    "low": 0.607348,
+    "high": 0.614077
+   }
+  },
+  "waste": {
+   "label": "Modeled waste (%)",
+   "static": {
+    "mean": 10.173662,
+    "low": 9.983665,
+    "high": 10.381163
+   },
+   "no_context": {
+    "mean": 6.948302,
+    "low": 6.834549,
+    "high": 7.067807
+   },
+   "agribrain": {
+    "mean": 6.490596,
+    "low": 6.38407,
+    "high": 6.612242
+   }
+  },
+  "carbon": {
+   "label": "Transport emissions (kg CO\u2082-eq/episode)",
+   "static": {
+    "mean": 4548.63371,
+    "low": 4537.594961,
+    "high": 4560.455296
+   },
+   "no_context": {
+    "mean": 2551.122041,
+    "low": 2492.581067,
+    "high": 2602.345039
+   },
+   "agribrain": {
+    "mean": 2228.634568,
+    "low": 2188.004892,
+    "high": 2266.871336
+   }
+  },
+  "slca": {
+   "label": "Social performance",
+   "static": {
+    "mean": 0.556893,
+    "low": 0.55648,
+    "high": 0.557372
+   },
+   "no_context": {
+    "mean": 0.696116,
+    "low": 0.692304,
+    "high": 0.700157
+   },
+   "agribrain": {
+    "mean": 0.719857,
+    "low": 0.716978,
+    "high": 0.722685
+   }
+  },
+  "rle": {
+   "label": "Reverse Logistics Efficiency",
+   "static": {
+    "mean": 0.0,
+    "low": 0.0,
+    "high": 0.0
+   },
+   "no_context": {
+    "mean": 0.761679,
+    "low": 0.725028,
+    "high": 0.790267
+   },
+   "agribrain": {
+    "mean": 0.815517,
+    "low": 0.77958,
+    "high": 0.843998
+   }
+  },
+  "mean_decision_latency_ms": {
+   "label": "Decision latency (ms)",
+   "static": {
+    "mean": 1.536276,
+    "low": 1.505252,
+    "high": 1.58321
+   },
+   "no_context": {
+    "mean": 1.567103,
+    "low": 1.550483,
+    "high": 1.586247
+   },
+   "agribrain": {
+    "mean": 11.824016,
+    "low": 11.789904,
+    "high": 11.86577
+   }
+  }
+ },
+ "scenarios": {
+  "heatwave": {
+   "metrics": {
+    "ari": {
+     "static": {
+      "mean": 0.401367,
+      "low": 0.391119,
+      "high": 0.408858
+     },
+     "no_context": {
+      "mean": 0.526255,
+      "low": 0.513444,
+      "high": 0.536288
+     },
+     "agribrain": {
+      "mean": 0.547752,
+      "low": 0.534385,
+      "high": 0.558418
+     }
+    },
+    "waste": {
+     "static": {
+      "mean": 0.112521,
+      "low": 0.110292,
+      "high": 0.114942
+     },
+     "no_context": {
+      "mean": 0.073346,
+      "low": 0.071734,
+      "high": 0.074926
+     },
+     "agribrain": {
+      "mean": 0.068665,
+      "low": 0.067034,
+      "high": 0.07019
+     }
+    },
+    "carbon": {
+     "static": {
+      "mean": 4879.662594,
+      "low": 4845.9923,
+      "high": 4910.939893
+     },
+     "no_context": {
+      "mean": 2580.336705,
+      "low": 2530.18855,
+      "high": 2639.319078
+     },
+     "agribrain": {
+      "mean": 2264.178165,
+      "low": 2226.442033,
+      "high": 2307.967694
+     }
+    },
+    "slca": {
+     "static": {
+      "mean": 0.535971,
+      "low": 0.535295,
+      "high": 0.536649
+     },
+     "no_context": {
+      "mean": 0.681947,
+      "low": 0.678186,
+      "high": 0.685211
+     },
+     "agribrain": {
+      "mean": 0.70393,
+      "low": 0.701239,
+      "high": 0.706442
+     }
+    },
+    "equity": {
+     "static": {
+      "mean": 0.500557,
+      "low": 0.49987,
+      "high": 0.501343
+     },
+     "no_context": {
+      "mean": 0.622112,
+      "low": 0.618503,
+      "high": 0.625545
+     },
+     "agribrain": {
+      "mean": 0.645724,
+      "low": 0.642678,
+      "high": 0.648375
+     }
+    },
+    "rle": {
+     "static": {
+      "mean": 0.0,
+      "low": 0.0,
+      "high": 0.0
+     },
+     "no_context": {
+      "mean": 0.843917,
+      "low": 0.787765,
+      "high": 0.867597
+     },
+     "agribrain": {
+      "mean": 0.88991,
+      "low": 0.803867,
+      "high": 0.917994
+     }
+    },
+    "mean_decision_latency_ms": {
+     "static": {
+      "mean": 1.425753,
+      "low": 1.422472,
+      "high": 1.428529
+     },
+     "no_context": {
+      "mean": 1.59995,
+      "low": 1.596223,
+      "high": 1.603155
+     },
+     "agribrain": {
+      "mean": 12.21466,
+      "low": 12.152418,
+      "high": 12.279693
+     }
+    }
+   },
+   "paired_gain": {
+    "mean": 0.021497,
+    "low": 0.019851,
+    "high": 0.023395
+   },
+   "different_actions_percent": {
+    "mean": 12.760417,
+    "low": 11.822917,
+    "high": 13.75
+   },
+   "relative_gain_percent": 4.084874
+  },
+  "overproduction": {
+   "metrics": {
+    "ari": {
+     "static": {
+      "mean": 0.408819,
+      "low": 0.402918,
+      "high": 0.414424
+     },
+     "no_context": {
+      "mean": 0.541967,
+      "low": 0.535666,
+      "high": 0.546994
+     },
+     "agribrain": {
+      "mean": 0.563492,
+      "low": 0.557688,
+      "high": 0.568484
+     }
+    },
+    "waste": {
+     "static": {
+      "mean": 0.124435,
+      "low": 0.119513,
+      "high": 0.127092
+     },
+     "no_context": {
+      "mean": 0.085603,
+      "low": 0.083176,
+      "high": 0.087178
+     },
+     "agribrain": {
+      "mean": 0.080538,
+      "low": 0.078006,
+      "high": 0.081957
+     }
+    },
+    "carbon": {
+     "static": {
+      "mean": 4653.487875,
+      "low": 4630.107199,
+      "high": 4676.920361
+     },
+     "no_context": {
+      "mean": 2435.567823,
+      "low": 2374.988,
+      "high": 2510.489601
+     },
+     "agribrain": {
+      "mean": 2113.518114,
+      "low": 2071.115833,
+      "high": 2157.488649
+     }
+    },
+    "slca": {
+     "static": {
+      "mean": 0.515759,
+      "low": 0.515294,
+      "high": 0.51623
+     },
+     "no_context": {
+      "mean": 0.657519,
+      "low": 0.652391,
+      "high": 0.661614
+     },
+     "agribrain": {
+      "mean": 0.679036,
+      "low": 0.675959,
+      "high": 0.682003
+     }
+    },
+    "equity": {
+     "static": {
+      "mean": 0.48665,
+      "low": 0.485937,
+      "high": 0.487328
+     },
+     "no_context": {
+      "mean": 0.60185,
+      "low": 0.596273,
+      "high": 0.606199
+     },
+     "agribrain": {
+      "mean": 0.626305,
+      "low": 0.622329,
+      "high": 0.629938
+     }
+    },
+    "rle": {
+     "static": {
+      "mean": 0.0,
+      "low": 0.0,
+      "high": 0.0
+     },
+     "no_context": {
+      "mean": 0.839082,
+      "low": 0.814667,
+      "high": 0.86124
+     },
+     "agribrain": {
+      "mean": 0.90164,
+      "low": 0.8813,
+      "high": 0.918308
+     }
+    },
+    "mean_decision_latency_ms": {
+     "static": {
+      "mean": 1.491617,
+      "low": 1.486873,
+      "high": 1.495585
+     },
+     "no_context": {
+      "mean": 1.536232,
+      "low": 1.506032,
+      "high": 1.571348
+     },
+     "agribrain": {
+      "mean": 13.563378,
+      "low": 13.524033,
+      "high": 13.605958
+     }
+    }
+   },
+   "paired_gain": {
+    "mean": 0.021525,
+    "low": 0.01917,
+    "high": 0.024223
+   },
+   "different_actions_percent": {
+    "mean": 12.586806,
+    "low": 11.197917,
+    "high": 13.993056
+   },
+   "relative_gain_percent": 3.971584
+  },
+  "cyber_outage": {
+   "metrics": {
+    "ari": {
+     "static": {
+      "mean": 0.445763,
+      "low": 0.439287,
+      "high": 0.452649
+     },
+     "no_context": {
+      "mean": 0.582684,
+      "low": 0.575539,
+      "high": 0.590299
+     },
+     "agribrain": {
+      "mean": 0.603081,
+      "low": 0.595556,
+      "high": 0.610873
+     }
+    },
+    "waste": {
+     "static": {
+      "mean": 0.113256,
+      "low": 0.107462,
+      "high": 0.117779
+     },
+     "no_context": {
+      "mean": 0.074958,
+      "low": 0.071201,
+      "high": 0.077773
+     },
+     "agribrain": {
+      "mean": 0.071014,
+      "low": 0.067406,
+      "high": 0.073714
+     }
+    },
+    "carbon": {
+     "static": {
+      "mean": 4691.821495,
+      "low": 4661.267636,
+      "high": 4718.892349
+     },
+     "no_context": {
+      "mean": 2570.271379,
+      "low": 2506.772737,
+      "high": 2625.500956
+     },
+     "agribrain": {
+      "mean": 2301.439056,
+      "low": 2248.226876,
+      "high": 2350.257247
+     }
+    },
+    "slca": {
+     "static": {
+      "mean": 0.549652,
+      "low": 0.548012,
+      "high": 0.551531
+     },
+     "no_context": {
+      "mean": 0.69327,
+      "low": 0.689074,
+      "high": 0.697069
+     },
+     "agribrain": {
+      "mean": 0.713299,
+      "low": 0.709557,
+      "high": 0.716697
+     }
+    },
+    "equity": {
+     "static": {
+      "mean": 0.524961,
+      "low": 0.523464,
+      "high": 0.526714
+     },
+     "no_context": {
+      "mean": 0.63649,
+      "low": 0.63209,
+      "high": 0.640975
+     },
+     "agribrain": {
+      "mean": 0.657832,
+      "low": 0.653663,
+      "high": 0.662294
+     }
+    },
+    "rle": {
+     "static": {
+      "mean": 0.0,
+      "low": 0.0,
+      "high": 0.0
+     },
+     "no_context": {
+      "mean": 0.849714,
+      "low": 0.835628,
+      "high": 0.864425
+     },
+     "agribrain": {
+      "mean": 0.8914,
+      "low": 0.88139,
+      "high": 0.90135
+     }
+    },
+    "mean_decision_latency_ms": {
+     "static": {
+      "mean": 1.625407,
+      "low": 1.524721,
+      "high": 1.788744
+     },
+     "no_context": {
+      "mean": 1.550398,
+      "low": 1.517217,
+      "high": 1.590865
+     },
+     "agribrain": {
+      "mean": 9.485356,
+      "low": 9.451287,
+      "high": 9.554558
+     }
+    }
+   },
+   "paired_gain": {
+    "mean": 0.020397,
+    "low": 0.018916,
+    "high": 0.021944
+   },
+   "different_actions_percent": {
+    "mean": 10.885417,
+    "low": 10.069444,
+    "high": 11.649306
+   },
+   "relative_gain_percent": 3.500438
+  },
+  "adaptive_pricing": {
+   "metrics": {
+    "ari": {
+     "static": {
+      "mean": 0.500917,
+      "low": 0.493771,
+      "high": 0.507089
+     },
+     "no_context": {
+      "mean": 0.629801,
+      "low": 0.622477,
+      "high": 0.637468
+     },
+     "agribrain": {
+      "mean": 0.656505,
+      "low": 0.649217,
+      "high": 0.664384
+     }
+    },
+    "waste": {
+     "static": {
+      "mean": 0.084654,
+      "low": 0.078962,
+      "high": 0.091226
+     },
+     "no_context": {
+      "mean": 0.060574,
+      "low": 0.056707,
+      "high": 0.06513
+     },
+     "agribrain": {
+      "mean": 0.055849,
+      "low": 0.052131,
+      "high": 0.059993
+     }
+    },
+    "carbon": {
+     "static": {
+      "mean": 4319.875634,
+      "low": 4295.731213,
+      "high": 4344.003547
+     },
+     "no_context": {
+      "mean": 2620.615537,
+      "low": 2559.301027,
+      "high": 2677.872359
+     },
+     "agribrain": {
+      "mean": 2278.373313,
+      "low": 2232.837318,
+      "high": 2323.118931
+     }
+    },
+    "slca": {
+     "static": {
+      "mean": 0.585393,
+      "low": 0.584898,
+      "high": 0.585896
+     },
+     "no_context": {
+      "mean": 0.717044,
+      "low": 0.712395,
+      "high": 0.722202
+     },
+     "agribrain": {
+      "mean": 0.743469,
+      "low": 0.739752,
+      "high": 0.747284
+     }
+    },
+    "equity": {
+     "static": {
+      "mean": 0.571809,
+      "low": 0.571182,
+      "high": 0.572445
+     },
+     "no_context": {
+      "mean": 0.649427,
+      "low": 0.64451,
+      "high": 0.655457
+     },
+     "agribrain": {
+      "mean": 0.68124,
+      "low": 0.676473,
+      "high": 0.68674
+     }
+    },
+    "rle": {
+     "static": {
+      "mean": 0.0,
+      "low": 0.0,
+      "high": 0.0
+     },
+     "no_context": {
+      "mean": 0.722654,
+      "low": 0.687025,
+      "high": 0.761455
+     },
+     "agribrain": {
+      "mean": 0.79178,
+      "low": 0.765608,
+      "high": 0.819886
+     }
+    },
+    "mean_decision_latency_ms": {
+     "static": {
+      "mean": 1.648576,
+      "low": 1.530688,
+      "high": 1.843331
+     },
+     "no_context": {
+      "mean": 1.560681,
+      "low": 1.520602,
+      "high": 1.609098
+     },
+     "agribrain": {
+      "mean": 11.984579,
+      "low": 11.93588,
+      "high": 12.039187
+     }
+    }
+   },
+   "paired_gain": {
+    "mean": 0.026705,
+    "low": 0.024459,
+    "high": 0.028651
+   },
+   "different_actions_percent": {
+    "mean": 13.628472,
+    "low": 12.534722,
+    "high": 14.583333
+   },
+   "relative_gain_percent": 4.240203
+  },
+  "baseline": {
+   "metrics": {
+    "ari": {
+     "static": {
+      "mean": 0.523043,
+      "low": 0.517934,
+      "high": 0.52776
+     },
+     "no_context": {
+      "mean": 0.654154,
+      "low": 0.648665,
+      "high": 0.660471
+     },
+     "agribrain": {
+      "mean": 0.683203,
+      "low": 0.677828,
+      "high": 0.68871
+     }
+    },
+    "waste": {
+     "static": {
+      "mean": 0.073817,
+      "low": 0.069421,
+      "high": 0.078192
+     },
+     "no_context": {
+      "mean": 0.052933,
+      "low": 0.049968,
+      "high": 0.055719
+     },
+     "agribrain": {
+      "mean": 0.048464,
+      "low": 0.045725,
+      "high": 0.05115
+     }
+    },
+    "carbon": {
+     "static": {
+      "mean": 4198.320954,
+      "low": 4168.636116,
+      "high": 4228.224161
+     },
+     "no_context": {
+      "mean": 2548.818759,
+      "low": 2459.314087,
+      "high": 2614.450879
+     },
+     "agribrain": {
+      "mean": 2185.664195,
+      "low": 2126.694145,
+      "high": 2237.894879
+     }
+    },
+    "slca": {
+     "static": {
+      "mean": 0.597687,
+      "low": 0.597056,
+      "high": 0.598279
+     },
+     "no_context": {
+      "mean": 0.7308,
+      "low": 0.725943,
+      "high": 0.737743
+     },
+     "agribrain": {
+      "mean": 0.759549,
+      "low": 0.75547,
+      "high": 0.764149
+     }
+    },
+    "equity": {
+     "static": {
+      "mean": 0.584415,
+      "low": 0.583686,
+      "high": 0.585094
+     },
+     "no_context": {
+      "mean": 0.661088,
+      "low": 0.655596,
+      "high": 0.669997
+     },
+     "agribrain": {
+      "mean": 0.696207,
+      "low": 0.690627,
+      "high": 0.70278
+     }
+    },
+    "rle": {
+     "static": {
+      "mean": 0.0,
+      "low": 0.0,
+      "high": 0.0
+     },
+     "no_context": {
+      "mean": 0.553031,
+      "low": 0.383864,
+      "high": 0.673443
+     },
+     "agribrain": {
+      "mean": 0.602856,
+      "low": 0.412387,
+      "high": 0.734358
+     }
+    },
+    "mean_decision_latency_ms": {
+     "static": {
+      "mean": 1.490025,
+      "low": 1.486577,
+      "high": 1.494216
+     },
+     "no_context": {
+      "mean": 1.588252,
+      "low": 1.5439,
+      "high": 1.644009
+     },
+     "agribrain": {
+      "mean": 11.872109,
+      "low": 11.802165,
+      "high": 11.942708
+     }
+    }
+   },
+   "paired_gain": {
+    "mean": 0.029049,
+    "low": 0.026009,
+    "high": 0.030939
+   },
+   "different_actions_percent": {
+    "mean": 14.930556,
+    "low": 13.385417,
+    "high": 15.920139
+   },
+   "relative_gain_percent": 4.440659
+  }
+ },
+ "sensitivity": [
+  {
+   "setting": "nominal",
+   "family": "weights",
+   "gain": 0.023834,
+   "low": 0.022281,
+   "high": 0.025214,
+   "change": 0.0
+  },
+  {
+   "setting": "base_policy_minus20",
+   "family": "weights",
+   "gain": 0.024621,
+   "low": 0.023354,
+   "high": 0.025733,
+   "change": 0.000786
+  },
+  {
+   "setting": "base_policy_plus20",
+   "family": "weights",
+   "gain": 0.022549,
+   "low": 0.021202,
+   "high": 0.023726,
+   "change": -0.001286
+  },
+  {
+   "setting": "mcp_prior_minus20",
+   "family": "weights",
+   "gain": 0.023135,
+   "low": 0.021606,
+   "high": 0.024467,
+   "change": -0.0007
+  },
+  {
+   "setting": "mcp_prior_plus20",
+   "family": "weights",
+   "gain": 0.024489,
+   "low": 0.022838,
+   "high": 0.025983,
+   "change": 0.000654
+  },
+  {
+   "setting": "retrieval_prior_minus20",
+   "family": "weights",
+   "gain": 0.021875,
+   "low": 0.020432,
+   "high": 0.023102,
+   "change": -0.00196
+  },
+  {
+   "setting": "retrieval_prior_plus20",
+   "family": "weights",
+   "gain": 0.025823,
+   "low": 0.024134,
+   "high": 0.027309,
+   "change": 0.001988
+  },
+  {
+   "setting": "w_c_minus20",
+   "family": "weights",
+   "gain": 0.02396,
+   "low": 0.022405,
+   "high": 0.025354,
+   "change": 0.000126
+  },
+  {
+   "setting": "w_c_plus20",
+   "family": "weights",
+   "gain": 0.023712,
+   "low": 0.022158,
+   "high": 0.025092,
+   "change": -0.000123
+  },
+  {
+   "setting": "w_l_minus20",
+   "family": "weights",
+   "gain": 0.023793,
+   "low": 0.022244,
+   "high": 0.025175,
+   "change": -4.2e-05
+  },
+  {
+   "setting": "w_l_plus20",
+   "family": "weights",
+   "gain": 0.023866,
+   "low": 0.022319,
+   "high": 0.02525,
+   "change": 3.2e-05
+  },
+  {
+   "setting": "w_r_minus20",
+   "family": "weights",
+   "gain": 0.023793,
+   "low": 0.022241,
+   "high": 0.025166,
+   "change": -4.2e-05
+  },
+  {
+   "setting": "w_r_plus20",
+   "family": "weights",
+   "gain": 0.023851,
+   "low": 0.022306,
+   "high": 0.025241,
+   "change": 1.6e-05
+  },
+  {
+   "setting": "w_p_minus20",
+   "family": "weights",
+   "gain": 0.023763,
+   "low": 0.022217,
+   "high": 0.025154,
+   "change": -7.1e-05
+  },
+  {
+   "setting": "w_p_plus20",
+   "family": "weights",
+   "gain": 0.023902,
+   "low": 0.022345,
+   "high": 0.025291,
+   "change": 6.8e-05
+  },
+  {
+   "setting": "eta_minus20",
+   "family": "weights",
+   "gain": 0.023824,
+   "low": 0.022243,
+   "high": 0.025218,
+   "change": -1e-05
+  },
+  {
+   "setting": "eta_plus20",
+   "family": "weights",
+   "gain": 0.023834,
+   "low": 0.022275,
+   "high": 0.025239,
+   "change": 0.0
+  },
+  {
+   "setting": "eta_rho_minus20",
+   "family": "weights",
+   "gain": 0.023813,
+   "low": 0.022265,
+   "high": 0.025197,
+   "change": -2.1e-05
+  },
+  {
+   "setting": "eta_rho_plus20",
+   "family": "weights",
+   "gain": 0.023838,
+   "low": 0.022285,
+   "high": 0.025214,
+   "change": 3e-06
+  },
+  {
+   "setting": "joint10_A",
+   "family": "weights",
+   "gain": 0.023869,
+   "low": 0.022346,
+   "high": 0.025209,
+   "change": 3.5e-05
+  },
+  {
+   "setting": "joint10_B",
+   "family": "weights",
+   "gain": 0.023484,
+   "low": 0.02203,
+   "high": 0.024795,
+   "change": -0.00035
+  },
+  {
+   "setting": "joint20_A",
+   "family": "weights",
+   "gain": 0.024086,
+   "low": 0.022611,
+   "high": 0.025337,
+   "change": 0.000251
+  },
+  {
+   "setting": "joint20_B",
+   "family": "weights",
+   "gain": 0.023159,
+   "low": 0.021908,
+   "high": 0.024278,
+   "change": -0.000675
+  }
+ ],
+ "routes_percent": {
+  "order": [
+   "cold_chain",
+   "local_redistribution",
+   "recovery"
+  ],
+  "no_context": [
+   26.1,
+   63.9,
+   10.0
+  ],
+  "agribrain": [
+   15.5,
+   76.8,
+   7.7
+  ]
+ },
+ "frozen_controls": {
+  "fixed": {
+   "mean": 0.001617,
+   "low": 0.001274,
+   "high": 0.00194
+  },
+  "shuffled": {
+   "mean": 0.001344,
+   "low": 0.001056,
+   "high": 0.001711
+  },
+  "zero": {
+   "mean": 0.024405,
+   "low": 0.022836,
+   "high": 0.025827
+  }
+ }
+}

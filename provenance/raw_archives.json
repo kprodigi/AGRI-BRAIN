@@ -1,0 +1,22 @@
+[
+  {
+    "file": "context_pair_20260914_193548_83c91ce_results.tar.gz",
+    "bytes": 801770097,
+    "sha256": "d8d02c6f5f9ac11a5496cf39561faa5f09017db99a6935ff174db1a7172a7760",
+    "purpose": "Full primary adaptive episode evidence",
+    "availability": "On request from the corresponding author"
+  },
+  {
+    "file": "weights_20260924_180354_results_analysis.tar.gz",
+    "bytes": 768107,
+    "sha256": "a6ce9caec42d1b9f15bf8e30bfe7a9624ff18da20b5b7c613babbc10ebae780b",
+    "purpose": "Completed sensitivity compact analysis; also distributed as data/sensitivity",
+    "availability": "Contents distributed as data/sensitivity; archive on request from the corresponding author"
+  },
+  {
+    "file": "weights_20260924_180354_results.tar.gz",
+    "purpose": "Full sensitivity archive retained on the HPC system",
+    "sha256": null,
+    "availability": "On request from the corresponding author"
+  }
+]

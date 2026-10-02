@@ -1,0 +1,5 @@
+Decision owner,Decisions,Tool calls,Peer use,Nonzero peer bias,Cooperative overlay
+Farm,7200,11556,410,0,2400
+Processor,7200,17824,1151,0,4800
+Distributor,7200,14713,7200,7200,0
+Recovery,7200,17280,99,1,0

@@ -1,0 +1,20 @@
+{
+  "checks": {
+    "environment_arrays_matching_after_archived_4dp_rounding": 680.0,
+    "matched_static_scenario_seed_cells": 100.0,
+    "ari_max_reconstruction_gap": 4.999087127455226e-05,
+    "waste_max_reconstruction_gap": 4.999849060584316e-05,
+    "carbon_kg_max_reconstruction_gap": 4.999907075387e-05,
+    "slca_max_reconstruction_gap": 4.999629119861737e-05,
+    "static_steps_rescored_with_new_contract": 28800.0,
+    "ari_scalar_reconstruction_gap": 0.0,
+    "waste_scalar_reconstruction_gap": 1.3877787807814457e-17,
+    "slca_scalar_reconstruction_gap": 0.0,
+    "carbon_scalar_reconstruction_gap": 5.4569682106375694e-12
+  },
+  "static_source": "d3286ae_20260829_105800",
+  "new_source": "context_pair_20260914_193548_83c91ce",
+  "source_commit": "83c91ce8592c1d40234e5a6bb2a8ce342412f383",
+  "method": "All environmental stream identities and hashes match exactly. Some archived arrays are rounded to 4 decimals; these match new arrays after the same rounding. Static actions rescored under new full-precision environmental traces and contracts reconstruct archived scalar outcomes within 1e-9. No simulation rerun and no source modifications.",
+  "latency_compatibility": "not established across execution runs"
+}

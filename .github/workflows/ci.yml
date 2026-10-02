@@ -1,0 +1,62 @@
+name: CI
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  evidence:
+    name: Verify evidence
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python scripts/verify_package.py
+  statistics:
+    name: Recompute statistics and figures
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r analysis/requirements.txt
+      - run: python analysis/primary_statistics.py
+      - run: python analysis/make_figures.py --output "$RUNNER_TEMP/figures"
+      - run: python analysis/export_dashboard_data.py --check
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r agribrain/backend/requirements-lock.txt
+      - run: python -m pip install --no-deps -e agribrain/backend
+      - run: python -m pytest agribrain/backend/tests agribrain/backend/pirag/tests -q
+  frontend:
+    name: Frontend build and tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agribrain/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+  contracts:
+    name: Contract tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agribrain/contracts/hardhat
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx hardhat test

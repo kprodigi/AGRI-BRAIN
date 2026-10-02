@@ -1,0 +1,41 @@
+MODELED TRANSPORT-EMISSIONS INDICATOR
+Status: Constructed benchmark input; the equation and coefficients are synthetic assumptions, not a fleet inventory.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, motivate the activity-times-factor structure only; the executable code and locked protocol govern all benchmark values.
+Document ID: KB-CAT-008
+Executable sources: agribrain/backend/src/models/carbon.py and policy.py
+
+1. EXECUTABLE EQUATION
+
+For one standardized routing opportunity, the confirmatory simulator computes
+
+  theta = clamp((T_C - 4.0) / 20.0, 0, 1)
+  E = d * 0.12 * 1.0 * (1 + 0.40*theta) kilograms CO2-equivalent.
+
+Here d is the selected route's nominal distance multiplied by the keyed stochastic
+transport multiplier. Nominal distances are 120 km for cold_chain, 45 km for
+local_redistribute, and 80 km for recovery. The confirmatory physical-efficiency factor
+is 1.0 for every mode. Thermal stress rises linearly from zero at 4 degrees Celsius to
+one at 24 degrees Celsius; the equation does not switch at 35 degrees Celsius.
+
+The 0.12 kg CO2-equivalent per vehicle-kilometre factor and the 0.40 full-stress penalty
+are author-declared benchmark coefficients. They are not measured fleet values and are
+not attributed to an EPA factor table.
+
+2. SOCIAL-PROXY CARBON COMPONENT
+
+The simulator converts E to C = max(0, 1 - E/50), where 50 kg CO2-equivalent is a
+normalizer for one standardized routing opportunity, not an episode emissions cap. The
+social-performance proxy then uses
+
+  S = 0.30*C + 0.20*L + 0.25*R + 0.25*P.
+
+The episode ARI-per-modeled-emissions ratio is mean ARI divided by cumulative modeled
+episode emissions; no factor of 1,000 is applied. This descriptive ratio is not a
+measured carbon-efficiency or lifecycle-performance assessment.
+
+3. EXCLUDED CLAIMS
+
+The benchmark does not infer shipment payload, tonne-kilometres, fuel type, ownership,
+Scope 1/2/3 category, monthly inventory, carbon budget, or regulatory reporting duty.
+It does not require a blockchain record. Real emissions reporting requires traceable
+vehicle-, load-, fuel-, refrigeration-, location-, and time-specific inventory data.

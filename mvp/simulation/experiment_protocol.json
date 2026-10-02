@@ -1,0 +1,352 @@
+{
+  "schema_version": 1,
+  "status": "locked_before_rerun",
+  "benchmark_kind": "synthetic_stochastic_simulation",
+  "seed_is_inferential_unit": true,
+  "seeds": [
+    42, 1337, 2024, 7, 99, 101, 202, 303, 404, 505,
+    606, 707, 808, 909, 1010, 1111, 1212, 1313, 1414, 1515
+  ],
+  "scenarios": [
+    "heatwave",
+    "overproduction",
+    "cyber_outage",
+    "adaptive_pricing",
+    "baseline"
+  ],
+  "spoilage_model": {
+    "kind": "independent_synthetic_dgp_outcome_with_mechanistic_and_frozen_pinn_policy_estimators",
+    "mechanistic_baseline_common_to_all_arms": true,
+    "outcome_reference": {
+      "kind": "independent_synthetic_dgp_v1",
+      "state_equation": "dC_true/dt = -k_base*alpha*exp(u)*C_true",
+      "stress_multiplier_equation": "u = 0.44*(packaging_index-0.50)+0.80*handling_shock_G+0.0040*abs_dRH_dt",
+      "packaging_index_default": 0.5,
+      "observation_noise_applied_to_scored_outcome": false,
+      "mode_invariant_within_paired_episode": true,
+      "paired_outcome_hash_required": true,
+      "evaluation_sensor_input_path": "agribrain/backend/src/data_spinach.csv",
+      "evaluation_sensor_input_sha256": "fee9e231da3e236c7ca56af4a24c55e299d9c17a03c6bdbf31a30a1a5a29777c",
+      "coefficient_source": "mvp/simulation/pinn/generate_synthetic_spoilage_data.py",
+      "synthetic_only": true,
+      "external_validation": false,
+      "empirical_claims_permitted": false
+    },
+    "base_k_ref_per_hour": 0.0021,
+    "base_ea_over_r_kelvin": 8000.0,
+    "episode_parameter_draws": {
+      "multiplier": "1 + Normal(0, fractional_std)",
+      "k_ref_fractional_std": 0.20,
+      "ea_over_r_fractional_std": 0.14,
+      "k_ref_floor_per_hour": 0.000001,
+      "ea_over_r_floor_kelvin": 100.0,
+      "draw_count_per_parameter_per_episode": 1,
+      "paired_counter_keyed_across_modes": true
+    },
+    "neural_residual_enabled": true,
+    "residual_bound_quality_fraction": 0.08,
+    "residual_checkpoint_is_frozen_before_hpc": true,
+    "residual_enabled_modes": "policy-observed spoilage estimate in all publication modes except no_pinn; never the scored outcome reference",
+    "deployed_quality_transform": "clip C_mech + delta_C to [0,1], then cumulative minimum within trajectory",
+    "raw_network_alone_claimed_physically_valid": false,
+    "test_diagnostics": {
+      "raw_monotonicity_violation_count": 115,
+      "raw_unit_interval_violation_count": 41,
+      "deployed_monotonicity_violation_count": 0,
+      "deployed_unit_interval_violation_count": 0,
+      "raw_latent_rmse": 0.0040683936884657315,
+      "deployed_latent_rmse": 0.004060998778830866,
+      "mechanistic_latent_rmse": 0.013166348643646958
+    },
+    "no_pinn_publication_arm": true,
+    "no_pinn_label": "Mechanistic-only (No-PINN)",
+    "no_pinn_difference_from_agribrain": "frozen residual disabled only in the policy-observed spoilage estimate; the independent synthetic-DGP scored outcome, policy, context, SLCA, peer, learning budget, and paired random streams are otherwise identical",
+    "training_evidence": {
+      "target_origin": "independent_synthetic_dgp",
+      "synthetic_only": true,
+      "external_validation": false,
+      "empirical_claims_permitted": false,
+      "dataset_path": "mvp/simulation/pinn/artifacts/synthetic_spoilage_residual_v1.csv",
+      "dataset_sha256": "58fa5ef1bbcc9ff6d8ad5780692c9f96aeee72189ec46d66ecc3677b7106ab5c",
+      "dataset_manifest_path": "mvp/simulation/pinn/artifacts/synthetic_spoilage_residual_v1_manifest.json",
+      "checkpoint_path": "mvp/simulation/pinn/artifacts/spoilage_pinn_v1.npz",
+      "checkpoint_sha256": "6b16d11b455271c58c4917eae3db5114c38e791ec5a82a80925f1bef53f7d8a5",
+      "checkpoint_manifest_path": "mvp/simulation/pinn/artifacts/spoilage_pinn_v1_manifest.json",
+      "training_history_path": "mvp/simulation/pinn/artifacts/spoilage_pinn_v1_training_history.json",
+      "training_history_sha256": "070690c1eee15200241498db7cf6eba107ba807d61b230c78b1702f8248fc454",
+      "trajectory_split_counts": {"train": 24, "validation": 6, "test": 6},
+      "split_unit": "trajectory",
+      "test_split_used_for_selection": false,
+      "initialization_seeds": [104729, 130363, 155921],
+      "loss": "data_mse + physics_ode_residual + initial_boundary + residual_regularization + monotonicity_penalty",
+      "loss_weights": {
+        "data": 1.0,
+        "physics": 0.20,
+        "boundary": 1.0,
+        "regularization": 0.01,
+        "monotonicity": 0.20
+      },
+      "limitation": "held-out validation is against a declared synthetic DGP, not observed spinach quality"
+    }
+  },
+  "forecast_protocol": {
+    "validation_scope": "internal synthetic benchmark only",
+    "external_validation": false,
+    "dataset_path": "agribrain/backend/src/data_spinach.csv",
+    "dataset_sha256": "fee9e231da3e236c7ca56af4a24c55e299d9c17a03c6bdbf31a30a1a5a29777c",
+    "n_rows": 288,
+    "temporal_split": {
+      "development_fraction": 0.6,
+      "validation_fraction": 0.2,
+      "test_fraction": 0.2
+    },
+    "evaluation": {
+      "kind": "rolling_origin_one_step",
+      "lookback_steps": 48,
+      "test_segment_used_for_selection": false,
+      "selection_criterion": "minimum_validation_rmse"
+    },
+    "selected_demand_method": "holt_linear",
+    "selected_supply_proxy_method": "persistence",
+    "validation_rmse": {
+      "demand_holt_linear": 7.569343255721136,
+      "demand_persistence": 7.704678381705316,
+      "demand_lstm": 16.26714464694573,
+      "supply_holt_linear": 634.9944108360346,
+      "supply_persistence": 536.628828893864
+    },
+    "test_rmse_report_only": {
+      "demand_holt_linear": 8.070505493408572,
+      "demand_persistence": 8.449648023683467,
+      "demand_lstm": 14.548911296109718,
+      "supply_holt_linear": 12.374766581365298,
+      "supply_persistence": 20.738935562749166
+    },
+    "limitations": [
+      "forecast validation uses synthetic benchmark data rather than field observations",
+      "demand Holt-linear test MAE is slightly worse than persistence despite lower test RMSE",
+      "supply validation ranking reverses on the held-out test segment",
+      "supply prediction intervals are poorly calibrated"
+    ]
+  },
+  "retrieval_protocol": {
+    "fixed_corpus_confirmatory": true,
+    "corpus_document_count": 20,
+    "dynamic_decision_history_ingestion": false,
+    "base_retriever": {
+      "sparse_method": "BM25",
+      "bm25_k1": 1.6,
+      "bm25_b": 0.72,
+      "dense_method": "sublinear_tf_idf_cosine",
+      "tfidf_max_features": 5000,
+      "fusion": "reciprocal_rank_fusion",
+      "rrf_k": 60,
+      "publication_top_k": 4
+    },
+    "pirag_transformations": [
+      "state_conditioned_query_expansion",
+      "lexical_arrhenius_plausibility_reranking",
+      "temporal_continuity_scaling"
+    ],
+    "guards": {
+      "raw_rrf_top_score_operator": "strictly_greater_than",
+      "raw_rrf_top_score_floor_definition": "1.5/61",
+      "raw_rrf_top_score_floor": 0.02459016393442623,
+      "dimensional_consistency": true,
+      "feasibility_inclusive_range": [-1000000000.0, 1000000000.0],
+      "feasibility_interpretation": "permissive integrity/schema screen, not substantive physical validation",
+      "failure_effect": "zero the retrieval-derived modifier only; do not suppress independently available MCP features"
+    }
+  },
+  "cooperative_overlay": {
+    "start_hour_inclusive": 12.0,
+    "end_hour_exclusive": 30.0,
+    "ordinary_context_composition": {
+      "primary_weight": 0.70,
+      "cooperative_weight": 0.30
+    },
+    "critical_envelope_adjustment": {
+      "eligible_when": "cooperative MCP operating-envelope result is critical and primary MCP result is not critical",
+      "composition": "cooperative context modifier plus fixed action bias",
+      "action_order": ["cold_chain", "local_redistribute", "recovery"],
+      "fixed_bias": [-0.20, 0.20, 0.00]
+    },
+    "composition_clip": [-1.0, 1.0],
+    "distinct_from_probability_gap_rule": true,
+    "interpretation": "author-declared synthetic benchmark mechanism, not a legal or calibrated safety rule"
+  },
+  "primary_modes": [
+    "static",
+    "hybrid_rl",
+    "no_pinn",
+    "no_slca",
+    "no_context",
+    "mcp_only",
+    "pirag_only",
+    "agribrain"
+  ],
+  "secondary_ablation_modes": [
+    "agribrain_standard_rag",
+    "agribrain_no_peer",
+    "agribrain_sign_unconstrained"
+  ],
+  "episode_protocol": {
+    "learned_adaptation_episodes": 3,
+    "learned_frozen_evaluation_episodes": 1,
+    "static_evaluation_episodes": 1,
+    "retained_episode_index": 3,
+    "steps_per_episode": 288,
+    "learner_reset_scope": "scenario_mode_seed_block",
+    "paired_stream_key": ["seed", "scenario", "episode_index", "stream"],
+    "mode_is_excluded_from_stream_key": true
+  },
+  "counts": {
+    "primary": {
+      "retained_cells": 800,
+      "executed_episodes": 2900,
+      "simulated_steps": 835200
+    },
+    "secondary_ablations": {
+      "retained_cells": 300,
+      "executed_episodes": 1200,
+      "simulated_steps": 345600
+    },
+    "h3_stressed_only": {
+      "retained_cells": 500,
+      "executed_episodes": 2000,
+      "simulated_steps": 576000,
+      "nominal_primary_reused": true
+    },
+    "core_total": {
+      "unique_retained_cells": 1600,
+      "executed_episodes": 6100,
+      "simulated_steps": 1756800
+    },
+    "structural_sensitivity": {
+      "latin_hypercube_points": 100,
+      "active_factors": 29,
+      "retained_cells": 6500,
+      "executed_episodes": 24500,
+      "simulated_steps": 7056000
+    }
+  },
+  "mode_neutral_outcomes": {
+    "adaptive_resilience_index": "(1 - waste_fraction) * social_performance_proxy * (1 - modeled_spoilage_risk)",
+    "reward": "social_performance_proxy - eta_w * waste_fraction - eta_rho * modeled_spoilage_risk",
+    "ari_per_modeled_emissions": "mean_episode_ari / cumulative_episode_modeled_emissions_indicator; no factor of 1000",
+    "route_circularity_proxy": {
+      "cold_chain": "0.0",
+      "local_redistribute": "min(1.0, 0.4 + 0.6 * food_bank_suitability)",
+      "recovery": "min(1.0, 0.5 + 0.5 * max(animal_feed_suitability, composting_suitability))",
+      "recovery_excludes_food_bank": true,
+      "interpretation": "author-declared modeled route-circularity indicator, not an audited circularity assessment"
+    },
+    "same_equations_across_modes": true
+  },
+  "hypotheses": {
+    "h1": {
+      "contrast": "agribrain - no_context",
+      "scenario_cells": 5,
+      "holm_family_size": 5,
+      "practical_margin_ari": 0.005,
+      "practical_claim_rule": "lower_95_bca_ci_greater_than_margin"
+    },
+    "h2": {
+      "directional_contrasts_per_scenario": [
+        "mcp_only - no_context",
+        "pirag_only - no_context",
+        "agribrain - mcp_only",
+        "agribrain - pirag_only"
+      ],
+      "scenario_cells": 5,
+      "holm_family_size": 20,
+      "universal_support_rule": "all_20_adjusted_directional_tests_pass",
+      "synergy_contrast": "agribrain - mcp_only - pirag_only + no_context"
+    },
+    "h3": {
+      "mode": "agribrain",
+      "stressors": [
+        "sensor_noise",
+        "missing_data",
+        "telemetry_delay",
+        "mcp_fault_injection",
+        "compounded"
+      ],
+      "scenario_cells": 5,
+      "total_cells": 25,
+      "ari_equivalence_margin": 0.01,
+      "confidence_interval": "90_percent_paired_tost",
+      "global_rule": "all_25_cells_pass_and_fault_exposure_is_verified"
+    }
+  },
+  "secondary_ablation_analysis": {
+    "status": "prespecified_diagnostic_not_confirmatory",
+    "metric": "ari",
+    "paired_contrasts": [
+      "agribrain - agribrain_standard_rag",
+      "agribrain - agribrain_no_peer",
+      "agribrain - agribrain_sign_unconstrained"
+    ],
+    "unit": "seed",
+    "scenario_specific": true,
+    "test": "two_sided_paired_wilcoxon",
+    "multiplicity": "benjamini_yekutieli_within_scenario_across_three_contrasts",
+    "reported_effects": [
+      "mean_paired_difference",
+      "95_percent_bca_paired_bootstrap_interval",
+      "cohens_dz",
+      "hedges_g_paired"
+    ],
+    "claim_rule": "direction_and_magnitude_are_observed; no required superiority"
+  },
+  "pinn_ablation_analysis": {
+    "status": "prespecified_primary_one_factor_ablation",
+    "label": "Mechanistic-only (No-PINN)",
+    "paired_contrast": "agribrain - no_pinn",
+    "metric": "ari",
+    "unit": "seed",
+    "scenario_specific": true,
+    "shared_random_streams": true,
+    "only_capability_removed": "frozen synthetic PINN residual",
+    "interpretation_limit": "isolates the residual inside this synthetic benchmark; does not establish empirical predictive validity"
+  },
+  "illustrative_trace_protocol": {
+    "seed": 42,
+    "selection_rule": "first_seed_in_the_locked_seed_list_prespecified_before_execution",
+    "scope": "worked calculation traces and illustrative trajectory panels only",
+    "inferential_use": false,
+    "cross_seed_uncertainty_uses_all_20_seeds": true
+  },
+  "complete_evidence_retention": {
+    "required": true,
+    "fail_closed_environment_flag": "FULL_EVIDENCE_CAPTURE=1",
+    "core_executed_episode_archives": 6100,
+    "structural_executed_episode_archives": 24500,
+    "all_episode_archives_include": [
+      "exact scenario environment and policy seeds and stream identifiers",
+      "lossless input frame with schema index and attributes",
+      "learner state before and after with continuity hashes",
+      "all public per-step and episode outputs without numeric rounding",
+      "Merkle-bound decision-ledger path hash root and record count",
+      "exact consumed and emitted peer-message evidence",
+      "primary and cooperative MCP request result and treatment evidence",
+      "primary and cooperative retrieval query citation score hash and guard evidence",
+      "in-process protocol records",
+      "episode wall CPU and process-resource receipt"
+    ],
+    "adaptation_ledgers_are_unique_and_never_overwritten": true,
+    "whole_worker_receipts_include": [
+      "wall time",
+      "child user and system CPU",
+      "peak resident set size",
+      "page faults",
+      "block IO counters",
+      "context-switch counters",
+      "Slurm allocation identity"
+    ],
+    "energy_claim_limitation": "resource receipts are not site electricity carbon or water measurements",
+    "future_analysis_boundary": "supports reanalysis without rerunning only when the model data interventions and experimental design are unchanged"
+  },
+  "retrieval_quality_claim_requires_independent_judgments": true,
+  "forbidden_episode_claim": "800 stochastic simulation episodes (800 is the retained primary cell count, not the executed-episode count)"
+}

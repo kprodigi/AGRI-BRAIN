@@ -1,0 +1,19 @@
+Green-AI Accounting Boundary for the AGRI-BRAIN Synthetic Benchmark
+Status: Executable-method companion note; all coefficients are author-declared proxies, not measured deployment data.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, are contextual references only; the executable code and locked protocol govern all benchmark values.
+
+Confirmatory activity-based estimate: For each timed action-selection call, the implementation records caller-supplied elapsed wall time in seconds. Estimated energy is
+
+    energy_J = elapsed_seconds * 10 W,
+
+and estimated water is
+
+    water_L = elapsed_seconds * 1.8e-06 L per server-second.
+
+The 10-watt active-power rate and 1.8e-06-litre-per-server-second water rate are declared assumptions. The resulting quantities are activity-based estimates, not hardware, power, carbon, or cooling telemetry. The timed boundary is the action-selection path supplied by the caller; it excludes forecast preparation, outcome scoring, learner post-step updates, artifact input/output, and idle allocation.
+
+Separately labelled step-count proxies: The code also retains fixed historical proxies of 0.05 joule and 1.8e-06 litre per caller-declared proxy step. In the benchmark, one proxy step is one standardized routing decision. These counters are sensitivity and backward-compatibility quantities only. They are not substituted for elapsed-time estimates and must not be described as neural forward-pass counts.
+
+Legacy MCP query: The query_footprint tool has no elapsed-time input, so it returns only the fixed step-count proxies. It converts proxy energy to kilowatt-hours and, for a monitoring example, applies the declared 0.42 kg CO2-equivalent per kWh grid-intensity proxy. That coefficient is not a measured regional or execution-site factor. Its efficiency flag is based only on the supplied energy-per-step proxy: normal at or below 0.05 J, above_baseline above 0.05 J through 0.10 J, and review_required above 0.10 J.
+
+Claim boundary: The benchmark does not measure cloud-versus-edge performance, neural inference energy, whole-system energy, whole-system water, or site-specific computational carbon emissions. No retrieved passage may turn these proxy calculations into an empirical sustainability or deployment-comparison claim.

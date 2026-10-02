@@ -1,0 +1,14 @@
+{
+  "decisions_checked": 115200,
+  "max_logit_equation_error": 2.220446049250313e-16,
+  "max_probability_error": 0.0,
+  "max_intervention_allocation_error": 0.0,
+  "control_vectors_verified": true,
+  "context_weights_match_original": true,
+  "overrides": {
+    "live": 349,
+    "fixed": 96,
+    "shuffled": 218,
+    "zero": 2
+  }
+}

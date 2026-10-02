@@ -1,0 +1,51 @@
+{
+  "date": "2026-09-22",
+  "design": "Post hoc exploratory validation; no preregistration claim",
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "numpy": "2.4.4",
+  "scipy": "1.17.1",
+  "base_source_commit": "83c91ce8592c1d40234e5a6bb2a8ce342412f383",
+  "primary_data": "context_pair_20260914_193548_83c91ce_results",
+  "source_files_modified": false,
+  "full_robustness_extension": "Not included; only development smoke outputs found locally, not completed publication runs",
+  "script_hashes": {
+    "analyze_controls.py": "5f1efe47279085f5c408592055d869cfbb29c04f5fc58e9b788e2f1845f52141",
+    "analyze_roles.py": "06ea9b7d146d6dedce4d16e21f936999b28b771bdbc0903e7a388c95af4c9566",
+    "check_documents.py": "e7824025c99db86c7295223868da1632428d0969ce77488791df930f3644285a",
+    "make_figures.py": "663458fe36830c59c9bedcedd0b88e377067636a0785a3079447745e073d1029",
+    "package_outputs.py": "96d8e202b5b2e8c33bcd5c5f8d01c10274b6c4037965e8370274b9c5e23be53b",
+    "protocol_validation.py": "e4816bd5980e53cda14008e440a4c2a532f146085fa21f7c7cacffd544260eb7",
+    "render_native.py": "41885c1af55ff18fe0c8bb4a28f6de67ec34dbf4d68ac13663e798fc0eb4988e",
+    "run_all_controls.py": "934e14db790537e5c3d3c83fef98c644d5498e295478fa07d29d344b288b6d0c",
+    "run_controls.py": "587f5475e6ddb3aace76f67ebac59a3f81f55013f5fd093b7dface5925497297",
+    "update_documents.py": "a7cdebb728820f4283bc86772aa237625a036f4957306bd0c869ef79112c3023",
+    "verify_controls.py": "64beb52f6860e95bd436e2ab88e699edca1b7696bfd3b752df18d6c3aefb18d8"
+  },
+  "baseline_document_hashes": {
+    "AB_R7_NS_Final_Clean.docx": "5eed72beff02cea320f8bb2bf0b9c909d531661e361054a3718a5674c326759e",
+    "AGRI_BRAIN_Supplementary_Final_Clean.docx": "dcbbbb2233a6f5c301580cf006eabe646119ecf36713b85a70c7bd9fc282bc5c"
+  },
+  "result_hashes": {
+    "control_endpoints.csv": "9bd15573e847d58afd548ad20cbf0cdd91993d66b4379b2b6baedefaf75b6f76",
+    "control_integrity.json": "50fd86121c1f400b5eda9b7a7f3f008103e191a11a0e19eb76538804d80be62c",
+    "control_summary.json": "203cc07ed222e5bd2268a960065bf9919d6c0db891acac017f8963a5123c3d06",
+    "frozen_control_decisions.csv.gz": "1df117addfb5a55ad9361c867b058284165ba20b154df2c5db1668513dcaba88",
+    "protocol_validation.json": "9a4262ab4dc2e51ab2fb57791f992691125eb53f2541a6d36fd39a62b86204e3",
+    "role_activity.json": "9716fcff552a5a7868e3b3814e517b2ce4694752b8e56e73b198f73262d12b41"
+  },
+  "control_integrity": {
+    "decisions_checked": 115200,
+    "max_logit_equation_error": 2.220446049250313e-16,
+    "max_probability_error": 0.0,
+    "max_intervention_allocation_error": 0.0,
+    "control_vectors_verified": true,
+    "context_weights_match_original": true,
+    "overrides": {
+      "live": 349,
+      "fixed": 96,
+      "shuffled": 218,
+      "zero": 2
+    }
+  }
+}
