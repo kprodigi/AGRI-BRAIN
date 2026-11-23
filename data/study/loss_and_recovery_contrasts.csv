@@ -1,0 +1,5 @@
+setting,scenario,mode,reference,measure,mean,low,high,ci_method,confidence,n,sd,positive_seeds,negative_seeds,zero_seeds
+main_fail_closed,heatwave,agribrain,no_context,loss,-0.0031000941720162657,-0.0046530443309113195,-0.0014552234624008308,BCa,0.95,20,0.0037646714659383858,5,15,0
+main_fail_closed,overproduction,agribrain,no_context,loss,-0.012791105910311814,-0.014704791456864619,-0.01054803258204964,BCa,0.95,20,0.004854521663140656,0,20,0
+main_fail_closed,cyber_outage,agribrain,no_context,loss,0.003457438644661713,0.0012169323449702288,0.006114029247533283,BCa,0.95,20,0.005769080705699403,12,8,0
+main_fail_closed,adaptive_pricing,agribrain,no_context,loss,-0.0025894578231976705,-0.004399008074186655,-0.0008067036446355603,BCa,0.95,20,0.0041972250818928655,6,14,0

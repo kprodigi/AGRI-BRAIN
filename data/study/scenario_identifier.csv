@@ -1,0 +1,2 @@
+scenario,with_scenario_terms,without_scenario_terms,mean,low,high,ci_method,confidence,n,sd,positive_seeds,negative_seeds,zero_seeds
+overall,0.6108065661710779,0.6117112082473228,-0.0009046420762448881,-0.0010213267565702664,-0.0007673319351528351,BCa,0.95,20,0.0003033544932898276,0,20,0

@@ -1,0 +1,29 @@
+SYNTHETIC CYBER-OUTAGE SCENARIO CONTRACT
+Status: Constructed benchmark input; it is a controlled simulation perturbation, not an incident-response standard.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, motivate topic selection only; the executable code and locked protocol govern all benchmark values.
+Document ID: KB-COC-010
+Executable sources: agribrain/backend/src/models/scenario_engine.py, src/agents/coordinator.py, and pirag/context_provider.py
+
+1. EXECUTABLE SCENARIO PERTURBATION
+
+At the nominal intensity, the cyber_outage scenario starts at simulation hour 24. For
+h >= 24, demand is multiplied by 0.15 and temperature receives the additive excursion
+
+  10*(1 - exp(-0.2*(h-24))) degrees Celsius.
+
+Inventory is not directly overwritten by this scenario transform. The common scenario
+state is recomputed and supplied to every paired experimental mode.
+
+2. EXECUTABLE CHANNEL AVAILABILITY
+
+For context-enabled policies, the MCP tool channel is marked unavailable from hour 24
+onward. Institutional retrieval is not automatically disabled by this scenario, and the
+normal policy distribution continues to operate using the channels available to its
+mode. The benchmark records channel availability and decisions for later validation.
+
+3. EXCLUDED CLAIMS
+
+The code does not implement heartbeat polling, a 48-hour cached-policy store, paper
+outage logs, two-hour reconciliation, post-incident deadlines, or queued blockchain
+transactions. It does not simulate a real cyberattack or validate operational recovery.
+Those procedures require a separately designed and tested deployment plan.

@@ -1,0 +1,6 @@
+# Gitleaks configuration for AGRI-BRAIN. No repository-specific secret
+# allowlist is maintained: scanner findings must be removed or reviewed
+# explicitly rather than suppressed by a literal credential pattern.
+
+[extend]
+useDefault = true

@@ -1,0 +1,3 @@
+setting,mode,cells,weights,weight_updates,cells_with_changed_weights,sign_constrained,weights_held_at_zero_by_the_sign_constraint,sign_reversals_in_final_weights,weights_at_change_bound,cells_with_a_weight_at_bound,largest_weight_change,largest_change_as_share_of_bound
+main_fail_closed,agribrain,100,1500,86400,100,True,0,0,0,0,0.1225057289422139,0.7000450589533277
+main_fail_closed,agribrain_eligibility_no_peer,100,1500,86400,100,True,0,0,0,0,0.09277883880286114,0.6185255920190743

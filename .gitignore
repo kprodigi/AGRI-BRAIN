@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+setup.env
+.env
+*.log
+*.pending
+runs/
+validation_output/
+weight_sensitivity_venv/
+weight_backend_build.*/
+*.tar.gz
+*.tar.gz.sha256
+weights_*_results/
+.publication_venvs/

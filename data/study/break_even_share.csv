@@ -1,0 +1,3 @@
+setting,scenario,route,break_even_share_p50
+main_fail_closed,overall,local_redistribute,0.1931476567970785
+main_fail_closed,overall,recovery,0.46067702779431025

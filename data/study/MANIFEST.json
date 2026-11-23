@@ -1,0 +1,205 @@
+{
+ "description": "Published results of the revised study. Each file is a row subset of the frozen analysis output named in it, limited to what the paper shows.",
+ "files": {
+  "seed_endpoints.csv": {
+   "source_sha256": "dea84ba9eeb39b20413500a0ab94f4e882096e4a7604b396c57a76c48be0c638",
+   "source_rows": 59700,
+   "published_rows": 13300,
+   "published_sha256": "3dac9733438a302eb69f9a35b42fb8ce842716d91e28790e0ed8dd569e580c3f",
+   "columns_left_out": 2,
+   "rows_kept": "per-seed values behind every reported mean: the reported modes in the main setting; Static, No-Context and AGRI-BRAIN with diversions left available, in the 36 sensitivity settings and in the four acceptance-document checks"
+  },
+  "modes.csv": {
+   "source_sha256": "7d9ce7bf1063a6a8759a359e3d20b8a3db1be3b6588765972eb4227cc9fa1aeb",
+   "source_rows": 5382,
+   "published_rows": 195,
+   "published_sha256": "a33d288cb10cdfabf1dde1da5af7c6a8abfd732874bedd4ae4098e40973a4ad7",
+   "columns_left_out": 0,
+   "rows_kept": "Table 8, Table S4 and the route shares for Static, No-Context and AGRI-BRAIN; the guard activity of AGRI-BRAIN; the rule that always redistributes; the refused share with diversions left available"
+  },
+  "principal_comparisons.csv": {
+   "source_sha256": "a4aab2bed1ec279fe672ce19af31f3f10c1a5858d275c98d1a93ddc7d581f98f",
+   "source_rows": 10,
+   "published_rows": 2,
+   "published_sha256": "7f6b4718989f2be45598e7439baeaf72372e35d3cd565ffbd23521b79db8cc7a",
+   "columns_left_out": 4,
+   "rows_kept": "AGRI-BRAIN minus No-Context"
+  },
+  "comparisons_by_scenario.csv": {
+   "source_sha256": "20549f9462b6d44c240417ea9fc15a89002198e01f3ce7e1723e2bf86bdc5e3c",
+   "source_rows": 62,
+   "published_rows": 10,
+   "published_sha256": "61719a19c2f753e63c7086691cd3b357d1c38bd3f8594b5af143d80b85967966",
+   "columns_left_out": 1,
+   "rows_kept": "AGRI-BRAIN minus No-Context in each scenario"
+  },
+  "effects.csv": {
+   "source_sha256": "a4d36f5ecbb93eb782eda8d4883fafbe7a43c1337d4d83b0d04477bac2eaf42a",
+   "source_rows": 1188,
+   "published_rows": 7,
+   "published_sha256": "546b4f70ef5251f60c678d829eaa822a463856e56fd23c7d7749d5f18a940528",
+   "columns_left_out": 1,
+   "rows_kept": "overall ARI effects reported in Section 5"
+  },
+  "guard_by_adjustment.csv": {
+   "source_sha256": "003e2f783ecf4e5f9d68200c9bc3d57ddce690f89de7041981d88b16d19be293",
+   "source_rows": 54,
+   "published_rows": 2,
+   "published_sha256": "4a163e885326061697e013555541c5073fc4f7dfbffb3be0e329573bbea194a4",
+   "columns_left_out": 1,
+   "rows_kept": "adjustment without a guard and at the guard (Table 7)"
+  },
+  "sensitivity_settings.csv": {
+   "source_sha256": "65ca58887c9904b58eb688e065927fad4d1d17ff76f3838597d80c101d5aa8e8",
+   "source_rows": 57,
+   "published_rows": 40,
+   "published_sha256": "1e1ec5523e1dee45d18da9eef59df907cec8234dc075efbbd63843845e77f177",
+   "columns_left_out": 45,
+   "rows_kept": "the 36 settings and four checks"
+  },
+  "sensitivity_by_scenario.csv": {
+   "source_sha256": "a918d3af39cc5b638b37fa40807eb7b877611f9a428ffd88925e25c0f3b0203a",
+   "source_rows": 1368,
+   "published_rows": 240,
+   "published_sha256": "3af790559a463d14a5ae3b6679f4889b36cb57828805895876a65c65f5e90dfc",
+   "columns_left_out": 1,
+   "rows_kept": "AGRI-BRAIN minus No-Context in the 36 settings and four checks"
+  },
+  "settings.csv": {
+   "source_sha256": "2459400e0baff563bd2ca5e665204e13b97f883797762e6bf5ba274551dcb324",
+   "source_rows": 63,
+   "published_rows": 42,
+   "published_sha256": "eb9f83e9d3453ca831cc78c713d8ee80bddcd0d2cac35a0294b2a9660e2dbaf7",
+   "columns_left_out": 1,
+   "rows_kept": "published settings"
+  },
+  "document_absent.csv": {
+   "source_sha256": "4f52bc1c493942caa2013815d12a53f31fe1debc32a9b8ffd82549bfd586c5ac",
+   "source_rows": 18,
+   "published_rows": 2,
+   "published_sha256": "cc8082cb00f438472beb1fb195fd62d2cc4fb35830885339dc0b0557b13d6156",
+   "columns_left_out": 0,
+   "rows_kept": "AGRI-BRAIN"
+  },
+  "document_cutoff.csv": {
+   "source_sha256": "de779d92c60315c52e723ff970da5a08de3eef32381aee986384a09b49fd026b",
+   "source_rows": 12,
+   "published_rows": 6,
+   "published_sha256": "1f61d9863ffc26b7886405c808c69daad2c4285355aec16fb3425d91bf240f0f",
+   "columns_left_out": 1,
+   "rows_kept": "AGRI-BRAIN"
+  },
+  "document_identifier.csv": {
+   "source_sha256": "6aba99a075409d87598cdfae6687cb055fe60e590f58c940234c3fc1883b195a",
+   "source_rows": 9,
+   "published_rows": 4,
+   "published_sha256": "a41156acd6aa1e1a7bd0c82ac66196480784b8482cece2e042aee18c9a186cae",
+   "columns_left_out": 0,
+   "rows_kept": "the reported modes evaluated in the document checks"
+  },
+  "guard_activity.csv": {
+   "source_sha256": "0ac51301852fbf5485c6fbd0822400cea2dd0d0d2dce57f61af5ff139153c503",
+   "source_rows": 252,
+   "published_rows": 1,
+   "published_sha256": "3785ba5e879e32fe1ade91d0e0fc97a848382764cd7b41daf0188b236a1811ad",
+   "columns_left_out": 9,
+   "rows_kept": "AGRI-BRAIN"
+  },
+  "gain_decomposition.csv": {
+   "source_sha256": "abd2d85b6e21723d4f07f4c170cdf3e966c6c86d599c8e8c29282e434fbd475e",
+   "source_rows": 252,
+   "published_rows": 3,
+   "published_sha256": "71fe7f9ede016f801426d647f88ac1dc0cf5662fb6e7b4e4cf6dc688e243c118",
+   "columns_left_out": 0,
+   "rows_kept": "AGRI-BRAIN against No-Context"
+  },
+  "gain_by_disruption_window.csv": {
+   "source_sha256": "2712b7b2f22dc6d2bfb6575fe3e7d2a498dc2ebc770caef134612273568b808b",
+   "source_rows": 112,
+   "published_rows": 8,
+   "published_sha256": "d7155be953666a66173a74ec68c3b447946077d9450a44c6ee8aa21a89457aee",
+   "columns_left_out": 0,
+   "rows_kept": "AGRI-BRAIN against No-Context"
+  },
+  "break_even_share.csv": {
+   "source_sha256": "36f7e2d60fc596adedf96bce17fddeb2400e26ee1a5c371c70d2b1a7dbe709fd",
+   "source_rows": 36,
+   "published_rows": 2,
+   "published_sha256": "3443095b6ccfd6d7ac59f35d1659b63e6f30899b08bd518d21a7d52190721bab",
+   "columns_left_out": 8,
+   "rows_kept": "median break-even share"
+  },
+  "rescoring_contrasts.csv": {
+   "source_sha256": "0f05dabcc881bb6425f8947a46b1f7e543dfe2a3aa5270c0f99166485ed33129",
+   "source_rows": 104,
+   "published_rows": 13,
+   "published_sha256": "4a33db6401c1542dd313f85f8cb9a15b3e9e3ca1ce87d879383201359af3836c",
+   "columns_left_out": 0,
+   "rows_kept": "AGRI-BRAIN against No-Context"
+  },
+  "loss_and_recovery.csv": {
+   "source_sha256": "c5b5573d1e1aed726547b3a64f8b9887ded8f30e9fd9494e3ea4c42a1421287c",
+   "source_rows": 184,
+   "published_rows": 40,
+   "published_sha256": "e7d18a6ce2c5612dd21e1dcc479a22a8d133b85a7f477b14069ddaf9fcc0897d",
+   "columns_left_out": 4,
+   "rows_kept": "reported modes"
+  },
+  "loss_and_recovery_contrasts.csv": {
+   "source_sha256": "f88f93af2229a5915662c9e20702dbc8d9595c2b682a5d61903335321a70a41f",
+   "source_rows": 32,
+   "published_rows": 4,
+   "published_sha256": "98e57d5d85bf5c61d77e3db57ba2a01994076e99312ac4710d7f4322e3446c58",
+   "columns_left_out": 0,
+   "rows_kept": "AGRI-BRAIN against No-Context"
+  },
+  "peer_influence.csv": {
+   "source_sha256": "411728fe8345598341510ce0a1b198885c7b04be3862d3a3896eab531f4810da",
+   "source_rows": 24,
+   "published_rows": 1,
+   "published_sha256": "42a299ee75f671597a1413210957f42390479e80c090edba02e91aca76e44a2f",
+   "columns_left_out": 6,
+   "rows_kept": "AGRI-BRAIN against the same policy without peer messages"
+  },
+  "implementation_check.csv": {
+   "source_sha256": "b2ec846d737056efe533c98056b343faa2f4cd78624060c33d1b6cfdea76e942",
+   "source_rows": 2,
+   "published_rows": 1,
+   "published_sha256": "e14be15d861b966efb0dae8e49172926f1773a004b43e01251d0b8c1af75522b",
+   "columns_left_out": 1,
+   "rows_kept": "feature inputs against the bounded adjustment"
+  },
+  "constraint_activity.csv": {
+   "source_sha256": "56ba0b67e271e037b3a11e742d1c3c1755d89a0552cec562837a548e15db9ef3",
+   "source_rows": 34,
+   "published_rows": 2,
+   "published_sha256": "5a6b34d0816d53d1cc8ecb5d8ccd8df4bc0a78a1ccb163a3267e00167611af4a",
+   "columns_left_out": 0,
+   "rows_kept": "AGRI-BRAIN and the bounded adjustment compared with feature inputs"
+  },
+  "score_influence.csv": {
+   "source_sha256": "199b046759a1bf98adc3700c12a36fb5d048e5a471af178e43b92e348e463511",
+   "source_rows": 60,
+   "published_rows": 2,
+   "published_sha256": "32939417ca9a8f543a88ad3eaf8c7b0e899db3c8b36b150ee33f252a5629b062",
+   "columns_left_out": 21,
+   "rows_kept": "AGRI-BRAIN and the bounded adjustment compared with feature inputs"
+  },
+  "control_contrasts.csv": {
+   "source_sha256": "52c33c0fac72fda9686c9b6914f894d9f822060e207d85bc499bb05e38485a3a",
+   "source_rows": 72,
+   "published_rows": 18,
+   "published_sha256": "9f629921634a4b7e9993266407829810e374f92a75de2e1039ca71e6daebae74",
+   "columns_left_out": 1,
+   "rows_kept": "frozen AGRI-BRAIN policies"
+  },
+  "scenario_identifier.csv": {
+   "source_sha256": "97840234d2c10397af265860637aa93ce958024f448cbdf24635cad6a6b2abb5",
+   "source_rows": 6,
+   "published_rows": 1,
+   "published_sha256": "c23f68d7a32108cd858a40a5db53c7e9a9539a39a638fc6776e5f8cb5ddd13fe",
+   "columns_left_out": 0,
+   "rows_kept": "rerun of the submitted configuration without scenario terms"
+  }
+ }
+}

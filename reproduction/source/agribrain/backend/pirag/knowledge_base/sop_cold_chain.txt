@@ -1,0 +1,19 @@
+SYNTHETIC COLD-CHAIN OPERATING CONTEXT
+Status: Constructed benchmark input; it is not a standard operating procedure for real product handling.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, are contextual references only; the executable code and locked protocol govern all benchmark values.
+
+The benchmark's spinach operating-envelope check uses an author-declared maximum of
+8 degrees Celsius and a relative-humidity range of 85 to 95 percent. The spoilage model
+uses 4 degrees Celsius as its reference temperature, not as a proven universal setpoint.
+Its committed time series is sampled at 15-minute intervals. These values define the
+synthetic case and do not validate safe storage or handling.
+
+The cold_chain action has a nominal modeled distance of 120 km before the keyed
+stochastic transport multiplier. Its modeled emissions use the same mode-neutral
+activity equation as the other actions. Selecting cold_chain does not alter the common
+latent spoilage trajectory or trigger an unimplemented physical control.
+
+The benchmark does not perform harvesting, precooling, loading-dock control, packaging
+inspection, microbial testing, vehicle refrigeration control, GPS tracking, live
+telemetry, or equipment verification. Those activities require a separately validated
+operating procedure and product-specific evidence.

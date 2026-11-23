@@ -1,0 +1,18 @@
+SYNTHETIC TELEMETRY INPUT SCOPE (LEGACY IOT CORPUS LABEL)
+Status: Constructed benchmark input; it is not a hardware specification or calibration record.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, are contextual references only; the executable code and locked protocol govern all benchmark values.
+
+The committed benchmark table supplies timestamped temperature, relative humidity,
+inventory, supply/yield, and demand fields. The simulation treats those values and its
+keyed perturbations as synthetic state inputs. It does not connect to a live sensor,
+weather feed, GPS unit, shock sensor, or calibration service.
+
+Temperature is interpreted in degrees Celsius and relative humidity in percent. The
+mechanistic model converts RH to a clipped [0,1] fraction and uses timestamp differences
+in hours. The benchmark's 8-degree-Celsius temperature ceiling and 85-to-95-percent
+spinach humidity envelope are author-declared operating-envelope values, not statements
+about sensor accuracy or calibration.
+
+No sensor accuracy, sampling-rate, traceability, or calibration schedule is implemented
+or validated. A deployment would need documented hardware specifications, uncertainty,
+calibration, missing-data handling, security, and independent acceptance testing.

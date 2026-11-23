@@ -1,0 +1,208 @@
+{
+  "base_commit": "83c91ce8592c1d40234e5a6bb2a8ce342412f383",
+  "changes": [
+    {
+      "file": "agribrain/backend/src/models/mode_capabilities.py",
+      "original_sha256": "e9b3ba3cd8a2f47aff8e6e38a592d89f8242ec0f51f02c81ae051fab7241c110",
+      "distributed_sha256": "78e798c8268ba9cf9e2869f7d963eb7c298c07806581f6f0cb597306cb6e76f2",
+      "change": "Restrict public registry to static, no_context and agribrain; retained capability expressions unchanged."
+    }
+  ],
+  "source_selection": "reproduction/source: computational backend, simulation, frozen predictor artifacts, HPC validation dependencies and the primary-run submission scripts; earlier-study results, dashboard and modes are not part of that copy.",
+  "repository_root": "The repository root also holds the application source (backend, frontend, contracts) and the evaluated-commit files used by the primary run, with the full mode registry. The files listed under revised_study were changed or added for the revised study (study/PROTOCOL.md); the other evaluated-commit files are unmodified. Earlier-study results, figures, publication tooling and its documentation are not distributed. Comments in .env.example and .env.prod.example were revised.",
+  "unmodified_files_match_original": true,
+  "additional_files": {
+    "note": "Primary-run scripts copied unmodified from the evaluated source. They are not listed in reproduction/SOURCE_MANIFEST.json, the integrity record used by the completed sensitivity study, which is therefore unchanged.",
+    "files": [
+      {
+        "file": "hpc/submit_context_pair.sh",
+        "sha256": "aa389b53940afa661f4d9fae2b38cdf630c7e621bc28a9446bed5920a3f6ba81"
+      },
+      {
+        "file": "hpc/no_context_rerun.sh",
+        "sha256": "d1cb71883369a155f298e969ac7f73d74859d062074a8c2fbf3b19f1eead1ad0"
+      },
+      {
+        "file": "hpc/collect_context_pair.sh",
+        "sha256": "0a8d9575f42c79c1b78d8152fc1474ff753afb6ba7b8287feb253ae30a4e8146"
+      },
+      {
+        "file": "hpc/ensure_git_available.sh",
+        "sha256": "ce2ba88f727b626f615cee65b5e29234644ce60afa413b5094ebf1e60c21dc6b"
+      },
+      {
+        "file": "mvp/simulation/benchmarks/rerun_no_context.py",
+        "sha256": "220aff273c81cc21fbcd6ae8d4ccf6e7b9a782c8a6c458705bef400d1996d41f"
+      },
+      {
+        "file": "mvp/simulation/benchmarks/verify_context_pair.py",
+        "sha256": "10ca8a0dc1f76830071d2cddf67c6226a3bf0395accf42bc7b4751c162a30caf"
+      }
+    ]
+  },
+  "revised_study": {
+    "note": "Changes for the revised study. The additions are switched off by default, so the default settings run the submitted configuration; the submitted setting of the study requires identical routing and agreement within 1e-10 with the stored primary results in every seed-scenario cell. reproduction/source is unchanged.",
+    "changed_files": [
+      {
+        "file": "agribrain/backend/pirag/context_to_logits.py",
+        "original_sha256": "0a5acc56691c7c08d0353b30eb07d384d3333a932837c1b8ab93c38d4947b89c",
+        "distributed_sha256": "abc78c2f4e009cf89250c37916c570045c98ffbd3fdc483478cc6b19e7499571"
+      },
+      {
+        "file": "agribrain/backend/pirag/mcp/TOOL_INVENTORY.md",
+        "original_sha256": "997b2c78f7ec65b4585abb7a626feec2baf3ff1acf941341eebf7c06c455f281",
+        "distributed_sha256": "fde7c186b9aaca99b618400f1e19d900f3221484a1c67bbc6a74a5c875546bb6"
+      },
+      {
+        "file": "agribrain/backend/pirag/mcp/registry.py",
+        "original_sha256": "c4c9360ed05c0f4182d291d459554fac74d5275dc73026d731a114cd7189881a",
+        "distributed_sha256": "b41dbbfc187f13d47d77b044ad47e4082f6a02a759fc40408a8d2593b8eb619a"
+      },
+      {
+        "file": "agribrain/backend/pirag/mcp/tool_dispatch.py",
+        "original_sha256": "43b94601cb75fce745051cb520ed69af426d606443aacd0c4dbd8931731240d1",
+        "distributed_sha256": "a64ebb966e9c66388f073227a290a0ae44c845c53af8665ae8e2180ba85c937f"
+      },
+      {
+        "file": "agribrain/backend/src/agents/coordinator.py",
+        "original_sha256": "7cfa1d3cf8a6c581339013618ba4bb1518932df08afa0cc2de561588a914e418",
+        "distributed_sha256": "03100f0d5e3de87003ffc0a4a4564518857b874a97b5ddc2576600cf1d356c3a"
+      },
+      {
+        "file": "agribrain/backend/src/agents/roles.py",
+        "original_sha256": "e7a9b3877bee52e5d92a5c4e31bb745850a67f1927022401a5d2fc6bc97416a5",
+        "distributed_sha256": "21dc02cf478c9b3fc19b398ab30edeb39a7db8055184f43d81f12613b8206d37"
+      },
+      {
+        "file": "agribrain/backend/src/models/action_selection.py",
+        "original_sha256": "10669783c6e706c072c67eb2e1a8a3919d08ed27bcc3b5d9192ebd926961e237",
+        "distributed_sha256": "f0e86cd8b515866b46d00d81b696edd1517e5c5bddc4931f7337cb98531c3af6"
+      },
+      {
+        "file": "agribrain/backend/src/models/mode_capabilities.py",
+        "original_sha256": "e9b3ba3cd8a2f47aff8e6e38a592d89f8242ec0f51f02c81ae051fab7241c110",
+        "distributed_sha256": "c52cb2ea476e8f4d1824428b18ba9d6893523bec748a39b7db70af75b85c38ff"
+      },
+      {
+        "file": "agribrain/backend/src/models/policy.py",
+        "original_sha256": "5f58f0b9742820bee9ea2f8987f81d0cf2580be726f8bd433d0d3e000de5d5e3",
+        "distributed_sha256": "693b9629db45d980a490df7028b31c6e2f5844c0f488fb127f0d011d345329dc"
+      },
+      {
+        "file": "agribrain/backend/src/models/resilience.py",
+        "original_sha256": "7c6408df7397ce9f932160997cc1f1b4f489feb048bff747c26ca89b54f6b43a",
+        "distributed_sha256": "3cea4af78259840e4ee029203378bd05bed8d406d968f98f2615ca047722f58b"
+      },
+      {
+        "file": "agribrain/backend/tests/test_mcp_tool_inventory.py",
+        "original_sha256": "bf31db320a7d5975960e8bc6f9260c50023c20fe2d970c79722e1def3633a0d0",
+        "distributed_sha256": "2455c43a3a1665398f5aebaa9f8a24df93eefe04ea21f4920c2b1ff573911e8e"
+      },
+      {
+        "file": "agribrain/backend/tests/test_mode_capabilities_and_learning.py",
+        "original_sha256": "428e56ec015171b0063789394c9216b640aac8058a609fef5297ac3a4c747957",
+        "distributed_sha256": "a5eb5fcefd1f1a3861f8a2ee6674940fdef82991d8eaf19082da7f7fd8d4d8f4"
+      },
+      {
+        "file": "hpc/validate_decision_ledgers.py",
+        "original_sha256": "db8477b8e077fdb64e6e80bf1a8d88e0f455ef7775d953bdf88b3a12f36e2802",
+        "distributed_sha256": "eea70e760c55a9fa018f52ddd22120c863e845d8801c7bdca53b0319a2d47d84"
+      },
+      {
+        "file": "mvp/simulation/generate_results.py",
+        "original_sha256": "f7c87b5194504c0e3eb79be352433a5f712e460a2a4574248eaaf7c8ba5b85ee",
+        "distributed_sha256": "90631f928771d0684c33ffda3523785ccd2596007b795cd3883cda8c5d1fa820"
+      }
+    ],
+    "added_files": [
+      {
+        "file": "agribrain/backend/pirag/context_design.py",
+        "sha256": "82e40d50f62b6d5fca07d53732b2045098b28fd7480e7fec7d59b5c70a8b2dd7"
+      },
+      {
+        "file": "agribrain/backend/pirag/mcp/tools/destination_capacity.py",
+        "sha256": "ce64d2ff8abe3cfd30fb390301740a7933e858f8f6110092fe0241aa64857dba"
+      },
+      {
+        "file": "agribrain/backend/src/models/destination_capacity.py",
+        "sha256": "7d12103e070a1dc15904000a4b073b56efa3b94b8097804dfd3580b8f7ceb7fb"
+      },
+      {
+        "file": "agribrain/backend/tests/test_context_design.py",
+        "sha256": "45636c1a74f79f46e50f65f8a258c7e57ccc8ba8bb4962a342408fc889253963"
+      },
+      {
+        "file": "agribrain/backend/tests/test_destination_capacity.py",
+        "sha256": "649195f5b2cfd79cf5d1ce1b1c5c3a42a641d5bf3f725a30d01eefb37fb5fb19"
+      },
+      {
+        "file": "study/PROTOCOL.md",
+        "sha256": "dc5b93a6b34945da6800200dd050b83d54bc59a870fafc8662b411cddb89fc5d"
+      },
+      {
+        "file": "study/analyze.py",
+        "sha256": "cfa1f40a779ebcc45e6f8e82b633693bc47d26921eb003c830968712dbc70fd7"
+      },
+      {
+        "file": "study/collect.sh",
+        "sha256": "6566148c9cd8d086f2fd21ae7b4ca71f5a55f507f693a0eecc2e2de983710806"
+      },
+      {
+        "file": "study/controls.py",
+        "sha256": "5865557ba083eb35868ecda033d14bda91a2f44cdad02557231ee07095c9739d"
+      },
+      {
+        "file": "study/inference.py",
+        "sha256": "92fdf8c77ccb243c5add36db02d8b7b16001ac4b102b5a8f25646d4e2e4e2a78"
+      },
+      {
+        "file": "study/records.py",
+        "sha256": "056af000785329c59ce2f259a40d144e4a94c68a1e35793ddf8e2f305039fc3d"
+      },
+      {
+        "file": "study/retry.sh",
+        "sha256": "e993aacb5ab8d11a1d5ca5cb2bceceea917352d6478035b1e488b0fb41a110d4"
+      },
+      {
+        "file": "study/run_local.py",
+        "sha256": "6279caf5e554704b1f47625ef39dea9fe4c36e0e82c4fce8842c831d779acf41"
+      },
+      {
+        "file": "study/setup.sh",
+        "sha256": "405163a4a99d1585cc739610e68bf239dcd297fafaf54e3c02355d2c7a641204"
+      },
+      {
+        "file": "study/status.sh",
+        "sha256": "e2313fc5e12a73fc430dc2b8ef97676b61d27fac0092a7c58c61db2b8e598e37"
+      },
+      {
+        "file": "study/study.py",
+        "sha256": "12af27d9c122db6d3fa7385151eafb69f68500a913ae99e6f59abd36ac8601b4"
+      },
+      {
+        "file": "study/submit.sh",
+        "sha256": "eb6cd3d6d1da6bcb258ab3fe318f22d44434b3e7b7f5883bce3a79ae9ac4bd74"
+      },
+      {
+        "file": "study/test_analysis.py",
+        "sha256": "08890be0165fa7c14a1dd998c8daa362efff6fc596df462e88bd573e064abc7c"
+      },
+      {
+        "file": "study/test_launch.py",
+        "sha256": "5e478424af54c68e509f82aad66f2dd8d234d689cfdebcae9e560bcc7ec34aab"
+      },
+      {
+        "file": "study/test_study.py",
+        "sha256": "873523b874a63afe0474c6a8c05fe4d18e1311517de8d02f2507dd9013a424a1"
+      },
+      {
+        "file": "study/validate.py",
+        "sha256": "963fae6d322c4085ea27e06de056130201e373f81fb56e7cd81388c341099c52"
+      },
+      {
+        "file": "study/worker.sh",
+        "sha256": "a653b486969cc977f0ca6bbb27db6f7eaf8e5a31adc4088265b4be8051498851"
+      }
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+DEMAND-VOLATILITY SIGNAL FOR THE SYNTHETIC BENCHMARK
+Status: Constructed benchmark input; it is not a market-risk or operational response standard.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, are contextual references only; the executable code and locked protocol govern all benchmark values.
+Document ID: KB-DVR-011
+Executable sources: agribrain/backend/src/models/spoilage.py, policy.py, and scenario_engine.py
+
+The volatility flag uses the first available series among demand_units, yield, and tempC.
+At each step it computes an ordinary rolling mean and sample standard deviation over the
+last 20 observations, with one observation allowed during startup. With the benchmark's
+15-minute data, 20 observations correspond to five hours. A point is labelled anomaly
+when the absolute rolling z score is greater than 2.0; zero rolling variance gives z=0.
+The code does not use a 30-day window, an exponentially weighted mean, or a seven-day
+half-life.
+
+At nominal intensity, the overproduction scenario multiplies inventory by 2.5 from hour
+12 through hour 60 and adds 8*(1-exp(-0.3*(h-12))) degrees Celsius during that window.
+After hour 60, the temperature addition decays as 8*exp(-0.15*(h-60)). It does not
+represent a measured facility capacity limit or mandate a disposition route.
+
+The adaptive_pricing scenario separately adds a 60-step sinusoid of amplitude 45 and a
+keyed per-seed Normal(0,14) demand perturbation at nominal intensity. The volatility flag
+tau contributes the declared logit vector [0.25, 0.05, -0.25]. It does not deterministically
+mandate a route, change route distances, allocate safety stock, or create alert reports.
+
+All coefficients are synthetic case-study assumptions. They are not estimated market
+effects, forecasts of a real demand series, or regulatory risk-management requirements.

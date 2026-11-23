@@ -1,0 +1,51 @@
+[
+  {
+    "file": "ari_performance_by_scenario.png",
+    "title": "ARI performance across scenarios",
+    "caption": "Resilience across scenarios: (a) mean ARI and (b) paired gain over No-Context, with gains labeled.",
+    "data": [
+      "data/study/modes.csv",
+      "data/study/comparisons_by_scenario.csv"
+    ],
+    "regenerated_by": "analysis/make_figures.py (analysis/figures/ari_performance_by_scenario.py)"
+  },
+  {
+    "file": "executed_routing_choices.png",
+    "title": "Executed routing choices across scenarios",
+    "caption": "Executed routes in the separately adapted policies. Decision difference is the share of decisions on which the two policies execute different routes.",
+    "data": [
+      "data/figure_inputs/agribrain",
+      "data/figure_inputs/no_context",
+      "data/study/seed_endpoints.csv"
+    ],
+    "regenerated_by": "analysis/make_figures.py (analysis/figures/executed_routing_choices.py)"
+  },
+  {
+    "file": "routing_decisions_and_information.png",
+    "title": "Routing decisions and the information that shaped them",
+    "caption": "AGRI-BRAIN’s routing over time and the information behind it in four scenarios. From top: the disturbance; the probability of each route after the guard; the share of decisions on which the guard removes a route because of the acceptance criteria from institutional knowledge retrieval, or because of the capacity reports received through the Model Context Protocol (MCP); and the push of the MCP tools on each route’s score. Retrieval removes recovery while the product is still too fresh to qualify; the capacity reports remove routes once the outlets fill or the reports stop. Means over 20 seeds in 1.5-h bins.",
+    "data": [
+      "data/figure_inputs/agribrain"
+    ],
+    "regenerated_by": "analysis/make_figures.py (analysis/figures/routing_decisions_and_information.py)"
+  },
+  {
+    "file": "routing_decision_explanation.png",
+    "title": "Explaining an individual routing decision",
+    "caption": "Context contributions and their effects on routing probabilities in one decision on which the context changed the executed route.",
+    "data": [
+      "data/figure_inputs/agribrain/direct_5001_overproduction.json.gz"
+    ],
+    "regenerated_by": "analysis/make_figures.py (analysis/figures/routing_decision_explanation.py)"
+  },
+  {
+    "file": "weight_sensitivity.png",
+    "title": "Sensitivity to the weight settings",
+    "caption": "Weight sensitivity: (a) paired ARI gain over No-Context and (b) change in gain from nominal.",
+    "data": [
+      "data/study/sensitivity_settings.csv",
+      "data/study/principal_comparisons.csv"
+    ],
+    "regenerated_by": "analysis/make_figures.py (analysis/figures/weight_sensitivity.py)"
+  }
+]

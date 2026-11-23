@@ -1,0 +1,36 @@
+SYNTHETIC TEMPERATURE-EXCURSION OPERATING ENVELOPE
+Status: Constructed benchmark input; thresholds are internal simulation rules, not food-safety or legal limits.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, motivate topic selection only; the executable code and locked protocol govern all benchmark values.
+Document ID: KB-TEX-001
+Executable sources: agribrain/backend/src/models/policy.py, spoilage.py, and pirag/mcp/tools/compliance.py
+
+1. EXECUTABLE OPERATING ENVELOPE
+
+For the synthetic spinach case, 8 degrees Celsius is the author-declared temperature
+ceiling used by the operating-envelope check and by the mode-neutral temperature-
+violation outcome. The MCP envelope also uses 85 to 95 percent relative humidity. These
+are benchmark values, not universal storage, FSMA, HACCP, release, or diversion rules.
+
+The separate outcome quality flag is true when remaining modeled quality 1-rho is below
+0.50. The benchmark does not classify minor, moderate, or critical excursions from
+duration or degree-hours, and it does not use a time-temperature-integration release
+threshold.
+
+2. EXECUTABLE SPOILAGE-RISK MODEL
+
+All modes use the same synthetic mechanistic trajectory:
+
+  dC/dt = -k(T,H)*alpha(t)*C; rho = 1-C
+  k(T,H) = 0.0021*exp[8000*(1/277.15 - 1/(T_C+273.15))]
+           *(1 + 0.25*RH/100) per hour
+  alpha(t) = t/(t+12).
+
+The midpoint update keeps rho in [0,1] and monotonically non-decreasing. The values were
+not fitted to observed spinach quality labels, so rho is modeled risk rather than a
+microbial count, shelf-life validation, or safety determination.
+
+3. EXCLUDED CLAIMS
+
+The benchmark does not create HACCP deviation records, quarantine or release product,
+notify a food-safety officer, mandate sensor cadence, or impose record retention. Those
+operational decisions require validated product evidence and applicable local rules.

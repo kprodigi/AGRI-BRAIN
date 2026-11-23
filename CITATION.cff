@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "Please cite the AGRI-BRAIN repository and the specific version or commit used."
+title: "AGRI-BRAIN: Protocol-Mediated Decision-Level Interoperability through Context Injection in Physics-Informed Multi-Agent Systems"
+type: software
+authors:
+  - family-names: Sarker
+    given-names: Nahid
+    affiliation: "Department of Chemistry and Chemical Engineering, Florida Institute of Technology, 150 West University Boulevard, Melbourne, FL 32901, USA"
+  - family-names: Kazi
+    given-names: Monzure-Khoda
+    affiliation: "Department of Chemistry and Chemical Engineering, Florida Institute of Technology, 150 West University Boulevard, Melbourne, FL 32901, USA"
+license: MIT
+repository-code: "https://github.com/kprodigi/AGRI-BRAIN"
+keywords:
+  - multi-agent systems
+  - context injection
+  - interoperability
+  - explainability
+  - supply-chain simulation

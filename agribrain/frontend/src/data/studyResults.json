@@ -1,0 +1,529 @@
+{
+ "meta": {
+  "seeds": 20,
+  "scenarios": [
+   "heatwave",
+   "overproduction",
+   "cyber_outage",
+   "adaptive_pricing",
+   "baseline"
+  ],
+  "modes": [
+   "static",
+   "no_context",
+   "agribrain"
+  ],
+  "primary_evaluations": 300,
+  "sensitivity": {
+   "weight_settings": 22,
+   "structural_settings": 14,
+   "acceptance_document_checks": 4
+  },
+  "intervals": "95% BCa across seeds; sensitivity intervals are pointwise"
+ },
+ "overall": {
+  "ari": {
+   "label": "Adaptive Resilience Index",
+   "static": {
+    "mean": 0.455489,
+    "low": 0.451584,
+    "high": 0.458752
+   },
+   "no_context": {
+    "mean": 0.502818,
+    "low": 0.498717,
+    "high": 0.506126
+   },
+   "agribrain": {
+    "mean": 0.523619,
+    "low": 0.519454,
+    "high": 0.527058
+   }
+  },
+  "waste": {
+   "label": "Food waste (%)",
+   "static": {
+    "mean": 10.197265,
+    "low": 9.952876,
+    "high": 10.416139
+   },
+   "no_context": {
+    "mean": 10.46316,
+    "low": 10.189866,
+    "high": 10.707335
+   },
+   "agribrain": {
+    "mean": 8.75867,
+    "low": 8.521929,
+    "high": 8.948552
+   }
+  },
+  "carbon": {
+   "label": "Emissions indicator (kg CO2-eq per routing opportunity)",
+   "static": {
+    "mean": 15.789252,
+    "low": 15.74867,
+    "high": 15.828841
+   },
+   "no_context": {
+    "mean": 14.930947,
+    "low": 14.85675,
+    "high": 15.030169
+   },
+   "agribrain": {
+    "mean": 12.436246,
+    "low": 12.365673,
+    "high": 12.505446
+   }
+  },
+  "slca": {
+   "label": "Social performance",
+   "static": {
+    "mean": 0.556815,
+    "low": 0.556407,
+    "high": 0.557223
+   },
+   "no_context": {
+    "mean": 0.612002,
+    "low": 0.610534,
+    "high": 0.613438
+   },
+   "agribrain": {
+    "mean": 0.627858,
+    "low": 0.62622,
+    "high": 0.62941
+   }
+  },
+  "rle": {
+   "label": "Reverse Logistics Efficiency",
+   "static": {
+    "mean": 0.0,
+    "low": 0.0,
+    "high": 0.0
+   },
+   "no_context": {
+    "mean": 0.313055,
+    "low": 0.287237,
+    "high": 0.328785
+   },
+   "agribrain": {
+    "mean": 0.309383,
+    "low": 0.285797,
+    "high": 0.324826
+   }
+  },
+  "refused_share_of_diverted_volume": {
+   "label": "Diverted volume refused (%)",
+   "static": {
+    "mean": 0.0,
+    "low": 0.0,
+    "high": 0.0
+   },
+   "no_context": {
+    "mean": 54.54663,
+    "low": 53.736749,
+    "high": 55.292209
+   },
+   "agribrain": {
+    "mean": 1.759517,
+    "low": 1.535205,
+    "high": 2.085273
+   }
+  },
+  "mean_decision_latency_ms": {
+   "label": "Decision latency (ms)",
+   "static": {
+    "mean": 1.541733,
+    "low": 1.531258,
+    "high": 1.552953
+   },
+   "no_context": {
+    "mean": 1.66142,
+    "low": 1.649674,
+    "high": 1.675212
+   },
+   "agribrain": {
+    "mean": 13.239449,
+    "low": 13.129894,
+    "high": 13.339742
+   }
+  }
+ },
+ "scenarios": {
+  "heatwave": {
+   "metrics": {
+    "ari": {
+     "static": {
+      "mean": 0.408987,
+      "low": 0.398441,
+      "high": 0.41786
+     },
+     "no_context": {
+      "mean": 0.472452,
+      "low": 0.458827,
+      "high": 0.481953
+     },
+     "agribrain": {
+      "mean": 0.493348,
+      "low": 0.480178,
+      "high": 0.502819
+     }
+    }
+   },
+   "paired_gain": {
+    "mean": 0.020896,
+    "low": 0.019123,
+    "high": 0.02237
+   },
+   "different_actions_percent": {
+    "mean": 38.333333,
+    "low": 36.493056,
+    "high": 41.09375
+   }
+  },
+  "overproduction": {
+   "metrics": {
+    "ari": {
+     "static": {
+      "mean": 0.402308,
+      "low": 0.396611,
+      "high": 0.409152
+     },
+     "no_context": {
+      "mean": 0.419428,
+      "low": 0.413096,
+      "high": 0.426786
+     },
+     "agribrain": {
+      "mean": 0.450015,
+      "low": 0.44422,
+      "high": 0.456529
+     }
+    }
+   },
+   "paired_gain": {
+    "mean": 0.030587,
+    "low": 0.028829,
+    "high": 0.032452
+   },
+   "different_actions_percent": {
+    "mean": 56.736111,
+    "low": 54.652778,
+    "high": 58.611111
+   }
+  },
+  "cyber_outage": {
+   "metrics": {
+    "ari": {
+     "static": {
+      "mean": 0.44635,
+      "low": 0.439297,
+      "high": 0.453709
+     },
+     "no_context": {
+      "mean": 0.458949,
+      "low": 0.450027,
+      "high": 0.466855
+     },
+     "agribrain": {
+      "mean": 0.473287,
+      "low": 0.464903,
+      "high": 0.480621
+     }
+    }
+   },
+   "paired_gain": {
+    "mean": 0.014339,
+    "low": 0.012006,
+    "high": 0.016319
+   },
+   "different_actions_percent": {
+    "mean": 63.506944,
+    "low": 61.996528,
+    "high": 65.017361
+   }
+  },
+  "adaptive_pricing": {
+   "metrics": {
+    "ari": {
+     "static": {
+      "mean": 0.500283,
+      "low": 0.496307,
+      "high": 0.506599
+     },
+     "no_context": {
+      "mean": 0.572704,
+      "low": 0.568346,
+      "high": 0.57917
+     },
+     "agribrain": {
+      "mean": 0.59309,
+      "low": 0.58851,
+      "high": 0.599686
+     }
+    }
+   },
+   "paired_gain": {
+    "mean": 0.020386,
+    "low": 0.01899,
+    "high": 0.022324
+   },
+   "different_actions_percent": {
+    "mean": 27.552083,
+    "low": 25.746528,
+    "high": 29.201389
+   }
+  },
+  "baseline": {
+   "metrics": {
+    "ari": {
+     "static": {
+      "mean": 0.519517,
+      "low": 0.513682,
+      "high": 0.525495
+     },
+     "no_context": {
+      "mean": 0.590559,
+      "low": 0.585668,
+      "high": 0.595841
+     },
+     "agribrain": {
+      "mean": 0.608355,
+      "low": 0.603496,
+      "high": 0.613917
+     }
+    }
+   },
+   "paired_gain": {
+    "mean": 0.017796,
+    "low": 0.016514,
+    "high": 0.019168
+   },
+   "different_actions_percent": {
+    "mean": 28.402778,
+    "low": 25.989583,
+    "high": 30.677083
+   }
+  }
+ },
+ "sensitivity": [
+  {
+   "setting": "nominal",
+   "family": "weights",
+   "gain": 0.020801,
+   "low": 0.019843,
+   "high": 0.021788,
+   "change": 0.0
+  },
+  {
+   "setting": "base_policy_minus20",
+   "family": "weights",
+   "gain": 0.021352,
+   "low": 0.020246,
+   "high": 0.022357,
+   "change": 0.000551
+  },
+  {
+   "setting": "base_policy_plus20",
+   "family": "weights",
+   "gain": 0.020988,
+   "low": 0.020195,
+   "high": 0.021778,
+   "change": 0.000187
+  },
+  {
+   "setting": "tool_prior_minus20",
+   "family": "weights",
+   "gain": 0.020448,
+   "low": 0.019517,
+   "high": 0.021428,
+   "change": -0.000353
+  },
+  {
+   "setting": "tool_prior_plus20",
+   "family": "weights",
+   "gain": 0.02135,
+   "low": 0.020457,
+   "high": 0.022322,
+   "change": 0.000549
+  },
+  {
+   "setting": "retrieval_prior_minus20",
+   "family": "weights",
+   "gain": 0.020801,
+   "low": 0.019857,
+   "high": 0.02181,
+   "change": 0.0
+  },
+  {
+   "setting": "retrieval_prior_plus20",
+   "family": "weights",
+   "gain": 0.020801,
+   "low": 0.019862,
+   "high": 0.021783,
+   "change": 0.0
+  },
+  {
+   "setting": "w_c_minus20",
+   "family": "weights",
+   "gain": 0.019398,
+   "low": 0.018514,
+   "high": 0.020356,
+   "change": -0.001403
+  },
+  {
+   "setting": "w_c_plus20",
+   "family": "weights",
+   "gain": 0.02205,
+   "low": 0.021011,
+   "high": 0.023114,
+   "change": 0.00125
+  },
+  {
+   "setting": "w_l_minus20",
+   "family": "weights",
+   "gain": 0.021188,
+   "low": 0.020194,
+   "high": 0.022201,
+   "change": 0.000387
+  },
+  {
+   "setting": "w_l_plus20",
+   "family": "weights",
+   "gain": 0.020436,
+   "low": 0.019519,
+   "high": 0.021445,
+   "change": -0.000365
+  },
+  {
+   "setting": "w_r_minus20",
+   "family": "weights",
+   "gain": 0.021265,
+   "low": 0.020264,
+   "high": 0.022264,
+   "change": 0.000464
+  },
+  {
+   "setting": "w_r_plus20",
+   "family": "weights",
+   "gain": 0.020364,
+   "low": 0.019414,
+   "high": 0.021385,
+   "change": -0.000437
+  },
+  {
+   "setting": "w_p_minus20",
+   "family": "weights",
+   "gain": 0.021282,
+   "low": 0.020296,
+   "high": 0.022299,
+   "change": 0.000481
+  },
+  {
+   "setting": "w_p_plus20",
+   "family": "weights",
+   "gain": 0.020341,
+   "low": 0.019375,
+   "high": 0.021359,
+   "change": -0.000459
+  },
+  {
+   "setting": "eta_minus20",
+   "family": "weights",
+   "gain": 0.020784,
+   "low": 0.019857,
+   "high": 0.021805,
+   "change": -1.7e-05
+  },
+  {
+   "setting": "eta_plus20",
+   "family": "weights",
+   "gain": 0.020829,
+   "low": 0.019877,
+   "high": 0.021816,
+   "change": 2.8e-05
+  },
+  {
+   "setting": "eta_rho_minus20",
+   "family": "weights",
+   "gain": 0.020801,
+   "low": 0.019859,
+   "high": 0.021812,
+   "change": 0.0
+  },
+  {
+   "setting": "eta_rho_plus20",
+   "family": "weights",
+   "gain": 0.020793,
+   "low": 0.019829,
+   "high": 0.021782,
+   "change": -8e-06
+  },
+  {
+   "setting": "joint10_A",
+   "family": "weights",
+   "gain": 0.019747,
+   "low": 0.018969,
+   "high": 0.020534,
+   "change": -0.001054
+  },
+  {
+   "setting": "joint10_B",
+   "family": "weights",
+   "gain": 0.02212,
+   "low": 0.021118,
+   "high": 0.023116,
+   "change": 0.001319
+  },
+  {
+   "setting": "joint20_A",
+   "family": "weights",
+   "gain": 0.01868,
+   "low": 0.017925,
+   "high": 0.019437,
+   "change": -0.002121
+  },
+  {
+   "setting": "joint20_B",
+   "family": "weights",
+   "gain": 0.02353,
+   "low": 0.022346,
+   "high": 0.024649,
+   "change": 0.002729
+  }
+ ],
+ "routes_percent": {
+  "order": [
+   "cold_chain",
+   "local_redistribution",
+   "recovery"
+  ],
+  "no_context": [
+   29.2,
+   61.0,
+   9.8
+  ],
+  "agribrain": [
+   62.2,
+   32.3,
+   5.5
+  ]
+ },
+ "frozen_controls": {
+  "fixed": {
+   "mean": 0.000479,
+   "low": 0.00021,
+   "high": 0.00082
+  },
+  "shuffled": {
+   "mean": 0.000494,
+   "low": 0.000218,
+   "high": 0.000797
+  },
+  "zero": {
+   "mean": 0.00271,
+   "low": 0.002406,
+   "high": 0.003072
+  }
+ }
+}

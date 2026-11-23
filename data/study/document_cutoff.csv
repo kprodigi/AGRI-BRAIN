@@ -1,0 +1,7 @@
+mode,scenario,decisions,redistribution_removed_for_acceptance_document_states_040,redistribution_removed_for_acceptance_document_states_050
+agribrain,heatwave,5760,305,87
+agribrain,overproduction,5760,0,0
+agribrain,cyber_outage,5760,0,0
+agribrain,adaptive_pricing,5760,0,0
+agribrain,baseline,5760,0,0
+agribrain,overall,28800,305,87

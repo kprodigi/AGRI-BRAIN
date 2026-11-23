@@ -1,0 +1,8 @@
+setting,effect,estimates,scenario,metric,mean,low,high,ci_method,confidence,n,sd,positive_seeds,negative_seeds,zero_seeds
+main_fail_closed,agribrain_minus_no_context,full system against the adaptive policy without protocol information,overall,ari,0.02080092102929171,0.019831379345385775,0.021791488636010003,BCa,0.95,20,0.002282257011465659,20,0,0
+main_fail_closed,adjustment_without_guard,score adjustment without a guard,overall,ari,0.0022399440944386117,0.0019177441685171146,0.0026694782534227948,BCa,0.95,20,0.0008633522810581834,20,0,0
+main_fail_closed,adjustment_at_reservation_guard,score adjustment added to the reservation guard,overall,ari,0.0026991844753344652,0.0023744625158393447,0.0030604207841154947,BCa,0.95,20,0.0008011916526609595,20,0,0
+main_fail_closed,reservation_guard_without_adjustment,reservation guard alone,overall,ari,0.01809868426505727,0.016973020110611116,0.019152605805042383,BCa,0.95,20,0.002586200605750748,20,0,0
+main_fail_closed,bounded_pathway_minus_feature_inputs,bounded sign-constrained pathway against feature inputs (implementation check),overall,ari,0.0,0.0,0.0,deterministic,0.95,20,0.0,0,0,20
+main_fail_closed,estimator,full system minus the neural residual of the spoilage estimator,overall,ari,-1.3282081432813842e-05,-9.347531748377567e-05,6.172476997575475e-05,BCa,0.95,20,0.00018083073952230243,11,9,0
+main_fail_closed,agribrain_minus_always_redistribute,full system against always redistribute,overall,ari,0.007367608331507192,0.005621572012112498,0.009046267689593433,BCa,0.95,20,0.004034432219406371,20,0,0

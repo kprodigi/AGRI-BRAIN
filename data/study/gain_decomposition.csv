@@ -1,0 +1,4 @@
+setting,mode,reference,scenario,part,mean,low,high,ci_method,confidence,n,sd,positive_seeds,negative_seeds,zero_seeds
+main_fail_closed,agribrain,no_context,overall,gain,0.020800921029291715,0.019838641788075893,0.021788261141789295,BCa,0.95,20,0.0022822570114656698,20,0,0
+main_fail_closed,agribrain,no_context,overall,merit,-0.055611996413233944,-0.05799373530579488,-0.05295414031326708,BCa,0.95,20,0.005892531324595709,0,20,0
+main_fail_closed,agribrain,no_context,overall,refusal,0.07641291744252562,0.07300821800578182,0.07929429932890703,BCa,0.95,20,0.007423526332017089,20,0,0

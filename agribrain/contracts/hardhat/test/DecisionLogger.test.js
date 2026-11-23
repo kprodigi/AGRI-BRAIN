@@ -1,0 +1,140 @@
+const { expect } = require("chai");
+const { ethers } = require("hardhat");
+
+describe("DecisionLogger", function () {
+  let logger, owner;
+
+  beforeEach(async function () {
+    [owner] = await ethers.getSigners();
+    const Factory = await ethers.getContractFactory("DecisionLogger");
+    logger = await Factory.deploy();
+    await logger.waitForDeployment();
+  });
+
+  it("should log a decision and emit DecisionLogged event with correct fields", async function () {
+    const tx = await logger.logDecision(
+      1000,          // ts
+      "farm:agent1", // agent
+      "farm",        // role
+      "cold_chain",  // action
+      850,           // slca_milli (0.850 * 1000)
+      1200,          // carbon_milli (1.200 kg * 1000)
+      "test note"    // note
+    );
+    // Decode and assert event fields (not just log existence)
+    const receipt = await tx.wait();
+    const iface = logger.interface;
+    const parsed = iface.parseLog({ topics: receipt.logs[0].topics, data: receipt.logs[0].data });
+    expect(parsed.name).to.equal("DecisionLogged");
+    expect(parsed.args.ts).to.equal(1000n);
+    expect(parsed.args.agent).to.equal("farm:agent1");
+    expect(parsed.args.role).to.equal("farm");
+    expect(parsed.args.action).to.equal("cold_chain");
+    expect(parsed.args.slca_milli).to.equal(850n);
+    expect(parsed.args.carbon_milli).to.equal(1200n);
+    expect(parsed.args.note).to.equal("test note");
+  });
+
+  it("should revert logDecision from unauthorized caller", async function () {
+    const [, outsider] = await ethers.getSigners();
+    await expect(
+      logger.connect(outsider).logDecision(1, "x", "y", "z", 0, 0, "")
+    ).to.be.revertedWith("missing role");
+  });
+
+  it("should store memo in mapping and allow read-back", async function () {
+    const tx = await logger.logDecision(
+      2000, "processor:agent2", "processor", "local_redistribute",
+      920, 800, "redistribution test"
+    );
+    const receipt = await tx.wait();
+    const parsed = logger.interface.parseLog({
+      topics: receipt.logs[0].topics,
+      data: receipt.logs[0].data,
+    });
+    const id = parsed.args.id;
+    const memo = await logger.memos(id);
+    expect(memo.ts).to.equal(2000n);
+    expect(memo.agent).to.equal("processor:agent2");
+    expect(memo.role).to.equal("processor");
+    expect(memo.action).to.equal("local_redistribute");
+    expect(memo.slca_milli).to.equal(920n);
+    expect(memo.carbon_milli).to.equal(800n);
+  });
+
+  it("should produce different IDs for different decisions", async function () {
+    const tx1 = await logger.logDecision(100, "a", "farm", "cold_chain", 500, 500, "");
+    const tx2 = await logger.logDecision(200, "b", "processor", "recovery", 600, 600, "");
+    const r1 = await tx1.wait();
+    const r2 = await tx2.wait();
+    // Both should succeed (different IDs)
+    expect(r1.status).to.equal(1);
+    expect(r2.status).to.equal(1);
+  });
+
+  it("should produce distinct IDs for identical payloads via monotone counter", async function () {
+    const tx1 = await logger.logDecision(1234, "farm:dup", "farm", "cold_chain", 700, 500, "first");
+    const tx2 = await logger.logDecision(1234, "farm:dup", "farm", "cold_chain", 700, 500, "second");
+    const r1 = await tx1.wait();
+    const r2 = await tx2.wait();
+    const id1 = logger.interface.parseLog({ topics: r1.logs[0].topics, data: r1.logs[0].data }).args.id;
+    const id2 = logger.interface.parseLog({ topics: r2.logs[0].topics, data: r2.logs[0].data }).args.id;
+    expect(id1).to.not.equal(id2);
+    expect(await logger.decisionCounter()).to.equal(2n);
+  });
+
+  it("should anchor a per-episode Merkle root and emit EpisodeLogged", async function () {
+    const root = ethers.keccak256(ethers.toUtf8Bytes("episode-root"));
+    const tx = await logger.logEpisode(
+      root,
+      9000,                  // ts
+      "agribrain",          // mode
+      "heatwave",           // scenario
+      42,                   // seed
+      48,                   // n_records
+      "20-seed HPC run"     // note
+    );
+    const receipt = await tx.wait();
+    const iface = logger.interface;
+    const parsed = iface.parseLog({ topics: receipt.logs[0].topics, data: receipt.logs[0].data });
+    expect(parsed.name).to.equal("EpisodeLogged");
+    expect(parsed.args.root).to.equal(root);
+    expect(parsed.args.ts).to.equal(9000n);
+    expect(parsed.args.mode).to.equal("agribrain");
+    expect(parsed.args.scenario).to.equal("heatwave");
+    expect(parsed.args.seed).to.equal(42n);
+    expect(parsed.args.n_records).to.equal(48n);
+    expect(parsed.args.note).to.equal("20-seed HPC run");
+  });
+
+  it("should revert logEpisode from unauthorized caller", async function () {
+    const [, outsider] = await ethers.getSigners();
+    const root = ethers.keccak256(ethers.toUtf8Bytes("x"));
+    await expect(
+      logger.connect(outsider).logEpisode(root, 1, "m", "s", 0, 0, "")
+    ).to.be.revertedWith("missing role");
+  });
+
+  it("supports role-based delegation: ADMIN_ROLE can grant LOGGER_ROLE", async function () {
+    const [owner, delegate, intruder] = await ethers.getSigners();
+    const LOGGER = await logger.LOGGER_ROLE();
+    expect(await logger.hasRole(LOGGER, delegate.address)).to.equal(false);
+
+    await logger.connect(owner).grantRole(LOGGER, delegate.address);
+    expect(await logger.hasRole(LOGGER, delegate.address)).to.equal(true);
+
+    await expect(
+      logger.connect(delegate).logDecision(1, "farm", "farm", "cold_chain", 800, 5000, "ok")
+    ).to.emit(logger, "DecisionLogged");
+
+    // Non-admin cannot grant.
+    await expect(
+      logger.connect(intruder).grantRole(LOGGER, intruder.address)
+    ).to.be.revertedWith("missing role");
+
+    // setAuthorized shim still works for admin and updates role state.
+    await logger.connect(owner).setAuthorized(delegate.address, false);
+    expect(await logger.hasRole(LOGGER, delegate.address)).to.equal(false);
+    expect(await logger.authorized(delegate.address)).to.equal(false);
+  });
+});

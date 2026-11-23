@@ -1,0 +1,22 @@
+COMPOSTING CONTEXT WITHIN THE AGGREGATE RECOVERY PROXY
+Status: Constructed benchmark input; it does not establish composting eligibility, process controls, or bioenergy yield.
+Source scope: Constructed institutional-retrieval input for the synthetic AGRI-BRAIN benchmark. It is not law, certification, field evidence, measured performance, or operational advice. External sources, where named, are contextual references only; the executable code and locked protocol govern all benchmark values.
+Document ID: KB-CBR-004
+Executable source: agribrain/backend/src/models/reverse_logistics.py
+
+The benchmark has one aggregate recovery action; composting is not a separately
+selectable policy action. Its descriptive recovery-option heuristic sets
+
+  composting_raw = min(1, 0.2 + rho).
+
+This raw value is normalized together with the food-bank and animal-feed heuristic
+values. The largest normalized value is labelled the recommended subpath, and the
+primary circular-economy proxy for a selected recovery action is
+
+  min(1, 0.5 + 0.5*max(normalized subpath score)).
+
+These values are stylized suitability and circularity proxies. Rho is modeled quality
+risk and is not a compost-feedstock test. The code does not model anaerobic digestion,
+methane yield, thermophilic temperature, pathogen reduction, retention time, facility
+permits, chain-of-custody manifests, carbon credits, or regulatory eligibility. Those
+questions require facility-specific evidence and applicable external rules.

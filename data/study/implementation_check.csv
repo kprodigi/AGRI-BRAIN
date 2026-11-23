@@ -1,0 +1,2 @@
+setting,mode,reference,cells,cells_with_identical_routing,largest_step_ari_difference,mean,low,high,ci_method,confidence,n,sd,positive_seeds,negative_seeds,zero_seeds
+main_fail_closed,agribrain_eligibility_no_peer,feature_inputs_prior,100,100,0.0,0.0,0.0,0.0,deterministic,0.95,20,0.0,0,0,20

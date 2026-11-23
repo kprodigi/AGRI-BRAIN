@@ -1,0 +1,3 @@
+setting,reference_setting,mode,ari,share_cold_chain,refused_share_of_diverted_volume,ari_change_from_reference,change_low,change_high,change_ci_method
+acceptance_document_absent,main_fail_closed,agribrain,0.45548884756316566,1.0,0.0,-0.06813031582738951,-0.06960509400917994,-0.0665354016509845,BCa
+acceptance_document_absent_fail_open,main_fail_open,agribrain,0.5137832921602923,0.4406944444444445,0.3149789887515488,-0.008419590773667648,-0.00967099770177752,-0.007446709263850609,BCa

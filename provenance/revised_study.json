@@ -1,0 +1,434 @@
+{
+  "run": "study_20261114_164524_results",
+  "source_commit": "78b631b8a07e750027a3611ec9222a389df71554",
+  "source_clean": true,
+  "harness_sha256": "cf6e155b364d84fc8260ab86441bf8b4e6cc43ad361eb8aec1990ec412bf491a",
+  "plan_sha256": "5c29cf6e627133f9d64ee7702ff18f754ae0a5898d4062ea45e8d24b463c6d90",
+  "settings_sha256": "454f77b944cd9d371e342e6b086cecfb2071ef2677258cc68037d1abe92b92de",
+  "tasks_sha256": "ba3dce891d44fe5e87952df6a86b7db0aea3c2f09f67d6b6616daa7d64e102db",
+  "created_utc": "2026-11-14T16:45:25.290094+00:00",
+  "counts": {
+    "settings": 63,
+    "tasks": 6300,
+    "episodes": 128100,
+    "frozen_controls": 200,
+    "decision_ledgers": 59700
+  },
+  "development_only": false,
+  "largest_metric_difference_in_endpoint_reconciliation": 0.0,
+  "analysis_archive": {
+    "file": "study_20261114_164524_results_analysis.tar.gz",
+    "sha256": "451ffddf0a8cb8eba23e6d281ffaf44f97610d54886cf12b916baf3d950c7f4d"
+  },
+  "published_results": "data/study is a subset of the analysis outputs, limited to what the paper shows; data/study/MANIFEST.json gives each source hash, which equals the hash in the completion record of the run.",
+  "publication_changes": {
+    "note": "Files added, changed or removed against the run commit for publication. The hash of every distributed file is in FILE_HASHES.json; a removed file is listed with its hash at the run commit.",
+    "added": [
+      "analysis/figures/ari_performance_by_scenario.py",
+      "analysis/figures/executed_routing_choices.py",
+      "analysis/figures/house_style.py",
+      "analysis/figures/routing_decision_explanation.py",
+      "analysis/figures/routing_decisions_and_information.py",
+      "analysis/figures/weight_sensitivity.py",
+      "data/figure_inputs/agribrain/direct_5001_adaptive_pricing.json.gz",
+      "data/figure_inputs/agribrain/direct_5001_baseline.json.gz",
+      "data/figure_inputs/agribrain/direct_5001_cyber_outage.json.gz",
+      "data/figure_inputs/agribrain/direct_5001_heatwave.json.gz",
+      "data/figure_inputs/agribrain/direct_5001_overproduction.json.gz",
+      "data/figure_inputs/agribrain/direct_5002_adaptive_pricing.json.gz",
+      "data/figure_inputs/agribrain/direct_5002_baseline.json.gz",
+      "data/figure_inputs/agribrain/direct_5002_cyber_outage.json.gz",
+      "data/figure_inputs/agribrain/direct_5002_heatwave.json.gz",
+      "data/figure_inputs/agribrain/direct_5002_overproduction.json.gz",
+      "data/figure_inputs/agribrain/direct_5003_adaptive_pricing.json.gz",
+      "data/figure_inputs/agribrain/direct_5003_baseline.json.gz",
+      "data/figure_inputs/agribrain/direct_5003_cyber_outage.json.gz",
+      "data/figure_inputs/agribrain/direct_5003_heatwave.json.gz",
+      "data/figure_inputs/agribrain/direct_5003_overproduction.json.gz",
+      "data/figure_inputs/agribrain/direct_5004_adaptive_pricing.json.gz",
+      "data/figure_inputs/agribrain/direct_5004_baseline.json.gz",
+      "data/figure_inputs/agribrain/direct_5004_cyber_outage.json.gz",
+      "data/figure_inputs/agribrain/direct_5004_heatwave.json.gz",
+      "data/figure_inputs/agribrain/direct_5004_overproduction.json.gz",
+      "data/figure_inputs/agribrain/direct_5005_adaptive_pricing.json.gz",
+      "data/figure_inputs/agribrain/direct_5005_baseline.json.gz",
+      "data/figure_inputs/agribrain/direct_5005_cyber_outage.json.gz",
+      "data/figure_inputs/agribrain/direct_5005_heatwave.json.gz",
+      "data/figure_inputs/agribrain/direct_5005_overproduction.json.gz",
+      "data/figure_inputs/agribrain/direct_5006_adaptive_pricing.json.gz",
+      "data/figure_inputs/agribrain/direct_5006_baseline.json.gz",
+      "data/figure_inputs/agribrain/direct_5006_cyber_outage.json.gz",
+      "data/figure_inputs/agribrain/direct_5006_heatwave.json.gz",
+      "data/figure_inputs/agribrain/direct_5006_overproduction.json.gz",
+      "data/figure_inputs/agribrain/direct_5007_adaptive_pricing.json.gz",
+      "data/figure_inputs/agribrain/direct_5007_baseline.json.gz",
+      "data/figure_inputs/agribrain/direct_5007_cyber_outage.json.gz",
+      "data/figure_inputs/agribrain/direct_5007_heatwave.json.gz",
+      "data/figure_inputs/agribrain/direct_5007_overproduction.json.gz",
+      "data/figure_inputs/agribrain/direct_5008_adaptive_pricing.json.gz",
+      "data/figure_inputs/agribrain/direct_5008_baseline.json.gz",
+      "data/figure_inputs/agribrain/direct_5008_cyber_outage.json.gz",
+      "data/figure_inputs/agribrain/direct_5008_heatwave.json.gz",
+      "data/figure_inputs/agribrain/direct_5008_overproduction.json.gz",
+      "data/figure_inputs/agribrain/direct_5009_adaptive_pricing.json.gz",
+      "data/figure_inputs/agribrain/direct_5009_baseline.json.gz",
+      "data/figure_inputs/agribrain/direct_5009_cyber_outage.json.gz",
+      "data/figure_inputs/agribrain/direct_5009_heatwave.json.gz",
+      "data/figure_inputs/agribrain/direct_5009_overproduction.json.gz",
+      "data/figure_inputs/agribrain/direct_5010_adaptive_pricing.json.gz",
+      "data/figure_inputs/agribrain/direct_5010_baseline.json.gz",
+      "data/figure_inputs/agribrain/direct_5010_cyber_outage.json.gz",
+      "data/figure_inputs/agribrain/direct_5010_heatwave.json.gz",
+      "data/figure_inputs/agribrain/direct_5010_overproduction.json.gz",
+      "data/figure_inputs/agribrain/direct_5011_adaptive_pricing.json.gz",
+      "data/figure_inputs/agribrain/direct_5011_baseline.json.gz",
+      "data/figure_inputs/agribrain/direct_5011_cyber_outage.json.gz",
+      "data/figure_inputs/agribrain/direct_5011_heatwave.json.gz",
+      "data/figure_inputs/agribrain/direct_5011_overproduction.json.gz",
+      "data/figure_inputs/agribrain/direct_5012_adaptive_pricing.json.gz",
+      "data/figure_inputs/agribrain/direct_5012_baseline.json.gz",
+      "data/figure_inputs/agribrain/direct_5012_cyber_outage.json.gz",
+      "data/figure_inputs/agribrain/direct_5012_heatwave.json.gz",
+      "data/figure_inputs/agribrain/direct_5012_overproduction.json.gz",
+      "data/figure_inputs/agribrain/direct_5013_adaptive_pricing.json.gz",
+      "data/figure_inputs/agribrain/direct_5013_baseline.json.gz",
+      "data/figure_inputs/agribrain/direct_5013_cyber_outage.json.gz",
+      "data/figure_inputs/agribrain/direct_5013_heatwave.json.gz",
+      "data/figure_inputs/agribrain/direct_5013_overproduction.json.gz",
+      "data/figure_inputs/agribrain/direct_5014_adaptive_pricing.json.gz",
+      "data/figure_inputs/agribrain/direct_5014_baseline.json.gz",
+      "data/figure_inputs/agribrain/direct_5014_cyber_outage.json.gz",
+      "data/figure_inputs/agribrain/direct_5014_heatwave.json.gz",
+      "data/figure_inputs/agribrain/direct_5014_overproduction.json.gz",
+      "data/figure_inputs/agribrain/direct_5015_adaptive_pricing.json.gz",
+      "data/figure_inputs/agribrain/direct_5015_baseline.json.gz",
+      "data/figure_inputs/agribrain/direct_5015_cyber_outage.json.gz",
+      "data/figure_inputs/agribrain/direct_5015_heatwave.json.gz",
+      "data/figure_inputs/agribrain/direct_5015_overproduction.json.gz",
+      "data/figure_inputs/agribrain/direct_5016_adaptive_pricing.json.gz",
+      "data/figure_inputs/agribrain/direct_5016_baseline.json.gz",
+      "data/figure_inputs/agribrain/direct_5016_cyber_outage.json.gz",
+      "data/figure_inputs/agribrain/direct_5016_heatwave.json.gz",
+      "data/figure_inputs/agribrain/direct_5016_overproduction.json.gz",
+      "data/figure_inputs/agribrain/direct_5017_adaptive_pricing.json.gz",
+      "data/figure_inputs/agribrain/direct_5017_baseline.json.gz",
+      "data/figure_inputs/agribrain/direct_5017_cyber_outage.json.gz",
+      "data/figure_inputs/agribrain/direct_5017_heatwave.json.gz",
+      "data/figure_inputs/agribrain/direct_5017_overproduction.json.gz",
+      "data/figure_inputs/agribrain/direct_5018_adaptive_pricing.json.gz",
+      "data/figure_inputs/agribrain/direct_5018_baseline.json.gz",
+      "data/figure_inputs/agribrain/direct_5018_cyber_outage.json.gz",
+      "data/figure_inputs/agribrain/direct_5018_heatwave.json.gz",
+      "data/figure_inputs/agribrain/direct_5018_overproduction.json.gz",
+      "data/figure_inputs/agribrain/direct_5019_adaptive_pricing.json.gz",
+      "data/figure_inputs/agribrain/direct_5019_baseline.json.gz",
+      "data/figure_inputs/agribrain/direct_5019_cyber_outage.json.gz",
+      "data/figure_inputs/agribrain/direct_5019_heatwave.json.gz",
+      "data/figure_inputs/agribrain/direct_5019_overproduction.json.gz",
+      "data/figure_inputs/agribrain/direct_5020_adaptive_pricing.json.gz",
+      "data/figure_inputs/agribrain/direct_5020_baseline.json.gz",
+      "data/figure_inputs/agribrain/direct_5020_cyber_outage.json.gz",
+      "data/figure_inputs/agribrain/direct_5020_heatwave.json.gz",
+      "data/figure_inputs/agribrain/direct_5020_overproduction.json.gz",
+      "data/figure_inputs/no_context/no_context_5001_adaptive_pricing.json.gz",
+      "data/figure_inputs/no_context/no_context_5001_baseline.json.gz",
+      "data/figure_inputs/no_context/no_context_5001_cyber_outage.json.gz",
+      "data/figure_inputs/no_context/no_context_5001_heatwave.json.gz",
+      "data/figure_inputs/no_context/no_context_5001_overproduction.json.gz",
+      "data/figure_inputs/no_context/no_context_5002_adaptive_pricing.json.gz",
+      "data/figure_inputs/no_context/no_context_5002_baseline.json.gz",
+      "data/figure_inputs/no_context/no_context_5002_cyber_outage.json.gz",
+      "data/figure_inputs/no_context/no_context_5002_heatwave.json.gz",
+      "data/figure_inputs/no_context/no_context_5002_overproduction.json.gz",
+      "data/figure_inputs/no_context/no_context_5003_adaptive_pricing.json.gz",
+      "data/figure_inputs/no_context/no_context_5003_baseline.json.gz",
+      "data/figure_inputs/no_context/no_context_5003_cyber_outage.json.gz",
+      "data/figure_inputs/no_context/no_context_5003_heatwave.json.gz",
+      "data/figure_inputs/no_context/no_context_5003_overproduction.json.gz",
+      "data/figure_inputs/no_context/no_context_5004_adaptive_pricing.json.gz",
+      "data/figure_inputs/no_context/no_context_5004_baseline.json.gz",
+      "data/figure_inputs/no_context/no_context_5004_cyber_outage.json.gz",
+      "data/figure_inputs/no_context/no_context_5004_heatwave.json.gz",
+      "data/figure_inputs/no_context/no_context_5004_overproduction.json.gz",
+      "data/figure_inputs/no_context/no_context_5005_adaptive_pricing.json.gz",
+      "data/figure_inputs/no_context/no_context_5005_baseline.json.gz",
+      "data/figure_inputs/no_context/no_context_5005_cyber_outage.json.gz",
+      "data/figure_inputs/no_context/no_context_5005_heatwave.json.gz",
+      "data/figure_inputs/no_context/no_context_5005_overproduction.json.gz",
+      "data/figure_inputs/no_context/no_context_5006_adaptive_pricing.json.gz",
+      "data/figure_inputs/no_context/no_context_5006_baseline.json.gz",
+      "data/figure_inputs/no_context/no_context_5006_cyber_outage.json.gz",
+      "data/figure_inputs/no_context/no_context_5006_heatwave.json.gz",
+      "data/figure_inputs/no_context/no_context_5006_overproduction.json.gz",
+      "data/figure_inputs/no_context/no_context_5007_adaptive_pricing.json.gz",
+      "data/figure_inputs/no_context/no_context_5007_baseline.json.gz",
+      "data/figure_inputs/no_context/no_context_5007_cyber_outage.json.gz",
+      "data/figure_inputs/no_context/no_context_5007_heatwave.json.gz",
+      "data/figure_inputs/no_context/no_context_5007_overproduction.json.gz",
+      "data/figure_inputs/no_context/no_context_5008_adaptive_pricing.json.gz",
+      "data/figure_inputs/no_context/no_context_5008_baseline.json.gz",
+      "data/figure_inputs/no_context/no_context_5008_cyber_outage.json.gz",
+      "data/figure_inputs/no_context/no_context_5008_heatwave.json.gz",
+      "data/figure_inputs/no_context/no_context_5008_overproduction.json.gz",
+      "data/figure_inputs/no_context/no_context_5009_adaptive_pricing.json.gz",
+      "data/figure_inputs/no_context/no_context_5009_baseline.json.gz",
+      "data/figure_inputs/no_context/no_context_5009_cyber_outage.json.gz",
+      "data/figure_inputs/no_context/no_context_5009_heatwave.json.gz",
+      "data/figure_inputs/no_context/no_context_5009_overproduction.json.gz",
+      "data/figure_inputs/no_context/no_context_5010_adaptive_pricing.json.gz",
+      "data/figure_inputs/no_context/no_context_5010_baseline.json.gz",
+      "data/figure_inputs/no_context/no_context_5010_cyber_outage.json.gz",
+      "data/figure_inputs/no_context/no_context_5010_heatwave.json.gz",
+      "data/figure_inputs/no_context/no_context_5010_overproduction.json.gz",
+      "data/figure_inputs/no_context/no_context_5011_adaptive_pricing.json.gz",
+      "data/figure_inputs/no_context/no_context_5011_baseline.json.gz",
+      "data/figure_inputs/no_context/no_context_5011_cyber_outage.json.gz",
+      "data/figure_inputs/no_context/no_context_5011_heatwave.json.gz",
+      "data/figure_inputs/no_context/no_context_5011_overproduction.json.gz",
+      "data/figure_inputs/no_context/no_context_5012_adaptive_pricing.json.gz",
+      "data/figure_inputs/no_context/no_context_5012_baseline.json.gz",
+      "data/figure_inputs/no_context/no_context_5012_cyber_outage.json.gz",
+      "data/figure_inputs/no_context/no_context_5012_heatwave.json.gz",
+      "data/figure_inputs/no_context/no_context_5012_overproduction.json.gz",
+      "data/figure_inputs/no_context/no_context_5013_adaptive_pricing.json.gz",
+      "data/figure_inputs/no_context/no_context_5013_baseline.json.gz",
+      "data/figure_inputs/no_context/no_context_5013_cyber_outage.json.gz",
+      "data/figure_inputs/no_context/no_context_5013_heatwave.json.gz",
+      "data/figure_inputs/no_context/no_context_5013_overproduction.json.gz",
+      "data/figure_inputs/no_context/no_context_5014_adaptive_pricing.json.gz",
+      "data/figure_inputs/no_context/no_context_5014_baseline.json.gz",
+      "data/figure_inputs/no_context/no_context_5014_cyber_outage.json.gz",
+      "data/figure_inputs/no_context/no_context_5014_heatwave.json.gz",
+      "data/figure_inputs/no_context/no_context_5014_overproduction.json.gz",
+      "data/figure_inputs/no_context/no_context_5015_adaptive_pricing.json.gz",
+      "data/figure_inputs/no_context/no_context_5015_baseline.json.gz",
+      "data/figure_inputs/no_context/no_context_5015_cyber_outage.json.gz",
+      "data/figure_inputs/no_context/no_context_5015_heatwave.json.gz",
+      "data/figure_inputs/no_context/no_context_5015_overproduction.json.gz",
+      "data/figure_inputs/no_context/no_context_5016_adaptive_pricing.json.gz",
+      "data/figure_inputs/no_context/no_context_5016_baseline.json.gz",
+      "data/figure_inputs/no_context/no_context_5016_cyber_outage.json.gz",
+      "data/figure_inputs/no_context/no_context_5016_heatwave.json.gz",
+      "data/figure_inputs/no_context/no_context_5016_overproduction.json.gz",
+      "data/figure_inputs/no_context/no_context_5017_adaptive_pricing.json.gz",
+      "data/figure_inputs/no_context/no_context_5017_baseline.json.gz",
+      "data/figure_inputs/no_context/no_context_5017_cyber_outage.json.gz",
+      "data/figure_inputs/no_context/no_context_5017_heatwave.json.gz",
+      "data/figure_inputs/no_context/no_context_5017_overproduction.json.gz",
+      "data/figure_inputs/no_context/no_context_5018_adaptive_pricing.json.gz",
+      "data/figure_inputs/no_context/no_context_5018_baseline.json.gz",
+      "data/figure_inputs/no_context/no_context_5018_cyber_outage.json.gz",
+      "data/figure_inputs/no_context/no_context_5018_heatwave.json.gz",
+      "data/figure_inputs/no_context/no_context_5018_overproduction.json.gz",
+      "data/figure_inputs/no_context/no_context_5019_adaptive_pricing.json.gz",
+      "data/figure_inputs/no_context/no_context_5019_baseline.json.gz",
+      "data/figure_inputs/no_context/no_context_5019_cyber_outage.json.gz",
+      "data/figure_inputs/no_context/no_context_5019_heatwave.json.gz",
+      "data/figure_inputs/no_context/no_context_5019_overproduction.json.gz",
+      "data/figure_inputs/no_context/no_context_5020_adaptive_pricing.json.gz",
+      "data/figure_inputs/no_context/no_context_5020_baseline.json.gz",
+      "data/figure_inputs/no_context/no_context_5020_cyber_outage.json.gz",
+      "data/figure_inputs/no_context/no_context_5020_heatwave.json.gz",
+      "data/figure_inputs/no_context/no_context_5020_overproduction.json.gz",
+      "data/study/MANIFEST.json",
+      "data/study/README.md",
+      "data/study/break_even_share.csv",
+      "data/study/comparisons_by_scenario.csv",
+      "data/study/constraint_activity.csv",
+      "data/study/control_contrasts.csv",
+      "data/study/document_absent.csv",
+      "data/study/document_cutoff.csv",
+      "data/study/document_identifier.csv",
+      "data/study/effects.csv",
+      "data/study/gain_by_disruption_window.csv",
+      "data/study/gain_decomposition.csv",
+      "data/study/guard_activity.csv",
+      "data/study/guard_by_adjustment.csv",
+      "data/study/implementation_check.csv",
+      "data/study/loss_and_recovery.csv",
+      "data/study/loss_and_recovery_contrasts.csv",
+      "data/study/modes.csv",
+      "data/study/peer_influence.csv",
+      "data/study/principal_comparisons.csv",
+      "data/study/rescoring_contrasts.csv",
+      "data/study/scenario_identifier.csv",
+      "data/study/score_influence.csv",
+      "data/study/seed_endpoints.csv",
+      "data/study/sensitivity_by_scenario.csv",
+      "data/study/sensitivity_settings.csv",
+      "data/study/settings.csv",
+      "docs/images/architecture.png",
+      "figures/routing_decision_explanation.png",
+      "figures/routing_decisions_and_information.png",
+      "provenance/revised_study.json"
+    ],
+    "changed": [
+      ".github/workflows/ci.yml",
+      "FILE_HASHES.json",
+      "HOW_TO_RUN.md",
+      "README.md",
+      "agribrain/frontend/src/data/studyResults.json",
+      "agribrain/frontend/src/data/studyResults.test.js",
+      "agribrain/frontend/src/pages/AnalyticsPage.jsx",
+      "analysis/export_dashboard_data.py",
+      "analysis/make_figures.py",
+      "analysis/requirements.txt",
+      "docs/ARCHITECTURE.md",
+      "docs/DATA.md",
+      "docs/PROVENANCE.md",
+      "docs/REPRODUCTION.md",
+      "figures/README.md",
+      "figures/ari_performance_by_scenario.png",
+      "figures/executed_routing_choices.png",
+      "figures/figure_index.json",
+      "figures/weight_sensitivity.png",
+      "scripts/verify_package.py"
+    ],
+    "removed": [
+      {
+        "file": "data/primary/audit_summary.json",
+        "sha256": "0c66779f7114890ef42261afc4c9c59a94774019fbb7b473e83d7b5bca4461ce"
+      },
+      {
+        "file": "data/primary/directional_disagreements.csv",
+        "sha256": "5f15e30e07ca1d68f056da897ba73156253c843efa257004789dd8c0f8ff964e"
+      },
+      {
+        "file": "data/primary/overall_outcomes.json",
+        "sha256": "136275e20cc5ffd7594c9601170dddf6006c9c4aa59fab4a58e80370325bc43a"
+      },
+      {
+        "file": "data/primary/paired_seed_ARI.csv",
+        "sha256": "494d8cac669a09d58696fcf6dd7439e0725a521e7dc5e9c40cc70ef0e60eb1fb"
+      },
+      {
+        "file": "data/primary/plotted_estimates.csv",
+        "sha256": "5358a8dffe0e746f0b3b56b3deee2fe8888b3247c77ce3917178034cf0bcc1a3"
+      },
+      {
+        "file": "data/primary/pricing_analysis.json",
+        "sha256": "880e8d8a1fee4532adc09b7b546ebb39831962b387850caa5fda15e2d3a5beee"
+      },
+      {
+        "file": "data/primary/routing_time_analysis.json",
+        "sha256": "27ba769a05601ef99d405c15538997900e3fc3eddd0a03e12a68719fd5f42d71"
+      },
+      {
+        "file": "data/primary/selected_decision_examples.json",
+        "sha256": "d03260e78c6d1f083360432ec6f839c0575a0ecc619144e8718e04a5e185efb7"
+      },
+      {
+        "file": "data/primary/source_manifest.json",
+        "sha256": "e1dba5a1d0800f9f0c0e2f139f4e2439d1ec099f1bdcdcd7ee8c9187baa76195"
+      },
+      {
+        "file": "data/primary/spoilage_pinn_v1_manifest.json",
+        "sha256": "5760b2515a30becac14bc79010654eca9052c6b82d9050cc4ad7868bf3301433"
+      },
+      {
+        "file": "data/primary/static_compatibility.json",
+        "sha256": "d0b9acb98735b9fc40e4923b668908a2d177442e031317f2253566c47d3d15c6"
+      },
+      {
+        "file": "data/primary/static_only_evidence.json.gz",
+        "sha256": "ef5c815339f09d5e92b129189ee35f38dacfea946a01c0625f0438ca97070248"
+      },
+      {
+        "file": "data/primary/three_mode_endpoints.csv",
+        "sha256": "a2868834e0ab15f5e68c1de9e7280b246f6f4b056298a66f8b77231be0fb7c4d"
+      },
+      {
+        "file": "data/primary/time_series_estimates.csv",
+        "sha256": "1ec84d875d4fb8b1a357340af4723fa6a604d4e8b5ca9e71feaf788dcb49b63e"
+      },
+      {
+        "file": "data/primary/validation_20260922/control_endpoints.csv",
+        "sha256": "9bd15573e847d58afd548ad20cbf0cdd91993d66b4379b2b6baedefaf75b6f76"
+      },
+      {
+        "file": "data/primary/validation_20260922/control_integrity.json",
+        "sha256": "50fd86121c1f400b5eda9b7a7f3f008103e191a11a0e19eb76538804d80be62c"
+      },
+      {
+        "file": "data/primary/validation_20260922/control_summary.json",
+        "sha256": "203cc07ed222e5bd2268a960065bf9919d6c0db891acac017f8963a5123c3d06"
+      },
+      {
+        "file": "data/primary/validation_20260922/frozen_control_decisions.csv.gz",
+        "sha256": "1df117addfb5a55ad9361c867b058284165ba20b154df2c5db1668513dcaba88"
+      },
+      {
+        "file": "data/primary/validation_20260922/protocol_validation.json",
+        "sha256": "9a4262ab4dc2e51ab2fb57791f992691125eb53f2541a6d36fd39a62b86204e3"
+      },
+      {
+        "file": "data/primary/validation_20260922/role_activity.json",
+        "sha256": "9716fcff552a5a7868e3b3814e517b2ce4694752b8e56e73b198f73262d12b41"
+      },
+      {
+        "file": "data/primary/validation_20260922/validation_provenance.json",
+        "sha256": "3f8aa9447857f7c055b4bb5ddc4018b548daaea72f51a291d8475d02853581f9"
+      },
+      {
+        "file": "data/relocated_tables/agent_activity.csv",
+        "sha256": "34f2f1365a52494981f077f86718c1448e9f8e790e28f09137e7fbcf91542cbd"
+      },
+      {
+        "file": "data/relocated_tables/effective_weights.csv",
+        "sha256": "bf093e6dbaba7c03efd7fde16841ac93f3de86b3e9bb17e7692270e8f5c25bcd"
+      },
+      {
+        "file": "data/relocated_tables/weight_sensitivity_overall.csv",
+        "sha256": "8e504c67c11733c7ee540d3e787850ed035aad3257b87d508fb5b03dc1dd7bc4"
+      },
+      {
+        "file": "data/sensitivity/effective_parameters.csv",
+        "sha256": "4607ad41b8d2f4e5e95415e74ef90ce2269ea03ef0fbb5bf3b9306830e77e504"
+      },
+      {
+        "file": "data/sensitivity/paired_ari_sensitivity.csv",
+        "sha256": "b78c019c7a41bb94f2aac2f57def53025f4410f3bbf8498440cbb3ecab737764"
+      },
+      {
+        "file": "data/sensitivity/route_changes.csv",
+        "sha256": "713c15c35e0544b90c14ebc406258e8da61ceece1d39625b58d264d946b1fa7b"
+      },
+      {
+        "file": "data/sensitivity/seed_endpoints.csv",
+        "sha256": "58a566f13775bdd1047f8e45e3bf2b5ba7fd700a56560b3fea99c9caa27e9284"
+      },
+      {
+        "file": "data/sensitivity/summary.json",
+        "sha256": "d3e8d9cb21fe60f66dc8cb70ed8d030c98681d00b63637e842562ac2d4d8ae48"
+      },
+      {
+        "file": "docs/images/architecture.jpg",
+        "sha256": "13819606f1fe2861332307c019224a790ca5cfe7f01522e5f53546bb6798b7c0"
+      },
+      {
+        "file": "figures/disturbance_and_policy_timing.png",
+        "sha256": "ca7bd562988f5924a59a7073d6e9e157926403d1225d2146595f703c4dfb1d45"
+      },
+      {
+        "file": "figures/protocol_preserved_context.png",
+        "sha256": "cb7af91d83f9ae5f2202d1b828585d3e082e1f43c0c371d84b8feb606713883c"
+      },
+      {
+        "file": "figures/routing_decision_explanations.png",
+        "sha256": "feeb96bf9f8ebca0108cf0f28899b0b59e15dab9187a8a974f9680ec6c638019"
+      },
+      {
+        "file": "provenance/metadata_sanitization.json",
+        "sha256": "580a696197aa7088cea9a289f44a00c3fbd9f3938482db14b7640e371bb2468e"
+      },
+      {
+        "file": "provenance/raw_archives.json",
+        "sha256": "3612e154747c24e20b371358e0b17042b146455811f01fecf717640bd39664d3"
+      },
+      {
+        "file": "provenance/static_source_files.json",
+        "sha256": "44bba17f085be36ecd80f0079b9168be38620fb42769b703d1377035ee15d33e"
+      }
+    ]
+  }
+}

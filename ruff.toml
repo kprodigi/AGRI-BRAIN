@@ -1,0 +1,20 @@
+# Lint configuration for the backend and simulation code.
+#
+# Check for syntax errors, undefined names and unused imports:
+#   ruff check --select E9,F63,F7,F82,F401,F821 agribrain/backend mvp/simulation
+target-version = "py311"
+line-length = 100
+
+[lint]
+select = ["E9", "F63", "F7", "F82", "F401", "I", "B"]
+ignore = []
+
+[lint.per-file-ignores]
+# These scripts set sys.path themselves, so their imports follow that setup.
+"agribrain/backend/experiments/**/*.py" = ["E402"]
+"mvp/simulation/**/*.py" = ["E402"]
+# Tests keep fixture-scope imports and imports used only for their side effects.
+"agribrain/backend/tests/**/*.py" = ["E402", "F401"]
+"agribrain/backend/pirag/tests/**/*.py" = ["E402", "F401"]
+"**/test_*.py" = ["E402", "F401"]
+"**/conftest.py" = ["E402", "F401"]

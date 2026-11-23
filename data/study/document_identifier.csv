@@ -1,0 +1,5 @@
+mode,cells,cells_with_identical_routing,largest_ari_difference
+static,100,100,0.0
+no_context,100,100,0.0
+agribrain,100,100,0.0
+rule_always_redistribute,100,100,0.0

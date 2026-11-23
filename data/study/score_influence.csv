@@ -1,0 +1,3 @@
+setting,mode,scenario,decisions,leading_route_changed_share,clip_active_decisions
+main_fail_closed,agribrain_eligibility_no_peer,overall,28800,0.048993055555555554,0
+main_fail_closed,agribrain,overall,28800,0.04809027777777778,0
